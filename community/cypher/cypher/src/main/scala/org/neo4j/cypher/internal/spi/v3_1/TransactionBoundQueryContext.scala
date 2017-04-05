@@ -53,8 +53,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema_new.IndexQuery
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema_new.{IndexQuery, RelationTypeSchemaDescriptor, SchemaDescriptorFactory}
 import org.neo4j.kernel.api.schema_new.constaints.{ConstraintBoundary, ConstraintDescriptor, ConstraintDescriptorFactory, UniquenessConstraintDescriptor}
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.impl.core.NodeManager
@@ -477,7 +476,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
         SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   } catch {
     case existing: AlreadyConstrainedException =>
-      IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
+      IdempotentResult(SchemaTypes.UniquenessConstraint(labelId, propertyKeyId), wasCreated = false)
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
@@ -485,13 +484,13 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
     try {
-      IdempotentResult(ConstraintBoundary.mapNode(
+      IdempotentResult(
         txContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
           SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
-        )).asInstanceOf[NodePropertyExistenceConstraint]) // this cast can be resolved with 3.1.2
+        ))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[NodePropertyExistenceConstraint], wasCreated = false)
+        IdempotentResult(SchemaTypes.NodePropertyExistenceConstraint(labelId, propertyKeyId), wasCreated = false)
     }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
@@ -499,13 +498,13 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
     try {
-      IdempotentResult(ConstraintBoundary.mapRelationship(
+      IdempotentResult(
         txContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
           SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId)
-        )).asInstanceOf[RelationshipPropertyExistenceConstraint])
+        ))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[RelationshipPropertyExistenceConstraint], wasCreated = false)
+        IdempotentResult(SchemaTypes.RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId), wasCreated = false)
     }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =

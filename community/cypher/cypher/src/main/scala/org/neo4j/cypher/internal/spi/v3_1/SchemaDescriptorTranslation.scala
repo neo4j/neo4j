@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
 import org.neo4j.kernel.api.schema_new.SchemaDescriptor
-import org.neo4j.kernel.api.schema_new.constaints.{ConstraintDescriptorFactory, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
+import org.neo4j.kernel.api.schema_new.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptorFactory, NewIndexDescriptor => KernelIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
@@ -39,6 +39,16 @@ trait SchemaDescriptorTranslation {
   implicit def toCypher(constraint: KernelUniquenessConstraint): SchemaTypes.UniquenessConstraint = {
     assertSingleProperty(constraint.schema())
     SchemaTypes.UniquenessConstraint(constraint.schema().getLabelId, constraint.schema().getPropertyId)
+  }
+
+  implicit def toCypher(constraint: NodeExistenceConstraintDescriptor): SchemaTypes.NodePropertyExistenceConstraint = {
+    assertSingleProperty(constraint.schema())
+    SchemaTypes.NodePropertyExistenceConstraint(constraint.schema().getLabelId, constraint.schema().getPropertyId)
+  }
+
+  implicit def toCypher(constraint: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint = {
+    assertSingleProperty(constraint.schema())
+    SchemaTypes.RelationshipPropertyExistenceConstraint(constraint.schema().getRelTypeId, constraint.schema().getPropertyId)
   }
 
   def assertSingleProperty(schema: SchemaDescriptor):Unit =

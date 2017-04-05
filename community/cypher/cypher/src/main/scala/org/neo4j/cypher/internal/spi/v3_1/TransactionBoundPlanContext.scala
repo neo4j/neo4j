@@ -90,7 +90,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
     ).asScala.collectFirst {
         case constraint: ConstraintDescriptor if constraint.`type`() == ConstraintDescriptor.Type.UNIQUE =>
-          ConstraintBoundary.map( constraint ).asInstanceOf[UniquenessConstraint]
+          SchemaTypes.UniquenessConstraint(labelId, propertyKeyId)
     }
   } catch {
     case _: KernelException => None
