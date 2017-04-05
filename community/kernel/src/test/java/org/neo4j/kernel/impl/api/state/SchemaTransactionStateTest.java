@@ -68,13 +68,13 @@ public class SchemaTransactionStateTest
             StateHandlingStatementOperations txContext, KernelStatement state, int labelId, int propertyKey )
     {
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKey );
-        return txContext.indexGetForLabelAndPropertyKey( state, schemaDescriptor );
+        return txContext.indexGetForSchema( state, schemaDescriptor );
     }
 
     private static NewIndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId,
             int propertyKey )
     {
-        return store.indexGetForLabelAndPropertyKey( SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
+        return store.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
     }
 
     @Test

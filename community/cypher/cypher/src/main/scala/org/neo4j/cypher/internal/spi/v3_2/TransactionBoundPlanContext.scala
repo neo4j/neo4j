@@ -43,7 +43,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.statement.readOperations().indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
+    tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+      .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+      .flatMap(getOnlineIndex)
   }
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
@@ -54,23 +56,26 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   def indexExistsForLabel(labelName: String): Boolean = {
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
 
-    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
-    val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
+    val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+                                  .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+                                  .flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    tc.statement.readOperations().uniqueIndexesGetForLabel(labelId).asScala.map(kernelToCypher)
+    tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+      .filter(_.`type`() == KernelIndexDescriptor.Type.UNIQUE)
+      .map(kernelToCypher)
   }
 
   def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(tc, labelName, propertyKeys)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    val index = tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(descriptor)
-    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds()))
+    val index = tc.statement.readOperations().indexGetForSchema(descriptor)
+    Some(IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -82,7 +87,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds()))
+      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds))
       case _ => None
     }
 

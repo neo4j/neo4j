@@ -80,6 +80,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 public class SchemaImpl implements Schema
@@ -110,8 +111,8 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            addDefinitions( definitions, statement.readOperations(), statement.readOperations().indexesGetForLabel( labelId ), false );
-            addDefinitions( definitions, statement.readOperations(), statement.readOperations().uniqueIndexesGetForLabel( labelId ), true );
+            Iterator<NewIndexDescriptor> indexes = statement.readOperations().indexesGetForLabel( labelId );
+            addDefinitions( definitions, statement.readOperations(), NewIndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
@@ -122,20 +123,20 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
-            addDefinitions( definitions, statement.readOperations(), statement.readOperations().indexesGetAll(), false );
-            addDefinitions( definitions, statement.readOperations(), statement.readOperations().uniqueIndexesGetAll(), true );
+            Iterator<NewIndexDescriptor> indexes = statement.readOperations().indexesGetAll();
+            addDefinitions( definitions, statement.readOperations(), NewIndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
 
-    private IndexDefinition descriptorToDefinition( final ReadOperations statement, NewIndexDescriptor index,
-            final boolean constraintIndex )
+    private IndexDefinition descriptorToDefinition( final ReadOperations statement, NewIndexDescriptor index )
     {
         try
         {
             Label label = label( statement.labelGetName( index.schema().getLabelId() ) );
-            return new IndexDefinitionImpl( actions, label,
-                    PropertyNameUtils.getPropertyKeys( statement, index.schema().getPropertyIds() ), constraintIndex );
+            boolean constraintIndex = index.type() == UNIQUE;
+            String[] propertyNames = PropertyNameUtils.getPropertyKeys( statement, index.schema().getPropertyIds() );
+            return new IndexDefinitionImpl( actions, label, propertyNames, constraintIndex );
         }
         catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
         {
@@ -144,10 +145,10 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
-                                 Iterator<NewIndexDescriptor> indexes, final boolean constraintIndex )
+                                 Iterator<NewIndexDescriptor> indexes )
     {
         addToCollection(
-                map( index -> descriptorToDefinition( statement, index, constraintIndex ), indexes ),
+                map( index -> descriptorToDefinition( statement, index ), indexes ),
                 definitions );
     }
 

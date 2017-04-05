@@ -58,6 +58,7 @@ public class SchemaCache
     private final Set<ConstraintDescriptor> constraints = new HashSet<>();
 
     private final Map<SchemaDescriptor, NewIndexDescriptor> indexDescriptors = new HashMap<>();
+    private final PrimitiveIntObjectMap<Set<NewIndexDescriptor>> indexDescriptorsByLabel = Primitive.intObjectMap();
     private final ConstraintSemantics constraintSemantics;
 
     private final Map<Class<?>,Object> dependantState = new ConcurrentHashMap<>();
@@ -153,7 +154,17 @@ public class SchemaCache
         {
             IndexRule indexRule = (IndexRule) rule;
             indexRuleById.put( indexRule.getId(), indexRule );
-            indexDescriptors.put( indexRule.schema(), indexRule.getIndexDescriptor() );
+            LabelSchemaDescriptor schema = indexRule.schema();
+            indexDescriptors.put( schema, indexRule.getIndexDescriptor() );
+
+            Set<NewIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
+            if ( forLabel == null )
+            {
+                forLabel = new HashSet<>();
+                indexDescriptorsByLabel.put( schema.getLabelId(), forLabel );
+            }
+            forLabel.add( indexRule.getIndexDescriptor() );
+
             for ( int propertyId : indexRule.schema().getPropertyIds() )
             {
                 List<NewIndexDescriptor> indexesForProperty = indexByProperty.get( propertyId );
@@ -196,10 +207,24 @@ public class SchemaCache
         else if ( indexRuleById.containsKey( id ) )
         {
             IndexRule rule = indexRuleById.remove( id );
-            indexDescriptors.remove( rule.schema() );
+            LabelSchemaDescriptor schema = rule.schema();
+            indexDescriptors.remove( schema );
+
+            Set<NewIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
+            forLabel.remove( rule.getIndexDescriptor() );
+            if ( forLabel.isEmpty() )
+            {
+                indexDescriptorsByLabel.remove( schema.getLabelId() );
+            }
+
             for ( int propertyId : rule.schema().getPropertyIds() )
             {
-                indexByProperty.get( propertyId ).remove( rule.getIndexDescriptor() );
+                List<NewIndexDescriptor> forProperty = indexByProperty.get( propertyId );
+                forProperty.remove( rule.getIndexDescriptor() );
+                if ( forProperty.isEmpty() )
+                {
+                    indexByProperty.remove( propertyId );
+                }
             }
         }
     }
@@ -207,6 +232,12 @@ public class SchemaCache
     public NewIndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
     {
         return indexDescriptors.get( descriptor );
+    }
+
+    public Iterator<NewIndexDescriptor> indexDescriptorsForLabel( int labelId )
+    {
+        Set<NewIndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
+        return forLabel == null ? Iterators.emptyIterator() : forLabel.iterator();
     }
 
     public Iterator<NewIndexDescriptor> indexesByProperty( int propertyId )

@@ -180,7 +180,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( asSet( uniqueIndex ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( readOperations.indexesGetAll() ) );
     }
 
     @Test
@@ -189,15 +189,14 @@ public class UniquenessConstraintCreationIT
         // given
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( uniqueIndex ),
-                asSet( statement.readOperations().uniqueIndexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( statement.readOperations().indexesGetAll() ) );
 
         // when
         rollback();
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
         commit();
     }
 
@@ -267,8 +266,7 @@ public class UniquenessConstraintCreationIT
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         UniquenessConstraintDescriptor constraint =
                 statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( uniqueIndex ),
-                asSet( statement.readOperations().uniqueIndexesGetAll() ) );
+        assertEquals( asSet( uniqueIndex ), asSet( statement.readOperations().indexesGetAll() ) );
         commit();
 
         // when
@@ -278,7 +276,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.uniqueIndexesGetAll() ) );
+        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
         commit();
     }
 

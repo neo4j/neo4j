@@ -67,20 +67,9 @@ public interface StoreReadLayer
     Iterator<NewIndexDescriptor> indexesGetAll();
 
     /**
-     * @param labelId label to list indexes related to uniqueness constraints for.
-     * @return {@link NewIndexDescriptor} related to uniqueness constraints associated with the given {@code labelId}.
-     */
-    Iterator<NewIndexDescriptor> uniquenessIndexesGetForLabel( int labelId );
-
-    /**
-     * @return all {@link NewIndexDescriptor} related to uniqueness constraints.
-     */
-    Iterator<NewIndexDescriptor> uniquenessIndexesGetAll();
-
-    /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<NewIndexDescriptor> indexesAndUniqueIndexesRelatedToProperty( int propertyId );
+    Iterator<NewIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
      * @param index {@link NewIndexDescriptor} to get related uniqueness constraint for.
@@ -145,10 +134,10 @@ public interface StoreReadLayer
     /**
      * Looks for a stored index by given {@code descriptor}
      *
-     * @param descriptor a description of the node .
-     * @return {@link NewIndexDescriptor} for matching index, or {@code null} if not found. TODO should throw exception.
+     * @param descriptor a description of the index.
+     * @return {@link NewIndexDescriptor} for matching index, or {@code null} if not found.
      */
-    NewIndexDescriptor indexGetForLabelAndPropertyKey( LabelSchemaDescriptor descriptor );
+    NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.

@@ -148,7 +148,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0L );
+        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0L );
         verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }

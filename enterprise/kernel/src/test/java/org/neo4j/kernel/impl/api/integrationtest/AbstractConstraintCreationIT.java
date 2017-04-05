@@ -326,7 +326,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( statement.uniqueIndexesGetAll() ) );
+            assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( statement.indexesGetAll() ) );
             commit();
         }
     }

@@ -81,7 +81,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowReAddingIndex() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( index );
+        when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( index );
 
         // WHEN
         try
@@ -102,7 +102,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowAddingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -123,7 +123,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( null );
+        when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( null );
 
         // WHEN
         try
@@ -144,7 +144,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingIndexWhenConstraintIndexExists() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -165,7 +165,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatDoesNotExists() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try
@@ -186,7 +186,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     public void shouldDisallowDroppingConstraintIndexThatIsReallyJustRegularIndex() throws Exception
     {
         // GIVEN
-        when( innerRead.indexGetForLabelAndPropertyKey( state, descriptor ) ).thenReturn( uniqueIndex );
+        when( innerRead.indexGetForSchema( state, descriptor ) ).thenReturn( uniqueIndex );
 
         // WHEN
         try

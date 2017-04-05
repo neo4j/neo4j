@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.GENERAL;
 
 public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
@@ -101,8 +102,9 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             NewIndexDescriptor descriptor = (NewIndexDescriptor) arg;
             int labelId = descriptor.schema().getLabelId();
-            builder.append( format( "NewIndexDescriptorFactory.forLabel( %d, %s )", labelId,
-                    asString( descriptor.schema().getPropertyIds() ) ) );
+            String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
+            builder.append( format( "NewIndexDescriptorFactory.%s( %d, %s )", methodName,
+                    labelId, asString( descriptor.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof LabelSchemaDescriptor )
         {

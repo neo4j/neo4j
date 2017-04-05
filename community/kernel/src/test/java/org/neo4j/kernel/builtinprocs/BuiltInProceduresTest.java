@@ -320,8 +320,8 @@ public class BuiltInProceduresTest
         when( read.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
         when( read.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
         when( read.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
-        when( read.indexesGetAll() ).thenAnswer( ( i ) -> indexes.iterator() );
-        when( read.uniqueIndexesGetAll() ).thenAnswer( ( i ) -> uniqueIndexes.iterator() );
+        when( read.indexesGetAll() ).thenAnswer(
+                ( i ) -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
         when( read.constraintsGetAll() ).thenAnswer( ( i ) -> constraints.iterator() );
         when( read.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 

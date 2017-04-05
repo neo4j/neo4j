@@ -125,7 +125,7 @@ public class DataIntegrityValidatingStatementOperations implements
         try
         {
             NewIndexDescriptor existingIndex =
-                    schemaReadDelegate.indexGetForLabelAndPropertyKey( state, index.schema() );
+                    schemaReadDelegate.indexGetForSchema( state, index.schema() );
 
             if ( existingIndex == null )
             {
@@ -223,7 +223,7 @@ public class DataIntegrityValidatingStatementOperations implements
             LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        NewIndexDescriptor existingIndex = schemaReadDelegate.indexGetForLabelAndPropertyKey( state, descriptor );
+        NewIndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
         if ( existingIndex != null )
         {
             if ( existingIndex.type() == UNIQUE )

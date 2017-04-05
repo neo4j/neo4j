@@ -134,30 +134,17 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         TokenNameLookup nameLookup = new StatementTokenNameLookup( read );
 
         showIndices( visitor, read, nameLookup );
-        showUniqueIndices( visitor, read, nameLookup );
         showUniqueConstraints( visitor, read, nameLookup );
     }
 
     private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
     {
-        for ( NewIndexDescriptor descriptor : loop( read.indexesGetAll() ) )
+        for ( NewIndexDescriptor descriptor : loop( NewIndexDescriptor.sortByType( read.indexesGetAll() ) ) )
         {
             String userDescription = descriptor.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
             long size = read.indexSize( descriptor );
             visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage, size );
-        }
-    }
-
-    private void showUniqueIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
-
-    {
-        for ( NewIndexDescriptor descriptor : loop( read.uniqueIndexesGetAll() ) )
-        {
-            String userDescription = descriptor.schema().userDescription( nameLookup );
-            double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            long size = read.indexSize( descriptor );
-            visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage, size );
         }
     }
 

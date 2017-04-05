@@ -70,7 +70,6 @@ import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
@@ -176,7 +175,7 @@ public class TxStateTest
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ),
-                state.indexDiffSetsByLabel( indexOn_1_1.schema().getLabelId(), GENERAL ).getAdded() );
+                state.indexDiffSetsByLabel( indexOn_1_1.schema().getLabelId() ).getAdded() );
     }
 
     @Test
@@ -186,7 +185,7 @@ public class TxStateTest
         state.indexRuleDoAdd( indexOn_1_1 );
 
         // THEN
-        assertEquals( asSet( indexOn_1_1 ), state.indexChanges( GENERAL ).getAdded() );
+        assertEquals( asSet( indexOn_1_1 ), state.indexChanges().getAdded() );
     }
 
     // endregion

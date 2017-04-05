@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.api.schema_new.index;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Predicate;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
@@ -142,5 +147,21 @@ public class NewIndexDescriptor implements LabelSchemaSupplier
     public String toString()
     {
         return userDescription( SchemaUtil.idTokenNameLookup );
+    }
+
+    /**
+     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
+     * hot path.
+     *
+     * @param indexes Indexes to sort
+     * @return sorted indexes
+     */
+    public static Iterator<NewIndexDescriptor> sortByType( Iterator<NewIndexDescriptor> indexes )
+    {
+        List<NewIndexDescriptor> materialized = Iterators.asList( indexes );
+        return Iterators.concat(
+                Iterators.filter( GENERAL, materialized.iterator() ),
+                Iterators.filter( UNIQUE, materialized.iterator() ) );
+
     }
 }

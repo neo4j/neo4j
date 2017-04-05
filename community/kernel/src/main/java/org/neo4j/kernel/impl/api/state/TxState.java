@@ -816,16 +816,15 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId, NewIndexDescriptor.Filter indexType )
+    public ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
-        return indexChangesDiffSets().filterAdded( index ->
-                SchemaDescriptorPredicates.hasLabel( index, labelId ) && indexType.test( index ) );
+        return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public ReadableDiffSets<NewIndexDescriptor> indexChanges( NewIndexDescriptor.Filter indexType )
+    public ReadableDiffSets<NewIndexDescriptor> indexChanges()
     {
-        return ReadableDiffSets.Empty.ifNull( indexChanges ).filterAdded( indexType );
+        return ReadableDiffSets.Empty.ifNull( indexChanges );
     }
 
     private DiffSets<NewIndexDescriptor> indexChangesDiffSets()

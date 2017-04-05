@@ -108,9 +108,9 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId, NewIndexDescriptor.Filter indexType );
+    ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<NewIndexDescriptor> indexChanges( NewIndexDescriptor.Filter indexType );
+    ReadableDiffSets<NewIndexDescriptor> indexChanges();
 
     Iterable<NewIndexDescriptor> constraintIndexesCreatedInTx();
 

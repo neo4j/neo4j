@@ -68,7 +68,7 @@ public class OperationsFacadeTest
     }
 
     @Test
-    public void testThrowExceptionWhenIndexNotFoundByLabelAndProperty() throws SchemaRuleNotFoundException
+    public void testThrowExceptionWhenIndexNotFound() throws SchemaRuleNotFoundException
     {
         setupSchemaReadOperations();
 
@@ -79,41 +79,6 @@ public class OperationsFacadeTest
                 "No index was found for :Label1(Prop1)." ) );
 
         operationsFacade.indexGetForSchema( descriptor );
-    }
-
-    @Test
-    public void testThrowExceptionWhenDuplicateUniqueIndexFound()
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
-    {
-        SchemaReadOperations readOperations = setupSchemaReadOperations();
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forSchema( descriptor );
-        Mockito.when( readOperations
-                .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), Mockito.eq( descriptor.getLabelId() ) ) )
-                .thenReturn( Iterators.iterator( index, index ) );
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-
-        expectedException.expect( DuplicateSchemaRuleException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "Multiple constraint indexs found for :Label1(Prop1)." ) );
-
-        operationsFacade.uniqueIndexGetForLabelAndPropertyKey( descriptor );
-    }
-
-    @Test
-    public void testThrowExceptionWhenUniqueIndexNotFound()
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
-    {
-        SchemaReadOperations readOperations = setupSchemaReadOperations();
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-        Mockito.when( readOperations
-                .uniqueIndexesGetForLabel( Mockito.any( KernelStatement.class ), anyInt() ) )
-                .thenReturn( Iterators.emptyIterator() );
-
-        expectedException.expect( SchemaRuleNotFoundException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "No constraint index was found for :Label1(Prop1)." ) );
-
-        operationsFacade.uniqueIndexGetForLabelAndPropertyKey( descriptor );
     }
 
     private SchemaReadOperations setupSchemaReadOperations()
