@@ -348,6 +348,23 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackBytes() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+        byte[] abcdefghij = "ABCDEFGHIJ".getBytes();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.pack( abcdefghij );
+        packer.flush();
+
+        // Then
+        byte[] value = newUnpacker( machine.output() ).unpackBytes();
+        assertThat( value, equalTo( abcdefghij ) );
+    }
+
+    @Test
     public void testCanPackAndUnpackString() throws Throwable
     {
         // Given

@@ -307,6 +307,19 @@ public class PackStream
             }
         }
 
+        public void pack( byte[] value ) throws IOException
+        {
+            if ( value == null )
+            {
+                packNull();
+            }
+            else
+            {
+                packBytesHeader( value.length );
+                out.writeBytes( value, 0, value.length );
+            }
+        }
+
         public void pack( String value ) throws IOException
         {
             if ( value == null )
@@ -318,6 +331,22 @@ public class PackStream
                 ByteBuffer encoded = utf8.encode( value );
                 packStringHeader( encoded.remaining() );
                 out.writeBytes( encoded );
+            }
+        }
+
+        private void packBytesHeader( int size ) throws IOException
+        {
+            if ( size <= Byte.MAX_VALUE )
+            {
+                out.writeShort( (short) (BYTES_8 << 8 | size) );
+            }
+            else if ( size <= Short.MAX_VALUE )
+            {
+                out.writeByte( BYTES_16 ).writeShort( (short) size );
+            }
+            else
+            {
+                out.writeByte( BYTES_32 ).writeInt( size );
             }
         }
 
@@ -567,9 +596,46 @@ public class PackStream
             throw new Unexpected( PackType.FLOAT, markerByte );
         }
 
+        public byte[] unpackBytes() throws IOException
+        {
+            int size = unpackBytesHeader();
+            return unpackRawBytes( size );
+        }
+
         public String unpackString() throws IOException
         {
             return new String( unpackUTF8(), StandardCharsets.UTF_8 );
+        }
+
+        public int unpackBytesHeader() throws IOException
+        {
+            final byte markerByte = in.readByte();
+            int size;
+            switch ( markerByte )
+            {
+            case BYTES_8:
+                size = unpackUINT8();
+                break;
+            case BYTES_16:
+                size = unpackUINT16();
+                break;
+            case BYTES_32:
+            {
+                long longSize = unpackUINT32();
+                if ( longSize <= Integer.MAX_VALUE )
+                {
+                    size = (int) longSize;
+                }
+                else
+                {
+                    throw new Overflow( "BYTES_32 too long for Java" );
+                }
+                break;
+            }
+            default:
+                throw new Unexpected( PackType.BYTES, markerByte );
+            }
+            return size;
         }
 
         public int unpackStringHeader() throws IOException
