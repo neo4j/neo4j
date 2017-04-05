@@ -124,6 +124,12 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "Binding relationships to a list in a variable length pattern is deprecated."
     ),
+    DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The semantics of using colon in the separation of alternative relationship types in conjunction with the"
+                    + " use of inlined property predicates will change in a future version."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

@@ -38,7 +38,7 @@ object Pattern {
 
     def apply(pattern: Pattern): Set[Seq[Variable]] = {
       val (seen, duplicates) = pattern.fold((Set.empty[Variable], Seq.empty[Variable])) {
-        case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _), _) =>
+        case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _), _) =>
           (acc) =>
             val (seen, duplicates) = acc
 
@@ -295,7 +295,8 @@ case class RelationshipPattern(
     types: Seq[RelTypeName],
     length: Option[Option[Range]],
     properties: Option[Expression],
-    direction: SemanticDirection)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
+    direction: SemanticDirection,
+    legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     variable.fold(SemanticCheckResult.success) {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.frontend.v3_2.phases
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.replaceAliasedFunctionInvocations.aliases
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, FunctionName, RelationshipPattern, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedVarLengthBindingNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedFunctionNotification, DeprecatedRelTypeSeparatorNotification, DeprecatedVarLengthBindingNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 
 object SyntaxDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
@@ -35,8 +35,10 @@ object SyntaxDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
     statement.treeFold(Set.empty[InternalNotification]) {
       case f@FunctionInvocation(_, FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
         (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
-      case p@RelationshipPattern(Some(variable),_,Some(_),_, _) =>
+      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
         (seq) => (seq + DeprecatedVarLengthBindingNotification(p.position, variable.name), None)
+      case p@RelationshipPattern(_, _, _, Some(_), _, true) =>
+        (seq) => (seq + DeprecatedRelTypeSeparatorNotification(p.position), None)
     }
 
   override def phase = DEPRECATION_WARNINGS

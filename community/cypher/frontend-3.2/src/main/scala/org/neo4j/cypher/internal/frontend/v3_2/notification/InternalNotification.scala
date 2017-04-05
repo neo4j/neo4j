@@ -66,4 +66,6 @@ case class DeprecatedFieldNotification(position: InputPosition, procedure: Strin
 
 case class DeprecatedVarLengthBindingNotification(position: InputPosition, variable: String) extends InternalNotification
 
+case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
+
 case object DeprecatedPlannerNotification extends InternalNotification

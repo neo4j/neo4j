@@ -133,7 +133,7 @@ case object projectNamedPaths extends Rewriter {
       case NodePattern(node, _, _) =>
         NodePathStep(node.get.copyId, step)
 
-      case RelationshipChain(relChain, RelationshipPattern(rel, _, length, _, direction), _) => length match {
+      case RelationshipChain(relChain, RelationshipPattern(rel, _, length, _, direction, _), _) => length match {
         case None =>
           flip(relChain, SingleRelationshipPathStep(rel.get.copyId, direction, step))
 

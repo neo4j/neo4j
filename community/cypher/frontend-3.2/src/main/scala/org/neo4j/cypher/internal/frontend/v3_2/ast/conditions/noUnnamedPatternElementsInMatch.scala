@@ -30,7 +30,7 @@ case object noUnnamedPatternElementsInMatch extends Condition {
 
   private def unnamedRelationshipPatterns(that: Any): Seq[String] = {
     collectNodesOfType[RelationshipPattern].apply(that).collect {
-      case rel@RelationshipPattern(None, _, _, _, _) =>
+      case rel@RelationshipPattern(None, _, _, _, _, _) =>
         s"RelationshipPattern at ${rel.position} is unnamed"
     }
   }

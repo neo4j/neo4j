@@ -28,16 +28,16 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     case NodePattern(Some(id), _, Some(props)) if !isParameter(props) =>
       propertyPredicates(id, props)
 
-    case RelationshipPattern(Some(id), _, None, Some(props), _) if !isParameter(props) =>
+    case RelationshipPattern(Some(id), _, None, Some(props), _, _) if !isParameter(props) =>
       propertyPredicates(id, props)
 
-    case rp@RelationshipPattern(Some(id), _, Some(_), Some(props), _) if !isParameter(props) =>
+    case rp@RelationshipPattern(Some(id), _, Some(_), Some(props), _, _) if !isParameter(props) =>
       Vector(varLengthPropertyPredicates(id, props, rp.position))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
     case p@NodePattern(Some(_) ,_, Some(props)) if !isParameter(props)                  => p.copy(properties = None)(p.position)
-    case p@RelationshipPattern(Some(_), _, _, Some(props), _) if !isParameter(props) => p.copy(properties = None)(p.position)
+    case p@RelationshipPattern(Some(_), _, _, Some(props), _, _) if !isParameter(props) => p.copy(properties = None)(p.position)
   }
 
   private def isParameter(expr: Expression) = expr match {
