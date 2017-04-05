@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
-import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, Rewriter, bottomUp, inSequence, topDown}
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
+import org.neo4j.cypher.internal.frontend.v3_2.{AstRewritingMonitor, Rewriter, bottomUp, inSequence, topDown}
 
 case object CNFNormalizer extends StatementRewriter {
 
@@ -120,12 +120,12 @@ object simplifyPredicates extends Rewriter {
 
   private val step: Rewriter = Rewriter.lift {
     case Not(Not(exp))                    => exp
+    case p@Ands(exps) if exps.size == 1   => exps.head
+    case p@Ors(exps) if exps.size == 1    => exps.head
     case p@Ands(exps) if exps.contains(T) => Ands(exps.filterNot(T == _))(p.position)
     case p@Ors(exps) if exps.contains(F)  => Ors(exps.filterNot(F == _))(p.position)
     case p@Ors(exps) if exps.contains(T)  => True()(p.position)
     case p@Ands(exps) if exps.contains(F) => False()(p.position)
-    case p@Ands(exps) if exps.size == 1   => exps.head
-    case p@Ors(exps) if exps.size == 1    => exps.head
   }
 
   private val instance = fixedPoint(bottomUp(step))
