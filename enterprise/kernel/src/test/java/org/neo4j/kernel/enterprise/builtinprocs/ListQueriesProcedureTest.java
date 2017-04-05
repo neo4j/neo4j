@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +47,8 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -53,6 +56,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -151,7 +155,7 @@ public class ListQueriesProcedureTest
         // given
         String query = "MATCH (n) SET n.v = n.v + 1";
         final Node node;
-        final long uncachedBytes, cachedBytes;
+        final Long bytes;
         try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
         {
             node = test.resource();
@@ -161,9 +165,9 @@ public class ListQueriesProcedureTest
             // then
             assertThat( data, hasKey( "allocatedBytes" ) );
             Object allocatedBytes = data.get( "allocatedBytes" );
-            assertThat( allocatedBytes, instanceOf( Long.class ) );
-            uncachedBytes = (Long)allocatedBytes;
-            assertThat( uncachedBytes, greaterThan( 0L ) );
+            assertThat( allocatedBytes, anyOf( nullValue(), (Matcher) allOf(
+                    instanceOf( Long.class ), greaterThan( 0L ) ) ) );
+            bytes = (Long) allocatedBytes;
         }
         // execute a second time, this time the query should be cached, and thus allocate less
         try ( Resource<Node> test = test( () -> node, Transaction::acquireWriteLock, query ) )
@@ -172,12 +176,10 @@ public class ListQueriesProcedureTest
             Map<String,Object> data = getQueryListing( query );
 
             // then
-            assertThat( data, hasKey( "allocatedBytes" ) );
-            Object allocatedBytes = data.get( "allocatedBytes" );
-            assertThat( allocatedBytes, instanceOf( Long.class ) );
-            cachedBytes = (Long)allocatedBytes;
-            assertThat( cachedBytes, greaterThan( 0L ) );
-            assertThat( cachedBytes, lessThanOrEqualTo( uncachedBytes ) );
+            @SuppressWarnings( "RedundantCast" )
+            Matcher<Object> allocatedBytes = bytes == null ? nullValue() : (Matcher) allOf(
+                    greaterThan( 0L ), lessThanOrEqualTo( bytes ) );
+            assertThat( data, hasEntry( equalTo( "allocatedBytes" ), allocatedBytes ) );
             assertSame( node, test.resource() );
         }
     }
