@@ -19,9 +19,11 @@
  */
 package org.neo4j.test.rule.concurrent;
 
-import org.junit.rules.ExternalResource;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import org.junit.rules.ExternalResource;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
@@ -66,27 +70,76 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> execute( ThrowingFunction<FROM,TO,EX> function, FROM parameter )
     {
-        return executor.submit( task( Barrier.NONE, function, parameter, (t) -> {} ) );
+        final Consumer<Thread> threadConsumer = (t) -> {};
+        return executor.submit( task( Barrier.NONE, function, function.toString(), parameter, threadConsumer ) );
+    }
+
+    public <FROM, TO, EX extends Exception> List<Future<TO>> multiple( int threads, ThrowingFunction<FROM,TO,EX> function, FROM parameter )
+    {
+        List<Future<TO>> result = new ArrayList<>( threads );
+        for ( int i = 0; i < threads; i++ )
+        {
+            result.add( executor.submit( task(
+                    Barrier.NONE, function, function.toString() + ":task=" + i, parameter, ( t ) -> {} ) ) );
+        }
+        return result;
+    }
+
+    public static <T> List<T> await( Iterable<Future<T>> futures ) throws InterruptedException, ExecutionException
+    {
+        List<T> result = futures instanceof Collection
+                ? new ArrayList<>( ((Collection) futures).size() )
+                : new ArrayList<>();
+        List<Throwable> failures = null;
+        for ( Future<T> future : futures )
+        {
+            try
+            {
+                result.add( future.get() );
+            }
+            catch ( ExecutionException e )
+            {
+                if ( failures == null )
+                {
+                    failures = new ArrayList<>();
+                }
+                failures.add( e.getCause() );
+            }
+        }
+        if ( failures != null )
+        {
+            if ( failures.size() == 1 )
+            {
+                throw new ExecutionException( failures.get( 0 ) );
+            }
+            ExecutionException exception = new ExecutionException( null );
+            for ( Throwable failure : failures )
+            {
+                exception.addSuppressed( failure );
+            }
+            throw exception;
+        }
+        return result;
     }
 
     public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(
             ThrowingFunction<FROM,TO,EX> function, FROM parameter, Predicate<Thread> threadCondition,
             long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException
     {
-        ConcurrentTransfer<Thread> threadTransfer = new ConcurrentTransfer<>();
-        Future<TO> future = executor.submit( task( Barrier.NONE, function, parameter, threadTransfer ) );
-        Predicates.await( threadTransfer, threadCondition, timeout, unit );
+        ConcurrentTransfer<Thread> transfer = new ConcurrentTransfer<>();
+        Future<TO> future = executor.submit( task( Barrier.NONE, function, function.toString(), parameter, transfer ) );
+        Predicates.await( transfer, threadCondition, timeout, unit );
         return future;
     }
 
     private static <FROM, TO, EX extends Exception> Callable<TO> task(
-            final Barrier barrier, final ThrowingFunction<FROM,TO,EX> function, final FROM parameter,
+            final Barrier barrier, final ThrowingFunction<FROM,TO,EX> function, final String name, final FROM parameter,
             final Consumer<Thread> threadConsumer )
     {
         return () -> {
             Thread thread = Thread.currentThread();
-            String name = thread.getName();
-            thread.setName( function.toString() );
+            String previousName = thread.getName();
+            thread.setName( name );
             threadConsumer.accept( thread );
             barrier.reached();
             try
@@ -95,7 +148,7 @@ public class ThreadingRule extends ExternalResource
             }
             finally
             {
-                thread.setName( name );
+                thread.setName( previousName );
             }
         };
     }

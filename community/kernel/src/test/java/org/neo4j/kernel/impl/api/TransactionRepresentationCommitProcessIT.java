@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
@@ -53,13 +52,7 @@ public class TransactionRepresentationCommitProcessIT
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( GraphDatabaseSettings.check_point_interval_time, "10ms" );
-        }
-    };
+            .withSetting( GraphDatabaseSettings.check_point_interval_time, "10ms" );
 
     @Test( timeout = 15000 )
     public void commitDuringContinuousCheckpointing() throws Exception

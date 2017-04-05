@@ -44,31 +44,22 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.junit.Assert.assertThat;
 
 public class RelationshipIdReuseStressIT
 {
-
     @Rule
-    public EmbeddedDatabaseRule embeddedDatabase = new EnterpriseDatabaseRule()
-    {
-        @Override
-        protected void configure(GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
-        }
-    };
+    public DatabaseRule embeddedDatabase = new EnterpriseDatabaseRule()
+            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -183,13 +174,13 @@ public class RelationshipIdReuseStressIT
         return TestRelationshipTypes.values()[ThreadLocalRandom.current().nextInt( TestRelationshipTypes.values().length )];
     }
 
-    private Node getRandomCityNode( EmbeddedDatabaseRule embeddedDatabase, Label cityLabel )
+    private Node getRandomCityNode( DatabaseRule embeddedDatabase, Label cityLabel )
     {
         return embeddedDatabase.
                 findNode( cityLabel, NAME_PROPERTY, "city" + (ThreadLocalRandom.current().nextInt( 1, NUMBER_OF_CITIES + 1 )) );
     }
 
-    private Node getRandomBandNode( EmbeddedDatabaseRule embeddedDatabase, Label bandLabel )
+    private Node getRandomBandNode( DatabaseRule embeddedDatabase, Label bandLabel )
     {
         return embeddedDatabase.
                 findNode( bandLabel, NAME_PROPERTY, "band" + (ThreadLocalRandom.current().nextInt( 1, NUMBER_OF_BANDS + 1 )) );

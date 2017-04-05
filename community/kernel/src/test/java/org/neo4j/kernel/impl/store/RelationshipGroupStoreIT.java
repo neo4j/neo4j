@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -42,13 +41,7 @@ public class RelationshipGroupStoreIT
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "1" );
-        }
-    };
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     @Test
     public void shouldCreateAllTheseRelationshipTypes() throws Exception

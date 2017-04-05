@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
@@ -41,15 +40,8 @@ public class AutoIndexOperationsTest
 {
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            builder.setConfig( GraphDatabaseSettings.relationship_keys_indexable, "Type" );
-            builder.setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" );
-        }
-    };
+            .withSetting( GraphDatabaseSettings.relationship_keys_indexable, "Type" )
+            .withSetting( GraphDatabaseSettings.relationship_auto_indexing, "true" );
 
     @Test
     public void shouldNotSeeDeletedRelationshipWhenQueryingWithStartAndEndNode()
