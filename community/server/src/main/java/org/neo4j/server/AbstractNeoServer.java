@@ -318,7 +318,7 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             setUpHttpLogging();
             webServer.start();
-            log.info( "Remote interface available at %s", baseUri() );
+            log.info( "HTTP interface available at %s", baseUri() );
         }
         catch ( Exception e )
         {

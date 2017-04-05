@@ -58,7 +58,14 @@ public class SocketAddress
     @Override
     public String toString()
     {
-        return hostname + ":" + port;
+        if (hostname.contains(":"))
+        {
+            return "[" + hostname + "]:" + port;
+        }
+        else
+        {
+            return hostname + ":" + port;
+        }
     }
 
     @Override
