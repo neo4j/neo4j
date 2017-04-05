@@ -273,7 +273,15 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
 
       case MergeLock(_, descriptions, lockMode) =>
-        PlanDescriptionImpl(id, s"MergeLock($lockMode)", children, Seq.empty, variables)
+        val arguments = descriptions flatMap { descr =>
+          val values = descr.propertyValues map {
+            case (prop, exp) => prop.name -> exp
+          }
+
+          Seq(LabelName(descr.label.name), Expressions(values.toMap))
+        }
+
+        PlanDescriptionImpl(id, s"MergeLock($lockMode)", children, arguments, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -391,7 +399,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
           case _ =>
             throw new InternalException("This should never happen. Missing a case?")
         }
-      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKeys.map(_.name))
+      case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKeys.map(_.name))
       case _ => throw new InternalException("This should never happen. Missing a case?")
     }
     (indexMode, indexDesc)

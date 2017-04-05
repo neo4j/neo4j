@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LockMode, Shared}
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Exclusive, LockMode}
 
 case class MergeLockPipe(src: Pipe, locksToGrab: Seq[MergeLockDescription], lockMode: LockMode)
                         (val id: Id = new Id)
@@ -31,7 +31,7 @@ case class MergeLockPipe(src: Pipe, locksToGrab: Seq[MergeLockDescription], lock
   extends PipeWithSource(src, pipeMonitor) {
 
 
-  private val exclusive = lockMode == Shared
+  private val exclusive = lockMode == Exclusive
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {

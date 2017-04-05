@@ -745,8 +745,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     val indexEntryId = indexEntryResourceId(labelId, predicates: _*)
+
     if (exclusive) {
-//      transactionalContext.statement.readOperations().releaseShared(ResourceTypes.INDEX_ENTRY, indexEntryId) //TODO!
+      // By releasing the shared lock before grabbing an exclusive lock, two threads racing to create the same node
+      // will not lead to an escalation dead lock
+      transactionalContext.statement.readOperations().releaseShared(ResourceTypes.INDEX_ENTRY, indexEntryId)
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.INDEX_ENTRY, indexEntryId)
     } else {
       transactionalContext.statement.readOperations().acquireShared(ResourceTypes.INDEX_ENTRY, indexEntryId)
