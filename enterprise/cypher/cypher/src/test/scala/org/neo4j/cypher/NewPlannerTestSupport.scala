@@ -24,6 +24,7 @@ import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, U
 import org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper
 import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
@@ -290,9 +291,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val compatibilityResult = graph.rollback(innerExecute(s"CYPHER $compatibility $queryText", params: _*))
     val costResult = executeWithCostPlannerAndInterpretedRuntimeOnly(queryText, params: _*)
 
-    assertResultsAreSame(compatibilityResult, costResult, queryText, s"Diverging results between $compatibility and current")
-    assertPlansAreSame(compatibility, compatibilityResult, costResult, queryText, s"Diverging query plan between $compatibility and current")
-    assertResultsAreSame(ruleResult, costResult, queryText, s"Diverging results between $compatibility and current")
+    assertPlansAreSimilar(compatibility, compatibilityResult, costResult, queryText, s"Diverging query plan between $compatibility and $currentVersion")
 
     compatibilityResult.close()
     costResult
@@ -303,25 +302,27 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val compatibilityResult = innerExecute(s"CYPHER $compatibility $queryText", params: _*)
     val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
 
-    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, s"Diverging results between $compatibility and current")
-    assertPlansAreSame(compatibility, compatibilityResult, interpretedResult, queryText, s"Diverging query plan between $compatibility and current")
+    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, s"Diverging results between $compatibility and $currentVersion")
+    assertPlansAreSimilar(compatibility, compatibilityResult, interpretedResult, queryText, s"Diverging query plan between $compatibility and $currentVersion")
 
     compatibilityResult.close()
     interpretedResult.close()
     interpretedResult
   }
 
-  protected def assertPlansAreSame(otherVersion: String, other: InternalExecutionResult, current: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
+  protected def assertPlansAreSimilar(otherVersion: String, other: InternalExecutionResult, current: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
       val currentText = current.executionPlanDescription().toString
       val otherText = other.executionPlanDescription().toString
-      val currentOps = current.executionPlanDescription().flatten.map(_.name.toLowerCase)
-      val otherOps = other.executionPlanDescription().flatten.map(_.name.toLowerCase)
-      withClue(s"$errorMsg: $currentOps != $otherOps\n\nOTHER $otherVersion:\n$otherText\n\nCURRENT $currentVersion:\n$currentText") {
+      val currentOps = current.executionPlanDescription().flatten.map(simpleName)
+      val otherOps = other.executionPlanDescription().flatten.map(simpleName)
+      withClue(s"$errorMsg:\n\t$currentOps\n\t\t!=\n$otherOps\n\nOTHER $otherVersion:\n$otherText\n\nCURRENT $currentVersion:\n$currentText") {
         currentOps should be(otherOps)
       }
     }
   }
+
+  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty","SetProperty").toLowerCase
 
   protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {

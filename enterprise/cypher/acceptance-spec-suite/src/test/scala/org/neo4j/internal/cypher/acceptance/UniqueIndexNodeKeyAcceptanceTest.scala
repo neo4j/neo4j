@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.config.Setting
