@@ -21,14 +21,12 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v2_3.spi
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException, Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.TokenNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.cypher.internal.compiler.v2_3.IndexDescriptor
 
 class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends DelegatingQueryContext(inner) {
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
@@ -91,7 +89,7 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
     translateException(super.dropIndexRule(labelId, propertyKeyId))
 
-  override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] =
+  override def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any): Iterator[Node] =
     translateException(super.indexSeek(index, value))
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
@@ -106,7 +104,7 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     translateException(super.getOrCreateFromSchemaState(key, creator))
 
-  override def upgrade(context: spi.QueryContext): LockingQueryContext =
+  override def upgrade(context: QueryContext): LockingQueryContext =
     translateException(super.upgrade(context))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
@@ -142,7 +140,7 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def getRelTypeName(id: Int) =
     translateException(super.getRelTypeName(id))
 
-  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
+  override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any) =
     translateException(super.lockingExactUniqueIndexSearch(index, value))
 
   override def commitAndRestartTx() =

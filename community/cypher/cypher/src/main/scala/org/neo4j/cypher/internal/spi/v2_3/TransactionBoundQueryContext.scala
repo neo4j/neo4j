@@ -44,7 +44,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint => KernelNPEConstraint, RelationshipPropertyExistenceConstraint => KernelRPEConstraint, UniquenessConstraint => KernelUniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.{exceptions, _}
@@ -54,7 +54,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
 
 final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
-  extends TransactionBoundTokenContext(tc.statement) with QueryContext with IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(tc.statement) with QueryContext with SchemaDescriptorTranslation {
 
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
@@ -125,10 +125,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
     new BeansAPIRelationshipIterator(relationships, nodeManager)
   }
 
-  def indexSeek(index: IndexDescriptor, value: Any) =
+  def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
-  def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
+  def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
@@ -140,7 +140,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
 
-  private def indexSeekByPrefixRange(index: IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
       bound.endPoint match {
         case n: Number => classOf[Number]
@@ -188,12 +188,12 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
     }
   }
 
-  private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, prefix: String): scala.Iterator[Node] = {
     val indexedNodes = tc.statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
+  private def indexSeekByNumericalRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
     val readOps = tc.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = (range match {
 
@@ -220,9 +220,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
+  private def indexSeekByStringRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
     val readOps = tc.statement.readOperations()
-    val propertyKeyId = index.getPropertyKeyId
     val matchingNodes: PrimitiveLongIterator = range match {
 
       case rangeLessThan: RangeLessThan[String] =>
@@ -249,10 +248,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  def indexScan(index: IndexDescriptor) =
+  def indexScan(index: SchemaTypes.IndexDescriptor) =
     mapToScalaENFXSafe(tc.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
+  override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -454,7 +453,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
     tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = try {
+  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.IndexDescriptor] = try {
     IdempotentResult(tc.statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId))
   } catch {
     case _: AlreadyIndexedException =>
@@ -465,39 +464,39 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
+    tc.statement.schemaWriteOperations().indexDrop(SchemaTypes.IndexDescriptor(labelId, propertyKeyId))
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] = try {
     IdempotentResult(tc.statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId))
   } catch {
     case existing: AlreadyConstrainedException =>
-      IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
+      IdempotentResult(existing.constraint().asInstanceOf[KernelUniquenessConstraint], wasCreated = false)
   }
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
+    tc.statement.schemaWriteOperations().constraintDrop(new KernelUniquenessConstraint(labelId, propertyKeyId))
 
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] =
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.NodePropertyExistenceConstraint] =
     try {
       IdempotentResult(tc.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(labelId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[NodePropertyExistenceConstraint], wasCreated = false)
+        IdempotentResult(existing.constraint().asInstanceOf[KernelNPEConstraint], wasCreated = false)
     }
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(new NodePropertyExistenceConstraint(labelId, propertyKeyId))
+    tc.statement.schemaWriteOperations().constraintDrop(new KernelNPEConstraint(labelId, propertyKeyId))
 
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[RelationshipPropertyExistenceConstraint] =
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.RelationshipPropertyExistenceConstraint] =
     try {
       IdempotentResult(tc.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(relTypeId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[RelationshipPropertyExistenceConstraint], wasCreated = false)
+        IdempotentResult(existing.constraint().asInstanceOf[KernelRPEConstraint], wasCreated = false)
     }
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+    tc.statement.schemaWriteOperations().constraintDrop(new KernelRPEConstraint(relTypeId, propertyKeyId))
 
   override def getImportURL(url: URL): Either[String,URL] = tc.graph match {
     case db: GraphDatabaseQueryService =>
