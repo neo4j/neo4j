@@ -75,7 +75,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.storemigration.StoreMigratorCheckPointer;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -101,7 +100,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -661,31 +659,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             //This means that we had no files only present in the page cache, this is fine.
         }
 
-        RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
-        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
-        boolean movingAwayFromVersionTrailers =
-                oldFormat.hasCapability( VERSION_TRAILERS ) && !newFormat.hasCapability( VERSION_TRAILERS );
-
-        if ( movingAwayFromVersionTrailers )
-        {
-            StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, storeDir, pageCache.pageSize() );
-        }
-
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        long lastCommittedTx = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-
         // update necessary neostore records
         LogPosition logPosition = readLastTxLogPosition( migrationDir );
         updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir, versionToUpgradeTo, logPosition );
 
         // delete old logs
         legacyLogs.deleteUnusedLogFiles( storeDir );
-
-        if ( movingAwayFromVersionTrailers )
-        {
-            // write a check point in the log in order to make recovery work in the newer version
-            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logPosition, lastCommittedTx );
-        }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
@@ -706,7 +685,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         //    is verified on A. A, at this point not having logs from pre-migration era, will need to
         //    know the checksum of transaction T to accommodate for this request from B. A will be able
         //    to look up checksums for transactions succeeding T by looking at its transaction logs,
-        //    but T needs to be stored in neostore to be accessible. Obvioously this scenario is only
+        //    but T needs to be stored in neostore to be accessible. Obviously this scenario is only
         //    problematic as long as we don't migrate and translate old logs.
         TransactionId lastTxInfo = readLastTxInformation( migrationDir );
 
