@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
@@ -46,7 +45,6 @@ public class RecordFormatsGenerationTest
     public void correctGenerations()
     {
         List<RecordFormats> recordFormats = Arrays.asList(
-                StandardV2_2.RECORD_FORMATS,
                 StandardV2_3.RECORD_FORMATS,
                 StandardV3_0.RECORD_FORMATS,
                 HighLimitV3_0_0.RECORD_FORMATS,
