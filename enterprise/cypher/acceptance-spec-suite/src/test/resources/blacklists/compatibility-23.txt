@@ -62,3 +62,8 @@ Ordering for lists, descending
 
 //SkipLimitAcceptance.feature - Unsupported limit syntax
 Negative parameter for LIMIT should not generate errors
+
+// Long chain of comparison operators
+Long chains of integer comparisons
+Long chains of floating point comparisons
+Long chains of string comparisons
