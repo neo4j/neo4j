@@ -57,4 +57,12 @@ class SimplifyPredicatesTest extends CypherFunSuite with PredicateTestSupport {
   test("P or P and P or Q  iff  P or Q") {
     ands(ors(P, P), ors(P, Q)) <=> ands(P, ors(P, Q))
   }
+
+  test("ANDS with only one TRUE") {
+    ands(TRUE) <=> TRUE
+  }
+
+  test("ORS with only one FALSE") {
+    ors(FALSE) <=> FALSE
+  }
 }
