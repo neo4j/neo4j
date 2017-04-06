@@ -19,15 +19,11 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
@@ -36,11 +32,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK;
@@ -144,15 +140,18 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnFutureAmbiguousRelTypeSeparator() throws Exception
     {
-        assertNotifications( "CYPHER 3.2 explain MATCH (a)-[:A|:B|:C{foo:'bar'}]-(b) RETURN a,b",
-                containsItem( notification(
-                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                containsString(
-                        "The semantics of using colon in the separation of alternative relationship types in "
-                                + "conjunction with the use of inlined property predicates will change in a future "
-                                + "version." ),
-                any( InputPosition.class ),
-                SeverityLevel.WARNING ) ) );
+        for ( String pattern : Arrays.asList("[:A|:B|:C {foo:'bar'}]", "[:A|:B|:C*]", "[x:A|:B|:C]") )
+        {
+            assertNotifications("CYPHER 3.2 explain MATCH (a)-" + pattern + "-(b) RETURN a,b",
+                    containsItem(notification(
+                            "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                            containsString(
+                                    "The semantics of using colon in the separation of alternative relationship types in conjunction with the " +
+                                              "use of variable binding, inlined property predicates, or variable length will change in a future version."
+                            ),
+                            any(InputPosition.class),
+                            SeverityLevel.WARNING)));
+        }
     }
 
     @Test

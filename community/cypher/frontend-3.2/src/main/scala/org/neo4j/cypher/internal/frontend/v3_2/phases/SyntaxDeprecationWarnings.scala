@@ -37,7 +37,7 @@ object SyntaxDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
         (seq) => (seq + DeprecatedFunctionNotification(f.position, name, aliases(name)), None)
       case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
         (seq) => (seq + DeprecatedVarLengthBindingNotification(p.position, variable.name), None)
-      case p@RelationshipPattern(_, _, _, Some(_), _, true) =>
+      case p@RelationshipPattern(variable, _, length, properties, _, true) if variable.isDefined || length.isDefined || properties.isDefined =>
         (seq) => (seq + DeprecatedRelTypeSeparatorNotification(p.position), None)
     }
 

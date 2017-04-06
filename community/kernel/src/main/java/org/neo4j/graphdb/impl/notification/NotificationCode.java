@@ -127,8 +127,8 @@ public enum NotificationCode
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The semantics of using colon in the separation of alternative relationship types in conjunction with the"
-                    + " use of inlined property predicates will change in a future version."
+            "The semantics of using colon in the separation of alternative relationship types in conjunction with the " +
+            "use of variable binding, inlined property predicates, or variable length will change in a future version."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
