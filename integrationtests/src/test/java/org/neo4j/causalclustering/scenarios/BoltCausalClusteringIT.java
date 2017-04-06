@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -205,6 +206,7 @@ public class BoltCausalClusteringIT
     private class LeaderSwitcher implements Runnable
     {
         private final Cluster cluster;
+        private final CountDownLatch switchCompleteLatch;
         private CoreClusterMember initialLeader;
         private CoreClusterMember currentLeader;
 
@@ -212,9 +214,10 @@ public class BoltCausalClusteringIT
         private boolean stopped;
         private Throwable throwable;
 
-        LeaderSwitcher( Cluster cluster )
+        LeaderSwitcher( Cluster cluster, CountDownLatch switchCompleteLatch )
         {
             this.cluster = cluster;
+            this.switchCompleteLatch = switchCompleteLatch;
         }
 
         @Override
@@ -231,6 +234,10 @@ public class BoltCausalClusteringIT
                     {
                         switchLeader( initialLeader );
                         currentLeader = cluster.awaitLeader();
+                    }
+                    else
+                    {
+                        switchCompleteLatch.countDown();
                     }
 
                     Thread.sleep( 100 );
@@ -284,7 +291,9 @@ public class BoltCausalClusteringIT
 
         CoreClusterMember leader = cluster.awaitLeader();
 
-        LeaderSwitcher leaderSwitcher = new LeaderSwitcher( cluster );
+        CountDownLatch leaderSwitchLatch = new CountDownLatch( 1 );
+
+        LeaderSwitcher leaderSwitcher = new LeaderSwitcher( cluster, leaderSwitchLatch );
 
         Config config = Config.build().withLogging( new JULogging( Level.OFF ) ).toConfig();
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
@@ -319,9 +328,10 @@ public class BoltCausalClusteringIT
                  * Having the latch release here ensures that we've done at least one pass through the loop, which means
                  * we've completed a connection before the forced master switch.
                  */
-                if ( seenAddresses.size() >= 1 )
+                if ( !seenAddresses.isEmpty() && !success )
                 {
                     leaderSwitcher.start();
+                    leaderSwitchLatch.await();
                 }
             }
         }
