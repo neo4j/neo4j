@@ -33,6 +33,30 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     procedures.registerProcedure(classOf[NotificationAcceptanceTest.TestProcedures])
   }
 
+  test("Warn on future ambiguous separator between alternative relationship types") {
+    val res1 = innerExecute("explain MATCH (a)-[:A|:B|:C{foo:'bar'}]-(b) RETURN a,b")
+
+    res1.notifications should contain(DeprecatedRelTypeSeparatorNotification(InputPosition(9,1,10)))
+
+    val res2 = innerExecute("explain MATCH (a)-[:A|B|C{foo:'bar'}]-(b) RETURN a,b")
+
+    no (res2.notifications) shouldBe a[DeprecatedRelTypeSeparatorNotification]
+
+    val res3 = innerExecute("explain MATCH (a)-[:A|:B|:C]-(b) RETURN a,b")
+
+    no (res3.notifications) shouldBe a[DeprecatedRelTypeSeparatorNotification]
+  }
+
+  test("Warn on binding variable length relationships") {
+    val res1 = innerExecute("explain MATCH ()-[rs*]-() RETURN rs")
+
+    res1.notifications should contain(DeprecatedVarLengthBindingNotification(InputPosition(8,1,9), "rs"))
+
+    val res2 = innerExecute("explain MATCH p = ()-[rs]-() RETURN relationships(p) AS rs")
+
+    no (res2.notifications) shouldBe a[DeprecatedVarLengthBindingNotification]
+  }
+
   test("Warn on deprecated standalone procedure calls") {
     val result = innerExecute("explain CALL oldProc()")
 
