@@ -58,25 +58,35 @@ object literalReplacement {
       acc => (acc, None)
     case l: ast.StringLiteral =>
       acc =>
-        val parameter = ast.Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)
-        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        if (acc.contains(l)) (acc, None) else {
+          val parameter = ast.Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)
+          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        }
     case l: ast.IntegerLiteral =>
       acc =>
-        val parameter = ast.Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)
-        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        if (acc.contains(l)) (acc, None) else {
+          val parameter = ast.Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)
+          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        }
     case l: ast.DoubleLiteral =>
       acc =>
-        val parameter = ast.Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)
-        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        if (acc.contains(l)) (acc, None) else {
+          val parameter = ast.Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)
+          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        }
     case l: ast.BooleanLiteral =>
       acc =>
-        val parameter = ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)
-        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
-    case l: ast.ListLiteral if l.expressions.forall(_.isInstanceOf[Literal])=>
+        if (acc.contains(l)) (acc, None) else {
+          val parameter = ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)
+          (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+        }
+    case l: ast.ListLiteral if l.expressions.forall(_.isInstanceOf[Literal]) =>
       acc =>
-        val parameter = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
-        val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value)
-        (acc + (l -> LiteralReplacement(parameter, values)), None)
+        if (acc.contains(l)) (acc, None) else {
+          val parameter = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
+          val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value)
+          (acc + (l -> LiteralReplacement(parameter, values)), None)
+        }
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {

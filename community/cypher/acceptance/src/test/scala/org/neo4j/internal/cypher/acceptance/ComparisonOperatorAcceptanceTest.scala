@@ -108,4 +108,21 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     result.toList should equal(List(Map("p" -> large)))
   }
 
+  test("should handle long chains of comparisons") {
+    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 2 < 3 < 4 as val") shouldBe true
+    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 3 < 2 < 4 as val") shouldBe false
+    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 2 < 2 < 4 as val") shouldBe false
+    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 2 <= 2 < 4 as val") shouldBe true
+
+    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 2.1 < 3.2 < 4.2 as val") shouldBe true
+    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 3.2 < 2.1 < 4.2 as val") shouldBe false
+    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 2.1 < 2.1 < 4.2 as val") shouldBe false
+    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 2.1 <= 2.1 < 4.2 as val") shouldBe true
+
+    executeScalarWithAllPlanners[Boolean]("RETURN 'a' < 'b' < 'c' < 'd' as val") shouldBe true
+    executeScalarWithAllPlanners[Boolean]("RETURN 'a' < 'c' < 'b' < 'd' as val") shouldBe false
+    executeScalarWithAllPlanners[Boolean]("RETURN 'a' < 'b' < 'b' < 'd' as val") shouldBe false
+    executeScalarWithAllPlanners[Boolean]("RETURN 'a' < 'b' <= 'b' < 'd' as val") shouldBe true
+  }
+
 }

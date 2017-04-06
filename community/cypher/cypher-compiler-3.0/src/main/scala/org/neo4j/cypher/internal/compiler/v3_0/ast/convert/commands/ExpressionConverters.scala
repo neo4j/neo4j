@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.{InequalitySeekRangeWrapper, NestedPipeExpression, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression => CommandExpression, InequalitySeekRangeExpression, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{InequalitySeekRangeExpression, ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v3_0.commands.{expressions => commandexpressions, predicates, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList

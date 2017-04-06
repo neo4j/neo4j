@@ -39,4 +39,8 @@ class ComparisonTest extends ParserAstTest[ast.Expression] with Expressions {
   test("a > b > c") {
     yields(ands(gt(id("a"), id("b")), gt(id("b"), id("c"))))
   }
+
+  test("a > b > c > d") {
+    yields(ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
+  }
 }
