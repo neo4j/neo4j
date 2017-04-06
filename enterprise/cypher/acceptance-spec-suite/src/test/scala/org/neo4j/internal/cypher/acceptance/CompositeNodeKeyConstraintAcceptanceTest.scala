@@ -204,6 +204,26 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     )
   }
 
+  test("should give appropriate error message when there is already an index") {
+    // Given
+    exec("CREATE INDEX ON :Person(firstname, lastname)")
+
+    // then
+    expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
+                "There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
+                  "A constraint cannot be created until the index has been dropped.")
+  }
+
+  test("should give appropriate error message when there is already a constraint") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
+
+    // then
+    expectError("CREATE INDEX ON :Person(firstname, lastname)",
+                "Label 'Person' properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
+                  "so an index is already created that matches this.")
+  }
+
   private def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](exec(query))
     assertThat(error.getMessage, containsString(expectedError))
