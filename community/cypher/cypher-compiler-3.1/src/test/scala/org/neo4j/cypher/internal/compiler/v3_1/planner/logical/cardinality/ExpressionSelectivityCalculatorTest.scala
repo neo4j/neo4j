@@ -152,6 +152,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val selections = mock[Selections]
 
     val expr = HasLabels(null, Seq(LabelName("Foo")(pos)))(pos)
-//    calculator(expr) should equal(Selectivity(1.0 / 10.0))
+    calculator(expr) should equal(Selectivity(1.0 / 10.0))
   }
 }
