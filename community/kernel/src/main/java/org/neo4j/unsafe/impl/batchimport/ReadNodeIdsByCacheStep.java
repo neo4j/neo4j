@@ -19,10 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
+import java.util.Arrays;
+
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
@@ -31,39 +30,25 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.System.nanoTime;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+
 /**
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
  * {@link NodeRecord} and sends downwards.
  */
-public class ReadNodeRecordsByCacheStep extends AbstractStep<Void>
+public class ReadNodeIdsByCacheStep extends AbstractStep<Void>
 {
     private final int nodeTypes;
     private final NodeRelationshipCache cache;
     private final int batchSize;
-    private final RecordCursor<NodeRecord> recordCursor;
 
-    public ReadNodeRecordsByCacheStep( StageControl control, Configuration config,
-            NodeStore nodeStore, NodeRelationshipCache cache, int nodeTypes )
+    public ReadNodeIdsByCacheStep( StageControl control, Configuration config,
+            NodeRelationshipCache cache, int nodeTypes )
     {
         super( control, ">", config );
         this.cache = cache;
         this.nodeTypes = nodeTypes;
         this.batchSize = config.batchSize();
-        this.recordCursor = nodeStore.newRecordCursor( nodeStore.newRecord() );
-    }
-
-    @Override
-    public void start( int orderingGuarantees )
-    {
-        super.start( orderingGuarantees );
-        recordCursor.acquire( 0, RecordLoad.NORMAL );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        recordCursor.close();
-        super.close();
     }
 
     @Override
@@ -87,19 +72,18 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<Void>
 
     private class NodeVisitor implements NodeChangeVisitor, AutoCloseable
     {
-        private NodeRecord[] batch = new NodeRecord[batchSize];
+        private long[] batch = new long[batchSize];
         private int cursor;
         private long time = nanoTime();
 
         @Override
         public void change( long nodeId, ByteArray array )
         {
-            recordCursor.next( nodeId );
-            batch[cursor++] = recordCursor.get().clone();
+            batch[cursor++] = nodeId;
             if ( cursor == batchSize )
             {
                 send();
-                batch = new NodeRecord[batchSize];
+                batch = new long[batchSize];
                 cursor = 0;
             }
         }
@@ -108,7 +92,7 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<Void>
         private void send()
         {
             totalProcessingTime.add( nanoTime() - time );
-            downstream.receive( doneBatches.getAndIncrement(), batch );
+            downstream.receive( doneBatches.getAndIncrement(), iterator( batch ) );
             time = nanoTime();
             assertHealthy();
         }
@@ -118,6 +102,7 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<Void>
         {
             if ( cursor > 0 )
             {
+                batch = Arrays.copyOf( batch, cursor );
                 send();
             }
         }
