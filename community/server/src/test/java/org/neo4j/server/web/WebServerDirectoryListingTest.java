@@ -48,7 +48,7 @@ public class WebServerDirectoryListingTest extends ExclusiveServerTestBase
 
         // When
         HTTP.Response okResource = HTTP.GET( server.baseUri().resolve( "/browser/index.html" ).toString() );
-        HTTP.Response illegalResource = HTTP.GET( server.baseUri().resolve( "/browser/styles/" ).toString() );
+        HTTP.Response illegalResource = HTTP.GET( server.baseUri().resolve( "/browser/assets/" ).toString() );
 
         // Then
         // Depends on specific resources exposed by the browser module; if this test starts to fail,
