@@ -20,10 +20,10 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
@@ -41,13 +41,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class NodeFirstRelationshipStage extends Stage
 {
     public NodeFirstRelationshipStage( String topic, Configuration config, NodeStore nodeStore,
-            RecordStore<RelationshipGroupRecord> relationshipGroupStore, NodeRelationshipCache cache,
-            int nodeTypes )
+            NodeRelationshipCache cache )
     {
         super( "Node --> Relationship" + topic, config );
-        add( new ReadNodeRecordsByCacheStep( control(), config, nodeStore, cache, nodeTypes ) );
+        add( new ReadNodeRecordsByCacheStep( control(), config, nodeStore, cache, NodeType.NODE_TYPE_SPARSE ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
+                new NodeFirstRelationshipProcessor( cache ), false ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }
 }
