@@ -117,7 +117,7 @@ class EagerizationAcceptanceTest
                   |RETURN r.val AS rv
                 """.stripMargin
 
-    val result = updateWithCostPlannerOnly(query) // Until 3.1 is released including fixes for rule planner we cannot run this with rule planner compatibility
+    val result = updateWithBothPlanners(query)
 
     result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
@@ -135,7 +135,7 @@ class EagerizationAcceptanceTest
                   |RETURN r.val AS rv
                 """.stripMargin
 
-    val result = updateWithCostPlannerOnly(query) // Until 3.1 is released including fixes for rule planner we cannot run this with rule planner compatibility
+    val result = updateWithBothPlanners(query)
 
     result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
@@ -2639,7 +2639,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels
                 """.stripMargin
 
-    val result = updateWithCostPlannerOnly(query) // Until 3.1 is released including fixes for rule planner we cannot run this with rule planner compatibility
+    val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("labels" -> List()), Map("labels" -> List())))
     assertStats(result, labelsAdded = 2)
     assertNumberOfEagerness(query, 1)
@@ -2656,7 +2656,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels
                 """.stripMargin
 
-    val result = updateWithCostPlannerOnly(query) // Until 3.1 is released including fixes for rule planner we cannot run this with rule planner compatibility
+    val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("labels" -> List("Foo")), Map("labels" -> List("Foo"))))
     assertStats(result, labelsRemoved = 2)
     assertNumberOfEagerness(query, 1)
@@ -2672,7 +2672,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels(n), labels(m)
                 """.stripMargin
 
-    val result = updateWithCostPlannerOnly(query) // Until 3.1 is released including fixes for rule planner we cannot run this with rule planner compatibility
+    val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
                                     Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
     assertStats(result, labelsAdded = 2)
@@ -2707,7 +2707,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels(n), labels(m)
                 """.stripMargin
 
-    val result = updateWithCostPlannerOnly(query) // Until 3.1 is released including fixes for rule planner we cannot run this with rule planner compatibility
+    val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("labels(n)" -> List(), "labels(m)" -> List()),
                                     Map("labels(n)" -> List(), "labels(m)" -> List())))
     assertStats(result, labelsRemoved = 2)
