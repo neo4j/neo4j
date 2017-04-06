@@ -23,10 +23,12 @@ import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper
 import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1}
+import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_2.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherTestSupport
@@ -421,6 +423,8 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
     def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
+        case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case p: CartesianPointv3_1  => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
         case a: Array[_] => a.toList.map(convert)
         case m: Map[_, _] =>
           Eagerly.immutableMapValues(m, convert)
