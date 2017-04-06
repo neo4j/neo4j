@@ -22,10 +22,10 @@ package org.neo4j.kernel.api.exceptions.index;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.SchemaUtil;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

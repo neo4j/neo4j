@@ -31,10 +31,10 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -50,8 +50,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.kernel.api.properties.Property.property;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
@@ -71,12 +71,12 @@ public class IndexTxStateUpdaterTest
     private IndexTxStateUpdater indexTxUpdater;
     private NodeItem node;
 
-    private NewIndexDescriptor indexOn1_1 = NewIndexDescriptorFactory.forLabel( labelId1, propId1 );
-    private NewIndexDescriptor indexOn2_new = NewIndexDescriptorFactory.forLabel( labelId2, newPropId );
-    private NewIndexDescriptor uniqueOn1_2 = NewIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
-    private NewIndexDescriptor indexOn1_1_new = NewIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
-    private NewIndexDescriptor uniqueOn2_2_3 = NewIndexDescriptorFactory.uniqueForLabel( labelId2, propId2, propId3 );
-    private List<NewIndexDescriptor> indexes =
+    private IndexDescriptor indexOn1_1 = IndexDescriptorFactory.forLabel( labelId1, propId1 );
+    private IndexDescriptor indexOn2_new = IndexDescriptorFactory.forLabel( labelId2, newPropId );
+    private IndexDescriptor uniqueOn1_2 = IndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
+    private IndexDescriptor indexOn1_1_new = IndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
+    private IndexDescriptor uniqueOn2_2_3 = IndexDescriptorFactory.uniqueForLabel( labelId2, propId2, propId3 );
+    private List<IndexDescriptor> indexes =
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
 
     @Before

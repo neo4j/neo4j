@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -59,8 +59,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
+import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema.IndexQuery.range;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -74,7 +74,7 @@ public class DatabaseIndexAccessorTest
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Parameterized.Parameter(0)
-    public NewIndexDescriptor index;
+    public IndexDescriptor index;
     @Parameterized.Parameter(1)
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
@@ -82,8 +82,8 @@ public class DatabaseIndexAccessorTest
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final NewIndexDescriptor GENERAL_INDEX = NewIndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final NewIndexDescriptor UNIQUE_INDEX = NewIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
+    private static final IndexDescriptor GENERAL_INDEX = IndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final IndexDescriptor UNIQUE_INDEX = IndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> implementations()
@@ -120,7 +120,7 @@ public class DatabaseIndexAccessorTest
     }
 
     private static Object[] arg(
-            NewIndexDescriptor index,
+            IndexDescriptor index,
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new Object[]{index, foo};

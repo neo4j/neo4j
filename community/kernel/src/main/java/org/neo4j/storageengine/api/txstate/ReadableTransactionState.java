@@ -26,10 +26,10 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
@@ -108,11 +108,11 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId );
+    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<NewIndexDescriptor> indexChanges();
+    ReadableDiffSets<IndexDescriptor> indexChanges();
 
-    Iterable<NewIndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -124,19 +124,19 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    ReadableDiffSets<Long> indexUpdatesForScan( NewIndexDescriptor index );
+    ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index );
 
-    ReadableDiffSets<Long> indexUpdatesForSeek( NewIndexDescriptor index, OrderedPropertyValues values );
+    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, OrderedPropertyValues values );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( NewIndexDescriptor index,
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
                                                              Number lower, boolean includeLower,
                                                              Number upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( NewIndexDescriptor index,
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index,
                                                              String lower, boolean includeLower,
                                                              String upper, boolean includeUpper );
 
-    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( NewIndexDescriptor index, String prefix );
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 

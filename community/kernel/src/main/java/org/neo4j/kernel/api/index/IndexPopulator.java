@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -102,7 +103,7 @@ public interface IndexPopulator
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link SchemaIndexProvider#getInitialState(long, org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link SchemaIndexProvider#getInitialState(long, IndexDescriptor)} also returns {@link InternalIndexState#ONLINE}.
      */
     void close( boolean populationCompletedSuccessfully ) throws IOException;
 

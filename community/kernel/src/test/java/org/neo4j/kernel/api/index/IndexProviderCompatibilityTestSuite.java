@@ -27,7 +27,7 @@ import org.junit.runners.Suite;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
@@ -59,7 +59,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         protected FileSystemAbstraction fs;
         protected final IndexProviderCompatibilityTestSuite testSuite;
         protected SchemaIndexProvider indexProvider;
-        protected NewIndexDescriptor descriptor;
+        protected IndexDescriptor descriptor;
 
         @Before
         public void setup()
@@ -69,7 +69,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             indexProvider = testSuite.createIndexProvider( fs, graphDbDir );
         }
 
-        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, NewIndexDescriptor descriptor )
+        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
         {
             this.testSuite = testSuite;
             this.descriptor = descriptor;

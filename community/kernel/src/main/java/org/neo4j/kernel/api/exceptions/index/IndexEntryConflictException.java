@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.SchemaUtil;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.SchemaUtil;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -57,7 +57,7 @@ public class IndexEntryConflictException extends Exception
      * was caught but it should not have been allowed to be thrown in the first place.
      * Typically where the index we performed an operation on is not a unique index.
      */
-    public RuntimeException notAllowed( NewIndexDescriptor descriptor )
+    public RuntimeException notAllowed( IndexDescriptor descriptor )
     {
         return new IllegalStateException( String.format(
                 "Index for (%s) should not require unique values.",

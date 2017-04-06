@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.SchemaUtil;
+import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 
 import static java.lang.String.format;

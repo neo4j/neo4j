@@ -36,8 +36,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -67,8 +67,8 @@ public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private final NewIndexDescriptor index1 = NewIndexDescriptorFactory.forLabel(1, 1);
-    private final NewIndexDescriptor index42 = NewIndexDescriptorFactory.forLabel(42, 42);
+    private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel(1, 1);
+    private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
 
     @After
     public void tearDown() throws Exception
@@ -253,7 +253,7 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance() );
 
             populator = addPopulator( batchingPopulator, index1 );
-            List<IndexEntryUpdate<NewIndexDescriptor>> expected = forUpdates( index1, update1, update2 );
+            List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllNodes().run();
@@ -295,7 +295,7 @@ public class BatchingMultipleIndexPopulatorTest
         verify( populator, never() ).add( forUpdates( index1, update5 ) );
     }
 
-    private List<IndexEntryUpdate<NewIndexDescriptor>> forUpdates( NewIndexDescriptor index, NodeUpdates... updates )
+    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, NodeUpdates... updates )
     {
         return Iterables.asList(
                 Iterables.concat(
@@ -311,7 +311,7 @@ public class BatchingMultipleIndexPopulatorTest
         return NodeUpdates.forNode( nodeId, labelIds, labelIds ).added( propertyId, propertyValue ).build();
     }
 
-    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, NewIndexDescriptor descriptor )
+    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
 

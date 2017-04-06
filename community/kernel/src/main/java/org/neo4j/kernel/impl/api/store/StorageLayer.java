@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -41,11 +40,10 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -84,8 +82,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -184,31 +180,31 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         return toIndexDescriptors( schemaCache.indexRules() );
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
@@ -219,7 +215,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( NewIndexDescriptor index )
+    public long indexGetCommittedId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
@@ -231,7 +227,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
@@ -579,7 +575,7 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( NewIndexDescriptor index )
+    private IndexRule indexRule( IndexDescriptor index )
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
@@ -681,7 +677,7 @@ public class StorageLayer implements StoreReadLayer
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
-    private static Iterator<NewIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
+    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
         return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
     }

@@ -36,8 +36,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -87,7 +87,7 @@ public class IndexingServiceIntegrationTest
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
         IndexRule rule = IndexRule.indexRule(
-                schemaStore.nextId(), NewIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
+                schemaStore.nextId(), IndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 

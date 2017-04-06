@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
 public class NodePropertyAccessor implements PropertyAccessor
 {

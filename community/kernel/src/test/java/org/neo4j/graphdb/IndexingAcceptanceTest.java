@@ -37,9 +37,9 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.stringPrefix;
+import static org.neo4j.kernel.api.schema.IndexQuery.stringPrefix;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyIds;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
@@ -490,7 +490,7 @@ public class IndexingAcceptanceTest
         {
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
-            NewIndexDescriptor descriptor = indexDescriptor( ops, index );
+            IndexDescriptor descriptor = indexDescriptor( ops, index );
             int propertyKeyId = descriptor.schema().getPropertyId();
             found.addAll( ops.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
         }
@@ -516,7 +516,7 @@ public class IndexingAcceptanceTest
             createNode( db, map( "name", "Karla" ), LABEL1 );
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
-            NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
             int propertyKeyId = descriptor.schema().getPropertyId();
             found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
         }
@@ -547,7 +547,7 @@ public class IndexingAcceptanceTest
             }
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
-            NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
             int propertyKeyId = descriptor.schema().getPropertyId();
             found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
         }
@@ -587,7 +587,7 @@ public class IndexingAcceptanceTest
             }
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
-            NewIndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
             int propertyKeyId = descriptor.schema().getPropertyId();
             found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
         }
@@ -609,7 +609,7 @@ public class IndexingAcceptanceTest
         return expected;
     }
 
-    private NewIndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
+    private IndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );

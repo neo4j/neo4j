@@ -33,10 +33,10 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -58,20 +58,20 @@ import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class SchemaTransactionStateTest
 {
-    private static NewIndexDescriptor indexCreate( StateHandlingStatementOperations txContext, KernelStatement state,
+    private static IndexDescriptor indexCreate( StateHandlingStatementOperations txContext, KernelStatement state,
             int labelId, int propertyKey )
     {
         return txContext.indexCreate( state, SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
     }
 
-    private static NewIndexDescriptor indexGetForLabelAndPropertyKey(
+    private static IndexDescriptor indexGetForLabelAndPropertyKey(
             StateHandlingStatementOperations txContext, KernelStatement state, int labelId, int propertyKey )
     {
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKey );
         return txContext.indexGetForSchema( state, schemaDescriptor );
     }
 
-    private static NewIndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId,
+    private static IndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId,
             int propertyKey )
     {
         return store.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
@@ -84,7 +84,7 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        NewIndexDescriptor index = indexCreate( txContext, state, labelId1, key1 );
+        IndexDescriptor index = indexCreate( txContext, state, labelId1, key1 );
 
         // THEN
         assertEquals( asSet( index ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
@@ -103,8 +103,8 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        NewIndexDescriptor rule1 = indexCreate( txContext, state, labelId1, key1 );
-        NewIndexDescriptor rule2 = indexCreate( txContext, state, labelId2, key2 );
+        IndexDescriptor rule1 = indexCreate( txContext, state, labelId1, key1 );
+        IndexDescriptor rule2 = indexCreate( txContext, state, labelId2, key2 );
 
         // THEN
         assertEquals( asSet( rule1 ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
@@ -126,8 +126,8 @@ public class SchemaTransactionStateTest
         commitNoLabels();
 
         // WHEN
-        NewIndexDescriptor rule1 = indexCreate( txContext, state, labelId1, key1 );
-        NewIndexDescriptor rule2 = indexCreate( txContext, state, labelId1, key2 );
+        IndexDescriptor rule1 = indexCreate( txContext, state, labelId1, key1 );
+        IndexDescriptor rule2 = indexCreate( txContext, state, labelId1, key2 );
 
         // THEN
         assertEquals( asSet( rule1, rule2 ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
@@ -138,7 +138,7 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         commitLabels( labelId1 );
-        NewIndexDescriptor rule = indexCreate( txContext, state, labelId1, key1 );
+        IndexDescriptor rule = indexCreate( txContext, state, labelId1, key1 );
 
         // THEN
         assertEquals( InternalIndexState.POPULATING, txContext.indexGetState( state, rule ) );
@@ -152,11 +152,11 @@ public class SchemaTransactionStateTest
         indexCreate( txContext, state, labelId1, key1 );
 
         // WHEN
-        NewIndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
-        Iterator<NewIndexDescriptor> labelRules = txContext.indexesGetForLabel( state, labelId1 );
+        IndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
+        Iterator<IndexDescriptor> labelRules = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
-        NewIndexDescriptor expectedRule = NewIndexDescriptorFactory.forLabel( labelId1, key1 );
+        IndexDescriptor expectedRule = IndexDescriptorFactory.forLabel( labelId1, key1 );
         assertEquals( expectedRule, index );
         assertEquals( asSet( expectedRule ), asSet( labelRules ) );
     }
@@ -166,19 +166,19 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
-        NewIndexDescriptor existingRule1 = NewIndexDescriptorFactory.forLabel( labelId1, key1 );
+        IndexDescriptor existingRule1 = IndexDescriptorFactory.forLabel( labelId1, key1 );
         when( indexGetForLabelAndPropertyKey( store, labelId1, key1 ) ).thenReturn( existingRule1 );
         // -- the store already have an index on a different label with the same property
-        NewIndexDescriptor existingRule2 = NewIndexDescriptorFactory.forLabel( labelId2, key2 );
+        IndexDescriptor existingRule2 = IndexDescriptorFactory.forLabel( labelId2, key2 );
         when( indexGetForLabelAndPropertyKey( store, labelId2, key2 ) ).thenReturn( existingRule2 );
         // -- a non-existent index has been added in the transaction
         indexCreate( txContext, state, labelId1, key2 );
 
         // WHEN
-        NewIndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key2 );
+        IndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key2 );
 
         // THEN
-        assertEquals( NewIndexDescriptorFactory.forLabel( labelId1, key2 ), index );
+        assertEquals( IndexDescriptorFactory.forLabel( labelId1, key2 ), index );
     }
 
     @Test
@@ -186,17 +186,17 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
-        NewIndexDescriptor existingIndex1 = NewIndexDescriptorFactory.forLabel( labelId1, key1 );
+        IndexDescriptor existingIndex1 = IndexDescriptorFactory.forLabel( labelId1, key1 );
         when( indexGetForLabelAndPropertyKey( store,labelId1, key1) ).thenReturn( existingIndex1 );
         // -- the store already have an index on a different label with the same property
-        NewIndexDescriptor existingIndex2 = NewIndexDescriptorFactory.forLabel( labelId2, key2 );
+        IndexDescriptor existingIndex2 = IndexDescriptorFactory.forLabel( labelId2, key2 );
         when( indexGetForLabelAndPropertyKey( store, labelId2, key2 ) ).thenReturn( existingIndex2 );
         // -- a non-existent rule has been added in the transaction
         indexCreate( txContext, state, labelId1, key2 );
 
         // WHEN
-        NewIndexDescriptor lookupRule1 = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
-        NewIndexDescriptor lookupRule2 = indexGetForLabelAndPropertyKey( txContext, state, labelId2, key2 );
+        IndexDescriptor lookupRule1 = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
+        IndexDescriptor lookupRule2 = indexGetForLabelAndPropertyKey( txContext, state, labelId2, key2 );
 
         // THEN
         assertEquals( existingIndex1, lookupRule1 );
@@ -208,17 +208,17 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- a rule that exists in the store
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( labelId1, key1 );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId1, key1 );
         when( store.indexesGetForLabel( labelId1 ) ).thenReturn( option( index ).iterator() );
         // -- that same rule dropped in the transaction
         txContext.indexDrop( state, index );
 
         // WHEN
         assertNull( indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 ) );
-        Iterator<NewIndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
+        Iterator<IndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( rulesByLabel ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( rulesByLabel ) );
     }
 
     // exists
@@ -239,9 +239,9 @@ public class SchemaTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<NewIndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<NewIndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll() ).then( asAnswer( Collections.<NewIndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
 
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );

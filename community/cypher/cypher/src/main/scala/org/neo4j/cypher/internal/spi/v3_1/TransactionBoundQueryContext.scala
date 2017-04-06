@@ -53,9 +53,9 @@ import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema_new.{IndexQuery, RelationTypeSchemaDescriptor, SchemaDescriptorFactory}
-import org.neo4j.kernel.api.schema_new.constaints.{ConstraintBoundary, ConstraintDescriptor, ConstraintDescriptorFactory, UniquenessConstraintDescriptor}
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
+import org.neo4j.kernel.api.schema.{IndexQuery, RelationTypeSchemaDescriptor, SchemaDescriptorFactory}
+import org.neo4j.kernel.api.schema.constaints.{ConstraintBoundary, ConstraintDescriptor, ConstraintDescriptorFactory, UniquenessConstraintDescriptor}
+import org.neo4j.kernel.api.schema.index.NewIndexDescriptorFactory
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -468,7 +468,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    txContext.statement.schemaWriteOperations().indexDrop(NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
+    txContext.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
     IdempotentResult(

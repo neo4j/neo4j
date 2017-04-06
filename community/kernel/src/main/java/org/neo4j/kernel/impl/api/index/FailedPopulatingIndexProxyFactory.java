@@ -21,21 +21,21 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
-    private final NewIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexCountsRemover indexCountsRemover;
     private final LogProvider logProvider;
 
-    FailedPopulatingIndexProxyFactory( NewIndexDescriptor descriptor,
+    FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
                                        IndexPopulator populator,
                                        String indexUserDescription,

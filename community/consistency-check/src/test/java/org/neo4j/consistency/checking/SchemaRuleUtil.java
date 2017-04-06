@@ -20,8 +20,8 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
@@ -48,20 +48,20 @@ public class SchemaRuleUtil
     public static IndexRule indexRule( long ruleId, int labelId, int propertyId, SchemaIndexProvider.Descriptor
             descriptor )
     {
-        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     public static IndexRule constraintIndexRule( long ruleId, int labelId, int propertyId,
             SchemaIndexProvider.Descriptor descriptor, long constraintId )
     {
-        return IndexRule.constraintIndexRule( ruleId, NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
+        return IndexRule.constraintIndexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
                 descriptor, constraintId );
     }
 
     public static IndexRule constraintIndexRule( long ruleId, int labelId, int propertyId,
             SchemaIndexProvider.Descriptor descriptor )
     {
-        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
+        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
                 descriptor );
     }
 }

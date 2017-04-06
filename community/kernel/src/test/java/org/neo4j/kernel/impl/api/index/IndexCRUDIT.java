@@ -46,9 +46,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -183,11 +183,11 @@ public class IndexCRUDIT
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getPopulator(
-                    anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+                    anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
             ).thenReturn( writer );
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.getOnlineAccessor(
-                    anyLong(), any( NewIndexDescriptor.class ), any( IndexSamplingConfig.class )
+                    anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
             ) ).thenReturn( writer );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority

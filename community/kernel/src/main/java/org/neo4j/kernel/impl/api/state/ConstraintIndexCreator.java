@@ -33,21 +33,19 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
-import static java.util.Collections.singleton;
 
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
-
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
@@ -92,7 +90,7 @@ public class ConstraintIndexCreator
             DropIndexFailureException, UniquePropertyValueValidationException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        NewIndexDescriptor index = createConstraintIndex( descriptor );
+        IndexDescriptor index = createConstraintIndex( descriptor );
         boolean success = false;
         boolean reacquiredSchemaLock = false;
         Client locks = state.locks().pessimistic();
@@ -163,7 +161,7 @@ public class ConstraintIndexCreator
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public void dropUniquenessConstraintIndex( NewIndexDescriptor descriptor )
+    public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
         try ( KernelTransaction transaction =
@@ -209,7 +207,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    public NewIndexDescriptor createConstraintIndex( final LabelSchemaDescriptor schema )
+    public IndexDescriptor createConstraintIndex( final LabelSchemaDescriptor schema )
     {
         try ( KernelTransaction transaction =
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
@@ -222,7 +220,7 @@ public class ConstraintIndexCreator
             // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
-            NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForSchema( schema );
+            IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( schema );
             ((KernelStatement) statement).txState().indexRuleDoAdd( index );
             transaction.success();
             return index;

@@ -27,17 +27,17 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class DbStructureCollector implements DbStructureVisitor
 {
@@ -183,7 +183,7 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitIndex( NewIndexDescriptor descriptor, String userDescription,
+    public void visitIndex( IndexDescriptor descriptor, String userDescription,
                             double uniqueValuesPercentage, long size )
     {
         IndexDescriptorMap indices = descriptor.type() == UNIQUE ? uniqueIndices : regularIndices;

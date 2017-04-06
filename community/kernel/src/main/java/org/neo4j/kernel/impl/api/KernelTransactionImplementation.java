@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.TransactionHookException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -353,7 +353,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( NewIndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 try
                 {

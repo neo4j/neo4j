@@ -49,19 +49,19 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.IndexQuery.ExactPredicate;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -81,7 +81,7 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
@@ -223,7 +223,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         try
         {
-            NewIndexDescriptor index = constraint.ownedIndexDescriptor();
+            IndexDescriptor index = constraint.ownedIndexDescriptor();
             assertIndexOnline( state, index );
 
             int labelId = index.schema().getLabelId();
@@ -247,7 +247,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private void assertIndexOnline( KernelStatement state, NewIndexDescriptor indexDescriptor )
+    private void assertIndexOnline( KernelStatement state, IndexDescriptor indexDescriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( schemaReadOperations.indexGetState( state, indexDescriptor ) )
@@ -340,7 +340,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index,
             IndexQuery[] predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
@@ -350,7 +350,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
-            NewIndexDescriptor index,
+            IndexDescriptor index,
             ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
@@ -405,7 +405,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );
@@ -538,20 +538,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         return schemaWriteOperations.indexCreate( state, descriptor );
     }
 
     @Override
-    public void indexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.indexDrop( state, descriptor );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.uniqueIndexDrop( state, descriptor );
     }

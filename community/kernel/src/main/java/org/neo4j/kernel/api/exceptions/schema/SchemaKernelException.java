@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
 /**
  * Signals that some constraint has been violated, for example a name containing invalid characters or length.

@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
 

@@ -37,9 +37,9 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -60,7 +60,7 @@ public class LuceneSchemaIndexPopulationIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     private int affectedNodes;
-    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Before
     public void before() throws Exception

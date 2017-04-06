@@ -36,10 +36,10 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -61,8 +61,8 @@ public class DataIntegrityValidatingStatementOperationsTest
     public ExpectedException exception = ExpectedException.none();
 
     LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 7 );
-    NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 7 );
-    NewIndexDescriptor uniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( 0, 7 );
+    IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 7 );
+    IndexDescriptor uniqueIndex = IndexDescriptorFactory.uniqueForLabel( 0, 7 );
     private SchemaReadOperations innerRead;
     private SchemaWriteOperations innerWrite;
     private KeyWriteOperations innerKeyWrite;

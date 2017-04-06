@@ -66,14 +66,14 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -433,7 +433,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         IndexRule schemaRule = IndexRule.indexRule(
                 schemaStore.nextId(),
-                NewIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
+                IndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
                 schemaIndexProviders.getDefaultProvider().getProviderDescriptor() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
@@ -460,7 +460,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( int i = 0; i < rules.length; i++ )
         {
             IndexRule rule = rules[i];
-            NewIndexDescriptor index = rule.getIndexDescriptor();
+            IndexDescriptor index = rule.getIndexDescriptor();
             descriptors[i] = index.schema();
             IndexPopulator populator = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
@@ -564,7 +564,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createUniqueIndexAndOwningConstraint( NewIndexDescriptor indexDescriptor,
+    private void createUniqueIndexAndOwningConstraint( IndexDescriptor indexDescriptor,
             IndexBackedConstraintDescriptor constraintDescriptor )
     {
         // TODO: Do not create duplicate index
@@ -603,14 +603,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private void createUniquenessConstraintRule( LabelSchemaDescriptor descriptor )
     {
         createUniqueIndexAndOwningConstraint(
-                NewIndexDescriptorFactory.uniqueForSchema( descriptor ),
+                IndexDescriptorFactory.uniqueForSchema( descriptor ),
                 ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
     }
 
     private void createNodeKeyConstraintRule( LabelSchemaDescriptor descriptor )
     {
         createUniqueIndexAndOwningConstraint(
-                NewIndexDescriptorFactory.uniqueForSchema( descriptor ),
+                IndexDescriptorFactory.uniqueForSchema( descriptor ),
                 ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ) );
     }
 
@@ -1276,9 +1276,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements LabelSchemaSupplier
     {
         private final IndexPopulator populator;
-        private final NewIndexDescriptor index;
+        private final IndexDescriptor index;
 
-        IndexPopulatorWithSchema( IndexPopulator populator, NewIndexDescriptor index )
+        IndexPopulatorWithSchema( IndexPopulator populator, IndexDescriptor index )
         {
             this.populator = populator;
             this.index = index;
@@ -1290,7 +1290,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return index.schema();
         }
 
-        public NewIndexDescriptor index()
+        public IndexDescriptor index()
         {
             return index;
         }

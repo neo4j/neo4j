@@ -24,21 +24,21 @@ import org.junit.Test;
 
 import java.util.Collections;
 
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.range;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.stringContains;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.stringPrefix;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.stringSuffix;
+import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema.IndexQuery.exists;
+import static org.neo4j.kernel.api.schema.IndexQuery.range;
+import static org.neo4j.kernel.api.schema.IndexQuery.stringContains;
+import static org.neo4j.kernel.api.schema.IndexQuery.stringPrefix;
+import static org.neo4j.kernel.api.schema.IndexQuery.stringSuffix;
 
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -49,7 +49,7 @@ import static org.neo4j.kernel.api.schema_new.IndexQuery.stringSuffix;
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
-            NewIndexDescriptor descriptor )
+            IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -127,7 +127,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, NewIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -245,7 +245,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, NewIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         @Test

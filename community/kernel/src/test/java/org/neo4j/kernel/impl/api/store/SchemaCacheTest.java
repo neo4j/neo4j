@@ -28,12 +28,12 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -178,7 +178,7 @@ public class SchemaCacheTest
 
         // When
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( 1, 3 );
-        NewIndexDescriptor descriptor = cache.indexDescriptor( schema );
+        IndexDescriptor descriptor = cache.indexDescriptor( schema );
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
@@ -191,7 +191,7 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        NewIndexDescriptor indexDescriptor = schemaCache.indexDescriptor( SchemaDescriptorFactory.forLabel( 1, 1 ) );
+        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( SchemaDescriptorFactory.forLabel( 1, 1 ) );
 
         // Then
         assertNull( indexDescriptor );
@@ -254,7 +254,7 @@ public class SchemaCacheTest
 
     private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
-        return IndexRule.indexRule( id, NewIndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
+        return IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )

@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -79,7 +79,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
                                         .withFileSystem( fileSystem )
@@ -104,7 +104,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor )
@@ -123,7 +123,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
         String failure = indexStorage.getStoredIndexFailure();
@@ -165,7 +165,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, NewIndexDescriptor descriptor ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor ).withIndexStorage( indexStorage ).build() )
         {

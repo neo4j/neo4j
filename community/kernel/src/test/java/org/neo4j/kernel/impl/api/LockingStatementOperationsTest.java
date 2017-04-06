@@ -33,13 +33,13 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -214,11 +214,11 @@ public class LockingStatementOperationsTest
     {
         // given
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 123, 456 );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
         when( schemaWriteOps.indexCreate( state, descriptor ) ).thenReturn( index );
 
         // when
-        NewIndexDescriptor result = lockingOps.indexCreate( state, descriptor );
+        IndexDescriptor result = lockingOps.indexCreate( state, descriptor );
 
         // then
         assertSame( index, result );
@@ -230,7 +230,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
 
         // when
         lockingOps.indexDrop( state, index );
@@ -244,11 +244,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingIndexRules() throws Exception
     {
         // given
-        Iterator<NewIndexDescriptor> rules = emptyIterator();
+        Iterator<IndexDescriptor> rules = emptyIterator();
         when( schemaReadOps.indexesGetAll( state ) ).thenReturn( rules );
 
         // when
-        Iterator<NewIndexDescriptor> result = lockingOps.indexesGetAll( state );
+        Iterator<IndexDescriptor> result = lockingOps.indexesGetAll( state );
 
         // then
         assertSame( rules, result );

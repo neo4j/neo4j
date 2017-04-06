@@ -41,15 +41,15 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
@@ -127,7 +127,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         acquireExclusiveSchemaLock( state );
@@ -136,7 +136,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -144,7 +144,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         acquireExclusiveSchemaLock( state );
         state.assertOpen();
@@ -176,7 +176,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -184,7 +184,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -192,7 +192,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetAll( KernelStatement state )
+    public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -200,7 +200,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state, NewIndexDescriptor descriptor )
+    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         acquireSharedSchemaLock( state );
@@ -209,7 +209,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( KernelStatement state, NewIndexDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         acquireSharedSchemaLock( state );
@@ -218,7 +218,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexSize( KernelStatement state, NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -227,7 +227,7 @@ public class LockingStatementOperations implements
 
     @Override
     public double indexUniqueValuesPercentage( KernelStatement state,
-            NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+            IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -235,7 +235,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, NewIndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();
@@ -243,7 +243,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         acquireSharedSchemaLock( state );
@@ -512,7 +512,7 @@ public class LockingStatementOperations implements
 
     // === TODO Below is unnecessary delegate methods
     @Override
-    public String indexGetFailure( Statement state, NewIndexDescriptor descriptor )
+    public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return schemaReadDelegate.indexGetFailure( state, descriptor );

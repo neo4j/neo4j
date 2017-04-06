@@ -22,15 +22,15 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
+import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema.IndexQuery.exists;
 
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -41,7 +41,7 @@ import static org.neo4j.kernel.api.schema_new.IndexQuery.exists;
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public CompositeIndexAccessorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, NewIndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -80,7 +80,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, NewIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -110,7 +110,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, NewIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test

@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.IndexQuery.ExactPredicate;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

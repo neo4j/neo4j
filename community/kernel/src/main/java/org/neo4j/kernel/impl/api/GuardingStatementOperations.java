@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -175,7 +175,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index,
+    public PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index,
             IndexQuery[] predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
@@ -184,7 +184,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         guard.check( statement );
@@ -192,7 +192,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check( statement );

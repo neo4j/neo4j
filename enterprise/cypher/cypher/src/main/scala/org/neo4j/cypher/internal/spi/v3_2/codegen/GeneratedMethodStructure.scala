@@ -30,7 +30,7 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType,  FloatType, IntType, LongType, ReferenceType, Parameter => _, _}
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, LongType, ReferenceType, Parameter => _, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
@@ -44,11 +44,10 @@ import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor, NewIndexDescriptorFactory}
-import org.neo4j.kernel.api.schema_new.{IndexQuery, LabelSchemaDescriptor}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
+import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
 
 import scala.collection.mutable
 
@@ -1345,9 +1344,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
 
   override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
-    val getIndexDescriptor = method[NewIndexDescriptorFactory, NewIndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])
+    val getIndexDescriptor = method[IndexDescriptorFactory, IndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])
     val propertyIdsExpr = Expression.newArray(typeRef[Int], generator.load(propKeyVar))
-    generator.assign(typeRef[NewIndexDescriptor], descriptorVar,
+    generator.assign(typeRef[IndexDescriptor], descriptorVar,
                       invoke(getIndexDescriptor, generator.load(labelVar), propertyIdsExpr ))
   }
 
@@ -1357,7 +1356,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       val descriptor = body.load(descriptorVar)
-      val schema = invoke(descriptor, method[NewIndexDescriptor, LabelSchemaDescriptor]("schema"))
+      val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
       body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
       body.assign(local, invoke(readOperations, indexQuery, descriptor,
@@ -1371,7 +1370,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       val descriptor = body.load(descriptorVar)
-      val schema = invoke(descriptor, method[NewIndexDescriptor, LabelSchemaDescriptor]("schema"))
+      val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
       body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
       body.assign(local, invoke(readOperations, nodeGetUniqueFromIndexLookup, descriptor,

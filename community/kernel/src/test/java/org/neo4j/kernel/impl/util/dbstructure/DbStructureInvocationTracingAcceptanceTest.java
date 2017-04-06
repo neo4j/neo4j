@@ -45,8 +45,8 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -131,12 +131,11 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( NewIndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
-        visitor.apply( null ).visitIndex(
-                        NewIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ), ":Person(name, lastName)", 0.5d, 1L );
-        visitor.apply( null ).visitUniqueConstraint(
-                        ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
-        visitor.apply( null ).visitNodeKeyConstraint(
+        visitor.apply( null ).visitIndex( IndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
+        visitor.apply( null )
+                .visitIndex( IndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ), ":Person(name, lastName)", 0.5d, 1L );
+        visitor.apply( null )
+                .visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );visitor.apply( null ).visitNodeKeyConstraint(
                         ConstraintDescriptorFactory.nodeKeyForLabel( 0, 1, 2 ), ":Person(name, lastName)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );

@@ -35,21 +35,21 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class DataIntegrityValidatingStatementOperations implements
     KeyWriteOperations,
@@ -111,7 +111,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public NewIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
@@ -120,11 +120,11 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( KernelStatement state, NewIndexDescriptor index ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
     {
         try
         {
-            NewIndexDescriptor existingIndex =
+            IndexDescriptor existingIndex =
                     schemaReadDelegate.indexGetForSchema( state, index.schema() );
 
             if ( existingIndex == null )
@@ -145,7 +145,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, NewIndexDescriptor index ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
     {
         schemaWriteDelegate.uniqueIndexDrop( state, index );
     }
@@ -223,7 +223,7 @@ public class DataIntegrityValidatingStatementOperations implements
             LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        NewIndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
+        IndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
         if ( existingIndex != null )
         {
             if ( existingIndex.type() == UNIQUE )

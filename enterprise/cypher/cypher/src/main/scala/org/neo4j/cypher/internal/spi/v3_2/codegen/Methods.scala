@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalR
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema_new.IndexQuery
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor
+import org.neo4j.kernel.api.schema.IndexQuery
+import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
@@ -84,9 +84,9 @@ object Methods {
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty", typeRef[Long], typeRef[Int])
-  val indexQuery = method[ReadOperations, PrimitiveLongIterator]("indexQuery", typeRef[NewIndexDescriptor], typeRef[Array[IndexQuery]])
+  val indexQuery = method[ReadOperations, PrimitiveLongIterator]("indexQuery", typeRef[IndexDescriptor], typeRef[Array[IndexQuery]])
   val indexQueryExact = method[IndexQuery, IndexQuery.ExactPredicate]("exact", typeRef[Int], typeRef[Object])
-  val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[NewIndexDescriptor], typeRef[Array[IndexQuery.ExactPredicate]])
+  val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Array[IndexQuery.ExactPredicate]])
   val countsForNode = method[ReadOperations, Long]("countsForNode", typeRef[Int])
   val countsForRel = method[ReadOperations, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
   val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty", typeRef[Long], typeRef[Int])

@@ -25,8 +25,8 @@ import java.util.Set;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
@@ -55,9 +55,9 @@ public interface TxStateVisitor extends AutoCloseable
     void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed ) throws
             ConstraintValidationException;
 
-    void visitAddedIndex( NewIndexDescriptor element );
+    void visitAddedIndex( IndexDescriptor element );
 
-    void visitRemovedIndex( NewIndexDescriptor element );
+    void visitRemovedIndex( IndexDescriptor element );
 
     void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
 
@@ -121,12 +121,12 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( NewIndexDescriptor index )
+        public void visitAddedIndex( IndexDescriptor index )
         {
         }
 
         @Override
-        public void visitRemovedIndex( NewIndexDescriptor index )
+        public void visitRemovedIndex( IndexDescriptor index )
         {
         }
 
@@ -228,13 +228,13 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( NewIndexDescriptor index )
+        public void visitAddedIndex( IndexDescriptor index )
         {
             actual.visitAddedIndex( index );
         }
 
         @Override
-        public void visitRemovedIndex( NewIndexDescriptor index )
+        public void visitRemovedIndex( IndexDescriptor index )
         {
             actual.visitRemovedIndex( index );
         }

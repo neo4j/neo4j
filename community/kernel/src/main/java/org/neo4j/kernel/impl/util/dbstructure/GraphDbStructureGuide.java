@@ -33,11 +33,11 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -139,7 +139,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
     {
-        for ( NewIndexDescriptor descriptor : loop( NewIndexDescriptor.sortByType( read.indexesGetAll() ) ) )
+        for ( IndexDescriptor descriptor : loop( IndexDescriptor.sortByType( read.indexesGetAll() ) ) )
         {
             String userDescription = descriptor.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );

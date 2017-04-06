@@ -75,16 +75,16 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -227,7 +227,7 @@ public class OperationsFacade
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates )
+    public PrimitiveLongIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
@@ -235,7 +235,7 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+    public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
         statement.assertOpen();
@@ -529,7 +529,7 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodesCountIndexed( NewIndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
@@ -570,11 +570,11 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        NewIndexDescriptor indexDescriptor = schemaRead().indexGetForSchema( statement, descriptor );
+        IndexDescriptor indexDescriptor = schemaRead().indexGetForSchema( statement, descriptor );
         if ( indexDescriptor == null )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, descriptor );
@@ -583,56 +583,56 @@ public class OperationsFacade
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().indexesGetForLabel( statement, labelId );
     }
 
     @Override
-    public Iterator<NewIndexDescriptor> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         statement.assertOpen();
         return schemaRead().indexesGetAll( statement );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
     }
 
     @Override
-    public InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexGetState( statement, descriptor );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexGetPopulationProgress( statement, descriptor );
     }
 
     @Override
-    public long indexSize( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexSize( statement, descriptor );
     }
 
     @Override
-    public double indexUniqueValuesSelectivity( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexUniqueValuesPercentage( statement, descriptor );
     }
 
     @Override
-    public String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return schemaRead().indexGetFailure( statement, descriptor );
@@ -941,7 +941,7 @@ public class OperationsFacade
 
     // <SchemaWrite>
     @Override
-    public NewIndexDescriptor indexCreate( LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexCreate( LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();
@@ -949,7 +949,7 @@ public class OperationsFacade
     }
 
     @Override
-    public void indexDrop( NewIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         statement.assertOpen();
         schemaWrite().indexDrop( statement, descriptor );
@@ -1000,7 +1000,7 @@ public class OperationsFacade
     }
 
     @Override
-    public void uniqueIndexDrop( NewIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         statement.assertOpen();
         schemaWrite().uniqueIndexDrop( statement, descriptor );
@@ -1290,7 +1290,7 @@ public class OperationsFacade
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( NewIndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -1298,7 +1298,7 @@ public class OperationsFacade
     }
 
     @Override
-    public DoubleLongRegister indexSample( NewIndexDescriptor index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();

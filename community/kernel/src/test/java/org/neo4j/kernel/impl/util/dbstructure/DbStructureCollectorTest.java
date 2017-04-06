@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -44,10 +44,10 @@ public class DbStructureCollectorTest
         collector.visitPropertyKey( 2, "income" );
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
-        collector.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
+        collector.visitIndex( IndexDescriptorFactory.uniqueForLabel( 1, 1 ), ":Person(name)", 1.0d, 1L );
         collector.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 1 ), ":City(name)" );
         collector.visitNodeKeyConstraint( ConstraintDescriptorFactory.nodeKeyForLabel( 2, 1 ), ":City(name)" );
-        collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2 ), ":City(income)", 0.2d, 1L );
+        collector.visitIndex( IndexDescriptorFactory.forLabel( 2, 2 ), ":City(income)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
         collector.visitNodeCount( 1, "Person", 20 );
         collector.visitNodeCount( 2, "City", 30 );
@@ -98,9 +98,9 @@ public class DbStructureCollectorTest
         collector.visitPropertyKey( 5, "area" );
         collector.visitRelationshipType( 1, "LIVES_IN" );
         collector.visitRelationshipType( 2, "FRIEND" );
-        collector.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 1, 1, 3 ), ":Person(name, lastName)", 1.0d, 1L );
+        collector.visitIndex( IndexDescriptorFactory.uniqueForLabel( 1, 1, 3 ), ":Person(name, lastName)", 1.0d, 1L );
         collector.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 1, 5 ), ":City(name, area)" );
-        collector.visitIndex( NewIndexDescriptorFactory.forLabel( 2, 2, 4 ), ":City(income, tax)", 0.2d, 1L );
+        collector.visitIndex( IndexDescriptorFactory.forLabel( 2, 2, 4 ), ":City(income, tax)", 0.2d, 1L );
         collector.visitAllNodesCount( 50 );
         collector.visitNodeCount( 1, "Person", 20 );
         collector.visitNodeCount( 2, "City", 30 );

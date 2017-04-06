@@ -35,10 +35,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -57,35 +57,35 @@ public interface StoreReadLayer
 
     /**
      * @param labelId label to list indexes for.
-     * @return {@link NewIndexDescriptor} associated with the given {@code labelId}.
+     * @return {@link IndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
-     * @return all {@link NewIndexDescriptor} in storage.
+     * @return all {@link IndexDescriptor} in storage.
      */
-    Iterator<NewIndexDescriptor> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<NewIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
+    Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
-     * @param index {@link NewIndexDescriptor} to get related uniqueness constraint for.
+     * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      * @throws SchemaRuleNotFoundException if there's no such index matching the given {@code index} in storage.
      */
-    Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index )
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**
-     * @param index {@link NewIndexDescriptor} to get schema rule id for.
+     * @param index {@link IndexDescriptor} to get schema rule id for.
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( NewIndexDescriptor index )
+    long indexGetCommittedId( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -135,9 +135,9 @@ public interface StoreReadLayer
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link NewIndexDescriptor} for matching index, or {@code null} if not found.
+     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
      */
-    NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor );
+    IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.
@@ -146,7 +146,7 @@ public interface StoreReadLayer
      * @return {@link InternalIndexState} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link LabelSchemaDescriptor} to get population progress for.

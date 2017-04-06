@@ -20,9 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.verification;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.SimpleCollector;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,7 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {

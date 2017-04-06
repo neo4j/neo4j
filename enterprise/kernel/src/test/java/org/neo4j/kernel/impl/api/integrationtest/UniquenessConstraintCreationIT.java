@@ -39,15 +39,15 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -67,7 +67,7 @@ public class UniquenessConstraintCreationIT
         extends AbstractConstraintCreationIT<UniquenessConstraintDescriptor,LabelSchemaDescriptor>
 {
     private static final String DUPLICATED_VALUE = "apa";
-    private NewIndexDescriptor uniqueIndex;
+    private IndexDescriptor uniqueIndex;
 
     @Override
     int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
@@ -122,7 +122,7 @@ public class UniquenessConstraintCreationIT
     @Override
     LabelSchemaDescriptor makeDescriptor( int typeId, int propertyKeyId )
     {
-        uniqueIndex = NewIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId );
+        uniqueIndex = IndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId );
         return SchemaDescriptorFactory.forLabel( typeId, propertyKeyId );
     }
 
@@ -196,7 +196,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
         commit();
     }
 
@@ -247,7 +247,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         SchemaStorage schema = new SchemaStorage( neoStores().getSchemaStore() );
-        IndexRule indexRule = schema.indexGetForSchema( NewIndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
+        IndexRule indexRule = schema.indexGetForSchema( IndexDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         ConstraintRule constraintRule = schema.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( typeId, propertyKeyId ) );
         assertEquals( constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
@@ -276,7 +276,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
         commit();
     }
 

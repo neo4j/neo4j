@@ -53,7 +53,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -395,7 +395,7 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexRule.class )
             {
-                return IndexRule.indexRule( 1, NewIndexDescriptorFactory.forLabel( 2, 3 ),
+                return IndexRule.indexRule( 1, IndexDescriptorFactory.forLabel( 2, 3 ),
                         new SchemaIndexProvider.Descriptor( "provider", "version" ) );
             }
             if ( type == RelationshipGroupRecord.class )

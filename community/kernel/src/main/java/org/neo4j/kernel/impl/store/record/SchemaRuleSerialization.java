@@ -23,18 +23,18 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaComputer;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.SchemaProcessor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaComputer;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.SchemaProcessor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
@@ -107,7 +107,7 @@ public class SchemaRuleSerialization
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        NewIndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
         switch ( indexDescriptor.type() )
         {
         case GENERAL:
@@ -185,8 +185,8 @@ public class SchemaRuleSerialization
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        NewIndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
-        if ( indexDescriptor.type() == NewIndexDescriptor.Type.UNIQUE )
+        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+        if ( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
         {
             length += 8; // owning constraint id
         }
@@ -233,12 +233,12 @@ public class SchemaRuleSerialization
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.indexRule( id, NewIndexDescriptorFactory.forSchema( schema ), indexProvider, name );
+            return IndexRule.indexRule( id, IndexDescriptorFactory.forSchema( schema ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
             schema = readLabelSchema( source );
-            NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForSchema( schema );
+            IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( id, IndexRule.class, source );
             return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
                     owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );

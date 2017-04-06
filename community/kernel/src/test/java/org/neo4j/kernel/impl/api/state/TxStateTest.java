@@ -39,12 +39,12 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -1616,9 +1616,9 @@ public class TxStateTest
         }
     }
 
-    private final NewIndexDescriptor indexOn_1_1 = NewIndexDescriptorFactory.forLabel( 1, 1 );
-    private final NewIndexDescriptor indexOn_1_2 = NewIndexDescriptorFactory.forLabel( 1, 2 );
-    private final NewIndexDescriptor indexOn_2_1 = NewIndexDescriptorFactory.forLabel( 2, 1 );
+    private final IndexDescriptor indexOn_1_1 = IndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor indexOn_1_2 = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor indexOn_2_1 = IndexDescriptorFactory.forLabel( 2, 1 );
 
     private TransactionState state;
 
@@ -1639,7 +1639,7 @@ public class TxStateTest
         void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues );
     }
 
-    private IndexUpdater addNodesToIndex( final NewIndexDescriptor descriptor )
+    private IndexUpdater addNodesToIndex( final IndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

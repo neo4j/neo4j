@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.Direction;
@@ -55,7 +55,7 @@ public interface EntityReadOperations
      * @return ids of the matching nodes
      * @throws IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator indexQuery( KernelStatement statement, NewIndexDescriptor index, IndexQuery... predicates )
+    PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
@@ -64,10 +64,10 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetFromUniqueIndexSeek( KernelStatement state, NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException;
 
-    long nodesCountIndexed( KernelStatement statement, NewIndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );

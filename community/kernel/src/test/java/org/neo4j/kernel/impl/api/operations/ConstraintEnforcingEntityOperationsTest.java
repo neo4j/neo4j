@@ -23,9 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
@@ -50,7 +50,7 @@ public class ConstraintEnforcingEntityOperationsTest
     private final int propertyKeyId = 2;
     private final String value = "value";
     private final long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, value ) );
-    private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
+    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
     private final IndexQuery.ExactPredicate withValue = IndexQuery.exact( propertyKeyId, value );
     private EntityReadOperations readOps;
     private KernelStatement state;

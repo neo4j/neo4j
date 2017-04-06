@@ -30,7 +30,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.DelegatingIndexReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -131,7 +131,7 @@ public class IndexSamplingCancellationTest
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
                 IndexSamplingConfig samplingConfig )
         {
             return new DelegatingIndexAccessor( super.getOnlineAccessor( indexId, descriptor, samplingConfig ) );

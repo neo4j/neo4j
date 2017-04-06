@@ -27,9 +27,9 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
@@ -42,10 +42,10 @@ public class TxStateCompositeIndexTest
 {
     private TransactionState state;
 
-    private final NewIndexDescriptor indexOn_1_1_2 = NewIndexDescriptorFactory.forLabel( 1, 1, 2 );
-    private final NewIndexDescriptor indexOn_1_2_3 = NewIndexDescriptorFactory.forLabel( 1, 2, 3 );
-    private final NewIndexDescriptor indexOn_2_2_3 = NewIndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
-    private final NewIndexDescriptor indexOn_2_2_3_4 = NewIndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
+    private final IndexDescriptor indexOn_1_1_2 = IndexDescriptorFactory.forLabel( 1, 1, 2 );
+    private final IndexDescriptor indexOn_1_2_3 = IndexDescriptorFactory.forLabel( 1, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3 = IndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
+    private final IndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @Before
     public void before() throws Exception
@@ -179,7 +179,7 @@ public class TxStateCompositeIndexTest
         assertSeek( indexOn_2_2_3_4, values3, 1000 );
     }
 
-    private void addEntries( NewIndexDescriptor index, OrderedPropertyValues[] values, long nodeIdStart )
+    private void addEntries( IndexDescriptor index, OrderedPropertyValues[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -187,7 +187,7 @@ public class TxStateCompositeIndexTest
         }
     }
 
-    private void assertSeek( NewIndexDescriptor index, OrderedPropertyValues[] values, long nodeIdStart )
+    private void assertSeek( IndexDescriptor index, OrderedPropertyValues[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -208,7 +208,7 @@ public class TxStateCompositeIndexTest
         void addDefaultStringProperties( long... nodeIds );
     }
 
-    private IndexUpdater modifyIndex( final NewIndexDescriptor descriptor )
+    private IndexUpdater modifyIndex( final IndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

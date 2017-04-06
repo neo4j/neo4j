@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {

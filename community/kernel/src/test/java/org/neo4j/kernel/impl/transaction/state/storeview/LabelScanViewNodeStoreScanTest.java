@@ -32,16 +32,16 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -71,7 +71,7 @@ public class LabelScanViewNodeStoreScanTest
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 3 );
+    private IndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 3 );
 
     @Before
     public void setUp()
@@ -177,7 +177,7 @@ public class LabelScanViewNodeStoreScanTest
 
         @Override
         public IndexPopulation createPopulation( IndexPopulator populator, long indexId,
-                NewIndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
                 FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory,
                 String indexUserDescription )
         {

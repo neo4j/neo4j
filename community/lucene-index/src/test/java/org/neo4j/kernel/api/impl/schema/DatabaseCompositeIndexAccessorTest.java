@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -65,7 +65,7 @@ public class DatabaseCompositeIndexAccessorTest
 {
     private static final int PROP_ID1 = 1;
     private static final int PROP_ID2 = 2;
-    private static final NewIndexDescriptor DESCRIPTOR = NewIndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
+    private static final IndexDescriptor DESCRIPTOR = IndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @ClassRule
@@ -78,9 +78,9 @@ public class DatabaseCompositeIndexAccessorTest
     private final long nodeId = 1, nodeId2 = 2;
     private final Object[] values = {"value1", "values2"}, values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory
+    private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );
-    private static final NewIndexDescriptor uniqueIndexDescriptor = NewIndexDescriptorFactory
+    private static final IndexDescriptor uniqueIndexDescriptor = IndexDescriptorFactory
             .uniqueForLabel( 1, PROP_ID1, PROP_ID2 );
 
     @Parameterized.Parameters( name = "{0}" )

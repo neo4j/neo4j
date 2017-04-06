@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -348,7 +348,7 @@ public class IndexSamplingControllerTest
         }
 
         @Override
-        public boolean test( long indexId, NewIndexDescriptor descriptor )
+        public boolean test( long indexId, IndexDescriptor descriptor )
         {
             return ans;
         }
@@ -365,8 +365,8 @@ public class IndexSamplingControllerTest
     private final long anotherIndexId = 3;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 3, 4 );
-    private final NewIndexDescriptor anotherDescriptor = NewIndexDescriptorFactory.forLabel( 5, 6 );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 3, 4 );
+    private final IndexDescriptor anotherDescriptor = IndexDescriptorFactory.forLabel( 5, 6 );
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
 

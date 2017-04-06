@@ -32,8 +32,8 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -48,8 +48,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -166,7 +166,7 @@ public class LabelTransactionStateTest
                 labels( 2, 1, 3 ) );
 
         // WHEN
-        List<NewIndexDescriptor> indexes = Collections.singletonList( NewIndexDescriptorFactory.forLabel( 2, 2 ) );
+        List<IndexDescriptor> indexes = Collections.singletonList( IndexDescriptorFactory.forLabel( 2, 2 ) );
         when( store.indexesGetForLabel( 2 ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, 2, 2 );
 

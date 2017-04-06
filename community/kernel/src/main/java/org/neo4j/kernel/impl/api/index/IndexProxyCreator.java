@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.logging.LogProvider;
 
@@ -56,7 +56,7 @@ public class IndexProxyCreator
     }
 
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
-                                                  final NewIndexDescriptor descriptor,
+                                                  final IndexDescriptor descriptor,
                                                   final SchemaIndexProvider.Descriptor providerDescriptor,
                                                   final boolean flipToTentative,
                                                   final IndexingService.Monitor monitor,
@@ -106,7 +106,7 @@ public class IndexProxyCreator
         return new ContractCheckingIndexProxy( flipper, false );
     }
 
-    public IndexProxy createRecoveringIndexProxy( NewIndexDescriptor descriptor,
+    public IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor,
                                                   SchemaIndexProvider.Descriptor providerDescriptor )
     {
         IndexProxy proxy = new RecoveringIndexProxy( descriptor, providerDescriptor );
@@ -114,7 +114,7 @@ public class IndexProxyCreator
     }
 
     public IndexProxy createOnlineIndexProxy( long ruleId,
-                                              NewIndexDescriptor descriptor,
+                                              IndexDescriptor descriptor,
                                               SchemaIndexProvider.Descriptor providerDescriptor )
     {
         // TODO Hook in version verification/migration calls to the SchemaIndexProvider here
@@ -137,7 +137,7 @@ public class IndexProxyCreator
     }
 
     public IndexProxy createFailedIndexProxy( long ruleId,
-                                              NewIndexDescriptor descriptor,
+                                              IndexDescriptor descriptor,
                                               SchemaIndexProvider.Descriptor providerDescriptor,
                                               IndexPopulationFailure populationFailure )
     {
@@ -158,7 +158,7 @@ public class IndexProxyCreator
         return proxy;
     }
 
-    private String indexUserDescription( final NewIndexDescriptor descriptor,
+    private String indexUserDescription( final IndexDescriptor descriptor,
                                          final SchemaIndexProvider.Descriptor providerDescriptor )
     {
         return format( "%s [provider: %s]",
@@ -166,14 +166,14 @@ public class IndexProxyCreator
     }
 
     private IndexPopulator populatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
-                                                  NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                                                  IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
         return indexProvider.getPopulator( ruleId, descriptor, samplingConfig );
     }
 
     private IndexAccessor onlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
-                                                      long ruleId, NewIndexDescriptor descriptor,
+                                                      long ruleId, IndexDescriptor descriptor,
                                                       IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );

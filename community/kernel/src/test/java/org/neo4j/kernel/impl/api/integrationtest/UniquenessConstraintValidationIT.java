@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -42,8 +42,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.kernel.api.properties.Property.property;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema_new.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
@@ -300,7 +300,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
         int propId = readOps.propertyKeyGetForName( "id" );
-        NewIndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+        IndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
 
         // when
         createLabeledNode( statement, "Item", "id", 2 );
@@ -326,7 +326,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         ReadOperations readOps = statement.readOperations();
         int person = readOps.labelGetForName( "Person" );
         int propId = readOps.propertyKeyGetForName( "id" );
-        NewIndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+        IndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
 
         // when
         createLabeledNode( statement, "Person", "id", 2 );

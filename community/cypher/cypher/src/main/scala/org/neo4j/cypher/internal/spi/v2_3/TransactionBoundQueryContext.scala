@@ -47,9 +47,9 @@ import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
-import org.neo4j.kernel.api.schema_new.{IndexQuery, SchemaDescriptorFactory}
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -464,7 +464,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().indexDrop(NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
+    tc.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] = try {
     IdempotentResult(

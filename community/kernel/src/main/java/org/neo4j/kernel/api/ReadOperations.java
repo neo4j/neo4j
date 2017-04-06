@@ -37,18 +37,17 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -125,7 +124,7 @@ public interface ReadOperations
      * @return ids of the matching nodes
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongIterator indexQuery( NewIndexDescriptor index, IndexQuery... predicates )
+    PrimitiveLongIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
@@ -155,10 +154,10 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( NewIndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException, IndexNotApplicableKernelException;
 
-    long nodesCountIndexed( NewIndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );
@@ -225,29 +224,29 @@ public interface ReadOperations
     //===========================================
 
     /** Returns the index rule for the given LabelSchemaDescriptor. */
-    NewIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
-    Iterator<NewIndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /** Returns all indexes. */
-    Iterator<NewIndexDescriptor> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /** Retrieve the state of an index. */
-    InternalIndexState indexGetState( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Retrieve the population progress of an index. */
-    PopulationProgress indexGetPopulationProgress( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Get the index size. */
-    long indexSize( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
-    double indexUniqueValuesSelectivity( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Returns the failure description of a failed index. */
-    String indexGetFailure( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey.
@@ -272,7 +271,7 @@ public interface ReadOperations
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( NewIndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 
@@ -458,10 +457,10 @@ public interface ReadOperations
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
-    DoubleLongRegister indexUpdatesAndSize( NewIndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( NewIndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     //===========================================

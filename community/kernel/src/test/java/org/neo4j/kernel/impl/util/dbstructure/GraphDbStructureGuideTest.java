@@ -31,15 +31,15 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -123,7 +123,7 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        NewIndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
+        IndexDescriptor descriptor = createSchemaIndex( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -142,7 +142,7 @@ public class GraphDbStructureGuideTest
         commitAndReOpen();
 
         UniquenessConstraintDescriptor constraint = createUniqueConstraint( labelId, pkId );
-        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.uniqueForLabel( labelId, pkId );
+        IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForLabel( labelId, pkId );
 
         // WHEN
         accept( visitor );
@@ -222,7 +222,7 @@ public class GraphDbStructureGuideTest
         dataWrite().relationshipCreate( relTypeId, startId, endId );
     }
 
-    private NewIndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
+    private IndexDescriptor createSchemaIndex( int labelId, int pkId ) throws Exception
     {
         return schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
     }

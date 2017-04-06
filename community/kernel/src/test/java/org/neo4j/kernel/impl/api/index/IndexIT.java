@@ -34,12 +34,12 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
@@ -49,7 +49,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
@@ -83,7 +82,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
 
         // WHEN
-        NewIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -98,14 +97,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        NewIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
         Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
-        NewIndexDescriptor addedRule = statement.schemaWriteOperations()
+        IndexDescriptor addedRule = statement.schemaWriteOperations()
                                             .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
-        Set<NewIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -125,7 +124,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
 
@@ -143,7 +142,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( NewIndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
 
@@ -151,7 +150,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        NewIndexDescriptor index;
+        IndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             index = statement.indexCreate( descriptor );
@@ -252,14 +251,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        NewIndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
-        NewIndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
+        IndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
+        IndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
                                                             .ownedIndexDescriptor();
         commit();
 
         // then/when
         ReadOperations readOperations = readOperationsInNewTransaction();
-        List<NewIndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
+        List<IndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
     }
 }

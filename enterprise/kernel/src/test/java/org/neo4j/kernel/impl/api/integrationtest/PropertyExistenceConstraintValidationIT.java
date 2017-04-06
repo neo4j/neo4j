@@ -47,8 +47,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.properties.Property.property;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory.forRelType;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.NodePropertyExistenceExistenceConstraintValidationIT;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.RelationshipPropertyExistenceExistenceConstraintValidationIT;
 

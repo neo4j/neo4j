@@ -26,16 +26,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
@@ -79,7 +76,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<NewIndexDescriptor, UnderlyingStorageException>> exceptions = null;
+        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
 
         for ( Map.Entry<LabelSchemaDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
@@ -94,7 +91,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( NewIndexDescriptorFactory.forSchema( updaterEntry.getKey() ),
+                exceptions.add( Pair.of( IndexDescriptorFactory.forSchema( updaterEntry.getKey() ),
                         new UnderlyingStorageException( e ) ) );
             }
         }
