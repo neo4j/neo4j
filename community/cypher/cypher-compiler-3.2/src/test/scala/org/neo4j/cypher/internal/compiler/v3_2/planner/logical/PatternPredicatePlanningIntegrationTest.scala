@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_2.planner._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{QueryGraph, RegularPlannerQuery}
@@ -58,148 +59,96 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should build plans containing semi apply for a single pattern predicate") {
+  test("should build plans with getDegree for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a")._2 should equal(
-      SemiApply(
-        AllNodesScan("a", Set.empty)(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
-        )(solved)
+      Selection(Seq(GreaterThan(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
+        AllNodesScan("a", Set.empty)(solved)
       )(solved)
     )
   }
 
-  test("should build plans containing anti semi apply for a single negated pattern predicate") {
+  test("should build plans containing getDegree for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a")._2 should equal(
-      AntiSemiApply(
-        AllNodesScan("a", Set.empty)(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED31", "  UNNAMED24"
-        )(solved)
+      Selection(Seq(LessThanOrEqual(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
+                AllNodesScan("a", Set.empty)(solved)
       )(solved)
     )
   }
 
-  test("should build plans containing semi apply for two pattern predicates") {
+  test("should build plans containing getDegree for two pattern predicates") {
     planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a")._2 should equal(
-      SemiApply(
-        SemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED44", "  UNNAMED37"
-          )(solved)
-        )(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
-        )(solved)
-      )(solved)
-    )
+      Selection(Seq(
+        GreaterThan(
+          GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_,
+        GreaterThan(
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_, SignedDecimalIntegerLiteral("0")_)_),
+                AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
-  test("should build plans containing select or semi apply for a pattern predicate and an expression") {
+  test("should build plans containing getDegree for a pattern predicate and an expression") {
     planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
-      SelectOrSemiApply(
-        AllNodesScan("a", Set.empty)(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
-        )(solved),
-        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
-      )(solved)
-    )
+      Selection(Seq(Ors(Set(
+        GreaterThan(
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_,
+        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _))_),
+                AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
-  test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
+  test("should build plans containing getDegree for a pattern predicate and multiple expressions") {
     planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
-      SelectOrSemiApply(
-        AllNodesScan("a", Set.empty)(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED42", "  UNNAMED35"
-        )(solved),
-        Ors(Set(
-          In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
-          GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
-        )) _
-      )(solved)
-    )
+      Selection(Seq(Ors(Set(
+        GreaterThan(
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_,
+        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _,
+        In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
+                AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
-  test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
+  test("should build plans containing getDegree for a single negated pattern predicate and an expression") {
     planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      SelectOrAntiSemiApply(
-        AllNodesScan("a", Set.empty)(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED45", "  UNNAMED38"
-        )(solved),
-        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
-      )(solved)
-    )
+      Selection(Seq(Ors(Set(
+        LessThanOrEqual(
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_,
+        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
+                AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
-  test("should build plans containing let select or semi apply and select or semi apply for two pattern predicates") {
+  test("should build plans containing getDegree for two pattern predicates and expressions") {
     planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      SelectOrAntiSemiApply(
-        LetSelectOrSemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
-          )(solved),
-          "  FRESHID30",
-          In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
-        )(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
-        )(solved),
-        varFor("  FRESHID30")
-      )(solved)
-    )
+      Selection(Seq(Ors(Set(
+        GreaterThan(
+          GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_,
+        LessThanOrEqual(
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_,
+        In(Property(Variable("a")_, PropertyKeyName("prop")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("9")_))_)_))_),
+                AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
-  test("should build plans containing let semi apply and select or semi apply for two pattern predicates") {
+  test("should build plans containing getDegree for two pattern predicates with one negation") {
     planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      SelectOrAntiSemiApply(
-        LetSemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED20"
-          )(solved),
-          "  FRESHID16"
-        )(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
-        )(solved),
-        varFor("  FRESHID16")
-      )(solved)
+      Selection(Seq(Ors(Set(
+        GreaterThan(
+          GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_,
+        LessThanOrEqual(
+          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
+          SignedDecimalIntegerLiteral("0")_)_))_),
+                AllNodesScan("a", Set.empty)(solved))(solved)
     )
   }
 
-  test("should build plans containing let anti semi apply and select or semi apply for two pattern predicates") {
+  test("should build plans containing getDegree for two negated pattern predicates") {
     planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      SelectOrAntiSemiApply(
-        LetAntiSemiApply(
-          AllNodesScan("a", Set.empty)(solved),
-          Expand(
-            Argument(Set("a"))(solved)(),
-            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED24"
-          )(solved),
-          "  FRESHID20"
-        )(solved),
-        Expand(
-          Argument(Set("a"))(solved)(),
-          "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
-        )(solved),
-        varFor("  FRESHID20")
-      )(solved)
+      Selection(Seq(Ors(Set(
+        LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
+                        SignedDecimalIntegerLiteral("0")_)_,
+        LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
+                        SignedDecimalIntegerLiteral("0")_)_))_),  AllNodesScan("a", Set.empty)(solved))(solved)
     )
   }
 

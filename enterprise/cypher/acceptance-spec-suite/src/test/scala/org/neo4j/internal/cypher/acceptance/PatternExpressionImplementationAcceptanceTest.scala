@@ -316,7 +316,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) WHERE (n)-[:HAS]->() RETURN n")
 
-    val argumentPLan = result.executionPlanDescription().cd("Argument")
+    val argumentPLan = result.executionPlanDescription().cd("NodeByLabelScan")
     val estimatedRows = argumentPLan.arguments.collect { case n: EstimatedRows => n }.head
     estimatedRows should equal(EstimatedRows(3.0))
   }

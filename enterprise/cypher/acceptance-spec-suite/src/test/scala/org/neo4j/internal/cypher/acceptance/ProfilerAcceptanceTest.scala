@@ -107,14 +107,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlanners("match (n) where (n)-[:FOO]->() return *")
 
     //THEN
-    assertRows(1)(result)("SemiApply")
-    assertDbHits(0)(result)("SemiApply")
+    assertRows(1)(result)("Filter")
+    assertDbHits(4)(result)("Filter")
 
     assertRows(2)(result)("AllNodesScan")
     assertDbHits(3)(result)("AllNodesScan")
-
-    assertRows(0)(result)("Expand(All)")
-    assertDbHits(2)(result)("Expand(All)")
   }
 
   test("match (n:A)-->(x:B) return *") {
@@ -153,14 +150,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlanners("match (n) where not (n)-[:FOO]->() return *")
 
     //THEN
-    assertRows(1)(result)("AntiSemiApply")
-    assertDbHits(0)(result)("AntiSemiApply")
+    assertRows(1)(result)("Filter")
+    assertDbHits(4)(result)("Filter")
 
     assertRows(2)(result)("AllNodesScan")
     assertDbHits(3)(result)("AllNodesScan")
-
-    assertRows(0)(result)("Expand(All)")
-    assertDbHits(2)(result)("Expand(All)")
   }
 
   test("unfinished profiler complains [using MATCH]") {

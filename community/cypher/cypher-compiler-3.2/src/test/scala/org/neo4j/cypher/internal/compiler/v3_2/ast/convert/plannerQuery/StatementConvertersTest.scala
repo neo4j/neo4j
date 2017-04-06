@@ -411,11 +411,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "  UNNAMED20"
     val nodeName = "  UNNAMED23"
-    val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _)
+    val exp = GreaterThan(GetDegree(varFor("a"),None,OUTGOING) _,
+                          SignedDecimalIntegerLiteral("0") _) _
     val predicate= Predicate(Set(IdName("a")), exp)
     val selections = Selections(Set(predicate))
 
@@ -463,11 +460,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "  UNNAMED35"
     val nodeName = "  UNNAMED38"
-    val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _)
+    val exp1 = GreaterThan(GetDegree(varFor("a"),None,OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
     val exp2: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop")_)_,
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
@@ -486,11 +479,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "  UNNAMED20"
     val nodeName = "  UNNAMED23"
-    val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _)
+    val exp1 = GreaterThan(GetDegree(varFor("a"),None,OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
     val exp2: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop")_)_,
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
@@ -509,11 +498,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "  UNNAMED36"
     val nodeName = "  UNNAMED39"
-    val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
-    ) _) _)
+    val exp1 = GreaterThan(GetDegree(varFor("a"),None,OUTGOING)_, SignedDecimalIntegerLiteral("0")_)_
     val exp2: Expression = In(
       Property(Variable("a")_, PropertyKeyName("prop")_)_,
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_

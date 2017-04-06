@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.calculateUsingGetDegree
 
-class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
+abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -34,7 +35,10 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
       }
 
       if (predicates.isEmpty)
-        m
+        m.copy(where = m.where.map(w => {
+          val pos: InputPosition = where.fold(m.position)(_.position)
+          w.copy( expression = w.expression.endoRewrite(whereRewriter))(pos)
+        }))(m.position)
       else {
         val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
 
@@ -47,7 +51,7 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
         val newWhere: Option[Where] = predOpt.map {
           exp =>
             val pos: InputPosition = where.fold(m.position)(_.position)
-            Where(exp)(pos)
+            Where(exp.endoRewrite(whereRewriter))(pos)
         }
 
         m.copy(
@@ -55,6 +59,26 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
           where = newWhere
         )(m.position)
       }
+  }
+
+  private def whereRewriter: Rewriter = Rewriter.lift {
+    // WHERE (a)-[:R]->() to WHERE GetDegree( (a)-[:R]->()) > 0
+    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None),
+                                                                    RelationshipPattern(None, types, None, None, dir),
+                                                                    NodePattern(None, List(), None)))) =>
+      GreaterThan(calculateUsingGetDegree(p, node, types, dir), SignedDecimalIntegerLiteral("0")(p.position))(p.position)
+    // WHERE ()-[:R]->(a) to WHERE GetDegree( (a)<-[:R]-()) > 0
+    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None),
+                                                                    RelationshipPattern(None, types, None, None, dir),
+                                                                    NodePattern(Some(node), List(), None)))) =>
+      GreaterThan(calculateUsingGetDegree(p, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(p.position))(p.position)
+
+    case a@And(lhs, rhs) =>
+      And(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(a.position)
+
+    case o@Or(lhs, rhs) => Or(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(o.position)
+
+    case n@Not(e) => Not(e.endoRewrite(whereRewriter))(n.position)
   }
 
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])
