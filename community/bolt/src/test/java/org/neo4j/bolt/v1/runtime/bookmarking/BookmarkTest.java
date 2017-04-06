@@ -105,4 +105,17 @@ public class BookmarkTest
             // I've been expecting you, Mr Bond.
         }
     }
+
+    @Test
+    public void shouldSupportMultipleBookmarks() throws Exception
+    {
+        // given
+        Bookmark bookmark = Bookmark.fromString( "neo4j:bookmark:v1:tx1,tx2,tx3" );
+
+        // when
+        long txId = bookmark.txId();
+
+        // then
+        assertEquals( 3L, txId );
+    }
 }

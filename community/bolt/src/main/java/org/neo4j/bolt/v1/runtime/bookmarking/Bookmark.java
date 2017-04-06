@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime.bookmarking;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.neo4j.cypher.internal.frontend.v3_2.ast.RegexMatch;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -29,6 +33,7 @@ public class Bookmark
     private static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
     private final long txId;
+    private static Pattern validBookmarkPattern = Pattern.compile( "neo4j\\:bookmark\\:v1\\:(tx\\d+,{0,1})+" );
 
     public Bookmark( long txId )
     {
@@ -43,18 +48,44 @@ public class Bookmark
 
     public static Bookmark fromString( String bookmarkString) throws BookmarkFormatException
     {
-        if ( bookmarkString != null && bookmarkString.startsWith( BOOKMARK_TX_PREFIX ) )
+        if ( validBookmark( bookmarkString ) )
         {
             try
             {
-                return new Bookmark( Long.parseLong( bookmarkString.substring( BOOKMARK_TX_PREFIX.length() ) ) );
+                return new Bookmark( getHighestTransactionIdFromSuppliedBookmarks( bookmarkString ) );
+
             }
             catch ( NumberFormatException e )
             {
-                throw new BookmarkFormatException( bookmarkString, e );
+                throw new BookmarkFormatException( bookmarkString );
             }
+
         }
         throw new BookmarkFormatException( bookmarkString );
+    }
+
+    private static boolean validBookmark( String bookmarkString )
+    {
+        return validBookmarkPattern.matcher( bookmarkString ).matches() && bookmarkString != null &&
+                bookmarkString.startsWith( BOOKMARK_TX_PREFIX );
+    }
+
+    private static long getHighestTransactionIdFromSuppliedBookmarks( String bookmarkString )
+    {
+        String[] stringBookmarks = bookmarkString.replace( BOOKMARK_TX_PREFIX, "" ).replace( "tx", "" ).split( "," );
+
+        long highest = -1;
+
+        for ( String stringBookmark : stringBookmarks )
+        {
+            long current = Long.valueOf( stringBookmark );
+
+            if ( current > highest )
+            {
+                highest = current;
+            }
+        }
+        return highest;
     }
 
     public long txId()
