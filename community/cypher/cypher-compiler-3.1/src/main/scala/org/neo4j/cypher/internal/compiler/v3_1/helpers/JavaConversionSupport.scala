@@ -53,17 +53,15 @@ object JavaConversionSupport {
 
     // Init
     private def fetchNext(): Option[T] = {
-      if (!hasMore())
-        _next = None
-      else {
+      _next = None
+      while (_next.isEmpty && hasMore()) {
         try {
           _next = Some(f(more()))
         } catch {
-          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => fetchNext()
-          case _: EntityNotFoundException => fetchNext()
+          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => // IGNORE
+          case _: EntityNotFoundException => // IGNORE
         }
       }
-
       _next
     }
 
