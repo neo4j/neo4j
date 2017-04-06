@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.ast._
 import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v3_2.ast.{InequalitySeekRangeWrapper, NestedPipeExpression, PrefixSeekRangeWrapper, _}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{InequalitySeekRangeExpression, ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
