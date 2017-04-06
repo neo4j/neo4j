@@ -49,7 +49,12 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
 
-        val query: CodeStructureResult[GeneratedQuery] = generateQuery(plan, semanticTable, idMap, res.columns, conf)
+        val query: CodeStructureResult[GeneratedQuery] = try {
+          generateQuery(plan, semanticTable, idMap, res.columns, conf)
+        } catch {
+          case e: CantCompileQueryException => throw e
+          case e: Exception => throw new CantCompileQueryException(cause = e)
+        }
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
