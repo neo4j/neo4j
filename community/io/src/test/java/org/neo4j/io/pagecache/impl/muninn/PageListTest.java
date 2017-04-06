@@ -839,6 +839,22 @@ public class PageListTest
     }
 
     @Test
+    public void loweredModifiedFlagMustRemainLoweredAfterReleasingFlushLock() throws Exception
+    {
+        pageList.unlockExclusive( pageRef );
+        assertTrue( pageList.tryWriteLock( pageRef ) );
+        pageList.unlockWrite( pageRef );
+        assertTrue( pageList.isModified( pageRef ) );
+        long s = pageList.tryFlushLock( pageRef );
+        pageList.unlockFlush( pageRef, s, true );
+        assertFalse( pageList.isModified( pageRef ) );
+
+        s = pageList.tryFlushLock( pageRef );
+        pageList.unlockFlush( pageRef, s, true );
+        assertFalse( pageList.isModified( pageRef ) );
+    }
+
+    @Test
     public void releasingFlushLockMustNotLowerModifiedFlagIfUnsuccessful() throws Exception
     {
         pageList.unlockExclusive( pageRef );
@@ -975,6 +991,198 @@ public class PageListTest
         pageList.explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
         assertFalse( pageList.isModified( pageRef ) );
         pageList.unlockExclusive( pageRef );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockMustTakeFlushLock() throws Exception
+    {
+        pageList.unlockExclusive( pageRef );
+        assertTrue( pageList.tryWriteLock( pageRef ) );
+        long flushStamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertThat( flushStamp, is( not( 0L ) ) );
+        assertThat( pageList.tryFlushLock( pageRef ), is( 0L ) );
+        pageList.unlockFlush( pageRef, flushStamp, true );
+    }
+
+    @Test( expected = IllegalMonitorStateException.class )
+    public void unlockWriteAndTryTakeFlushLockMustThrowIfNotWriteLocked() throws Exception
+    {
+        pageList.unlockExclusive( pageRef );
+        pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+    }
+
+    @Test( expected = IllegalMonitorStateException.class )
+    public void unlockWriteAndTryTakeFlushLockMustThrowIfNotWriteLockedButExclusiveLocked() throws Exception
+    {
+        // exclusive lock implied by constructor
+        pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockMustFailIfFlushLockIsAlreadyTaken() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.tryFlushLock( pageRef );
+        assertThat( stamp, is( not( 0L ) ) );
+        long secondStamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertThat( secondStamp, is( 0L ) );
+        pageList.unlockFlush( pageRef, stamp, true );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockMustReleaseWriteLockEvenIfFlushLockFails() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long flushStamp = pageList.tryFlushLock( pageRef );
+        assertThat( flushStamp, is( not( 0L ) ) );
+        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ), is( 0L ) );
+        long readStamp = pageList.tryOptimisticReadLock( pageRef );
+        assertTrue( pageList.validateReadLock( pageRef, readStamp ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockMustReleaseWriteLockWhenFlushLockSucceeds() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ), is( not( 0L ) ) );
+        long readStamp = pageList.tryOptimisticReadLock( pageRef );
+        assertTrue( pageList.validateReadLock( pageRef, readStamp ) );
+    }
+
+    @Test
+    public void unlockWriteAndTrueTakeFlushLockMustRaiseModifiedFlag() throws Exception
+    {
+        assertFalse( pageList.isModified( pageRef ) );
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        assertTrue( pageList.isModified( pageRef ) );
+        assertThat( pageList.unlockWriteAndTryTakeFlushLock( pageRef ), is( not( 0L ) ) );
+        assertTrue( pageList.isModified( pageRef ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockAndThenUnlockFlushMustLowerModifiedFlagIfSuccessful() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertTrue( pageList.isModified( pageRef ) );
+        pageList.unlockFlush( pageRef, stamp, true );
+        assertFalse( pageList.isModified( pageRef ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockAndThenUnlockFlushMustNotLowerModifiedFlagIfFailed() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertTrue( pageList.isModified( pageRef ) );
+        pageList.unlockFlush( pageRef, stamp, false );
+        assertTrue( pageList.isModified( pageRef ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockWithOverlappingWriterAndThenUnlockFlushMustNotLowerModifiedFlag()
+            throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        assertTrue( pageList.tryWriteLock( pageRef ) ); // two write locks, now
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef ); // one flush, one write lock
+        assertThat( stamp, is( not( 0L ) ) );
+        pageList.unlockWrite( pageRef ); // one flush, zero write locks
+        assertTrue( pageList.isModified( pageRef ) );
+        pageList.unlockFlush( pageRef, stamp, true ); // flush is successful, but had one overlapping writer
+        assertTrue( pageList.isModified( pageRef ) ); // so it's still modified
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockAndThenUnlockFlushWithOverlappingWriterMustNotLowerModifiedFlag()
+            throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef ); // one flush lock
+        assertThat( stamp, is( not( 0L ) ) );
+        assertTrue( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryWriteLock( pageRef ) ); // one flush and one write lock
+        pageList.unlockFlush( pageRef, stamp, true ); // flush is successful, but have one overlapping writer
+        pageList.unlockWrite( pageRef ); // no more locks, but a writer started within flush section ...
+        assertTrue( pageList.isModified( pageRef ) ); // ... and overlapped unlockFlush, so it's still modified
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockAndThenUnlockFlushWithContainedWriterMustNotLowerModifiedFlag()
+            throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef ); // one flush lock
+        assertThat( stamp, is( not( 0L ) ) );
+        assertTrue( pageList.isModified( pageRef ) );
+        assertTrue( pageList.tryWriteLock( pageRef ) ); // one flush and one write lock
+        pageList.unlockWrite( pageRef ); // back to one flush lock
+        pageList.unlockFlush( pageRef, stamp, true ); // flush is successful, but had one overlapping writer
+        assertTrue( pageList.isModified( pageRef ) ); // so it's still modified
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockThatSucceedsMustPreventOverlappingExclusiveLock() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        assertFalse( pageList.tryExclusiveLock( pageRef ) );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertFalse( pageList.tryExclusiveLock( pageRef ) );
+        pageList.unlockFlush( pageRef, stamp, true );
+        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockThatFailsMustPreventOverlappingExclusiveLock() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        assertFalse( pageList.tryExclusiveLock( pageRef ) );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertFalse( pageList.tryExclusiveLock( pageRef ) );
+        pageList.unlockFlush( pageRef, stamp, false );
+        assertTrue( pageList.tryExclusiveLock( pageRef ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockThatSucceedsMustPreventOverlappingFlushLock() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertThat( pageList.tryFlushLock( pageRef ), is( 0L ) );
+        pageList.unlockFlush( pageRef, stamp, true );
+        assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockThatFailsMustPreventOverlappingFlushLock() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long stamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertThat( pageList.tryFlushLock( pageRef ), is( 0L ) );
+        pageList.unlockFlush( pageRef, stamp, false );
+        assertThat( pageList.tryFlushLock( pageRef ), is( not( 0L ) ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockMustNotInvalidateReadersOverlappingWithFlushLock() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long flushStamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        long readStamp = pageList.tryOptimisticReadLock( pageRef );
+        assertTrue( pageList.validateReadLock( pageRef, readStamp ) );
+        pageList.unlockFlush( pageRef, flushStamp, true );
+        assertTrue( pageList.validateReadLock( pageRef, readStamp ) );
+    }
+
+    @Test
+    public void unlockWriteAndTryTakeFlushLockMustInvalidateReadersOverlappingWithWriteLock() throws Exception
+    {
+        pageList.unlockExclusiveAndTakeWriteLock( pageRef );
+        long readStamp = pageList.tryOptimisticReadLock( pageRef );
+        long flushStamp = pageList.unlockWriteAndTryTakeFlushLock( pageRef );
+        assertFalse( pageList.validateReadLock( pageRef, readStamp ) );
+        pageList.unlockFlush( pageRef, flushStamp, true );
+        assertFalse( pageList.validateReadLock( pageRef, readStamp ) );
     }
 
     // xxx ---[ Page state tests ]---

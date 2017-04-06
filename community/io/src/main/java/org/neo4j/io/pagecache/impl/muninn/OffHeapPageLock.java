@@ -204,7 +204,7 @@ public final class OffHeapPageLock
         return false;
     }
 
-    private static long throwWriteLockOverflow( long s )
+    private static void throwWriteLockOverflow( long s )
     {
         throw new IllegalMonitorStateException( "Write lock counter overflow: " + describeState( s ) );
     }
@@ -235,6 +235,28 @@ public final class OffHeapPageLock
     private static long nextSeq( long s )
     {
         return (s & SEQ_IMSK) + (s + 1 & SEQ_MASK);
+    }
+
+    public static long unlockWriteAndTryTakeFlushLock( long address )
+    {
+        long s, n, r;
+        do
+        {
+            r = 0;
+            s = getState( address );
+            if ( (s & CNT_MASK) == 0 )
+            {
+                throwUnmatchedUnlockWrite( s );
+            }
+            n = nextSeq( s ) - CNT_UNIT;
+            if ( (n & FAE_MASK) == 0 )
+            {
+                r = (n += FLS_MASK);
+            }
+        }
+        while ( !compareAndSetState( address, s, n ) );
+        UnsafeUtil.storeFence();
+        return r;
     }
 
     /**

@@ -213,6 +213,11 @@ class PageList
         OffHeapPageLock.unlockWrite( offLock( pageRef ) );
     }
 
+    public long unlockWriteAndTryTakeFlushLock( long pageRef )
+    {
+        return OffHeapPageLock.unlockWriteAndTryTakeFlushLock( offLock( pageRef ) );
+    }
+
     public boolean tryExclusiveLock( long pageRef )
     {
         return OffHeapPageLock.tryExclusiveLock( offLock( pageRef ) );
