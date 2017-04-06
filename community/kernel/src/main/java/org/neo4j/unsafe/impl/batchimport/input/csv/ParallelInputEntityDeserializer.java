@@ -298,7 +298,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
     @Override
     public long position()
     {
-        return last.position();
+        return source.position();
     }
 
     @Override
