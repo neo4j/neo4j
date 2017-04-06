@@ -19,20 +19,17 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_2.ast.conditions._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{NotEquals, Statement, UnaliasedReturnItem}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, SemanticState}
 
-class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldExtractParameters: Boolean = true) {
+class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, literalExtraction: LiteralExtraction) {
 
   import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStep._
 
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
-    val (extractParameters, extractedParameters) = if (shouldExtractParameters)
-      literalReplacement(statement)
-    else
-      (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
+    val (extractParameters, extractedParameters) = literalReplacement(statement, literalExtraction)
 
     val contract = rewriterSequencer("ASTRewriter")(
       recordScopes(semanticState),

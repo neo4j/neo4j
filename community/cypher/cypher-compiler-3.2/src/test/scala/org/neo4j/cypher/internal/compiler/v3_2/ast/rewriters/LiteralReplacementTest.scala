@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.ast.rewriters
 
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Parameter
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.literalReplacement
+import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
@@ -102,6 +102,15 @@ class LiteralReplacementTest extends CypherFunSuite  {
     )
   }
 
+  test("should rewrite queries that already have params in them if configured to") {
+    assertRewrite(
+      "CREATE (a:Person {name: 'Jakub', age: $age })",
+      "CREATE (a:Person {name: {`  AUTOSTRING0`}, age: $age })",
+      Map("  AUTOSTRING0" -> "Jakub"),
+      Forced
+    )
+  }
+
   test("should extract from procedure calls") {
     assertRewrite("CALL foo(12)", "CALL foo({`  AUTOINT0`})", Map("  AUTOINT0" -> 12))
   }
@@ -110,11 +119,11 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(query, query, Map.empty)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any]) {
+  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtraction = IfNoParameter) {
     val original = parser.parse(originalQuery)
     val expected = parser.parse(expectedQuery).endoRewrite(fixParameterTypeExpectations)
 
-    val (rewriter, replacedLiterals) = literalReplacement(original)
+    val (rewriter, replacedLiterals) = literalReplacement(original, extractLiterals)
 
     val result = original.rewrite(rewriter)
     assert(result === expected)

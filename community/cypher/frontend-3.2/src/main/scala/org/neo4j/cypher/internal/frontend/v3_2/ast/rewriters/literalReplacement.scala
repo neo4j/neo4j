@@ -79,21 +79,32 @@ object literalReplacement {
         (acc + (l -> LiteralReplacement(parameter, values)), None)
   }
 
-  def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    val containsParameter: Boolean = term.treeExists {
-      case _:Parameter => true
+  private def doIt(term: ASTNode) = {
+    val replaceableLiterals = term.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
+
+    val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
+      case (_, LiteralReplacement(parameter, value)) => (parameter.name, value)
     }
 
-    if (containsParameter) {
-      (Rewriter.noop, Map.empty)
-    } else {
-      val replaceableLiterals = term.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
+    (ExtractParameterRewriter(replaceableLiterals), extractedParams)
+  }
 
-      val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
-        case (_, LiteralReplacement(parameter, value)) => (parameter.name, value)
+  def apply(term: ASTNode, paramExtraction: LiteralExtraction): (Rewriter, Map[String, Any]) = paramExtraction match {
+    case Never =>
+      Rewriter.noop -> Map.empty
+    case Forced =>
+      doIt(term)
+    case IfNoParameter =>
+      val containsParameter: Boolean = term.treeExists {
+        case _: Parameter => true
       }
 
-      (ExtractParameterRewriter(replaceableLiterals), extractedParams)
-    }
+      if (containsParameter) Rewriter.noop -> Map.empty
+      else doIt(term)
   }
 }
+
+sealed trait LiteralExtraction
+case object Forced extends LiteralExtraction
+case object IfNoParameter extends LiteralExtraction
+case object Never extends LiteralExtraction
