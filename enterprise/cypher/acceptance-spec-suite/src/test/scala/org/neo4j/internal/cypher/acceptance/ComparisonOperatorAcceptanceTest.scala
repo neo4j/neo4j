@@ -24,14 +24,14 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should handle long chains of comparisons") {
-    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 2 < 3 < 4 as val") shouldBe true
-    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 3 < 2 < 4 as val") shouldBe false
-    executeScalarWithAllPlanners[Boolean]("RETURN 1 < 2 < 2 < 4 as val") shouldBe false
+    executeScalarWithAllPlannersAndRuntimes[Boolean]("RETURN 1 < 2 < 3 < 4 as val") shouldBe true
+    executeScalarWithAllPlannersAndRuntimes[Boolean]("RETURN 1 < 3 < 2 < 4 as val") shouldBe false
+    executeScalarWithAllPlannersAndRuntimes[Boolean]("RETURN 1 < 2 < 2 < 4 as val") shouldBe false
     executeScalarWithAllPlanners[Boolean]("RETURN 1 < 2 <= 2 < 4 as val") shouldBe true
 
-    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 2.1 < 3.2 < 4.2 as val") shouldBe true
-    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 3.2 < 2.1 < 4.2 as val") shouldBe false
-    executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 2.1 < 2.1 < 4.2 as val") shouldBe false
+    executeScalarWithAllPlannersAndRuntimes[Boolean]("RETURN 1.0 < 2.1 < 3.2 < 4.2 as val") shouldBe true
+    executeScalarWithAllPlannersAndRuntimes[Boolean]("RETURN 1.0 < 3.2 < 2.1 < 4.2 as val") shouldBe false
+    executeScalarWithAllPlannersAndRuntimes[Boolean]("RETURN 1.0 < 2.1 < 2.1 < 4.2 as val") shouldBe false
     executeScalarWithAllPlanners[Boolean]("RETURN 1.0 < 2.1 <= 2.1 < 4.2 as val") shouldBe true
 
     executeScalarWithAllPlanners[Boolean]("RETURN 'a' < 'b' < 'c' < 'd' as val") shouldBe true
