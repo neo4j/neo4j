@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QualifiedName}
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
-import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, PlannerName, notification, symbols}
@@ -172,9 +172,14 @@ object RewindableExecutionResult {
         case v2_3.planDescription.InternalPlanDescription.Arguments.PlannerImpl(value) => Arguments.PlannerImpl(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(value) => Arguments.Runtime(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
-        case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, _, varLength) =>
+        case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, direction, varLength) =>
           val (min,max) = if(varLength) (1, None) else (1, Some(1))
-          Arguments.ExpandExpression(from, relName, relTypes, to, null, min, max)
+          val dir = direction match {
+            case SemanticDirection2_3.OUTGOING => OUTGOING
+            case SemanticDirection2_3.INCOMING => INCOMING
+            case SemanticDirection2_3.BOTH => BOTH
+          }
+          Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
       }

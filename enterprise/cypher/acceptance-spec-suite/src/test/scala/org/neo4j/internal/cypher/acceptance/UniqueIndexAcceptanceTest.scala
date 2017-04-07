@@ -19,114 +19,158 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+
+import scala.collection.Map
+import scala.collection.JavaConverters._
 
 class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  test("should be able to use unique index hints on IN expressions") {
-    //GIVEN
-    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
-    relate(andres, createNode())
-    relate(jake, createNode())
-
-    graph.createConstraint("Person", "name")
-
-    //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
-
-    //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
-  test("should be able to use unique index on IN collections with duplicates") {
-    //GIVEN
-    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
-    relate(andres, createNode())
-    relate(jake, createNode())
+  Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 
-    graph.createConstraint("Person", "name")
+    test(s"$constraintCreator: should be able to use unique index hints on IN expressions") {
+      //GIVEN
+      val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      relate(andres, createNode())
+      relate(jake, createNode())
 
-    //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
-    //THEN
-    result.toList should equal (List(Map("n" -> jake)))
-  }
+      //WHEN
+      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
-  test("should be able to use unique index on IN a null value") {
-    //GIVEN
-    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
-    relate(andres, createNode())
-    relate(jake, createNode())
+      //THEN
+      result.toList should equal(List(Map("n" -> jake)))
+    }
 
-    graph.createConstraint("Person", "name")
+    test(s"$constraintCreator: should be able to use unique index on IN collections with duplicates") {
+      //GIVEN
+      val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      relate(andres, createNode())
+      relate(jake, createNode())
 
-    //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
-    //THEN
-    result.toList should equal (List())
-  }
+      //WHEN
+      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
-  test("should be able to use index unique index on IN a collection parameter") {
-    //GIVEN
-    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
-    relate(andres, createNode())
-    relate(jake, createNode())
+      //THEN
+      result.toList should equal(List(Map("n" -> jake)))
+    }
 
-    graph.createConstraint("Person", "name")
+    test(s"$constraintCreator: should be able to use unique index on IN a null value") {
+      //GIVEN
+      val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      relate(andres, createNode())
+      relate(jake, createNode())
 
-    //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
-    //THEN
-    result.toList should equal (List(Map("n" -> jake)))
-  }
+      //WHEN
+      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
-  test("should not use locking index for read only query") {
-    //GIVEN
-    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
-    relate(andres, createNode())
-    relate(jake, createNode())
+      //THEN
+      result.toList should equal(List())
+    }
 
-    graph.createConstraint("Person", "name")
+    test(s"$constraintCreator: should be able to use index unique index on IN a collection parameter") {
+      //GIVEN
+      val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      relate(andres, createNode())
+      relate(jake, createNode())
 
-    //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
-    //THEN
-    result should use("NodeUniqueIndexSeek")
-    result shouldNot use("NodeUniqueIndexSeek(Locking)")
-  }
+      //WHEN
+      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
-  test("should use locking unique index for merge queries") {
-    //GIVEN
-    createLabeledNode(Map("name" -> "Andres"), "Person")
-    graph.createConstraint("Person", "name")
+      //THEN
+      result.toList should equal(List(Map("n" -> jake)))
+    }
 
-    //WHEN
-    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+    test(s"$constraintCreator: should not use locking index for read only query") {
+      //GIVEN
+      val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      relate(andres, createNode())
+      relate(jake, createNode())
 
-    //THEN
-    result shouldNot use("NodeIndexSeek")
-    result should use("NodeUniqueIndexSeek(Locking)")
-  }
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
-  test("should use locking unique index for mixed read write queries") {
-    //GIVEN
-    createLabeledNode(Map("name" -> "Andres"), "Person")
-    graph.createConstraint("Person", "name")
+      //WHEN
+      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
-    //WHEN
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name","coll"->List("Jacob"))
+      //THEN
+      result should use("NodeUniqueIndexSeek")
+      result shouldNot use("NodeUniqueIndexSeek(Locking)")
+    }
 
-    //THEN
-    result shouldNot use("NodeIndexSeek")
-    result should use("NodeUniqueIndexSeek(Locking)")
+    test(s"$constraintCreator: should use locking unique index for merge node queries") {
+      //GIVEN
+      createLabeledNode(Map("name" -> "Andres"), "Person")
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
+
+      //WHEN
+      val result = updateWithCompatibilityAndAssertSimilarPlans("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+
+      //THEN
+      result shouldNot use("NodeIndexSeek")
+      result should use("NodeUniqueIndexSeek(Locking)")
+    }
+
+    test(s"$constraintCreator: should use locking unique index for merge relationship queries") {
+      //GIVEN
+      createLabeledNode(Map("name" -> "Andres"), "Person")
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
+
+      //WHEN
+      val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
+
+      //THEN
+      result shouldNot use("NodeIndexSeek")
+      result shouldNot use("NodeByLabelScan")
+      result should use("NodeUniqueIndexSeek(Locking)")
+    }
+
+    test(s"$constraintCreator: should use locking unique index for mixed read write queries") {
+      //GIVEN
+      createLabeledNode(Map("name" -> "Andres"), "Person")
+      constraintCreator.createConstraint(graph, "Person", "name")
+      graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
+      graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
+
+      //WHEN
+      val result = updateWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name", "coll" -> List("Jacob"))
+
+      //THEN
+      result shouldNot use("NodeIndexSeek")
+      result should use("NodeUniqueIndexSeek(Locking)")
+    }
   }
 }

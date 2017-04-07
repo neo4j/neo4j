@@ -83,6 +83,12 @@ trait GraphIcing {
       }
     }
 
+    def createNodeKeyConstraint(label: String, property: String): Result = {
+      inTx {
+        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NODE KEY")
+      }
+    }
+
     def createIndex(label: String, properties: String*) = {
       graph.execute(s"CREATE INDEX ON :$label(${properties.mkString(",")})")
 
