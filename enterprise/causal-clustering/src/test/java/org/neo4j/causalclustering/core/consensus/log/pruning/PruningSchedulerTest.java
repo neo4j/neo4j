@@ -33,19 +33,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 
+import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
 public class PruningSchedulerTest
 {
-    private final LogPruner logPruner = mock( LogPruner.class );
+    private final RaftLogPruner logPruner = mock( RaftLogPruner.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
     @Test
@@ -133,10 +135,14 @@ public class PruningSchedulerTest
         final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
-        LogPruner logPruner = () ->
+        RaftLogPruner logPruner = new RaftLogPruner( null, null )
         {
-            checkPointerLatch.startAndWaitForAllToStart();
-            checkPointerLatch.waitForAllToFinish();
+            @Override
+            public void prune() throws IOException
+            {
+                checkPointerLatch.startAndWaitForAllToStart();
+                checkPointerLatch.waitForAllToFinish();
+            }
         };
 
         final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );

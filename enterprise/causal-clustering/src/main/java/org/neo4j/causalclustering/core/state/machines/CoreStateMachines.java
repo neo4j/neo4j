@@ -56,7 +56,7 @@ public class CoreStateMachines
     private final LocalDatabase localDatabase;
     private final RecoverConsensusLogIndex consensusLogIndexRecovery;
 
-    private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
+    private final CommandDispatcher dispatcher = new StateMachineCommandDispatcher();
     private volatile boolean runningBatch;
 
     CoreStateMachines(
@@ -84,7 +84,7 @@ public class CoreStateMachines
         localDatabase.assertHealthy( IllegalStateException.class );
         assert !runningBatch;
         runningBatch = true;
-        return currentBatch;
+        return dispatcher;
     }
 
     public long getLastAppliedIndex()

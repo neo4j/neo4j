@@ -17,17 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.consensus.log.pruning;
+package org.neo4j.causalclustering.core.state;
 
 import java.io.IOException;
 
-/**
- * Defines the set of operations needed to execute raft log pruning. Each raft log implementation is expected
- * to provide its own LogPruner implementation that knows about the log structure on disk. The SPI of these
- * implementations will be provided with the appropriate configuration options that define the expected pruning
- * characteristics.
- */
-public interface LogPruner
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.RaftMessages;
+
+public class RaftLogPruner
 {
-    void prune() throws IOException;
+    private final RaftMachine raftMachine;
+    private final CommandApplicationProcess applicationProcess;
+
+    public RaftLogPruner( RaftMachine raftMachine, CommandApplicationProcess applicationProcess )
+    {
+
+        this.raftMachine = raftMachine;
+        this.applicationProcess = applicationProcess;
+    }
+
+    public void prune() throws IOException
+    {
+        raftMachine.handle( new RaftMessages.PruneRequest( applicationProcess.lastFlushed() ) );
+    }
 }
