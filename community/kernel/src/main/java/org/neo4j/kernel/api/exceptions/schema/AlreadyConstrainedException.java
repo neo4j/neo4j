@@ -32,7 +32,7 @@ public class AlreadyConstrainedException extends SchemaKernelException
 
     private static final String ALREADY_CONSTRAINED_MESSAGE_PREFIX = "Constraint already exists: ";
 
-    private static final String INDEX_CONTEXT_FORMAT = "Label '%s' %s have a unique constraint defined on them, so an index is " +
+    private static final String INDEX_CONTEXT_FORMAT = "Label '%s' and %s have a unique constraint defined on them, so an index is " +
                                                        "already created that matches this.";
 
     private final ConstraintDescriptor constraint;

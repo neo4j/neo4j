@@ -61,7 +61,7 @@ public abstract class SchemaKernelException extends KernelException
         if ( tokenNameLookup != null )
         {
             String propertyString = propertyIds.length == 1 ?
-                                    "property " + tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) :
+                                    "property '" + tokenNameLookup.propertyKeyGetName( propertyIds[0]) + "'" :
                                     "properties " + Arrays.stream( propertyIds )
                                             .mapToObj( (i) -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'")
                                             .collect( Collectors.joining( " and " ));

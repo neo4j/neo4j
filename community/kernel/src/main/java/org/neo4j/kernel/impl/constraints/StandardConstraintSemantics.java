@@ -92,16 +92,14 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     {
         // When creating a Property Existence Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.existsForSchema( descriptor ),
-                new IllegalStateException( ERROR_MESSAGE_EXISTS ) );
+                ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_EXISTS );
     }
 
     private CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Node Key Constraint in Community Edition
         return new CreateConstraintFailureException(
-                ConstraintDescriptorFactory.existsForSchema( descriptor ),
-                new IllegalStateException( ERROR_MESSAGE_NODE_KEY ) );
+                ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_NODE_KEY );
     }
 
     @Override

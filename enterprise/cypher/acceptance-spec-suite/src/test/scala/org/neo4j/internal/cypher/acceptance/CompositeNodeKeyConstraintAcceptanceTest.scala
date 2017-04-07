@@ -220,7 +220,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // then
     expectError("CREATE INDEX ON :Person(firstname, lastname)",
-                "Label 'Person' properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
+                "Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
                   "so an index is already created that matches this.")
   }
 
