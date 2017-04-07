@@ -84,15 +84,6 @@ public class MigrationTestUtils
         }
     }
 
-    static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
-            throws IOException
-    {
-        try ( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
-        {
-            fileChannel.truncate( newLength );
-        }
-    }
-
     public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
             File workingDirectory, File realDirForPreparingDatabase ) throws IOException
     {
