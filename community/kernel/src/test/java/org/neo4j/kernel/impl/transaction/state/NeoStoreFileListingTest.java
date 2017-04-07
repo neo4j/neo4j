@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,27 +28,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -63,12 +59,14 @@ public class NeoStoreFileListingTest
     public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( getClass() );
     private NeoStoreDataSource neoStoreDataSource;
     private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
+            "index",
             "lock",
             "debug.log",
             "neostore",
             "neostore.id",
             "neostore.counts.db.a",
             "neostore.counts.db.b",
+            "neostore.labelscanstore.db",
             "neostore.labeltokenstore.db",
             "neostore.labeltokenstore.db.id",
             "neostore.labeltokenstore.db.names",
@@ -87,6 +85,8 @@ public class NeoStoreFileListingTest
             "neostore.propertystore.db.index.keys.id",
             "neostore.propertystore.db.strings",
             "neostore.propertystore.db.strings.id",
+            "neostore.relationshipgroupstore.db",
+            "neostore.relationshipgroupstore.db.id",
             "neostore.relationshipstore.db",
             "neostore.relationshipstore.db.id",
             "neostore.relationshiptypestore.db",
@@ -102,6 +102,8 @@ public class NeoStoreFileListingTest
             "store_lock"};
 
     private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
+    private static final Function<StoreFileMetadata,Optional<StoreType>> toStoreType =
+            fileMetaData -> StoreType.typeOf( fileMetaData.file().getName() );
 
     @Before
     public void setUp() throws IOException
@@ -118,54 +120,6 @@ public class NeoStoreFileListingTest
         {
             assertTrue( indexFile.createNewFile() );
         }
-    }
-
-    private Set<String> expectedStoreFiles( boolean includeLogFiles )
-    {
-        Set<String> storeFileNames = new HashSet<>();
-        for ( StoreType type : StoreType.values() )
-        {
-            if ( !type.equals( StoreType.COUNTS ) )
-            {
-                storeFileNames.add( type.getStoreFile().fileName( StoreFileType.STORE ) );
-            }
-        }
-        if ( includeLogFiles )
-        {
-            storeFileNames.add( PhysicalLogFile.DEFAULT_NAME + ".0" );
-        }
-        storeFileNames.add( IndexConfigStore.INDEX_DB_FILE_NAME );
-        return storeFileNames;
-    }
-
-    private List<String> countStoreFiles()
-    {
-        List<String> countStoreFiles = new ArrayList<>();
-        countStoreFiles.add( StoreFile.COUNTS_STORE_LEFT.fileName( StoreFileType.STORE ) );
-        countStoreFiles.add( StoreFile.COUNTS_STORE_RIGHT.fileName( StoreFileType.STORE ) );
-        return countStoreFiles;
-    }
-
-    @Test
-    public void shouldNotIncludeTransactionLogFile() throws Exception
-    {
-        final ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( false );
-        final Set<String> actual = asSetOfPaths( storeFiles );
-        final Set<String> expectedStoreFiles = expectedStoreFiles( false );
-        final List<String> countStoreFiles = countStoreFiles();
-        assertTrue( diffSet( actual, expectedStoreFiles ), actual.containsAll( expectedStoreFiles ) );
-        assertFalse( Collections.disjoint( actual, countStoreFiles ) );
-    }
-
-    @Test
-    public void shouldIncludeTransactionLogFile() throws Exception
-    {
-        final ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( true );
-        final Set<String> actual = asSetOfPaths( storeFiles );
-        final Set<String> expectedStoreFiles = expectedStoreFiles( true );
-        final List<String> countStoreFiles = countStoreFiles();
-        assertTrue( diffSet( actual, expectedStoreFiles ), actual.containsAll( expectedStoreFiles ) );
-        assertFalse( Collections.disjoint( actual, countStoreFiles ) );
     }
 
     @Test
@@ -197,37 +151,57 @@ public class NeoStoreFileListingTest
     }
 
     @Test
-    public void shouldListNeostoreDbLast() throws Exception
+    public void shouldListMetaDataStoreLast() throws Exception
     {
-        Boolean[] foundStoreType = new Boolean[StoreType.values().length];
-        boolean foundTxLogs = false;
-
-        final ResourceIterator<StoreFileMetadata> storeFiles =
-                neoStoreDataSource.listStoreFiles( true );
-
-        while ( storeFiles.hasNext() )
-        {
-            final StoreFileMetadata storeFile = storeFiles.next();
-            if ( storeFile.storeType().isPresent() )
-            {
-                StoreType storeType = storeFile.storeType().get();
-                foundStoreType[storeType.ordinal()] = true;
-                if ( storeType == StoreType.META_DATA )
-                {
-                    Arrays.stream( foundStoreType ).forEach( Assert::assertTrue );
-                    assertTrue( "Transaction logs was not listed before neostore.db", foundTxLogs );
-                }
-            }
-            else if ( transactionLogFile( storeFile.file().getName() ) )
-            {
-                foundTxLogs = true;
-            }
-        }
+        assertTrue( neoStoreDataSource.listStoreFiles( false ).stream()
+                .reduce( ( a, b ) -> b )
+                .map( toStoreType )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .filter( StoreType.META_DATA::equals )
+                .isPresent() );
     }
 
-    private boolean transactionLogFile( String name )
+    @Test
+    public void shouldListMetaDataStoreLastWithTxLogs() throws Exception
     {
-        return name.startsWith( MetaDataStore.DEFAULT_NAME + ".transaction" ) && !name.endsWith( ".active" );
+        assertTrue( neoStoreDataSource.listStoreFiles( true ).stream()
+                .reduce( ( a, b ) -> b )
+                .map( toStoreType )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .filter( StoreType.META_DATA::equals )
+                .isPresent() );
+    }
+
+    @Test
+    public void shouldListTxLogFiles() throws Exception
+    {
+        assertTrue( neoStoreDataSource.listStoreFiles( true ).stream()
+                .map( metaData -> metaData.file().getName() )
+                .anyMatch( fileName -> LogFiles.FILENAME_FILTER.accept( null, fileName ) ) );
+    }
+
+    @Test
+    public void shouldNotListTxLogFiles() throws Exception
+    {
+        assertTrue( neoStoreDataSource.listStoreFiles( false ).stream()
+                .map( metaData -> metaData.file().getName() )
+                .noneMatch( fileName -> LogFiles.FILENAME_FILTER.accept( null, fileName ) ) );
+    }
+
+    @Test
+    public void shouldListNeostoreFiles() throws Exception
+    {
+        StoreType[] values = StoreType.values();
+        ResourceIterator<StoreFileMetadata> storeFiles =
+                neoStoreDataSource.listStoreFiles( false );
+        List<StoreType> listedStoreFiles = storeFiles.stream()
+                .map( toStoreType )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .collect( Collectors.toList() );
+        assertEquals( Arrays.asList(values), listedStoreFiles );
     }
 
     private void filesInStoreDirAre( File storeDir, String[] filenames, String[] dirs )
@@ -236,25 +210,6 @@ public class NeoStoreFileListingTest
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
         when( storeDir.listFiles() ).thenReturn( files.toArray( new File[files.size()] ) );
-    }
-
-    private String diffSet( Set<String> actual, Set<String> expected )
-    {
-        Set<String> extra = new HashSet<>( actual );
-        Set<String> missing = new HashSet<>( expected );
-        extra.removeAll( expected );
-        missing.removeAll( actual );
-        return "Extra entries: " + extra + "\nMissing entries: " + missing;
-    }
-
-    private Set<String> asSetOfPaths( ResourceIterator<StoreFileMetadata> result )
-    {
-        List<String> names = new ArrayList<>();
-        while ( result.hasNext() )
-        {
-            names.add( result.next().file().getName() );
-        }
-        return Iterables.asUniqueSet( names );
     }
 
     private ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )

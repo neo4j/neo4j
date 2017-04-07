@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -50,7 +52,7 @@ public class NeoStoreFileListing
     private final LegacyIndexProviderLookup legacyIndexProviders;
     private final StorageEngine storageEngine;
     private final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
-            file -> new StoreFileMetadata( file, Optional.empty(), RecordFormat.NO_RECORD_SIZE );
+            file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
 
     public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore, IndexingService indexingService,
             LegacyIndexProviderLookup legacyIndexProviders, StorageEngine storageEngine )
@@ -64,15 +66,36 @@ public class NeoStoreFileListing
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        Collection<StoreFileMetadata> files = new ArrayList<>();
+        List<StoreFileMetadata> files = new ArrayList<>();
         gatherNonRecordStores( files, includeLogs );
         gatherNeoStoreFiles( files );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
         Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
         Resource legacyIndexSnapshots = gatherLegacyIndexFiles( files );
 
+        placeMetaDataStoreLast( files );
+
         return resourceIterator( files.iterator(),
                 new MultiResource( asList( labelScanStoreSnapshot, schemaIndexSnapshots, legacyIndexSnapshots ) ) );
+    }
+
+    private void placeMetaDataStoreLast( List<StoreFileMetadata> files )
+    {
+        int index = 0;
+        for ( StoreFileMetadata file : files )
+        {
+            Optional<StoreType> storeType = StoreType.typeOf( file.file().getName() );
+            if ( storeType.isPresent() && storeType.get().equals( StoreType.META_DATA ) )
+            {
+                break;
+            }
+            index++;
+        }
+        if ( index < files.size() - 1 )
+        {
+            StoreFileMetadata metaDataStoreFile = files.remove( index );
+            files.add( metaDataStoreFile );
+        }
     }
 
     private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )

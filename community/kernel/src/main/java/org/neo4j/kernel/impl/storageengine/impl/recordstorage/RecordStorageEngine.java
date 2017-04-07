@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -58,8 +57,8 @@ import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.store.StorageLayer;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.api.store.StorageLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -516,8 +515,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             {
                 final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
                 StoreFileMetadata metadata =
-                        new StoreFileMetadata( recordStore.getStorageFileName(), Optional.of( type ),
-                                recordStore.getRecordSize() );
+                        new StoreFileMetadata( recordStore.getStorageFileName(), recordStore.getRecordSize() );
                 files.add( metadata );
             }
         }
@@ -530,7 +528,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         for ( File countStoreFile : countStoreFiles )
         {
             StoreFileMetadata countStoreFileMetadata = new StoreFileMetadata( countStoreFile,
-                    Optional.of( StoreType.COUNTS ), RecordFormat.NO_RECORD_SIZE );
+                    RecordFormat.NO_RECORD_SIZE );
             files.add( countStoreFileMetadata );
         }
     }
