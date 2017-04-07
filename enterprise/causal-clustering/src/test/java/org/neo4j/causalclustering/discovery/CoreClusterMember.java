@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.IntFunction;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -63,7 +64,14 @@ public class CoreClusterMember implements ClusterMember
     private final String boltAdvertisedAddress;
     private CoreGraphDatabase database;
 
-    public CoreClusterMember( int serverId, int hazelcastPort, int txPort, int raftPort, int boltPort, int httpPort, int clusterSize,
+    public CoreClusterMember( int serverId,
+                              int hazelcastPort,
+                              int txPort,
+                              int raftPort,
+                              int boltPort,
+                              int httpPort,
+                              int backupPort,
+                              int clusterSize,
                               List<AdvertisedSocketAddress> addresses,
                               DiscoveryServiceFactory discoveryServiceFactory,
                               String recordFormat,
@@ -99,6 +107,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
         config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress + ":" + httpPort );
         config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress + ":" + httpPort );
+        config.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + backupPort );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );

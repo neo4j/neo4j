@@ -424,6 +424,7 @@ public class Cluster
         int raftPort = PortPicker.pickPort();
         int boltPort = PortPicker.pickPort();
         int httpPort = PortPicker.pickPort();
+        int backupPort = PortPicker.pickPort();
 
         return new CoreClusterMember(
                 serverId,
@@ -432,6 +433,7 @@ public class Cluster
                 raftPort,
                 boltPort,
                 httpPort,
+                backupPort,
                 clusterSize,
                 addresses,
                 discoveryServiceFactory,
