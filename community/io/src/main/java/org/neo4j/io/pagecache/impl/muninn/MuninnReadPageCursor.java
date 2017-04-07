@@ -117,7 +117,10 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         MuninnReadPageCursor cursor = this;
         do
         {
-            cursor.startRetry();
+            if ( cursor.pinnedPageRef != 0 )
+            {
+                cursor.startRetry();
+            }
             cursor = (MuninnReadPageCursor) cursor.linkedCursor;
         }
         while ( cursor != null );
