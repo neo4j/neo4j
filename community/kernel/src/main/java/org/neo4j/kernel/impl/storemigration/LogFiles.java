@@ -33,7 +33,7 @@ public class LogFiles
 {
     public static final FilenameFilter FILENAME_FILTER = new LogicalLogFilenameFilter();
 
-    public static final class LogicalLogFilenameFilter implements FilenameFilter
+    private static final class LogicalLogFilenameFilter implements FilenameFilter
     {
         private static final Pattern LOG_FILENAME_PATTERN = compile(
                 PhysicalLogFile.REGEX_DEFAULT_NAME + PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX + ".*"
