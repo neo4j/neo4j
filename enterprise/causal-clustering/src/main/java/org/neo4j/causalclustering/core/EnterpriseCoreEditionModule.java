@@ -164,7 +164,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
-        RaftOutbound raftOutbound = new RaftOutbound( topologyService, raftSender, clusteringModule.clusterIdentity(),
+        RaftOutbound raftOutbound = new RaftOutbound( topologyService, raftSender, clusteringModule.clusterBinder(),
                 logProvider, logThresholdMillis );
         Outbound<MemberId,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>( raftOutbound,
                 identityModule.myself(), messageLogger );

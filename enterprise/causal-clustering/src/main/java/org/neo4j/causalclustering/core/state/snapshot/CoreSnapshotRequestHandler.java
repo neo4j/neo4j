@@ -26,25 +26,25 @@ import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
-import org.neo4j.causalclustering.core.state.CoreState;
+import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 
 import static org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 
 public class CoreSnapshotRequestHandler extends SimpleChannelInboundHandler<CoreSnapshotRequest>
 {
     private final CatchupServerProtocol protocol;
-    private final CoreState coreState;
+    private final CoreSnapshotService snapshotService;
 
-    public CoreSnapshotRequestHandler( CatchupServerProtocol protocol, CoreState coreState )
+    public CoreSnapshotRequestHandler( CatchupServerProtocol protocol, CoreSnapshotService snapshotService )
     {
         this.protocol = protocol;
-        this.coreState = coreState;
+        this.snapshotService = snapshotService;
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, CoreSnapshotRequest msg ) throws Exception
     {
-        sendStates( ctx, coreState.snapshot() );
+        sendStates( ctx, snapshotService.snapshot() );
         protocol.expect( State.MESSAGE_TYPE );
     }
 

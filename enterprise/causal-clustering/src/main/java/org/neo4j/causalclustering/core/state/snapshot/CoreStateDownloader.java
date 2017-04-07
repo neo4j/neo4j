@@ -28,7 +28,8 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.core.state.CoreState;
+import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
+import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -48,10 +49,13 @@ public class CoreStateDownloader
     private final Log log;
     private final StoreCopyProcess storeCopyProcess;
     private final CoreStateMachines coreStateMachines;
+    private final CoreSnapshotService snapshotService;
+    private final CommandApplicationProcess applicationProcess;
 
     public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
             RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
-            StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines )
+            StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines,
+            CoreSnapshotService snapshotService, CommandApplicationProcess applicationProcess )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
@@ -60,10 +64,13 @@ public class CoreStateDownloader
         this.log = logProvider.getLog( getClass() );
         this.storeCopyProcess = storeCopyProcess;
         this.coreStateMachines = coreStateMachines;
+        this.snapshotService = snapshotService;
+        this.applicationProcess = applicationProcess;
     }
 
-    public synchronized void downloadSnapshot( MemberId source, CoreState coreState ) throws StoreCopyFailedException
+    public void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
     {
+        applicationProcess.pauseApplier();
         try
         {
             /* Extract some key properties before shutting it down. */
@@ -128,7 +135,7 @@ public class CoreStateDownloader
 
             /* We install the snapshot after the store has been downloaded,
              * so that we are not left with a state ahead of the store. */
-            coreState.installSnapshot( coreSnapshot );
+            snapshotService.installSnapshot( coreSnapshot );
             log.info( "Core snapshot installed: " + coreSnapshot );
 
             /* Starting the database will invoke the commit process factory in
@@ -145,6 +152,10 @@ public class CoreStateDownloader
         catch ( Throwable e )
         {
             throw new StoreCopyFailedException( e );
+        }
+        finally
+        {
+            applicationProcess.resumeApplier();
         }
     }
 }

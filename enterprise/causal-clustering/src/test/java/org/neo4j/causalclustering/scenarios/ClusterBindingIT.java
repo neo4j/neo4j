@@ -57,13 +57,13 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
-public class ClusterIdentityIT
+public class ClusterBindingIT
 {
     @Rule
     public SuppressOutput suppressOutput = suppress( SuppressOutput.System.err );
 
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( ClusterIdentityIT.class )
+    public ClusterRule clusterRule = new ClusterRule( ClusterBindingIT.class )
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 )
             .withSharedCoreParam( CausalClusteringSettings.raft_log_pruning_strategy, "3 entries" )
@@ -173,7 +173,7 @@ public class ClusterIdentityIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().prune();
+            db.raftLogPruner().prune();
         }
 
         // WHEN
@@ -208,7 +208,7 @@ public class ClusterIdentityIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().prune();
+            db.raftLogPruner().prune();
         }
 
         // WHEN
@@ -238,7 +238,7 @@ public class ClusterIdentityIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().prune();
+            db.raftLogPruner().prune();
         }
 
         // WHEN

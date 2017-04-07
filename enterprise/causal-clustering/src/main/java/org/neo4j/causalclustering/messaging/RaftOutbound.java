@@ -26,7 +26,7 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages.RaftMessage;
 import org.neo4j.causalclustering.discovery.CoreAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.ClusterIdentity;
+import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.address.UnknownAddressMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -38,16 +38,16 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
 {
     private final CoreTopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress,Message> outbound;
-    private final ClusterIdentity clusterIdentity;
+    private final ClusterBinder clusterBinder;
     private final UnknownAddressMonitor unknownAddressMonitor;
     private final Log log;
 
     public RaftOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
-                         ClusterIdentity clusterIdentity, LogProvider logProvider, long logThresholdMillis )
+            ClusterBinder clusterBinder, LogProvider logProvider, long logThresholdMillis )
     {
         this.discoveryService = discoveryService;
         this.outbound = outbound;
-        this.clusterIdentity = clusterIdentity;
+        this.clusterBinder = clusterBinder;
         this.log = logProvider.getLog( getClass() );
         this.unknownAddressMonitor = new UnknownAddressMonitor( log, Clocks.systemClock(), logThresholdMillis );
     }
@@ -55,8 +55,8 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
     @Override
     public void send( MemberId to, RaftMessage message )
     {
-        ClusterId clusterId = clusterIdentity.clusterId();
-        if ( clusterId == null )
+        Optional<ClusterId> clusterId = clusterBinder.get();
+        if ( !clusterId.isPresent() )
         {
             log.warn( "Attempting to send a message before bound to a cluster" );
             return;
@@ -65,7 +65,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         Optional<CoreAddresses> coreAddresses = discoveryService.coreServers().find( to );
         if ( coreAddresses.isPresent() )
         {
-            outbound.send( coreAddresses.get().getRaftServer(), new ClusterIdAwareMessage( clusterId, message ) );
+            outbound.send( coreAddresses.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
         }
         else
         {

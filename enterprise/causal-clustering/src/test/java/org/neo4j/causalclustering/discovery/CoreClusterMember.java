@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.log.segmented.FileNames;
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
-import org.neo4j.causalclustering.core.state.CoreState;
+import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -166,9 +166,9 @@ public class CoreClusterMember implements ClusterMember
         return storeDir;
     }
 
-    public CoreState coreState()
+    public RaftLogPruner raftLogPruner()
     {
-        return database.getDependencyResolver().resolveDependency( CoreState.class );
+        return database.getDependencyResolver().resolveDependency( RaftLogPruner.class );
     }
 
     public RaftMachine raft()
