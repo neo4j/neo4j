@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,6 +42,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTerminated;
+
 public class Neo4jTransactionalContext implements TransactionalContext
 {
     private final GraphDatabaseQueryService graph;
@@ -56,6 +59,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private InternalTransaction transaction;
     private Statement statement;
     private boolean isOpen = true;
+    private boolean terminated = false;
 
     private long pageHits;
     private long pageMisses;
@@ -142,10 +146,11 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         if ( isOpen )
         {
+            terminated = true;
             try
             {
                 transaction.terminate();
-                close( false );
+                isOpen = false;
             }
             catch ( NotInTransactionException e )
             {
@@ -167,6 +172,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         * Since our transactions are thread bound, we must first unbind the old transaction from the thread before
         * creating a new one. And then we need to do that thread switching again to close the old transaction.
         */
+
+        checkNotTerminated();
 
         collectTransactionExecutionStatistic();
 
@@ -221,6 +228,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public TransactionalContext getOrBeginNewIfClosed()
     {
+        checkNotTerminated();
+
         if ( !isOpen )
         {
             transaction = graph.beginTransaction( transactionType, securityContext );
@@ -229,6 +238,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
             isOpen = true;
         }
         return this;
+    }
+
+    private void checkNotTerminated()
+    {
+        if ( terminated )
+        {
+            throw new TransactionTerminatedException(TransactionTerminated);
+        }
     }
 
     @Override
