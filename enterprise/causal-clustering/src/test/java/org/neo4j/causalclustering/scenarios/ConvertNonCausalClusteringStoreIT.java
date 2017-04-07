@@ -71,7 +71,7 @@ public class ConvertNonCausalClusteringStoreIT
     public void shouldReplicateTransactionToCoreMembers() throws Throwable
     {
         // given
-        File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
+        File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db-" + recordFormat );
         int classicNodeCount = 1024;
         File classicNeo4jStore = createNeoStore( dbDir, classicNodeCount );
 
