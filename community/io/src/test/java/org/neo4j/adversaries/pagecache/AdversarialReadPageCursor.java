@@ -376,7 +376,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         delegate.close();
         linkedCursor = null;
@@ -455,7 +455,7 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
+    public PageCursor openLinkedCursor( long pageId ) throws IOException
     {
         return linkedCursor = new AdversarialReadPageCursor( delegate.openLinkedCursor( pageId ), state );
     }

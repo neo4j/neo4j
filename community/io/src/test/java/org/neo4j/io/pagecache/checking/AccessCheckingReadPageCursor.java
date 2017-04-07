@@ -123,7 +123,7 @@ public class AccessCheckingReadPageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         assertNoReadWithoutShouldRetry();
         super.close();

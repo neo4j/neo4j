@@ -302,7 +302,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         if ( linkedCursor != null )
         {
@@ -365,7 +365,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
+    public PageCursor openLinkedCursor( long pageId ) throws IOException
     {
         PageCursor toReturn = new PageAwareByteArrayCursor( pages, pageSize, pageId );
         if ( linkedCursor != null )

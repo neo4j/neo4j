@@ -74,6 +74,10 @@ public interface PagedFile extends AutoCloseable
      * Do not update page access statistics.
      */
     int PF_TRANSIENT = 1 << 5; // TBD
+    /**
+     * Flush pages more aggressively, after they have been dirtied by a write cursor.
+     */
+    int PF_EAGER_FLUSH = 1 << 6;
 
     /**
      * Initiate an IO interaction with the contents of the paged file.

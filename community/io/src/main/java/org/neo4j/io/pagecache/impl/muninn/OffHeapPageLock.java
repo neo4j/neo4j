@@ -251,7 +251,8 @@ public final class OffHeapPageLock
             n = nextSeq( s ) - CNT_UNIT;
             if ( (n & FAE_MASK) == 0 )
             {
-                r = (n += FLS_MASK);
+                n += FLS_MASK;
+                r = n;
             }
         }
         while ( !compareAndSetState( address, s, n ) );

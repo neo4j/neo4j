@@ -91,6 +91,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -1857,7 +1858,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             finally
             {
-                cursors.forEach( PageCursor::close );
+                for ( PageCursor cursor : cursors )
+                {
+                    cursor.close();
+                }
             }
         }
     }
@@ -5233,6 +5237,21 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
               PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
         {
             assertFalse( cursor.isWriteLocked() );
+        }
+    }
+
+    @Test
+    public void eagerFlushMustWriteToFileOnUnpin() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH ) )
+        {
+            assertTrue( cursor.next() );
+            writeRecords( cursor );
+            assertTrue( cursor.next() ); // this will unpin and flush page 0
+            verifyRecordsInFile( file, recordsPerFilePage );
         }
     }
 }

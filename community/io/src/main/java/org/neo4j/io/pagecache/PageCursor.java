@@ -262,7 +262,7 @@ public abstract class PageCursor implements AutoCloseable
      * @see AutoCloseable#close()
      */
     @Override
-    public abstract void close();
+    public abstract void close() throws IOException;
 
     /**
      * Returns true if the page has entered an inconsistent state since the last call to next() or shouldRetry().
@@ -352,7 +352,7 @@ public abstract class PageCursor implements AutoCloseable
      * @param pageId The page id that the linked cursor will be placed at after its first call to {@link #next()}.
      * @return A cursor that is linked with this cursor.
      */
-    public abstract PageCursor openLinkedCursor( long pageId );
+    public abstract PageCursor openLinkedCursor( long pageId ) throws IOException;
 
     /**
      * Sets all bytes in this page to zero, as if this page was newly allocated at the end of the file.

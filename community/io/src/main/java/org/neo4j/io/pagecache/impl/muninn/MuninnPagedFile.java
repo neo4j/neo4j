@@ -474,6 +474,27 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
+    void flushLockedPage( long pageRef, long filePageId ) throws IOException
+    {
+        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
+        {
+            FlushEvent flush = flushEvent.flushEventOpportunity().beginFlush( filePageId, toId( pageRef ), swapper );
+            long address = getAddress( pageRef );
+            try
+            {
+                long bytesWritten = swapper.write( filePageId, address );
+                flush.addBytesWritten( bytesWritten );
+                flush.addPagesFlushed( 1 );
+                flush.done();
+            }
+            catch ( IOException e )
+            {
+                flush.done( e );
+                throw e;
+            }
+        }
+    }
+
     private void syncDevice() throws IOException
     {
         pageCache.syncDevice();

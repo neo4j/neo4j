@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
@@ -57,6 +58,7 @@ abstract class MuninnPageCursor extends PageCursor
     protected PinEvent pinEvent;
     protected long pageId;
     protected int pf_flags;
+    protected boolean eagerFlush;
     protected long currentPageId;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
@@ -90,6 +92,7 @@ abstract class MuninnPageCursor extends PageCursor
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
+        this.eagerFlush = (pf_flags & PF_EAGER_FLUSH) == PF_EAGER_FLUSH;
     }
 
     @Override
@@ -120,7 +123,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public final void close()
+    public final void close() throws IOException
     {
         if ( pagedFile == null )
         {
@@ -145,7 +148,7 @@ abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void closeLinkedCursorIfAny()
+    private void closeLinkedCursorIfAny() throws IOException
     {
         if ( linkedCursor != null )
         {
@@ -154,7 +157,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
+    public PageCursor openLinkedCursor( long pageId ) throws IOException
     {
         closeLinkedCursorIfAny();
         MuninnPagedFile pf = pagedFile;
@@ -369,7 +372,7 @@ abstract class MuninnPageCursor extends PageCursor
         return pagedFile.getLastPageId();
     }
 
-    protected abstract void unpinCurrentPage();
+    protected abstract void unpinCurrentPage() throws IOException;
 
     protected abstract void convertPageFaultLock( long pageRef );
 
