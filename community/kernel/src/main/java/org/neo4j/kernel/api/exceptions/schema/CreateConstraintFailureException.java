@@ -28,11 +28,20 @@ public class CreateConstraintFailureException extends SchemaKernelException
 {
     private final ConstraintDescriptor constraint;
 
+    private final String cause;
     public CreateConstraintFailureException( ConstraintDescriptor constraint, Throwable cause )
     {
         super( Status.Schema.ConstraintCreationFailed, cause, "Unable to create constraint %s: %s", constraint,
                 cause.getMessage() );
         this.constraint = constraint;
+        this.cause = null;
+    }
+
+    public CreateConstraintFailureException( ConstraintDescriptor constraint, String cause )
+    {
+        super( Status.Schema.ConstraintCreationFailed, null, "Unable to create constraint %s: %s", constraint, cause );
+        this.constraint = constraint;
+        this.cause = cause;
     }
 
     public ConstraintDescriptor constraint()
@@ -44,6 +53,10 @@ public class CreateConstraintFailureException extends SchemaKernelException
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         String message = "Unable to create " + constraint.prettyPrint( tokenNameLookup );
+        if (cause != null)
+        {
+            message = String.format( "%s:%n%s", message, cause );
+        }
         if ( getCause() instanceof KernelException )
         {
             KernelException cause = (KernelException) getCause();

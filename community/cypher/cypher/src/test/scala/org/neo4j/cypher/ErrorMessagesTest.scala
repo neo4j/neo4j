@@ -238,6 +238,12 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
       "Expected exactly one statement per query but got: 2")
   }
 
+  test("should give proper error message when trying to use Node Key constraint on community") {
+    expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname) IS NODE KEY",
+                """Unable to create CONSTRAINT ON ( person:Person ) ASSERT exists(person.firstname):
+                  |Node Key constraint requires Neo4j Enterprise Edition""".stripMargin)
+  }
+
   private def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))

@@ -27,8 +27,8 @@ public class AlreadyIndexedException extends SchemaKernelException
 {
     private static final String NO_CONTEXT_FORMAT = "Already indexed %s.";
 
-    private static final String INDEX_CONTEXT_FORMAT = "There already exists an index for label '%s' on property '%s'.";
-    private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index for label '%s' on property '%s'. " +
+    private static final String INDEX_CONTEXT_FORMAT = "There already exists an index for label '%s' on %s.";
+    private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index for label '%s' on %s. " +
                                                             "A constraint cannot be created until the index has been dropped.";
 
     private final LabelSchemaDescriptor descriptor;

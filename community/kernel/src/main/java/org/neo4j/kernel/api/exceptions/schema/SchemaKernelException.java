@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -50,20 +53,29 @@ public abstract class SchemaKernelException extends KernelException
         super( statusCode, message );
     }
 
-    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
+    static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
             LabelSchemaDescriptor descriptor )
     {
+        int[] propertyIds = descriptor.getPropertyIds();
+
         if ( tokenNameLookup != null )
         {
+            String propertyString = propertyIds.length == 1 ?
+                                    "property '" + tokenNameLookup.propertyKeyGetName( propertyIds[0]) + "'" :
+                                    "properties " + Arrays.stream( propertyIds )
+                                            .mapToObj( (i) -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'")
+                                            .collect( Collectors.joining( " and " ));
             return String.format( formatString,
-                    tokenNameLookup.labelGetName( descriptor.getLabelId() ),
-                    tokenNameLookup.propertyKeyGetName( descriptor.getPropertyId() ) );
+                    tokenNameLookup.labelGetName( descriptor.getLabelId() ), propertyString);
         }
         else
         {
+            String keyString = propertyIds.length == 1 ? "key[" + propertyIds[0] + "]" :
+                               "keys[" + Arrays.stream( propertyIds )
+                                       .mapToObj( Integer::toString )
+                                       .collect( Collectors.joining( ", " )) + "]";
             return String.format( formatString,
-                    "label[" + descriptor.getLabelId() + "]",
-                    "key[" + descriptor.getPropertyId() + "]" );
+                    "label[" + descriptor.getLabelId() + "]", keyString );
         }
     }
 }
