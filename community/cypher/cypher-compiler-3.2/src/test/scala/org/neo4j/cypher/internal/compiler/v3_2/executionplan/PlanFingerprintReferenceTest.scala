@@ -40,7 +40,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(2, SECONDS)
 
-    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(transactionIdSupplier(42), stats)
 
     stale shouldBe true
   }
@@ -56,7 +56,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(2, SECONDS)
 
-    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(transactionIdSupplier(42), stats)
 
     stale shouldBe false
   }
@@ -72,7 +72,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(2, SECONDS)
 
-    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(17), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(transactionIdSupplier(17), stats)
 
     stale shouldBe false
   }
@@ -88,7 +88,7 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
 
     clock.forward(500, MILLISECONDS)
 
-    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(->(42), stats)
+    val stale = new PlanFingerprintReference(clock, ttl, threshold, fingerprint).isStale(transactionIdSupplier(42), stats)
 
     stale shouldBe false
   }
@@ -105,10 +105,10 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val reference = new PlanFingerprintReference(clock, ttl, threshold, fingerprint)
 
     clock.forward(2, SECONDS)
-    reference.isStale(->(17), stats) shouldBe false
+    reference.isStale(transactionIdSupplier(17), stats) shouldBe false
 
     clock.forward(500, MILLISECONDS)
-    reference.isStale(->(23), stats) shouldBe false
+    reference.isStale(transactionIdSupplier(23), stats) shouldBe false
   }
 
   test("should update the timestamp and the txId if the life time is expired the txId is old but stats has not changed over the threshold") {
@@ -123,13 +123,13 @@ class PlanFingerprintReferenceTest extends CypherFunSuite {
     val reference = new PlanFingerprintReference(clock, ttl, threshold, fingerprint)
 
     clock.forward(2, SECONDS)
-    reference.isStale(->(23), stats) shouldBe false
+    reference.isStale(transactionIdSupplier(23), stats) shouldBe false
 
     clock.forward(2, SECONDS)
-    reference.isStale(->(23), stats) shouldBe false
+    reference.isStale(transactionIdSupplier(23), stats) shouldBe false
   }
 
   implicit def liftToOption[T](item: T): Option[T] = Option(item)
-  def ->[T](item: T): () => T = () => item
+  def transactionIdSupplier[T](item: T): () => T = () => item
   def label(i: Int): LabelId = LabelId(i)
 }
