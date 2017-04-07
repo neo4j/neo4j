@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -48,6 +49,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             UniquenessConstraintDescriptor.class.getCanonicalName(),
             RelExistenceConstraintDescriptor.class.getCanonicalName(),
             NodeExistenceConstraintDescriptor.class.getCanonicalName(),
+            NodeKeyConstraintDescriptor.class.getCanonicalName(),
             LabelSchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
             NewIndexDescriptor.class.getCanonicalName(),
@@ -134,6 +136,14 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             int relTypeId = descriptor.getRelTypeId();
             builder.append( format( "ConstraintDescriptorFactory.existsForReltype( %d, %s )", relTypeId,
                     asString( descriptor.getPropertyIds() ) ) );
+        }
+        else if ( arg instanceof NodeKeyConstraintDescriptor )
+        {
+            NodeKeyConstraintDescriptor constraint = (NodeKeyConstraintDescriptor) arg;
+            int labelId = constraint.schema().getLabelId();
+            builder.append( format( "ConstraintDescriptorFactory.nodeKeyForLabel( %d, %s )",
+                    labelId,
+                    asString( constraint.schema().getPropertyIds() ) ) );
         }
         else
         {

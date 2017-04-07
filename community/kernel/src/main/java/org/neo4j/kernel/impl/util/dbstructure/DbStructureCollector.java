@@ -28,8 +28,10 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -47,6 +49,7 @@ public class DbStructureCollector implements DbStructureVisitor
     private final Set<UniquenessConstraintDescriptor> uniquenessConstraints = new HashSet<>();
     private final Set<NodeExistenceConstraintDescriptor> nodePropertyExistenceConstraints = new HashSet<>();
     private final Set<RelExistenceConstraintDescriptor> relPropertyExistenceConstraints = new HashSet<>();
+    private final Set<NodeKeyConstraintDescriptor> nodeKeyConstraints = new HashSet<>();
     private final Map<Integer, Long> nodeCounts = new HashMap<>();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
     private long allNodesCount = -1L;
@@ -88,31 +91,31 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String[]>> knownUniqueConstraints()
             {
-                return Iterators.map( uniquenessConstraint ->
-                {
-                    String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
-                    String[] propertyKeyNames = propertyKeys
-                            .byIdOrFail( uniquenessConstraint.schema().getPropertyIds() );
-                    return Pair.of( label, propertyKeyNames );
-                }, uniquenessConstraints.iterator() );
+                return idsToNames( uniquenessConstraints );
             }
 
             @Override
             public Iterator<Pair<String,String[]>> knownNodePropertyExistenceConstraints()
             {
-                return Iterators.map( uniquenessConstraint ->
-                {
-                    String label = labels.byIdOrFail( uniquenessConstraint.schema().getLabelId() );
-                    String[] propertyKeyNames = propertyKeys
-                            .byIdOrFail( uniquenessConstraint.schema().getPropertyIds() );
-                    return Pair.of( label, propertyKeyNames );
-                }, nodePropertyExistenceConstraints.iterator() );
+                return idsToNames( nodePropertyExistenceConstraints );
+            }
+
+            @Override
+            public Iterator<Pair<String,String[]>> knownNodeKeyConstraints()
+            {
+                return idsToNames( nodeKeyConstraints );
             }
 
             @Override
             public Iterator<Pair<String,String[]>> knownRelationshipPropertyExistenceConstraints()
             {
-                return Iterators.emptyIterator();
+                return Iterators.map( relConstraint ->
+                {
+                    String label = labels.byIdOrFail( relConstraint.schema().getRelTypeId() );
+                    String[] propertyKeyNames = propertyKeys
+                            .byIdOrFail( relConstraint.schema().getPropertyIds() );
+                    return Pair.of( label, propertyKeyNames );
+                }, relPropertyExistenceConstraints.iterator() );
             }
 
             @Override
@@ -146,6 +149,17 @@ public class DbStructureCollector implements DbStructureVisitor
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.size;
+            }
+
+            private Iterator<Pair<String,String[]>> idsToNames( Iterable<? extends LabelSchemaSupplier> nodeConstraints )
+            {
+                return Iterators.map( nodeConstraint ->
+                {
+                    String label = labels.byIdOrFail( nodeConstraint.schema().getLabelId() );
+                    String[] propertyKeyNames = propertyKeys
+                            .byIdOrFail( nodeConstraint.schema().getPropertyIds() );
+                    return Pair.of( label, propertyKeyNames );
+                }, nodeConstraints.iterator() );
             }
         };
     }
@@ -208,6 +222,17 @@ public class DbStructureCollector implements DbStructureVisitor
             throw new IllegalArgumentException(
                     format( "Duplicated relationship property existence constraint %s for %s",
                             constraint, userDescription )
+            );
+        }
+    }
+
+    @Override
+    public void visitNodeKeyConstraint( NodeKeyConstraintDescriptor constraint, String userDescription )
+    {
+        if ( !nodeKeyConstraints.add( constraint ) )
+        {
+            throw new IllegalArgumentException(
+                    format( "Duplicated node key constraint %s for %s", constraint, userDescription )
             );
         }
     }

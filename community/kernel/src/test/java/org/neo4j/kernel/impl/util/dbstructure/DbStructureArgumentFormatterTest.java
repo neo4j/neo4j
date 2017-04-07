@@ -84,6 +84,13 @@ public class DbStructureArgumentFormatterTest
                 formatArgument( ConstraintDescriptorFactory.uniqueForLabel( 23, 42, 43 ) ) );
     }
 
+    @Test
+    public void shouldFormatNodeKeyConstraints()
+    {
+        assertEquals( "ConstraintDescriptorFactory.nodeKeyForLabel( 23, 42, 43 )",
+                formatArgument( ConstraintDescriptorFactory.nodeKeyForLabel( 23, 42, 43 ) ) );
+    }
+
     private String formatArgument( Object arg )
     {
         StringBuilder builder = new StringBuilder();

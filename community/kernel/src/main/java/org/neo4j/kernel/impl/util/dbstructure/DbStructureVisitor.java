@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
@@ -35,6 +36,7 @@ public interface DbStructureVisitor
     void visitNodePropertyExistenceConstraint( NodeExistenceConstraintDescriptor constraint, String userDescription );
     void visitRelationshipPropertyExistenceConstraint( RelExistenceConstraintDescriptor constraint,
             String userDescription );
+    void visitNodeKeyConstraint( NodeKeyConstraintDescriptor constraint, String userDescription );
 
     void visitAllNodesCount( long nodeCount );
     void visitNodeCount( int labelId, String labelName, long nodeCount );

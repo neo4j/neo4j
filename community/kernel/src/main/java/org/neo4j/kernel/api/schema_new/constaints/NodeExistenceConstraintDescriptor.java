@@ -21,9 +21,10 @@ package org.neo4j.kernel.api.schema_new.constaints;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema_new.SchemaUtil;
 
-public class NodeExistenceConstraintDescriptor extends ConstraintDescriptor
+public class NodeExistenceConstraintDescriptor extends ConstraintDescriptor implements LabelSchemaSupplier
 {
     private LabelSchemaDescriptor schema;
 
