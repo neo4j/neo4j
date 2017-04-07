@@ -63,11 +63,6 @@ public class PlatformConstraintStoreUpgradeTest
         return Collections.singletonList( StandardV2_3.STORE_VERSION );
     }
 
-//    public PlatformConstraintStoreUpgradeTest( String version )
-//    {
-//        this.version = version;
-//    }
-
     @Before
     public void setup()
     {

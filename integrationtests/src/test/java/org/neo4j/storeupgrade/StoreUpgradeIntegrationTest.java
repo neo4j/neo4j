@@ -266,10 +266,10 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String[]> parameters()
         {
-            return Arrays.<String[]>asList(
+            return Arrays.asList(
                     new String[]{"on a not cleanly shutdown database", "0.A.3-to-be-recovered.zip"},
                     new String[]{"on a 1.9 store", "0.A.0-db.zip"},
-                    new String[]{"on a 2.0 store", "/upgrade/0.A.1-db.zip"},
+                    new String[]{"on a 2.0 store", "0.A.1-db.zip"},
                     new String[]{"on a 2.1 store", "0.A.3-data.zip"},
                     new String[]{"on a 2.2 store", "0.A.5-data.zip"}
             );
@@ -373,7 +373,7 @@ public class StoreUpgradeIntegrationTest
             this.formatFamily = formatFamily;
         }
 
-        public File prepareDirectory( File targetDir ) throws IOException
+        File prepareDirectory( File targetDir ) throws IOException
         {
             if ( !targetDir.exists() && !targetDir.mkdirs() )
             {
@@ -390,12 +390,12 @@ public class StoreUpgradeIntegrationTest
             return "Store: " + resourceName;
         }
 
-        public long indexes()
+        long indexes()
         {
             return indexCounts.length;
         }
 
-        public String getFormatFamily()
+        String getFormatFamily()
         {
             return formatFamily;
         }
