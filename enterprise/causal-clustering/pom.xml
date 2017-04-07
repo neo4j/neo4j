@@ -242,4 +242,24 @@
             </properties>
         </profile>
     </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <forkCount>4</forkCount>
+                    <parallel>classes</parallel>
+                    <threadCount>4</threadCount>
+                    <!-- slowest test class takes up to 10 minutes, so let's cater for that, with contingency -->
+                    <parallelTestsTimeoutInSeconds>1200</parallelTestsTimeoutInSeconds>
+                    <parallelTestsTimeoutForcedInSeconds>1800</parallelTestsTimeoutForcedInSeconds>
+                    <workingDirectory>${project.build.directory}/FORK_DIRECTORY_${surefire.forkNumber}</workingDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
 </project>
