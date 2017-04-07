@@ -23,11 +23,11 @@ import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.ExpanderStep
-import org.neo4j.cypher.internal.compiler.v3_1.spi._
-import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, symbols}
 import org.neo4j.graphdb.Node
@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema_new.constaints.{ConstraintBoundary, ConstraintDescriptor}
+import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor
 import org.neo4j.kernel.api.schema_new.index.{NewIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
@@ -68,8 +68,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    Some(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =

@@ -59,8 +59,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val labelId = tc.statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    Some(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
