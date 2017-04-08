@@ -115,7 +115,7 @@ public class TestBranchState extends TraversalTestBase
         public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
         {
             assertEquals( path.length(), state.getState().intValue() );
-            state.setState( state.getState()+1 );
+            state.setState( state.getState() + 1 );
             return path.endNode().getRelationships( Direction.OUTGOING );
         }
 
@@ -131,7 +131,7 @@ public class TestBranchState extends TraversalTestBase
         @Override
         public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
         {
-            assertEquals( path.length()/2, state.getState().intValue() );
+            assertEquals( path.length() / 2, state.getState().intValue() );
             if ( path.length() % 2 == 1 )
             {
                 state.setState( state.getState() + 1 );

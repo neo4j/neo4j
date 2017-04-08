@@ -96,7 +96,7 @@ public class PositionToRecoverFromTest
         {
             new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
         }
-        catch( UnderlyingStorageException ex )
+        catch ( UnderlyingStorageException ex )
         {
             // then
             final String expectedMessage =

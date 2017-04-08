@@ -32,7 +32,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
-
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
 /**
@@ -200,13 +199,13 @@ class NativeLabelScanWriter implements LabelScanWriter
                 // We can do a little shorter check for next labelId here straight away,
                 // we just check the next if it's less than what we currently think is next labelId
                 // and then break right after
-                if ( li+1 < labels.length && labels[li+1] != -1 )
+                if ( li + 1 < labels.length && labels[li + 1] != -1 )
                 {
-                    long nextLabelCandidate = labels[li+1];
+                    long nextLabelCandidate = labels[li + 1];
                     if ( nextLabelCandidate < currentLabelId )
                     {
-                        throw new IllegalArgumentException( "The node label update contained unsorted label ids " +
-                                Arrays.toString( labels ) );
+                        throw new IllegalArgumentException(
+                                "The node label update contained unsorted label ids " + Arrays.toString( labels ) );
                     }
                     if ( nextLabelCandidate > currentLabelId )
                     {

@@ -56,7 +56,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
     protected OwnerQueueElement<Thread> acquire( LockedEntity key )
     {
         OwnerQueueElement<Thread> suggestion = new OwnerQueueElement<>( currentThread() );
-        for(;;)
+        for ( ; ; )
         {
             OwnerQueueElement<Thread> owner = locks.putIfAbsent( key, suggestion );
             if ( owner == null )

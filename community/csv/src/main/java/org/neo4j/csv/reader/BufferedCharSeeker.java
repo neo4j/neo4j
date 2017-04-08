@@ -105,7 +105,7 @@ public class BufferedCharSeeker implements CharSeeker
                 }
                 else if ( isNewLine( ch ) )
                 {   // Encountered newline, done for now
-                    if ( bufferPos-1 == lineStartPos )
+                    if ( bufferPos - 1 == lineStartPos )
                     {   // We're at the start of this read so just skip it
                         seekStartPos++;
                         lineStartPos++;
@@ -135,7 +135,7 @@ public class BufferedCharSeeker implements CharSeeker
                         // so it looks like there's data characters after this end quote. We don't really support that.
                         // So circle this back to the user saying there's something wrong with the field.
                         throw new DataAfterQuoteException( this,
-                                new String( buffer, seekStartPos, bufferPos-seekStartPos ) );
+                                new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
                     }
                     else
                     {   // Found an ending quote, skip it and switch mode
@@ -236,7 +236,7 @@ public class BufferedCharSeeker implements CharSeeker
     {
         long from = mark.startPosition();
         long to = mark.position();
-        return extractor.extract( buffer, (int) from, (int)(to-from), mark.isQuoted() );
+        return extractor.extract( buffer, (int) from, (int) (to - from), mark.isQuoted() );
     }
 
     private int nextChar( int skippedChars ) throws IOException
@@ -295,7 +295,7 @@ public class BufferedCharSeeker implements CharSeeker
             dataCapacity = nextChunk.maxFieldSize();
             bufferPos = nextChunk.startPosition();
             bufferEnd = bufferPos + dataLength;
-            int shift = seekStartPos-nextChunk.backPosition();
+            int shift = seekStartPos - nextChunk.backPosition();
             seekStartPos = nextChunk.backPosition();
             if ( first )
             {

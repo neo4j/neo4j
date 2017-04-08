@@ -209,9 +209,11 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "\n" +
                  "Currently, it is not possible to search using multiple properties." )
     @GraphDescription.Graph( nodes = {
-            @NODE( name = "Donald Sutherland",   labels={ @LABEL( "Person" )} ),
-            @NODE( name = "Clint Eastwood", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Clint Eastwood" )}),
-            @NODE( name = "Steven Spielberg", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Steven Spielberg" )})})
+            @NODE( name = "Donald Sutherland",   labels = { @LABEL( "Person" )} ),
+            @NODE( name = "Clint Eastwood", labels = { @LABEL( "Person" )}, properties = { @PROP( key = "name",
+                    value = "Clint Eastwood" )}),
+            @NODE( name = "Steven Spielberg", labels = { @LABEL( "Person" )}, properties = { @PROP( key = "name",
+                    value = "Steven Spielberg" )})})
     public void get_nodes_with_label_and_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();

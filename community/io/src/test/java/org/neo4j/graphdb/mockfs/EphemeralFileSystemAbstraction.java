@@ -1413,7 +1413,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         protected Iterator<T> nextIteratorOrNull()
         {
-            if(iterators.hasNext())
+            if ( iterators.hasNext() )
             {
                 return iterators.next();
             }

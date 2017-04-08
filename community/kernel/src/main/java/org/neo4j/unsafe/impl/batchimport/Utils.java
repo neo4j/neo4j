@@ -156,7 +156,7 @@ public class Utils
     public static boolean anyIdCollides( long[] first, int firstLength, long[] other, int otherLength )
     {
         int f = 0, o = 0;
-        while( f < firstLength && o < otherLength )
+        while ( f < firstLength && o < otherLength )
         {
             if ( first[f] == other[o] )
             {
@@ -182,9 +182,9 @@ public class Utils
 
     public static void mergeSortedInto( long[] values, long[] into, int intoLengthBefore )
     {
-        int v = values.length-1;
-        int i = intoLengthBefore-1;
-        int t = i+values.length;
+        int v = values.length - 1;
+        int i = intoLengthBefore - 1;
+        int t = i + values.length;
         while ( v >= 0 || i >= 0 )
         {
             if ( i == -1 )

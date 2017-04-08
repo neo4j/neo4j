@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,9 +31,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,11 +48,9 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
@@ -299,7 +297,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_relationship() throws Exception
     {
-        final String index = indexes.newInstance(), type="knowledge", key = "name", value = "Tobias";
+        final String index = indexes.newInstance(), type = "knowledge", key = "name", value = "Tobias";
         helper.createRelationshipIndex( index );
         long start = helper.createNode();
         long end = helper.createNode();

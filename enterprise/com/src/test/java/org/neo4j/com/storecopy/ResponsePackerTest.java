@@ -44,7 +44,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class ResponsePackerTest
@@ -55,7 +54,7 @@ public class ResponsePackerTest
         // GIVEN
         LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
         long lastAppliedTransactionId = 5L;
-        TransactionCursor endlessCursor = new EndlessCursor( lastAppliedTransactionId+1 );
+        TransactionCursor endlessCursor = new EndlessCursor( lastAppliedTransactionId + 1 );
         when( transactionStore.getTransactions( anyLong() ) ).thenReturn( endlessCursor );
         final long targetTransactionId = 8L;
         final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0,

@@ -45,12 +45,12 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender )
     {
         InputRelationship[] input = batch.input;
-        long[] ids = batch.ids = new long[input.length*2];
+        long[] ids = batch.ids = new long[input.length * 2];
         for ( int i = 0; i < input.length; i++ )
         {
             InputRelationship batchRelationship = input[i];
-            ids[i*2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
-            ids[i*2+1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
+            ids[i * 2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
+            ids[i * 2 + 1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
         sender.send( batch );
     }

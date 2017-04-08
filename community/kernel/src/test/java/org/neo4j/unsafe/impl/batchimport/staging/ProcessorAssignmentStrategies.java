@@ -101,7 +101,7 @@ public class ProcessorAssignmentStrategies
                 }
 
                 Random random = ThreadLocalRandom.current();
-                int maxThisCheck = random.nextInt( processors-1 )+1;
+                int maxThisCheck = random.nextInt( processors - 1 ) + 1;
                 for ( Step<?> step : execution.steps() )
                 {
                     int before = step.processors( 0 );

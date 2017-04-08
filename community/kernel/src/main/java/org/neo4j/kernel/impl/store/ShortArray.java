@@ -753,7 +753,7 @@ public enum ShortArray
 
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {
-        int totalBitsRequired = requiredBits*arrayLength;
+        int totalBitsRequired = requiredBits * arrayLength;
         int maxBits = payloadSizeInBytes * 8 - 24 - 4 - 4 - 6 - 6;
         return totalBitsRequired <= maxBits;
     }
@@ -813,7 +813,7 @@ public enum ShortArray
 
     public static int calculateNumberOfBlocksUsed( int arrayLength, int requiredBits )
     {
-        int bitsForItems = arrayLength*requiredBits;
+        int bitsForItems = arrayLength * requiredBits;
         /*
          * Key, Property Type (ARRAY), Array Type, Array Length, Bits Per Member, Data
          */

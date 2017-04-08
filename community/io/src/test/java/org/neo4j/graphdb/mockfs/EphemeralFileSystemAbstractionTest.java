@@ -265,10 +265,10 @@ public class EphemeralFileSystemAbstractionTest
             channel.read( buffer, 0 );
             buffer.flip();
 
-            for ( int position = 0; position < claimedSize; position+=8 )
+            for ( int position = 0; position < claimedSize; position += 8 )
             {
                 long value = buffer.getLong( position );
-                assertEquals(1, value);
+                assertEquals( 1, value );
             }
         }
         catch ( IOException e )

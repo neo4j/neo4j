@@ -162,7 +162,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
 
-        List<ProtocolInitializer> connectors =config.enabledBoltConnectors().stream()
+        List<ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
                 .map( ( connConfig ) ->
                 {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );

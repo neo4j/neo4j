@@ -112,13 +112,13 @@ public class RelationshipGroupDefragmenterTest
         RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
         long cursor = 0;
-        for ( int typeId = relationshipTypeCount-1; typeId >= 0; typeId-- )
+        for ( int typeId = relationshipTypeCount - 1; typeId >= 0; typeId-- )
         {
             for ( long nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
             {
                 // next doesn't matter at all, as we're rewriting it anyway
                 // firstOut/In/Loop we could use in verification phase later
-                groupRecord.initialize( true, typeId, cursor, cursor+1, cursor+2, nodeId, 4 );
+                groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
                 groupRecord.setId( groupStore.nextId() );
                 groupStore.updateRecord( groupRecord );
 
@@ -152,7 +152,7 @@ public class RelationshipGroupDefragmenterTest
         NodeRecord nodeRecord = nodeStore.newRecord();
         long cursor = 0;
         BitSet initializedNodes = new BitSet();
-        for ( int typeId = relationshipTypeCount-1; typeId >= 0; typeId-- )
+        for ( int typeId = relationshipTypeCount - 1; typeId >= 0; typeId-- )
         {
             for ( int nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
             {
@@ -165,7 +165,7 @@ public class RelationshipGroupDefragmenterTest
                 {
                     // next doesn't matter at all, as we're rewriting it anyway
                     // firstOut/In/Loop we could use in verification phase later
-                    groupRecord.initialize( true, typeId, cursor, cursor+1, cursor+2, nodeId, 4 );
+                    groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
                     groupRecord.setId( groupStore.nextId() );
                     groupStore.updateRecord( groupRecord );
 

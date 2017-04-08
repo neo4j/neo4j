@@ -102,7 +102,7 @@ public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstractio
 
     public void ensureHasSpace() throws IOException
     {
-        if( outOfSpace )
+        if ( outOfSpace )
         {
             throw new IOException( "No space left on device" );
         }

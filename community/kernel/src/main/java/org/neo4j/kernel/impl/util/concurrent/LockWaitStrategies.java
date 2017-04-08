@@ -55,7 +55,7 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
         @Override
         public void apply( long iteration ) throws AcquireLockTimeoutException
         {
-            if(iteration < spinIterations)
+            if ( iteration < spinIterations )
             {
                 SPIN.apply( iteration );
                 return;
@@ -63,7 +63,7 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
 
             try
             {
-                if(iteration < multiplyUntilIteration )
+                if ( iteration < multiplyUntilIteration )
                 {
                     Thread.sleep( 0, 1 << (iteration - spinIterations) );
                 }
@@ -72,10 +72,10 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
                     Thread.sleep( 0, 500 );
                 }
             }
-            catch(InterruptedException e)
+            catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new AcquireLockTimeoutException( e , "Interrupted while waiting.", Interrupted );
+                throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Interrupted );
             }
         }
     };

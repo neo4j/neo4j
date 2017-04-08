@@ -397,10 +397,10 @@ public abstract class MapUtil
     public static <K,V> Map<K, V> toMap( Iterator<Pair<K, V>> pairs )
     {
         Map<K,V> result = new HashMap<K,V>();
-        while(pairs.hasNext())
+        while ( pairs.hasNext() )
         {
             Pair<K,V> pair = pairs.next();
-            result.put(pair.first(), pair.other());
+            result.put( pair.first(), pair.other() );
         }
         return result;
     }

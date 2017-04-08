@@ -147,7 +147,9 @@ public class SequenceLockStressIT
                 int spin = rng.nextInt( 20, 2000 );
                 while ( !stop.get() )
                 {
-                    while ( !lock.tryExclusiveLock() ) {}
+                    while ( !lock.tryExclusiveLock() )
+                    {
+                    }
                     long sumA = 0;
                     long sumB = 0;
                     for ( int[] ints : data )

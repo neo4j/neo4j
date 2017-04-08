@@ -24,10 +24,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.configuration.Internal;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -303,8 +303,8 @@ public class SecuritySettings implements LoadableConfig
     //=========================================================================
 
     @Description( "The default role that can execute all procedures and user-defined functions that are not covered " +
-                  "by the `"+PROC_ALLOWED_SETTING_ROLES+"` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` " +
-                  "setting is the empty string (default), procedures will be executed according to the same security " +
+                  "by the `" + PROC_ALLOWED_SETTING_ROLES + "` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME +
+                  "` setting is the empty string (default), procedures will be executed according to the same security " +
                   "rules as normal Cypher statements." )
     public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
 

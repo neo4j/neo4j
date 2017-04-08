@@ -220,9 +220,9 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     private static ThrowingConsumer<HttpServletResponse, IOException> requestAuthentication(
             HttpServletRequest req, ThrowingConsumer<HttpServletResponse, IOException> responseGen )
     {
-        if( "true".equals( req.getHeader( "X-Ajax-Browser-Auth" ) ) )
+        if ( "true".equals( req.getHeader( "X-Ajax-Browser-Auth" ) ) )
         {
-            return (res) ->
+            return ( res ) ->
             {
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );

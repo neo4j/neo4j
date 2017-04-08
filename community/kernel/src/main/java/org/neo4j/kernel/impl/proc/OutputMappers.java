@@ -137,7 +137,7 @@ public class OutputMappers
     public OutputMapper mapper( Method method ) throws ProcedureException
     {
         Class<?> cls = method.getReturnType();
-        if( cls == Void.class || cls == void.class )
+        if ( cls == Void.class || cls == void.class )
         {
             return OutputMappers.VOID_MAPPER;
         }
@@ -218,8 +218,8 @@ public class OutputMappers
 
     private void assertIsValidRecordClass( Class<?> userClass ) throws ProcedureException
     {
-        if( userClass.isPrimitive() || userClass.isArray()
-            || userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
+        if ( userClass.isPrimitive() || userClass.isArray() ||
+                userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
         {
             throw invalidReturnType( userClass );
         }

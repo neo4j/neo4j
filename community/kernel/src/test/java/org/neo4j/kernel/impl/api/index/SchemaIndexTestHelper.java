@@ -114,17 +114,17 @@ public class SchemaIndexTestHelper
             throws IndexNotFoundKernelException
     {
         long start = System.currentTimeMillis();
-        while(true)
+        while ( true )
         {
             if ( readOperations.indexGetState( index ) == InternalIndexState.ONLINE )
-           {
-               break;
-           }
+            {
+                break;
+            }
 
-           if(start + 1000 * 10 < System.currentTimeMillis())
-           {
-               throw new RuntimeException( "Index didn't come online within a reasonable time." );
-           }
+            if ( start + 1000 * 10 < System.currentTimeMillis() )
+            {
+                throw new RuntimeException( "Index didn't come online within a reasonable time." );
+            }
         }
     }
 }

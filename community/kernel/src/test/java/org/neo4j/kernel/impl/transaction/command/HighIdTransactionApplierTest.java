@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -135,8 +134,8 @@ public class HighIdTransactionApplierTest
         tracker.close();
 
         // THEN
-        assertEquals( node.getSecondaryUnitId()+1, neoStores.getNodeStore().getHighId() );
-        assertEquals( relationship.getSecondaryUnitId()+1, neoStores.getRelationshipStore().getHighId() );
-        assertEquals( relationshipGroup.getSecondaryUnitId()+1, neoStores.getRelationshipGroupStore().getHighId() );
+        assertEquals( node.getSecondaryUnitId() + 1, neoStores.getNodeStore().getHighId() );
+        assertEquals( relationship.getSecondaryUnitId() + 1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals( relationshipGroup.getSecondaryUnitId() + 1, neoStores.getRelationshipGroupStore().getHighId() );
     }
 }

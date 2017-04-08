@@ -93,7 +93,7 @@ public class DelayedBufferTest
         buffer.close();
 
         // THEN
-        consumer.assertHaveOnlySeenRange( 0, size-1 );
+        consumer.assertHaveOnlySeenRange( 0, size - 1 );
     }
 
     @Test

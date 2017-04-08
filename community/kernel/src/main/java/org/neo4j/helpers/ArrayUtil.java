@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.function.Function;
+
 import static java.util.Arrays.copyOf;
 
 /**
@@ -417,7 +418,7 @@ public abstract class ArrayUtil
     public static <T> T[] concat( T first, T... additional )
     {
         @SuppressWarnings( "unchecked" )
-        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), additional.length+1 );
+        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), additional.length + 1 );
         result[0] = first;
         System.arraycopy( additional, 0, result, 1, additional.length );
         return result;
@@ -434,7 +435,7 @@ public abstract class ArrayUtil
     public static <T> T[] concat( T[] initial, T... additional )
     {
         @SuppressWarnings( "unchecked" )
-        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), initial.length+additional.length );
+        T[] result = (T[]) Array.newInstance( additional.getClass().getComponentType(), initial.length + additional.length );
         System.arraycopy( initial, 0, result, 0, initial.length );
         System.arraycopy( additional, 0, result, initial.length, additional.length );
         return result;
@@ -474,9 +475,9 @@ public abstract class ArrayUtil
             int index = indexOf( result, candidate );
             if ( index != -1 )
             {
-                if ( index+1 < length )
+                if ( index + 1 < length )
                 {   // not the last one
-                    result[index] = result[length-1];
+                    result[index] = result[length - 1];
                 }
                 length--;
             }

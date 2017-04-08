@@ -87,7 +87,7 @@ public class ProcessStreamHandler
         {
             out.join();
         }
-        catch( InterruptedException e )
+        catch ( InterruptedException e )
         {
             Thread.interrupted();
             e.printStackTrace();
@@ -96,7 +96,7 @@ public class ProcessStreamHandler
         {
             err.join();
         }
-        catch( InterruptedException e )
+        catch ( InterruptedException e )
         {
             Thread.interrupted();
             e.printStackTrace();
@@ -119,7 +119,7 @@ public class ProcessStreamHandler
             {
                 return process.waitFor();
             }
-            catch( InterruptedException e )
+            catch ( InterruptedException e )
             {
                 Thread.interrupted();
                 return 0;

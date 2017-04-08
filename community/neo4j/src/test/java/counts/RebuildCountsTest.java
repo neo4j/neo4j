@@ -125,7 +125,7 @@ public class RebuildCountsTest
 
     private void deleteHumans()
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             try ( ResourceIterator<Node> humans = db.findNodes( HUMAN ) )
             {

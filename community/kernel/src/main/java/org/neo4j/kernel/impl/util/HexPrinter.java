@@ -187,7 +187,7 @@ public class HexPrinter
     public HexPrinter append( ReadableByteChannel source, int atMost ) throws IOException
     {
         boolean indefinite = atMost == -1;
-        ByteBuffer buffer = ByteBuffer.allocate( 4*1024 );
+        ByteBuffer buffer = ByteBuffer.allocate( 4 * 1024 );
         while ( true )
         {
             buffer.clear();

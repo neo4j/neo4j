@@ -66,9 +66,9 @@ public class HeapLongArray extends HeapNumberArray<LongArray> implements LongArr
     {
         for ( int i = 0; i < numberOfEntries; i++ )
         {
-            long fromValue = get( fromIndex+i );
-            set( fromIndex+i, get( toIndex+i ) );
-            set( toIndex+i, fromValue );
+            long fromValue = get( fromIndex + i );
+            set( fromIndex + i, get( toIndex + i ) );
+            set( toIndex + i, fromValue );
         }
     }
 }

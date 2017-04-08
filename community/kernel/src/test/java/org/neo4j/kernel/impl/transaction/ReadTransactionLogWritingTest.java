@@ -86,9 +86,9 @@ public class ReadTransactionLogWritingTest
 
         // THEN
         long actualCount = countLogEntries();
-        assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
-                " log entries written during one or more pure read transactions",
-                logEntriesWrittenBeforeReadOperations, actualCount );
+        assertEquals( "There were " + (actualCount - logEntriesWrittenBeforeReadOperations) +
+                        " log entries written during one or more pure read transactions", logEntriesWrittenBeforeReadOperations,
+                actualCount );
     }
 
     private long countLogEntries()
@@ -117,7 +117,7 @@ public class ReadTransactionLogWritingTest
         char[] characters = new char[length];
         for ( int i = 0; i < length; i++ )
         {
-            characters[i] = (char) ('a' + i%10);
+            characters[i] = (char) ('a' + i % 10);
         }
         return new String( characters );
     }

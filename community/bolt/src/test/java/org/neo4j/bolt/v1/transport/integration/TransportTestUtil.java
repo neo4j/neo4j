@@ -47,7 +47,7 @@ public class TransportTestUtil
     {
         ByteBuffer in = ByteBuffer.wrap( chunked );
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while(in.hasRemaining())
+        while ( in.hasRemaining() )
         {
             int chunkSize = in.getShort();
             if ( chunkSize == 0 )

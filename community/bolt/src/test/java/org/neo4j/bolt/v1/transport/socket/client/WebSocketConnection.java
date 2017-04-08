@@ -132,8 +132,8 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
             currentReceiveIndex = 0;
             currentReceiveBuffer = received.poll( 10, MILLISECONDS );
 
-            if( (currentReceiveBuffer == null && ( client.isStopped() || client.isStopping() ) ) ||
-                currentReceiveBuffer == POISON_PILL )
+            if ( (currentReceiveBuffer == null && (client.isStopped() || client.isStopping())) ||
+                    currentReceiveBuffer == POISON_PILL )
             {
                 // no data received
                 throw new IOException( "Connection closed while waiting for data from the server." );

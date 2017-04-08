@@ -37,14 +37,14 @@ public class MultipleFailureLatencyStrategy
 
     public <T extends NetworkLatencyStrategy> T getStrategy(Class<T> strategyClass)
     {
-        for( NetworkLatencyStrategy strategy : strategies )
+        for ( NetworkLatencyStrategy strategy : strategies )
         {
             if ( strategyClass.isInstance( strategy ) )
             {
                 return (T) strategy;
             }
         }
-        throw new IllegalArgumentException( " No strategy of type "+strategyClass.getName()+" found" );
+        throw new IllegalArgumentException( " No strategy of type " + strategyClass.getName() + " found" );
     }
 
     @Override

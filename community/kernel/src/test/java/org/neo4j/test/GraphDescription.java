@@ -119,9 +119,9 @@ public class GraphDescription implements GraphDefinition
             @Override
             Object convert( PropType componentType, String value )
             {
-                String[] items  = value.split( " *, *" );
+                String[] items = value.split( " *, *" );
                 Object[] result = (Object[]) Array.newInstance( componentType.componentClass(), items.length );
-                for ( int i =0 ; i < items.length; i++ )
+                for ( int i = 0; i < items.length; i++ )
                 {
                     result[i] = componentType.convert( items[i] );
                 }
@@ -258,7 +258,7 @@ public class GraphDescription implements GraphDefinition
         autoindex.setEnabled( auto );
         for ( PROP prop : properties )
         {
-            if(auto)
+            if ( auto )
             {
                 autoindex.startAutoIndexingProperty( prop.key() );
             }
@@ -274,7 +274,7 @@ public class GraphDescription implements GraphDefinition
         }
         if ( name != null )
         {
-            if(auto)
+            if ( auto )
             {
                 autoindex.startAutoIndexingProperty( "name" );
             }
@@ -472,9 +472,9 @@ public class GraphDescription implements GraphDefinition
         {
             super( name );
             labels = new LABEL[labelNames.length];
-            for(int i=0;i<labelNames.length;i++)
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                labels[i] = new DefaultLabel(labelNames[i]);
+                labels[i] = new DefaultLabel( labelNames[i] );
             }
         }
 
@@ -498,9 +498,9 @@ public class GraphDescription implements GraphDefinition
         {
             this.inner = inner;
             labels = new LABEL[labelNames.length];
-            for(int i=0;i<labelNames.length;i++)
+            for ( int i = 0; i < labelNames.length; i++ )
             {
-                labels[i] = new DefaultLabel(labelNames[i]);
+                labels[i] = new DefaultLabel( labelNames[i] );
             }
         }
 

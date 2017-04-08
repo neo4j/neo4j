@@ -261,7 +261,7 @@ public class ReadablesTest
         assertEquals( expected.length, buffer.available() );
         for ( int i = 0; i < expected.length; i++ )
         {
-            assertEquals( expected[i], array[buffer.pivot()+i] );
+            assertEquals( expected[i], array[buffer.pivot() + i] );
         }
     }
 

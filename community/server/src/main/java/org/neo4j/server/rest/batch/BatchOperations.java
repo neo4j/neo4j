@@ -106,41 +106,41 @@ public abstract class BatchOperations
         return baseUri.resolve("." + requestedPath);
     }
 
-    private static final Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
+    private static final Pattern PLACHOLDER_PATTERN = Pattern.compile( "\\{(\\d{1,10})\\}" );
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
-        if (!str.contains( "{" ))
+        if ( !str.contains( "{" ) )
         {
             return str;
         }
-        Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
-        StringBuffer sb=new StringBuffer();
+        Matcher matcher = PLACHOLDER_PATTERN.matcher( str );
+        StringBuffer sb = new StringBuffer();
         String replacement = null;
-        while (matcher.find())
+        while ( matcher.find() )
         {
-            String id = matcher.group(1);
+            String id = matcher.group( 1 );
             try
             {
-                replacement = locations.get(Integer.valueOf(id));
+                replacement = locations.get( Integer.valueOf( id ) );
             }
-            catch( NumberFormatException e )
+            catch ( NumberFormatException e )
             {
                 // The body contained a value that happened to match our regex, but is not a valid integer.
                 // Specifically, the digits inside the brackets must have been > 2^31-1.
                 // Simply ignore this, since we don't support non-integer placeholders, this is not a valid placeholder
             }
-            if (replacement!=null)
+            if ( replacement != null )
             {
-                matcher.appendReplacement(sb,replacement);
+                matcher.appendReplacement( sb, replacement );
             }
             else
             {
-                matcher.appendReplacement(sb,matcher.group());
+                matcher.appendReplacement( sb, matcher.group() );
             }
         }
-        matcher.appendTail(sb);
+        matcher.appendTail( sb );
         return sb.toString();
     }
 
@@ -160,9 +160,9 @@ public abstract class BatchOperations
         {
             if (token == JsonToken.START_OBJECT)
             {
-                String jobMethod="", jobPath="", jobBody="";
+                String jobMethod = "", jobPath = "", jobBody = "";
                 Integer jobId = null;
-                while ((token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
+                while ( (token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
                 {
                     String field = jp.getText();
                     jp.nextToken();
@@ -185,8 +185,7 @@ public abstract class BatchOperations
                     }
                 }
                 // Read one job description. Execute it.
-                performRequest( uriInfo, jobMethod, jobPath, jobBody,
-                        jobId, httpHeaders, locations, requestData );
+                performRequest( uriInfo, jobMethod, jobPath, jobBody, jobId, httpHeaders, locations, requestData );
             }
         }
     }

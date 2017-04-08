@@ -120,10 +120,10 @@ public class UtilsTest
     public void shouldMergeIdsInto() throws Exception
     {
         // GIVEN
-        long[] values = new long[] { 2, 4, 10, 11, 14};
-        long[] into   = new long[] { 1, 5,  6, 11, 25};
+        long[] values = new long[]{2, 4, 10, 11, 14};
+        long[] into = new long[]{1, 5, 6, 11, 25};
         int intoLengthBefore = into.length;
-        into = Arrays.copyOf( into, into.length+values.length );
+        into = Arrays.copyOf( into, into.length + values.length );
 
         // WHEN
         Utils.mergeSortedInto( values, into, intoLengthBefore );
@@ -145,7 +145,7 @@ public class UtilsTest
             long[] values = randomBatch( batchSize, random, 100_000_000 );
             long[] into = randomBatch( batchSize, random, 100_000_000 );
             long[] expectedMergedArray = manuallyMerge( values, into );
-            into = Arrays.copyOf( into, batchSize*2 );
+            into = Arrays.copyOf( into, batchSize * 2 );
             Utils.mergeSortedInto( values, into, batchSize );
             assertArrayEquals( expectedMergedArray, into );
         }
@@ -173,7 +173,7 @@ public class UtilsTest
 
     private long[] manuallyMerge( long[] values, long[] into )
     {
-        long[] all = new long[values.length+into.length];
+        long[] all = new long[values.length + into.length];
         System.arraycopy( values, 0, all, 0, values.length );
         System.arraycopy( into, 0, all, values.length, into.length );
         Arrays.sort( all );

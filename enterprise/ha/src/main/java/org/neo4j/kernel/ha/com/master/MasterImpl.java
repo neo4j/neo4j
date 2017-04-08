@@ -32,17 +32,17 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
@@ -169,10 +169,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         // not, we use a one-off lock client. The way the client signals this is via the 'eventIdentifier' in the
         // request. -1 means no locks are held, any other number means there should be a matching lock session.
 
-        if( context.getEventIdentifier() == Locks.Client.NO_LOCK_SESSION_ID )
+        if ( context.getEventIdentifier() == Locks.Client.NO_LOCK_SESSION_ID )
         {
             // Client is not holding locks, use a temporary lock client
-            try(Conversation conversation = conversationManager.acquire())
+            try ( Conversation conversation = conversationManager.acquire() )
             {
                 return commit0( context, preparedTransaction, conversation.getLocks() );
             }
@@ -193,7 +193,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
                     conversationManager.release(context);
                 }
             }
-            catch(NoSuchEntryException | ConcurrentAccessException e)
+            catch (NoSuchEntryException | ConcurrentAccessException e)
             {
                 throw new TransactionNotPresentOnMasterException(context);
             }

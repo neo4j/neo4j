@@ -82,7 +82,8 @@ public class ReadRecordsStepTest
         {
             return new ControlledRecordCursor<>( (NodeRecord) invocation.getArguments()[0], record ->
             {
-                record.setInUse( record.getId() < config.batchSize() || record.getId() >= highId - config.batchSize()/2 );
+                record.setInUse(
+                        record.getId() < config.batchSize() || record.getId() >= highId - config.batchSize() / 2 );
                 return record.inUse() && record.getId() < highId;
             } );
         } );
@@ -98,10 +99,10 @@ public class ReadRecordsStepTest
         // THEN
         assertEquals( config.batchSize(), first.length );
         assertEquals( 0L, first[0].getId() );
-        assertEquals( first[0].getId() + config.batchSize() - 1, first[first.length-1].getId() );
+        assertEquals( first[0].getId() + config.batchSize() - 1, first[first.length - 1].getId() );
 
-        assertEquals( config.batchSize()/2, second.length );
-        assertEquals( highId - 1, second[second.length-1].getId() );
+        assertEquals( config.batchSize() / 2, second.length );
+        assertEquals( highId - 1, second[second.length - 1].getId() );
 
         assertNull( third );
     }

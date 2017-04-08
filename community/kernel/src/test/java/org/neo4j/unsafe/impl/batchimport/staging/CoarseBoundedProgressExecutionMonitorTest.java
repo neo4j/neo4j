@@ -82,7 +82,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
         long part = total / 10;
         for ( int i = 0; i < 9; i++ )
         {
-            progressExecutionMonitor.check( execution( part * (i+1), config ) );
+            progressExecutionMonitor.check( execution( part * (i + 1), config ) );
             assertTrue( progressExecutionMonitor.getProgress() < total );
         }
         progressExecutionMonitor.done( 0, "Test" );

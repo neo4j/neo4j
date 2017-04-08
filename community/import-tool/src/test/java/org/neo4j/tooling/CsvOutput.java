@@ -107,7 +107,7 @@ public class CsvOutput implements BatchImporter
         {
             if ( properties[i].equals( key ) )
             {
-                return properties[i+1];
+                return properties[i + 1];
             }
         }
         return null;

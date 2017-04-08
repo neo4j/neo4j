@@ -467,7 +467,7 @@ public abstract class Iterators
     public static <T> Set<T> asUniqueSet( Iterator<T> items )
     {
         HashSet<T> set = new HashSet<>();
-        while( items.hasNext() )
+        while ( items.hasNext() )
         {
             addUnique( set, items.next() );
         }
@@ -740,10 +740,10 @@ public abstract class Iterators
     public static String join( String joinString, Iterator<?> iter )
     {
         StringBuilder sb = new StringBuilder();
-        while(iter.hasNext())
+        while ( iter.hasNext() )
         {
             sb.append( iter.next().toString() );
-            if(iter.hasNext())
+            if ( iter.hasNext() )
             {
                 sb.append( joinString );
             }

@@ -43,7 +43,7 @@ public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
     {
         // These records are read page-wise forwards, but should be cached in reverse
         // since the records exists in the store in reverse order.
-        for ( int i = batch.length-1; i >= 0; i-- )
+        for ( int i = batch.length - 1; i >= 0; i-- )
         {
             cache.put( batch[i] );
         }

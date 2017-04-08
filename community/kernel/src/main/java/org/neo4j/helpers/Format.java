@@ -143,7 +143,7 @@ public class Format
         for ( int i = 0; i < half; i++ )
         {
             T temp = array[i];
-            int highIndex = array.length-1-i;
+            int highIndex = array.length - 1 - i;
             array[i] = array[highIndex];
             array[highIndex] = temp;
         }

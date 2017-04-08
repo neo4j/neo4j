@@ -38,11 +38,9 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Integer.max;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Integer.max;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
@@ -64,7 +62,7 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         long[] expected = new long[NODE_COUNT];
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT/100 ) ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ) ) )
         {
             writer.initialize( inserter );
 

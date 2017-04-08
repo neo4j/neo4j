@@ -38,6 +38,6 @@ final class FreePage
     void setNext( FreePage next )
     {
         this.next = next;
-        this.count = next == null? 1 : 1 + next.count;
+        this.count = next == null ? 1 : 1 + next.count;
     }
 }

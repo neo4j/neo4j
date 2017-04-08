@@ -75,12 +75,12 @@ class ClusterState
             {
                 try
                 {
-                    if(actions.hasNext())
+                    if (actions.hasNext())
                     {
                         ClusterAction action = actions.next();
                         return Pair.of( action, performAction( action ) );
                     }
-                    else if(instancesWithTimeouts.hasNext())
+                    else if (instancesWithTimeouts.hasNext())
                     {
                         ClusterInstance instance = instancesWithTimeouts.next();
                         return performNextTimeoutFrom(instance);
@@ -90,7 +90,7 @@ class ClusterState
                         return null;
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new RuntimeException( e );
                 }
@@ -148,7 +148,7 @@ class ClusterState
         for ( ClusterInstance clusterInstance : instances )
         {
             URI instanceUri = clusterInstance.uri();
-            if( instanceUri.getHost().equals( uri.getHost() ) && instanceUri.getPort() == uri.getPort())
+            if ( instanceUri.getHost().equals( uri.getHost() ) && instanceUri.getPort() == uri.getPort() )
             {
                 return clusterInstance;
             }
@@ -194,19 +194,19 @@ class ClusterState
     @Override
     public String toString()
     {
-        return "Cluster["+ Iterables.toString( instances, ", " )+"]";
+        return "Cluster[" + Iterables.toString( instances, ", " ) + "]";
     }
 
     public boolean isDeadEnd()
     {
-        if(pendingActions.size() > 0)
+        if ( pendingActions.size() > 0 )
         {
             return false;
         }
 
         for ( ClusterInstance instance : instances )
         {
-            if(instance.hasPendingTimeouts())
+            if ( instance.hasPendingTimeouts() )
             {
                 return false;
             }

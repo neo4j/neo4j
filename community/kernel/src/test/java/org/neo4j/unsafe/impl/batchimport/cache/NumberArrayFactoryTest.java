@@ -36,7 +36,6 @@ import static org.mockito.Mockito.verify;
 public class NumberArrayFactoryTest
 {
     private static final long KILO = 1024;
-    private static final long MEGA = KILO*KILO;
 
     @Test
     public void shouldPickFirstAvailableCandidateLongArray() throws Exception
@@ -45,12 +44,12 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        LongArray array = factory.newLongArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
         assertTrue( array instanceof HeapLongArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -62,13 +61,13 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        LongArray array = factory.newLongArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newLongArray( 1*KILO, -1, 0 );
+        verify( lowMemoryFactory, times( 1 ) ).newLongArray( KILO, -1, 0 );
         assertTrue( array instanceof HeapLongArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -82,7 +81,7 @@ public class NumberArrayFactoryTest
         // WHEN
         try
         {
-            factory.newLongArray( 1*KILO, -1 );
+            factory.newLongArray( KILO, -1 );
             fail( "Should have thrown" );
         }
         catch ( OutOfMemoryError e )
@@ -98,12 +97,12 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
 
         // WHEN
-        IntArray array = factory.newIntArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        IntArray array = factory.newIntArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
         assertTrue( array instanceof HeapIntArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -115,13 +114,13 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        IntArray array = factory.newIntArray( 1*KILO, -1 );
-        array.set( 1*KILO-10, 12345 );
+        IntArray array = factory.newIntArray( KILO, -1 );
+        array.set( KILO - 10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newIntArray( 1*KILO, -1, 0 );
+        verify( lowMemoryFactory, times( 1 ) ).newIntArray( KILO, -1, 0 );
         assertTrue( array instanceof HeapIntArray );
-        assertEquals( 12345, array.get( 1*KILO-10 ) );
+        assertEquals( 12345, array.get( KILO - 10 ) );
     }
 
     @Test
@@ -134,12 +133,12 @@ public class NumberArrayFactoryTest
         NumberArrayFactory factory = new NumberArrayFactory.Auto( throwingMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        ByteArray array = factory.newByteArray( 1*KILO, new byte[4], 0 );
-        array.setInt( 1*KILO-10, 0, 12345 );
+        ByteArray array = factory.newByteArray( KILO, new byte[4], 0 );
+        array.setInt( KILO - 10, 0, 12345 );
 
         // THEN
-        verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( 1*KILO ), any( byte[].class ), eq( 0L ) );
+        verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( KILO ), any( byte[].class ), eq( 0L ) );
         assertTrue( array instanceof HeapByteArray );
-        assertEquals( 12345, array.getInt( 1*KILO-10, 0 ) );
+        assertEquals( 12345, array.getInt( KILO - 10, 0 ) );
     }
 }

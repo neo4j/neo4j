@@ -36,7 +36,7 @@ public class DoubleEvaluator implements CostEvaluator<Double>
     public Double getCost( Relationship relationship, Direction direction )
     {
         Object costProp = relationship.getProperty(costPropertyName);
-        if(costProp instanceof Number)
+        if ( costProp instanceof Number )
         {
             return ((Number) costProp).doubleValue();
         }

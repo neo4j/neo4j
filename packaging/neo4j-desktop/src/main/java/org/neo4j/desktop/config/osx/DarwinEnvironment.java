@@ -33,9 +33,9 @@ class DarwinEnvironment extends Environment
         {
             super.editFile( file );
         }
-        catch( IOException|UnsupportedOperationException ex )
+        catch ( IOException | UnsupportedOperationException ex )
         {
-            Runtime.getRuntime().exec( new String[] { "open", "-nt", file.getAbsolutePath() } );
+            Runtime.getRuntime().exec( new String[]{"open", "-nt", file.getAbsolutePath()} );
         }
     }
 

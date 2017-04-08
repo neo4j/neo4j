@@ -78,7 +78,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
     {
         long nodeId = 0L;
 
-        try(Transaction transaction = slave.beginTx())
+        try (Transaction transaction = slave.beginTx() )
         {
             // When
             Node node = slave.getNodeById( nodeId );

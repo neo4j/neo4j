@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
+
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
@@ -167,7 +168,7 @@ public class InputEntityDeserializer<ENTITY extends InputEntity> extends InputIt
                     "%n  for header: %s" +
                     "%n  raw field value: %s" +
                     "%n  original error: %s",
-                    data, entries[fieldIndex] + ":" + (fieldIndex+1), header,
+                    data, entries[fieldIndex] + ":" + (fieldIndex + 1), header,
                     stringValue != null ? stringValue : "??",
                     e.getMessage() );
             if ( e instanceof InputException )

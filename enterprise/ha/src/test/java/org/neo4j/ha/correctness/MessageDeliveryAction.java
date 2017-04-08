@@ -55,7 +55,8 @@ class MessageDeliveryAction implements ClusterAction
     @Override
     public String toString()
     {
-        return "("+message.getHeader( Message.FROM ) + ")-[" + message.getMessageType().name() + "]->(" + message.getHeader( Message.TO ) + ")";
+        return "(" + message.getHeader( Message.FROM ) + ")-[" + message.getMessageType().name() + "]->(" +
+                message.getHeader( Message.TO ) + ")";
     }
 
     @Override
@@ -76,33 +77,33 @@ class MessageDeliveryAction implements ClusterAction
 
     private boolean messageEquals( Message first, Message other )
     {
-        if( !first.getMessageType().equals( other.getMessageType() ))
+        if ( !first.getMessageType().equals( other.getMessageType() ) )
         {
             return false;
         }
 
-        if( !first.getHeader( Message.FROM ).equals( other.getHeader( Message.FROM ) ))
+        if ( !first.getHeader( Message.FROM ).equals( other.getHeader( Message.FROM ) ) )
         {
             return false;
         }
 
-        if( !first.getHeader( Message.TO ).equals( other.getHeader( Message.TO ) ))
+        if ( !first.getHeader( Message.TO ).equals( other.getHeader( Message.TO ) ) )
         {
             return false;
         }
 
-        if(first.getPayload() instanceof Message && other.getPayload() instanceof Message)
+        if ( first.getPayload() instanceof Message && other.getPayload() instanceof Message )
         {
-            return messageEquals((Message)first.getPayload(), (Message)other.getPayload() );
+            return messageEquals( (Message) first.getPayload(), (Message) other.getPayload() );
         }
-        else if(first.getPayload() == null)
+        else if ( first.getPayload() == null )
         {
-            if(other.getPayload() != null)
+            if ( other.getPayload() != null )
             {
                 return false;
             }
         }
-        else if( !first.getPayload().equals( other.getPayload() ))
+        else if ( !first.getPayload().equals( other.getPayload() ) )
         {
             return false;
         }

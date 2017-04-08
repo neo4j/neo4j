@@ -208,7 +208,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         spinUntilBlocking:
         for (; ; )
         {
-            if(thread2.getState() == Thread.State.TIMED_WAITING || thread2.getState() == Thread.State.WAITING)
+            if ( thread2.getState() == Thread.State.TIMED_WAITING || thread2.getState() == Thread.State.WAITING )
             {
                 break;
             }

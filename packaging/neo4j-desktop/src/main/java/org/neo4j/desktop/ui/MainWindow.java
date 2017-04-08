@@ -33,9 +33,7 @@ import org.neo4j.desktop.model.SysTrayListener;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
-import static javax.swing.JOptionPane.CANCEL_OPTION;
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
-import static javax.swing.JOptionPane.OK_CANCEL_OPTION;
 import static javax.swing.JOptionPane.OK_OPTION;
 import static javax.swing.SwingUtilities.invokeLater;
 import static org.neo4j.desktop.ui.Components.createPanel;
@@ -200,7 +198,7 @@ public class MainWindow extends JFrame
             @Override
             public void mouseClicked( MouseEvent e )
             {
-                if( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
+                if ( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
                 {
                     debugWindow.show();
                 }

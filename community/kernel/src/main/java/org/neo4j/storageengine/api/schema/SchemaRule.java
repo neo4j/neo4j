@@ -45,7 +45,7 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
     protected SchemaRule( long id, String name )
     {
         this.id = id;
-        this.name = name == null? generateName( id, getClass() ) : checkName( name );
+        this.name = name == null ? generateName( id, getClass() ) : checkName( name );
     }
 
     private String checkName( String name )
@@ -133,7 +133,7 @@ public abstract class SchemaRule implements SchemaDescriptor.Supplier
         {
             if ( id >= 1 && id <= ALL.length )
             {
-                return values()[id-1];
+                return values()[id - 1];
             }
             throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
         }

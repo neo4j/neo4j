@@ -53,7 +53,8 @@ public class IdRange
     @Override
     public String toString()
     {
-        return "IdRange[" + rangeStart + "-" + (rangeStart+rangeLength-1) + ", defrag " + Arrays.toString( defragIds ) + "]";
+        return "IdRange[" + rangeStart + "-" + (rangeStart + rangeLength - 1) + ", defrag " +
+                Arrays.toString( defragIds ) + "]";
     }
 
     @Override

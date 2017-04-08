@@ -23,9 +23,9 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class BoltV1Dechunker
 {
@@ -129,7 +129,7 @@ public class BoltV1Dechunker
 
     private void handleHeader() throws IOException
     {
-        if(chunkSize == 0)
+        if ( chunkSize == 0 )
         {
             // Message boundary
             try

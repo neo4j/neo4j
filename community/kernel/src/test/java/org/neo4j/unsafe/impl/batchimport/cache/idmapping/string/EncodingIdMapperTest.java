@@ -83,12 +83,12 @@ public class EncodingIdMapperTest
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
-        data.add( new Object[] {1} );
-        data.add( new Object[] {2} );
-        int bySystem = Runtime.getRuntime().availableProcessors()-1;
+        data.add( new Object[]{1} );
+        data.add( new Object[]{2} );
+        int bySystem = Runtime.getRuntime().availableProcessors() - 1;
         if ( bySystem > 2 )
         {
-            data.add( new Object[] {bySystem} );
+            data.add( new Object[]{bySystem} );
         }
         return data;
     }
@@ -487,7 +487,7 @@ public class EncodingIdMapperTest
                             }
 
                             // The other 90% will be accidental collisions for something else
-                            encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456-group.get().id() ) );
+                            encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456 - group.get().id() ) );
                             return Long.valueOf( i );
                         }
                         finally
@@ -558,7 +558,7 @@ public class EncodingIdMapperTest
         List<Object> ids = new ArrayList<>();
         for ( int run = 0; run < 2; run++ )
         {
-            for ( long i = 0; i < high/2; i++ )
+            for ( long i = 0; i < high / 2; i++ )
             {
                 ids.add( high - (i + 1) );
                 ids.add( i );

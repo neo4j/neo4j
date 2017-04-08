@@ -226,7 +226,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
 
     public boolean canAuthenticate()
     {
-        return authPlugin != null || authenticationPlugin !=null;
+        return authPlugin != null || authenticationPlugin != null;
     }
 
     public boolean canAuthorize()

@@ -67,7 +67,7 @@ public class InMemoryRaftLog implements RaftLog
     @Override
     public synchronized long prune( long safeIndex )
     {
-        if( safeIndex > prevIndex )
+        if ( safeIndex > prevIndex )
         {
             long removeIndex = prevIndex + 1;
 
@@ -78,7 +78,8 @@ public class InMemoryRaftLog implements RaftLog
             {
                 raftLog.remove( removeIndex );
                 removeIndex++;
-            } while( removeIndex <= safeIndex );
+            }
+            while ( removeIndex <= safeIndex );
         }
 
         return prevIndex;
@@ -99,7 +100,7 @@ public class InMemoryRaftLog implements RaftLog
     @Override
     public synchronized long readEntryTerm( long logIndex )
     {
-        if( logIndex == prevIndex )
+        if ( logIndex == prevIndex )
         {
             return prevTerm;
         }
@@ -119,9 +120,10 @@ public class InMemoryRaftLog implements RaftLog
         }
         else if ( fromIndex > appendIndex )
         {
-            throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " + appendIndex );
+            throw new IllegalArgumentException(
+                    "Cannot truncate at index " + fromIndex + " when append index is " + appendIndex );
         }
-        else if( fromIndex <= prevIndex )
+        else if ( fromIndex <= prevIndex )
         {
             prevIndex = -1;
             prevTerm = -1;
@@ -194,7 +196,7 @@ public class InMemoryRaftLog implements RaftLog
     @Override
     public synchronized long skip( long index, long term )
     {
-        if( index > appendIndex )
+        if ( index > appendIndex )
         {
             raftLog.clear();
 

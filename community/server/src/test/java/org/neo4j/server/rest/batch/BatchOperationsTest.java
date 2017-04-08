@@ -53,7 +53,7 @@ public class BatchOperationsTest
     @Test
     public void testReplaceLocations() throws Exception
     {
-        Map<Integer,String> map=new HashMap<>();
+        Map<Integer,String> map = new HashMap<>();
         map.put(100,"bar");
         assertEquals("foo", ops.replaceLocationPlaceholders("foo", map));
         assertEquals("foo bar", ops.replaceLocationPlaceholders("foo {100}", map));

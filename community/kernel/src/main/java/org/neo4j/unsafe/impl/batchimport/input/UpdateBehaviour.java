@@ -50,17 +50,17 @@ public enum UpdateBehaviour
             Object[] result;
             if ( existing.getClass().isArray() )
             {
-                result = Arrays.copyOf( (Object[]) existing, Array.getLength( existing )+1 );
-                result[result.length-1] = additional;
+                result = Arrays.copyOf( (Object[]) existing, Array.getLength( existing ) + 1 );
+                result[result.length - 1] = additional;
             }
             else if ( additional.getClass().isArray() )
             {
                 int length = Array.getLength( additional );
-                result = (Object[]) Array.newInstance( existing.getClass(), 1+length );
+                result = (Object[]) Array.newInstance( existing.getClass(), 1 + length );
                 result[0] = existing;
                 for ( int i = 0; i < length; i++ )
                 {
-                    result[1+i] = Array.get( additional, i );
+                    result[1 + i] = Array.get( additional, i );
                 }
             }
             else

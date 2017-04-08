@@ -64,7 +64,7 @@ public class ByteBufferPage implements Page
 
     public ByteBufferPage( ByteBuffer buffer )
     {
-        assert addressOf( buffer ) != 0:
+        assert addressOf( buffer ) != 0 :
                 "Probably not a DirectByteBuffer: " + buffer + " (address = " + addressOf( buffer ) + ")";
         this.buffer = buffer;
     }

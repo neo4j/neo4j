@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -73,10 +74,10 @@ public class LatestCheckPointFinderTest
         this.endLogVersion = endLogVersion;
     }
 
-    @Parameterized.Parameters( name="{0},{1}")
+    @Parameterized.Parameters( name = "{0},{1}" )
     public static Collection<Object[]> params()
     {
-        return Arrays.asList( new Object[]{1, 2}, new Object[]{42, 43}  );
+        return Arrays.asList( new Object[]{1, 2}, new Object[]{42, 43} );
     }
 
     @Before

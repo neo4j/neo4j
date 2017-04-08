@@ -300,7 +300,7 @@ public class RESTRequestGenerator
         }
         if ( response.getType() != null )
         {
-            assertTrue( "wrong response type: "+ data.entity, response.getType().isCompatible( type ) );
+            assertTrue( "wrong response type: " + data.entity, response.getType().isCompatible( type ) );
         }
         for ( Pair<String,Predicate<String>> headerField : headerFields )
         {

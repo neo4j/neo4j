@@ -67,7 +67,7 @@ public class MasterEpochTest
         assertEquals( servedIdAllocation.getHighestIdInUse(), idAllocation.getHighestIdInUse() );
         try
         {
-            master.allocateIds( context( handshake.epoch()+1 ), IdType.NODE );
+            master.allocateIds( context( handshake.epoch() + 1 ), IdType.NODE );
             fail( "Should fail with invalid epoch" );
         }
         catch ( InvalidEpochException e )
@@ -77,7 +77,7 @@ public class MasterEpochTest
 
     private IdAllocation idAllocation( long from, int length )
     {
-        return new IdAllocation( new IdRange( EMPTY_LONG_ARRAY, from, length ), from+length, 0 );
+        return new IdAllocation( new IdRange( EMPTY_LONG_ARRAY, from, length ), from + length, 0 );
     }
 
     private RequestContext context( long epoch )

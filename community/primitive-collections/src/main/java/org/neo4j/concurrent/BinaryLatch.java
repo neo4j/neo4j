@@ -115,7 +115,7 @@ public final class BinaryLatch
                 // It looks like the latch hasn't yet been released, so we are going to park. Before that, we must
                 // assign a non-null value to our next pointer, so other threads will know that we have been properly
                 // enqueued. We use the 'end' sentinel as a marker when there's otherwise no other next node.
-                waiter.next = state == null? end : state;
+                waiter.next = state == null ? end : state;
                 do
                 {
                     // Park may wake up spuriously, so we have to loop on it until we observe from the state of the

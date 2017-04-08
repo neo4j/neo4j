@@ -45,7 +45,7 @@ public class NetworkFlushableChannelNetty4Test
             channel.put( (byte) 1 );
             fail("Should not allow more bytes than what the limit dictates");
         }
-        catch( MessageTooBigException e )
+        catch ( MessageTooBigException e )
         {
             // then
         }
@@ -70,7 +70,7 @@ public class NetworkFlushableChannelNetty4Test
             channel.put( new byte[padding * 2], padding * 2 );
             fail("Should not allow more bytes than what the limit dictates");
         }
-        catch( MessageTooBigException e )
+        catch ( MessageTooBigException e )
         {
             // then
         }
@@ -106,7 +106,7 @@ public class NetworkFlushableChannelNetty4Test
             channel.put( (byte) 0 );
             fail("Should not allow more bytes than what the limit dictates");
         }
-        catch( MessageTooBigException e )
+        catch ( MessageTooBigException e )
         {
             // then
         }

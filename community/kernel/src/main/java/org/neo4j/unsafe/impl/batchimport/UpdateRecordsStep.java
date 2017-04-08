@@ -81,7 +81,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     @Override
     public Stat stat( Key key )
     {
-        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize*recordsUpdated ) : null;
+        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize * recordsUpdated ) : null;
     }
 
     @Override

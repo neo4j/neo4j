@@ -78,12 +78,11 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
             public void run()
             {
 
-                try(Transaction tx = getGraphDb().beginTx())
+                try ( Transaction tx = getGraphDb().beginTx() )
                 {
                     node1.setProperty( "key", "new" );
                     rel1.setProperty( "key", "new" );
-                    node1.createRelationshipTo( node2,
-                            RelationshipType.withName( "TEST" ) );
+                    node1.createRelationshipTo( node2, RelationshipType.withName( "TEST" ) );
                     assertPropertyEqual( node1, "key", "new" );
                     assertPropertyEqual( rel1, "key", "new" );
                     assertRelationshipCount( node1, 2 );
@@ -111,7 +110,7 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
                         assertRelationshipCount( node1, 1 );
                         assertRelationshipCount( node2, 1 );
                     }
-                    catch(Exception e)
+                    catch ( Exception e )
                     {
                         t1Exception.compareAndSet( null, e );
                     }
@@ -137,7 +136,7 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         assertRelationshipCount( node1, 1 );
         assertRelationshipCount( node2, 1 );
 
-        if(t1Exception.get() != null)
+        if ( t1Exception.get() != null )
         {
             throw t1Exception.get();
         }

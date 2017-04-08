@@ -51,7 +51,7 @@ public class ReadRelationshipCountsDataStep extends ReadRecordsStep<Relationship
             return null;
         }
 
-        long[] batch = new long[batchSize*3]; // start node, type, end node = 3
+        long[] batch = new long[batchSize * 3]; // start node, type, end node = 3
         int i = 0;
         for ( ; i < batchSize && ++id <= highestId; )
         {
@@ -63,12 +63,12 @@ public class ReadRelationshipCountsDataStep extends ReadRecordsStep<Relationship
                 batch[index++] = record.getSecondNode();
             }
         }
-        return i == batchSize ? batch : Arrays.copyOf( batch, i*3 );
+        return i == batchSize ? batch : Arrays.copyOf( batch, i * 3 );
     }
 
     @Override
     protected long position()
     {
-        return doneBatches.get()*batchSize*store.getRecordSize();
+        return doneBatches.get() * batchSize * store.getRecordSize();
     }
 }

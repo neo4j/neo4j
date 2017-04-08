@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,9 +33,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,13 +48,11 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -272,7 +270,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         // When
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Build~0.1%20AND%20Gender:Male&order=score" ).entity();
+                        + "?query=" + key + ":Build~0.1%20AND%20Gender:Male&order=score" ).entity();
 
         //noinspection unchecked
         hits = (Collection<LinkedHashMap<String, String>>) JsonHelper.readJson( entity );
@@ -329,9 +327,8 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
          */
         assertTrue( "scores are reversed", score2 > score1 );
 
-        entity = gen().expectedStatus( 200 ).get(
-                functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Builder~%20AND%20Gender:Male&order=index" ).entity();
+        entity = gen().expectedStatus( 200 ).get( functionalTestHelper.indexNodeUri( indexName ) + "?query=" + key +
+                ":Builder~%20AND%20Gender:Male&order=index" ).entity();
 
         hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
@@ -355,7 +352,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
 
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Builder~%20AND%20Gender:Male&order=score" ).entity();
+                        + "?query=" + key + ":Builder~%20AND%20Gender:Male&order=score" ).entity();
 
         hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );

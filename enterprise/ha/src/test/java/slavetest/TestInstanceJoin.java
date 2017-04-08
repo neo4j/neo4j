@@ -109,7 +109,8 @@ public class TestInstanceJoin
 
             try ( Transaction ignore = slave.beginTx() )
             {
-                assertEquals( "store contents differ", importantNodeCount+1, nodesHavingProperty( slave, key, value ) );
+                assertEquals( "store contents differ", importantNodeCount + 1,
+                        nodesHavingProperty( slave, key, value ) );
             }
         }
         finally

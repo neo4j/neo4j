@@ -48,7 +48,6 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
@@ -107,7 +106,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             @Override
             protected boolean matchesSafely( List<String> lines )
             {
-                if(expectedLinePatterns.length > lines.size())
+                if ( expectedLinePatterns.length > lines.size() )
                 {
                     return false;
                 }

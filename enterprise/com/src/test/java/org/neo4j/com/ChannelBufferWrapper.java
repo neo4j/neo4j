@@ -19,6 +19,11 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ByteBufferBackedChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBufferFactory;
+import org.jboss.netty.buffer.ChannelBufferIndexFinder;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,11 +32,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
-
-import org.jboss.netty.buffer.ByteBufferBackedChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferFactory;
-import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
@@ -718,7 +718,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     {
         try
         {
-            return (short) (delegate.get()&0xFF);
+            return (short) (delegate.get() & 0xFF);
         }
         catch ( ReadPastEndException e )
         {
@@ -744,7 +744,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     {
         try
         {
-            return delegate.getShort()&0xFFFF;
+            return delegate.getShort() & 0xFFFF;
         }
         catch ( ReadPastEndException e )
         {
@@ -791,7 +791,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     {
         try
         {
-            return delegate.getInt()&0xFFFFFFFFL;
+            return delegate.getInt() & 0xFFFFFFFFL;
         }
         catch ( ReadPastEndException e )
         {
@@ -990,7 +990,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     @Override
     public void skipBytes( int length )
     {
-        delegate.positionReader( delegate.readerPosition()+length );
+        delegate.positionReader( delegate.readerPosition() + length );
     }
 
     @Override
@@ -1258,7 +1258,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     @Override
     public int bytesBefore( int index, int length, byte value )
     {
-        int foundIndex = indexOf( index, index+length, value );
+        int foundIndex = indexOf( index, index + length, value );
         return foundIndex == -1 ? -1 : foundIndex - index;
     }
 

@@ -53,7 +53,7 @@ public class EnterpriseInProcessServerBuilderTest
         workDir.mkdir();
 
         // When
-        try(ServerControls server = getTestServerBuilder( workDir ).newServer())
+        try (ServerControls server = getTestServerBuilder( workDir ).newServer())
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );

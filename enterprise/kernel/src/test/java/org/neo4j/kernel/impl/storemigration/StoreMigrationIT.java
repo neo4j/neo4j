@@ -255,7 +255,7 @@ public class StoreMigrationIT
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( );
         ConsistencyCheckService.Result result =
                 runConsistencyChecker( db, fs, consistencyCheckService, to.storeVersion() );
-        if( !result.isSuccessful() )
+        if ( !result.isSuccessful() )
         {
             fail( "Database is inconsistent after migration." );
         }

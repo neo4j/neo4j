@@ -162,9 +162,9 @@ public class HTTP
 
         public Response request( String method, String uri, Object payload )
         {
-            if(payload == null)
+            if ( payload == null )
             {
-                return request(method, uri);
+                return request( method, uri );
             }
             String jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom(
                     payload );

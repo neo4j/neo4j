@@ -86,8 +86,8 @@ public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelat
             int propertyBlockCount = batch.propertyBlocksLengths[i];
 
             // Create relationship
-            long startNodeId = batch.ids[i*2];
-            long endNodeId = batch.ids[i*2+1];
+            long startNodeId = batch.ids[i * 2];
+            long endNodeId = batch.ids[i * 2 + 1];
             if ( startNodeId != -1 && endNodeId != -1 )
             {
                 long id = relationshipIdGenerator.nextId();

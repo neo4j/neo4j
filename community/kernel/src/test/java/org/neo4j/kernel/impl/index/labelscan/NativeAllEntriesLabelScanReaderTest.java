@@ -179,7 +179,7 @@ public class NativeAllEntriesLabelScanReaderTest
                     {
                         long nodeId = baseNodeId + Long.numberOfTrailingZeros( bits );
                         result.computeIfAbsent( nodeId, id -> new ArrayList<>() ).add( (long) label.labelId );
-                        bits &= bits-1;
+                        bits &= bits - 1;
                     }
                 }
             }

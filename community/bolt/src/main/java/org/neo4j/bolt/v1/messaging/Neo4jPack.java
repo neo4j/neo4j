@@ -397,7 +397,7 @@ public class Neo4jPack
                         case STRING:
                             key = unpackString();
                             val = unpack();
-                            if( map.put( key, val ) != null )
+                            if ( map.put( key, val ) != null )
                             {
                                 errors.add(
                                         Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
@@ -438,9 +438,9 @@ public class Neo4jPack
                     }
 
                     Object val = unpack();
-                    if( map.put( key, val ) != null )
+                    if ( map.put( key, val ) != null )
                     {
-                        errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ));
+                        errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
                     }
                 }
             }

@@ -79,7 +79,7 @@ public class NodeLabelsCacheTest
         int[][] expectedLabels = new int[numberOfNodes][];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            int[] labels = randomLabels( random.nextInt( 30 )+1, highLabelId );
+            int[] labels = randomLabels( random.nextInt( 30 ) + 1, highLabelId );
             expectedLabels[i] = labels;
             cache.put( i, asLongArray( labels ) );
         }

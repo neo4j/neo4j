@@ -255,7 +255,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
 
-        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles +"]";
+        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
 
         // Then
         assertThat( client, eventuallyReceives(
@@ -281,7 +281,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                 run( "CREATE ()" ),
                 pullAll() ) );
 
-        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles +"]";
+        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
 
         // Then
         assertThat( client, eventuallyReceives(

@@ -19,11 +19,11 @@
  */
 package org.neo4j.com;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+
+import static org.junit.Assert.assertEquals;
 
 public class ToAssertionWriter implements MadeUpWriter
 {
@@ -46,7 +46,7 @@ public class ToAssertionWriter implements MadeUpWriter
                 while ( intermediate.remaining() > 0 )
                 {
                     byte value = intermediate.get();
-                    assertEquals( (index++)%10, value );
+                    assertEquals( (index++) % 10, value );
                 }
             }
             catch ( IOException e )

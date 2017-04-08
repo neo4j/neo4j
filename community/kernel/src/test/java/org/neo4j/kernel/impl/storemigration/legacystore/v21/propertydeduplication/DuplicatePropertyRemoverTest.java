@@ -87,13 +87,13 @@ public class DuplicatePropertyRemoverTest
             node = db.createNode( nodeLabel );
             nodeId = node.getId();
 
-            for( int i = 0; i < PROPERTY_COUNT; i ++ )
+            for ( int i = 0; i < PROPERTY_COUNT; i++ )
             {
                 String propKey = "key" + i;
                 propertyNames.add( propKey );
                 String propValue = "value" + i;
                 boolean isBigProp = ThreadLocalRandom.current().nextBoolean();
-                if( isBigProp )
+                if ( isBigProp )
                 {
                     propValue += propValue;
                     propValue += propValue;
@@ -151,7 +151,7 @@ public class DuplicatePropertyRemoverTest
     {
         long nextPropId = nodeRecord.getNextProp();
         int propBlockCount = 0;
-        while( nextPropId != Record.NO_NEXT_PROPERTY.intValue() )
+        while ( nextPropId != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = getRecord( propertyStore, nextPropId );
             PropertyBlock propertyBlock = propRecord.getPropertyBlock( propertyKeyId );
@@ -214,11 +214,11 @@ public class DuplicatePropertyRemoverTest
         assertTrue( nextProp != Record.NO_NEXT_PROPERTY.intValue() );
         boolean found = false;
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        while( nextProp != Record.NO_NEXT_PROPERTY.intValue() && !found )
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() && !found )
         {
             propertyStore.getRecord( nextProp, propertyRecord, NORMAL );
             PropertyBlock propertyBlock = propertyRecord.removePropertyBlock( propertyKeyId );
-            if( propertyBlock != null )
+            if ( propertyBlock != null )
             {
                 found = true;
                 propertyStore.updateRecord( propertyRecord );

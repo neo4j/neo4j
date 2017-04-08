@@ -141,7 +141,7 @@ public class Terms
             {
                 return i - 1;
             }
-            else if( indexes[i] == index )
+            else if ( indexes[i] == index )
             {
                 return i;
             }

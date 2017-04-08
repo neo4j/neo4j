@@ -424,7 +424,7 @@ public class TransactionIT
             {
                 for ( int i = 0; i < batchSize; i++ )
                 {
-                    out.write( format( "%d %d\n", i, i*i ) );
+                    out.write( format( "%d %d\n", i, i * i ) );
                     i++;
                 }
             }

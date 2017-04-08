@@ -415,7 +415,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             // labels
             labelField = channel.getLong();
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
-            if( hasSecondaryUnit )
+            if ( hasSecondaryUnit )
             {
                 record.setSecondaryUnitId( channel.getLong() );
             }

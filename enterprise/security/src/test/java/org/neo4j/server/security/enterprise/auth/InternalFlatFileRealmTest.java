@@ -381,7 +381,7 @@ public class InternalFlatFileRealmTest
         @Override
         public String getName()
         {
-            return "TestRealm wrapping "+ super.getName();
+            return "TestRealm wrapping " + super.getName();
         }
 
         @Override

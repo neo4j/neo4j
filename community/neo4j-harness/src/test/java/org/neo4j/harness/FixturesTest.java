@@ -60,8 +60,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = getServerBuilder( targetFolder )
-                .withFixture( fixture ).newServer())
+        try ( ServerControls server = getServerBuilder( targetFolder ).withFixture( fixture ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -92,8 +91,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = getServerBuilder( targetFolder )
-                .withFixture( targetFolder ).newServer())
+        try ( ServerControls server = getServerBuilder( targetFolder ).withFixture( targetFolder ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -118,10 +116,10 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = getServerBuilder( targetFolder )
+        try ( ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( fixture1 )
                 .withFixture( fixture2 )
-                .newServer())
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -138,9 +136,9 @@ public class FixturesTest
         File targetFolder = testDir.directory();
 
         // When
-        try(ServerControls server = getServerBuilder( targetFolder )
+        try ( ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( "CREATE (a:User)" )
-                .newServer())
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -161,8 +159,8 @@ public class FixturesTest
         FileUtils.writeToFile( new File(targetFolder, "fixture2.cyp"), "", false);
 
         // When
-        try(ServerControls server = getServerBuilder( targetFolder )
-                .withFixture( targetFolder ).newServer())
+        try ( ServerControls server = getServerBuilder( targetFolder )
+                .withFixture( targetFolder ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -180,12 +178,12 @@ public class FixturesTest
         FileUtils.writeToFile( new File(targetFolder, "fixture1.cyp"), "this is not a valid cypher statement", false);
 
         // When
-        try(ServerControls ignore = getServerBuilder( targetFolder )
-                .withFixture( targetFolder ).newServer())
+        try ( ServerControls ignore = getServerBuilder( targetFolder )
+                .withFixture( targetFolder ).newServer() )
         {
             fail("Should have thrown exception");
         }
-        catch(RuntimeException e)
+        catch ( RuntimeException e )
         {
             assertThat( e.getMessage(), equalTo(
                     "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() +

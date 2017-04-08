@@ -31,12 +31,11 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 
+import static java.lang.Integer.parseInt;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class TicketedProcessingTest
@@ -56,7 +55,7 @@ public class TicketedProcessingTest
             {
                 park.park( Thread.currentThread() );
             }
-            return from*2;
+            return from * 2;
         };
         int processorCount = Runtime.getRuntime().availableProcessors();
         Future<Void> assertions;
@@ -75,7 +74,7 @@ public class TicketedProcessingTest
                     {
                         Integer next = processing.next();
                         assertNotNull( next );
-                        assertEquals( i*2, next.intValue() );
+                        assertEquals( i * 2, next.intValue() );
                     }
                     assertNull( processing.next() );
                     return null;

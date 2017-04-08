@@ -85,15 +85,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
         int arrayLength = Array.getLength( array );
         int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength);
-        int totalBits = requiredBits*arrayLength;
-        int numberOfBytes = (totalBits-1)/8+1;
-        int bitsUsedInLastByte = totalBits%8;
+        int totalBits = requiredBits * arrayLength;
+        int numberOfBytes = (totalBits - 1) / 8 + 1;
+        int bitsUsedInLastByte = totalBits % 8;
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
         numberOfBytes += NUMBER_HEADER_SIZE; // type + rest + requiredBits header. TODO no need to use full bytes
         byte[] bytes;
         if ( isByteArray )
         {
-            bytes = new byte[NUMBER_HEADER_SIZE+ arrayLength];
+            bytes = new byte[NUMBER_HEADER_SIZE + arrayLength];
             bytes[0] = (byte) type.intValue();
             bytes[1] = (byte) bitsUsedInLastByte;
             bytes[2] = (byte) requiredBits;
@@ -106,7 +106,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 Byte[] source = (Byte[]) array;
                 for ( int i = 0; i < source.length; i++ )
                 {
-                    bytes[NUMBER_HEADER_SIZE+i] = source[i];
+                    bytes[NUMBER_HEADER_SIZE + i] = source[i];
                 }
             }
         }
@@ -177,7 +177,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         byte typeId = header[0];
         if ( typeId == PropertyType.STRING.intValue() )
         {
-            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length-1 );
+            ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length - 1 );
             int arrayLength = headerBuffer.getInt();
             String[] result = new String[arrayLength];
 
@@ -208,8 +208,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
             else
             {   // Fallback to the generic approach, which is a slower
                 Bits bits = Bits.bitsFromBytes( bArray );
-                int length = (bArray.length*8-(8-bitsUsedInLastByte))/requiredBits;
-                result = type.createArray(length, bits, requiredBits);
+                int length = (bArray.length * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
+                result = type.createArray( length, bits, requiredBits );
             }
             return result;
         }

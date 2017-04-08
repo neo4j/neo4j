@@ -120,7 +120,7 @@ public class ReadGroupsFromCacheStepTest
             processCounter.incrementAndGet();
             if ( batch.length > 0 )
             {
-                lastBatchLastOwningNode = batch[batch.length-1].getOwningNode();
+                lastBatchLastOwningNode = batch[batch.length - 1].getOwningNode();
             }
         }
     }

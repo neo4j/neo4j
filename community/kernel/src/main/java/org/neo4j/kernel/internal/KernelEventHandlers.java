@@ -63,7 +63,7 @@ public class KernelEventHandlers
     public void shutdown()
         throws Throwable
     {
-        for( KernelEventHandler kernelEventHandler : kernelEventHandlers )
+        for ( KernelEventHandler kernelEventHandler : kernelEventHandlers )
         {
             kernelEventHandler.beforeShutdown();
         }
@@ -71,23 +71,22 @@ public class KernelEventHandlers
 
     public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
     {
-        if( this.kernelEventHandlers.contains( handler ) )
+        if ( this.kernelEventHandlers.contains( handler ) )
         {
             return handler;
         }
 
         // Some algo for putting it in the right place
-        for( KernelEventHandler registeredHandler : this.kernelEventHandlers )
+        for ( KernelEventHandler registeredHandler : this.kernelEventHandlers )
         {
-            KernelEventHandler.ExecutionOrder order =
-                handler.orderComparedTo( registeredHandler );
+            KernelEventHandler.ExecutionOrder order = handler.orderComparedTo( registeredHandler );
             int index = this.kernelEventHandlers.indexOf( registeredHandler );
-            if( order == KernelEventHandler.ExecutionOrder.BEFORE )
+            if ( order == KernelEventHandler.ExecutionOrder.BEFORE )
             {
                 this.kernelEventHandlers.add( index, handler );
                 return handler;
             }
-            else if( order == KernelEventHandler.ExecutionOrder.AFTER )
+            else if ( order == KernelEventHandler.ExecutionOrder.AFTER )
             {
                 this.kernelEventHandlers.add( index + 1, handler );
                 return handler;
@@ -100,7 +99,7 @@ public class KernelEventHandlers
 
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
     {
-        if( !kernelEventHandlers.remove( handler ) )
+        if ( !kernelEventHandlers.remove( handler ) )
         {
             throw new IllegalStateException( handler + " isn't registered" );
         }
@@ -109,13 +108,13 @@ public class KernelEventHandlers
 
     public void kernelPanic( ErrorState error, Throwable cause )
     {
-        for( KernelEventHandler handler : kernelEventHandlers )
+        for ( KernelEventHandler handler : kernelEventHandlers )
         {
             try
             {
                 handler.kernelPanic( error );
             }
-            catch( Throwable e )
+            catch ( Throwable e )
             {
                 if ( cause != null )
                 {

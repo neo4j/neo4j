@@ -87,7 +87,7 @@ public class ManualAcquireLockTest
         {
             worker.finishTx();
         }
-        catch(ExecutionException e)
+        catch ( ExecutionException e )
         {
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }
@@ -141,7 +141,7 @@ public class ManualAcquireLockTest
         {
             worker.finishTx();
         }
-        catch(ExecutionException e)
+        catch ( ExecutionException e )
         {
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }

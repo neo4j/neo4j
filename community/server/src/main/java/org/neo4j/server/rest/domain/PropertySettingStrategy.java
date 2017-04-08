@@ -70,7 +70,7 @@ public class PropertySettingStrategy
     {
         for ( String entityPropertyKey : entity.getPropertyKeys() )
         {
-            if( ! propertiesThatShouldExist.contains( entityPropertyKey ))
+            if ( !propertiesThatShouldExist.contains( entityPropertyKey ) )
             {
                 entity.removeProperty( entityPropertyKey );
             }
@@ -103,17 +103,14 @@ public class PropertySettingStrategy
                 // on the entity, and either leave it intact if it is empty, or set it to an empty collection
                 // of the same type as the original
                 Object currentValue = entity.getProperty( key, null );
-                if(currentValue != null &&
-                   currentValue.getClass().isArray())
+                if ( currentValue != null && currentValue.getClass().isArray() )
                 {
                     if ( Array.getLength( currentValue ) == 0 )
                     {
                         // Ok, leave it this way
                         return;
                     }
-
-                    value = emptyArrayOfType(currentValue.getClass().getComponentType());
-
+                    value = emptyArrayOfType( currentValue.getClass().getComponentType() );
                 }
                 else
                 {

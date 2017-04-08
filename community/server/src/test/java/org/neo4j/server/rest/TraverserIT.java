@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -39,7 +39,6 @@ import org.neo4j.test.GraphDescription.NODE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
@@ -55,7 +54,7 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @Graph( nodes = {@NODE(name="I")} )
+    @Graph( nodes = {@NODE(name = "I")} )
     public void shouldGet200WhenNoHitsFromTraversing()
     {
         assertSize( 0,gen().expectedStatus( 200 ).payload( "" ).post(

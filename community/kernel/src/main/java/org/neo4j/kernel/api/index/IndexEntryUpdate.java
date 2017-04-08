@@ -159,7 +159,7 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
 
     public Object[] beforeValues()
     {
-        if( before == null )
+        if ( before == null )
         {
             throw new UnsupportedOperationException( "beforeValues is only valid for `UpdateMode.CHANGED" );
         }

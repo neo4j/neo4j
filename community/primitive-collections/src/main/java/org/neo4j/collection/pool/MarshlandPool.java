@@ -84,7 +84,7 @@ public class MarshlandPool<T> implements Pool<T>
         LocalSlot<T> localSlot = puddle.get();
 
         T object = localSlot.object;
-        if(object != null)
+        if ( object != null )
         {
             localSlot.set( null );
             return object;
@@ -92,7 +92,7 @@ public class MarshlandPool<T> implements Pool<T>
 
         // Try the reference queue, containing objects from dead threads
         LocalSlotReference<T> slotReference = (LocalSlotReference) objectsFromDeadThreads.poll();
-        if( slotReference != null && slotReference.object != null )
+        if ( slotReference != null && slotReference.object != null )
         {
             slotReferences.remove( slotReference );
             return slotReference.object;
@@ -108,9 +108,9 @@ public class MarshlandPool<T> implements Pool<T>
         // Return it locally if possible
         LocalSlot<T> localSlot = puddle.get();
 
-        if(localSlot.object == null)
+        if ( localSlot.object == null )
         {
-            localSlot.set(obj);
+            localSlot.set( obj );
         }
 
         // Fall back to the delegate pool
@@ -128,10 +128,10 @@ public class MarshlandPool<T> implements Pool<T>
         for ( LocalSlotReference slotReference : slotReferences )
         {
             LocalSlot<T> slot = (LocalSlot) slotReference.get();
-            if(slot != null)
+            if ( slot != null )
             {
                 T obj = slot.object;
-                if(obj != null)
+                if ( obj != null )
                 {
                     slot.set( null );
                     pool.release( obj );
@@ -139,7 +139,7 @@ public class MarshlandPool<T> implements Pool<T>
             }
         }
 
-        for(LocalSlotReference<T> reference = (LocalSlotReference) objectsFromDeadThreads.poll();
+        for ( LocalSlotReference<T> reference = (LocalSlotReference) objectsFromDeadThreads.poll();
             reference != null;
             reference = (LocalSlotReference) objectsFromDeadThreads.poll() )
         {

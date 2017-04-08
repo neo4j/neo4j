@@ -602,7 +602,7 @@ public class Neo4jMatchers
             protected boolean matchesSafely( Deferred<?> deferred, Description description )
             {
                 Collection<?> collection = deferred.collection();
-                if(!collection.isEmpty())
+                if ( !collection.isEmpty() )
                 {
                     description.appendText( "was " + collection.toString() );
                     return false;

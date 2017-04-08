@@ -50,8 +50,8 @@ class DebugMonitor extends Monitor.Adapter
         while ( hopBits > 0 )
         {
             int indexDistance = Long.numberOfTrailingZeros( hopBits );
-            hopBits &= hopBits-1;
-            builder.append( builder.length() > 1 ? "," : "" ).append( indexDistance+1 );
+            hopBits &= hopBits - 1;
+            builder.append( builder.length() > 1 ? "," : "" ).append( indexDistance + 1 );
         }
         return builder.append( "]" ).toString();
     }

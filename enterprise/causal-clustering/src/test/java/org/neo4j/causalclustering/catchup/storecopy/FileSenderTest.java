@@ -150,7 +150,7 @@ public class FileSenderTest
         random.nextBytes( bytes );
 
         File smallFile = testDirectory.file( "smallFile" );
-        try( StoreChannel storeChannel = fs.create( smallFile ) )
+        try ( StoreChannel storeChannel = fs.create( smallFile ) )
         {
             storeChannel.write( ByteBuffer.wrap( bytes ) );
         }

@@ -89,7 +89,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
                 cursor.setCursorException( "PropertyRecord claims to have more property blocks than can fit in a record" );
                 return;
             }
-            while ( additionalBlocks --> 0 )
+            while ( additionalBlocks-- > 0 )
             {
                 record.addLoadedBlock( cursor.getLong() );
             }

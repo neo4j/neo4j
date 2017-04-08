@@ -57,7 +57,7 @@ public class DbRepresentation
     public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
         int retryCount = 5;
-        while( true )
+        while ( true )
         {
             try ( Transaction ignore = db.beginTx() )
             {
@@ -67,12 +67,13 @@ public class DbRepresentation
                     NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
                     result.nodes.put( node.getId(), nodeRep );
                     result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-                    result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                    result.highestRelationshipId =
+                            Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
 
                 }
                 return result;
             }
-            catch( TransactionFailureException e )
+            catch ( TransactionFailureException e )
             {
                 if ( retryCount-- < 0 )
                 {

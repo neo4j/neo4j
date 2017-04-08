@@ -35,7 +35,7 @@ public class TimeCheckPointThreshold extends AbstractCheckPointThreshold
         this.timeMillisThreshold = thresholdMillis;
         this.clock = clock;
         // The random start offset means database in a cluster will not all check-point at the same time.
-        long randomStartOffset = thresholdMillis > 0? ThreadLocalRandom.current().nextLong( thresholdMillis ) : 0;
+        long randomStartOffset = thresholdMillis > 0 ? ThreadLocalRandom.current().nextLong( thresholdMillis ) : 0;
         this.nextCheckPointTime = clock.millis() + thresholdMillis + randomStartOffset;
 
     }

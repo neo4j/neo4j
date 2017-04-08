@@ -487,7 +487,7 @@ public class Cluster
                         DbRepresentation representationThatChanges = DbRepresentation.of( memberThatChanges.database() );
                         return representationToLookLike.equals( representationThatChanges );
                     }
-                    catch( DatabaseShutdownException e )
+                    catch ( DatabaseShutdownException e )
                     {
                     /*
                      * This can happen if the database is still in the process of starting. Yes, the naming

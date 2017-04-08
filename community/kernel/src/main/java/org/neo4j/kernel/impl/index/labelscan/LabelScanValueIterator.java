@@ -116,7 +116,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
     private boolean nextFromCurrent()
     {
         int delta = Long.numberOfTrailingZeros( bits );
-        bits &= bits-1;
+        bits &= bits - 1;
         return next( baseNodeId + delta );
     }
 }

@@ -111,7 +111,7 @@ public enum HeartbeatMessage
         @Override
         public String toString()
         {
-            return "Suspicions:"+suspicions;
+            return "Suspicions:" + suspicions;
         }
 
         @Override

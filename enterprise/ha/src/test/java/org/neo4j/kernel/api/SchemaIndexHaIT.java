@@ -295,7 +295,7 @@ public class SchemaIndexHaIT
     {
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            if( db != slaveToIgnore && db.getInstanceState() == HighAvailabilityMemberState.SLAVE )
+            if ( db != slaveToIgnore && db.getInstanceState() == HighAvailabilityMemberState.SLAVE )
             {
                 dbFactory.triggerFinish( db );
             }
@@ -375,7 +375,7 @@ public class SchemaIndexHaIT
             IndexDefinition index = reHomedIndexDefinition( db, requestedIndex );
 
             long timeout = System.currentTimeMillis() + SECONDS.toMillis( 120 );
-            while( !indexOnline( index, db ) )
+            while ( !indexOnline( index, db ) )
             {
                 Thread.sleep( 1 );
                 if ( System.currentTimeMillis() > timeout )
@@ -566,7 +566,7 @@ public class SchemaIndexHaIT
         @Override
         public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
         {
-            if(injectLatchPredicate.test( deps.db() ))
+            if ( injectLatchPredicate.test( deps.db() ) )
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
                         new LuceneSchemaIndexProvider( fileSystemRule.get(),

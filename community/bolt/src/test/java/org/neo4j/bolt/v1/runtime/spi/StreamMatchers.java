@@ -38,14 +38,14 @@ public class StreamMatchers
             @Override
             protected boolean matchesSafely( Record item )
             {
-                if(expectedFieldValues.length != item.fields().length)
+                if ( expectedFieldValues.length != item.fields().length )
                 {
                     return false;
                 }
 
                 for ( int i = 0; i < item.fields().length; i++ )
                 {
-                    if(!expectedFieldValues[i].matches( item.fields()[i] ))
+                    if ( !expectedFieldValues[i].matches( item.fields()[i] ) )
                     {
                         return false;
                     }
@@ -70,7 +70,7 @@ public class StreamMatchers
             @Override
             protected boolean matchesSafely( BoltResult item )
             {
-                if(!Arrays.equals(fieldNames, item.fieldNames()))
+                if ( !Arrays.equals( fieldNames, item.fieldNames() ) )
                 {
                     return false;
                 }

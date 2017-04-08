@@ -163,7 +163,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public URI boltURI()
     {
-        if(controls == null)
+        if ( controls == null )
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
@@ -172,7 +172,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public URI httpURI()
     {
-        if(controls == null)
+        if ( controls == null )
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
@@ -181,7 +181,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public URI httpsURI()
     {
-        if(controls == null)
+        if ( controls == null )
         {
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }

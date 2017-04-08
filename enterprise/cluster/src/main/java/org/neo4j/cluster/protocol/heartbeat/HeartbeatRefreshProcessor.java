@@ -62,7 +62,7 @@ public class HeartbeatRefreshProcessor implements MessageProcessor
                             serverId ) );
                 }
             }
-            catch( URISyntaxException e )
+            catch ( URISyntaxException e )
             {
                 e.printStackTrace();
             }

@@ -629,7 +629,7 @@ public enum LongerShortString
     int maxLength( int payloadSize )
     {
         // key-type-encoding-length
-        return ((payloadSize << 3)-24-4-4-6)/step;
+        return ((payloadSize << 3) - 24 - 4 - 4 - 6) / step;
     }
 
     final IllegalArgumentException cannotEncode( byte b )
@@ -1067,7 +1067,7 @@ public enum LongerShortString
             if ( maskShift >= 64 )
             {
                 maskShift %= 64;
-                codePoint |= (blocks[++block] & (0xFF >>> (8-maskShift))) << (8-maskShift);
+                codePoint |= (blocks[++block] & (0xFF >>> (8 - maskShift))) << (8 - maskShift);
             }
             result[i] = codePoint;
         }
@@ -1086,7 +1086,7 @@ public enum LongerShortString
             if ( maskShift >= 64 )
             {
                 maskShift %= 64;
-                codePoint |= (blocks[++block] & (0xFF >>> (8-maskShift))) << (8-maskShift);
+                codePoint |= (blocks[++block] & (0xFF >>> (8 - maskShift))) << (8 - maskShift);
             }
             result[i] = codePoint;
         }

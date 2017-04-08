@@ -94,7 +94,7 @@ public class RepresentationTestAccess
         {
             throw new IllegalArgumentException( "'" + nodeUri + "' isn't a node URI" );
         }
-        return Long.parseLong( nodeUri.substring( lastSlash+1 ) );
+        return Long.parseLong( nodeUri.substring( lastSlash + 1 ) );
     }
 
     private static class StringFormat extends RepresentationFormat

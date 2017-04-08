@@ -53,7 +53,7 @@ public final class ConfigurationChange
     @Override
     public String toString()
     {
-        return name+":"+oldValue+"->"+newValue;
+        return name + ":" + oldValue + "->" + newValue;
     }
 
     @Override

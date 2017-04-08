@@ -222,7 +222,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             {
                 int key = getOrCreateId( properties[cursor++] );
                 Object value = properties[cursor++];
-                target[offset+i] = creator.encodeValue( new PropertyBlock(), key, value );
+                target[offset + i] = creator.encodeValue( new PropertyBlock(), key, value );
             }
         }
     }

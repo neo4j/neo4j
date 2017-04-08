@@ -43,7 +43,9 @@ public enum TraverserReturnType
         {
             Relationship lastRelationship = position.lastRelationship();
 
-            return lastRelationship != null? new org.neo4j.server.rest.repr.RelationshipRepresentation( lastRelationship ): Representation.emptyRepresentation();
+            return lastRelationship != null ?
+                   new org.neo4j.server.rest.repr.RelationshipRepresentation( lastRelationship ) :
+                   Representation.emptyRepresentation();
         }
     },
     path( RepresentationType.PATH )

@@ -268,8 +268,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             // begin and execute and commit
             Response response = http.POST(
                     "/db/data/transaction/commit",
-                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT "+batch+" LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE ()' } ] }" )
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batch + " LOAD CSV FROM " +
+                            "\\\"" + url + "\\\" AS line CREATE ()' } ] }" )
             );
 
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
@@ -300,8 +300,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             // begin and execute and commit
             Response response = http.POST(
                     "/db/data/transaction/commit",
-                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT "+batch+" LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batch + " LOAD CSV FROM " +
+                            "\\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
             );
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
@@ -336,8 +336,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             // begin and execute and commit
             Response response = http.POST(
                     "/db/data/transaction/commit",
-                    quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT "+batch+" LOAD CSV FROM" +
-                                " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+                    quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT " + batch +
+                            " LOAD CSV FROM" + " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
             );
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 

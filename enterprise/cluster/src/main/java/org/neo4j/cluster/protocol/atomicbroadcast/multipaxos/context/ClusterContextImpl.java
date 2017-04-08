@@ -396,7 +396,7 @@ class ClusterContextImpl
             {
                 result.add( new InstanceId( Integer.parseInt( instanceId.trim() ) ) );
             }
-            catch( NumberFormatException e )
+            catch ( NumberFormatException e )
             {
                 /*
                  * This will happen if the message did not contain a DISCOVERY header. There are two reasons for this.

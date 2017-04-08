@@ -86,7 +86,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         File file = new File( fileName );
         long[] ids = null; // null means all possible ids
 
-        if( file.isFile() )
+        if ( file.isFile() )
         {
                 /* If file exists, even with : in its path, then accept it straight off. */
         }

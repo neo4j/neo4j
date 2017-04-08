@@ -29,7 +29,7 @@ public class FailingByteChannel extends KnownDataByteChannel
 
     public FailingByteChannel( int sizeToFailAt, String failWithMessage )
     {
-        super( sizeToFailAt*2 );
+        super( sizeToFailAt * 2 );
         this.sizeToFailAt = sizeToFailAt;
         this.failWithMessage = failWithMessage;
     }

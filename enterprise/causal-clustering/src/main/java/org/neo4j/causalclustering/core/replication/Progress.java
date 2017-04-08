@@ -47,7 +47,7 @@ public class Progress
 
     public void awaitReplication( long timeoutMillis ) throws InterruptedException
     {
-        if( !isReplicated )
+        if ( !isReplicated )
         {
             replicationSignal.tryAcquire( timeoutMillis, MILLISECONDS );
         }

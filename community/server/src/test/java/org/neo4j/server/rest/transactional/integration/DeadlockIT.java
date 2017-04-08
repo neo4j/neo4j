@@ -51,7 +51,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
     public void shouldReturnCorrectStatusCodeOnDeadlock() throws Exception
     {
         // Given
-        try( Transaction tx = graphdb().beginTx() )
+        try ( Transaction tx = graphdb().beginTx() )
         {
             graphdb().createNode( Label.label( "First" ) );
             graphdb().createNode( Label.label( "Second" ) );

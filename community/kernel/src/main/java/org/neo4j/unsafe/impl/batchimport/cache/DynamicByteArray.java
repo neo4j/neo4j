@@ -44,10 +44,10 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
         byte[] transport = defaultValue.clone();
         for ( int i = 0; i < numberOfEntries; i++ )
         {
-            get( fromIndex+i, intermediary );
-            get( toIndex+i, transport );
-            set( fromIndex+i, transport );
-            set( toIndex+i, intermediary );
+            get( fromIndex + i, intermediary );
+            get( toIndex + i, transport );
+            set( fromIndex + i, transport );
+            set( toIndex + i, intermediary );
         }
     }
 

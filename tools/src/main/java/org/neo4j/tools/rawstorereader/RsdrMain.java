@@ -183,8 +183,8 @@ public class RsdrMain
             String upper = matcher.group( "upper" );
             String fname = matcher.group( "fname" );
             String regex = matcher.group( "regex" );
-            Pattern pattern = regex != null? Pattern.compile( regex ) : null;
-            long fromId = lower != null? Long.parseLong( lower ) : 0L;
+            Pattern pattern = regex != null ? Pattern.compile( regex ) : null;
+            long fromId = lower != null ? Long.parseLong( lower ) : 0L;
             long toId = upper != null ? Long.parseLong( upper ) : Long.MAX_VALUE;
 
             RecordStore store = getStore( fname, neoStores );
@@ -239,7 +239,7 @@ public class RsdrMain
                 try
                 {
                     AbstractBaseRecord record = RecordStore.getRecord( store, i, CHECK );
-                    use = record.inUse()? "+" : "-";
+                    use = record.inUse() ? "+" : "-";
                     str = record.toString();
                 }
                 catch ( InvalidRecordException e )

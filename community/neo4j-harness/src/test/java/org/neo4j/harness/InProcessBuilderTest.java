@@ -87,11 +87,11 @@ public class InProcessBuilderTest
         workDir.mkdir();
 
         // When
-        try(ServerControls server = getTestServerBuilder( workDir ).newServer())
+        try ( ServerControls server = getTestServerBuilder( workDir ).newServer() )
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );
-            assertThat( workDir.list().length, equalTo(1));
+            assertThat( workDir.list().length, equalTo( 1 ) );
         }
 
         // And after it's been closed, it should've cleaned up after itself.
@@ -134,9 +134,9 @@ public class InProcessBuilderTest
     public void shouldMountUnmanagedExtensionsByClass() throws Exception
     {
         // When
-        try(ServerControls server = getTestServerBuilder( testDir.directory() )
+        try ( ServerControls server = getTestServerBuilder( testDir.directory() )
                 .withExtension( "/path/to/my/extension", MyUnmanagedExtension.class )
-                .newServer())
+                .newServer() )
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
@@ -148,9 +148,9 @@ public class InProcessBuilderTest
     public void shouldMountUnmanagedExtensionsByPackage() throws Exception
     {
         // When
-        try(ServerControls server = getTestServerBuilder( testDir.directory() )
+        try ( ServerControls server = getTestServerBuilder( testDir.directory() )
                 .withExtension( "/path/to/my/extension", "org.neo4j.harness.extensionpackage" )
-                .newServer())
+                .newServer() )
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
@@ -162,10 +162,10 @@ public class InProcessBuilderTest
     public void shouldFindFreePort() throws Exception
     {
         // Given one server is running
-        try(ServerControls firstServer = getTestServerBuilder( testDir.directory() ).newServer())
+        try ( ServerControls firstServer = getTestServerBuilder( testDir.directory() ).newServer() )
         {
             // When I start a second server
-            try(ServerControls secondServer = getTestServerBuilder( testDir.directory() ).newServer())
+            try ( ServerControls secondServer = getTestServerBuilder( testDir.directory() ).newServer() )
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
@@ -234,7 +234,7 @@ public class InProcessBuilderTest
     public void shouldOpenBoltPort() throws Throwable
     {
         // given
-        try(ServerControls controls = newInProcessBuilder().newServer() )
+        try ( ServerControls controls = newInProcessBuilder().newServer() )
         {
             URI uri = controls.boltURI();
 
@@ -273,16 +273,16 @@ public class InProcessBuilderTest
         boolean foundKey = false;
         for ( JsonNode attribute : configurationBean )
         {
-            if(attribute.get("name").asText().equals( key ))
+            if ( attribute.get( "name" ).asText().equals( key ) )
             {
-                assertThat(attribute.get("value").asText(), equalTo( expected ));
+                assertThat( attribute.get( "value" ).asText(), equalTo( expected ) );
                 foundKey = true;
                 break;
             }
         }
-        if(!foundKey)
+        if ( !foundKey )
         {
-            fail("No config key '" + key + "'.");
+            fail( "No config key '" + key + "'." );
         }
     }
 
@@ -301,7 +301,8 @@ public class InProcessBuilderTest
 
     private void trustAllSSLCerts() throws NoSuchAlgorithmException, KeyManagementException
     {
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager()
         {
             @Override
             public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
@@ -320,7 +321,8 @@ public class InProcessBuilderTest
             {
                 return null;
             }
-        }};
+        }
+        };
 
         // Install the all-trusting trust manager
         SSLContext sc = SSLContext.getInstance( "TLS" );

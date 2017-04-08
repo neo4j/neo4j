@@ -130,7 +130,7 @@ public class RandomPageCacheTestHarness implements Closeable
      */
     public void setCommandProbabilityFactor( Command command, double probabilityFactor )
     {
-        assert 0.0 <= probabilityFactor: "Probability factor cannot be negative";
+        assert 0.0 <= probabilityFactor : "Probability factor cannot be negative";
         commandProbabilityFactors[command.ordinal()] = probabilityFactor;
     }
 
@@ -471,8 +471,8 @@ public class RandomPageCacheTestHarness implements Closeable
         File[] files = new File[s.length()];
         for ( int i = 0; i < s.length(); i++ )
         {
-            files[i] = new File( s.substring( i, i+1 ) ).getCanonicalFile();
-            fs.mkdirs( files[i].getParentFile()  );
+            files[i] = new File( s.substring( i, i + 1 ) ).getCanonicalFile();
+            fs.mkdirs( files[i].getParentFile() );
             fs.open( files[i], "rw" ).close();
         }
         return files;

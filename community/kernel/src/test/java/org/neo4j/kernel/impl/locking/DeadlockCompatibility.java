@@ -97,17 +97,17 @@ public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compati
         }
 
         long timeout = System.currentTimeMillis() + (1000 * 10);
-        while(System.currentTimeMillis() < timeout)
+        while ( System.currentTimeMillis() < timeout )
         {
-            for ( Pair<Client, Future<Object>> call : calls )
+            for ( Pair<Client,Future<Object>> call : calls )
             {
                 try
                 {
-                    call.other().get(1, TimeUnit.MILLISECONDS);
+                    call.other().get( 1, TimeUnit.MILLISECONDS );
                 }
                 catch ( ExecutionException e )
                 {
-                    if(e.getCause() instanceof DeadlockDetectedException)
+                    if ( e.getCause() instanceof DeadlockDetectedException )
                     {
                         return;
                     }

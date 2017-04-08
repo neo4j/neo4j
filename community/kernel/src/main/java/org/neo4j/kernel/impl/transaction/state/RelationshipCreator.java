@@ -205,14 +205,14 @@ public class RelationshipCreator
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )
             {
-                newCount = firstRel.getFirstPrevRel()+1;
+                newCount = firstRel.getFirstPrevRel() + 1;
                 firstRel.setFirstPrevRel( rel.getId() );
                 firstRel.setFirstInFirstChain( false );
                 changed = true;
             }
             if ( firstRel.getSecondNode() == nodeId )
             {
-                newCount = firstRel.getSecondPrevRel()+1;
+                newCount = firstRel.getSecondPrevRel() + 1;
                 firstRel.setSecondPrevRel( rel.getId() );
                 firstRel.setFirstInSecondChain( false );
                 changed = true;

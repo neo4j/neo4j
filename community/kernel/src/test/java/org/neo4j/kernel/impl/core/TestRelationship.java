@@ -855,9 +855,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node otherNode = getGraphDb().createNode();
         RelationshipType[] types = new RelationshipType[] {withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )};
         int count = 30; // 30*4 > 100 (rel grabSize)
-        for ( int i = 0; i < types.length*count; i++ )
+        for ( int i = 0; i < types.length * count; i++ )
         {
-            node.createRelationshipTo( otherNode, types[i%types.length] );
+            node.createRelationshipTo( otherNode, types[i % types.length] );
         }
         newTransaction();
         int delCount = 0;
@@ -868,7 +868,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             for ( Relationship rel : node.getRelationships( types[1] ) )
             {
                 rel.delete();
-                if ( ++delCount == count/2 )
+                if ( ++delCount == count / 2 )
                 {
                     newTransaction();
                 }

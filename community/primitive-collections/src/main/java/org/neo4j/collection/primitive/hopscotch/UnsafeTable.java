@@ -37,9 +37,9 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         super( capacity, 32 );
         UnsafeUtil.assertHasUnsafe();
         this.bytesPerKey = bytesPerKey;
-        this.bytesPerEntry = 4+bytesPerKey;
+        this.bytesPerEntry = 4 + bytesPerKey;
         this.valueMarker = valueMarker;
-        this.dataSize = (long)this.capacity*bytesPerEntry;
+        this.dataSize = (long) this.capacity * bytesPerEntry;
 
         // Below is a piece of code which ensures that allocated memory is aligned to 4-byte boundary
         // if memory system requires aligned memory access. The reason we pick 4-byte boundary is that
@@ -164,18 +164,18 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     {
         long adr = hopBitsAddress( index );
         int hopBits = UnsafeUtil.getInt( adr );
-        hopBits ^= (1 << hd) | (1 << (hd+delta));
+        hopBits ^= (1 << hd) | (1 << (hd + delta));
         UnsafeUtil.putInt( adr, hopBits );
     }
 
     protected long keyAddress( int index )
     {
-        return address + (index*((long) bytesPerEntry)) + 4;
+        return address + (index * ((long) bytesPerEntry)) + 4;
     }
 
     protected long hopBitsAddress( int index )
     {
-        return address + (index*((long) bytesPerEntry));
+        return address + (index * ((long) bytesPerEntry));
     }
 
     @Override

@@ -33,7 +33,7 @@ public class ScriptExecutorFactoryRepository
 
     public ScriptExecutor.Factory getFactory( String language )
     {
-        if(languages.containsKey( language ))
+        if ( languages.containsKey( language ) )
         {
             return languages.get( language );
         }

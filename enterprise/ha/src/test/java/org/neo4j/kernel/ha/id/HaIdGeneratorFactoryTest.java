@@ -108,17 +108,17 @@ public class HaIdGeneratorFactoryTest
         // THEN
         long startAt = firstResult.getIdRange().getRangeStart();
         long forThatMany = firstResult.getIdRange().getRangeLength();
-        for ( long i =startAt ; i < startAt + forThatMany; i++ )
+        for ( long i = startAt; i < startAt + forThatMany; i++ )
         {
-            assertEquals(i, gen.nextId());
+            assertEquals( i, gen.nextId() );
         }
         verify( master, times( 1 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
 
         startAt = secondResult.getIdRange().getRangeStart();
         forThatMany = secondResult.getIdRange().getRangeLength();
-        for ( long i =startAt ; i < startAt + forThatMany; i++ )
+        for ( long i = startAt; i < startAt + forThatMany; i++ )
         {
-            assertEquals(i, gen.nextId());
+            assertEquals( i, gen.nextId() );
         }
 
         verify( master, times( 2 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
@@ -231,7 +231,7 @@ public class HaIdGeneratorFactoryTest
         // GIVEN
         long[] defragIds = {3, 5};
         int size = 10;
-        long low = IdGeneratorImpl.INTEGER_MINUS_ONE - size/2;
+        long low = IdGeneratorImpl.INTEGER_MINUS_ONE - size / 2;
         IdRange idRange = new IdRange( defragIds, low, size );
 
         // WHEN

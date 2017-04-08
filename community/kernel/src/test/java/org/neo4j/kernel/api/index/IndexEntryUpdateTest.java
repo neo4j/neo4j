@@ -132,6 +132,6 @@ public class IndexEntryUpdateTest
 
     private Object[] arraysOfDepth( int n )
     {
-        return n == 0 ? new Object[]{"hej"} : new Object[]{arraysOfDepth( n-1 )};
+        return n == 0 ? new Object[]{"hej"} : new Object[]{arraysOfDepth( n - 1 )};
     }
 }

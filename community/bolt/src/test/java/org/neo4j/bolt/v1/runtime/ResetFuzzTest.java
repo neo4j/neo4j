@@ -125,7 +125,7 @@ public class ResetFuzzTest
         long deadline = System.currentTimeMillis() + 2 * 1000;
 
         // when
-        while( System.currentTimeMillis() < deadline )
+        while ( System.currentTimeMillis() < deadline )
         {
             dispatchRandomSequenceOfMessages( router );
             assertWorkerWorks( boltWorker );
@@ -144,7 +144,7 @@ public class ResetFuzzTest
             assertThat( machine.state(), equalTo( BoltStateMachine.State.READY ) );
             assertThat( liveTransactions.get(), equalTo( 0L ) );
         }
-        catch( AssertionError e )
+        catch ( AssertionError e )
         {
             throw new AssertionError( String.format( "Expected session to return to good state after RESET, but " +
                                                      "assertion failed: %s.%n" +

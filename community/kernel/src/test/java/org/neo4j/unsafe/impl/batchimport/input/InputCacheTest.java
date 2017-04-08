@@ -289,7 +289,7 @@ public class InputCacheTest
     private Object[] randomProperties( Randoms random )
     {
         int length = random.random().nextInt( 10 );
-        Object[] properties = new Object[length*2];
+        Object[] properties = new Object[length * 2];
         for ( int i = 0; i < properties.length; i++ )
         {
             properties[i++] = random.random().nextFloat() < 0.2f ? random.intBetween( 0, 10 ) : random.among( TOKENS );

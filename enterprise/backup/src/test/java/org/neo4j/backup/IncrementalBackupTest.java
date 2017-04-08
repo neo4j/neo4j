@@ -19,13 +19,13 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import java.io.File;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -197,7 +197,7 @@ public class IncrementalBackupTest
             node.createRelationshipTo( db.createNode(), typeToDelete );
             tx.success();
         }
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node.createRelationshipTo( db.createNode(), theOtherType );
             for ( Relationship relationship : node.getRelationships( Direction.BOTH, typeToDelete ) )

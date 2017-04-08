@@ -90,7 +90,7 @@ public class StreamConsumer implements Runnable
             {
                 if ( !quiet )
                 {
-                    out.write( prefix+line+"\n" );
+                    out.write( prefix + line + "\n" );
                     out.flush();
                 }
             }

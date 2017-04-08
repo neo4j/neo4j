@@ -257,7 +257,7 @@ public class TransactionStateMachine implements StatementProcessor
                             {
                                 ctx.lastStatement = statement;
                             }
-                            if( spi.isPeriodicCommit( statement ) )
+                            if ( spi.isPeriodicCommit( statement ) )
                             {
                                 throw new QueryExecutionKernelException( new InvalidSemanticsException(
                                         "Executing queries that use periodic commit in an " +

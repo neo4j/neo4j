@@ -211,7 +211,7 @@ public class CompositePageCursor extends PageCursor
 
     private int relative( int offset )
     {
-        return offset < firstLength? firstBaseOffset + offset : secondBaseOffset + (offset - firstLength);
+        return offset < firstLength ? firstBaseOffset + offset : secondBaseOffset + (offset - firstLength);
     }
 
     @Override

@@ -362,7 +362,7 @@ public class Jetty9WebServer implements WebServer
         {
             jetty.start();
         }
-        catch( BindException e )
+        catch ( BindException e )
         {
             if ( jettyHttpsAddress.isPresent() )
             {

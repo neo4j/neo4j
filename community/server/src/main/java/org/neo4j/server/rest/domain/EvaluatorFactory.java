@@ -139,9 +139,9 @@ public class EvaluatorFactory
 
             Object out = executor.execute( scriptContext );
 
-            if(out instanceof Boolean)
+            if ( out instanceof Boolean )
             {
-                return (Boolean)out;
+                return (Boolean) out;
             }
 
             throw new EvaluationException("Provided script did not return a boolean value.");

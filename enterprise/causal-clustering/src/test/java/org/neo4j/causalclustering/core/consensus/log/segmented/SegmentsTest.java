@@ -78,7 +78,8 @@ public class SegmentsTest
     public void shouldCreateNext() throws Exception
     {
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
+                logProvider, -1 ) )
         {
             // When
             segments.rotate( 10, 10, 12 );
@@ -97,7 +98,8 @@ public class SegmentsTest
     {
         verifyZeroInteractions( fsa );
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
+                logProvider, -1 ) )
         {
             SegmentFile toPrune = segments.rotate( -1, -1, -1 ); // this is version 0 and will be deleted on prune later
             segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
@@ -116,7 +118,8 @@ public class SegmentsTest
     public void shouldNeverDeleteOnTruncate() throws Exception
     {
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
+                logProvider, -1 ) )
         {
             segments.rotate( -1, -1, -1 );
             segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
@@ -135,7 +138,8 @@ public class SegmentsTest
     public void shouldDeleteTruncatedFilesOnPrune() throws Exception
     {
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try ( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal,
+                logProvider, -1 ) )
         {
             SegmentFile toBePruned = segments.rotate( -1, -1, -1 );
             segments.last().closeWriter(); // need to close writer otherwise dispose will not be called

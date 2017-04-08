@@ -45,7 +45,7 @@ public class ServerStartupErrors
             public ServerStartupException apply( Throwable o )
             {
                 Throwable rootCause = Exceptions.rootCause( o );
-                if( rootCause instanceof UpgradeNotAllowedException )
+                if ( rootCause instanceof UpgradeNotAllowedException )
                 {
                     return new UpgradeDisallowedStartupException( (UpgradeNotAllowedException)rootCause );
                 }
@@ -59,7 +59,7 @@ public class ServerStartupErrors
         for ( Function<Throwable,ServerStartupException> translator : translators )
         {
             ServerStartupException r = translator.apply( cause );
-            if(r != null)
+            if (r != null)
             {
                 return r;
             }

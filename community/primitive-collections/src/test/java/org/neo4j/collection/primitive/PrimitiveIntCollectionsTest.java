@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -603,7 +602,7 @@ public class PrimitiveIntCollectionsTest
         int[] result = new int[items.length];
         for ( int i = 0; i < items.length; i++ )
         {
-            result[i] = items[items.length-i-1];
+            result[i] = items[items.length - i - 1];
         }
         return result;
     }

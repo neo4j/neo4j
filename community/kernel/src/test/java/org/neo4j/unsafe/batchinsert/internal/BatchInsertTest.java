@@ -1579,7 +1579,7 @@ public class BatchInsertTest
         int[] array = new int[length];
         for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ )
         {
-            array[i] = startValue+i;
+            array[i] = startValue + i;
         }
         return array;
     }

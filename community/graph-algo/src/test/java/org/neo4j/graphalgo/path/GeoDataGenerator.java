@@ -151,12 +151,12 @@ public class GeoDataGenerator
 
         void createNodeAtRandomLocation( Random random, BatchInserter inserter )
         {
-            double x = random.nextInt( width-1 ) + random.nextFloat();
-            double y = random.nextInt( height-1 ) + random.nextFloat();
+            double x = random.nextInt( width - 1 ) + random.nextFloat();
+            double y = random.nextInt( height - 1 ) + random.nextFloat();
             nodePropertyScratchMap.put( "x", x );
             nodePropertyScratchMap.put( "y", y );
             long node = inserter.createNode( nodePropertyScratchMap );
-            cells[(int)(x/sizeX)][(int)(y/sizeY)].add( new PositionedNode( node, x, y ) );
+            cells[(int) (x / sizeX)][(int) (y / sizeY)].add( new PositionedNode( node, x, y ) );
         }
 
         void createConnection( Random random, BatchInserter inserter )
@@ -190,7 +190,7 @@ public class GeoDataGenerator
             }
             if ( result >= maxPosition )
             {
-                result = maxPosition-1;
+                result = maxPosition - 1;
             }
             return result;
         }
@@ -209,7 +209,7 @@ public class GeoDataGenerator
 
         private double factor( Random random, double value, double maxDivergence )
         {
-            double divergence = random.nextDouble()*maxDivergence;
+            double divergence = random.nextDouble() * maxDivergence;
             divergence = random.nextBoolean() ? 1d - divergence : 1d + divergence;
             return value * divergence;
         }

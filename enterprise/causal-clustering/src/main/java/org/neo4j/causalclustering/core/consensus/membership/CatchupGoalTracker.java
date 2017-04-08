@@ -73,7 +73,7 @@ class CatchupGoalTracker
         }
         else if ( achievedTarget )
         {
-            if( roundCount < MAX_ROUNDS )
+            if ( roundCount < MAX_ROUNDS )
             {
                 roundCount++;
                 roundStartTime = clock.millis();

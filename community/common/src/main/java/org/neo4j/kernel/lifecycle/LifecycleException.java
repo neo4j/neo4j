@@ -29,22 +29,22 @@ public class LifecycleException
 
     private static String humanReadableMessage( Object instance, LifecycleStatus from, LifecycleStatus to )
     {
-        switch(to)
+        switch ( to )
         {
             case STOPPED:
-                if(from == LifecycleStatus.NONE)
+                if ( from == LifecycleStatus.NONE )
                 {
                     return String.format( "Component '%s' failed to initialize. Please see attached cause exception" +
                             ".", instance.toString() );
                 }
-                if(from == LifecycleStatus.STARTED)
+                if ( from == LifecycleStatus.STARTED )
                 {
                     return String.format( "Component '%s' failed to stop. Please see attached cause exception.",
                             instance.toString()  );
                 }
                 break;
             case STARTED:
-                if(from == LifecycleStatus.STOPPED)
+                if ( from == LifecycleStatus.STOPPED )
                 {
                     return String.format( "Component '%s' was successfully initialized, but failed to start. Please " +
                             "see attached cause exception.", instance.toString() );

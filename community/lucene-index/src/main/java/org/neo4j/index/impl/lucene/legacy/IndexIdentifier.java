@@ -48,8 +48,8 @@ class IndexIdentifier
     private int calculateHashCode()
     {
         int code = 17;
-        code += 7*entityType.hashCode();
-        code += 7*indexName.hashCode();
+        code += 7 * entityType.hashCode();
+        code += 7 * indexName.hashCode();
         return code;
     }
 

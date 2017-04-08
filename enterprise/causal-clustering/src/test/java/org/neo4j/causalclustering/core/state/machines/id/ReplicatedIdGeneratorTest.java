@@ -133,7 +133,9 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         return rangeAcquirer;
     }
 
-    private static class NoMoreIds extends RuntimeException {}
+    private static class NoMoreIds extends RuntimeException
+    {
+    }
 
     private IdAllocation allocation( long start, int length, int highestIdInUse )
     {

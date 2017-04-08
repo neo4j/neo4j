@@ -36,7 +36,7 @@ public class VolatileFuture<T>
 
     public synchronized void set( T value )
     {
-        if( this.value != value )
+        if ( this.value != value )
         {
             this.value = value;
             notifyAll();
@@ -46,12 +46,12 @@ public class VolatileFuture<T>
     public T get( long timeoutMillis, Predicate<T> predicate ) throws TimeoutException, InterruptedException
     {
         T alias = value;
-        if( predicate.test( alias ) )
+        if ( predicate.test( alias ) )
         {
             return alias;
         }
 
-        if( timeoutMillis == 0 )
+        if ( timeoutMillis == 0 )
         {
             throw new TimeoutException();
         }

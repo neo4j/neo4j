@@ -78,7 +78,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writeMap(out, (Map) value );
         }
-        else if( value instanceof Geometry )
+        else if ( value instanceof Geometry )
         {
             Geometry geom = (Geometry) value;
             Object coordinates = (geom instanceof Point) ? ((Point) geom).getCoordinate() : geom.getCoordinates();

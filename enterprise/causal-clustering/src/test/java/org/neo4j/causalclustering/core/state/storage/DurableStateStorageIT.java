@@ -80,7 +80,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "writeAll" );
         }
 
-        try( LongState restoredState = new LongState( delegate, testDir.directory(), 4 ) )
+        try ( LongState restoredState = new LongState( delegate, testDir.directory(), 4 ) )
         {
             assertEquals( lastValue, restoredState.getTheState() );
         }
@@ -119,7 +119,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "truncate" );
         }
 
-        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        try ( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
             assertEquals( lastValue, restoredState.getTheState() );
         }
@@ -162,7 +162,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "force" );
         }
 
-        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        try ( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
             assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
         }
@@ -236,7 +236,7 @@ public class DurableStateStorageIT
             ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "close" );
         }
 
-        try( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
+        try ( LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 ) )
         {
             assertThat( restoredState.getTheState(), greaterThanOrEqualTo( lastValue ) );
         }

@@ -75,8 +75,8 @@ public class ApplyRecoveredTransactionsTest
                 new RelationshipCommand( null, new RelationshipRecord( relationshipId ) ) );
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
-        assertEquals( nodeId+1, neoStores.getNodeStore().getHighId() );
-        assertEquals( relationshipId+1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals( nodeId + 1, neoStores.getNodeStore().getHighId() );
+        assertEquals( relationshipId + 1, neoStores.getRelationshipStore().getHighId() );
     }
 
     private RelationshipRecord with( RelationshipRecord relationship, long startNode, long endNode, int type )

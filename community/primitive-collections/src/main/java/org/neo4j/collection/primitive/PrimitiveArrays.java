@@ -260,7 +260,7 @@ public class PrimitiveArrays
 
     private static long intPair( int left, int right )
     {
-        return ( ((long)left) << Integer.SIZE ) | right;
+        return (((long) left) << Integer.SIZE) | right;
     }
 
     private static int left( long pair )
@@ -277,7 +277,7 @@ public class PrimitiveArrays
     {
         for ( int i = 0; i < set.length - 1; i++ )
         {
-            assert set[i] < set[i+1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
+            assert set[i] < set[i + 1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
         }
         return true;
     }
@@ -286,7 +286,7 @@ public class PrimitiveArrays
     {
         for ( int i = 0; i < set.length - 1; i++ )
         {
-            assert set[i] < set[i+1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
+            assert set[i] < set[i + 1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
         }
         return true;
     }

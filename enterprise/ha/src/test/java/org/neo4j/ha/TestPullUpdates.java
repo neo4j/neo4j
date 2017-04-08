@@ -330,7 +330,7 @@ public class TestPullUpdates
                         ok = false;
                     }
                 }
-                catch( NotFoundException e )
+                catch ( NotFoundException e )
                 {
                     ok = false;
                 }

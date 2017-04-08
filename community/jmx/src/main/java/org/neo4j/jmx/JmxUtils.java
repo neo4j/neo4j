@@ -36,7 +36,7 @@ public class JmxUtils
 
     public static ObjectName getObjectName( GraphDatabaseService db, String name )
     {
-        if(!(db instanceof GraphDatabaseAPI))
+        if ( !(db instanceof GraphDatabaseAPI) )
         {
             throw new IllegalArgumentException( "Can only resolve object names for embedded Neo4j database " +
                     "instances, eg. instances created by GraphDatabaseFactory or HighlyAvailableGraphDatabaseFactory." );

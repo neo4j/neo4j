@@ -47,7 +47,7 @@ public class WebSocketFrameTranslator extends ChannelDuplexHandler
     @Override
     public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
     {
-        if( msg instanceof ByteBuf )
+        if ( msg instanceof ByteBuf )
         {
             ctx.write( new BinaryWebSocketFrame( (ByteBuf) msg ), promise );
         }

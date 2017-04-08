@@ -145,7 +145,7 @@ public class EphemeralIdGenerator implements IdGenerator
     public long getNumberOfIdsInUse()
     {
         long result = freeList == null ? nextId.get() : nextId.get() - freeList.size();
-        return result-freedButNotReturnableIdCount.get();
+        return result - freedButNotReturnableIdCount.get();
     }
 
     @Override

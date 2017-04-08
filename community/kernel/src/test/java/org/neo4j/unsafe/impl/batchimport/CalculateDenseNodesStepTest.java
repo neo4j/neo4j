@@ -32,7 +32,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -114,8 +113,8 @@ public class CalculateDenseNodesStepTest
         {
             batch.input[i] = new InputRelationship( "test", i, i, NO_PROPERTIES, null, relationships[i].startNode,
                     relationships[i].endNode, "TYPE", null );
-            batch.ids[i*2] = relationships[i].startNodeId;
-            batch.ids[i*2 + 1] = relationships[i].endNodeId;
+            batch.ids[i * 2] = relationships[i].startNodeId;
+            batch.ids[i * 2 + 1] = relationships[i].endNodeId;
         }
         return batch;
     }

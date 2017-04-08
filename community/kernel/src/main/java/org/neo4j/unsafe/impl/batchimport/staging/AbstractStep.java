@@ -174,7 +174,7 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected void collectStatsProviders( Collection<StatsProvider> into )
     {
-        into.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
+        into.add( new ProcessingStats( doneBatches.get() + queuedBatches.get(), doneBatches.get(),
                 totalProcessingTime.total(), totalProcessingTime.average() / processors( 0 ),
                 upstreamIdleTime.get(), downstreamIdleTime.get() ) );
         into.addAll( additionalStatsProvider );

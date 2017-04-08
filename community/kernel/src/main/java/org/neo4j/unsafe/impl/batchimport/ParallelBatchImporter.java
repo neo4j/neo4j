@@ -196,7 +196,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 2 -- calculate dense node threshold
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage(
-                    withBatchSize( config, config.batchSize()*10 ),
+                    withBatchSize( config, config.batchSize() * 10 ),
                     relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
             executeStage( calculateDenseNodesStage );
 

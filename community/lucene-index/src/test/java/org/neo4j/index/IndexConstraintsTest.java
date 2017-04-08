@@ -70,7 +70,7 @@ public class IndexConstraintsTest
         final String uuid = UUID.randomUUID().toString();
 
         final Node commonNode;
-        try(Transaction tx = graphDb.beginTx())
+        try ( Transaction tx = graphDb.beginTx() )
         {
             commonNode = graphDb.createNode();
             tx.success();
@@ -120,13 +120,13 @@ public class IndexConstraintsTest
     @Test
     public void convertIndexToConstraint()
     {
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
             tx.success();
         }
 
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             IndexDefinition index = firstOrNull( graphDb.schema().getIndexes( LABEL ) );
             index.drop();
@@ -140,9 +140,9 @@ public class IndexConstraintsTest
     @Test
     public void convertIndexToConstraintWithExistingData()
     {
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            for ( int i = 0; i < 2000; i++)
+            for ( int i = 0; i < 2000; i++ )
             {
                 Node node = graphDb.createNode( LABEL );
                 node.setProperty( PROPERTY_KEY, i );
@@ -150,13 +150,13 @@ public class IndexConstraintsTest
             tx.success();
         }
 
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
             tx.success();
         }
 
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             IndexDefinition index = firstOrNull( graphDb.schema().getIndexes( LABEL ) );
             index.drop();
@@ -170,13 +170,13 @@ public class IndexConstraintsTest
     @Test
     public void convertConstraintToIndex()
     {
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
             tx.success();
         }
 
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             ConstraintDefinition constraint = firstOrNull( graphDb.schema().getConstraints( LABEL ) );
             constraint.drop();

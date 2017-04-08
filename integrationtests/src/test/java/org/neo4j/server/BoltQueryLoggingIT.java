@@ -187,7 +187,7 @@ public class BoltQueryLoggingIT
         int offset = 0;
         while (offset < howMany)
         {
-            int read = dataIn.read( buffer, offset, howMany-offset );
+            int read = dataIn.read( buffer, offset, howMany - offset );
             if (read == 0)
             {
                 Thread.yield();

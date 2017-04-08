@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.causalclustering.messaging.TestNetwork;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.TestNetwork;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -133,7 +133,7 @@ public class ElectionPerformanceIT
 
         if ( result.collisionCount > 10 )
         {
-            assertThat( result.collidingAverage, lessThan( 5.0*electionTimeout ) );
+            assertThat( result.collidingAverage, lessThan( 5.0 * electionTimeout ) );
         }
         assertThat( result.timeoutCount, lessThanOrEqualTo( 1L ) ); // for GC or whatever reason
     }

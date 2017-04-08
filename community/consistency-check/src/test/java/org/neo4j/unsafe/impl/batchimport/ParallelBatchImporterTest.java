@@ -54,7 +54,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -614,14 +613,14 @@ public class ParallelBatchImporterTest
     private Object[] randomProperties( Randoms randoms, Object id )
     {
         String[] keys = randoms.selection( TOKENS, 0, TOKENS.length, false );
-        Object[] properties = new Object[(keys.length+1)*2];
+        Object[] properties = new Object[(keys.length + 1) * 2];
         for ( int i = 0; i < keys.length; i++ )
         {
-            properties[i*2] = keys[i];
-            properties[i*2 + 1] = randoms.propertyValue();
+            properties[i * 2] = keys[i];
+            properties[i * 2 + 1] = randoms.propertyValue();
         }
-        properties[properties.length-2] = "id";
-        properties[properties.length-1] = id;
+        properties[properties.length - 2] = "id";
+        properties[properties.length - 1] = id;
         return properties;
     }
 }

@@ -70,7 +70,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        switch( mode )
+        switch ( mode )
         {
             case ONLINE:
                 return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )

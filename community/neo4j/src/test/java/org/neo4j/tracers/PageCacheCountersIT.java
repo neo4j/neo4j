@@ -193,7 +193,7 @@ public class PageCacheCountersIT
         private void storeCounters( PageCursorCounters pageCursorCounters )
         {
             Objects.nonNull( pageCursorCounters );
-            pins +=pageCursorCounters.pins();
+            pins += pageCursorCounters.pins();
             unpins += pageCursorCounters.unpins();
             hits += pageCursorCounters.hits();
             bytesRead += pageCursorCounters.bytesRead();

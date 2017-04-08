@@ -150,8 +150,8 @@ public class TraversalDescriptionBuilder
             Object expanderDesc = description.get( "expander" );
             if ( !(expanderDesc instanceof String) )
             {
-                throw new IllegalArgumentException( "Invalid expander type '"+expanderDesc+"', expected a string name." );
-
+                throw new IllegalArgumentException( "Invalid expander type '" + expanderDesc + "', expected a string " +
+                        "name." );
             }
 
             String expanderName = (String) expanderDesc;
@@ -160,7 +160,7 @@ public class TraversalDescriptionBuilder
                 return PathExpanderBuilder.emptyOrderedByType();
             }
 
-            throw new IllegalArgumentException( "Unknown expander type: '"+expanderName+"'" );
+            throw new IllegalArgumentException( "Unknown expander type: '" + expanderName + "'" );
         }
 
         // Default expander

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.csv.reader.Configuration;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.kernel.configuration.HttpConnectorValidator;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
@@ -388,7 +388,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Specifies at which file size the logical log will auto-rotate. " +
                   "`0` means that no rotation will automatically occur based on file size. " )
-    public static final Setting<Long> logical_log_rotation_threshold = setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( 1024*1024L /*1Mb*/ ) );
+    public static final Setting<Long> logical_log_rotation_threshold = setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( 1024 * 1024L /*1Mb*/ ) );
 
     @Description("Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities.")
@@ -648,7 +648,7 @@ public class GraphDatabaseSettings implements LoadableConfig
      * DEPRECATED: Use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
      */
     @Deprecated
-    @Description( "Configuration options for Bolt connectors. "+
+    @Description( "Configuration options for Bolt connectors. " +
             "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
             "\"bolt-public\" or some other name that describes what the connector is for." )
     public static class BoltConnector extends Connector

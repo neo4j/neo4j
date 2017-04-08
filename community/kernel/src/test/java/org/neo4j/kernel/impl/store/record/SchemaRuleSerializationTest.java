@@ -553,7 +553,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         if ( !(schemaRule instanceof IndexRule) )
         {
-            fail( "Expected IndexRule, but got "+schemaRule.getClass().getSimpleName() );
+            fail( "Expected IndexRule, but got " + schemaRule.getClass().getSimpleName() );
         }
         return (IndexRule)schemaRule;
     }
@@ -584,7 +584,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         if ( !(schemaRule instanceof ConstraintRule) )
         {
-            fail( "Expected ConstraintRule, but got "+schemaRule.getClass().getSimpleName() );
+            fail( "Expected ConstraintRule, but got " + schemaRule.getClass().getSimpleName() );
         }
         return (ConstraintRule)schemaRule;
     }

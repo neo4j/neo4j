@@ -93,7 +93,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final Mode mode =config.get( ClusterSettings.mode );
+        final Mode mode = config.get( ClusterSettings.mode );
 
         switch ( mode )
         {

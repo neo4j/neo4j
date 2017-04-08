@@ -245,7 +245,7 @@ public class Ls extends TransactionProvidingApp
         boolean sortByType = parser.options().containsKey( "s" );
         Node node = thing.asNode();
         Iterable<Relationship> relationships = getRelationships( node, filterMap,
-                caseInsensitiveFilters, looseFilters, sortByType|brief );
+                caseInsensitiveFilters, looseFilters, sortByType | brief );
         if ( brief )
         {
             Iterator<Relationship> iterator = relationships.iterator();

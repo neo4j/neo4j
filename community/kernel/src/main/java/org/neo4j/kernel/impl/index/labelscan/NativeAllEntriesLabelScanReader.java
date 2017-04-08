@@ -200,7 +200,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                     slots++;
                 }
                 labelsForEachNode[relativeNodeId].add( labelId );
-                bits &= bits-1;
+                bits &= bits - 1;
             }
             return slots;
         }

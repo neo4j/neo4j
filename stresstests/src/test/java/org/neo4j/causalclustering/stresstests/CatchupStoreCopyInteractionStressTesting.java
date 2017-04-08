@@ -110,7 +110,7 @@ public class CatchupStoreCopyInteractionStressTesting
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );
-        BooleanSupplier keepGoing = () ->!stopTheWorld.get() && notExpired.getAsBoolean();
+        BooleanSupplier keepGoing = () -> !stopTheWorld.get() && notExpired.getAsBoolean();
         Runnable onFailure = () -> stopTheWorld.set( true );
 
         ExecutorService service = Executors.newCachedThreadPool();

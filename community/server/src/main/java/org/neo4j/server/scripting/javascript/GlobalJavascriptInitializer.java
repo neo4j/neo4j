@@ -52,23 +52,24 @@ public class GlobalJavascriptInitializer
 
     public static synchronized void initialize(Mode requestedMode)
     {
-        if(initializationMode != null)
+        if ( initializationMode != null )
         {
-            if(initializationMode == requestedMode)
+            if ( initializationMode == requestedMode )
             {
                 return;
             }
             else
             {
-                throw new RuntimeException( "Cannot initialize javascript context twice, " +
-                        "system is currently initialized as: '" + initializationMode.name() + "'." );
+                throw new RuntimeException(
+                        "Cannot initialize javascript context twice, " + "system is currently initialized as: '" +
+                                initializationMode.name() + "'." );
             }
         }
 
         initializationMode = requestedMode;
 
         ContextFactory contextFactory;
-        switch(requestedMode)
+        switch ( requestedMode )
         {
             case UNSAFE:
                 contextFactory = new ContextFactory()

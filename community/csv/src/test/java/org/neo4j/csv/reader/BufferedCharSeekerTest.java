@@ -672,7 +672,7 @@ public class BufferedCharSeekerTest
 
     private String randomWeirdValue( char... except )
     {
-        int length = random.nextInt( 10 )+5;
+        int length = random.nextInt( 10 ) + 5;
         char[] chars = new char[length];
         for ( int i = 0; i < length; i++ )
         {

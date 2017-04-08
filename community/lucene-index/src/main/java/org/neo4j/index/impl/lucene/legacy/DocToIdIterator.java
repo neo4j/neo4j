@@ -102,7 +102,7 @@ public class DocToIdIterator extends AbstractLegacyIndexHits
 
     private boolean isClosed()
     {
-        return searcherOrNull==null;
+        return searcherOrNull == null;
     }
 
     @Override

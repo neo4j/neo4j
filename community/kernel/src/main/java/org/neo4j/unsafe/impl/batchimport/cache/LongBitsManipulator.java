@@ -59,7 +59,7 @@ public class LongBitsManipulator
             }
 
             long otherBits = field & ~mask;
-            return ((value << bitOffset)&mask) | otherBits;
+            return ((value << bitOffset) & mask) | otherBits;
         }
 
         public long clear( long field, boolean trueForAllOnes )

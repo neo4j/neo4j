@@ -390,7 +390,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     public void interrupt()
     {
-        if(thread != null)
+        if ( thread != null )
         {
             thread.interrupt();
         }

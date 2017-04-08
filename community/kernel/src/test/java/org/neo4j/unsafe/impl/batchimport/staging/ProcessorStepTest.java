@@ -76,7 +76,7 @@ public class ProcessorStepTest
         step.start( ORDER_SEND_DOWNSTREAM );
         step.processors( 1 ); // now at 2
         // adding two should be fine
-        for ( int i = 0; i < processors+1 /* +1 since we allow queueing one more*/; i++ )
+        for ( int i = 0; i < processors + 1 /* +1 since we allow queueing one more*/; i++ )
         {
             step.receive( i, null );
         }
@@ -100,7 +100,7 @@ public class ProcessorStepTest
         step.start( ORDER_SEND_DOWNSTREAM );
         step.processors( 2 ); // now at 3
         // adding two should be fine
-        for ( int i = 0; i < step.processors( 0 )+1 /* +1 since we allow queueing one more*/; i++ )
+        for ( int i = 0; i < step.processors( 0 ) + 1 /* +1 since we allow queueing one more*/; i++ )
         {
             step.receive( i, null );
         }

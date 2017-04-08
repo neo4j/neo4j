@@ -84,7 +84,7 @@ public class ConsoleUtil
             char ch = string.charAt( i );
             if ( ch == ' ' )
             {
-                boolean isGluedSpace = i > 0 && string.charAt( i-1 ) == '\\';
+                boolean isGluedSpace = i > 0 && string.charAt( i - 1 ) == '\\';
                 if ( !isGluedSpace )
                 {
                     into.add( current.toString() );

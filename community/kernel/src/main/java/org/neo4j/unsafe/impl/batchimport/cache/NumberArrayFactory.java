@@ -25,7 +25,6 @@ import org.neo4j.helpers.Exceptions;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
@@ -267,7 +266,7 @@ public interface NumberArrayFactory
         private Throwable error( long length, int itemSize, Throwable error )
         {
             return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
-                    error.getMessage(), bytes( length*itemSize ), Arrays.toString( candidates ) ) );
+                    error.getMessage(), bytes( length * itemSize ), Arrays.toString( candidates ) ) );
         }
     }
 
@@ -287,7 +286,7 @@ public interface NumberArrayFactory
             // live on heap, some off. At the same time we want a fixed size array. Therefore first create
             // the array as a dynamic array and make it grow to the requested length.
             LongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
-            array.at( length-1 );
+            array.at( length - 1 );
             return array;
         }
 
@@ -298,7 +297,7 @@ public interface NumberArrayFactory
             // live on heap, some off. At the same time we want a fixed size array. Therefore first create
             // the array as a dynamic array and make it grow to the requested length.
             IntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
-            array.at( length-1 );
+            array.at( length - 1 );
             return array;
         }
 
@@ -309,7 +308,7 @@ public interface NumberArrayFactory
             // live on heap, some off. At the same time we want a fixed size array. Therefore first create
             // the array as a dynamic array and make it grow to the requested length.
             ByteArray array = newDynamicByteArray( fractionOf( length ), defaultValue );
-            array.at( length-1 );
+            array.at( length - 1 );
             return array;
         }
 

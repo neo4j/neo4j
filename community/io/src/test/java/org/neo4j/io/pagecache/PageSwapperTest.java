@@ -862,7 +862,7 @@ public abstract class PageSwapperTest
         ByteBufferPage output = createPage( 4 );
         for ( int i = 0; i < pageCount; i++ )
         {
-            output.putInt( i+1, 0 );
+            output.putInt( i + 1, 0 );
             swapper.write( i, output );
         }
 

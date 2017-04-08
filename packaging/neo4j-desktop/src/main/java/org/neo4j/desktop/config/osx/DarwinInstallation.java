@@ -65,7 +65,7 @@ public class DarwinInstallation extends UnixInstallation
                 System.out.println( "Error writing " + filename );
             }
         }
-        catch( URISyntaxException urise )
+        catch ( URISyntaxException urise )
         {
             System.out.println( "Error getting bin locations for " + filename );
         }

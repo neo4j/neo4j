@@ -95,7 +95,8 @@ public class InMemoryAcceptorInstanceStore
     public InMemoryAcceptorInstanceStore snapshot()
     {
         return new InMemoryAcceptorInstanceStore( new HashMap<>(instances),
-                new ArrayBlockingQueue<>( currentInstances.size()+currentInstances.remainingCapacity(), false, currentInstances ),
+                new ArrayBlockingQueue<>( currentInstances.size() + currentInstances.remainingCapacity(), false,
+                        currentInstances ),
                 lastDeliveredInstanceId );
     }
 

@@ -309,7 +309,7 @@ public class PhysicalLogFileTest
         byte[] result = new byte[length];
         for ( int i = 0; i < length; i++ )
         {
-            result[i] = (byte) (i%5);
+            result[i] = (byte) (i % 5);
         }
         return result;
     }

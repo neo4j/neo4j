@@ -91,11 +91,11 @@ public class ConfiguringPageCacheFactoryTest
                 PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log );
 
         // Then
-        try( PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
+        try ( PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
         {
             logProvider.assertContainsLogCallContaining(
                     "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
-                    "deprecated and will be removed in a future version." );
+                            "deprecated and will be removed in a future version." );
         }
     }
 

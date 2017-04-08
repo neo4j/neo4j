@@ -43,7 +43,7 @@ public class IndexProviderStore
     private final long indexVersion;
 
     private final StoreChannel fileChannel;
-    private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE*RECORD_COUNT );
+    private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE * RECORD_COUNT );
     private long lastCommittedTx;
     private final File file;
     private final Random random;
@@ -132,7 +132,7 @@ public class IndexProviderStore
     {
         buf.clear();
         int bytesRead = fileChannel.read( buf );
-        int wholeRecordsRead = bytesRead/RECORD_SIZE;
+        int wholeRecordsRead = bytesRead / RECORD_SIZE;
         if ( wholeRecordsRead < RECORD_COUNT && !allowUpgrade )
         {
             throw new UpgradeNotAllowedByConfigurationException(
@@ -183,7 +183,7 @@ public class IndexProviderStore
         int written = channel.write( buf, 0 );
         channel.force( true );
 
-        int expectedLength = RECORD_COUNT*RECORD_SIZE;
+        int expectedLength = RECORD_COUNT * RECORD_SIZE;
         if ( written != expectedLength )
         {
             throw new RuntimeException( "Expected to write " + expectedLength + " bytes, but wrote " + written );

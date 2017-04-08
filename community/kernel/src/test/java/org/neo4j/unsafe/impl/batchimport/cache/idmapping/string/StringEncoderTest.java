@@ -68,7 +68,7 @@ public class StringEncoderTest
         char[] chars = new char[length];
         for ( int i = 0; i < length; i++ )
         {
-            int ch = 'a' + (i%20);
+            int ch = 'a' + (i % 20);
             chars[i] = (char) ch;
         }
         return new String( chars );

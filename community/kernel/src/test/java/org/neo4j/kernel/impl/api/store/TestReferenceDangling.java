@@ -49,7 +49,7 @@ public class TestReferenceDangling
         restartNeoDataSource( db );
 
         // Then reading the property is still possible
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nId ).getProperty( "some" );
             tx.success();
@@ -69,9 +69,9 @@ public class TestReferenceDangling
         restartNeoDataSource( db );
 
         // Then it should still be possible to manipulate properties on this node
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            db.getNodeById( nId ).setProperty( "some", new long[]{-1,2,2,3,4,5,5} );
+            db.getNodeById( nId ).setProperty( "some", new long[]{-1, 2, 2, 3, 4, 5, 5} );
             tx.success();
         }
     }
@@ -79,15 +79,15 @@ public class TestReferenceDangling
     private long ensurePropertyIsCachedLazyProperty( GraphDatabaseAPI slave, String key )
     {
         long nId;
-        try( Transaction tx = slave.beginTx() )
+        try ( Transaction tx = slave.beginTx() )
         {
             Node n = slave.createNode();
             nId = n.getId();
-            n.setProperty( key, new long[]{-1,2,2,3,4,5,5} );
+            n.setProperty( key, new long[]{-1, 2, 2, 3, 4, 5, 5} );
             tx.success();
         }
 
-        try( Transaction tx = slave.beginTx() )
+        try ( Transaction tx = slave.beginTx() )
         {
             slave.getNodeById( nId ).hasProperty( key );
             tx.success();

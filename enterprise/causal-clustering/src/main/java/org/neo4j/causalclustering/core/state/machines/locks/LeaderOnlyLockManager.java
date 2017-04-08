@@ -123,7 +123,7 @@ public class LeaderOnlyLockManager implements Locks
         try
         {
             boolean success = (boolean) future.get();
-            if( success )
+            if ( success )
             {
                 return lockTokenRequest.id();
             }

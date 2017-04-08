@@ -43,12 +43,12 @@ public class Fixtures
 
     private final FileFilter cypherFileOrDirectoryFilter = file ->
     {
-        if(file.isDirectory())
+        if ( file.isDirectory() )
         {
             return true;
         }
         String[] split = file.getName().split( "\\." );
-        String suffix = split[split.length-1];
+        String suffix = split[split.length - 1];
         return suffix.equals( cypherSuffix );
     };
 
@@ -56,11 +56,11 @@ public class Fixtures
     {
         try
         {
-            if(fixturePath.isDirectory())
+            if ( fixturePath.isDirectory() )
             {
                 for ( File file : fixturePath.listFiles( cypherFileOrDirectoryFilter ) )
                 {
-                    add(file);
+                    add( file );
                 }
                 return;
             }
@@ -68,13 +68,14 @@ public class Fixtures
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Unable to read fixture file '"+fixturePath.getAbsolutePath()+"': " + e.getMessage(), e );
+            throw new RuntimeException(
+                    "Unable to read fixture file '" + fixturePath.getAbsolutePath() + "': " + e.getMessage(), e );
         }
     }
 
     public void add( String statement )
     {
-        if(statement.trim().length() > 0)
+        if ( statement.trim().length() > 0 )
         {
             fixtureStatements.add( statement );
         }
@@ -90,13 +91,13 @@ public class Fixtures
         GraphDatabaseService db = controls.graph();
         for ( String fixtureStatement : fixtureStatements )
         {
-            try( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
                 db.execute( fixtureStatement );
                 tx.success();
             }
         }
-        for ( Function<GraphDatabaseService, Void> fixtureFunction : fixtureFunctions )
+        for ( Function<GraphDatabaseService,Void> fixtureFunction : fixtureFunctions )
         {
             fixtureFunction.apply( db );
         }

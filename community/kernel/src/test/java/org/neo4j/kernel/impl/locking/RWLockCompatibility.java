@@ -345,7 +345,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
                 }
             }
         }
-        if(anyAlive)
+        if ( anyAlive )
         {
             throw new RuntimeException( "Expected all threads to complete." );
         }

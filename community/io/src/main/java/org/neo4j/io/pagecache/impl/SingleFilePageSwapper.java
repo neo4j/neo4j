@@ -242,9 +242,9 @@ public class SingleFilePageSwapper implements PageSwapper
             while ( read != -1 && (readTotal += read) < filePageSize );
 
             // Zero-fill the rest.
-            assert readTotal >= 0 && filePageSize <= cachePageSize && readTotal <= filePageSize: format(
-                    "pointer = %h, readTotal = %s, length = %s, page size = %s",
-                    address, readTotal, filePageSize, cachePageSize );
+            assert readTotal >= 0 && filePageSize <= cachePageSize && readTotal <= filePageSize :
+                    format( "pointer = %h, readTotal = %s, length = %s, page size = %s", address, readTotal,
+                            filePageSize, cachePageSize );
             UnsafeUtil.setMemory( address + readTotal, filePageSize - readTotal, MuninnPageCache.ZERO_BYTE );
             return readTotal;
         }
@@ -734,7 +734,7 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         long div = channelSize / filePageSize;
         long mod = channelSize % filePageSize;
-        return mod == 0? div - 1 : div;
+        return mod == 0 ? div - 1 : div;
     }
 
     @Override

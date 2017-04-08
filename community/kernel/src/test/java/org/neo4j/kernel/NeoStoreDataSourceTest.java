@@ -98,7 +98,7 @@ public class NeoStoreDataSourceTest
         }
         finally
         {
-            if ( theDataSource!= null )
+            if ( theDataSource != null )
             {
                 theDataSource.stop();
                 theDataSource.shutdown();

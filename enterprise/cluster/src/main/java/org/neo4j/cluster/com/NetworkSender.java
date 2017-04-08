@@ -68,7 +68,6 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -331,7 +330,7 @@ public class NetworkSender
                 }
                 catch ( Exception e )
                 {
-                    if( Exceptions.contains(e, ClosedChannelException.class ))
+                    if ( Exceptions.contains( e, ClosedChannelException.class ) )
                     {
                         msgLog.warn( "Could not send message, because the connection has been closed." );
                     }

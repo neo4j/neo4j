@@ -51,7 +51,7 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
             Map<String,Object> properties = rel.getAllProperties();
             packer.packRawMap( properties );
         }
-        catch(NotFoundException e)
+        catch ( NotFoundException e )
         {
             //relationship was deleted, just send empty property map back
             packer.packRawMap( Collections.emptyMap() );
@@ -63,11 +63,11 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
     {
         long numFields = unpacker.unpackStructHeader();
         char signature = unpacker.unpackStructSignature();
-        if( signature != Neo4jPack.RELATIONSHIP )
+        if ( signature != Neo4jPack.RELATIONSHIP )
         {
             throw new BoltIOException( Status.Request.InvalidFormat, "Expected a relationship structure, recieved 0x" + Integer.toHexString( signature ) );
         }
-        if( numFields != STRUCT_FIELD_COUNT )
+        if ( numFields != STRUCT_FIELD_COUNT )
         {
             throw new BoltIOException( Status.Request.InvalidFormat, "Relationship structures should have " + STRUCT_FIELD_COUNT
                                                                      + " fields, structure sent contained " + numFields );

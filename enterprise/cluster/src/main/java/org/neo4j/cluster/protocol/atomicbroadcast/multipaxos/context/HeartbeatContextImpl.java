@@ -142,7 +142,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         Set<InstanceId> everyoneElse = new HashSet<>();
         for ( InstanceId instanceId : getMembers().keySet() )
         {
-            if( !isMe( instanceId ) )
+            if ( !isMe( instanceId ) )
             {
                 everyoneElse.add( instanceId );
             }

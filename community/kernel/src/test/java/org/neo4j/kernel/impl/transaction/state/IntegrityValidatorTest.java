@@ -59,7 +59,7 @@ public class IntegrityValidatorTest
             validator.validateSchemaRule( record );
             fail("Should have thrown integrity error.");
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
             // good
         }
@@ -80,9 +80,9 @@ public class IntegrityValidatorTest
         try
         {
             validator.validateNodeRecord( record );
-            fail("Should have thrown integrity error.");
+            fail( "Should have thrown integrity error." );
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
             // good
         }
@@ -103,9 +103,9 @@ public class IntegrityValidatorTest
         try
         {
             validator.validateTransactionStartKnowledge( 1 );
-            fail("Should have thrown integrity error.");
+            fail( "Should have thrown integrity error." );
         }
-        catch(Exception e)
+        catch ( Exception e )
         {
             // good
         }

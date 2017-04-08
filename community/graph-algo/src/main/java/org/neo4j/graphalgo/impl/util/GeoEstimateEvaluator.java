@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Node;
 
 public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
 {
-    private static final double EARTH_RADIUS = 6371*1000; // Meters
+    private static final double EARTH_RADIUS = 6371 * 1000; // Meters
 
     private Node cachedGoal;
     private double[] cachedGoalCoordinates;

@@ -89,7 +89,7 @@ public class BadCollector implements Collector
 
         if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
         {
-            leftOverDuplicateNodeIds = Arrays.copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIds.length*2 );
+            leftOverDuplicateNodeIds = Arrays.copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIds.length * 2 );
         }
         leftOverDuplicateNodeIds[leftOverDuplicateNodeIdsCursor++] = actualId;
     }

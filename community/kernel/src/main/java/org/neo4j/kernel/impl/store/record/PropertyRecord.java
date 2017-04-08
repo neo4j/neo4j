@@ -318,7 +318,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
         if ( entityId != -1 )
         {
-            buf.append( entityType == TYPE_NODE? ",node=" : ",rel=" ).append( entityId );
+            buf.append( entityType == TYPE_NODE ? ",node=" : ",rel=" ).append( entityId );
         }
 
         if ( blocksLoaded )
