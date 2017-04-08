@@ -24,11 +24,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveArrays;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveArrays;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -131,17 +131,17 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return nodeId;
     }
 
-    public long[] labelsChanged()
+    long[] labelsChanged()
     {
         return PrimitiveArrays.symmetricDifference( labelsBefore, labelsAfter );
     }
 
-    public long[] labelsUnchanged()
+    long[] labelsUnchanged()
     {
         return PrimitiveArrays.intersect( labelsBefore, labelsAfter );
     }
 
-    public PrimitiveIntCollection propertiesChanged()
+    PrimitiveIntCollection propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";
@@ -231,7 +231,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
                         nodeId, indexKey, valuesAfter( propertyIds )
                 ) );
             }
-            else if ( relevantBefore && relevantAfter )
+            else if ( relevantBefore )
             {
                 if ( valuesChanged( propertyIds ) )
                 {
@@ -308,7 +308,8 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     {
         for ( int propertyId : propertyIds )
         {
-            if ( !knownProperties.get( propertyId ).hasBefore() )
+            PropertyValue propertyValue = knownProperties.get( propertyId );
+            if ( propertyValue == null || !propertyValue.hasBefore() )
             {
                 return false;
             }
@@ -320,7 +321,8 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     {
         for ( int propertyId : propertyIds )
         {
-            if ( !knownProperties.get( propertyId ).hasAfter() )
+            PropertyValue propertyValue = knownProperties.get( propertyId );
+            if ( propertyValue == null || !propertyValue.hasAfter() )
             {
                 return false;
             }
@@ -343,7 +345,8 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         Object[] values = new Object[propertyIds.length];
         for ( int i = 0; i < propertyIds.length; i++ )
         {
-            values[i] = knownProperties.get( propertyIds[i] ).after;
+            PropertyValue propertyValue = knownProperties.get( propertyIds[i] );
+            values[i] = propertyValue == null ? null : propertyValue.after;
         }
         return values;
     }
@@ -444,7 +447,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         Before,
         After,
         UnChanged,
-        Changed;
+        Changed
     }
 
     private static class PropertyValue
