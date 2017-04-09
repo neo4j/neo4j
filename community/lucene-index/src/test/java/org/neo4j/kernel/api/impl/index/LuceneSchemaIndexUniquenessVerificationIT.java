@@ -27,15 +27,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -63,7 +58,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-@RunWith( Parameterized.class )
 public class LuceneSchemaIndexUniquenessVerificationIT
 {
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
@@ -75,27 +69,11 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( testName );
 
-    @Parameter
-    public int nodesToCreate;
+    private int nodesToCreate = DOCS_PER_PARTITION * 2 + 1;
 
     private SchemaIndex index;
     private static final long MAX_LONG_VALUE = Long.MAX_VALUE >> 10;
     private static final long MIN_LONG_VALUE = MAX_LONG_VALUE - 20;
-
-    @Parameters( name = "created nodes: {0}" )
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList( new Object[][]{
-                {DOCS_PER_PARTITION / 2},
-                {DOCS_PER_PARTITION / 2 + 1},
-                {DOCS_PER_PARTITION / 3},
-                {DOCS_PER_PARTITION / 3 + 1},
-                {DOCS_PER_PARTITION * 2},
-                {DOCS_PER_PARTITION * 2 + 1},
-                {DOCS_PER_PARTITION * 3},
-                {DOCS_PER_PARTITION * 3 + 1}
-        } );
-    }
 
     // todo System.out here is part of investigation of flaky test that only shows in "real" pipeline
     // todo should be removed when investigation is finished.
