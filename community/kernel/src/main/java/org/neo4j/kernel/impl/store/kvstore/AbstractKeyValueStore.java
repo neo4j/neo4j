@@ -303,7 +303,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
         private long rotate( boolean force ) throws IOException
         {
-            try( RotationState<Key> rotation = this.rotation )
+            try ( RotationState<Key> rotation = this.rotation )
             {
                 try
                 {

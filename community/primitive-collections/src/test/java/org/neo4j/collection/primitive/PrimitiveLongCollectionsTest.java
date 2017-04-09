@@ -27,10 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 
-import static java.util.Arrays.asList;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -655,7 +654,7 @@ public class PrimitiveLongCollectionsTest
         long[] result = new long[items.length];
         for ( int i = 0; i < items.length; i++ )
         {
-            result[i] = items[items.length-i-1];
+            result[i] = items[items.length - i - 1];
         }
         return result;
     }

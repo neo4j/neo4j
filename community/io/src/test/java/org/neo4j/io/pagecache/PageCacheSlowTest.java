@@ -467,10 +467,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         for ( int i = 0; i < 1000; i++ )
         {
-            PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
+            PagedFile pagedFile = rng.nextBoolean() ? pfA : pfB;
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
-            long startingPage = maxPageId < 0? 0 : rng.nextLong( maxPageId + 1 );
+            long startingPage = maxPageId < 0 ? 0 : rng.nextLong( maxPageId + 1 );
             int pf_flags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
             int pageSize = pagedFile.pageSize();
 

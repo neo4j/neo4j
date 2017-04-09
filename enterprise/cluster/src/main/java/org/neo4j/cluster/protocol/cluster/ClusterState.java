@@ -488,7 +488,7 @@ public enum ClusterState
 
                             if ( somethingIsWrong )
                             {
-                                if(otherInstanceJoiningWithSameId)
+                                if ( otherInstanceJoiningWithSameId )
                                 {
                                     context.getLog( ClusterState.class ).info( format( "Denying entry to instance %s" +
                                             " because another instance is currently joining with the same id.",

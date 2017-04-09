@@ -45,7 +45,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
         long createdAndRemoved = createLabeledNode( db, map() ).getId();
         long neverExisted = createdAndRemoved + 99;
 
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( createdAndRemoved ).delete();
             tx.success();
@@ -64,14 +64,14 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
         long node = createLabeledNode( db, map() ).getId();
         long created, createdAndRemoved, neverExisted;
 
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             created = db.createNode().createRelationshipTo( db.createNode(), withName( "Banana" ) ).getId();
             createdAndRemoved = db.createNode().createRelationshipTo( db.createNode(), withName( "Banana" ) ).getId();
             tx.success();
         }
 
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.getRelationshipById( createdAndRemoved ).delete();
             tx.success();

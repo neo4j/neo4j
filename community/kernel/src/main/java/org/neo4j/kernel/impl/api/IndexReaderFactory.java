@@ -49,7 +49,7 @@ public interface IndexReaderFactory
         @Override
         public IndexReader newReader( NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
-            if( indexReaders == null )
+            if ( indexReaders == null )
             {
                 indexReaders = new HashMap<>();
             }

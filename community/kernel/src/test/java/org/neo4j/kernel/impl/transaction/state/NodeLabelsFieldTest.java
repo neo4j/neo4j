@@ -192,7 +192,7 @@ public class NodeLabelsFieldTest
 
         // THEN
         assertTrue( changedDynamicRecords.containsAll( initialRecords ) );
-        assertEquals( initialRecords.size()+1, changedDynamicRecords.size() );
+        assertEquals( initialRecords.size() + 1, changedDynamicRecords.size() );
     }
 
     @Test
@@ -483,14 +483,14 @@ public class NodeLabelsFieldTest
 
     private long inlinedLabelsLongRepresentation( long... labelIds )
     {
-        long header = (long)labelIds.length << 36;
-        byte bitsPerLabel = (byte) (36/labelIds.length);
+        long header = (long) labelIds.length << 36;
+        byte bitsPerLabel = (byte) (36 / labelIds.length);
         Bits bits = bits( 5 );
         for ( long labelId : labelIds )
         {
             bits.put( labelId, bitsPerLabel );
         }
-        return header|bits.getLongs()[0];
+        return header | bits.getLongs()[0];
     }
 
     @ClassRule
@@ -553,7 +553,7 @@ public class NodeLabelsFieldTest
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
         {
-            result[i] = 255-i;
+            result[i] = 255 - i;
         }
         Arrays.sort( result );
         return result;
@@ -564,7 +564,7 @@ public class NodeLabelsFieldTest
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
         {
-            result[i] = Integer.MAX_VALUE-i;
+            result[i] = Integer.MAX_VALUE - i;
         }
         Arrays.sort( result );
         return result;

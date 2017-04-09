@@ -35,8 +35,8 @@ final class MuninnPageEvictionCallback implements PageEvictionCallback
     public void onEvict( long filePageId, Page page )
     {
         MuninnPage removed = file.evictPage( filePageId );
-        assert removed == page:
+        assert removed == page :
                 "Removed unexpected page when cleaning up translation table for filePageId " + filePageId + ". " +
-                "Evicted " + page + " but removed " + removed + " from the translation table.";
+                        "Evicted " + page + " but removed " + removed + " from the translation table.";
     }
 }

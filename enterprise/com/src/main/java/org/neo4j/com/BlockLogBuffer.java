@@ -19,12 +19,12 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
@@ -43,7 +43,7 @@ public class BlockLogBuffer implements Closeable
     // First byte of every chunk that is not the last one
     static final byte FULL_BLOCK_AND_MORE = 0;
     static final int MAX_SIZE = 256; /* soft limit, incl. header */
-    static final int DATA_SIZE = MAX_SIZE-1;
+    static final int DATA_SIZE = MAX_SIZE - 1;
 
     private final ChannelBuffer target;
     private final ByteCounterMonitor monitor;

@@ -142,7 +142,7 @@ class OpenEndRangeMap<K extends Comparable<K>, V>
             itr.remove();
         }
 
-        if( tree.isEmpty() )
+        if ( tree.isEmpty() )
         {
             endKey = null;
             endValue = null;

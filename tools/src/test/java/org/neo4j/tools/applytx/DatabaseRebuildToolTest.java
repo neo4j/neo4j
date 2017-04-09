@@ -44,12 +44,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
@@ -203,7 +201,7 @@ public class DatabaseRebuildToolTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( label( "Label_" + (i%2) ) );
+                Node node = db.createNode( label( "Label_" + (i % 2) ) );
                 setProperties( node, i );
                 nodes[i] = node;
                 tx.success();
@@ -213,15 +211,15 @@ public class DatabaseRebuildToolTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Relationship relationship =
-                        nodes[i%nodes.length].createRelationshipTo( nodes[(i+1)%nodes.length], withName( "TYPE_" + (i%3) ) );
+                Relationship relationship = nodes[i % nodes.length]
+                        .createRelationshipTo( nodes[(i + 1) % nodes.length], withName( "TYPE_" + (i % 3) ) );
                 setProperties( relationship, i );
                 tx.success();
             }
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = nodes[nodes.length-1];
+            Node node = nodes[nodes.length - 1];
             for ( Relationship relationship : node.getRelationships() )
             {
                 relationship.delete();

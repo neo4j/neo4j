@@ -49,7 +49,7 @@ public class ValueUnboundRelationship
             Map<String,Object> properties = rel.getAllProperties();
             packer.packRawMap( properties );
         }
-        catch(NotFoundException e)
+        catch ( NotFoundException e )
         {
             //relationship was deleted, just send empty property map back
             packer.packRawMap( Collections.emptyMap() );

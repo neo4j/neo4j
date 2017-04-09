@@ -79,7 +79,7 @@ public class TransactionHooks
     @SuppressWarnings( "unchecked" )
     public void afterRollback( ReadableTransactionState state, KernelTransaction tx, TransactionHooksState hooksState )
     {
-        if(hooksState == null)
+        if ( hooksState == null )
         {
             return;
         }
@@ -97,9 +97,9 @@ public class TransactionHooks
         public void add( TransactionHook hook, Outcome outcome )
         {
             hooksWithAttachment.add( Pair.of( hook, outcome ) );
-            if(outcome != null && !outcome.isSuccessful())
+            if ( outcome != null && !outcome.isSuccessful() )
             {
-                failure = new TransactionHookException(outcome.failure(), "Transaction handler failed.");
+                failure = new TransactionHookException( outcome.failure(), "Transaction handler failed." );
             }
         }
 

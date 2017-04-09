@@ -117,17 +117,17 @@ class ProverTimeouts extends Timeouts
         ProverTimeouts that = (ProverTimeouts) o;
 
         Iterator<Pair<ProverTimeout,Long>> those = that.timeouts.values().iterator();
-        Iterator<Pair<ProverTimeout,Long>> mine  = timeouts.values().iterator();
+        Iterator<Pair<ProverTimeout,Long>> mine = timeouts.values().iterator();
 
-        while(mine.hasNext())
+        while ( mine.hasNext() )
         {
-            if(!those.hasNext() || !those.next().first().equals( mine.next().first() ))
+            if ( !those.hasNext() || !those.next().first().equals( mine.next().first() ) )
             {
                 return false;
             }
         }
 
-        if(those.hasNext())
+        if ( those.hasNext() )
         {
             return false;
         }
@@ -156,7 +156,7 @@ class ProverTimeouts extends Timeouts
     public ClusterAction peek()
     {
         Map.Entry<Object, Pair<ProverTimeout, Long>> next = nextTimeout();
-        if(next != null)
+        if ( next != null )
         {
             return new MessageDeliveryAction( next.getValue().first().getTimeoutMessage() );
         }
@@ -169,9 +169,9 @@ class ProverTimeouts extends Timeouts
     private Map.Entry<Object, Pair<ProverTimeout, Long>> nextTimeout()
     {
         Map.Entry<Object, Pair<ProverTimeout, Long>> lowestTimeout = null;
-        for ( Map.Entry<Object, Pair<ProverTimeout, Long>> current : timeouts.entrySet() )
+        for ( Map.Entry<Object,Pair<ProverTimeout,Long>> current : timeouts.entrySet() )
         {
-            if(lowestTimeout == null || lowestTimeout.getValue().other() > current.getValue().other())
+            if ( lowestTimeout == null || lowestTimeout.getValue().other() > current.getValue().other() )
             {
                 lowestTimeout = current;
             }
@@ -195,7 +195,7 @@ class ProverTimeouts extends Timeouts
         @Override
         public boolean equals( Object obj )
         {
-            if(obj.getClass() != getClass())
+            if ( obj.getClass() != getClass() )
             {
                 return false;
             }

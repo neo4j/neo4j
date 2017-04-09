@@ -479,7 +479,7 @@ public class ExecutionResultSerializer
 
     private IOException loggedIOException( IOException exception )
     {
-        if(Exceptions.contains(exception, "Broken pipe", IOException.class ))
+        if ( Exceptions.contains( exception, "Broken pipe", IOException.class ) )
         {
             log.error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." );
         }

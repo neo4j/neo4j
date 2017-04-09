@@ -57,20 +57,20 @@ public class RecentK<Type> implements Iterable<Type>
     public void add( Type item )
     {
         AtomicLong counter = recentItems.get( item );
-        if(counter != null)
+        if ( counter != null )
         {
             counter.incrementAndGet();
         }
         else
         {
             // Double-checked locking ahead: Check if there is space for our item
-            if( recentItems.size() >= maxItems )
+            if ( recentItems.size() >= maxItems )
             {
                 // If not, synchronize and check again (this will happen if there is > maxItems in the current set)
                 synchronized ( recentItems )
                 {
                     // Proper check under lock, make space in the set for our new item
-                    while( recentItems.size() >= maxItems )
+                    while ( recentItems.size() >= maxItems )
                     {
                         removeItemWithLowestCount();
                     }
@@ -116,14 +116,14 @@ public class RecentK<Type> implements Iterable<Type>
         for ( Map.Entry<Type,AtomicLong> entry : recentItems.entrySet() )
         {
             long currentCount = entry.getValue().get();
-            if( currentCount < lowestCount)
+            if ( currentCount < lowestCount )
             {
                 lowestCount = currentCount;
                 lowestCountKey = entry.getKey();
             }
         }
 
-        if( lowestCountKey != null )
+        if ( lowestCountKey != null )
         {
             recentItems.remove( lowestCountKey );
         }

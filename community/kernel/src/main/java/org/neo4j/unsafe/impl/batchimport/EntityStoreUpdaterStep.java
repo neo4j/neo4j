@@ -142,7 +142,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             propertyStore.updateRecord( propertyRecord );
         }
 
-        monitor.entitiesWritten( records[0].getClass(), records.length-skipped );
+        monitor.entitiesWritten( records[0].getClass(), records.length - skipped );
         monitor.propertiesWritten( propertyBlockCursor );
     }
 
@@ -154,7 +154,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         // where we know we have a single thread doing this.
         for ( int i = 0; i < length; i++ )
         {
-            PropertyBlock block = blocks[offset+i];
+            PropertyBlock block = blocks[offset + i];
             PropertyType type = block.getType();
             switch ( type )
             {

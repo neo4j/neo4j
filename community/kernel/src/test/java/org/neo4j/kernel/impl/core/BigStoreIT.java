@@ -124,7 +124,7 @@ public class BigStoreIT implements RelationshipType
          * Each node/relationship will have a bunch of different properties on them.
          */
         Node refNode = createReferenceNode( db );
-        setHighIds( startId-1000 );
+        setHighIds( startId - 1000 );
 
         byte[] bytes = new byte[45];
         bytes[2] = 5;
@@ -200,7 +200,8 @@ public class BigStoreIT implements RelationshipType
             return false;
         }
 
-        long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
+        // Not 1024, matches better wanted result with -Xmx
+        long heapMb = Runtime.getRuntime().maxMemory() / (1000 * 1000);
         if ( heapMb < requiredHeapMb )
         {
             // This test requires a heap of size requiredHeapMb, this heap has only heapMb
@@ -244,12 +245,12 @@ public class BigStoreIT implements RelationshipType
             return;
         }
 
-        long idBelow = highMark-minus;
+        long idBelow = highMark - minus;
         setHighIds( idBelow );
         String propertyKey = "name";
         int intPropertyValue = 123;
         String stringPropertyValue = "Long string, longer than would fit in shortstring";
-        long[] arrayPropertyValue = new long[] { 1021L, 321L, 343212L };
+        long[] arrayPropertyValue = new long[]{1021L, 321L, 343212L};
 
         Transaction tx = db.beginTx();
         Node nodeBelowTheLine = db.createNode();

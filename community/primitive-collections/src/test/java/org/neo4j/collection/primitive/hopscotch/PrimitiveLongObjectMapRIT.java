@@ -19,12 +19,12 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -40,7 +40,6 @@ import org.neo4j.test.randomized.TestResource;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -158,7 +157,7 @@ public class PrimitiveLongObjectMapRIT
 
     private long randomExisting( Random random, Map<Long,Integer> existing )
     {
-        int index = random.nextInt( existing.size() )+1;
+        int index = random.nextInt( existing.size() ) + 1;
         Iterator<Long> iterator = existing.keySet().iterator();
         long value = 0;
         for ( int i = 0; i < index; i++ )
@@ -229,7 +228,7 @@ public class PrimitiveLongObjectMapRIT
                 out.println( format( "assertEquals( \"%s\", %d, sizeBefore );",
                         "Size before put should have been " + actualSizeBefore, actualSizeBefore ) );
                 out.println( format( "assert%s( \"%s\", existedBefore );", capitilize( existing ),
-                        key + " should " + (existing?"":"not ") + "exist before putting here" ) );
+                        key + " should " + (existing ? "" : "not ") + "exist before putting here" ) );
                 if ( existing )
                 {
                     out.println( format( "assertEquals( \"%s\", (Integer)%d, valueBefore );",
@@ -248,7 +247,7 @@ public class PrimitiveLongObjectMapRIT
                         key + " should exist" ) );
                 out.println( format( "assertEquals( \"%s\", (Integer)%d, valueAfter );",
                         "value after putting should be " + value, value ) );
-                int actualSizeAfter = existing ? actualSizeBefore : actualSizeBefore+1;
+                int actualSizeAfter = existing ? actualSizeBefore : actualSizeBefore + 1;
                 out.println( format( "assertEquals( \"%s\", %d, sizeAfter );",
                         "Size after put should have been " + actualSizeAfter, actualSizeAfter ) );
             }
@@ -306,7 +305,7 @@ public class PrimitiveLongObjectMapRIT
                 out.println( format( "Integer valueAfter = map.get( %d );", key ) );
 
                 out.println( format( "assert%s( \"%s\", existedBefore );", capitilize( existing ),
-                        key + " should " + (existing?"":"not ") + "exist before putting here" ) );
+                        key + " should " + (existing ? "" : "not ") + "exist before putting here" ) );
                 if ( existing )
                 {
                     out.println( format( "assertEquals( \"%s\", (Integer)%d, valueBefore );",

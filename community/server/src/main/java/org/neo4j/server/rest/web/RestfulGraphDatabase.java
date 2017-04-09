@@ -445,7 +445,7 @@ public class RestfulGraphDatabase
                 s.add((String) rawInput);
                 actions.addLabelToNode( nodeId, s );
             }
-            else if(rawInput instanceof Collection)
+            else if ( rawInput instanceof Collection )
             {
                 actions.addLabelToNode( nodeId, (Collection<String>) rawInput );
             }
@@ -1756,7 +1756,7 @@ public class RestfulGraphDatabase
             }
             return output.ok( actions.createSchemaIndex( labelName, singlePropertyKey ) );
         }
-        catch( UnsupportedOperationException e )
+        catch ( UnsupportedOperationException e )
         {
             return output.badRequest( e );
         }
@@ -1843,7 +1843,7 @@ public class RestfulGraphDatabase
             }
             return output.ok( actions.createPropertyUniquenessConstraint( labelName, singlePropertyKey ) );
         }
-        catch( UnsupportedOperationException e )
+        catch ( UnsupportedOperationException e )
         {
             return output.badRequest( e );
         }

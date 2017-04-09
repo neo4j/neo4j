@@ -211,6 +211,6 @@ public class SchemaStorage implements SchemaRuleAccess
 
     private byte[] newRecordBuffer()
     {
-        return new byte[schemaStore.getRecordSize()*4];
+        return new byte[schemaStore.getRecordSize() * 4];
     }
 }

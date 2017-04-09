@@ -40,18 +40,18 @@ public class IdGroupDistribution
 
         // Assign all except the last one
         long total = 0;
-        long partSize = nodeCount/numberOfGroups;
+        long partSize = nodeCount / numberOfGroups;
         float debt = 1f;
-        for ( int i = 0; i < numberOfGroups-1; i++ )
+        for ( int i = 0; i < numberOfGroups - 1; i++ )
         {
-            float part = random.nextFloat()*debt;
-            assignGroup( i, (long) (partSize*part) );
+            float part = random.nextFloat() * debt;
+            assignGroup( i, (long) (partSize * part) );
             total += groupCounts[i];
             debt = debt + 1.0f - part;
         }
 
         // Assign the rest to the last one
-        assignGroup( numberOfGroups-1, nodeCount - total );
+        assignGroup( numberOfGroups - 1, nodeCount - total );
     }
 
     private void assignGroup( int i, long count )

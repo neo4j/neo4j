@@ -186,7 +186,7 @@ public class EncodingIdMapper implements IdMapper
     public void put( Object inputId, long id, Group group )
     {
         // Fill any gap to the previously highest set id
-        for ( long gapId = highestSetIndex+1; gapId < id; gapId++ )
+        for ( long gapId = highestSetIndex + 1; gapId < id; gapId++ )
         {
             radix.registerRadixOf( GAP_VALUE );
         }
@@ -223,7 +223,7 @@ public class EncodingIdMapper implements IdMapper
         {
             if ( groupId >= idGroups.length )
             {
-                idGroups = Arrays.copyOf( idGroups, max( groupId+1, idGroups.length*2 ) );
+                idGroups = Arrays.copyOf( idGroups, max( groupId + 1, idGroups.length * 2 ) );
             }
             idGroups[groupId] = currentIdGroup = new IdGroup( group, id );
         }
@@ -267,7 +267,7 @@ public class EncodingIdMapper implements IdMapper
     public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
-        trackerCache = trackerFactory.create( cacheFactory, highestSetIndex+1 );
+        trackerCache = trackerFactory.create( cacheFactory, highestSetIndex + 1 );
 
         try
         {
@@ -364,11 +364,11 @@ public class EncodingIdMapper implements IdMapper
         SameGroupDetector sameGroupDetector = new SameGroupDetector();
         for ( long i = 0; i < max; )
         {
-            int batch = (int) min( max-i, COUNTING_BATCH_SIZE );
+            int batch = (int) min( max - i, COUNTING_BATCH_SIZE );
             for ( int j = 0; j < batch; j++, i++ )
             {
                 long dataIndexA = trackerCache.get( i );
-                long dataIndexB = trackerCache.get( i+1 );
+                long dataIndexB = trackerCache.get( i + 1 );
                 if ( dataIndexA == ID_NOT_FOUND || dataIndexB == ID_NOT_FOUND )
                 {
                     sameGroupDetector.reset();
@@ -397,7 +397,7 @@ public class EncodingIdMapper implements IdMapper
                     if ( dataIndexA > dataIndexB )
                     {
                         // Swap so that lower tracker index means lower data index. TODO Why do we do this?
-                        trackerCache.swap( i, i+1, 1 );
+                        trackerCache.swap( i, i + 1, 1 );
                     }
 
                     if ( collision != ID_NOT_FOUND )
@@ -483,7 +483,7 @@ public class EncodingIdMapper implements IdMapper
                         lastSourceDescription = currentSourceDescription;
                     }
                     collisionSourceDataCache.set( collisionIndex,
-                            encodeSourceInformation( sourceDescriptions.size()-1, ids.lineNumber() ) );
+                            encodeSourceInformation( sourceDescriptions.size() - 1, ids.lineNumber() ) );
                 }
             }
             progress.add( j );
@@ -548,7 +548,7 @@ public class EncodingIdMapper implements IdMapper
             }
         };
 
-        new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions-1,
+        new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions - 1,
                 collisionTrackerCache, processorsForSorting, progress, duplicateComparator ).run();
 
         // Here we have a populated C
@@ -617,8 +617,8 @@ public class EncodingIdMapper implements IdMapper
 
             if ( cursor == inputIdArray.length )
             {
-                inputIdArray = Arrays.copyOf( inputIdArray, cursor*2 );
-                sourceInformationArray = Arrays.copyOf( sourceInformationArray, cursor*2 );
+                inputIdArray = Arrays.copyOf( inputIdArray, cursor * 2 );
+                sourceInformationArray = Arrays.copyOf( sourceInformationArray, cursor * 2 );
             }
             inputIdArray[cursor] = inputId;
             sourceInformationArray[cursor] = sourceInformation;
@@ -653,7 +653,7 @@ public class EncodingIdMapper implements IdMapper
     {
         while ( low <= high )
         {
-            long mid = low + (high - low)/2;//(low + high) / 2;
+            long mid = low + (high - low) / 2;//(low + high) / 2;
             long dataIndex = trackerCache.get( mid );
             if ( dataIndex == ID_NOT_FOUND )
             {

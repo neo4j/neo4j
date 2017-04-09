@@ -85,7 +85,7 @@ public class RelationshipGroupStoreTest
     @After
     public void after() throws IOException
     {
-        if(db != null)
+        if ( db != null )
         {
             db.shutdown();
         }
@@ -101,7 +101,7 @@ public class RelationshipGroupStoreTest
     @Test
     public void createWithCustomThreshold() throws Exception
     {
-        createAndVerify( defaultThreshold*2 );
+        createAndVerify( defaultThreshold * 2 );
     }
 
     @Test

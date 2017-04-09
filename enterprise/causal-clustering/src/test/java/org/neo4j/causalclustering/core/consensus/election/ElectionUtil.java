@@ -85,7 +85,7 @@ public class ElectionUtil
                     }
                 }
 
-                if( newLeader != null && leaderIsValid && allAgreeOnLeader( leaderViews, viewCount, newLeader ) )
+                if ( newLeader != null && leaderIsValid && allAgreeOnLeader( leaderViews, viewCount, newLeader ) )
                 {
                     futureAgreedLeader.complete( newLeader );
                 }
@@ -105,7 +105,7 @@ public class ElectionUtil
 
         for ( T leaderView : leaderViews.values() )
         {
-            if( !leader.equals( leaderView) )
+            if ( !leader.equals( leaderView ) )
             {
                 return false;
             }

@@ -147,7 +147,7 @@ public class TestIndexProviderStore
         // This was before 1.6.M02
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
         store.close();
-        FileUtils.truncateFile( file, 4*8 );
+        FileUtils.truncateFile( file, 4 * 8 );
         try
         {
             store = new IndexProviderStore( file, fileSystem, 0, false );

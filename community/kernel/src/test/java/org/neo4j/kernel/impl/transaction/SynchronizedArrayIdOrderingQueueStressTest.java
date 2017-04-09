@@ -218,7 +218,7 @@ public class SynchronizedArrayIdOrderingQueueStressTest
 
         public int next()
         {
-            return (stride++%max) + 1;
+            return (stride++ % max) + 1;
         }
     }
 }

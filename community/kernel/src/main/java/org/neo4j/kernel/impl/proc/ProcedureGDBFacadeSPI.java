@@ -100,7 +100,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     {
         availability.assertDatabaseAvailable();
         KernelTransaction tx = sourceModule.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
-        if( tx == null )
+        if ( tx == null )
         {
             throw new NotInTransactionException();
         }

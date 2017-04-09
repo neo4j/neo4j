@@ -42,7 +42,7 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     protected long[] internalRemove( long keyAddress )
     {
-        valueMarker[0] = alignmentSafeGetLongAsTwoInts( keyAddress+8 );
+        valueMarker[0] = alignmentSafeGetLongAsTwoInts( keyAddress + 8 );
         alignmentSafePutLongAsTwoInts( keyAddress, -1 );
         return valueMarker;
     }
@@ -64,7 +64,7 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
 
     private long valueAddress( int index )
     {
-        return keyAddress( index )+8;
+        return keyAddress( index ) + 8;
     }
 
     @Override

@@ -228,7 +228,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public long getHighestPossibleIdInUse()
     {
-        return getHighId()-1;
+        return getHighId() - 1;
     }
 
     /**

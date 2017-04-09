@@ -104,11 +104,11 @@ public class RelationshipGroupGetterTest
         {
             if ( i > 0 )
             {
-                groups[i].setPrev( groups[i-1].getId() );
+                groups[i].setPrev( groups[i - 1].getId() );
             }
-            if ( i < groups.length-1 )
+            if ( i < groups.length - 1 )
             {
-                groups[i].setNext( groups[i+1].getId() );
+                groups[i].setNext( groups[i + 1].getId() );
             }
         }
     }

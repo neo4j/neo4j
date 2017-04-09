@@ -112,11 +112,11 @@ public final class ConfigurationBean extends Neo4jMBean
         {
             return getClass().getMethod( s ).invoke( this );
         }
-        catch( InvocationTargetException e )
+        catch ( InvocationTargetException e )
         {
             throw new MBeanException( (Exception) e.getTargetException() );
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             throw new MBeanException( e );
         }

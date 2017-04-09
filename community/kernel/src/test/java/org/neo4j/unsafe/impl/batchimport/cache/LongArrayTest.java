@@ -62,8 +62,8 @@ public class LongArrayTest
                 assertEquals( "Seed:" + seed, expected[index], array.get( index ) );
                 break;
             default: // swap
-                int items = Math.min( random.nextInt( 10 )+1, length-index );
-                int toIndex = (index + length/2) % (length-items);
+                int items = Math.min( random.nextInt( 10 ) + 1, length - index );
+                int toIndex = (index + length / 2) % (length - items);
                 array.swap( index, toIndex, items );
                 swap( expected, index, toIndex, items );
                 break;
@@ -88,9 +88,9 @@ public class LongArrayTest
     {
         for ( int i = 0; i < items; i++ )
         {
-            long fromValue = expected[fromIndex+i];
-            expected[fromIndex+i] = expected[toIndex+i];
-            expected[toIndex+i] = fromValue;
+            long fromValue = expected[fromIndex + i];
+            expected[fromIndex + i] = expected[toIndex + i];
+            expected[toIndex + i] = fromValue;
         }
     }
 

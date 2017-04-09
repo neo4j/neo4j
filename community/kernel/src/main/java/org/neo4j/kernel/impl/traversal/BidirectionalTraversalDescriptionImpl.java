@@ -155,7 +155,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
      */
     private void assertIsMonoDirectional( TraversalDescription traversal )
     {
-        if( !( traversal instanceof MonoDirectionalTraversalDescription ) )
+        if ( !(traversal instanceof MonoDirectionalTraversalDescription) )
         {
             throw new IllegalArgumentException( "The bi-directional traversals currently do not support using " +
                     "anything but mono-directional traversers as start and stop points. Please provide a regular " +

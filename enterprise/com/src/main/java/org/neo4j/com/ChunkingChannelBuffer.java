@@ -96,7 +96,8 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private byte[] header( byte continuation )
     {
         byte[] header = new byte[2];
-        header[0] = (byte)((internalProtocolVersion << 2) | ((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | continuation );
+        header[0] = (byte)((internalProtocolVersion << 2) | ((failure ? OUTCOME_FAILURE : OUTCOME_SUCCESS) << 1) |
+                continuation );
         header[1] = applicationProtocolVersion;
         return header;
     }
@@ -532,7 +533,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     {
         // Note: This is wasteful, it should pack as much data as possible into the current chunk before sending it off.
         // Refactor when there is time.
-        if ( writerIndex()+bytesPlus >= capacity )
+        if ( writerIndex() + bytesPlus >= capacity )
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();

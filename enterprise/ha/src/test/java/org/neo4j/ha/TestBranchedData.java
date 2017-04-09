@@ -193,11 +193,11 @@ public class TestBranchedData
         assertTrue( "Store-copy unsuccessful", thorHasBranched.copySucessful );
 
         // Now do some more transactions on current master (odin) and have thor pull those
-        for( int i = 0; i < 3; i++ )
+        for ( int i = 0; i < 3; i++ )
         {
             int ii = i;
-            retryOnTransactionFailure( odin, db ->
-                    createNodes( odin, String.valueOf( "" + ii ), 10, andIndexInto( indexName ) ) );
+            retryOnTransactionFailure( odin,
+                    db -> createNodes( odin, String.valueOf( "" + ii ), 10, andIndexInto( indexName ) ) );
             cluster.sync();
             cluster.force();
         }

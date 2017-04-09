@@ -434,7 +434,7 @@ public class FileUtils
 
     public static void readTextFile( File file, LineListener listener ) throws IOException
     {
-        try(BufferedReader reader = new BufferedReader( new FileReader( file ) );)
+        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ); )
         {
             String line;
             while ( (line = reader.readLine()) != null )
@@ -539,7 +539,7 @@ public class FileUtils
         int bytesWritten;
         while ( (filePosition += bytesWritten = channel.write( src, filePosition )) < expectedEndPosition )
         {
-            if( bytesWritten <= 0 )
+            if ( bytesWritten <= 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }
@@ -552,7 +552,7 @@ public class FileUtils
         int bytesWritten;
         while ( (bytesToWrite -= bytesWritten = channel.write( src )) > 0 )
         {
-            if( bytesWritten <= 0 )
+            if ( bytesWritten <= 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }

@@ -825,7 +825,7 @@ public class BackupServiceIT
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long txIdFromOrigin = MetaDataStore
                 .getRecord( resolver.resolveDependency( PageCache.class ), neoStore, Position.LAST_TRANSACTION_ID );
-        checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1, txIdFromOrigin );
+        checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId + 1, txIdFromOrigin );
         assertEquals( DbRepresentation.of( db ), getBackupDbRepresentation() );
         assertTrue( backupOutcome.isConsistent() );
     }

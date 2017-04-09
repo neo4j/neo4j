@@ -98,13 +98,13 @@ public class StatUtil
         {
             for ( BasicStats stats : bucket )
             {
-                if( stats.count > 0 )
+                if ( stats.count > 0 )
                 {
                     log.info( format( "%s%s", name, stats ) );
                 }
             }
 
-            if( clearAfterPrint )
+            if ( clearAfterPrint )
             {
                 clear();
             }

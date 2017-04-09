@@ -181,10 +181,10 @@ class CypherAdapterStream extends BoltResult
                 notificationMap.put( "severity", notification.getSeverity().toString() );
 
                 InputPosition pos = notification.getPosition(); // position is optional
-                if( !pos.equals( InputPosition.empty ) )
+                if ( !pos.equals( InputPosition.empty ) )
                 {
                     // only add the position if it is not empty
-                    Map<String, Object> posMap = new HashMap<>( 3 );
+                    Map<String,Object> posMap = new HashMap<>( 3 );
                     posMap.put( "offset", pos.getOffset() );
                     posMap.put( "line", pos.getLine() );
                     posMap.put( "column", pos.getColumn() );

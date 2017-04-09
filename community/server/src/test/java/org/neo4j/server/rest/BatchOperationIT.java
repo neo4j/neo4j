@@ -126,8 +126,8 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         assertEquals(3, secondPostResult.get("id"));
 
         // Should contain "from"
-        assertEquals("/node/"+idJoe+"/properties", putResult.get("from"));
-        assertEquals("/node/"+idJoe, getResult.get("from"));
+        assertEquals("/node/" + idJoe + "/properties", putResult.get("from"));
+        assertEquals("/node/" + idJoe, getResult.get("from"));
         assertEquals("/node", firstPostResult.get("from"));
         assertEquals("/node", secondPostResult.get("from"));
 
@@ -216,7 +216,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
 
     private String batchUri()
     {
-        return getDataUri()+"batch";
+        return getDataUri() + "batch";
     }
 
     @Test
@@ -306,7 +306,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(500, response.getStatus());
-        assertEquals(originalNodeCount, countNodes());
+        assertEquals( originalNodeCount, countNodes() );
     }
 
     @Test
@@ -394,7 +394,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         .array()
             .object()
                 .key("method") .value("PUT")
-                .key("to")     .value("/node/"+gnode.getId()+"/properties")
+                .key("to")     .value("/node/" + gnode.getId() + "/properties")
                 .key("body")
                     .object()
                         .key("name").value(name)
@@ -412,7 +412,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         .array()
             .object()
                 .key("method") .value("GET")
-                .key("to")     .value("/node/"+gnode.getId()+"/properties/name")
+                .key("to")     .value("/node/" + gnode.getId() + "/properties/name")
             .endObject()
         .endArray()
         .toString();
@@ -760,7 +760,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         try ( Transaction tx = graphdb().beginTx() )
         {
             int count = 0;
-            for(Node node : graphdb().getAllNodes())
+            for ( Node node : graphdb().getAllNodes() )
             {
                 count++;
             }

@@ -527,13 +527,13 @@ public class PrimitiveLongCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
         if ( cursor < fromEnd )
         {
             throw new NoSuchElementException( "Item " + index + " not found in " + iterator );
         }
-        return trail[cursor%fromEnd];
+        return trail[cursor % fromEnd];
     }
 
     public static long itemAt( PrimitiveLongIterator iterator, int index, long defaultItem )
@@ -553,9 +553,9 @@ public class PrimitiveLongCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
-        return cursor < fromEnd ? defaultItem : trail[cursor%fromEnd];
+        return cursor < fromEnd ? defaultItem : trail[cursor % fromEnd];
     }
 
     /**
@@ -792,9 +792,9 @@ public class PrimitiveLongCollections
     public static List<Long> asList( PrimitiveLongIterator iterator )
     {
         List<Long> out = new ArrayList<>();
-        while(iterator.hasNext())
+        while ( iterator.hasNext() )
         {
-            out.add(iterator.next());
+            out.add( iterator.next() );
         }
         return out;
     }

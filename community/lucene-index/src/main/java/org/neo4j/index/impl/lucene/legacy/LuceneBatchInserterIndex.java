@@ -268,7 +268,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private double determineGoodBufferSize( double atLeast )
     {
-        double heapHint = Runtime.getRuntime().maxMemory()/(1024*1024*14);
+        double heapHint = Runtime.getRuntime().maxMemory() / (1024 * 1024 * 14);
         double result = Math.max( atLeast, heapHint );
         return Math.min( result, 700 );
     }

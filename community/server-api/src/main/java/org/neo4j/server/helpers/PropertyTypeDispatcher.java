@@ -55,7 +55,7 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     public final T dispatch( Object property, K param )
     {
-        if( property == null)
+        if ( property == null )
         {
             return dispatchNullProperty( param );
         }

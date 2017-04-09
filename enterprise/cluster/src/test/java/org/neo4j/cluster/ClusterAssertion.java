@@ -118,11 +118,11 @@ public class ClusterAssertion
 
     public InstanceAssertion[] snapshot()
     {
-        InstanceAssertion[] result = new InstanceAssertion[in.size()+out.size()];
+        InstanceAssertion[] result = new InstanceAssertion[in.size() + out.size()];
         for ( Map.Entry<Integer, InstanceAssertion> inEntry : in.entrySet() )
         {
             int key = inEntry.getKey() - 1;
-            assert result[ key ] == null : "double entry for "+inEntry.getKey();
+            assert result[key] == null : "double entry for " + inEntry.getKey();
             result[ key ] = inEntry.getValue();
         }
         for ( Map.Entry<Integer, InstanceAssertion> outEntry : out.entrySet() )

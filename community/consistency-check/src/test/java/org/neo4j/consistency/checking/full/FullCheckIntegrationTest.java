@@ -736,8 +736,8 @@ public class FullCheckIntegrationTest
 
     private Pair<List<DynamicRecord>, List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws TransactionFailureException
     {
-        final long[] labels = new long[labelCount+1]; // allocate enough labels to need three records
-        final List<Integer> createdLabels = new ArrayList<>(  );
+        final long[] labels = new long[labelCount + 1]; // allocate enough labels to need three records
+        final List<Integer> createdLabels = new ArrayList<>();
         try ( Applier applier = fixture.createApplier() )
         {
             for ( int i = 1/*leave space for the node id*/; i < labels.length; i++ )
@@ -747,7 +747,7 @@ public class FullCheckIntegrationTest
                 { // Neo4j can create no more than one label per transaction...
                     @Override
                     protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                                    GraphStoreFixture.IdGenerator next )
+                            GraphStoreFixture.IdGenerator next )
                     {
                         Integer label = next.label();
                         tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset );
@@ -761,7 +761,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record1 = inUse( new DynamicRecord( next.nodeLabel() ) );
@@ -1174,7 +1174,7 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentName.get()+1,
+        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentName.get() + 1,
                 access.getPropertyKeyNameStore().newRecord(), FORCE );
         record.setNextBlock( record.getId() );
         access.getPropertyKeyNameStore().updateRecord( record );
@@ -1243,7 +1243,7 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentKey.get()+1,
+        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentKey.get() + 1,
                 access.getPropertyKeyNameStore().newRecord(), FORCE );
         record.setInUse( false );
         access.getPropertyKeyNameStore().updateRecord( record );
@@ -1296,7 +1296,7 @@ public class FullCheckIntegrationTest
                 long group = next.relationshipGroup();
                 tx.create( inUse( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) ) );
                 tx.create( withOwner( withNext( inUse( new RelationshipGroupRecord( group, C ) ),
-                        group+1 /*non-existent group id*/ ), node ) );
+                        group + 1 /*non-existent group id*/ ), node ) );
             }
         } );
 

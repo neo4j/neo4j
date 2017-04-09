@@ -67,7 +67,7 @@ public class TwoInstanceClusterIT
         ClusterManager.RepairKit repairKit = cluster.fail( theSlave );
         cluster.await( memberSeesOtherMemberAsFailed( master, theSlave ) );
 
-        try( Transaction tx = master.beginTx() )
+        try ( Transaction tx = master.beginTx() )
         {
             Node node = master.createNode();
             node.setProperty( propertyName, propertyValue1 );
@@ -79,7 +79,7 @@ public class TwoInstanceClusterIT
 
         cluster.await( allSeesAllAsAvailable() );
 
-        try( Transaction tx = theSlave.beginTx() )
+        try ( Transaction tx = theSlave.beginTx() )
         {
             Node node = theSlave.createNode();
             node.setProperty( propertyName, propertyValue2 );
@@ -88,7 +88,7 @@ public class TwoInstanceClusterIT
             tx.success();
         }
 
-        try( Transaction tx = master.beginTx() )
+        try ( Transaction tx = master.beginTx() )
         {
             assertEquals( propertyValue2, master.getNodeById( slaveNodeId ).getProperty( propertyName ) );
             tx.success();
@@ -114,7 +114,7 @@ public class TwoInstanceClusterIT
 
         cluster.await( allSeesAllAsAvailable() );
 
-        try( Transaction tx = theSlave.beginTx() )
+        try ( Transaction tx = theSlave.beginTx() )
         {
             Node node = theSlave.createNode();
             slaveNodeId = node.getId();
@@ -122,7 +122,7 @@ public class TwoInstanceClusterIT
             tx.success();
         }
 
-        try( Transaction tx = master.beginTx() )
+        try ( Transaction tx = master.beginTx() )
         {
             assertEquals( propertyValue, master.getNodeById( slaveNodeId ).getProperty( propertyName ) );
             tx.success();

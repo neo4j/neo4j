@@ -1191,7 +1191,7 @@ public class DatabaseActionsTest
         }, representation ) ) );
     }
 
-    @Test(expected =/*THEN*/IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
     {
         // WHEN

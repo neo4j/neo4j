@@ -94,7 +94,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
      */
     public synchronized void resume( LeaderContext initialLeaderContext )
     {
-        if( stopped )
+        if ( stopped )
         {
             return;
         }
@@ -159,7 +159,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         for ( MemberId member : toBeRemoved )
         {
             RaftLogShipper logShipper = logShippers.remove( member );
-            if( logShipper != null )
+            if ( logShipper != null )
             {
                 logShipper.stop();
             }

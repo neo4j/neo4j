@@ -282,7 +282,8 @@ final class MuninnPagedFile implements PagedFile, Flushable
             // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
             // TODO garbage to the file.
             int pagesGrabbed = 0;
-            chunkLoop:for ( int i = 0; i < chunk.length; i++ )
+            chunkLoop:
+            for ( int i = 0; i < chunk.length; i++ )
             {
                 filePageId++;
 
@@ -301,7 +302,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
                             break;
                         }
 
-                        if ( !(forClosing? page.tryExclusiveLock() : page.tryFlushLock()) )
+                        if ( !(forClosing ? page.tryExclusiveLock() : page.tryFlushLock()) )
                         {
                             continue;
                         }
@@ -547,7 +548,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
         long chunkOffset = computeChunkOffset( filePageId );
         Object[] chunk = translationTable[chunkId];
         Object element = UnsafeUtil.getAndSetObject( chunk, chunkOffset, null );
-        assert element instanceof MuninnPage: "Expected to evict a MuninnPage but found " + element;
+        assert element instanceof MuninnPage : "Expected to evict a MuninnPage but found " + element;
         return (MuninnPage) element;
     }
 

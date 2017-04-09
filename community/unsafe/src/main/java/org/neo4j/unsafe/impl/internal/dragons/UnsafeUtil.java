@@ -33,6 +33,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -408,7 +409,7 @@ public final class UnsafeUtil
     }
 
     private static final ConcurrentSkipListMap<Long, Long> pointers = new ConcurrentSkipListMap<>();
-    private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS? new FreeTrace[4096] : null;
+    private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeTraceCounter = new AtomicLong();
 
     private static void addAllocatedPointer( long pointer, long sizeInBytes )
@@ -456,18 +457,18 @@ public final class UnsafeUtil
         Map.Entry<Long,Long> centry = pointers.ceilingEntry( pointer );
         if ( fentry == null || fentry.getKey() + fentry.getValue() < pointer + size )
         {
-            long faddr = fentry == null? 0 : fentry.getKey();
-            long fsize = fentry == null? 0 : fentry.getValue();
+            long faddr = fentry == null ? 0 : fentry.getKey();
+            long fsize = fentry == null ? 0 : fentry.getValue();
             long foffset = pointer - (faddr + fsize);
-            long caddr = centry == null? 0 : centry.getKey();
-            long csize = centry == null? 0 : centry.getValue();
+            long caddr = centry == null ? 0 : centry.getKey();
+            long csize = centry == null ? 0 : centry.getValue();
             long coffset = caddr - (pointer + size);
             boolean floorIsNearest = foffset < coffset;
-            long naddr = floorIsNearest? faddr : caddr;
-            long nsize = floorIsNearest? fsize : csize;
-            long noffset = floorIsNearest? foffset : coffset;
+            long naddr = floorIsNearest ? faddr : caddr;
+            long nsize = floorIsNearest ? fsize : csize;
+            long noffset = floorIsNearest ? foffset : coffset;
             List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                                                .filter( trace -> trace != null )
+                                                .filter( Objects::nonNull )
                                                 .filter( trace -> trace.contains( pointer ) )
                                                 .sorted()
                                                 .collect( Collectors.toList() );

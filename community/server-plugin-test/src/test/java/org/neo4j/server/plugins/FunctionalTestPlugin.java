@@ -262,14 +262,14 @@ public class FunctionalTestPlugin extends ServerPlugin
 
     private Node getOrCreateANode( GraphDatabaseService db )
     {
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             Node node;
             try
             {
                 node = db.getNodeById( 0L );
             }
-            catch(NotFoundException e)
+            catch ( NotFoundException e )
             {
                 node = db.createNode();
             }

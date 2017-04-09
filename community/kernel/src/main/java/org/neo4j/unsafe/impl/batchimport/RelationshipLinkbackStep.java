@@ -49,7 +49,7 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
     @Override
     protected void forkedProcess( int id, int processors, RelationshipRecord[] batch )
     {
-        for ( int i = batch.length-1; i >= 0; i-- )
+        for ( int i = batch.length - 1; i >= 0; i-- )
         {
             RelationshipRecord item = batch[i];
             if ( item != null && item.inUse() )

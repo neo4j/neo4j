@@ -89,7 +89,7 @@ public class LuceneIndexRecoveryIT
         waitForIndex( index );
 
         long nodeId = createNode( myLabel, 12 );
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             assertNotNull( db.getNodeById( nodeId ) );
         }
@@ -102,7 +102,7 @@ public class LuceneIndexRecoveryIT
         startDb( createLuceneIndexFactory() );
 
         // Then
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             assertNotNull( db.getNodeById( nodeId ) );
         }

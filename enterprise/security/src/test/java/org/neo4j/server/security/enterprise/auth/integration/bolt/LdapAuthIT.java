@@ -658,7 +658,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         getLdapServer().setConfidentialityRequired( true );
 
-        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
             restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
@@ -674,7 +674,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         getLdapServer().setConfidentialityRequired( true );
 
-        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
             restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
@@ -693,7 +693,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         getLdapServer().setConfidentialityRequired( true );
 
-        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
             restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
@@ -712,7 +712,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         getLdapServer().setConfidentialityRequired( true );
 
-        try( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
         {
             // When
             restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->

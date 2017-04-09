@@ -145,7 +145,7 @@ public class ProcessingSource implements Closeable
 
     private static int offsetOfLastNewline( char[] buffer )
     {
-        for ( int i = buffer.length-1; i >= 0; i-- )
+        for ( int i = buffer.length - 1; i >= 0; i-- )
         {
             if ( buffer[i] == '\n' )
             {

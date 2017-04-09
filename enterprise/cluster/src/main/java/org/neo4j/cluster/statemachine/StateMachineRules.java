@@ -66,7 +66,7 @@ public class StateMachineRules
         List<StateMachineRule> oldStateRules = rules.get( transition.getOldState() );
         if (oldStateRules != null)
         {
-            for( StateMachineRule oldStateRule : oldStateRules )
+            for ( StateMachineRule oldStateRule : oldStateRules )
             {
                 oldStateRule.stateTransition( transition );
             }
@@ -97,7 +97,7 @@ public class StateMachineRules
                 transition.getMessage().getMessageType().equals( messageType ) &&
                 newState.equals( transition.getNewState() ))
             {
-                for( Message<?> message : messages )
+                for ( Message<?> message : messages )
                 {
                     outgoing.offer( message );
                 }

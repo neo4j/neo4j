@@ -520,7 +520,7 @@ public class KernelIT extends KernelIntegrationTest
             tx.acquireStatement().readOperations().nodeExists( 0L );
             fail("Should have been terminated.");
         }
-        catch( TransactionTerminatedException e )
+        catch ( TransactionTerminatedException e )
         {
             // Success
         }

@@ -96,11 +96,12 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             {
                 log.debug( "Could not replicate operation " + operation + " because no leader was found. Retrying.", e );
             }
-        } while( !progress.isReplicated() );
+        }
+        while ( !progress.isReplicated() );
 
         BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> sessionPool.releaseSession( session );
 
-        if( trackResult )
+        if ( trackResult )
         {
             progress.futureResult().whenComplete( cleanup );
         }

@@ -315,7 +315,7 @@ public class AbstractKeyValueStoreTest
 
         try ( StoreChannel channel = resourceManager.fileSystem().open( corrupted, "rw" ) )
         {
-            channel.truncate( 16*4 );
+            channel.truncate( 16 * 4 );
         }
 
         // then

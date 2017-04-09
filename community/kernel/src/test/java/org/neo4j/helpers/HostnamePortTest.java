@@ -313,7 +313,7 @@ public class HostnamePortTest
         {
             InetAddress.getByName( unknownHost );
         }
-        catch( UnknownHostException e)
+        catch ( UnknownHostException e )
         {
             unknownHostUnknown = true;
         }

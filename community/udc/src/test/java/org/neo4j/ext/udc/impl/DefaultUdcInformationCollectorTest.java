@@ -52,7 +52,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -144,11 +143,11 @@ public class DefaultUdcInformationCollectorTest
 
         // When & Then
         String userAgents = collector.getUdcParams().get( UdcConstants.USER_AGENTS );
-        if( !(userAgents.equals( "SteveBrookClient/1.0,MayorClient/1.0" )
-           || userAgents.equals( "MayorClient/1.0,SteveBrookClient/1.0" )))
+        if ( !(userAgents.equals( "SteveBrookClient/1.0,MayorClient/1.0" ) ||
+                userAgents.equals( "MayorClient/1.0,SteveBrookClient/1.0" )) )
         {
-            fail("Expected \"SteveBrookClient/1.0,MayorClient/1.0\" or \"MayorClient/1.0,SteveBrookClient/1.0\", " +
-                 "got \""+userAgents+"\"");
+            fail( "Expected \"SteveBrookClient/1.0,MayorClient/1.0\" or \"MayorClient/1.0,SteveBrookClient/1.0\", " +
+                    "got \"" + userAgents + "\"" );
         }
     }
 

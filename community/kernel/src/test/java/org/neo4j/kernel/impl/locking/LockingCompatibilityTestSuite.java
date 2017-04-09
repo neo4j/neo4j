@@ -231,7 +231,7 @@ public abstract class LockingCompatibilityTestSuite
             {
                 lock.get( 5, TimeUnit.SECONDS );
             }
-            catch(ExecutionException | TimeoutException | InterruptedException e)
+            catch ( ExecutionException | TimeoutException | InterruptedException e )
             {
                 throw new RuntimeException( "Waiting for lock timed out!" );
             }

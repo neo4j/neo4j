@@ -113,7 +113,7 @@ public class Randoms
 
     public int intBetween( int min, int max )
     {
-        return min + random.nextInt( max-min+1 );
+        return min + random.nextInt( max - min + 1 );
     }
 
     public String string()
@@ -169,7 +169,7 @@ public class Randoms
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
     {
         assert min <= max;
-        int diff = min == max ? 0 : random.nextInt( max-min );
+        int diff = min == max ? 0 : random.nextInt( max - min );
         int length = min + diff;
         T[] result = (T[]) Array.newInstance( among.getClass().getComponentType(), length );
         for ( int i = 0; i < length; i++ )

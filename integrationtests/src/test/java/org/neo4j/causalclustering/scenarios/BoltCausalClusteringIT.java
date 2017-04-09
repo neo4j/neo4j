@@ -19,22 +19,21 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
-import java.util.logging.Level;
-
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.logging.Level;
 
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -53,37 +52,29 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -696,7 +687,7 @@ public class BoltCausalClusteringIT
 
         Driver driver = GraphDatabase.driver( cluster.awaitLeader().routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        try(Session session = driver.session())
+        try (Session session = driver.session())
         {
             session.writeTransaction( ( tx ) ->
             {
@@ -717,7 +708,7 @@ public class BoltCausalClusteringIT
         final int nodesToCreate = 20000;
         for ( int i = 0; i < iterations; i++ )
         {
-            try(Session writeSession = driver.session())
+            try (Session writeSession = driver.session())
             {
                 writeSession.writeTransaction( tx ->
                 {

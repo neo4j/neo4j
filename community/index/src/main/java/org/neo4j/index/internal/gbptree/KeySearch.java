@@ -68,7 +68,7 @@ class KeySearch
         }
 
         int lower = 0;
-        int higher = keyCount-1;
+        int higher = keyCount - 1;
         int pos;
         boolean hit = false;
 
@@ -106,7 +106,7 @@ class KeySearch
                 }
                 else
                 {
-                    lower = pos+1;
+                    lower = pos + 1;
                 }
             }
             if ( lower != higher )

@@ -26,7 +26,6 @@ import org.neo4j.desktop.config.portable.Environment;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
-
 import static org.apache.commons.lang.StringUtils.join;
 
 class WindowsEnvironment extends Environment
@@ -39,9 +38,9 @@ class WindowsEnvironment extends Environment
         {
             super.editFile( file );
         }
-        catch( IOException|UnsupportedOperationException ex )
+        catch ( IOException | UnsupportedOperationException ex )
         {
-            getRuntime().exec( new String[] { "notepad", file.getAbsolutePath() } );
+            getRuntime().exec( new String[]{"notepad", file.getAbsolutePath()} );
         }
     }
 
@@ -52,9 +51,9 @@ class WindowsEnvironment extends Environment
         {
             super.openDirectory( directory );
         }
-        catch( IOException|UnsupportedOperationException ex )
+        catch ( IOException | UnsupportedOperationException ex )
         {
-            getRuntime().exec( new String[] { "explorer", directory.getAbsolutePath() } );
+            getRuntime().exec( new String[]{"explorer", directory.getAbsolutePath()} );
         }
     }
 

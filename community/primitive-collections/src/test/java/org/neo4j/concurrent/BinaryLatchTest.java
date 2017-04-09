@@ -75,7 +75,9 @@ public class BinaryLatchTest
             fail( "Call should have timed out" );
         }
         catch ( TimeoutException ignore )
-        {}
+        {
+            // empty
+        }
 
         latch.release();
 

@@ -138,7 +138,7 @@ public class TestArrayMap
 
         map.put( "next key", 999 );
         Map dataAsMap = (Map) dataField.get( map );
-        assertEquals( arraySize+1, dataAsMap.size() );
+        assertEquals( arraySize + 1, dataAsMap.size() );
 
         map.remove( "key1" );
         map.remove( "key2" );

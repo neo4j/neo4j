@@ -73,13 +73,7 @@ public class TypeMappersTest
                 new Object[]{String.class, NTString, null, null},
 
                 new Object[]{Map.class, NTMap, new HashMap<>(), new HashMap<>()},
-                new Object[]{Map.class, NTMap, new HashMap<String,Object>()
-                {{
-                    put( "k", 1 );
-                }}, new HashMap<String,Object>()
-                {{
-                    put( "k", 1 );
-                }}},
+                new Object[]{Map.class, NTMap, getKMap(), getKMap()},
                 new Object[]{Map.class, NTMap, null, null},
 
                 new Object[]{List.class, NTList( NTAny ), emptyList(), emptyList()},
@@ -133,6 +127,14 @@ public class TypeMappersTest
                 new Object[]{Double.class, NTFloat, Double.MIN_VALUE, Double.MIN_VALUE},
                 new Object[]{Double.class, NTFloat, Double.MAX_VALUE, Double.MAX_VALUE}
         );
+    }
+
+    private static HashMap<String,Object> getKMap()
+    {
+        return new HashMap<String,Object>()
+        {{
+            put( "k", 1 );
+        }};
     }
 
     @Test

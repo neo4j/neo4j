@@ -315,12 +315,12 @@ public class GraphDbHelper
         {
             try
             {
-                Node referenceNode = database.getGraph().getNodeById(0L);
+                Node referenceNode = database.getGraph().getNodeById( 0L );
 
                 tx.success();
                 return referenceNode.getId();
             }
-            catch(NotFoundException e)
+            catch ( NotFoundException e )
             {
                 Node newNode = database.getGraph().createNode();
                 tx.success();

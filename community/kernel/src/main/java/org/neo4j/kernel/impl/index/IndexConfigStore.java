@@ -64,7 +64,7 @@ public class IndexConfigStore extends LifecycleAdapter
     {
         if ( dontUseBuffer.capacity() < size )
         {
-            dontUseBuffer = ByteBuffer.allocate( size*2 );
+            dontUseBuffer = ByteBuffer.allocate( size * 2 );
         }
         return dontUseBuffer;
     }

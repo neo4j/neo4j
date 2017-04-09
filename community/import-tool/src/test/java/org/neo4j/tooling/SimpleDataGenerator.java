@@ -20,6 +20,7 @@
 package org.neo4j.tooling;
 
 import java.util.function.Function;
+
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -75,7 +76,7 @@ public class SimpleDataGenerator extends SourceTraceability.Adapter
         String[] result = new String[count];
         for ( int i = 0; i < count; i++ )
         {
-            result[i] = prefix + (i+1);
+            result[i] = prefix + (i + 1);
         }
         return result;
     }

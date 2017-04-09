@@ -93,7 +93,7 @@ public class CypherResultRepresentation extends MappingRepresentation
 
     private Representation getRepresentation( Object r )
     {
-        if( r == null )
+        if ( r == null )
         {
             return ValueRepresentation.string( null );
         }
@@ -103,7 +103,7 @@ public class CypherResultRepresentation extends MappingRepresentation
             return new PathRepresentation<>((Path) r );
         }
 
-        if(r instanceof Iterable)
+        if ( r instanceof Iterable )
         {
             return handleIterable( (Iterable) r );
         }

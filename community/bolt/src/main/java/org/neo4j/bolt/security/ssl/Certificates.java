@@ -149,21 +149,21 @@ public class Certificates
         CertificateFactory certFactory = CertificateFactory.getInstance( CERTIFICATE_TYPE );
         Collection<Certificate> certificates = new LinkedList<>();
 
-        try(PemReader r = new PemReader( new FileReader( certFile ) ))
+        try ( PemReader r = new PemReader( new FileReader( certFile ) ) )
         {
-            for( PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject() )
+            for ( PemObject pemObject = r.readPemObject(); pemObject != null; pemObject = r.readPemObject() )
             {
                 byte[] encodedCert = pemObject.getContent();
                 certificates.addAll( certFactory.generateCertificates( new ByteArrayInputStream( encodedCert ) ) );
             }
         }
 
-        if(certificates.size() == 0)
+        if ( certificates.size() == 0 )
         {
             // Ok, failed to read as PEM file, try and read it as raw binary certificate
             try ( FileInputStream in = new FileInputStream( certFile ) )
             {
-                certificates = (Collection<Certificate>)certFactory.generateCertificates( in );
+                certificates = (Collection<Certificate>) certFactory.generateCertificates( in );
             }
         }
 
@@ -175,10 +175,10 @@ public class Certificates
             InvalidKeySpecException, NoSuchPaddingException,
             InvalidKeyException, InvalidAlgorithmParameterException
     {
-        try(PemReader r = new PemReader( new FileReader( privateKeyFile ) ))
+        try ( PemReader r = new PemReader( new FileReader( privateKeyFile ) ) )
         {
             PemObject pemObject = r.readPemObject();
-            if( pemObject != null )
+            if ( pemObject != null )
             {
                 byte[] encodedKey = pemObject.getContent();
                 KeySpec keySpec = new PKCS8EncodedKeySpec( encodedKey );
@@ -208,14 +208,14 @@ public class Certificates
         }
 
         // Ok, failed to read as PEM file, try and read it as a raw binary private key
-        try(DataInputStream in = new DataInputStream(new FileInputStream(privateKeyFile)))
+        try ( DataInputStream in = new DataInputStream( new FileInputStream( privateKeyFile ) ) )
         {
             byte[] keyBytes = new byte[(int) privateKeyFile.length()];
             in.readFully( keyBytes );
 
-            KeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+            KeySpec keySpec = new PKCS8EncodedKeySpec( keyBytes );
 
-            return KeyFactory.getInstance( DEFAULT_ENCRYPTION ).generatePrivate(keySpec);
+            return KeyFactory.getInstance( DEFAULT_ENCRYPTION ).generatePrivate( keySpec );
         }
     }
 

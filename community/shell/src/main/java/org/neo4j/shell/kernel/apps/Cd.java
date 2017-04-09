@@ -313,7 +313,7 @@ public class Cd extends TransactionProvidingApp
                         return true;
                     }
                 }
-                if ( System.currentTimeMillis()-startTime > 350 )
+                if ( System.currentTimeMillis() - startTime > 350 )
                 {
                     // DOn't spend too long time in here
                     return true;

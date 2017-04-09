@@ -148,7 +148,7 @@ public class FailoverWithAdditionalSlaveFailuresIT
         HighlyAvailableGraphDatabase slave = null;
 
         List<HighlyAvailableGraphDatabase> excluded = new ArrayList<>();
-        while( slaveOrder-->0 )
+        while ( slaveOrder-- > 0 )
         {
             slave = cluster.getAnySlave( toArray( excluded ) );
             excluded.add( slave );

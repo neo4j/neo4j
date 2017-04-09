@@ -45,7 +45,7 @@ public class NettyServerTest
     {
         // Given an occupied port
         int port = 16000;
-        try(ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ))
+        try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
         {
             final ListenSocketAddress address = new ListenSocketAddress( "localhost", port );
 

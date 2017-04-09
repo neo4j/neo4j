@@ -22,18 +22,23 @@ package org.neo4j.bolt.v1.messaging;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
-import org.neo4j.bolt.v1.messaging.message.*;
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
+import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
@@ -41,7 +46,13 @@ import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
-import static org.neo4j.bolt.v1.messaging.example.Paths.*;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ONE;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ZERO;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LOOP;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_NODES_VISITED_MULTIPLE_TIMES;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 import static org.neo4j.graphdb.Label.label;
@@ -135,26 +146,26 @@ public class BoltResponseMessageTest
                          "6E 63 65 C9 07 CF 92 01 01"
         ) );
         assertThat( serialized( PATH_WITH_LENGTH_TWO ),
-                equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72"+ lineSeparator() +
-                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61"+ lineSeparator() +
-                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9"+ lineSeparator() +
-                         "03 EB 91 86 50 65 72 73 6F 6E A1 84 6E 61 6D 65"+ lineSeparator() +
-                         "85 43 61 72 6F 6C B3 4E C9 03 EC 90 A1 84 6E 61"+ lineSeparator() +
-                         "6D 65 84 44 61 76 65 92 B3 72 0D 85 4C 49 4B 45"+ lineSeparator() +
-                         "53 A0 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F"+ lineSeparator() +
+                equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9" + lineSeparator() +
+                         "03 EB 91 86 50 65 72 73 6F 6E A1 84 6E 61 6D 65" + lineSeparator() +
+                         "85 43 61 72 6F 6C B3 4E C9 03 EC 90 A1 84 6E 61" + lineSeparator() +
+                         "6D 65 84 44 61 76 65 92 B3 72 0D 85 4C 49 4B 45" + lineSeparator() +
+                         "53 A0 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F" + lineSeparator() +
                          "A0 94 01 01 02 02"  ) );
         assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION),
-                equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72"+ lineSeparator() +
-                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61"+ lineSeparator() +
-                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9"+ lineSeparator() +
-                         "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F"+ lineSeparator() +
-                         "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67"+ lineSeparator() +
-                         "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1"+ lineSeparator() +
-                         "84 6E 61 6D 65 85 43 61 72 6F 6C B3 4E C9 03 EC"+ lineSeparator() +
-                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 93 B3 72 0C"+ lineSeparator() +
-                         "85 4B 4E 4F 57 53 A1 85 73 69 6E 63 65 C9 07 CF"+ lineSeparator() +
-                         "B3 72 20 88 44 49 53 4C 49 4B 45 53 A0 B3 72 22"+ lineSeparator() +
-                         "8A 4D 41 52 52 49 45 44 5F 54 4F A0 96 01 01 FE"+ lineSeparator() +
+                equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9" + lineSeparator() +
+                         "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F" + lineSeparator() +
+                         "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
+                         "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1" + lineSeparator() +
+                         "84 6E 61 6D 65 85 43 61 72 6F 6C B3 4E C9 03 EC" + lineSeparator() +
+                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 93 B3 72 0C" + lineSeparator() +
+                         "85 4B 4E 4F 57 53 A1 85 73 69 6E 63 65 C9 07 CF" + lineSeparator() +
+                         "B3 72 20 88 44 49 53 4C 49 4B 45 53 A0 B3 72 22" + lineSeparator() +
+                         "8A 4D 41 52 52 49 45 44 5F 54 4F A0 96 01 01 FE" + lineSeparator() +
                          "02 03 03" ) );
         assertThat( serialized( PATH_WITH_NODES_VISITED_MULTIPLE_TIMES ),
                 equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +

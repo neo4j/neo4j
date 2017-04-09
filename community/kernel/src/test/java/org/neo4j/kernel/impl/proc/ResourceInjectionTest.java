@@ -342,7 +342,7 @@ public class ResourceInjectionTest
             private MyAwesomeAPI api;
             public VoidOutput(MyAwesomeAPI api)
             {
-                this.api=api;
+                this.api = api;
             }
 
             @UserAggregationUpdate
@@ -398,7 +398,7 @@ public class ResourceInjectionTest
             private UnknownAPI api;
             public VoidOutput(UnknownAPI api)
             {
-                this.api=api;
+                this.api = api;
             }
 
             @UserAggregationUpdate
@@ -454,7 +454,7 @@ public class ResourceInjectionTest
 
             public VoidOutput(MyUnsafeAPI api)
             {
-                this.api=api;
+                this.api = api;
             }
 
             @UserAggregationUpdate

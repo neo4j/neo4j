@@ -19,13 +19,13 @@
  */
 package org.neo4j.cluster;
 
-import static org.neo4j.helpers.Uris.parameter;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URI;
+
+import static org.neo4j.helpers.Uris.parameter;
 
 /**
  * Represents the concept of the cluster wide unique id of an instance. The
@@ -109,6 +109,6 @@ public class InstanceId implements Externalizable, Comparable<InstanceId>
     public String instanceNameFromURI( URI member )
     {
         String name = member == null ? null : parameter( "memberName" ).apply( member );
-        return name == null? toString() : name;
+        return name == null ? toString() : name;
     }
 }

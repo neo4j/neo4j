@@ -251,8 +251,10 @@ public class KeyValueStoreFile implements Closeable
             // look at the low mark for the page
             int cmp = compare( key.buffer, catalogue, mid * key.size() * 2 );
             if ( cmp == 0 )
-            {// this page starts with the key
-                max = mid; // the previous page might also contain mid the key
+            {
+                // this page starts with the key
+                // the previous page might also contain mid the key
+                max = mid;
             }
             if ( cmp > 0 )
             {

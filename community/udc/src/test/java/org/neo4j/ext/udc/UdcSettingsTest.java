@@ -42,7 +42,7 @@ public class UdcSettingsTest
     @Rule
     public final Configuration configuration = new Configuration();
 
-    @Parameterized.Parameters(name="{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> variations()
     {
         return Arrays.asList(

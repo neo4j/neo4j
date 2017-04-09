@@ -128,7 +128,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
 
     public static class RecordChange<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY, RECORD, ADDITIONAL>
     {
-        private final Map<KEY, RecordProxy<KEY, RECORD, ADDITIONAL>> allChanges;
+        private final Map<KEY,RecordProxy<KEY,RECORD,ADDITIONAL>> allChanges;
         private final IntCounter changeCounter;
         private final Loader<KEY,RECORD,ADDITIONAL> loader;
 
@@ -140,9 +140,8 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         private RECORD before;
         private boolean changed;
 
-        public RecordChange(Map<KEY, RecordProxy<KEY, RECORD, ADDITIONAL>> allChanges, IntCounter changeCounter,
-                KEY key, RECORD record, Loader<KEY, RECORD, ADDITIONAL> loader, boolean created,
-                ADDITIONAL additionalData)
+        public RecordChange( Map<KEY,RecordProxy<KEY,RECORD,ADDITIONAL>> allChanges, IntCounter changeCounter, KEY key,
+                RECORD record, Loader<KEY,RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
@@ -156,11 +155,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         @Override
         public String toString()
         {
-            return "RecordChange{" +
-                   "record=" + record +
-                   "key=" + key +
-                   "created=" + created +
-                   '}';
+            return "RecordChange{" + "record=" + record + "key=" + key + "created=" + created + '}';
         }
 
         @Override
@@ -187,9 +182,9 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
-                RecordProxy<KEY, RECORD, ADDITIONAL> previous = this.allChanges.put( key, this );
+                RecordProxy<KEY,RECORD,ADDITIONAL> previous = this.allChanges.put( key, this );
 
-                if( previous == null || !previous.isChanged() )
+                if ( previous == null || !previous.isChanged() )
                 {
                     changeCounter.increment();
                 }

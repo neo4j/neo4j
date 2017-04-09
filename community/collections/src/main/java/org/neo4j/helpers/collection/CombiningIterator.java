@@ -69,7 +69,7 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
 
     protected Iterator<T> nextIteratorOrNull()
     {
-        if(iterators.hasNext())
+        if ( iterators.hasNext() )
         {
             return iterators.next();
         }

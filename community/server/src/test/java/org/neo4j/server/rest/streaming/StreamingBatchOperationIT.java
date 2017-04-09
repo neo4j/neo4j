@@ -120,8 +120,8 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
         assertEquals(3, secondPostResult.get("id"));
 
         // Should contain "from"
-        assertEquals("/node/"+idJoe+"/properties", putResult.get("from"));
-        assertEquals("/node/"+idJoe, getResult.get("from"));
+        assertEquals("/node/" + idJoe + "/properties", putResult.get("from"));
+        assertEquals("/node/" + idJoe, getResult.get("from"));
         assertEquals("/node", firstPostResult.get("from"));
         assertEquals("/node", secondPostResult.get("from"));
 
@@ -247,8 +247,7 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
 
     private String batchUri()
     {
-        return getDataUri()+"batch";
-
+        return getDataUri() + "batch";
     }
 
     @Test
@@ -382,7 +381,7 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
         .array()
             .object()
                 .key("method") .value("PUT")
-                .key("to")     .value("/node/"+gnode.getId()+"/properties")
+                .key("to")     .value("/node/" + gnode.getId() + "/properties")
                 .key("body")
                     .object()
                         .key("name").value(name)
@@ -402,7 +401,7 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
         .array()
             .object()
                 .key("method") .value("GET")
-                .key("to")     .value("/node/"+gnode.getId()+"/properties/name")
+                .key("to")     .value("/node/" + gnode.getId() + "/properties/name")
             .endObject()
         .endArray()
         .toString();

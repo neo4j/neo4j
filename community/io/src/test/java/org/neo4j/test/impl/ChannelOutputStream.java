@@ -61,7 +61,7 @@ public class ChannelOutputStream extends OutputStream
         while ( written < len )
         {
             buffer.clear();
-            buffer.put( b, index, Math.min( len-written, buffer.capacity() ) );
+            buffer.put( b, index, Math.min( len - written, buffer.capacity() ) );
             buffer.flip();
             written += channel.write( buffer );
         }

@@ -97,7 +97,7 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependencies( watcherService );
         life.add( watcherService );
 
-        this.accessCapability = config.get( GraphDatabaseSettings.read_only )? new ReadOnly() : new CanWrite();
+        this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 

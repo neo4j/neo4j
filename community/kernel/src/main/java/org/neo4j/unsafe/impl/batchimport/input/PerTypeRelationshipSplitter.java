@@ -97,13 +97,13 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
      */
     public Object currentType()
     {
-        return allRelationshipTypes[typeCursor-1];
+        return allRelationshipTypes[typeCursor - 1];
     }
 
     int highestTypeId()
     {
         int highest = 0;
-        for( Object type : allRelationshipTypes )
+        for ( Object type : allRelationshipTypes )
         {
             highest = max( highest, typeToId.applyAsInt( type ) );
         }
@@ -128,7 +128,7 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
         {
             super( actual );
             this.currentType = currentType;
-            this.receivers = new Receiver[highestTypeId()+1];
+            this.receivers = new Receiver[highestTypeId() + 1];
 
             try
             {

@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
@@ -43,7 +44,6 @@ import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
@@ -237,11 +237,11 @@ public class InternalFlatFileRealmIT
         {
             if ( fileName.equals( userStoreFile ) )
             {
-                return LARGE_NUMBER+1 - userStoreVersions.size();
+                return LARGE_NUMBER + 1 - userStoreVersions.size();
             }
             if ( fileName.equals( roleStoreFile ) )
             {
-                return LARGE_NUMBER+1 - roleStoreVersions.size();
+                return LARGE_NUMBER + 1 - roleStoreVersions.size();
             }
             return super.lastModifiedTime( fileName );
         }

@@ -331,7 +331,7 @@ public class NetworkReceiver
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
-            fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
+            fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );

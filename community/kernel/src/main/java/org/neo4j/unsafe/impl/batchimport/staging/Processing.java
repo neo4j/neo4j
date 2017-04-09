@@ -54,6 +54,6 @@ public class Processing
             park.park( thread );
             healthCheck.run();
         }
-        return nanoTime()-startTime;
+        return nanoTime() - startTime;
     }
 }

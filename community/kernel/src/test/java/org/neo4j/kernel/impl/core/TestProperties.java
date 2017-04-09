@@ -149,11 +149,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void byteRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        byte stride = Byte.MAX_VALUE/VALUE_RANGE_SPLIT;
+        byte stride = Byte.MAX_VALUE / VALUE_RANGE_SPLIT;
         for ( byte i = Byte.MIN_VALUE; i < Byte.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
-            i = i > 0 && Byte.MAX_VALUE-i < stride ? Byte.MAX_VALUE : (byte)(i + stride);
+            i = i > 0 && Byte.MAX_VALUE - i < stride ? Byte.MAX_VALUE : (byte) (i + stride);
         }
     }
 
@@ -161,11 +161,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void charRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        char stride = Character.MAX_VALUE/VALUE_RANGE_SPLIT;
+        char stride = Character.MAX_VALUE / VALUE_RANGE_SPLIT;
         for ( char i = Character.MIN_VALUE; i < Character.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
-            i = i > 0 && Character.MAX_VALUE-i < stride ? Character.MAX_VALUE : (char)(i + stride);
+            i = i > 0 && Character.MAX_VALUE - i < stride ? Character.MAX_VALUE : (char) (i + stride);
         }
     }
 
@@ -173,11 +173,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void shortRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        short stride = Short.MAX_VALUE/VALUE_RANGE_SPLIT;
+        short stride = Short.MAX_VALUE / VALUE_RANGE_SPLIT;
         for ( short i = Short.MIN_VALUE; i < Short.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
-            i = i > 0 && Short.MAX_VALUE-i < stride ? Short.MAX_VALUE : (short)(i + stride);
+            i = i > 0 && Short.MAX_VALUE - i < stride ? Short.MAX_VALUE : (short) (i + stride);
         }
     }
 
@@ -185,11 +185,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void intRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        int stride = Integer.MAX_VALUE/VALUE_RANGE_SPLIT;
+        int stride = Integer.MAX_VALUE / VALUE_RANGE_SPLIT;
         for ( int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
-            i = i > 0 && Integer.MAX_VALUE-i < stride ? Integer.MAX_VALUE : i + stride;
+            i = i > 0 && Integer.MAX_VALUE - i < stride ? Integer.MAX_VALUE : i + stride;
         }
     }
 
@@ -197,11 +197,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void longRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        long stride = Long.MAX_VALUE/VALUE_RANGE_SPLIT;
+        long stride = Long.MAX_VALUE / VALUE_RANGE_SPLIT;
         for ( long i = Long.MIN_VALUE; i < Long.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
-            i = i > 0 && Long.MAX_VALUE-i < stride ? Long.MAX_VALUE : i + stride;
+            i = i > 0 && Long.MAX_VALUE - i < stride ? Long.MAX_VALUE : i + stride;
         }
     }
 

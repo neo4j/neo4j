@@ -128,7 +128,7 @@ class LuceneTransactionState implements Closeable
             {
                 return c1;
             }
-            Collection<EntityId> result = new HashSet<>( c1.size()+c2.size(), 1 );
+            Collection<EntityId> result = new HashSet<>( c1.size() + c2.size(), 1 );
             result.addAll( c1 );
             result.addAll( c2 );
             return result;

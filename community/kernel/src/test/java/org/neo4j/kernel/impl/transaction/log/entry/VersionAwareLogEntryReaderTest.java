@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.junit.Test;
+
 import java.io.IOException;
+
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -28,11 +30,12 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
 
 public class VersionAwareLogEntryReaderTest
 {
@@ -383,7 +386,7 @@ public class VersionAwareLogEntryReaderTest
         {
             LogEntry entry = reader.readLogEntry( channel );
             assertNull( entry );
-            assertEquals( i+1, channel.readerPosition() );
+            assertEquals( i + 1, channel.readerPosition() );
         }
     }
 

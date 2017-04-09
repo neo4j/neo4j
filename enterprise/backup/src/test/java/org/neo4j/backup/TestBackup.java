@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -497,7 +496,7 @@ public class TestBackup
         {
             Node node = db.createNode();
             int threshold = parseInt( dense_node_threshold.getDefaultValue() );
-            for ( int i = 0; i < threshold*2; i++ )
+            for ( int i = 0; i < threshold * 2; i++ )
             {
                 node.createRelationshipTo( db.createNode(), TEST );
             }

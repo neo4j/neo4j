@@ -60,7 +60,7 @@ public class ExceptionRepresentation extends MappingRepresentation
         // For legacy reasons, this actually serializes into two separate formats - the old format, which simply
         // serializes a single exception, and the new format which serializes multiple errors and provides simple
         // status codes.
-        if(includeLegacyRepresentation)
+        if ( includeLegacyRepresentation )
         {
             renderWithLegacyFormat( errors.get( 0 ).cause(), serializer );
         }
@@ -98,7 +98,7 @@ public class ExceptionRepresentation extends MappingRepresentation
         }
 
         Throwable cause = exception.getCause();
-        if(cause != null)
+        if ( cause != null )
         {
             serializer.putMapping( "cause", new ExceptionRepresentation( cause ) );
         }
@@ -119,7 +119,7 @@ public class ExceptionRepresentation extends MappingRepresentation
         {
             serializer.putString( "code", error.status().code().serialize() );
             serializer.putString( "message", error.getMessage() );
-            if(error.shouldSerializeStackTrace())
+            if ( error.shouldSerializeStackTrace() )
             {
                 serializer.putString( "stackTrace", error.getStackTraceAsString() );
             }
@@ -140,11 +140,11 @@ public class ExceptionRepresentation extends MappingRepresentation
 
     private static Status statusCode( Throwable current )
     {
-        while(current != null)
+        while ( current != null )
         {
-            if(current instanceof Status.HasStatus)
+            if ( current instanceof Status.HasStatus )
             {
-                return ((Status.HasStatus)current).status();
+                return ((Status.HasStatus) current).status();
             }
             if ( current instanceof ConstraintViolationException )
             {

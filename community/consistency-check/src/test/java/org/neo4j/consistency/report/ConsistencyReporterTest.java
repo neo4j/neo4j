@@ -259,7 +259,7 @@ public class ConsistencyReporterTest
             this.method = method;
         }
 
-        @Parameterized.Parameters(name="{1}")
+        @Parameterized.Parameters( name = "{1}" )
         public static List<Object[]> methods()
         {
             ArrayList<Object[]> methods = new ArrayList<>();

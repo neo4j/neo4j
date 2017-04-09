@@ -215,8 +215,8 @@ public class HANewSnapshotFunctionTest
 
     private MemberIsAvailable roleForId( String role, int id )
     {
-        return new MemberIsAvailable( role, new InstanceId( id ),
-                URI.create( "cluster://"+id ), URI.create( "ha://"+id ), StoreId.DEFAULT );
+        return new MemberIsAvailable( role, new InstanceId( id ), URI.create( "cluster://" + id ),
+                URI.create( "ha://" + id ), StoreId.DEFAULT );
     }
 
     private void eventsMatch( Iterable<MemberIsAvailable> result, List<MemberIsAvailable> expected )

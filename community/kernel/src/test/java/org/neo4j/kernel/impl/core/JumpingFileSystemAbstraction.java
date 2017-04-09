@@ -164,41 +164,41 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
 
         private long translateIncoming( long position, boolean allowFix )
         {
-            long actualRecord = position/recordSize;
-            if ( actualRecord < sizePerJump/2 )
+            long actualRecord = position / recordSize;
+            if ( actualRecord < sizePerJump / 2 )
             {
                 return position;
             }
             else
             {
-                long jumpIndex = (actualRecord+sizePerJump)/0x100000000L;
+                long jumpIndex = (actualRecord + sizePerJump) / 0x100000000L;
                 long diff = actualRecord - jumpIndex * 0x100000000L;
                 diff = assertWithinDiff( diff, allowFix );
-                long offsettedRecord = jumpIndex*sizePerJump + diff;
-                return offsettedRecord*recordSize;
+                long offsettedRecord = jumpIndex * sizePerJump + diff;
+                return offsettedRecord * recordSize;
             }
         }
 
         private long translateOutgoing( long offsettedPosition )
         {
-            long offsettedRecord = offsettedPosition/recordSize;
-            if ( offsettedRecord < sizePerJump/2 )
+            long offsettedRecord = offsettedPosition / recordSize;
+            if ( offsettedRecord < sizePerJump / 2 )
             {
                 return offsettedPosition;
             }
             else
             {
-                long jumpIndex = (offsettedRecord-sizePerJump/2) / sizePerJump + 1;
-                long diff = ((offsettedRecord-sizePerJump/2) % sizePerJump) - sizePerJump/2;
+                long jumpIndex = (offsettedRecord - sizePerJump / 2) / sizePerJump + 1;
+                long diff = ((offsettedRecord - sizePerJump / 2) % sizePerJump) - sizePerJump / 2;
                 assertWithinDiff( diff, false );
-                long actualRecord = jumpIndex*0x100000000L - sizePerJump/2 + diff;
-                return actualRecord*recordSize;
+                long actualRecord = jumpIndex * 0x100000000L - sizePerJump / 2 + diff;
+                return actualRecord * recordSize;
             }
         }
 
         private long assertWithinDiff( long diff, boolean allowFix )
         {
-            if ( diff < -sizePerJump/2 || diff > sizePerJump/2 )
+            if ( diff < -sizePerJump / 2 || diff > sizePerJump / 2 )
             {
                 if ( allowFix )
                 {

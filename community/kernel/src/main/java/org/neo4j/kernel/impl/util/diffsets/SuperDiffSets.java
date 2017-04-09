@@ -218,11 +218,11 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     public void clear()
     {
-        if(addedElements != null)
+        if ( addedElements != null )
         {
             addedElements.clear();
         }
-        if(removedElements != null)
+        if ( removedElements != null )
         {
             removedElements.clear();
         }

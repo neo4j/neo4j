@@ -92,7 +92,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         public String toString()
         {
             return format( "%s[%s last accessed at %d (%s ago)", getClass().getSimpleName(),
-                    value, latestActivityTimestamp, duration( currentTimeMillis()-latestActivityTimestamp ) );
+                    value, latestActivityTimestamp, duration( currentTimeMillis() - latestActivityTimestamp ) );
         }
     }
 
@@ -122,7 +122,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
      */
     public VALUE end( KEY key )
     {
-        while(true)
+        while ( true )
         {
             Entry entry = repo.get( key );
             if ( entry == null )
@@ -169,7 +169,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         {
             throw new NoSuchEntryException( String.format("Cannot access '%s', no such entry exists.", key) );
         }
-        if(entry.acquire())
+        if ( entry.acquire() )
         {
             return entry.value;
         }
@@ -179,11 +179,11 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     public void release( KEY key )
     {
         Entry entry = repo.get( key );
-        if(entry != null && !entry.release())
+        if ( entry != null && !entry.release() )
         {
             // This happens when another client has asked that this entry be ended while we were using it, leaving us
             // a note to not release the object back to the public, and to end its life when we are done with it.
-            end0(key, entry.value);
+            end0( key, entry.value );
         }
     }
 

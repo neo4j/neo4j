@@ -85,7 +85,7 @@ public class InProcessServerControls implements ServerControls
         }
         try
         {
-            if( looksLikeMd5Hash( serverFolder.getName() ) )
+            if ( looksLikeMd5Hash( serverFolder.getName() ) )
             {
                 FileUtils.deleteRecursively( serverFolder );
             }

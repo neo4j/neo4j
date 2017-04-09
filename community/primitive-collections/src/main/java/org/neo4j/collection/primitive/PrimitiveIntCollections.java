@@ -519,13 +519,13 @@ public class PrimitiveIntCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
         if ( cursor < fromEnd )
         {
             throw new NoSuchElementException( "Item " + index + " not found in " + iterator );
         }
-        return trail[cursor%fromEnd];
+        return trail[cursor % fromEnd];
     }
 
     public static int itemAt( PrimitiveIntIterator iterator, int index, int defaultItem )
@@ -545,9 +545,9 @@ public class PrimitiveIntCollections
         int cursor = 0;
         for ( ; iterator.hasNext(); cursor++ )
         {
-            trail[cursor%trail.length] = iterator.next();
+            trail[cursor % trail.length] = iterator.next();
         }
-        return cursor < fromEnd ? defaultItem : trail[cursor%fromEnd];
+        return cursor < fromEnd ? defaultItem : trail[cursor % fromEnd];
     }
 
     /**
@@ -803,9 +803,9 @@ public class PrimitiveIntCollections
     public static List<Integer> toList( PrimitiveIntIterator iterator )
     {
         List<Integer> out = new ArrayList<>();
-        while(iterator.hasNext())
+        while ( iterator.hasNext() )
         {
-            out.add(iterator.next());
+            out.add( iterator.next() );
         }
         return out;
     }

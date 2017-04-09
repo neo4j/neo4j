@@ -49,7 +49,7 @@ public class ProofDatabase
 
     public Node newState( ClusterState state )
     {
-        try( Transaction tx = gds.beginTx() )
+        try ( Transaction tx = gds.beginTx() )
         {
             Node node = gds.createNode( label( "State" ) );
             node.setProperty( "description", state.toString() );
@@ -63,7 +63,7 @@ public class ProofDatabase
     public void newStateTransition( ClusterState originalState,
                             Pair<ClusterAction, ClusterState> transition )
     {
-        try( Transaction tx = gds.beginTx() )
+        try ( Transaction tx = gds.beginTx() )
         {
             Node stateNode = stateNodes.get( originalState );
 
@@ -77,7 +77,7 @@ public class ProofDatabase
 
     private void cleanDbDir( File dbDir )
     {
-        if( dbDir.exists())
+        if ( dbDir.exists() )
         {
             try
             {

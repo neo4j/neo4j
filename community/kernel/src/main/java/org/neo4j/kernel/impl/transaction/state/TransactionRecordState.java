@@ -255,7 +255,7 @@ public class TransactionRecordState implements RecordState
             commands.add( new Command.SchemaRuleCommand(
                     change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
         }
-        assert commands.size() == noOfCommands - skippedCommands: format( "Expected %d final commands, got %d " +
+        assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
                 "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
 
         prepared = true;
@@ -585,8 +585,9 @@ public class TransactionRecordState implements RecordState
 
     public void createSchemaRule( SchemaRule schemaRule )
     {
-        for( DynamicRecord change : recordChangeSet.getSchemaRuleChanges()
-                .create( schemaRule.getId(), schemaRule ).forChangingData() )
+        for ( DynamicRecord change : recordChangeSet.getSchemaRuleChanges()
+                .create( schemaRule.getId(), schemaRule )
+                .forChangingData() )
         {
             change.setInUse( true );
             change.setCreated();

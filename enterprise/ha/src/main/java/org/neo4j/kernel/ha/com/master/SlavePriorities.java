@@ -86,14 +86,14 @@ public abstract class SlavePriorities
                     {
                         return new PrefetchingIterator<Slave>()
                         {
-                            private int start = index.getAndIncrement()%slaveList.size();
+                            private int start = index.getAndIncrement() % slaveList.size();
                             private int count;
 
                             @Override
                             protected Slave fetchNextOrNull()
                             {
                                 int id = count++;
-                                return id <= slaveList.size() ? slaveList.get( (start+id)%slaveList.size() ) : null;
+                                return id <= slaveList.size() ? slaveList.get( (start + id) % slaveList.size() ) : null;
                             }
                         };
                     }

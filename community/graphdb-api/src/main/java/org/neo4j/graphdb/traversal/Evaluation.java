@@ -75,8 +75,8 @@ public enum Evaluation
      */
     public static Evaluation of( boolean includes, boolean continues )
     {
-        return includes?(continues?INCLUDE_AND_CONTINUE:INCLUDE_AND_PRUNE):
-                        (continues?EXCLUDE_AND_CONTINUE:EXCLUDE_AND_PRUNE);
+        return includes ? (continues ? INCLUDE_AND_CONTINUE : INCLUDE_AND_PRUNE)
+                        : (continues ? EXCLUDE_AND_CONTINUE : EXCLUDE_AND_PRUNE);
     }
 
     /**
@@ -92,7 +92,7 @@ public enum Evaluation
      */
     public static Evaluation ofIncludes( boolean includes )
     {
-        return includes?INCLUDE_AND_CONTINUE:EXCLUDE_AND_CONTINUE;
+        return includes ? INCLUDE_AND_CONTINUE : EXCLUDE_AND_CONTINUE;
     }
 
     /**
@@ -108,6 +108,6 @@ public enum Evaluation
      */
     public static Evaluation ofContinues( boolean continues )
     {
-        return continues?INCLUDE_AND_CONTINUE:INCLUDE_AND_PRUNE;
+        return continues ? INCLUDE_AND_CONTINUE : INCLUDE_AND_PRUNE;
     }
 }

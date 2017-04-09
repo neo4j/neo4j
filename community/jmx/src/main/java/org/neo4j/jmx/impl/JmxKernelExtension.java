@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.management.MBeanServer;
 import javax.management.remote.JMXServiceURL;
 
@@ -138,7 +137,7 @@ public class JmxKernelExtension implements Lifecycle
             }
             return bean;
         }
-        throw new NotFoundException( "No management bean found for "+type.getName() );
+        throw new NotFoundException( "No management bean found for " + type.getName() );
     }
 
     public <T> Collection<T> getManagementBeans( Class<T> beanInterface )

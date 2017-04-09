@@ -95,7 +95,7 @@ public class InputNodeReader extends InputEntityReader<InputNode>
 
     private String[] ensureRoomForOneMore( String[] labels, int cursor )
     {
-        return cursor >= labels.length ? Arrays.copyOf( labels, cursor+1 ) : labels;
+        return cursor >= labels.length ? Arrays.copyOf( labels, cursor + 1 ) : labels;
     }
 
     private void remove( String item, String[] from, int cursor )
@@ -104,8 +104,8 @@ public class InputNodeReader extends InputEntityReader<InputNode>
         {
             if ( item.equals( from[i] ) )
             {
-                from[i] = from[cursor-1];
-                from[cursor-1] = null;
+                from[i] = from[cursor - 1];
+                from[cursor - 1] = null;
                 return;
             }
         }

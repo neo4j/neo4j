@@ -83,7 +83,7 @@ public class TestShortArray
         int[] result = new int[count];
         for ( int i = 0; i < count; i++ )
         {
-            result[i] = i*stride;
+            result[i] = i * stride;
         }
         return result;
     }

@@ -124,7 +124,7 @@ public class ProtocolServer
     {
         StringBuilder builder = new StringBuilder();
         builder.append( "Instance URI: " ).append( boundAt.toString() ).append( "\n" );
-        for( StateMachine stateMachine : stateMachines.getStateMachines() )
+        for ( StateMachine stateMachine : stateMachines.getStateMachines() )
         {
             builder.append( "  " ).append( stateMachine ).append( "\n" );
         }

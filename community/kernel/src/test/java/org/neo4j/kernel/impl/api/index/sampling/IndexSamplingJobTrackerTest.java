@@ -156,7 +156,7 @@ public class IndexSamplingJobTrackerTest
         assertFalse( waiting.get() );
 
         // eventually we accept new jobs
-        while( ! jobTracker.canExecuteMoreSamplingJobs() )
+        while ( !jobTracker.canExecuteMoreSamplingJobs() )
         {
             Thread.yield();
         }

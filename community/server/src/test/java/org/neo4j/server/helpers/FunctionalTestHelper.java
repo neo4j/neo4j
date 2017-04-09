@@ -204,7 +204,7 @@ public final class FunctionalTestHelper
 
     public long getNodeIdFromUri( String nodeUri )
     {
-        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) +1 , nodeUri.length() ) );
+        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) + 1, nodeUri.length() ) );
     }
 
     public long getRelationshipIdFromUri( String relationshipUri )

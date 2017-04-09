@@ -85,13 +85,12 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        switch(status.code().classification())
+        switch ( status.code().classification() )
         {
-            case ClientError:
-                return false;
-            default:
-                return true;
-
+        case ClientError:
+            return false;
+        default:
+            return true;
         }
     }
 

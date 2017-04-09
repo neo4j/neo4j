@@ -70,7 +70,7 @@ class SameGroupDetector
     {
         if ( cursor == seen.length )
         {
-            seen = Arrays.copyOf( seen, seen.length*2 );
+            seen = Arrays.copyOf( seen, seen.length * 2 );
         }
         seen[cursor++] = dataIndex;
         seen[cursor++] = groupId;

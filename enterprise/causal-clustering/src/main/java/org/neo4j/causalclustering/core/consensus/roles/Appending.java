@@ -29,8 +29,8 @@ import org.neo4j.causalclustering.core.consensus.outcome.BatchAppendLogEntries;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
 import org.neo4j.causalclustering.core.consensus.outcome.ShipCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.TruncateLogCommand;
-import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
+import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -73,7 +73,7 @@ class Appending
             long logIndex = baseIndex + offset;
             long logTerm = state.entryLog().readEntryTerm( logIndex );
 
-            if( logIndex > state.entryLog().appendIndex() )
+            if ( logIndex > state.entryLog().appendIndex() )
             {
                 // entry doesn't exist because it's beyond the current log end, so we can go ahead and append
                 break;
@@ -98,7 +98,7 @@ class Appending
             }
         }
 
-        if( offset < request.entries().length )
+        if ( offset < request.entries().length )
         {
             outcome.addLogCommand( new BatchAppendLogEntries( baseIndex, offset, request.entries() ) );
         }

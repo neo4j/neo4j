@@ -101,25 +101,25 @@ public class TypeMappers
     public NeoValueConverter converterFor( Type javaType ) throws ProcedureException
     {
         NeoValueConverter converter = javaToNeo.get( javaType );
-        if( converter != null )
+        if ( converter != null )
         {
             return converter;
         }
 
-        if( javaType instanceof ParameterizedType )
+        if ( javaType instanceof ParameterizedType )
         {
             ParameterizedType pt = (ParameterizedType) javaType;
             Type rawType = pt.getRawType();
 
-            if( rawType == List.class )
+            if ( rawType == List.class )
             {
                 Type type = pt.getActualTypeArguments()[0];
                 return toList( converterFor( type ), type );
             }
-            else if( rawType == Map.class )
+            else if ( rawType == Map.class )
             {
                 Type type = pt.getActualTypeArguments()[0];
-                if( type != String.class )
+                if ( type != String.class )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                             "Maps are required to have `String` keys - but this map has `%s` keys.",

@@ -104,7 +104,7 @@ public class NodeRelationshipCacheTest
         int nodeCount = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.OFF_HEAP, 20, 100, base );
         cache.setHighNodeId( nodeCount );
-        incrementRandomCounts( cache, nodeCount, nodeCount*20 );
+        incrementRandomCounts( cache, nodeCount, nodeCount * 20 );
 
         // Test sparse node semantics
         {
@@ -129,7 +129,7 @@ public class NodeRelationshipCacheTest
         Direction[] directions = Direction.values();
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         cache.setForwardScan( true );
-        cache.setHighNodeId( nodes+1 );
+        cache.setHighNodeId( nodes + 1 );
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
@@ -185,10 +185,9 @@ public class NodeRelationshipCacheTest
 
         // WHEN
         long nodeId = 1_000_000 - 1;
-        cache.setHighNodeId( nodeId+1 );
-        Direction direction = Direction.OUTGOING;
+        cache.setHighNodeId( nodeId + 1 );
         long relId = 10;
-        cache.getAndPutRelationship( nodeId, direction, relId, false );
+        cache.getAndPutRelationship( nodeId, Direction.OUTGOING, relId, false );
 
         // THEN
         assertEquals( relId, cache.getFirstRel( nodeId, mock( GroupVisitor.class ) ) );
@@ -351,7 +350,7 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 0;
-        cache.setHighNodeId( nodeId+1 );
+        cache.setHighNodeId( nodeId + 1 );
         cache.incrementCount( nodeId );
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
         when( groupVisitor.visit( anyLong(), anyLong(), anyLong(), anyLong(), anyLong() ) ).thenReturn( 1L, 2L, 3L );
@@ -468,7 +467,7 @@ public class NodeRelationshipCacheTest
     private long incrementRandomCounts( NodeRelationshipCache link, int nodeCount, int i )
     {
         long highestSeenCount = 0;
-        while ( i --> 0 )
+        while ( i-- > 0 )
         {
             long node = random.nextInt( nodeCount );
             highestSeenCount = max( highestSeenCount, link.incrementCount( node ) );

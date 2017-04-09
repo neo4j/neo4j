@@ -81,9 +81,9 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
             {   // Encode the properties and attach the blocks to the BatchEntity.
                 // Dynamic records for each entity will start from 0, they will be reassigned later anyway
                 int count = input.properties().length >> 1;
-                if ( blockCursor+count > propertyBlocks.length )
+                if ( blockCursor + count > propertyBlocks.length )
                 {
-                    propertyBlocks = copyOf( propertyBlocks, max( propertyBlocks.length << 1, blockCursor+count ) );
+                    propertyBlocks = copyOf( propertyBlocks, max( propertyBlocks.length << 1, blockCursor + count ) );
                 }
                 propertyKeyHolder.propertyKeysAndValues( propertyBlocks, blockCursor,
                         input.properties(), propertyCreator );

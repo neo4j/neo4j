@@ -107,11 +107,11 @@ public class DelayedRenewableTimeoutServiceTest
         life.add( timeoutService );
 
         // when
-        Thread.sleep( TIMEOUT_MS/2 );
+        Thread.sleep( TIMEOUT_MS / 2 );
         long timeoutCountSample = timeoutCount.get();
         long sampleTime = System.currentTimeMillis();
 
-        if( sampleTime < startTime + TIMEOUT_MS )
+        if ( sampleTime < startTime + TIMEOUT_MS )
         {
             assertThat( timeoutCountSample, is( 0L ) );
         }
@@ -119,7 +119,7 @@ public class DelayedRenewableTimeoutServiceTest
         long renewTime = System.currentTimeMillis();
         timeout.renew();
 
-        if( System.currentTimeMillis() < startTime + TIMEOUT_MS )
+        if ( System.currentTimeMillis() < startTime + TIMEOUT_MS )
         {
             // we managed to renew before it expired
             Predicates.await( timeoutCount::get, count -> count == 1, LONG_TIME_MS, MILLISECONDS, 1, MILLISECONDS );
@@ -151,9 +151,9 @@ public class DelayedRenewableTimeoutServiceTest
         timeoutService.shutdown();
 
         timeout.renew();
-        Thread.sleep( TIMEOUT_MS/2 );
+        Thread.sleep( TIMEOUT_MS / 2 );
         clock.forward( TIMEOUT_MS, MILLISECONDS );
-        Thread.sleep( TIMEOUT_MS/2 );
+        Thread.sleep( TIMEOUT_MS / 2 );
 
         // then
         assertThat( timeoutCount.get(), equalTo( 1L ) );
@@ -184,7 +184,7 @@ public class DelayedRenewableTimeoutServiceTest
         life.add( timeoutService );
 
         clock.forward( TIMEOUT_MS, MILLISECONDS );
-        Thread.sleep( TIMEOUT_MS/2 ); // to allow the scheduled timeout to fire and get stuck in the latch
+        Thread.sleep( TIMEOUT_MS / 2 ); // to allow the scheduled timeout to fire and get stuck in the latch
 
         // given: another thread that wants to cancel the timeout while the handler is in progress
         Thread cancelThread = new Thread()
@@ -199,7 +199,7 @@ public class DelayedRenewableTimeoutServiceTest
         // when: we cancel the timeout, then it should not deadlock, and the latch be immediately released
         cancelThread.start();
         // so the following join should finish quicker than the latch expiry, and the cancelThread should be dead
-        cancelThread.join( LONG_TIME_MS/2 );
+        cancelThread.join( LONG_TIME_MS / 2 );
         assertFalse( cancelThread.isAlive() );
 
         // cleanup

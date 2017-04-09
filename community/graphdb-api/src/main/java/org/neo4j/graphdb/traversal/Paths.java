@@ -198,7 +198,7 @@ public class Paths
             public String nodeRepresentation( T path, Node node )
             {
                 String representation = representation( node );
-                return "(" + ( nodeId ? node.getId(): "" ) +
+                return "(" + (nodeId ? node.getId() : "" ) +
                        ( nodeId && !representation.equals( "" ) ? "," : "" ) +
                        representation + ")";
             }
@@ -230,7 +230,7 @@ public class Paths
                 {
                     builder.append( "<" );
                 }
-                builder.append( "--[" + ( relId ? relationship.getId(): "" ) );
+                builder.append( "--[" + (relId ? relationship.getId() : "") );
                 String representation = representation( relationship );
                 if ( relId && !representation.equals( "" ) )
                 {

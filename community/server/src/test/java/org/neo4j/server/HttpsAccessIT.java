@@ -19,6 +19,10 @@
  */
 package org.neo4j.server;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -30,17 +34,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
@@ -68,15 +67,14 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         // Because we are generating a non-CA-signed certificate, we need to turn off verification in the client.
         // This is ironic, since there is no proper verification on the CA side in the first place, but I digress.
 
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager()
         {
-            public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
+            public void checkClientTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
             {
             }
 
-            public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
+            public void checkServerTrusted( X509Certificate[] arg0, String arg1 ) throws CertificateException
             {
             }
 
@@ -84,7 +82,8 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
             {
                 return null;
             }
-        }};
+        }
+        };
 
         // Install the all-trusting trust manager
         SSLContext sc = SSLContext.getInstance( "TLS" );

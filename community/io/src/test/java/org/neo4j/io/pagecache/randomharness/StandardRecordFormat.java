@@ -113,7 +113,7 @@ public class StandardRecordFormat extends RecordFormat
         StandardRecord( byte type, byte fileName, short fill1, int recordId, long fill2 )
         {
             this.type = type;
-            this.file = fileName == 0? null : new File( new String( new byte[] {fileName} ) );
+            this.file = fileName == 0 ? null : new File( new String( new byte[]{fileName} ) );
             this.fill1 = fill1;
             this.recordId = recordId;
             this.fill2 = fill2;

@@ -177,7 +177,7 @@ public class PartitionedIndexStorage
                 byte[] buffer = null;
                 if ( zip != null )
                 {
-                    buffer = new byte[4*1024];
+                    buffer = new byte[4 * 1024];
                 }
                 for ( File partitionFolder : partitionFolders )
                 {

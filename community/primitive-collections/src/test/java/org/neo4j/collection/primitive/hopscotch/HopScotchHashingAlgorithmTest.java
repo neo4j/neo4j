@@ -19,11 +19,11 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -32,7 +32,6 @@ import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monito
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_H;
 
@@ -47,9 +46,9 @@ public class HopScotchHashingAlgorithmTest
         PrimitiveLongSet set = new PrimitiveLongHashSet(
                 new LongKeyTable<>( DEFAULT_H, VALUE_MARKER ), VALUE_MARKER, monitor );
         Set<Long> added = new HashSet<>();
-        for ( int i = 0; i < threshold-1; i++ )
+        for ( int i = 0; i < threshold - 1; i++ )
         {
-            long value = i*3;
+            long value = i * 3;
             set.add( value );
             added.add( value );
         }
@@ -57,12 +56,13 @@ public class HopScotchHashingAlgorithmTest
         // WHEN
         PrimitiveLongIterator iterator = set.iterator();
         Set<Long> iterated = new HashSet<>();
-        for ( int i = 0; i < threshold/2; i++ )
+        for ( int i = 0; i < threshold / 2; i++ )
         {
             iterated.add( iterator.next() );
         }
         assertFalse( monitor.checkAndReset() );
-        set.add( (threshold-1)*3 ); // will push it over the edge, to grow the table
+        // will push it over the edge, to grow the table
+        set.add( (threshold - 1) * 3 );
         assertTrue( monitor.checkAndReset() );
         while ( iterator.hasNext() )
         {
@@ -114,7 +114,7 @@ public class HopScotchHashingAlgorithmTest
             int i = 0;
             for ( i = 0; !grew.get(); i++ )
             {
-                set.add( i*3 );
+                set.add( i * 3 );
             }
             return i;
         }

@@ -159,7 +159,7 @@ public class ComparableRaftState implements ReadableRaftState
         leader = outcome.getLeader();
         votesForMe = outcome.getVotesForMe();
         lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
-        followerStates= outcome.getFollowerStates();
+        followerStates = outcome.getFollowerStates();
 
         for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {

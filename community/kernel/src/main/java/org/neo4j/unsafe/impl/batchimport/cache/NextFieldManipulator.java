@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.Utils;
  */
 public class NextFieldManipulator
 {
-    private static final LongBitsManipulator MANIPULATOR = new LongBitsManipulator( 64-16 /*next*/, 16 /*type*/ );
+    private static final LongBitsManipulator MANIPULATOR = new LongBitsManipulator( 64 - 16 /*next*/, 16 /*type*/ );
     private static final long EMPTY_FIELD = MANIPULATOR.template( true, false );
 
     private NextFieldManipulator()

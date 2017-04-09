@@ -219,10 +219,8 @@ class CommandPrimer
         }
         final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         List<Integer> recordsWritten = recordsWrittenTo.get( file );
-        final int recordId =
-                recordsWritten.isEmpty()?
-                rng.nextInt( maxRecordCount )
-                : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
+        final int recordId = recordsWritten.isEmpty() ? rng.nextInt( maxRecordCount )
+                                                      : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
         final int pageId = recordId / recordsPerPage;
         final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
         final Record expectedRecord = recordFormat.createRecord( file, recordId );

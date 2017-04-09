@@ -63,7 +63,7 @@ public class TestLockManagerBean
     {
         Node node = createNode();
 
-        try(Transaction ignore = graphDb.beginTx())
+        try ( Transaction ignore = graphDb.beginTx() )
         {
             node.setProperty( "key", "value" );
 
@@ -79,7 +79,7 @@ public class TestLockManagerBean
 
     private Node createNode()
     {
-        try( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Node node = graphDb.createNode();
             tx.success();

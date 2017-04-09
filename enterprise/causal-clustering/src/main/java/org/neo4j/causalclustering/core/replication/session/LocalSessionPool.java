@@ -56,7 +56,7 @@ public class LocalSessionPool
         {
             localSession = sessionStack.pop();
         }
-        catch( EmptyStackException e )
+        catch ( EmptyStackException e )
         {
             localSession = createSession();
         }

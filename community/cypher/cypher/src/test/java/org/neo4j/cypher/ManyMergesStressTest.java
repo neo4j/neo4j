@@ -84,7 +84,7 @@ public class ManyMergesStressTest
             tx.success();
         }
 
-        for( int count = 0; count < TRIES; count++ )
+        for ( int count = 0; count < TRIES; count++ )
         {
             Pair<String, String> stringPair = getRandomName();
             String ident = stringPair.first();

@@ -98,7 +98,7 @@ public class LifeSupportTest
             lifeSupport.init();
             fail();
         }
-        catch( LifecycleException throwable )
+        catch ( LifecycleException throwable )
         {
             assertEquals( initThrowable, throwable.getCause() );
         }
@@ -126,9 +126,9 @@ public class LifeSupportTest
             lifeSupport.start();
             fail();
         }
-        catch( LifecycleException throwable )
+        catch ( LifecycleException throwable )
         {
-            assertEquals( startThrowable, throwable.getCause());
+            assertEquals( startThrowable, throwable.getCause() );
         }
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
         assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
@@ -155,11 +155,11 @@ public class LifeSupportTest
             lifeSupport.start();
             fail();
         }
-        catch( LifecycleException throwable )
+        catch ( LifecycleException throwable )
         {
             assertEquals( startThrowable, throwable.getCause() );
             assertEquals( 1, throwable.getSuppressed().length );
-            assertThat(throwable.getSuppressed()[0], instanceOf(LifecycleException.class));
+            assertThat( throwable.getSuppressed()[0], instanceOf( LifecycleException.class ) );
             assertEquals( stopThrowable, throwable.getSuppressed()[0].getCause() );
         }
 
@@ -190,9 +190,9 @@ public class LifeSupportTest
             lifeSupport.stop();
             fail();
         }
-        catch( LifecycleException throwable )
+        catch ( LifecycleException throwable )
         {
-            assertEquals( stopThrowable, throwable.getCause());
+            assertEquals( stopThrowable, throwable.getCause() );
         }
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus());
         assertEquals( LifecycleStatus.STOPPED , instance1.getStatus());
@@ -221,9 +221,9 @@ public class LifeSupportTest
             lifeSupport.shutdown();
             fail();
         }
-        catch( LifecycleException throwable )
+        catch ( LifecycleException throwable )
         {
-            assertEquals( shutdownThrowable, throwable.getCause());
+            assertEquals( shutdownThrowable, throwable.getCause() );
         }
         assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus());
         assertEquals( LifecycleStatus.SHUTDOWN , instance1.getStatus());

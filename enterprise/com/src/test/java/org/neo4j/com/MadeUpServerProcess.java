@@ -49,7 +49,7 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     {
         try
         {
-            long endTime = System.currentTimeMillis()+20*1000;
+            long endTime = System.currentTimeMillis() + 20 * 1000;
             while ( server == null && System.currentTimeMillis() < endTime )
             {
                 Thread.sleep( 10 );

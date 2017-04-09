@@ -82,7 +82,7 @@ public class MigrationTestUtils
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        try( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
+        try ( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
         {
             fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
             fileChannel.write( ByteBuffer.wrap( versionBytes ) );

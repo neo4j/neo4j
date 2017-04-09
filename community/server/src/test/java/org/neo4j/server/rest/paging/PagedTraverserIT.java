@@ -68,7 +68,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     private static final String PAGED_TRAVERSE_LINK_REL = "paged_traverse";
     private static final int SHORT_LIST_LENGTH = 33;
     private static final int LONG_LIST_LENGTH = 444;
-    private static final int VERY_LONG_LIST_LENGTH = LONG_LIST_LENGTH*2;
+    private static final int VERY_LONG_LIST_LENGTH = LONG_LIST_LENGTH * 2;
 
     @ClassRule
     public static TemporaryFolder staticFolder = new TemporaryFolder();

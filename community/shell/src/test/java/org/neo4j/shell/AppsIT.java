@@ -568,7 +568,7 @@ public class AppsIT extends AbstractShellIT
         Map<String, Serializable> values = genericMap( "mykey", "myvalue",
                 "my_other_key", "My other value" );
         ShellClient client = newShellClient( shellServer, values );
-        String[] allStrings = new String[values.size()*2];
+        String[] allStrings = new String[values.size() * 2];
         int i = 0;
         for ( Map.Entry<String, Serializable> entry : values.entrySet() )
         {

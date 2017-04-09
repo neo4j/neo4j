@@ -687,7 +687,7 @@ public class Extractors
         {
             for ( int i = 0; i < length; i++ )
             {
-                if ( data[offset+i] == arrayDelimiter )
+                if ( data[offset + i] == arrayDelimiter )
                 {
                     return i;
                 }
@@ -700,7 +700,7 @@ public class Extractors
             int count = length > 0 ? 1 : 0;
             for ( int i = 0; i < length; i++ )
             {
-                if ( data[offset+i] == arrayDelimiter )
+                if ( data[offset + i] == arrayDelimiter )
                 {
                     count++;
                 }
@@ -739,9 +739,9 @@ public class Extractors
             value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = new String( data, offset+charIndex, numberOfChars );
-                if (trimStrings)
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = new String( data, offset + charIndex, numberOfChars );
+                if ( trimStrings )
                 {
                     value[arrayIndex] = value[arrayIndex].trim();
                 }
@@ -766,8 +766,8 @@ public class Extractors
             value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = safeCastLongToByte( extractLong( data, offset+charIndex, numberOfChars ) );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = safeCastLongToByte( extractLong( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -789,8 +789,8 @@ public class Extractors
             value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = safeCastLongToShort( extractLong( data, offset+charIndex, numberOfChars ) );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = safeCastLongToShort( extractLong( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -812,8 +812,8 @@ public class Extractors
             value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = safeCastLongToInt( extractLong( data, offset+charIndex, numberOfChars ) );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = safeCastLongToInt( extractLong( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -833,8 +833,8 @@ public class Extractors
             value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY_LONG_ARRAY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = extractLong( data, offset+charIndex, numberOfChars );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = extractLong( data, offset + charIndex, numberOfChars );
                 charIndex += numberOfChars;
             }
         }
@@ -856,10 +856,10 @@ public class Extractors
             value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
                 // TODO Figure out a way to do this conversion without round tripping to String
                 // parseFloat automatically handles leading/trailing whitespace so no need for us to do it
-                value[arrayIndex] = Float.parseFloat( String.valueOf( data, offset+charIndex, numberOfChars ) );
+                value[arrayIndex] = Float.parseFloat( String.valueOf( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -881,10 +881,10 @@ public class Extractors
             value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
                 // TODO Figure out a way to do this conversion without round tripping to String
                 // parseDouble automatically handles leading/trailing whitespace so no need for us to do it
-                value[arrayIndex] = Double.parseDouble( String.valueOf( data, offset+charIndex, numberOfChars ) );
+                value[arrayIndex] = Double.parseDouble( String.valueOf( data, offset + charIndex, numberOfChars ) );
                 charIndex += numberOfChars;
             }
         }
@@ -906,8 +906,8 @@ public class Extractors
             value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
-                int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );
-                value[arrayIndex] = extractBoolean( data, offset+charIndex, numberOfChars );
+                int numberOfChars = charsToNextDelimiter( data, offset + charIndex, length - charIndex );
+                value[arrayIndex] = extractBoolean( data, offset + charIndex, numberOfChars );
                 charIndex += numberOfChars;
             }
         }

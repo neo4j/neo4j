@@ -101,7 +101,7 @@ public class LogEntryStart extends AbstractLogEntry
     {
         // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
         long lowBits = Arrays.hashCode( additionalHeader );
-        long highBits = masterId*37 + authorId;
+        long highBits = masterId * 37 + authorId;
         return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
     }
 

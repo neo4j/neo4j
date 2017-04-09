@@ -31,7 +31,7 @@ import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.options;
 
-@Description( "Configuration options for Bolt connectors. "+
+@Description( "Configuration options for Bolt connectors. " +
               "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
               "\"bolt-public\" or some other name that describes what the connector is for." )
 public class BoltConnector extends Connector

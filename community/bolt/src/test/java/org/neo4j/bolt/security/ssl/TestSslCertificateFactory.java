@@ -114,7 +114,7 @@ public class TestSslCertificateFactory
         File cPath = tmpDir.newFile( "certificate" );
         byte[] raw = certs.loadCertificates(cert.certificate())[0].getEncoded();
 
-        try(FileChannel ch = FileChannel.open( cPath.toPath(), WRITE ))
+        try ( FileChannel ch = FileChannel.open( cPath.toPath(), WRITE ) )
         {
             FileUtils.writeAll( ch, ByteBuffer.wrap( raw ) );
         }
@@ -142,7 +142,7 @@ public class TestSslCertificateFactory
         File keyFile = tmpDir.newFile( "certificate" );
         byte[] raw = certs.loadPrivateKey( cert.privateKey() ).getEncoded();
 
-        try(FileChannel ch = FileChannel.open( keyFile.toPath(), WRITE ))
+        try ( FileChannel ch = FileChannel.open( keyFile.toPath(), WRITE ) )
         {
             FileUtils.writeAll( ch, ByteBuffer.wrap( raw ) );
         }

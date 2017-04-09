@@ -80,7 +80,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     private class JumpingIdGenerator implements IdGenerator
     {
         private final AtomicLong nextId = new AtomicLong();
-        private int leftToNextJump = sizePerJump/2;
+        private int leftToNextJump = sizePerJump / 2;
         private long highBits = 0;
 
         @Override
@@ -90,7 +90,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
             if ( --leftToNextJump == 0 )
             {
                 leftToNextJump = sizePerJump;
-                nextId.set( (0xFFFFFFFFL | (highBits++ << 32)) - sizePerJump/2 + 1 );
+                nextId.set( (0xFFFFFFFFL | (highBits++ << 32)) - sizePerJump / 2 + 1 );
             }
             return result;
         }
@@ -113,15 +113,15 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void setHighId( long id )
-        {
-            nextId.set( id );
-        }
-
-        @Override
         public long getHighId()
         {
             return nextId.get();
+        }
+
+        @Override
+        public void setHighId( long id )
+        {
+            nextId.set( id );
         }
 
         @Override
@@ -154,7 +154,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public long getHighestPossibleIdInUse()
         {
-            return getHighId()-1;
+            return getHighId() - 1;
         }
     }
 }

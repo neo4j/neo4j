@@ -38,7 +38,8 @@ public class TestOnlineBackupExtension extends KernelExtensionFactoryContractTes
         if ( shouldLoad )
         {
             configuration.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.TRUE );
-            configuration.put( OnlineBackupSettings.online_backup_server.name(), ":"+(BackupServer.DEFAULT_PORT + instance) );
+            configuration.put( OnlineBackupSettings.online_backup_server.name(), ":" +
+                    (BackupServer.DEFAULT_PORT + instance) );
         }
         return configuration;
     }

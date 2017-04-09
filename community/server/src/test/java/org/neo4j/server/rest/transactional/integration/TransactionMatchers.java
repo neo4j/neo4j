@@ -586,7 +586,7 @@ public class TransactionMatchers
 
                 for ( Map<String, Object> error : errors )
                 {
-                    if( error.containsKey( "stackTrace" ) )
+                    if ( error.containsKey( "stackTrace" ) )
                     {
                         return false;
                     }

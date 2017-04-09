@@ -86,11 +86,11 @@ public class QueryContext
             return sort( new Sort( firstSortField ) );
         }
 
-        SortField[] sortFields = new SortField[1+additionalKeys.length];
+        SortField[] sortFields = new SortField[1 + additionalKeys.length];
         sortFields[0] = firstSortField;
         for ( int i = 0; i < additionalKeys.length; i++ )
         {
-            sortFields[1+i] = new SortedSetSortField( additionalKeys[i], false );
+            sortFields[1 + i] = new SortedSetSortField( additionalKeys[i], false );
         }
         return sort( new Sort( sortFields ) );
     }

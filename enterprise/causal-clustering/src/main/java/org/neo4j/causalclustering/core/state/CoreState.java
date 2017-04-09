@@ -31,8 +31,8 @@ import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
-import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.ClusterBinder;
+import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Inbound.MessageHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -176,7 +176,7 @@ public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMess
         // TODO: Include the None/Partial/Full in the move.
 
         long endTime = System.currentTimeMillis() + MINUTES.toMillis( 30 );
-        while( !haveState() )
+        while ( !haveState() )
         {
             if ( System.currentTimeMillis() > endTime )
             {

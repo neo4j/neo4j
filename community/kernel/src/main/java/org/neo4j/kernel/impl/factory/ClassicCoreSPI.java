@@ -188,7 +188,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         availability.assertDatabaseAvailable();
         KernelTransaction tx = dataSource.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
-        if( tx == null )
+        if ( tx == null )
         {
             throw new NotInTransactionException();
         }

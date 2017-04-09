@@ -76,7 +76,7 @@ public class ClusterFormationIT
             }
 
             // (2) BuiltInProcedures from enterprise
-            try( InternalTransaction tx = gdb.beginTransaction(
+            try ( InternalTransaction tx = gdb.beginTransaction(
                     KernelTransaction.Type.explicit,
                     EnterpriseSecurityContext.AUTH_DISABLED
             ) )

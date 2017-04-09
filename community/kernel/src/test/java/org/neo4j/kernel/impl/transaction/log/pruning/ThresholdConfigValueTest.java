@@ -47,7 +47,7 @@ public class ThresholdConfigValueTest
             ThresholdConfigParser.parse( "more than one spaces is invalid" );
             fail("Should not parse unknown types");
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             // good
         }

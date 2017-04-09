@@ -46,7 +46,7 @@ public class StageTest
         };
         Stage stage = new Stage( "Test stage", config, ORDER_SEND_DOWNSTREAM );
         long batches = 1000;
-        final long items = batches*config.batchSize();
+        final long items = batches * config.batchSize();
         stage.add( new ProducerStep( stage.control(), "Producer", config )
         {
             private final Object theObject = new Object();

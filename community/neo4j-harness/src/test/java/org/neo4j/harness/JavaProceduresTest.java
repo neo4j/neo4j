@@ -125,7 +125,9 @@ public class JavaProceduresTest
     public void shouldLaunchWithDeclaredProcedures() throws Exception
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProcedures.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withProcedure( MyProcedures.class )
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -142,7 +144,9 @@ public class JavaProceduresTest
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProcedures.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withProcedure( MyProcedures.class )
+                .newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -157,7 +161,8 @@ public class JavaProceduresTest
     public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
     {
         // When
-        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProceduresUsingMyService.class ).newServer())
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withProcedure( MyProceduresUsingMyService.class ).newServer() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),

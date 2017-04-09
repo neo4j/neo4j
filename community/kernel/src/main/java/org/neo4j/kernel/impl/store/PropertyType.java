@@ -368,7 +368,7 @@ public enum PropertyType
 
     private static int typeIdentifier( long propBlock )
     {
-        return (int)((propBlock&0x000000000F000000L)>>24);
+        return (int) ((propBlock & 0x000000000F000000L) >> 24);
     }
 
     public static PropertyType getPropertyTypeOrThrow( long propBlock )
@@ -396,7 +396,7 @@ public enum PropertyType
     // TODO In wait of a better place
     public static void setPayloadSize( int newPayloadSize )
     {
-        if ( newPayloadSize%8 != 0 )
+        if ( newPayloadSize % 8 != 0 )
         {
             throw new RuntimeException( "Payload must be divisible by 8" );
         }

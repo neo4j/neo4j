@@ -228,7 +228,7 @@ public class MuninnPageCache implements PageCache
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
         Object pageList = null;
         int pageIndex = maxPages;
-        while ( pageIndex --> 0 )
+        while ( pageIndex-- > 0 )
         {
             MuninnPage page = new MuninnPage( cachePageSize, memoryManager );
             page.tryExclusiveLock(); // All pages in the free-list are exclusively locked, and unlocked by page fault.
@@ -624,7 +624,7 @@ public class MuninnPageCache implements PageCache
                 msg.append( "\n\t" );
                 msg.append( files.file );
                 msg.append( " (" ).append( refCount );
-                msg.append( refCount == 1? " mapping)" : " mappings)" );
+                msg.append( refCount == 1 ? " mapping)" : " mappings)" );
                 files = files.next;
             }
             throw new IllegalStateException( msg.toString() );

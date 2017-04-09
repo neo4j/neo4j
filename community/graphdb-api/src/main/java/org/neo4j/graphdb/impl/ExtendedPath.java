@@ -181,7 +181,7 @@ public class ExtendedPath implements Path
     @Override
     public int length()
     {
-        return start.length()+1;
+        return start.length() + 1;
     }
 
     @Override

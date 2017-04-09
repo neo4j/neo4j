@@ -89,7 +89,7 @@ public class CypherService
         usage.get( features ).flag( http_cypher_endpoint );
         Map<String,Object> command = input.readMap( body );
 
-        if( !command.containsKey(QUERY_KEY) )
+        if ( !command.containsKey( QUERY_KEY ) )
         {
             return output.badRequest( new InvalidArgumentsException( "You have to provide the 'query' parameter." ) );
         }

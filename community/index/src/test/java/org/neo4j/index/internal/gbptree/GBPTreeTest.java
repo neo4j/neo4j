@@ -68,7 +68,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -649,7 +648,7 @@ public class GBPTreeTest
 
         // WHEN
         Barrier.Control barrier = new Barrier.Control();
-        Future<?> write= executor.submit( throwing( () ->
+        Future<?> write = executor.submit( throwing( () ->
         {
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {

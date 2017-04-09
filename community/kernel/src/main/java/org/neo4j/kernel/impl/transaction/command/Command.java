@@ -236,7 +236,7 @@ public abstract class Command implements StorageCommand
                 channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
                 channel.putLong( record.getNextRel() ).putLong( record.getNextProp() );
                 channel.putLong( record.getLabelField() );
-                if( record.hasSecondaryUnitId() )
+                if ( record.hasSecondaryUnitId() )
                 {
                     channel.putLong( record.getSecondaryUnitId() );
                 }

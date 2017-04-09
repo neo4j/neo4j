@@ -273,7 +273,7 @@ public class ClusterStateTest
 
     private URI uri( int i )
     {
-        return URI.create( "http://localhost:" + (6000+i) + "?serverId=" + i );
+        return URI.create( "http://localhost:" + (6000 + i) + "?serverId=" + i );
     }
 
     private InstanceId id( int i )

@@ -191,14 +191,13 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public final int getCurrentPageSize()
     {
-        return currentPageId == UNBOUND_PAGE_ID?
-               UNBOUND_PAGE_SIZE : pagedFile.pageSize();
+        return currentPageId == UNBOUND_PAGE_ID ? UNBOUND_PAGE_SIZE : pagedFile.pageSize();
     }
 
     @Override
     public final File getCurrentFile()
     {
-        return currentPageId == UNBOUND_PAGE_ID? null : pagedFile.file();
+        return currentPageId == UNBOUND_PAGE_ID ? null : pagedFile.file();
     }
 
     /**

@@ -223,7 +223,7 @@ public class CachingIterator<T> implements ListIterator<T>
     @Override
     public int previousIndex()
     {
-        return position-1;
+        return position - 1;
     }
 
     /**

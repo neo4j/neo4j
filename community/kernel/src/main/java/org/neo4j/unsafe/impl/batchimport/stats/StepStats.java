@@ -61,8 +61,8 @@ public class StepStats implements StatsProvider
                 {
                     if ( !arrayContains( keys, providerKey ) )
                     {
-                        keys = Arrays.copyOf( keys, keys.length+1 );
-                        keys[keys.length-1] = providerKey;
+                        keys = Arrays.copyOf( keys, keys.length + 1 );
+                        keys[keys.length - 1] = providerKey;
                     }
                 }
             }

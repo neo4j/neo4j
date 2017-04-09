@@ -79,7 +79,7 @@ public abstract class ProducerStep extends AbstractStep<Void>
                 break;
             }
 
-            totalProcessingTime.add( nanoTime()-startTime );
+            totalProcessingTime.add( nanoTime() - startTime );
             downstreamIdleTime.addAndGet( downstream.receive( doneBatches.getAndIncrement(), batch ) );
             assertHealthy();
         }

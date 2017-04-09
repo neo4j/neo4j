@@ -200,7 +200,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         // Given
         GraphDatabaseService db = getGraphDb();
         Node node;
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
             node.createRelationshipTo( node, DynamicRelationshipType.withName( "MAYOR_OF" ) );
@@ -214,8 +214,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
         // Expect
         exception.expect( ConstraintViolationException.class );
-        exception.expectMessage( "Cannot delete node<"+node.getId()+">, because it still has relationships. " +
-                                 "To delete this node, you must first delete its relationships." );
+        exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                "To delete this node, you must first delete its relationships." );
 
         // When I commit
         tx.close();

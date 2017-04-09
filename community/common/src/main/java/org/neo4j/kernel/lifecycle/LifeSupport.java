@@ -162,7 +162,7 @@ public class LifeSupport
             }
             catch ( LifecycleException e )
             {
-                if( ex != null )
+                if ( ex != null )
                 {
                     ex.addSuppressed( e );
                 }
@@ -207,7 +207,7 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
-                    if( ex != null )
+                    if ( ex != null )
                     {
                         ex.addSuppressed( e );
                     }
@@ -359,11 +359,11 @@ public class LifeSupport
         {
             if (instance.instance instanceof LifeSupport)
             {
-                ((LifeSupport)instance.instance).toString( indent+3, sb );
+                ((LifeSupport) instance.instance).toString( indent + 3, sb );
             }
             else
             {
-                for ( int i = 0; i < indent+3; i++ )
+                for ( int i = 0; i < indent + 3; i++ )
                 {
                     sb.append( ' ' );
                 }
@@ -409,9 +409,9 @@ public class LifeSupport
                 catch ( Throwable e )
                 {
                     currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.NONE );
-                    if( e instanceof LifecycleException )
+                    if ( e instanceof LifecycleException )
                     {
-                        throw (LifecycleException)e;
+                        throw (LifecycleException) e;
                     }
                     throw new LifecycleException( instance, LifecycleStatus.NONE, LifecycleStatus.STOPPED, e );
                 }
@@ -437,9 +437,9 @@ public class LifeSupport
                 catch ( Throwable e )
                 {
                     currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED );
-                    if( e instanceof LifecycleException )
+                    if ( e instanceof LifecycleException )
                     {
-                        throw (LifecycleException)e;
+                        throw (LifecycleException) e;
                     }
                     throw new LifecycleException( instance, LifecycleStatus.STOPPED, LifecycleStatus.STARTED, e );
                 }

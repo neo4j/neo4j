@@ -298,7 +298,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
         buffer.discardReadBytes();
         if ( hasMarkedReaderIndex )
         {
-            buffer.readerIndex( oldReaderIndex-bytesToDiscard );
+            buffer.readerIndex( oldReaderIndex - bytesToDiscard );
         }
     }
 

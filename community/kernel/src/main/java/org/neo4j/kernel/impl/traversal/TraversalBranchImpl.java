@@ -180,7 +180,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public int length()
     {
-        return depthAndEvaluationBits&0x3FFFFFFF;
+        return depthAndEvaluationBits & 0x3FFFFFFF;
     }
 
     @Override
@@ -349,7 +349,7 @@ class TraversalBranchImpl implements TraversalBranch
         while ( branch.length() > 0 )
         {
             Relationship relationship = branch.lastRelationship();
-            hashCode = 31*hashCode + relationship.hashCode();
+            hashCode = 31 * hashCode + relationship.hashCode();
             branch = branch.parent();
         }
         if ( hashCode == 1 )

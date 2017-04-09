@@ -61,9 +61,9 @@ public class ReadAheadChannelTest
         try
         {
             channel.get();
-            fail("Should have thrown exception signalling end of file reached");
+            fail( "Should have thrown exception signalling end of file reached" );
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -71,9 +71,9 @@ public class ReadAheadChannelTest
         try
         {
             channel.get();
-            fail("Should have thrown exception signalling end of file reached");
+            fail( "Should have thrown exception signalling end of file reached" );
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -100,7 +100,7 @@ public class ReadAheadChannelTest
             channel.getShort();
             fail("Should have thrown exception signalling end of file reached");
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -110,9 +110,9 @@ public class ReadAheadChannelTest
         try
         {
             channel.get();
-            fail("Should have thrown exception signalling end of file reached");
+            fail( "Should have thrown exception signalling end of file reached" );
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -159,7 +159,7 @@ public class ReadAheadChannelTest
             channel.getLong();
             fail("Should have thrown exception signalling end of file reached");
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }
@@ -171,7 +171,7 @@ public class ReadAheadChannelTest
             channel.get();
             fail("Should have thrown exception signalling end of file reached");
         }
-        catch( ReadPastEndException endOfFile )
+        catch ( ReadPastEndException endOfFile )
         {
             // outstanding
         }

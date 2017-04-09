@@ -65,8 +65,8 @@ public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Ad
     {
         long doneBatches = Iterables.last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
         int batchSize = execution.getConfig().batchSize();
-        long amount = doneBatches*batchSize;
-        int n = (int) (amount/dotEveryN);
+        long amount = doneBatches * batchSize;
+        int n = (int) (amount / dotEveryN);
         return n;
     }
 

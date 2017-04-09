@@ -76,7 +76,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         {
             switchToWebsocket( ctx );
         }
-        else if( isBoltPreamble( in ) )
+        else if ( isBoltPreamble( in ) )
         {
             switchToSocket( ctx );
         }

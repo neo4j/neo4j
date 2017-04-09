@@ -106,7 +106,7 @@ public class PhysicalLogFileInformationTest
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected -1 );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected - 1 );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingEntryId();

@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import org.apache.commons.codec.binary.Base64;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,10 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.apache.commons.codec.binary.Base64;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.AssertableLogProvider;
@@ -41,7 +41,6 @@ import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicSecurityContext;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
@@ -51,7 +50,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
@@ -138,7 +136,8 @@ public class AuthorizationFilterTest
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError" +".Security.Unauthorized\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo" +
+                ".ClientError.Security.Unauthorized\"" ) );
         assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"No authentication header supplied.\"" ) );
     }
 
@@ -311,7 +310,8 @@ public class AuthorizationFilterTest
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError" +".Security.Unauthorized\"" ) );
+        assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"code\" : \"Neo" +
+                ".ClientError.Security.Unauthorized\"" ) );
         assertThat( outputStream.toString( StandardCharsets.UTF_8.name() ), containsString( "\"message\" : \"No authentication header supplied.\"" ) );
     }
 }

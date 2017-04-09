@@ -32,7 +32,7 @@ public class CursorValue<T>
 
     public T get()
     {
-        if( valid )
+        if ( valid )
         {
             return t;
         }

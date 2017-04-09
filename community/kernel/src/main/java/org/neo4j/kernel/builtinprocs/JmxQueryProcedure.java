@@ -77,7 +77,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
             // Then convert them to a Neo4j type system representation
             return RawIterator.from( () ->
             {
-                if( !names.hasNext() )
+                if ( !names.hasNext() )
                 {
                     return null;
                 }
@@ -115,7 +115,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         HashMap<String,Object> out = new HashMap<>();
         for ( MBeanAttributeInfo attribute : attributes )
         {
-            if( attribute.isReadable() )
+            if ( attribute.isReadable() )
             {
                 out.put( attribute.getName(), toNeo4jValue( name, attribute ) );
             }
@@ -131,9 +131,9 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         {
             value = toNeo4jValue( jmxServer.getAttribute( name, attribute.getName() ) );
         }
-        catch( RuntimeMBeanException e )
+        catch ( RuntimeMBeanException e )
         {
-            if( e.getCause() != null && e.getCause() instanceof UnsupportedOperationException )
+            if ( e.getCause() != null && e.getCause() instanceof UnsupportedOperationException )
             {
                 // We include the name and description of this attribute still - but the value of it is
                 // unknown. We do this rather than rethrow the exception, because several MBeans built into
@@ -155,34 +155,34 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     private Object toNeo4jValue( Object attributeValue )
     {
         // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
-        if( isSimpleType( attributeValue ) )
+        if ( isSimpleType( attributeValue ) )
         {
             return attributeValue;
         }
-        else if( attributeValue.getClass().isArray() )
+        else if ( attributeValue.getClass().isArray() )
         {
-            if( isSimpleType( attributeValue.getClass().getComponentType() ) )
+            if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
             {
                 return attributeValue;
             }
             else
             {
-                return toNeo4jValue((Object[])attributeValue);
+                return toNeo4jValue( (Object[]) attributeValue );
             }
         }
-        else if( attributeValue instanceof CompositeData )
+        else if ( attributeValue instanceof CompositeData )
         {
-            return toNeo4jValue( (CompositeData)attributeValue );
+            return toNeo4jValue( (CompositeData) attributeValue );
         }
-        else if( attributeValue instanceof ObjectName )
+        else if ( attributeValue instanceof ObjectName )
         {
             return ((ObjectName) attributeValue).getCanonicalName();
         }
-        else if( attributeValue instanceof TabularData )
+        else if ( attributeValue instanceof TabularData )
         {
             return toNeo4jValue( (Map<?,?>) attributeValue );
         }
-        else if( attributeValue instanceof Date )
+        else if ( attributeValue instanceof Date )
         {
             return ((Date) attributeValue).getTime();
         }

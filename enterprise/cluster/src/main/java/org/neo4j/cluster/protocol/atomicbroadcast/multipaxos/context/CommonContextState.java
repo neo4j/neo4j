@@ -68,7 +68,7 @@ class CommonContextState
 
     public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, InstanceId instanceId )
     {
-        if(this.lastKnownLearnedInstanceInCluster <= lastKnownLearnedInstanceInCluster)
+        if ( this.lastKnownLearnedInstanceInCluster <= lastKnownLearnedInstanceInCluster )
         {
             this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
             if ( instanceId != null )
@@ -76,7 +76,7 @@ class CommonContextState
                 this.lastKnownAliveUpToDateInstance = instanceId;
             }
         }
-        else if(lastKnownLearnedInstanceInCluster == -1)
+        else if (lastKnownLearnedInstanceInCluster == -1)
         {
             // Special case for clearing the state
             this.lastKnownLearnedInstanceInCluster = -1;

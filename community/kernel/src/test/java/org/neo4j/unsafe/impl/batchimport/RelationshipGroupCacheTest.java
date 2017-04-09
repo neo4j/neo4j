@@ -96,7 +96,7 @@ public class RelationshipGroupCacheTest
         // WHEN
         for ( int i = 0; i < 7; i++ )
         {
-            cache.put( new RelationshipGroupRecord( i+1 ).initialize( true, i, -1, -1, -1, 1, -1 ) );
+            cache.put( new RelationshipGroupRecord( i + 1 ).initialize( true, i, -1, -1, -1, 1, -1 ) );
         }
         try
         {
@@ -150,7 +150,7 @@ public class RelationshipGroupCacheTest
         long currentNodeId = -1;
         int currentTypeId = -1;
         int readCount = 0;
-        for( RelationshipGroupRecord group : cache )
+        for ( RelationshipGroupRecord group : cache )
         {
             assertTrue( group.getOwningNode() >= currentNodeId );
             if ( group.getOwningNode() > currentNodeId )

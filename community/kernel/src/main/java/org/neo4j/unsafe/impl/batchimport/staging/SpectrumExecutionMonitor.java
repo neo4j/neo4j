@@ -168,13 +168,13 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         {
             double floatValue = value / pow( 1000, weight );
             progress = String.valueOf( floatValue );
-            if ( progress.length() > PROGRESS_WIDTH-1 )
+            if ( progress.length() > PROGRESS_WIDTH - 1 )
             {
-                progress = progress.substring( 0, PROGRESS_WIDTH-1 );
+                progress = progress.substring( 0, PROGRESS_WIDTH - 1 );
             }
             if ( progress.endsWith( "." ) )
             {
-                progress = progress.substring( 0, progress.length()-1 );
+                progress = progress.substring( 0, progress.length() - 1 );
             }
             progress += WEIGHTS[weight];
         }

@@ -63,7 +63,7 @@ public class SimpleBitSet implements PrimitiveIntIterable
     {
         int idx = key >>> 6;
         ensureCapacity(idx);
-        data[idx] = data[idx] | (1L<< (key & 63));
+        data[idx] = data[idx] | (1L << (key & 63));
     }
 
     public void put( SimpleBitSet other )
@@ -78,9 +78,9 @@ public class SimpleBitSet implements PrimitiveIntIterable
     public void remove( int key )
     {
         int idx = key >>> 6;
-        if(data.length > idx)
+        if ( data.length > idx )
         {
-            data[idx] = data[idx] & ~(1L<< (key & 63));
+            data[idx] = data[idx] & ~(1L << (key & 63));
         }
     }
 

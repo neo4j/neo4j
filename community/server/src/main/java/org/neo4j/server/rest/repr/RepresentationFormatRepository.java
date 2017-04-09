@@ -49,11 +49,11 @@ public final class RepresentationFormatRepository
     public OutputFormat outputFormat(List<MediaType> acceptable, URI baseUri, MultivaluedMap<String, String> requestHeaders)
     {
         RepresentationFormat format = forHeaders( acceptable, requestHeaders );
-        if (format==null)
+        if ( format == null )
         {
             format = forMediaTypes( acceptable );
         }
-        if (format==null)
+        if ( format == null )
         {
             format = useDefault( acceptable );
         }
@@ -62,7 +62,7 @@ public final class RepresentationFormatRepository
 
     private PluginManager getExtensionManager()
     {
-        return injectorProvider==null ? null : injectorProvider.getExtensionManager();
+        return injectorProvider == null ? null : injectorProvider.getExtensionManager();
     }
 
     private RepresentationFormat forHeaders(List<MediaType> acceptable, MultivaluedMap<String, String> requestHeaders)

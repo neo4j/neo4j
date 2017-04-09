@@ -96,7 +96,7 @@ class FieldInjections
                 }
                 if ( Modifier.isStatic( field.getModifiers() ) )
                 {
-                    if( field.isAnnotationPresent( Context.class ))
+                    if ( field.isAnnotationPresent( Context.class ) )
                     {
                         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                                  "The field `%s` in the class named `%s` is annotated as a @Context field,%n" +
@@ -110,7 +110,8 @@ class FieldInjections
                 assertValidForInjection( cls, field );
                 setters.add( createInjector( cls, field ) );
             }
-        } while( (currentClass = currentClass.getSuperclass()) != null );
+        }
+        while ( (currentClass = currentClass.getSuperclass()) != null );
 
         return setters;
     }
@@ -120,7 +121,7 @@ class FieldInjections
         try
         {
             ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
-            if( provider == null )
+            if ( provider == null )
             {
                 throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
@@ -141,19 +142,19 @@ class FieldInjections
 
     private void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
     {
-        if( !field.isAnnotationPresent( Context.class ) )
+        if ( !field.isAnnotationPresent( Context.class ) )
         {
             throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
-                    "Field `%s` on `%s` is not annotated as a @"+Context.class.getSimpleName()+" and is not static. " +
-                    "If you want to store state along with your procedure, please use a static field.",
+                    "Field `%s` on `%s` is not annotated as a @" + Context.class.getSimpleName() +
+                            " and is not static. If you want to store state along with your procedure," +
+                            " please use a static field.",
                     field.getName(), cls.getSimpleName() );
         }
 
-        if( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
+        if ( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
         {
-            throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
-                    "Field `%s` on `%s` must be non-final and public.",
-                    field.getName(), cls.getSimpleName() );
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Field `%s` on `%s` must be non-final and public.", field.getName(), cls.getSimpleName() );
 
         }
     }

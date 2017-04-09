@@ -87,7 +87,7 @@ public class RecordCheckWorker<RECORD> implements Runnable
 
     private void awaitMyTurnToInitialize()
     {
-        while ( idQueue.get() < id-1 )
+        while ( idQueue.get() < id - 1 )
         {
             try
             {
@@ -103,7 +103,7 @@ public class RecordCheckWorker<RECORD> implements Runnable
 
     private void tellNextThreadToInitialize()
     {
-        boolean set = idQueue.compareAndSet( id-1, id );
+        boolean set = idQueue.compareAndSet( id - 1, id );
         assert set : "Something wrong with the design here";
     }
 }

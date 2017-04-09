@@ -88,7 +88,7 @@ public class TestTimeline
 
     private TimelineIndex<PropertyContainer> nodeTimeline()
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Index<Node> nodeIndex = db.index().forNodes( "timeline" );
             tx.success();
@@ -98,7 +98,7 @@ public class TestTimeline
 
     private TimelineIndex<PropertyContainer> relationshipTimeline()
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             RelationshipIndex relationshipIndex = db.index().forRelationships( "timeline" );
             tx.success();
@@ -109,9 +109,9 @@ public class TestTimeline
     private LinkedList<Pair<PropertyContainer, Long>> createTimestamps( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline, long... timestamps )
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            LinkedList<Pair<PropertyContainer, Long>> result = new LinkedList<>();
+            LinkedList<Pair<PropertyContainer,Long>> result = new LinkedList<>();
             for ( long timestamp : timestamps )
             {
                 result.add( createTimestampedEntity( creator, timeline, timestamp ) );
@@ -156,7 +156,7 @@ public class TestTimeline
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline, 223456, 12345, 432234 );
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             assertEquals( timestamps.get( 1 ).first(), timeline.getFirst() );
             assertEquals( timestamps.getLast().first(), timeline.getLast() );
@@ -169,9 +169,10 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 400000, 100000, 500000, 600000, 900000, 800000 );
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( sortedEntities( timestamps, false ), asCollection( timeline.getBetween( null, null ).iterator() ) );
+            assertEquals( sortedEntities( timestamps, false ),
+                    asCollection( timeline.getBetween( null, null ).iterator() ) );
             tx.success();
         }
     }
@@ -181,9 +182,10 @@ public class TestTimeline
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ).iterator() ) );
+            assertEquals( sortedEntities( timestamps, true ),
+                    asCollection( timeline.getBetween( null, null, true ).iterator() ) );
             tx.success();
         }
     }
@@ -191,11 +193,11 @@ public class TestTimeline
     private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
-        LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
-                -10000, 0, 10000 );
-        try( Transaction tx = db.beginTx() )
+        LinkedList<Pair<PropertyContainer,Long>> timestamps = createTimestamps( creator, timeline, -10000, 0, 10000 );
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ).iterator() ) );
+            assertEquals( sortedEntities( timestamps, true ),
+                    asCollection( timeline.getBetween( null, 10000L, true ).iterator() ) );
             tx.success();
         }
     }
@@ -206,7 +208,7 @@ public class TestTimeline
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 100000, 500000, 900000, 800000 );
 
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             timestamps.addAll( createTimestamps( creator, timeline, 40000, 70000, 20000 ) );
             assertEquals( sortedEntities( timestamps, false ),
@@ -214,7 +216,7 @@ public class TestTimeline
             tx.success();
         }
 
-        try( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             assertEquals( sortedEntities( timestamps, false ),
                     asCollection( timeline.getBetween( null, null ).iterator() ) );

@@ -210,11 +210,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public String getPropertiesUri( Relationship rel )
     {
-        return getRelationshipUri(rel)+  "/properties";
+        return getRelationshipUri( rel ) + "/properties";
     }
+
     public String getPropertiesUri( Node node )
     {
-        return getNodeUri( node )+  "/properties";
+        return getNodeUri( node ) + "/properties";
     }
 
     public RESTRequestGenerator gen()

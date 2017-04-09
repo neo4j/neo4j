@@ -549,7 +549,7 @@ public abstract class ProcedureInteractionTestBase<S>
 
         CountResult( Long count )
         {
-            this.count = ""+count;
+            this.count = "" + count;
         }
     }
 

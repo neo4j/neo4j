@@ -42,8 +42,8 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -129,7 +129,7 @@ public class BackupStoreCopyInteractionStressTesting
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );
-        BooleanSupplier keepGoing = () ->!stopTheWorld.get() && notExpired.getAsBoolean();
+        BooleanSupplier keepGoing = () -> !stopTheWorld.get() && notExpired.getAsBoolean();
         Runnable onFailure = () -> stopTheWorld.set( true );
 
         ExecutorService service = Executors.newFixedThreadPool( 3 );

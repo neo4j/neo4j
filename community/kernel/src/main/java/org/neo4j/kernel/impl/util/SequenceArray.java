@@ -37,7 +37,7 @@ public class SequenceArray
     {
         this.longsPerItem = longsPerItem;
         this.capacity = initialCapacity;
-        this.array = new long[capacity*longsPerItem];
+        this.array = new long[capacity * longsPerItem];
     }
 
     public void clear()
@@ -48,19 +48,19 @@ public class SequenceArray
 
     void offer( long baseNumber, long number, long[] meta )
     {
-        int diff = (int) (number-baseNumber);
+        int diff = (int) (number - baseNumber);
         ensureArrayCapacity( diff );
-        int index = cursor+diff-1;
+        int index = cursor + diff - 1;
 
         // If we offer a value a bit ahead of the last offered value then clear the values in between
-        for ( int i = cursor+itemsAhead; i < index; i++ )
+        for ( int i = cursor + itemsAhead; i < index; i++ )
         {
             array[index( i )] = UNSET;
         }
 
         int absIndex = index( index );
         array[absIndex] = number;
-        System.arraycopy( meta, 0, array, absIndex+1, longsPerItem-1 );
+        System.arraycopy( meta, 0, array, absIndex + 1, longsPerItem - 1 );
         itemsAhead = max( itemsAhead, diff );
     }
 
@@ -73,7 +73,7 @@ public class SequenceArray
     {
         // assume that "given" would be placed at cursor
         long number = given;
-        int length = itemsAhead-1;
+        int length = itemsAhead - 1;
         int absIndex = 0;
         for ( int i = 0; i < length; i++ )
         {
@@ -85,12 +85,13 @@ public class SequenceArray
             }
 
             number++;
-            assert array[absIndex] == number : "Expected index " + cursor + " to be " + number +
-                    ", but was " + array[absIndex] + ". This is for i=" + i;
+            assert array[absIndex] == number :
+                    "Expected index " + cursor + " to be " + number + ", but was " + array[absIndex] +
+                            ". This is for i=" + i;
         }
 
         // copy the meta values into the supplied meta
-        System.arraycopy( array, absIndex+1, meta, 0, longsPerItem-1 );
+        System.arraycopy( array, absIndex + 1, meta, 0, longsPerItem - 1 );
         return number;
     }
 
@@ -98,15 +99,15 @@ public class SequenceArray
     {
         assert itemsAhead > 0;
         itemsAhead--;
-        cursor = (cursor+1)%capacity;
+        cursor = (cursor + 1) % capacity;
     }
 
     private void ensureArrayCapacity( int capacity )
     {
         while ( capacity > this.capacity )
         {
-            int newCapacity = this.capacity*2;
-            long[] newArray = new long[newCapacity*longsPerItem];
+            int newCapacity = this.capacity * 2;
+            long[] newArray = new long[newCapacity * longsPerItem];
             // Copy contents to new array, newArray starting at 0
             for ( int i = 0; i < itemsAhead; i++ )
             {

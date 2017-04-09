@@ -77,7 +77,7 @@ public class StageExecution implements StageControl
 
     public long getExecutionTime()
     {
-        return currentTimeMillis()-startTime;
+        return currentTimeMillis() - startTime;
     }
 
     public String getStageName()

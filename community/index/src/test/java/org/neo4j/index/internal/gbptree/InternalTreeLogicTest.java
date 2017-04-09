@@ -1678,7 +1678,8 @@ public class InternalTreeLogicTest
         {
             goTo( cursor, successor );
             successor = pointer( TreeNode.successor( cursor, stableGeneration, unstableGeneration ) );
-        } while( successor != TreeNode.NO_NODE_FLAG );
+        }
+        while ( successor != TreeNode.NO_NODE_FLAG );
         successor = cursor.getCurrentPageId();
         goTo( cursor, current );
         return successor;

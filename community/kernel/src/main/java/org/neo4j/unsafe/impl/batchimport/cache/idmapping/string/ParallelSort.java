@@ -99,7 +99,7 @@ public class ParallelSort
         int[] bucketRange = new int[threads];
         Workers<TrackerInitializer> initializers = new Workers<>( "TrackerInitializer" );
         sortBuckets = new long[threads][2];
-        long dataSize = highestSetIndex+1;
+        long dataSize = highestSetIndex + 1;
         long bucketSize = dataSize / threads;
         long count = 0, fullCount = 0;
         progress.started( "SPLIT" );
@@ -123,7 +123,7 @@ public class ParallelSort
                     progress.add( radixIndexCount[i] );
                 }
                 initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
-                        threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
+                        threadIndex > 0 ? bucketRange[threadIndex - 1] : -1, bucketRange[threadIndex],
                         sortBuckets[threadIndex] ) );
                 threadIndex++;
             }
@@ -131,13 +131,13 @@ public class ParallelSort
             {
                 count += radixIndexCount[i];
             }
-            if ( threadIndex == threads - 1 || i == radixIndexCount.length -1 )
+            if ( threadIndex == threads - 1 || i == radixIndexCount.length - 1 )
             {
                 bucketRange[threadIndex] = radixIndexCount.length;
                 rangeParams[threadIndex][0] = fullCount;
                 rangeParams[threadIndex][1] = dataSize - fullCount;
                 initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
-                        threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
+                        threadIndex > 0 ? bucketRange[threadIndex - 1] : -1, bucketRange[threadIndex],
                         sortBuckets[threadIndex] ) );
                 break;
             }
@@ -343,14 +343,14 @@ public class ParallelSort
 
         private long informedPivot( long start, long end, long randomIndex )
         {
-            if ( end-start < pivotChoice.length )
+            if ( end - start < pivotChoice.length )
             {
                 return randomIndex;
             }
 
             long low = Math.max( start, randomIndex - 5 );
             long high = Math.min( low + 10, end );
-            int length = Utils.safeCastLongToInt( high-low );
+            int length = Utils.safeCastLongToInt( high - low );
 
             int j = 0;
             for ( long i = low; i < high; i++, j++ )
@@ -359,7 +359,7 @@ public class ParallelSort
             }
             Arrays.sort( pivotChoice, 0, length );
 
-            long middle = pivotChoice[length/2];
+            long middle = pivotChoice[length / 2];
             for ( long i = low; i <= high; i++ )
             {
                 if ( clearCollision( dataCache.get( tracker.get( i ) ) ) == middle )

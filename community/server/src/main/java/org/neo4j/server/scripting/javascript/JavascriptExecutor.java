@@ -48,7 +48,7 @@ public class JavascriptExecutor implements ScriptExecutor
          */
         public Factory(boolean enableSandboxing)
         {
-            if(enableSandboxing)
+            if ( enableSandboxing )
             {
                 GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
             }
@@ -97,9 +97,9 @@ public class JavascriptExecutor implements ScriptExecutor
             Scriptable scope = cx.newObject(prototype);
             scope.setPrototype(prototype);
 
-            if(variables != null)
+            if ( variables != null )
             {
-                for(String k : variables.keySet())
+                for ( String k : variables.keySet() )
                 {
                     scope.put( k, scope, variables.get( k ) );
                 }
@@ -119,7 +119,7 @@ public class JavascriptExecutor implements ScriptExecutor
                 return out;
             }
         }
-        catch( RhinoException e )
+        catch ( RhinoException e )
         {
             throw new EvaluationException( "Failed to execute script, see nested exception.", e );
         }

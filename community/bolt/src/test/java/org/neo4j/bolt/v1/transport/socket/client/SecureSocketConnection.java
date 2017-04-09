@@ -46,7 +46,7 @@ public class SecureSocketConnection extends SocketConnection
 
             return context.getSocketFactory().createSocket();
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             throw new RuntimeException( e );
         }

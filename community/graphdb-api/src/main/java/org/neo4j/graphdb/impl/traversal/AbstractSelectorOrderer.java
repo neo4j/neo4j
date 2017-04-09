@@ -89,7 +89,7 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
 
     protected BranchSelector nextSelector()
     {
-        selectorIndex = (selectorIndex+1)%2;
+        selectorIndex = (selectorIndex + 1) % 2;
         return selectors[selectorIndex];
     }
 

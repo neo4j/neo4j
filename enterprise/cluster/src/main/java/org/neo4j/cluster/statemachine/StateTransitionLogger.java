@@ -100,7 +100,7 @@ public class StateTransitionLogger
 
             // Throttle
             String msg = line.toString();
-            if( msg.equals( lastLogMessage ) )
+            if ( msg.equals( lastLogMessage ) )
             {
                 return;
             }

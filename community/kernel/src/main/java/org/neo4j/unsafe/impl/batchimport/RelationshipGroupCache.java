@@ -47,7 +47,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
  */
 public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>, AutoCloseable
 {
-    public static final int GROUP_ENTRY_SIZE = 1/*header*/ + 3/*type*/ + 6/*relationship id*/*3/*all directions*/;
+    public static final int GROUP_ENTRY_SIZE = 1/*header*/ + 3/*type*/ + 6/*relationship id*/ * 3/*all directions*/;
 
     private final ByteArray groupCountCache;
     private final ByteArray cache;
@@ -63,15 +63,16 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         this.groupCountCache = arrayFactory.newByteArray( highNodeId, new byte[2] );
         this.highNodeId = highNodeId;
 
-        long memoryDedicatedToCounting = 2*highNodeId;
+        long memoryDedicatedToCounting = 2 * highNodeId;
         long memoryLeftForGroupCache = maxMemory - memoryDedicatedToCounting;
         if ( memoryLeftForGroupCache < 0 )
         {
-            throw new IllegalArgumentException( "Too little memory to cache any groups, provided " +
-                    bytes( maxMemory ) + " where " + bytes( memoryDedicatedToCounting ) +
-                    " was dedicated to group counting" );
+            throw new IllegalArgumentException(
+                    "Too little memory to cache any groups, provided " + bytes( maxMemory ) + " where " +
+                            bytes( memoryDedicatedToCounting ) + " was dedicated to group counting" );
         }
-        this.cache = arrayFactory.newByteArray( memoryLeftForGroupCache / GROUP_ENTRY_SIZE, new byte[GROUP_ENTRY_SIZE] );
+        this.cache =
+                arrayFactory.newByteArray( memoryLeftForGroupCache / GROUP_ENTRY_SIZE, new byte[GROUP_ENTRY_SIZE] );
     }
 
     /**
@@ -230,7 +231,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     {
         for ( long index = toIndex; index > fromIndex; index-- )
         {
-            cache.get( index-1, scratch );
+            cache.get( index - 1, scratch );
             cache.set( index, scratch );
         }
     }
@@ -268,7 +269,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                                 // Special: we want to convey information about how many groups are coming
                                 // after this one so that chains can be ordered accordingly in the store
                                 // so this isn't at all "next" in the true sense of chain next.
-                                countLeftForThisNode-1 );
+                                countLeftForThisNode - 1 );
                     }
 
                     cursor++;

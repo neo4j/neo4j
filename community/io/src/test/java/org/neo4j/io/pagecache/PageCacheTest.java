@@ -2023,8 +2023,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         };
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
-        try( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+                PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             while ( cursor.next() )
             {
@@ -2252,7 +2252,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             @Override
             public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
             {
-                (writeLock? writeCount : readCount).getAndIncrement();
+                (writeLock ? writeCount : readCount).getAndIncrement();
                 return super.beginPin( writeLock, filePageId, swapper );
             }
         };
@@ -3578,7 +3578,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            for ( int i = 0; i < maxPages+5; i++ )
+            for ( int i = 0; i < maxPages + 5; i++ )
             {
                 // THEN eviction happening here should not result in any exception
                 assertTrue( cursor.next() );
@@ -3610,14 +3610,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, 2, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         int fileId = files.length;
-        while ( fileId --> 0 )
+        while ( fileId-- > 0 )
         {
             File file = files[fileId];
             try ( PagedFile pf = pageCache.map( file, pageSize );
                   PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
             {
                 int pageCount = 0;
-                while( cursor.next() )
+                while ( cursor.next() )
                 {
                     pageCount++;
                     recordFormat.assertRecordsWrittenCorrectly( cursor );
@@ -3928,7 +3928,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             for ( int i = 0; i < bytes; i++ )
             {
-                if ( (i & 31) ==0 )
+                if ( (i & 31) == 0 )
                 {
                     assertTrue( cursor.next() );
                 }
@@ -3939,7 +3939,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     cursor.setOffset( offset );
                     b = cursor.getByte();
                 }
-                while( cursor.shouldRetry() );
+                while ( cursor.shouldRetry() );
                 assertThat( b, is( (byte) i ) );
             }
         }

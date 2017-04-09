@@ -41,8 +41,8 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
         // This calculation below is aware of internals of the parallel importer and may
         // be wrong for other importers.
         this.totalNumberOfBatches =
-                (highNodeId/configuration.batchSize()) * 3 + // node records encountered three times
-                (highRelationshipId/configuration.batchSize()) * 4; // rel records encountered four times
+                (highNodeId / configuration.batchSize()) * 3 + // node records encountered three times
+                        (highRelationshipId / configuration.batchSize()) * 4; // rel records encountered four times
     }
 
     protected long total()

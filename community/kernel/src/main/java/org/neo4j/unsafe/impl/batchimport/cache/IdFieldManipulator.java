@@ -24,7 +24,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  */
 public class IdFieldManipulator
 {
-    private static final LongBitsManipulator MANIPULATOR = new LongBitsManipulator( 64-29 /*id*/, 29/*count*/ );
+    private static final LongBitsManipulator MANIPULATOR = new LongBitsManipulator( 64 - 29 /*id*/, 29/*count*/ );
     private static final long EMPTY_FIELD = MANIPULATOR.template( true, false );
 
     private IdFieldManipulator()
@@ -43,7 +43,7 @@ public class IdFieldManipulator
 
     public static long changeCount( long field, int diff )
     {
-        return setCount( field, getCount( field )+diff );
+        return setCount( field, getCount( field ) + diff );
     }
 
     public static int getCount( long field )

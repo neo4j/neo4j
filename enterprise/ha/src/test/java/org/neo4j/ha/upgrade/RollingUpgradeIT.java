@@ -383,7 +383,7 @@ public class RollingUpgradeIT
 
     public void doComplexLoad( GraphDatabaseAPI db, long center )
     {
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node central = db.getNodeById( center );
 
@@ -438,7 +438,7 @@ public class RollingUpgradeIT
             {
                 relationship.setProperty( "relProp", "relProp" + relationship.getId() + "-" + largestCreated );
                 Node end = relationship.getEndNode();
-                end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated  );
+                end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated );
             }
 
             tx.success();
@@ -448,13 +448,13 @@ public class RollingUpgradeIT
     public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws InterruptedException
     {
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node center = db.getNodeById( centralNode );
             long maxRelId = -1;
             for ( Relationship relationship : center.getRelationships() )
             {
-                if (relationship.getId() > maxRelId )
+                if ( relationship.getId() > maxRelId )
                 {
                     maxRelId = relationship.getId();
                 }
@@ -464,38 +464,40 @@ public class RollingUpgradeIT
             for ( Relationship relationship : center.getRelationships( type1 ) )
             {
                 typeCount++;
-                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                if ( !relationship.getProperty( "relProp" )
+                        .equals( "relProp" + relationship.getId() + "-" + maxRelId ) )
                 {
-                    fail( "damn");
+                    fail( "damn" );
                 }
                 Node other = relationship.getEndNode();
-                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp" + other.getId() + "-" + maxRelId ) )
                 {
-                    fail("double damn");
+                    fail( "double damn" );
                 }
             }
             if ( typeCount != 100 )
             {
-                fail("tripled damn");
+                fail( "tripled damn" );
             }
 
             typeCount = 0;
             for ( Relationship relationship : center.getRelationships( type2 ) )
             {
                 typeCount++;
-                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                if ( !relationship.getProperty( "relProp" )
+                        .equals( "relProp" + relationship.getId() + "-" + maxRelId ) )
                 {
-                    fail( "damn");
+                    fail( "damn" );
                 }
                 Node other = relationship.getEndNode();
-                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp" + other.getId() + "-" + maxRelId ) )
                 {
-                    fail("double damn");
+                    fail( "double damn" );
                 }
             }
             if ( typeCount != 100 )
             {
-                fail("tripled damn");
+                fail( "tripled damn" );
             }
             tx.success();
         }

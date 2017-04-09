@@ -154,7 +154,7 @@ public class Neo4jError
 
     private static Neo4jError fromThrowable( Throwable any, boolean isFatal )
     {
-        for( Throwable cause = any; cause != null; cause = cause.getCause() )
+        for ( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
             if ( cause instanceof Status.HasStatus )
             {
@@ -164,11 +164,11 @@ public class Neo4jError
             {
                 return new Neo4jError( Status.General.DatabaseUnavailable, cause, isFatal );
             }
-            if (cause instanceof OutOfMemoryError)
+            if ( cause instanceof OutOfMemoryError )
             {
                 return new Neo4jError( Status.General.OutOfMemoryError, cause, isFatal );
             }
-            if (cause instanceof StackOverflowError)
+            if ( cause instanceof StackOverflowError )
             {
                 return new Neo4jError( Status.General.StackOverFlowError, cause, isFatal );
             }

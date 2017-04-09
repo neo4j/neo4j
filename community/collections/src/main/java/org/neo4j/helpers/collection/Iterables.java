@@ -427,10 +427,10 @@ public final class Iterables
     {
         Iterator<?> it = values.iterator();
         StringBuilder sb = new StringBuilder();
-        while(it.hasNext())
+        while ( it.hasNext() )
         {
             sb.append( it.next().toString() );
-            if(it.hasNext())
+            if ( it.hasNext() )
             {
                 sb.append( separator );
             }

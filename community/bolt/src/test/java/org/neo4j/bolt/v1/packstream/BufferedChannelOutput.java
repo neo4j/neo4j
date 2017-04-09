@@ -86,7 +86,7 @@ public class BufferedChannelOutput implements PackOutput
     @Override
     public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
     {
-        if( offset + length > data.length )
+        if ( offset + length > data.length )
         {
             throw new IOException( "Asked to write " + length + " bytes, but there is only " +
                                    ( data.length - offset ) + " bytes available in data provided." );

@@ -157,7 +157,7 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
         else
         {
             Object[] properties = entity.properties();
-            channel.putShort( safeCastLongToShort( properties.length/2 ) );
+            channel.putShort( safeCastLongToShort( properties.length / 2 ) );
             for ( int i = 0; i < properties.length; i++ )
             {
                 Object key = properties[i++];

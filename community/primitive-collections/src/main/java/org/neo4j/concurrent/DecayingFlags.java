@@ -108,13 +108,13 @@ public class DecayingFlags
     public void flag( Key key )
     {
         // We dynamically size this up as needed
-        if( key.index >= flags.length )
+        if ( key.index >= flags.length )
         {
             resize( key.index );
         }
 
         int flag = flags[key.index];
-        if( flag < keepalive )
+        if ( flag < keepalive )
         {
             flags[key.index] = flag + 1;
         }
@@ -132,7 +132,7 @@ public class DecayingFlags
         for ( int i = 0; i < flags.length; i++ )
         {
             int count = flags[i];
-            if( count > 0 )
+            if ( count > 0 )
             {
                 flags[i] = count - 1;
             }
@@ -142,12 +142,12 @@ public class DecayingFlags
     private synchronized void resize( int minSize )
     {
         int newSize = flags.length;
-        while( newSize < minSize )
+        while ( newSize < minSize )
         {
             newSize += 16;
         }
 
-        if( flags.length < newSize )
+        if ( flags.length < newSize )
         {
             flags = Arrays.copyOf( flags, newSize );
         }
@@ -162,17 +162,17 @@ public class DecayingFlags
         // Go over the flags, eight at a time to align
         // with sticking eight bits at a time into the
         // output array.
-        for ( int i = 0; i < flags.length; i+=8 )
+        for ( int i = 0; i < flags.length; i += 8 )
         {
-            bits[i/8] = (byte)(
-                (bit(i)   << 7) |
-                (bit(i+1) << 6) |
-                (bit(i+2) << 5) |
-                (bit(i+3) << 4) |
-                (bit(i+4) << 3) |
-                (bit(i+5) << 2) |
-                (bit(i+6) << 1) |
-                (bit(i+7)) ) ;
+            bits[i / 8] = (byte)(
+                (bit( i ) << 7) |
+                (bit( i + 1 ) << 6) |
+                (bit( i + 2 ) << 5) |
+                (bit( i + 3 ) << 4) |
+                (bit( i + 4 ) << 3) |
+                (bit( i + 5 ) << 2) |
+                (bit( i + 6 ) << 1) |
+                (bit( i + 7 )) ) ;
         }
         return printHexBinary(bits);
     }

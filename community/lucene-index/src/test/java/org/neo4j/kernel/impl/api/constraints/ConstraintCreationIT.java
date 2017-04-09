@@ -67,7 +67,7 @@ public class ConstraintCreationIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
-            fail("Should have failed with ConstraintViolationException");
+            fail( "Should have failed with ConstraintViolationException" );
             tx.success();
         }
         catch ( ConstraintViolationException ignored )
@@ -75,9 +75,9 @@ public class ConstraintCreationIT
         }
 
         // then
-        try(Transaction ignore = db.beginTx())
+        try ( Transaction ignore = db.beginTx() )
         {
-            assertEquals(0, Iterables.count(db.schema().getIndexes() ));
+            assertEquals( 0, Iterables.count( db.schema().getIndexes() ) );
         }
 
         SchemaIndexProvider schemaIndexProvider =

@@ -41,14 +41,14 @@ public class TestJumpingIdGenerator
         int sizePerJump = 1000;
         IdGeneratorFactory factory = new JumpingIdGeneratorFactory( sizePerJump );
         IdGenerator generator = factory.get( IdType.NODE );
-        for ( int i = 0; i < sizePerJump/2; i++ )
+        for ( int i = 0; i < sizePerJump / 2; i++ )
         {
             assertEquals( i, generator.nextId() );
         }
 
-        for ( int i = 0; i < sizePerJump-1; i++ )
+        for ( int i = 0; i < sizePerJump - 1; i++ )
         {
-            long expected = 0x100000000L-sizePerJump/2+i;
+            long expected = 0x100000000L - sizePerJump / 2 + i;
             if ( expected >= 0xFFFFFFFFL )
             {
                 expected++;
@@ -58,12 +58,12 @@ public class TestJumpingIdGenerator
 
         for ( int i = 0; i < sizePerJump; i++ )
         {
-            assertEquals( 0x200000000L-sizePerJump/2+i, generator.nextId() );
+            assertEquals( 0x200000000L - sizePerJump / 2 + i, generator.nextId() );
         }
 
         for ( int i = 0; i < sizePerJump; i++ )
         {
-            assertEquals( 0x300000000L-sizePerJump/2+i, generator.nextId() );
+            assertEquals( 0x300000000L - sizePerJump / 2 + i, generator.nextId() );
         }
     }
 
@@ -100,7 +100,7 @@ public class TestJumpingIdGenerator
     private byte readSomethingLikeNodeRecord( JumpingFileChannel channel, long id ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
-        channel.position( id*RECORD_SIZE );
+        channel.position( id * RECORD_SIZE );
         channel.read( buffer );
         buffer.flip();
         buffer.getLong();
@@ -109,7 +109,7 @@ public class TestJumpingIdGenerator
 
     private void writeSomethingLikeNodeRecord( JumpingFileChannel channel, long id, int justAByte ) throws IOException
     {
-        channel.position( id*RECORD_SIZE );
+        channel.position( id * RECORD_SIZE );
         ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
         buffer.putLong( 4321 );
         buffer.put( (byte) justAByte );

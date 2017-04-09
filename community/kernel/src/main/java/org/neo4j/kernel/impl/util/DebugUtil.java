@@ -45,7 +45,7 @@ public class DebugUtil
 {
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
     {
-        System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines+1 ) );
+        System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines + 1 ) );
     }
 
     public static String firstLinesOf( String string, int maxNumberOfLines )
@@ -354,9 +354,7 @@ public class DebugUtil
 
     private static String simpleClassName( String className )
     {
-        return className.indexOf( '.' ) == -1
-                ? className
-                : className.substring( className.lastIndexOf( '.' )+1 );
+        return className.indexOf( '.' ) == -1 ? className : className.substring( className.lastIndexOf( '.' ) + 1 );
     }
 
     private static boolean hasTestAnnotation( Method method )

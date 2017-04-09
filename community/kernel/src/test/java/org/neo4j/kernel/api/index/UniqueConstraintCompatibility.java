@@ -820,7 +820,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             StringBuilder sb = new StringBuilder( "Transaction failed:\n\n" );
             for ( int i = 0; i < actions.length; i++ )
             {
-                String mark = progress == i? " failed --> " : "            ";
+                String mark = progress == i ? " failed --> " : "            ";
                 sb.append( mark ).append( actions[i] ).append( '\n' );
             }
             ex.addSuppressed( new AssertionError( sb.toString() ) );
@@ -931,16 +931,12 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private String reprValue( Object value )
     {
-        return value instanceof String? "\"" + value + "\"" : String.valueOf( value );
+        return value instanceof String ? "\"" + value + "\"" : String.valueOf( value );
     }
 
     private String reprNode( Node node )
     {
-        return node == a? "a"
-                : node == b? "b"
-                : node == c? "c"
-                : node == d? "d"
-                : "n";
+        return node == a ? "a" : node == b ? "b" : node == c ? "c" : node == d ? "d" : "n";
     }
 
     // -- Set Up: Advanced transaction handling

@@ -124,7 +124,7 @@ public class TransactionThroughMasterSwitchStressIT
                             // Acquiring lock, read int property value, increment, set incremented int property
                             // should not break under any circumstances.
                             tx.acquireWriteLock( node );
-                            node.setProperty( key, (Integer) node.getProperty( key, 0 )+1 );
+                            node.setProperty( key, (Integer) node.getProperty( key, 0 ) + 1 );
                             // Throw in relationship for good measure
                             node.createRelationshipTo( master.createNode(), TEST );
 

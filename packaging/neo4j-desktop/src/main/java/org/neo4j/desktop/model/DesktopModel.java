@@ -58,9 +58,9 @@ public class DesktopModel
     {
         serverConfigurator.refresh();
 
-        for(DesktopModelListener listener : listeners)
+        for ( DesktopModelListener listener : listeners )
         {
-            listener.desktopModelChanged(this);
+            listener.desktopModelChanged( this );
         }
 
         return serverConfigurator.configuration();
@@ -178,8 +178,8 @@ public class DesktopModel
     {
         if ( data != null )
         {
-            try( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
-                 PrintWriter writer = new PrintWriter( file ) )
+            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
+                    PrintWriter writer = new PrintWriter( file ) )
             {
                 String input = reader.readLine();
                 while ( input != null )

@@ -73,7 +73,7 @@ public class RepeatRule implements TestRule
     public Statement apply( Statement base, Description description )
     {
         Repeat repeat = description.getAnnotation(Repeat.class);
-        if(repeat != null)
+        if ( repeat != null )
         {
             return new RepeatStatement( repeat.times(), base );
         }

@@ -61,7 +61,9 @@ public class LuceneLegacyIndexUpgrader
         default void migrated( String name ) {}
     }
 
-    public static final Monitor NO_MONITOR = new Monitor() {};
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+    };
 
     private static final String LIBRARY_DIRECTORY = "lib";
     private static final String RESOURCE_SEPARATOR = "/";

@@ -924,7 +924,7 @@ public class TestTransactionEvents
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         // create a rel type so the next type id is non zero
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), withName( "TYPE" ) );
         }
@@ -960,7 +960,7 @@ public class TestTransactionEvents
             }
         } );
 
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = db.getRelationshipById( relId );
             rel.setProperty( "since", 2010 );

@@ -44,10 +44,10 @@ public class ThresholdConfigParserTest
         assertEquals( KEEP_LAST_FILE, configValue );
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void parseGarbage() throws Exception
     {
         parse( "davide" );
-        fail("Expected IllegalArgumentException");
+        fail( "Expected IllegalArgumentException" );
     }
 }

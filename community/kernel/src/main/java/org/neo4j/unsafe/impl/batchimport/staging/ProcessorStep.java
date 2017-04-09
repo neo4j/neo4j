@@ -133,7 +133,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             long lastBatchEnd = lastBatchEndTime.get();
             if ( lastBatchEnd != 0 )
             {
-                upstreamIdleTime.addAndGet( currentTimeMillis()-lastBatchEnd );
+                upstreamIdleTime.addAndGet( currentTimeMillis() - lastBatchEnd );
             }
         }
     }

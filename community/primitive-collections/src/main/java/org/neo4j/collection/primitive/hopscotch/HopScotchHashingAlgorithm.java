@@ -76,12 +76,12 @@ public class HopScotchHashingAlgorithm
         long hopBits = table.hopBits( index );
         while ( hopBits > 0 )
         {
-            int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits )+1, tableMask );
+            int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits ) + 1, tableMask );
             if ( table.key( hopIndex ) == key )
             {   // There it is
                 return table.value( hopIndex );
             }
-            hopBits &= hopBits-1;
+            hopBits &= hopBits - 1;
         }
 
         return null;
@@ -104,14 +104,14 @@ public class HopScotchHashingAlgorithm
         while ( hopBits > 0 )
         {
             int hd = numberOfTrailingZeros( hopBits );
-            int hopIndex = nextIndex( index, hd+1, tableMask );
+            int hopIndex = nextIndex( index, hd + 1, tableMask );
             if ( table.key( hopIndex ) == key )
             {   // there it is
                 freedIndex = hopIndex;
                 result = table.remove( hopIndex );
                 table.removeHopBit( index, hd );
             }
-            hopBits &= hopBits-1;
+            hopBits &= hopBits - 1;
         }
 
         // reversed hop-scotching, i.e. pull in the most distant neighbor, iteratively as long as the
@@ -121,8 +121,8 @@ public class HopScotchHashingAlgorithm
             long freedHopBits = table.hopBits( freedIndex );
             if ( freedHopBits > 0 )
             {   // It's got a neighbor, go ahead and move it here
-                int hd = 63-numberOfLeadingZeros( freedHopBits );
-                int candidateIndex = nextIndex( freedIndex, hd+1, tableMask );
+                int hd = 63 - numberOfLeadingZeros( freedHopBits );
+                int candidateIndex = nextIndex( freedIndex, hd + 1, tableMask );
                 // move key/value
                 long candidateKey = table.move( candidateIndex, freedIndex );
                 // remove that hop bit, since that one is no longer a neighbor, it's "the one" at the index
@@ -163,12 +163,12 @@ public class HopScotchHashingAlgorithm
             long hopBits = table.hopBits( index );
             while ( hopBits > 0 )
             {
-                int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits )+1, tableMask );
+                int hopIndex = nextIndex( index, numberOfTrailingZeros( hopBits ) + 1, tableMask );
                 if ( table.key( hopIndex ) == key )
                 {
                     return table.putValue( hopIndex, value );
                 }
-                hopBits &= hopBits-1;
+                hopBits &= hopBits - 1;
             }
         }
 
@@ -217,7 +217,7 @@ public class HopScotchHashingAlgorithm
         {   // grab a closer index and see which of its neighbors is OK to move further away,
             // so that there will be a free space to place the new value. I.e. move the free space closer
             // and some close neighbors a bit further away (although never outside its neighborhood)
-            int neighborIndex = nextIndex( freeIndex, -(h-1), tableMask ); // hopscotch hashing says to try h-1 entries closer
+            int neighborIndex = nextIndex( freeIndex, -(h - 1), tableMask ); // hopscotch hashing says to try h-1 entries closer
 
             boolean swapped = false;
             for ( int d = 0; d < (h >> 1) && !swapped; d++ )
@@ -227,16 +227,16 @@ public class HopScotchHashingAlgorithm
                 while ( neighborHopBits > 0 && !swapped )
                 {
                     int hd = numberOfTrailingZeros( neighborHopBits );
-                    if ( hd+d >= h-1 )
+                    if ( hd + d >= h - 1 )
                     {   // that would be too far
                         break;
                     }
-                    neighborHopBits &= neighborHopBits-1;
-                    int candidateIndex = nextIndex( neighborIndex, hd+1, tableMask );
+                    neighborHopBits &= neighborHopBits - 1;
+                    int candidateIndex = nextIndex( neighborIndex, hd + 1, tableMask );
 
                     // OK, here's a neighbor, let's examine it's neighbors (candidates to move)
                     //  - move the candidate entry (incl. updating its hop bits) to the free index
-                    int distance = (freeIndex-candidateIndex)&tableMask;
+                    int distance = (freeIndex - candidateIndex) & tableMask;
                     long candidateKey = table.move( candidateIndex, freeIndex );
                     //  - update the neighbor entry with the move of the candidate entry
                     table.moveHopBit( neighborIndex, hd, distance );
@@ -269,7 +269,7 @@ public class HopScotchHashingAlgorithm
 
     private static int nextIndex( int index, int delta, int mask )
     {
-        return (index+delta)&mask;
+        return (index + delta) & mask;
     }
 
     private static int indexOf( HashFunction hashFunction, long key, int tableMask )

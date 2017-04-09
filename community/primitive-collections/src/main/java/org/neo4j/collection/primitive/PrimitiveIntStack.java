@@ -58,7 +58,7 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
     @Override
     public int size()
     {
-        return cursor+1;
+        return cursor + 1;
     }
 
     @Override
@@ -106,7 +106,7 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
 
     private void ensureCapacity()
     {
-        if ( cursor == array.length-1 )
+        if ( cursor == array.length - 1 )
         {
             array = copyOf( array, array.length << 1 );
         }
