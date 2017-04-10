@@ -2805,12 +2805,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
               PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
-            //noinspection unused
             try ( PageCursor linked = cursor.openLinkedCursor( 1 ) )
             {
                 assertTrue( linked.next() );
             }
-            assertFalse( cursor.shouldRetry() );
+            cursor.shouldRetry();
         }
     }
 
