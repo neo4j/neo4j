@@ -2796,6 +2796,64 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    public void shouldRetryOnWriteParentOfClosedLinkedCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            try ( PageCursor linked = cursor.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linked.next() );
+            }
+            cursor.shouldRetry();
+        }
+    }
+
+    @Test
+    public void shouldRetryOnReadParentOfClosedLinkedCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            try ( PageCursor linked = cursor.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linked.next() );
+            }
+            cursor.shouldRetry();
+        }
+    }
+
+    @Test
+    public void shouldRetryOnReadParentOnDirtyPageOfClosedLinkedCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        configureStandardPageCache();
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( reader.next() );
+            try ( PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( writer.next() );
+            }
+            try ( PageCursor linked = reader.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linked.next() );
+            }
+            assertTrue( reader.shouldRetry() ) ;
+        }
+    }
+
+    @Test
     public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
     {
         File file = file( "a" );
