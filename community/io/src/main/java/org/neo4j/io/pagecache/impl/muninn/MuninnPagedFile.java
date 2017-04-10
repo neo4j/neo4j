@@ -282,7 +282,8 @@ final class MuninnPagedFile implements PagedFile, Flushable
         Object[][] tt = this.translationTable;
         for ( Object[] chunk : tt )
         {
-            chunkLoop:for ( int i = 0; i < chunk.length; i++ )
+            chunkLoop:
+            for ( int i = 0; i < chunk.length; i++ )
             {
                 filePageId++;
                 long offset = computeChunkOffset( filePageId );
