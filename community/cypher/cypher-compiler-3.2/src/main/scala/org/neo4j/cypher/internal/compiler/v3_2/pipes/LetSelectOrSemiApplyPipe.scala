@@ -42,5 +42,8 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
     }
   }
 
-  private def name = if (negated) "LetSelectOrAntiSemiApply" else "LetSelectOrSemiApply"
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }

@@ -138,10 +138,10 @@ public interface ReadOperations
      */
     PrimitiveLongIterator relationshipsGetAll();
 
-    RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+    RelationshipIterator.Resource nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
             throws EntityNotFoundException;
 
-    RelationshipIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
+    RelationshipIterator.Resource nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
 
     /**
      * Returns node id of unique node found in the given unique index for value or

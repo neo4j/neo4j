@@ -87,6 +87,11 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
     }
     Some(key.toIndexedSeq)
   }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }
 
 class ProbeTable() {

@@ -33,4 +33,9 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id)
         val innerResults = inner.createResults(innerState)
         innerResults.map { context => context ++ original }
     }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }

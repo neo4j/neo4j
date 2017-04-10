@@ -51,6 +51,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))
@@ -68,6 +69,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node, node2))
@@ -85,6 +87,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node, node2))
@@ -104,6 +107,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
         Literal("hello"),
         Literal(null))))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))
@@ -123,6 +127,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
         Literal("hello"),
         Literal(null))), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))
@@ -139,6 +144,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral()))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List.empty)
@@ -158,6 +164,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
       Literal("hello")
     )))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))
@@ -178,6 +185,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
       Literal("world")
     )))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node, node))
@@ -200,6 +208,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
         SingleQueryExpression(Literal("world"))
       )))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))
@@ -213,7 +222,10 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Literal("wut?")))()
 
     // then
-    intercept[CypherTypeException](pipe.createResults(queryState))
+    intercept[CypherTypeException]{
+      try pipe.createResults(queryState)
+      finally pipe.close(true)
+    }
   }
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
@@ -223,6 +235,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))
@@ -238,6 +251,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Variable("x")))()
     val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("n")).toList should equal(List(node))

@@ -35,5 +35,8 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
     }
   }
 
-  private def name = if (negated) "AntiSemiApply" else "SemiApply"
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }

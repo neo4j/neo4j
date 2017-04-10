@@ -40,8 +40,10 @@ class NodeByLabelScanPipeTest extends CypherFunSuite {
     implicit val table = new SemanticTable()
     table.resolvedLabelIds.put("Foo", LabelId(12))
 
+    val pipe = NodeByLabelScanPipe("a", LazyLabel(LabelName("Foo")(null)))()
     // when
-    val result = NodeByLabelScanPipe("a", LazyLabel(LabelName("Foo")(null)))().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("a")).toList should equal(nodes)

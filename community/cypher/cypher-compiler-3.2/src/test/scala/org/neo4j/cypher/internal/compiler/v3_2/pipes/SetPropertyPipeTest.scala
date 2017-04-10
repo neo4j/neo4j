@@ -51,6 +51,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(nodeOps).acquireExclusiveLock(10)
     verify(nodeOps).releaseExclusiveLock(10)
   }
@@ -65,6 +67,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipOps).thenReturn(relOps)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(relOps).acquireExclusiveLock(10)
     verify(relOps).releaseExclusiveLock(10)
   }
@@ -79,6 +83,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(nodeOps, never()).acquireExclusiveLock(10)
     verify(nodeOps, never()).releaseExclusiveLock(10)
   }
@@ -93,6 +99,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipOps).thenReturn(relOps)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(relOps, never()).acquireExclusiveLock(10)
     verify(relOps, never()).releaseExclusiveLock(10)
   }
@@ -107,6 +115,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(nodeOps, never()).acquireExclusiveLock(10)
     verify(nodeOps, never()).releaseExclusiveLock(10)
     verify(nodeOps, never()).acquireExclusiveLock(20)
@@ -124,6 +134,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipOps).thenReturn(relOps)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(relOps, never()).acquireExclusiveLock(10)
     verify(relOps, never()).releaseExclusiveLock(10)
     verify(relOps, never()).acquireExclusiveLock(20)
@@ -142,6 +154,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(nodeOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(nodeOps).acquireExclusiveLock(10)
     verify(nodeOps).releaseExclusiveLock(10)
   }
@@ -158,6 +172,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(relOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(relOps).acquireExclusiveLock(10)
     verify(relOps).releaseExclusiveLock(10)
   }
@@ -174,6 +190,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(nodeOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(nodeOps, never()).acquireExclusiveLock(10)
     verify(nodeOps, never()).releaseExclusiveLock(10)
     verify(nodeOps, never()).acquireExclusiveLock(20)
@@ -194,6 +212,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(relOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(relOps, never()).acquireExclusiveLock(10)
     verify(relOps, never()).releaseExclusiveLock(10)
     verify(relOps, never()).acquireExclusiveLock(20)
@@ -212,6 +232,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(nodeOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(nodeOps, never()).acquireExclusiveLock(10)
     verify(nodeOps, never()).releaseExclusiveLock(10)
 
@@ -229,6 +251,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(relOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
 
     pipe.createResults(state).toVector
+    pipe.close(true)
+
     verify(relOps, never()).acquireExclusiveLock(10)
     verify(relOps, never()).releaseExclusiveLock(10)
   }

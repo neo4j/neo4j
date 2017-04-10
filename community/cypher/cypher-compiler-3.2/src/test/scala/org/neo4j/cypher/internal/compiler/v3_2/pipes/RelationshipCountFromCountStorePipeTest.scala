@@ -36,7 +36,10 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
+    val result = pipe.createResults(queryState).map(_ ("count(r)")).toSet
+    pipe.close(true)
+
+    result should equal(Set(42L))
   }
 
   test("should return a count for relationships with a type but no labels") {
@@ -48,7 +51,10 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
+    val result = pipe.createResults(queryState).map(_ ("count(r)")).toSet
+    pipe.close(true)
+
+    result should equal(Set(42L))
   }
 
   test("should return a count for relationships with a type and start label") {
@@ -61,7 +67,10 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
+    val result = pipe.createResults(queryState).map(_ ("count(r)")).toSet
+    pipe.close(true)
+
+    result should equal(Set(42L))
   }
 
   test("should return zero if rel-type is missing") {
@@ -75,7 +84,10 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     when(mockedContext.getOptLabelId("A")).thenReturn(None)
     val queryState = QueryStateHelper.emptyWith(query = mockedContext)
 
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(0L))
+    val result = pipe.createResults(queryState).map(_ ("count(r)")).toSet
+    pipe.close(true)
+
+    result should equal(Set(0L))
   }
 
 }

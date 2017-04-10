@@ -61,9 +61,20 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
   case class LeafPipe(name: String) extends FakeRonjaPipe
 
-  case class OneChildPipe(name: String, src: Pipe) extends FakeRonjaPipe
+  case class OneChildPipe(name: String, src: Pipe) extends FakeRonjaPipe {
+    override def close(success: Boolean): Unit = {
+      super.close(success)
+      src.close(success)
+    }
+  }
 
-  case class TwoChildPipe(name: String, l: Pipe, r: Pipe) extends FakeRonjaPipe
+  case class TwoChildPipe(name: String, l: Pipe, r: Pipe) extends FakeRonjaPipe {
+    override def close(success: Boolean): Unit = {
+      super.close(success)
+      l.close(success)
+      r.close(success)
+    }
+  }
 
 
   val factory = new PipeBuilderFactory {

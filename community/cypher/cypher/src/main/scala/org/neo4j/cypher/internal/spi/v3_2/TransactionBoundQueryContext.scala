@@ -126,7 +126,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateLabelId(labelName: String) =
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]):
+    Iterator[Relationship] with AutoCloseable = {
     val relationships = types match {
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))

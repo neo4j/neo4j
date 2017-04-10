@@ -50,10 +50,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
@@ -70,10 +70,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel, "a" -> node2)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -90,10 +90,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel, "a" -> 42)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -114,10 +114,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel2)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(Map("r" -> rel1, "a" -> node1, "b" -> node2)))
@@ -135,10 +135,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel, "a" -> node3)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
@@ -156,10 +156,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel, "b" -> node3)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = true, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = true, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
@@ -176,10 +176,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false,  None, directed = false, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -200,10 +200,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel, "a" -> node2)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = false, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = false, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -227,10 +227,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rel2)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("B"))), directed = false, simpleLength = true)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("B"))), directed = false, simpleLength = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -258,10 +258,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -288,10 +288,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels, "a" -> node1, "b" -> node4)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = true, None, directed = true, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = true, None, directed = true, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -318,10 +318,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -348,10 +348,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -378,10 +378,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -411,10 +411,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels, "b" -> node3)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = false, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = false, simpleLength = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -442,10 +442,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels, "b" -> node4)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = false, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = false, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -462,10 +462,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be('isEmpty)
@@ -479,10 +479,10 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       row("r" -> rels)
     )
 
+    val pipe = ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = false)()
     // when
-    val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be('isEmpty)

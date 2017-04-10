@@ -42,12 +42,13 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       query = when(mock[QueryContext].relationshipOps).thenReturn(relOps).getMock[QueryContext]
     )
 
+    val pipe = DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)()
     // when
-    val result: Iterator[ExecutionContext] =
-      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should equal(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
+    result should equal(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
   }
 
   test("should seek relationships by multiple ids") {
@@ -65,12 +66,13 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     )
 
     val relName = "a"
+    val pipe = DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)()
     // whens
-    val result =
-      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should equal(List(
+    result should equal(List(
       Map(relName -> r1, to -> e1, from -> s1),
       Map(relName -> r2, to -> e2, from -> s2)
     ))
@@ -85,12 +87,13 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )
 
+    val pipe = DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)()
     // when
-    val result: Iterator[ExecutionContext] =
-      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should be(empty)
+    result should be(empty)
   }
 
   private def getRelWithNodes:(Node,Relationship,Node) = {

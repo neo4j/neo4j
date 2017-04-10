@@ -41,8 +41,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val endNode = newMockedNode(2)
     val relationship = newMockedRelationship(1, startNode, endNode)
     val query = mock[QueryContext]
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable = lift(Iterator(relationship))
     })
 
     val queryState = QueryStateHelper.emptyWith(query = query)
@@ -52,10 +52,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode))
     })
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
-      .createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -70,8 +70,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val endNode = newMockedNode(2)
     val relationship = newMockedRelationship(1, startNode, endNode)
     val query = mock[QueryContext]
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable = lift(Iterator(relationship))
     })
 
     val queryState = QueryStateHelper.emptyWith(query = query)
@@ -81,10 +81,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
     })
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
-      .createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -99,8 +99,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val endNode = newMockedNode(2)
     val relationship = newMockedRelationship(1, startNode, endNode)
     val query = mock[QueryContext]
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable = lift(Iterator(relationship))
     })
 
     val queryState = QueryStateHelper.emptyWith(query = query)
@@ -110,10 +110,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> newMockedNode(42)))
     })
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
-      .createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -125,8 +125,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val endNode = newMockedNode(2)
     val relationship = newMockedRelationship(1, startNode, endNode)
     val query = mock[QueryContext]
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable = lift(Iterator(relationship))
     })
 
     val queryState = QueryStateHelper.emptyWith(query = query)
@@ -136,10 +136,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> 42))
     })
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
-      .createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -151,8 +151,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val endNode = newMockedNode(2)
     val relationship = newMockedRelationship(1, startNode, endNode)
     val query = mock[QueryContext]
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable = lift(Iterator(relationship))
     })
 
     val queryState = QueryStateHelper.emptyWith(query = query)
@@ -165,10 +165,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       )
     })
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
-      .createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -198,10 +198,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -234,10 +234,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -271,10 +271,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val badNode: Node = newMockedNode(42)
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> badNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result =
-      VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
-        createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -302,9 +302,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: third :: fourth :: Nil) = result
@@ -344,9 +345,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -381,9 +383,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val badNode = newMockedNode(42)
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> badNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be(empty)
@@ -411,9 +414,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -448,9 +452,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = true)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = true)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: Nil) = result
@@ -481,9 +486,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -521,9 +527,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b"-> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = true)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = true)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -562,9 +569,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: third :: fourth :: Nil) = result
@@ -612,9 +620,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode, "b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = true)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = true)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -649,9 +658,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // (b)-[r]->(a)
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().
-      createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -699,9 +709,11 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
         rel.getId != 2
     }
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
+      LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,
-                                     LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -734,8 +746,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -768,8 +782,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -802,8 +818,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -836,8 +854,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -873,8 +893,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -906,8 +928,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -939,8 +963,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
+    val pipe = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -972,8 +998,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> endNode)))
 
+    val pipe = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -990,8 +1018,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val source = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> null)))
 
+    val pipe = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)()
     // when
-    val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -1025,12 +1055,23 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
   }
 
   private def replyWithMap(query: QueryContext, mapping: Map[(Node, _ <: SemanticDirection), Seq[Relationship]]) {
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = {
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable = {
         val (startNode :: dir :: _ :: Nil) = invocation.getArguments.toList
-        mapping((startNode.asInstanceOf[Node], dir.asInstanceOf[SemanticDirection])).iterator
+        val iterator = mapping((startNode.asInstanceOf[Node], dir.asInstanceOf[SemanticDirection])).iterator
+        lift(iterator)
       }
     })
+  }
+
+  private def lift(iterator: Iterator[Relationship]) = {
+    new Iterator[Relationship] with AutoCloseable {
+      override def hasNext: Boolean = iterator.hasNext
+
+      override def next(): Relationship = iterator.next()
+
+      override def close(): Unit = ()
+    }
   }
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {

@@ -45,8 +45,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2), row("b" -> node3)))
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("b")).toList should equal(List(node2))
@@ -76,8 +78,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
         row("a" -> node2, "b" -> node2, "d" -> 3),
         row("a" -> null,  "b" -> node2,  "d" -> 4)))
 
+    val pipe = NodeHashJoinPipe(Set("a", "b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("a", "b"), left, right)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -99,8 +103,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node2, "c" -> 40)))
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.toList should equal(List(
@@ -121,8 +127,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node1, "c" -> 40)))
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.toList should equal(List(
@@ -142,8 +150,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> null, "c" -> 30), row("b" -> node2, "c" -> 40)))
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.toList should equal(List(
@@ -160,8 +170,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result shouldBe empty
@@ -179,8 +191,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
     when(left.createResults(queryState)).thenReturn(Iterator.empty)
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result shouldBe empty
@@ -201,8 +215,10 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator.empty)
 
+    val pipe = NodeHashJoinPipe(Set("b"), left, right)()
     // when
-    val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result shouldBe empty

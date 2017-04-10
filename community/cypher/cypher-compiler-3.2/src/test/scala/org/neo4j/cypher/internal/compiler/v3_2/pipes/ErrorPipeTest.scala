@@ -29,7 +29,10 @@ class ErrorPipeTest extends CypherFunSuite {
     val exception = new RuntimeException("Boom!")
     val pipe = ErrorPipe(mock[Pipe], exception)()
 
-    val thrown = the [RuntimeException] thrownBy pipe.createResults(QueryStateHelper.empty)
+    val thrown = the [RuntimeException] thrownBy {
+      try pipe.createResults(QueryStateHelper.empty)
+      finally pipe.close(true)
+    }
 
     thrown should be theSameInstanceAs exception
   }

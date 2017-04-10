@@ -39,4 +39,9 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
         }
         outerContext
     }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }

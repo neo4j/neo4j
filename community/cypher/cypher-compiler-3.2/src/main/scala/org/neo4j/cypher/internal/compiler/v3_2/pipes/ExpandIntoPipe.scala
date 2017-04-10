@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.pipes
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Node, Relationship}
 
 /**
  * Expand when both end-points are known, find all relationships of the given
@@ -45,21 +45,32 @@ case class ExpandIntoPipe(source: Pipe,
   self =>
   private final val CACHE_SIZE = 100000
 
+  private val _relationships : ThreadLocal[Iterator[Relationship] with AutoCloseable] =
+    new ThreadLocal[Iterator[Relationship] with AutoCloseable]
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
     val relCache = new RelationshipsCache(CACHE_SIZE)
 
     input.flatMap {
       row =>
-        val fromNode = getRowNode(row, fromName)
-        fromNode match {
+        closeIterator()
+        getRowNode(row, fromName) match {
           case fromNode: Node =>
             val toNode = getRowNode(row, toName)
 
             if (toNode == null) Iterator.empty
             else {
-              val relationships = relCache.get(fromNode, toNode, dir)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
+              val relationships = {
+                val maybeRelationships = relCache.get(fromNode, toNode, dir)
+                if (maybeRelationships.isDefined)
+                  maybeRelationships.get.iterator
+                else {
+                  val iterator = findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query))
+                  _relationships.set(iterator)
+                  iterator
+                }
+              }
 
               if (relationships.isEmpty) Iterator.empty
               else relationships.map(row.newWith1(relName, _))
@@ -69,6 +80,17 @@ case class ExpandIntoPipe(source: Pipe,
             Iterator.empty
         }
     }
+  }
+
+  private def closeIterator() = {
+    val closeable = _relationships.get()
+    if (closeable != null) closeable.close()
+  }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    closeIterator()
+    _relationships.remove()
   }
 }
 

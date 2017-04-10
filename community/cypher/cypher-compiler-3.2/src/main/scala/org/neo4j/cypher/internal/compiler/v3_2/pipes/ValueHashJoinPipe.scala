@@ -67,4 +67,9 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
 
     table
   }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    right.close(success)
+  }
 }

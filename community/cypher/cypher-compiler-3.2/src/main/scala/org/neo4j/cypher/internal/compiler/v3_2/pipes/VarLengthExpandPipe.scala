@@ -62,14 +62,15 @@ case class VarLengthExpandPipe(source: Pipe,
       def next(): (Node, Seq[Relationship]) = {
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
-
+          val relationships = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
+          try
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
             val otherNode = rel.getOtherNode(node)
             if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
               stack.push((otherNode, rels :+ rel))
             }
           }
+          finally relationships.close()
         }
         val needsFlipping = if (dir == SemanticDirection.BOTH) projectedDir == SemanticDirection.INCOMING else dir != projectedDir
         val projectedRels = if (needsFlipping) {

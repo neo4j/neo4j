@@ -41,4 +41,9 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
         }
     }
   }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    rhs.close(success)
+  }
 }

@@ -81,4 +81,9 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     }
     Some(key.toIndexedSeq)
   }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    right.close(success)
+  }
 }

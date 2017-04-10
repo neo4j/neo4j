@@ -251,7 +251,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
           val start = System.nanoTime()
-          val numberOfRows = pipe.createResults(state).size
+          val numberOfRows = {
+            try pipe.createResults(state).size
+            finally pipe.close(true)
+          }
           val elapsed = System.nanoTime() - start
 
           //warmup

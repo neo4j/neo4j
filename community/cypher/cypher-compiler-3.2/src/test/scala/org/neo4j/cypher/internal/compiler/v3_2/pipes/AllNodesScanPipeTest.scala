@@ -36,11 +36,13 @@ class AllNodesScanPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
+    val pipe = AllNodesScanPipe("a")()
 
     // when
-    val result = AllNodesScanPipe("a")().createResults(queryState)
+    val result = pipe.createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(nodes)
+    pipe.close(true)
   }
 }

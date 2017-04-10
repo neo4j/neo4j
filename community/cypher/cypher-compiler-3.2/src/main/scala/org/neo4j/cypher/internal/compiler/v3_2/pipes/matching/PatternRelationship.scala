@@ -44,17 +44,16 @@ class PatternRelationship(key: String,
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
   def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
-
-    val result: Iterator[GraphRelationship] =
-      state.query.
-        getRelationshipsForIds(realNode, getDirection(node), types.types(state.query)).
-        filter(r => canUseThis(r, state, f)).
-        map(new SingleGraphRelationship(_))
-
-    if (startNode == endNode)
-      result.filter(r => r.getOtherNode(realNode) == realNode).toIndexedSeq
-    else
-      result.toIndexedSeq
+    val relationships = state.query.getRelationshipsForIds(realNode, getDirection(node), types.types(state.query))
+    val result = {
+      val itr = relationships.filter(r => canUseThis(r, state, f)).map(SingleGraphRelationship)
+      if (startNode == endNode)
+        itr.filter(r => r.getOtherNode(realNode) == realNode).toIndexedSeq
+      else
+        itr.toIndexedSeq
+    }
+    relationships.close()
+    result
   }
 
   protected def getDirection(node: PatternNode): SemanticDirection = {

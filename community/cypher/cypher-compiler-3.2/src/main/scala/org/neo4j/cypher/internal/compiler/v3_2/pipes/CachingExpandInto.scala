@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirec
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -41,11 +40,20 @@ import scala.collection.mutable.ArrayBuffer
  */
 trait CachingExpandInto {
 
+  private object Empty extends Iterator[Relationship] with AutoCloseable {
+    override def close(): Unit = ()
+
+    override def hasNext: Boolean = Iterator.empty.hasNext
+
+    override def next(): Relationship = Iterator.empty.next()
+  }
+
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
   protected def findRelationships(query: QueryContext, fromNode: Node, toNode: Node,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): Iterator[Relationship] = {
+                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]):
+  Iterator[Relationship] with AutoCloseable = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode.getId)
     val toNodeIsDense = query.nodeIsDense(toNode.getId)
@@ -55,12 +63,12 @@ trait CachingExpandInto {
       //check degree and iterate from the node with smaller degree
       val fromDegree = getDegree(fromNode, relTypes, dir, query)
       if (fromDegree == 0) {
-        return Iterator.empty
+        return Empty
       }
 
       val toDegree = getDegree(toNode, relTypes, dir.reversed, query)
       if (toDegree == 0) {
-        return Iterator.empty
+        return Empty
       }
 
       relIterator(query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
@@ -84,26 +92,35 @@ trait CachingExpandInto {
   }
 
   private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
+                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection): Iterator[Relationship] with AutoCloseable = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships = query.getRelationshipsForIds(start, localDirection, relTypes)
-    new PrefetchingIterator[Relationship] {
-      //we do not expect two nodes to have many connecting relationships
-      val connectedRelationships = new ArrayBuffer[Relationship](2)
+    new Iterator[Relationship] with AutoCloseable
+    {
+      private val inner = new PrefetchingIterator[Relationship] {
+        //we do not expect two nodes to have many connecting relationships
+        val connectedRelationships = new ArrayBuffer[Relationship](2)
 
-      override def fetchNextOrNull(): Relationship = {
-        while (relationships.hasNext) {
-          val rel = relationships.next()
-          val other = rel.getOtherNode(start)
-          if (end == other) {
-            connectedRelationships.append(rel)
-            return rel
+        override def fetchNextOrNull(): Relationship = {
+          while (relationships.hasNext) {
+            val rel = relationships.next()
+            val other = rel.getOtherNode(start)
+            if (end == other) {
+              connectedRelationships.append(rel)
+              return rel
+            }
           }
+          relCache.put(fromNode, toNode, connectedRelationships, dir)
+          null
         }
-        relCache.put(fromNode, toNode, connectedRelationships, dir)
-        null
       }
-    }.asScala
+
+      override def hasNext: Boolean = inner.hasNext
+
+      override def next(): Relationship = inner.next()
+
+      override def close(): Unit = relationships.close()
+    }
   }
 
   private def getDegree(node: Node, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {

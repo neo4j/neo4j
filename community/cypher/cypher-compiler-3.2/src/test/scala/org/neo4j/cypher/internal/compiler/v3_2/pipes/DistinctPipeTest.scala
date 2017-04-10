@@ -32,7 +32,8 @@ class DistinctPipeTest extends CypherFunSuite {
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)))
 
     //WHEN
-    val result = pipe.createResults(QueryStateHelper.empty)
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     //THEN
     result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
@@ -44,10 +45,11 @@ class DistinctPipeTest extends CypherFunSuite {
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)), expressions)
 
     //WHEN
-    val result = pipe.createResults(QueryStateHelper.empty)
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     //THEN
-    result.toList should equal(List(Map("doubled" -> 2), Map("doubled" -> 4)))
+    result should equal(List(Map("doubled" -> 2), Map("doubled" -> 4)))
   }
 
   test("undistinct input passes through") {
@@ -55,10 +57,11 @@ class DistinctPipeTest extends CypherFunSuite {
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 1)))
 
     //WHEN
-    val result = pipe.createResults(QueryStateHelper.empty)
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     //THEN
-    result.toList should equal(List(Map("x" -> 1)))
+    result should equal(List(Map("x" -> 1)))
   }
 
   test("distinct deals with maps containing java arrays") {
@@ -69,6 +72,7 @@ class DistinctPipeTest extends CypherFunSuite {
 
     //WHEN
     val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     //THEN
     result should have size 1

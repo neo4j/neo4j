@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Node, Relationship}
 
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection,
                                  types: LazyTypes, predicate: Predicate)
@@ -33,17 +33,20 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
 
   predicate.registerOwningPipe(this)
 
+  private val relationships: ThreadLocal[Iterator[Relationship] with AutoCloseable] =
+    new ThreadLocal[Iterator[Relationship] with AutoCloseable]
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
 
     input.flatMap {
       row =>
-        val fromNode = getFromNode(row)
-        fromNode match {
+        closeIterator()
+        getFromNode(row) match {
           case n: Node =>
-            val relationships = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
-            val matchIterator = relationships.map {
-              case r => row.newWith2(relName, r, toName, r.getOtherNode(n))
+            val iterator = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
+            relationships.set(iterator)
+            val matchIterator = iterator.map { r => row.newWith2(relName, r, toName, r.getOtherNode(n))
             }.filter(ctx => predicate.isTrue(ctx))
 
             if (matchIterator.isEmpty) {
@@ -66,4 +69,17 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
 
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
+
+  override def close(success: Boolean) = {
+    super.close(success)
+    closeIterator()
+    relationships.remove()
+  }
+
+  private def closeIterator() = {
+    val closeable = relationships.get()
+    if (closeable != null) {
+      closeable.close()
+    }
+  }
 }

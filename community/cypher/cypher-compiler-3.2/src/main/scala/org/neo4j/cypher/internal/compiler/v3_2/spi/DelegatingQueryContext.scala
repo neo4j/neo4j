@@ -33,6 +33,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHitsC[A](value: Iterator[A] with AutoCloseable): Iterator[A] with AutoCloseable = value
   protected def manyDbHits(count: Int): Int = count
 
   type EntityAccessor = inner.EntityAccessor
@@ -64,8 +65,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
-  manyDbHits(inner.getRelationshipsForIds(node, dir, types))
+  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]):
+    Iterator[Relationship] with AutoCloseable =
+  manyDbHitsC(inner.getRelationshipsForIds(node, dir, types))
 
   override def nodeOps = inner.nodeOps
 

@@ -34,16 +34,18 @@ case class ExpandAllPipe(source: Pipe,
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
 
+  private val relationships: ThreadLocal[Iterator[Relationship] with AutoCloseable] =
+    new ThreadLocal[Iterator[Relationship] with AutoCloseable]
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       row =>
+        closeIterator()
         getFromNode(row) match {
           case n: Node =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
-            relationships.map {
-              case r =>
-                row.newWith2(relName, r, toName, r.getOtherNode(n))
-            }
+            val iterator = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
+            relationships.set(iterator)
+            iterator.map { r => row.newWith2(relName, r, toName, r.getOtherNode(n)) }
 
           case null => None
 
@@ -56,4 +58,17 @@ case class ExpandAllPipe(source: Pipe,
 
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
+
+  override def close(success: Boolean) = {
+    super.close(success)
+    closeIterator()
+    relationships.remove()
+  }
+
+  private def closeIterator() = {
+    val closeable = relationships.get()
+    if (closeable != null) {
+      closeable.close()
+    }
+  }
 }

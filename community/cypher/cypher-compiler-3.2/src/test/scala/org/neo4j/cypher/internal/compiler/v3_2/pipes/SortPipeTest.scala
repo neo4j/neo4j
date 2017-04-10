@@ -34,7 +34,10 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
     val source = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
-    assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)
+    val result = sortPipe.createResults(QueryStateHelper.empty).toList
+    sortPipe.close(true)
+
+    assertEquals(List(), result)
   }
 
   test("simple sorting is supported") {
@@ -55,10 +58,13 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       Ascending("x"),
       Ascending("y")))()
 
+    val result = sortPipe.createResults(QueryStateHelper.empty).toList
+    sortPipe.close(true)
+
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
       MutableMap("x" -> "B", "y" -> 10),
-      MutableMap("x" -> "B", "y" -> 20)), sortPipe.createResults(QueryStateHelper.empty).toList)
+      MutableMap("x" -> "B", "y" -> 20)), result)
   }
 
   test("sort by two columns with one descending") {
@@ -71,10 +77,13 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       Ascending("x"),
       Descending("y")))()
 
+    val result = sortPipe.createResults(QueryStateHelper.empty).toList
+    sortPipe.close(true)
+
     assertEquals(List(
       MutableMap[String, Any]("x" -> "A", "y" -> 100),
       MutableMap[String, Any]("x" -> "B", "y" -> 20),
-      MutableMap[String, Any]("x" -> "B", "y" -> 10)), sortPipe.createResults(QueryStateHelper.empty).toList)
+      MutableMap[String, Any]("x" -> "B", "y" -> 10)), result)
   }
 
   test("should handle null values") {
@@ -86,9 +95,12 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
     val sortPipe = new SortPipe(source, List(Ascending("y")))()
 
+    val result = sortPipe.createResults(QueryStateHelper.empty).toList
+    sortPipe.close(true)
+
     assertEquals(List(
       MutableMap("y" -> 1),
       MutableMap("y" -> 2),
-      MutableMap("y" -> null)), sortPipe.createResults(QueryStateHelper.empty).toList)
+      MutableMap("y" -> null)), result)
   }
 }

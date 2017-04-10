@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable.ListBuffer
 
@@ -34,26 +34,37 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
   extends PipeWithSource(source, pipeMonitor) with CachingExpandInto {
   private final val CACHE_SIZE = 100000
 
+  private val _relationships : ThreadLocal[Iterator[Relationship] with AutoCloseable] =
+    new ThreadLocal[Iterator[Relationship] with AutoCloseable]
+
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
     val relCache = new RelationshipsCache(CACHE_SIZE)
 
     input.flatMap {
       row =>
-        val fromNode = getRowNode(row, fromName)
-        fromNode match {
+        closeIterator()
+        getRowNode(row, fromName) match {
           case fromNode: Node =>
             val toNode = getRowNode(row, toName)
 
             if (toNode == null) Iterator.single(row.newWith1(relName, null))
             else {
-              val relationships = relCache.get(fromNode, toNode, dir)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, types.types(state.query)))
+              val relationships = {
+                val maybeRelationships = relCache.get(fromNode, toNode, dir)
+                if (maybeRelationships.isDefined)
+                  maybeRelationships.get.iterator
+                else {
+                  val iterator = findRelationships(state.query, fromNode, toNode, relCache, dir, types.types(state.query))
+                  _relationships.set(iterator)
+                  iterator
+                }
+              }
 
-              val it = relationships.toIterator
               val filteredRows = ListBuffer.empty[ExecutionContext]
-              while (it.hasNext) {
-                val candidateRow = row.newWith1(relName, it.next())
+              while (relationships.hasNext) {
+                val candidateRow = row.newWith1(relName, relationships.next())
 
                 if (predicate.isTrue(candidateRow)(state)) {
                   filteredRows.append(candidateRow)
@@ -67,5 +78,16 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
           case null => Iterator(row.newWith1(relName, null))
         }
     }
+  }
+
+  private def closeIterator() = {
+    val closeable = _relationships.get()
+    if (closeable != null) closeable.close()
+  }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    closeIterator()
+    _relationships.remove()
   }
 }

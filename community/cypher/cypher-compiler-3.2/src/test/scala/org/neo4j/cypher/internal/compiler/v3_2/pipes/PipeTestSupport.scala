@@ -63,8 +63,15 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     relsByNode.foreach {
       case (node, rels) =>
         when(query.getRelationshipsForIds(node, direction, None)).thenAnswer(
-          new Answer[Iterator[Relationship]] {
-            def answer(invocation: InvocationOnMock) = rels.iterator
+          new Answer[Iterator[Relationship] with AutoCloseable] {
+            def answer(invocation: InvocationOnMock) = new Iterator[Relationship] with AutoCloseable {
+              private val inner = rels.iterator
+              override def hasNext: Boolean = inner.hasNext
+
+              override def next(): Relationship = inner.next()
+
+              override def close(): Unit = ()
+            }
           })
 
         when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)

@@ -36,6 +36,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // when
     val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     // then
     result should equal(List(Map("a" -> 1, "x" -> Seq.empty)))
@@ -49,6 +50,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // when
     val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -64,6 +66,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // when
     val result = pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     // then
     result should equal(List(
@@ -85,6 +88,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // when
     pipe.createResults(QueryStateHelper.empty).toList
+    pipe.close(true)
 
     // then should not throw exception
   }
