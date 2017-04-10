@@ -261,10 +261,65 @@ final class MuninnPagedFile implements PagedFile, Flushable
 
     void flushAndForceForClose() throws IOException
     {
+        if ( deleteOnClose )
+        {
+            // No need to spend time flushing data to a file we're going to delete anyway.
+            // However, we still have to mark the dirtied pages as clean since evicting would otherwise try to flush
+            // these pages, and would fail because the file is closed, and we cannot allow that to happen.
+            markAllDirtyPagesAsClean();
+            return;
+        }
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.unlimited() );
             syncDevice();
+        }
+    }
+
+    private void markAllDirtyPagesAsClean()
+    {
+        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+        Object[][] tt = this.translationTable;
+        for ( Object[] chunk : tt )
+        {
+            chunkLoop:
+            for ( int i = 0; i < chunk.length; i++ )
+            {
+                filePageId++;
+                long offset = computeChunkOffset( filePageId );
+
+                // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
+                // in getting a lock on all available pages.
+                for (;;)
+                {
+                    Object element = UnsafeUtil.getObjectVolatile( chunk, offset );
+                    if ( element instanceof MuninnPage )
+                    {
+                        MuninnPage page = (MuninnPage) element;
+                        long stamp = page.tryOptimisticReadLock();
+                        if ( (!page.isDirty()) && page.validateReadLock( stamp ) )
+                        {
+                            // We got a valid read, and the page isn't dirty, so we skip it.
+                            continue chunkLoop;
+                        }
+
+                        if ( !page.tryExclusiveLock() )
+                        {
+                            continue;
+                        }
+                        if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
+                        {
+                            // The page is still bound to the expected file and file page id after we locked it,
+                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            page.markAsClean();
+                            page.unlockExclusive();
+                            continue chunkLoop;
+                        }
+                    }
+                    // There was no page at this entry in the table. Continue to the next entry.
+                    continue chunkLoop;
+                }
+            }
         }
     }
 
@@ -286,8 +341,8 @@ final class MuninnPagedFile implements PagedFile, Flushable
             for ( int i = 0; i < chunk.length; i++ )
             {
                 filePageId++;
-
                 long offset = computeChunkOffset( filePageId );
+
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
                 for (;;)
