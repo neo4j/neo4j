@@ -41,7 +41,8 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 public class ConfiguringPageCacheFactory
 {
     private static final int pageSize = getInteger( ConfiguringPageCacheFactory.class, "pageSize", 8192 );
-    private final PageSwapperFactory swapperFactory;
+    private PageSwapperFactory swapperFactory;
+    private final FileSystemAbstraction fs;
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
     private final Log log;
@@ -60,46 +61,19 @@ public class ConfiguringPageCacheFactory
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
     {
-        this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
+        this.fs = fs;
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
         this.log = log;
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
     }
 
-    private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
-    {
-        String desiredImplementation = config.get( pagecache_swapper );
-
-        if ( desiredImplementation != null )
-        {
-            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
-            {
-                if ( factory.implementationName().equals( desiredImplementation ) )
-                {
-                    factory.setFileSystemAbstraction( fs );
-                    if ( factory instanceof ConfigurablePageSwapperFactory )
-                    {
-                        ConfigurablePageSwapperFactory configurableFactory = (ConfigurablePageSwapperFactory) factory;
-                        configurableFactory.configure( config );
-                    }
-                    log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
-                    return factory;
-                }
-            }
-            throw new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation );
-        }
-
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.setFileSystemAbstraction( fs );
-        return factory;
-    }
-
     public synchronized PageCache getOrCreatePageCache()
     {
         if ( pageCache == null )
         {
-            pageCache = createPageCache();
+            this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
+            this.pageCache = createPageCache();
         }
         return pageCache;
     }
@@ -218,4 +192,30 @@ public class ConfiguringPageCacheFactory
 
         log.info( msg );
     }
+
+    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
+    {
+        PageSwapperFactory factory = getPageSwapperFactory( config, log );
+        factory.configure( fs, config );
+        return factory;
+    }
+
+    private static PageSwapperFactory getPageSwapperFactory( Config config, Log log )
+    {
+        String desiredImplementation = config.get( pagecache_swapper );
+        if ( desiredImplementation != null )
+        {
+            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
+            {
+                if ( factory.implementationName().equals( desiredImplementation ) )
+                {
+                    log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
+                    return factory;
+                }
+            }
+            throw new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation );
+        }
+        return new SingleFilePageSwapperFactory();
+    }
+
 }

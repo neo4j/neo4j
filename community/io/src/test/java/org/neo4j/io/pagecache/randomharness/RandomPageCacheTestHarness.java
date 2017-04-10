@@ -382,7 +382,7 @@ public class RandomPageCacheTestHarness implements Closeable
         }
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.setFileSystemAbstraction( fs );
+        swapperFactory.configure( fs );
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer,
                 cursorTracerSupplier );
         cache.setPrintExceptionsOnClose( false );

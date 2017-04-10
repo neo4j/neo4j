@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -33,17 +34,27 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * <p>
  * The PageSwapperFactory presumably knows about what file system to use.
  * <p>
+ * To be able to create PageSwapper factory need to be configured first using appropriate configure call.
  * Note that this API is <em>only</em> intended to be used by a {@link PageCache} implementation.
  * It should never be used directly by user code.
  */
 public interface PageSwapperFactory
 {
     /**
-     * Configure the FileSystemAbstraction to use.
-     * <p>
-     * This must be called before the first PageSwapper is created.
+     * Configure page swapper factory with filesystem and config
+     * @param fs file system to use in page swappers
+     * @param config custom page swapper configuration
      */
-    void setFileSystemAbstraction( FileSystemAbstraction fs );
+    void configure( FileSystemAbstraction fs, Configuration config );
+
+    /**
+     * Configure swapper with filesystem to use.
+     * @param fs file system to use in page swappers
+     */
+    default void configure( FileSystemAbstraction fs )
+    {
+        this.configure( fs, Configuration.EMPTY );
+    }
 
     /**
      * Get the name of this PageSwapperFactory implementation, for configuration purpose.

@@ -54,7 +54,7 @@ public final class StandalonePageCacheFactory
             PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.setFileSystemAbstraction( fileSystem );
+        factory.configure( fileSystem );
 
         int cachePageSize = pageSize != null ? pageSize : factory.getCachePageSizeHint();
         long pageCacheMemory = ByteUnit.mebiBytes( 8 );

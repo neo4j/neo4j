@@ -3744,7 +3744,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 };
             }
         };
-        factory.setFileSystemAbstraction( fs );
+        factory.configure( fs );
         return factory;
     }
 

@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -81,7 +82,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     protected PageSwapperFactory swapperFactory()
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
-        factory.setFileSystemAbstraction( getFs() );
+        factory.configure( getFs(), Configuration.EMPTY );
         return factory;
     }
 
@@ -235,7 +236,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS );
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( fileSystem );
+        factory.configure( fileSystem );
         File file = testDir.file( "file" );
         fileSystem.create( file ).close();
 
@@ -259,7 +260,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( fileSystem );
+        factory.configure( fileSystem );
         File file = testDir.file( "file" );
 
         StoreFileChannel channel = fileSystem.create( file );
@@ -278,7 +279,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( fileSystem );
+        factory.configure( fileSystem );
         File file = testDir.file( "file" );
 
         fileSystem.create( file ).close();
@@ -312,7 +313,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( fileSystem );
+        factory.configure( fileSystem );
         File file = testDir.file( "file" );
         fileSystem.create( file ).close();
 
@@ -331,7 +332,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assumeFalse( "No file locking on Windows", SystemUtils.IS_OS_WINDOWS ); // no file locking on Windows.
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( fileSystem );
+        factory.configure( fileSystem );
         File file = testDir.file( "file" );
         fileSystem.create( file ).close();
 
@@ -360,7 +361,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( new DelegatingFileSystemAbstraction( fileSystem )
+        factory.configure( new DelegatingFileSystemAbstraction( fileSystem )
         {
             @Override
             public StoreChannel open( File fileName, String mode ) throws IOException
@@ -421,7 +422,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         ThreadLocalRandom.current().nextBytes( data );
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( getFs() );
+        factory.configure( getFs() );
         File file = getFile();
         PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
         try
@@ -434,7 +435,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
 
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
+        factory.configure( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
         swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, false );
 
         ByteBufferPage page = createPage( bytesTotal );
@@ -466,7 +467,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         File file = getFile();
         PageSwapperFactory factory = createSwapperFactory();
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
+        factory.configure( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
         PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
 
         ByteBufferPage page = createPage( bytesTotal );
@@ -502,7 +503,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         ThreadLocalRandom.current().nextBytes( data );
 
         PageSwapperFactory factory = createSwapperFactory();
-        factory.setFileSystemAbstraction( getFs() );
+        factory.configure( getFs() );
         File file = getFile();
         PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
         try
@@ -515,7 +516,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
 
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
+        factory.configure( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
         swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, false );
 
         ByteBufferPage[] pages = new ByteBufferPage[pageCount];
@@ -561,7 +562,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         File file = getFile();
         PageSwapperFactory factory = createSwapperFactory();
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
-        factory.setFileSystemAbstraction( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
+        factory.configure( new AdversarialFileSystemAbstraction( adversary, getFs() ) );
         PageSwapper swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, true );
 
         ByteBufferPage[] writePages = new ByteBufferPage[pageCount];
