@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -81,6 +83,16 @@ public class NativeLabelScanStore implements LabelScanStore
      * Name of the file used for the native label scan store.
      */
     public static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
+
+    /**
+     * Written in header to indicate native label scan store is clean
+     */
+    private static final byte CLEAN = (byte) 0x00;
+
+    /**
+     * Written in header to indicate native label scan store is dirty
+     */
+    private static final byte DIRTY = (byte) 0x01;
 
     /**
      * Whether or not this label scan store is read-only.
@@ -152,17 +164,12 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Write dirty bit to header
      */
-    private final Consumer<PageCursor> writeDirty;
+    private static final Consumer<PageCursor> writeDirty = pageCursor -> pageCursor.putByte( DIRTY );
 
     /**
      * Remove dirty bit from header
      */
-    private final Consumer<PageCursor> writeClean;
-
-    /**
-     * Read dirty bit from header
-     */
-    private final GetDirtyReader getDirty;
+    private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors )
@@ -184,15 +191,12 @@ public class NativeLabelScanStore implements LabelScanStore
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
-        this.writeDirty = new DirtyWriter();
-        this.writeClean = new CleanWriter();
-        this.getDirty = new GetDirtyReader();
     }
 
     /**
      * @return {@link LabelScanReader} capable of finding node ids with given label ids.
      * Readers will immediately see updates made by {@link LabelScanWriter}, although {@link LabelScanWriter}
-     * may internally batch updates so functionality isn't realiable. The only given is that readers will
+     * may internally batch updates so functionality isn't reliable. The only given is that readers will
      * see at least updates from closed {@link LabelScanWriter writers}.
      */
     @Override
@@ -334,9 +338,6 @@ public class NativeLabelScanStore implements LabelScanStore
             monitor.notValidIndex();
             dropStrict();
             instantiateTree();
-        }
-        if ( isDirty || !storeExists )
-        {
             needsRebuild = true;
         }
     }
@@ -367,8 +368,10 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         monitors.addMonitorListener( treeMonitor() );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
+        MutableBoolean isDirty = new MutableBoolean();
+        Header.Reader getDirty = (pageCursor, length) -> isDirty.setValue( pageCursor.getByte() == DIRTY );
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty );
-        return getDirty.isDirty();
+        return isDirty.getValue();
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -385,50 +388,6 @@ public class NativeLabelScanStore implements LabelScanStore
                         "Time spent", duration( durationMillis ) ) );
             }
         };
-    }
-
-    private static final int HEADER_LENGTH = 1;
-    private static final byte CLEAN = (byte) 0x00;
-    private static final byte DIRTY = (byte) 0x01;
-
-    private class GetDirtyReader implements Header.Reader
-    {
-        private boolean isDirty;
-        private boolean read;
-
-        @Override
-        public void read( PageCursor from, int length )
-        {
-            byte[] header = new byte[HEADER_LENGTH];
-            from.getBytes( header );
-            read = true;
-            isDirty = header[0] == DIRTY;
-        }
-
-        boolean isDirty()
-        {
-            boolean result = read && isDirty;
-            read = false;
-            return result;
-        }
-    }
-
-    private class DirtyWriter implements Consumer<PageCursor>
-    {
-        @Override
-        public void accept( PageCursor pageCursor )
-        {
-            pageCursor.putByte( DIRTY );
-        }
-    }
-
-    private class CleanWriter implements Consumer<PageCursor>
-    {
-        @Override
-        public void accept( PageCursor pageCursor )
-        {
-            pageCursor.putByte( CLEAN );
-        }
     }
 
     @Override
