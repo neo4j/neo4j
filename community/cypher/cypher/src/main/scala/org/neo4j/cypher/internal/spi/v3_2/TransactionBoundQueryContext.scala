@@ -468,7 +468,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       IdempotentResult(transactionalContext.statement.schemaWriteOperations().indexCreate( descriptor ))
     } catch {
       case _: AlreadyIndexedException =>
-        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForSchema (SchemaDescriptorFactory.forLabel(descriptor.getLabelId, descriptor.getPropertyId));
+        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForSchema (
+          SchemaDescriptorFactory.forLabel(descriptor.getLabelId, descriptor.getPropertyIds:_*))
         if(transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
           throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
         IdempotentResult(indexDescriptor, wasCreated = false)

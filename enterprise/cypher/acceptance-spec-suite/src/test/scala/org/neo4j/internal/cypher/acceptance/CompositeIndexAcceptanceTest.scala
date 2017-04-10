@@ -274,6 +274,12 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     result should useIndex(":L(foo,bar,baz")
   }
 
+  test("should not fail on multiple attempts to create a composite index") {
+    // Given
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
+    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
+  }
+
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
       graph.inTx {
