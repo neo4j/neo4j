@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.RandomRule;
@@ -556,20 +555,6 @@ public abstract class LabelScanStoreTest
 
         life.start();
         assertTrue( monitor.initCalled );
-    }
-
-    protected FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
-    {
-        return writer ->
-        {
-            long count = 0;
-            for ( NodeLabelUpdate update : existingData )
-            {
-                writer.write( update );
-                count++;
-            }
-            return count;
-        };
     }
 
     private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data,
