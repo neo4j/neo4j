@@ -22,7 +22,6 @@ package org.neo4j.test;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.LogProvider;
 
 public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
@@ -44,9 +44,37 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                                                                           GraphDatabaseFactoryState state )
     {
-        return config -> {
-            config.put( "unsupported.dbms.ephemeral", "false" );
-            return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
+        return new GraphDatabaseBuilder.DatabaseCreator() {
+
+            @Override
+            public GraphDatabaseService newDatabase( Map<String,String> config )
+            {
+                config.put( "unsupported.dbms.ephemeral", "false" );
+                return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
+                {
+                    @Override
+                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    {
+                        return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade ) {
+                            @Override
+                            protected LogService createLogService( LogProvider userLogProvider )
+                            {
+                                if ( state instanceof TestGraphDatabaseFactoryState )
+                                {
+                                    LogProvider logProvider = ((TestGraphDatabaseFactoryState) state).getInternalLogProvider();
+                                    if ( logProvider != null )
+                                    {
+                                        return new SimpleLogService( logProvider, logProvider );
+                                    }
+                                }
+                                return super.createLogService( userLogProvider );
+                            }
+                        };
+                    }
+                }.newFacade( storeDir, config,
+                        GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+            }
         };
     }
 
@@ -64,8 +92,8 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
                 {
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
-                                                             Dependencies dependencies,
-                                                             GraphDatabaseFacade graphDatabaseFacade )
+                            Dependencies dependencies,
+                            GraphDatabaseFacade graphDatabaseFacade )
                     {
                         return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
                                 dependencies, graphDatabaseFacade )
