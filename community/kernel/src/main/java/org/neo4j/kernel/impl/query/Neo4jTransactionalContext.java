@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
@@ -59,7 +60,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private InternalTransaction transaction;
     private Statement statement;
     private boolean isOpen = true;
-    private boolean terminated = false;
+    private AtomicBoolean terminated = new AtomicBoolean(false);
 
     private long pageHits;
     private long pageMisses;
@@ -146,7 +147,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         if ( isOpen )
         {
-            terminated = true;
+            terminated.set(true);
             try
             {
                 transaction.terminate();
@@ -242,9 +243,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
     private void checkNotTerminated()
     {
-        if ( terminated )
+        if ( terminated.get() )
         {
-            throw new TransactionTerminatedException(TransactionTerminated);
+            throw new TransactionTerminatedException( TransactionTerminated );
         }
     }
 

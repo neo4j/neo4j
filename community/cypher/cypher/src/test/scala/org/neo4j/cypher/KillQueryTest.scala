@@ -40,10 +40,10 @@ class KillQueryTest extends ExecutionEngineFunSuite {
    */
   val emptyMap = new util.HashMap[String, AnyRef]
   val NODE_COUNT = 1000
-  val THREAD_COUNT = 10
+  val THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2
+  val SECONDS_TO_RUN = 5
 
-
-  test("apa") {
+  test("run queries and kill them left and right") {
     val locker = new PropertyContainerLocker()
     val contextFactory = Neo4jTransactionalContextFactory.create(graph, locker)
 
@@ -84,7 +84,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
       override def run(): Unit =
         try {
           val start = System.currentTimeMillis()
-          while ((System.currentTimeMillis() - start) < 10000 && continue.get()) {
+          while ((System.currentTimeMillis() - start) < SECONDS_TO_RUN * 1000 && continue.get()) {
             val transactionalContext = tcs.poll()
             if (transactionalContext != null)
               try {
