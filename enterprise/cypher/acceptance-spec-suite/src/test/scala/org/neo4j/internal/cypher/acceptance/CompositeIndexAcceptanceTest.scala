@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
-import org.neo4j.graphdb.{ConstraintViolationException, Node}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -162,7 +162,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("should be able to update composite index when only one property has changed") {
     graph.createIndex("Person", "firstname", "lastname")
-    val n = executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").toList(0).asInstanceOf[Node]
+    val n = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      "CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").toList.head.asInstanceOf[Node]
     executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) SET n.lastname = 'Bloggs'")
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
     result should use("NodeIndexSeek")
@@ -241,6 +242,36 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     // Then
     result should useIndex(":Foo(bar,baz)")
     result should evaluateTo(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
+  }
+
+  test("should handle missing properties when populating index") {
+    // Given
+    createLabeledNode(Map("foo" -> 42), "PROFILES")
+    createLabeledNode(Map("foo" -> 42, "bar" -> 1337, "baz" -> 1980), "L")
+
+    // When
+    graph.createIndex("L", "foo", "bar", "baz")
+
+    // Then
+    graph should haveIndexes(":L(foo,bar,baz)")
+    val result = executeWithAllPlanners("MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    result should evaluateTo(Seq(Map("count(n)" -> 1)))
+    result should useIndex(":L(foo,bar,baz")
+  }
+
+  test("should handle missing properties when adding to index after creation") {
+    // Given
+    createLabeledNode(Map("foo" -> 42), "PROFILES")
+
+    // When
+    graph.createIndex("L", "foo", "bar", "baz")
+    createLabeledNode(Map("foo" -> 42, "bar" -> 1337, "baz" -> 1980), "L")
+
+    // Then
+    graph should haveIndexes(":L(foo,bar,baz)")
+    val result = executeWithAllPlanners("MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    result should evaluateTo(Seq(Map("count(n)" -> 1)))
+    result should useIndex(":L(foo,bar,baz")
   }
 
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {
