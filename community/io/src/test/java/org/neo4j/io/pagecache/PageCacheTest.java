@@ -5168,7 +5168,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 expectedException.expectCause( isA( FileIsMappedException.class ) );
                 handleRename( b ).accept( fh );
-            });
+            } );
         }
     }
 
@@ -5184,7 +5184,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 expectedException.expectCause( isA( FileIsMappedException.class ) );
                 handleRename( b ).accept( fh );
-            });
+            } );
         }
     }
 
@@ -5395,7 +5395,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 handleRename( target ).accept( fh );
             }
-        });
+        } );
         assertThat( observedFiles, containsInAnyOrder( a, x ) );
     }
 
@@ -5415,7 +5415,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 handleRename( target ).accept( fh );
             }
-        });
+        } );
         assertThat( observedFiles, containsInAnyOrder( a ) );
     }
 
