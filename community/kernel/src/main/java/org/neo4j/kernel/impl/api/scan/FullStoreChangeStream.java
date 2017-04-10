@@ -20,9 +20,11 @@
 package org.neo4j.kernel.impl.api.scan;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 /**
  * Stream of changes used to rebuild a {@link LabelScanStore} from scratch.
@@ -32,4 +34,18 @@ public interface FullStoreChangeStream
     FullStoreChangeStream EMPTY = writer -> 0;
 
     long applyTo( LabelScanWriter writer ) throws IOException;
+
+    static FullStoreChangeStream asStream( final List<NodeLabelUpdate> existingData )
+    {
+        return writer ->
+        {
+            long count = 0;
+            for ( NodeLabelUpdate update : existingData )
+            {
+                writer.write( update );
+                count++;
+            }
+            return count;
+        };
+    }
 }

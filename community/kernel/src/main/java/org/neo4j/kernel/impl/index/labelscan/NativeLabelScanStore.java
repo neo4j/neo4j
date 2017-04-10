@@ -23,18 +23,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -48,7 +51,6 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
@@ -142,7 +144,25 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private boolean needsRebuild;
 
+    /**
+     * The single instance of {@link NativeLabelScanWriter} used for updates.
+     */
     private final NativeLabelScanWriter singleWriter;
+
+    /**
+     * Write dirty bit to header
+     */
+    private final Consumer<PageCursor> writeDirty;
+
+    /**
+     * Remove dirty bit from header
+     */
+    private final Consumer<PageCursor> writeClean;
+
+    /**
+     * Read dirty bit from header
+     */
+    private final GetDirtyReader getDirty;
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors )
@@ -164,6 +184,9 @@ public class NativeLabelScanStore implements LabelScanStore
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
+        this.writeDirty = new DirtyWriter();
+        this.writeClean = new CleanWriter();
+        this.getDirty = new GetDirtyReader();
     }
 
     /**
@@ -289,6 +312,7 @@ public class NativeLabelScanStore implements LabelScanStore
         monitor.init();
 
         boolean storeExists = hasStore();
+        boolean isDirty;
         try
         {
             needsRebuild = !storeExists;
@@ -297,14 +321,22 @@ public class NativeLabelScanStore implements LabelScanStore
                 monitor.noIndex();
             }
 
-            instantiateTree();
+            isDirty = instantiateTree();
         }
         catch ( MetadataMismatchException e )
         {
             // GBPTree is corrupt. Try to rebuild.
+            isDirty = true;
+        }
+
+        if ( isDirty )
+        {
             monitor.notValidIndex();
             dropStrict();
             instantiateTree();
+        }
+        if ( isDirty || !storeExists )
+        {
             needsRebuild = true;
         }
     }
@@ -328,11 +360,15 @@ public class NativeLabelScanStore implements LabelScanStore
         return single( pageCache.streamFilesRecursive( storeFile ).collect( Collectors.toList() ) );
     }
 
-    private void instantiateTree() throws IOException
+    /**
+     * @return true instantiated tree needs to be rebuilt
+     */
+    private boolean instantiateTree() throws IOException
     {
         monitors.addMonitorListener( treeMonitor() );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, NO_HEADER );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty );
+        return getDirty.isDirty();
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -351,6 +387,50 @@ public class NativeLabelScanStore implements LabelScanStore
         };
     }
 
+    private static final int HEADER_LENGTH = 1;
+    private static final byte CLEAN = (byte) 0x00;
+    private static final byte DIRTY = (byte) 0x01;
+
+    private class GetDirtyReader implements Header.Reader
+    {
+        private boolean isDirty;
+        private boolean read;
+
+        @Override
+        public void read( PageCursor from, int length )
+        {
+            byte[] header = new byte[HEADER_LENGTH];
+            from.getBytes( header );
+            read = true;
+            isDirty = header[0] == DIRTY;
+        }
+
+        boolean isDirty()
+        {
+            boolean result = read && isDirty;
+            read = false;
+            return result;
+        }
+    }
+
+    private class DirtyWriter implements Consumer<PageCursor>
+    {
+        @Override
+        public void accept( PageCursor pageCursor )
+        {
+            pageCursor.putByte( DIRTY );
+        }
+    }
+
+    private class CleanWriter implements Consumer<PageCursor>
+    {
+        @Override
+        public void accept( PageCursor pageCursor )
+        {
+            pageCursor.putByte( CLEAN );
+        }
+    }
+
     @Override
     public void drop() throws IOException
     {
@@ -366,6 +446,11 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private void dropStrict() throws IOException
     {
+        if ( index != null )
+        {
+            index.close();
+            index = null;
+        }
         storeFileHandle().delete();
     }
 
@@ -383,11 +468,16 @@ public class NativeLabelScanStore implements LabelScanStore
             monitor.rebuilding();
             long numberOfNodes;
 
+            index.checkpoint( IOLimiter.unlimited(), writeDirty );
+
             // Intentionally ignore read-only flag here when rebuilding.
             try ( LabelScanWriter writer = writer() )
             {
                 numberOfNodes = fullStoreChangeStream.applyTo( writer );
             }
+
+            index.checkpoint( IOLimiter.unlimited(), writeClean );
+
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
         }
