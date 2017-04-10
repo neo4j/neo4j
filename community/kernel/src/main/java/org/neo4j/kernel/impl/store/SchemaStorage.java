@@ -48,11 +48,11 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     /**
-     * Find the IndexRule that matches the given NewIndexDescriptor.
+     * Find the IndexRule that matches the given IndexDescriptor.
      *
      * @return  the matching IndexRule, or null if no matching IndexRule was found
      * @throws  IllegalStateException if more than one matching rule.
-     * @param descriptor the target NewIndexDescriptor
+     * @param descriptor the target IndexDescriptor
      */
     public IndexRule indexGetForSchema( final IndexDescriptor descriptor )
     {

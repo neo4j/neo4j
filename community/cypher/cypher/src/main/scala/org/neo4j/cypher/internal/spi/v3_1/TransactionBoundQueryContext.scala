@@ -54,8 +54,8 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.{IndexQuery, RelationTypeSchemaDescriptor, SchemaDescriptorFactory}
-import org.neo4j.kernel.api.schema.constaints.{ConstraintBoundary, ConstraintDescriptor, ConstraintDescriptorFactory, UniquenessConstraintDescriptor}
-import org.neo4j.kernel.api.schema.index.NewIndexDescriptorFactory
+import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptor, ConstraintDescriptorFactory, UniquenessConstraintDescriptor}
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
