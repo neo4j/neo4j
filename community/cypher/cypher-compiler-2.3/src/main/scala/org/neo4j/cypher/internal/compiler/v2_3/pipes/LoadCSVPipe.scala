@@ -106,7 +106,7 @@ case class LoadCSVPipe(source: Pipe,
       val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
       format match {
         case HasHeaders =>
-          val headers = iterator.next().toSeq // First row is headers
+          val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
           new IteratorWithHeaders(headers, context, iterator)
         case NoHeaders =>
           new IteratorWithoutHeaders(context, iterator)
