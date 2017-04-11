@@ -20,17 +20,18 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.{File, PrintWriter}
-import java.net.{URLConnection, URLStreamHandler, URLStreamHandlerFactory, URL}
+import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
+
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphdb.config.Configuration
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.security.URLAccessRule
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
-import org.neo4j.graphdb.config.Configuration
 
 class LoadCsvAcceptanceTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll
@@ -474,6 +475,17 @@ class LoadCsvAcceptanceTest
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     result.columnAs("c").toList should equal(List(0))
     result.close()
+  }
+
+  test("empty headers file should not throw") {
+    val urls = csvUrls({ _ => {} })
+    for (url <- urls) {
+      val result = executeWithAllPlanners(
+        s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN count(*)"
+      )
+
+      result.toList should equal(List(Map("count(*)" -> 0)))
+    }
   }
 
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
