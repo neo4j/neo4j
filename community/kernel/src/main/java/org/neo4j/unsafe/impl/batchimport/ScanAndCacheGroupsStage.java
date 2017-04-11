@@ -43,7 +43,7 @@ public class ScanAndCacheGroupsStage extends Stage
     {
         super( "Gather", config );
         add( new BatchFeedStep( control(), config, allInReversed( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, store ) );
+        add( new ReadRecordsStep<>( control(), config, false, store ) );
         add( new CacheGroupsStep( control(), config, cache ) );
     }
 }

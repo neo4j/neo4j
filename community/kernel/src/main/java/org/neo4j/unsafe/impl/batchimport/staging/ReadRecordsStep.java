@@ -44,12 +44,19 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     protected final int batchSize;
 
     @SuppressWarnings( "unchecked" )
-    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
+    public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
+            RecordStore<RECORD> store )
     {
-        super( control, ">", config, 0 );
+        super( control, ">", config, parallelReading( config, inRecordWritingStage ) ? 0 : 1 );
         this.store = store;
         this.klass = (Class<RECORD>) store.newRecord().getClass();
         this.batchSize = config.batchSize();
+    }
+
+    private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
+    {
+        return (inRecordWritingStage && config.parallelRecordReadsWhenWriting())
+                || (!inRecordWritingStage && config.parallelRecordReads());
     }
 
     @Override
