@@ -261,24 +261,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         return details;
     }
 
-    public WaitDetails waitUntilThreadState( Predicate<WaitDetails> correctWait,
-            final Thread.State... possibleStates ) throws TimeoutException
-    {
-        long end = currentTimeMillis() + timeout;
-        WaitDetails details = null;
-        while ( !correctWait.test( details = waitUntil( new AnyThreadState( possibleStates )) ) )
-        {
-            LockSupport.parkNanos( MILLISECONDS.toNanos( 20 ) );
-            if ( currentTimeMillis() > end )
-            {
-                throw new TimeoutException( "Wanted to wait for any of " + Arrays.toString( possibleStates ) +
-                        " over at " + correctWait + ", but didn't managed to get there in " + timeout + "ms. " +
-                        "instead ended up waiting in " + details );
-            }
-        }
-        return details;
-    }
-
     public WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
     {
         long end = System.currentTimeMillis() + timeout;
