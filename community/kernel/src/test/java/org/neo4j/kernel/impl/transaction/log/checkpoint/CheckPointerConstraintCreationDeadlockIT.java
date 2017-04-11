@@ -26,8 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -45,8 +47,12 @@ import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
@@ -86,7 +92,7 @@ public class CheckPointerConstraintCreationDeadlockIT
     @Rule
     public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
 
-    @Test
+    @Test( timeout = 30_000 )
     public void shouldNotDeadlock() throws Exception
     {
         List<TransactionRepresentation> transactions = createConstraintCreatingTransactions();
@@ -134,6 +140,24 @@ public class CheckPointerConstraintCreationDeadlockIT
             applier.get( 10, SECONDS );
             checkPointer.get( 10, SECONDS );
             success = true;
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                ConstraintDefinition constraint = single( db.schema().getConstraints( LABEL ) );
+                assertEquals( KEY, single( constraint.getPropertyKeys() ) );
+                tx.success();
+            }
+
+            createNode( db, "A" );
+            try
+            {
+                createNode( db, "A" );
+                fail( "Should have failed" );
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // THEN good
+            }
         }
         finally
         {
@@ -144,6 +168,15 @@ public class CheckPointerConstraintCreationDeadlockIT
                 // so that shutdown won't hang too
             }
             db.shutdown();
+        }
+    }
+
+    private void createNode( GraphDatabaseAPI db, String name )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( LABEL ).setProperty( KEY, name );
+            tx.success();
         }
     }
 
