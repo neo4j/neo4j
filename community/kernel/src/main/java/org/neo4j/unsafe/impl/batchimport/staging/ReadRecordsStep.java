@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.

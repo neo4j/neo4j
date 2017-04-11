@@ -21,6 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
+
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
@@ -29,7 +32,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 /**
  * User controlled configuration for a {@link BatchImporter}.
  */
-public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging.Configuration
+public interface Configuration
 {
     /**
      * File name in which bad entries from the import will end up. This file will be created in the
@@ -37,6 +40,41 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      */
     String BAD_FILE_NAME = "bad.log";
     long MAX_PAGE_CACHE_MEMORY = mebiBytes( 240 );
+
+    /**
+     * A {@link Stage} works with batches going through one or more {@link Step steps} where one or more threads
+     * process batches at each {@link Step}. This setting dictates how big the batches that are passed around are.
+     */
+    default int batchSize()
+    {
+        return 10_000;
+    }
+
+    /**
+     * For statistics the average processing time is based on total processing time divided by
+     * number of batches processed. A total average is probably not that interesting so this configuration
+     * option specifies how many of the latest processed batches counts in the equation above.
+     */
+    default int movingAverageSize()
+    {
+        return 100;
+    }
+
+    /**
+     * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
+     * This value should be set while taking the necessary IO threads into account; the page cache and the operating
+     * system will require a couple of threads between them, to handle the IO workload the importer generates.
+     * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
+     * number of threads that needs to be used just to get the very basics of the import working,
+     * so for that reason there's no lower bound to this value.
+     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
+     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
+     * of a processor.
+     */
+    default int maxNumberOfProcessors()
+    {
+        return Runtime.getRuntime().availableProcessors();
+    }
 
     /**
      * @return number of relationships threshold for considering a node dense.
@@ -65,9 +103,7 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     {
     };
 
-    class Overridden
-            extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Overridden
-            implements Configuration
+    class Overridden implements Configuration
     {
         private final Configuration defaults;
         private final Config config;
@@ -79,7 +115,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
 
         public Overridden( Configuration defaults, Config config )
         {
-            super( defaults );
             this.defaults = defaults;
             this.config = config;
         }

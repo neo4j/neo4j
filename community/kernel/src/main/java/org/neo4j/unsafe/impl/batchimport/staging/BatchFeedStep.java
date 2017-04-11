@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.RecordIdIterator;
 
 /**

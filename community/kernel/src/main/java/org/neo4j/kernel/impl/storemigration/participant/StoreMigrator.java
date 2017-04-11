@@ -840,7 +840,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         private final MigrationProgressMonitor.Section progressMonitor;
 
         BatchImporterProgressMonitor( long highNodeId, long highRelationshipId,
-                org.neo4j.unsafe.impl.batchimport.staging.Configuration configuration,
+                org.neo4j.unsafe.impl.batchimport.Configuration configuration,
                 MigrationProgressMonitor.Section progressMonitor )
         {
             super( highNodeId, highRelationshipId, configuration );
