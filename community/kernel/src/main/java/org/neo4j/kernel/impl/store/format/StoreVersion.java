@@ -24,8 +24,6 @@ package org.neo4j.kernel.impl.store.format;
  */
 public enum StoreVersion
 {
-    STANDARD_V2_1( "v0.A.3", "2.1.0" ),
-    STANDARD_V2_2( "v0.A.5", "2.2.0" ),
     STANDARD_V2_3( "v0.A.6", "2.3.0" ),
     STANDARD_V3_0( "v0.A.7", "3.0.0" ),
 
