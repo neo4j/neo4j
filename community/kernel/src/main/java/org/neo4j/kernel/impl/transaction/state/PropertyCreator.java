@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -197,12 +198,20 @@ public class PropertyCreator
     public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
     {
+        return createPropertyChain( owner, properties, propertyRecords, p -> {} );
+    }
+
+    public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
+            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords,
+            Consumer<PropertyRecord> createdPropertyRecords )
+    {
         if ( properties == null || !properties.hasNext() )
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
         PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId(), owner )
                 .forChangingData();
+        createdPropertyRecords.accept( currentRecord );
         currentRecord.setInUse( true );
         currentRecord.setCreated();
         PropertyRecord firstRecord = currentRecord;
@@ -216,6 +225,7 @@ public class PropertyCreator
                 // Create new record
                 long propertyId = propertyRecordIdGenerator.nextId();
                 currentRecord = propertyRecords.create( propertyId, owner ).forChangingData();
+                createdPropertyRecords.accept( currentRecord );
                 currentRecord.setInUse( true );
                 currentRecord.setCreated();
                 // Set up links

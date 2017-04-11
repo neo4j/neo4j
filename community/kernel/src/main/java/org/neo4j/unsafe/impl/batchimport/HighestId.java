@@ -17,21 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * {@link BatchingRecordAccess} for {@link PropertyRecord property records}.
+ * Tracks a highest id when there are potentially multiple concurrent threads calling {@link #offer(long)}.
  */
-public class BatchingPropertyRecordAccess extends BatchingRecordAccess<Long,PropertyRecord, PrimitiveRecord>
+public class HighestId
 {
-    @Override
-    protected PropertyRecord createRecord( Long key, PrimitiveRecord additionalData )
+    private final AtomicLong highestId = new AtomicLong();
+
+    public void offer( long candidate )
     {
-        return additionalData != null
-                ? new PropertyRecord( key.longValue(), additionalData )
-                : new PropertyRecord( key.longValue() );
+        long currentHighest;
+        do
+        {
+            currentHighest = highestId.get();
+            if ( candidate < currentHighest )
+            {
+                return;
+            }
+        }
+        while ( !highestId.compareAndSet( currentHighest, candidate ) );
+    }
+
+    public long get()
+    {
+        return highestId.get();
     }
 }

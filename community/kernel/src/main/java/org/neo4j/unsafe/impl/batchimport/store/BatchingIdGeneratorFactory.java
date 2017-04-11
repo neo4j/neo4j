@@ -96,7 +96,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public IdRange nextIdBatch( int size )
         {
-            throw new UnsupportedOperationException();
+            return idSequence.nextIdBatch( size );
         }
 
         @Override
