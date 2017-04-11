@@ -103,7 +103,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
 
         writePropertyRecords( batch.propertyRecords, propertyStore );
 
-        monitor.entitiesWritten( records[0].getClass(), records.length-skipped );
+        monitor.entitiesWritten( records[0].getClass(), records.length - skipped );
         monitor.propertiesWritten( batch.numberOfProperties );
     }
 

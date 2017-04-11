@@ -111,6 +111,7 @@ public class PropertyEncoderStepTest
                             case ARRAY:
                                 assertTrue( arrayIds.add( dynamicRecord.getId() ) );
                                 break;
+                            default: // don't care about the others
                             }
                         }
                     }
