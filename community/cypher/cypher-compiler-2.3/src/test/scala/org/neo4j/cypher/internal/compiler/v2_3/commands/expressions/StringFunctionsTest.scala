@@ -95,6 +95,19 @@ class StringFunctionsTest extends CypherFunSuite {
     intercept[CypherTypeException](lower(1024) should equal(expectedNull))
   }
 
+  test("camelCaseTests") {
+    def camelCase(x: Any) = CamelCaseFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+
+    camelCase("test") should equal("Test")
+    camelCase("TEST") should equal("Test")
+    camelCase("a STRING with multiple words and 3 numbers and '2' signs") should equal("A String With Multiple Words And 3 Numbers And '2' Signs")
+    camelCase("""leave strings in 'SINGLE' or "doUBle" quotes untouched""") should equal("""Leave Strings In 'SINGLE' Or "doUBle" Quotes Untouched""")
+    intercept[CypherTypeException](camelCase(1024) should equal(expectedNull))
+    camelCase("") should equal("")
+    camelCase(" ") should equal("")
+    camelCase(null) should be(null.asInstanceOf[String])
+  }
+
   test("upperTests") {
     def upper(x: Any) = UpperFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 

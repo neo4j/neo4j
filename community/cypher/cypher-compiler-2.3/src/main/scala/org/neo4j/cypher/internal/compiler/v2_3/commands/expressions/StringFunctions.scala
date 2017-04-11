@@ -97,6 +97,39 @@ case class StrFunction(argument: Expression) extends StringFunction(argument) wi
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
 }
 
+case class CamelCaseFunction(argument: Expression) extends StringFunction(argument) {
+  import CamelCaseFunction._
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toCamelCase()
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(CamelCaseFunction(argument.rewrite(f)))
+}
+
+object CamelCaseFunction {
+
+  private object IsLetter {
+    val aToz = ('a' to 'z') ++ ('A' to 'Z')
+    def unapply(c: Char): Option[Char] = if (aToz.contains(c)) Some(c) else None
+  }
+
+  implicit class StringCamelCase(val s: String) extends AnyVal {
+
+    def toCamelCase(): String = Option(s).map { in =>
+      val words = in.split(" ")
+
+      // must check for empty cause might cause NoSuchElementException on .map with Array is empty.
+      if (words.isEmpty) ""
+      else {
+        words.map { word => if (word.isEmpty) "" else word.head match {
+          case IsLetter(x) => x.toUpper + word.tail.toLowerCase
+          case _ => word // leave untouched
+        }
+        }
+          .mkString(" ")
+      }
+    }.getOrElse("")
+  }
+}
+
 case class LowerFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
 
