@@ -183,7 +183,9 @@ public class ParallelBatchImporter implements BatchImporter
             NodeStage nodeStage = new NodeStage( config, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
                     storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
+            neoStore.startFlushingPageCache();
             executeStage( nodeStage );
+            neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
                 executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
@@ -320,7 +322,9 @@ public class ParallelBatchImporter implements BatchImporter
             final RelationshipStage relationshipStage = new RelationshipStage( topic, config,
                     writeMonitor, perType, idMapper, neoStore, nodeRelationshipCache,
                     storeUpdateMonitor, nextRelationshipId );
+            neoStore.startFlushingPageCache();
             executeStage( relationshipStage );
+            neoStore.stopFlushingPageCache();
 
             // Stage 4a -- set node nextRel fields for dense nodes
             executeStage( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
