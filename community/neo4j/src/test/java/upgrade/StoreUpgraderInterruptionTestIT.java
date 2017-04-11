@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
@@ -114,7 +115,7 @@ public class StoreUpgraderInterruptionTestIT
         workingDirectory = directory.directory( "working" );
         prepareDirectory = directory.directory( "prepare" );
         labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( workingDirectory, fs,
-                pageCacheRule.getPageCache( fs ) );
+                pageCacheRule.getPageCache( fs ), new Monitors() );
     }
 
     @Test

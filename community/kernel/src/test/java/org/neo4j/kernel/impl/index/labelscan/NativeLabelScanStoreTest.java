@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.PageCacheRule;
 
 public class NativeLabelScanStoreTest extends LabelScanStoreTest
@@ -44,10 +45,11 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
             List<NodeLabelUpdate> existingData, boolean usePersistentStore, boolean readOnly,
             LabelScanStore.Monitor monitor )
     {
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, rootFolder,
-                asStream( existingData ), readOnly, monitor );
-        return nativeLabelScanStore;
+        return new NativeLabelScanStore( pageCache, rootFolder,
+                asStream( existingData ), readOnly, monitors );
     }
 
     @Override

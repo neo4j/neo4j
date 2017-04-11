@@ -34,6 +34,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -108,8 +109,11 @@ public abstract class LabelScanStoreHaIT
     @Before
     public void setUp()
     {
-        KernelExtensionFactory<?> testExtension = labelScanStoreExtension( monitor );
+        KernelExtensionFactory<?> testExtension = labelScanStoreExtension();
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
+        factory.setMonitors( monitors );
         factory.removeKernelExtensions( extension -> extension.getClass().getName().contains( "LabelScan" ) );
         factory.addKernelExtension( testExtension );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
@@ -146,7 +150,7 @@ public abstract class LabelScanStoreHaIT
 
     protected abstract String labelIndexSettingName();
 
-    protected abstract KernelExtensionFactory<?> labelScanStoreExtension( LabelScanStore.Monitor monitor );
+    protected abstract KernelExtensionFactory<?> labelScanStoreExtension();
 
     @After
     public void tearDown()

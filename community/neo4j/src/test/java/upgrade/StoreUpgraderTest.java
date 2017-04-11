@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
@@ -157,7 +158,7 @@ public class StoreUpgraderTest
     {
         dbDirectory = directory.directory( "db_" + version );
         labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( dbDirectory, fileSystem,
-                pageCacheRule.getPageCache( fileSystem ) );
+                pageCacheRule.getPageCache( fileSystem ), new Monitors() );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, dbDirectory, prepareDirectory );
     }

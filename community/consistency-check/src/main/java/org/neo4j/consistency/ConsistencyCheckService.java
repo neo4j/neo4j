@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -239,8 +240,8 @@ public class ConsistencyCheckService
         {
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( config, fileSystem,
-                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache );
+            dependencies.satisfyDependencies( config, fileSystem, new SimpleLogService( logProvider, logProvider ),
+                    indexStoreView, pageCache, new Monitors() );
             KernelContext kernelContext = new SimpleKernelContext( storeDir, UNKNOWN, dependencies );
             KernelExtensions extensions = life.add( new KernelExtensions(
                     kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
