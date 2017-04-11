@@ -344,8 +344,8 @@ public class ParallelBatchImporter implements BatchImporter
 
         // Stage 5b -- link relationship chains together for sparse nodes
         nodeRelationshipCache.setForwardScan( false );
-        executeStage( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore.getRelationshipStore(),
-                nodeRelationshipCache, 0, nextRelationshipId, false/*sparse*/ ) );
+        executeStage( new RelationshipLinkbackStage( topic, relationshipConfig,
+                neoStore.getRelationshipStore(), nodeRelationshipCache, 0, nextRelationshipId, false/*sparse*/ ) );
 
         if ( minorityRelationshipTypes.length > 0 )
         {

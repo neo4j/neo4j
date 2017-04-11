@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;

@@ -26,14 +26,10 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
-import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
-import org.neo4j.kernel.impl.util.ReusableIteratorCostume;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -42,20 +38,18 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
-import static org.neo4j.unsafe.impl.batchimport.EntityStoreUpdaterStep.reassignDynamicRecordIds;
+import static org.neo4j.unsafe.impl.batchimport.EntityStoreUpdaterStep.writePropertyRecords;
 
 public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final ToIntFunction<Object> typeToId;
     private final RelationshipCreator relationshipCreator;
     private final Locks.Client noopLockClient = new NoOpClient();
-    private final PropertyCreator propertyCreator;
     private final DirectRecordAccessSet recordAccess;
     private final PropertyStore propertyStore;
     private int pendingRelationshipChanges;
 
     // Reusable instances for less GC
-    private final ReusableIteratorCostume<PropertyBlock> blockIterator = new ReusableIteratorCostume<>();
     private final IdSequence relationshipIdGenerator;
 
     public BatchInsertRelationshipsStep( StageControl control, Configuration config, BatchingNeoStores store,
@@ -66,8 +60,6 @@ public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelat
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = store.getTemporaryRelationshipGroupStore();
         RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( relationshipGroupStore );
         this.relationshipCreator = new RelationshipCreator( groupGetter, config.denseNodeThreshold() );
-        PropertyTraverser propertyTraverser = new PropertyTraverser();
-        this.propertyCreator = new PropertyCreator( store.getPropertyStore(), propertyTraverser );
         this.propertyStore = store.getPropertyStore();
         this.recordAccess = new DirectRecordAccessSet( store.getNodeStore(), propertyStore,
                 store.getRelationshipStore(), relationshipGroupStore,
@@ -80,10 +72,9 @@ public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelat
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        for ( int i = 0, propertyBlockCursor = 0; i < batch.input.length; i++ )
+        for ( int i = 0; i < batch.input.length; i++ )
         {
             InputRelationship input = batch.input[i];
-            int propertyBlockCount = batch.propertyBlocksLengths[i];
 
             // Create relationship
             long startNodeId = batch.ids[i * 2];
@@ -96,26 +87,12 @@ public class BatchInsertRelationshipsStep extends ProcessorStep<Batch<InputRelat
 
                 // Set properties
                 RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null ).forChangingData();
-                if ( input.hasFirstPropertyId() )
-                {
-                    record.setNextProp( input.firstPropertyId() );
-                }
-                else
-                {
-                    if ( propertyBlockCount > 0 )
-                    {
-                        reassignDynamicRecordIds( propertyStore, batch.propertyBlocks,
-                                propertyBlockCursor, propertyBlockCount );
-                        long firstProp = propertyCreator.createPropertyChain( record,
-                                blockIterator.dressArray( batch.propertyBlocks, propertyBlockCursor, propertyBlockCount ),
-                                recordAccess.getPropertyRecords() );
-                        record.setNextProp( firstProp );
-                    }
-                }
+                record.setNextProp( batch.records[i].getNextProp() );
             }
             // else --> This is commonly known as input relationship referring to missing node IDs
-            propertyBlockCursor += propertyBlockCount;
         }
+
+        writePropertyRecords( batch.propertyRecords, propertyStore );
 
         pendingRelationshipChanges += batch.input.length;
         if ( pendingRelationshipChanges >= 50_000 )

@@ -17,21 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * {@link BatchingRecordAccess} for {@link PropertyRecord property records}.
- */
-public class BatchingPropertyRecordAccess extends BatchingRecordAccess<Long,PropertyRecord, PrimitiveRecord>
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+
+public class BatchCollector<T> implements BatchSender
 {
+    private final List<T> batches = new ArrayList<>();
+
     @Override
-    protected PropertyRecord createRecord( Long key, PrimitiveRecord additionalData )
+    public synchronized void send( Object batch )
     {
-        return additionalData != null
-                ? new PropertyRecord( key.longValue(), additionalData )
-                : new PropertyRecord( key.longValue() );
+        batches.add( (T) batch );
+    }
+
+    public List<T> getBatches()
+    {
+        return batches;
     }
 }

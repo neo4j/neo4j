@@ -49,6 +49,11 @@ public class RelativeIdRecordAllocator implements DynamicRecordAllocator
         return dataSize;
     }
 
+    public long peek()
+    {
+        return id;
+    }
+
     @Override
     public DynamicRecord nextRecord()
     {
