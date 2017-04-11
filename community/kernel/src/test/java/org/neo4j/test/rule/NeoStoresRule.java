@@ -21,8 +21,10 @@ package org.neo4j.test.rule;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -34,6 +36,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -60,6 +63,11 @@ public class NeoStoresRule extends ExternalResource
         this.stores = stores;
     }
 
+    public Builder builder()
+    {
+        return new Builder();
+    }
+
     public NeoStores open( String... config ) throws IOException
     {
         Config configuration = Config.embeddedDefaults( stringMap( config ) );
@@ -72,17 +80,34 @@ public class NeoStoresRule extends ExternalResource
         efs = new EphemeralFileSystemAbstraction();
         Config conf = Config.embeddedDefaults( stringMap( config ) );
         pageCache = getOrCreatePageCache( conf, efs );
-        return open( efs, pageCache, format, config );
+        return open( efs, pageCache, format, fs -> new DefaultIdGeneratorFactory( fs ), config );
     }
 
-    public NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format, String... config )
-            throws IOException
+    public NeoStores open( FileSystemAbstraction fs, PageCache pageCache, RecordFormats format,
+            Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory, String... config )
+                    throws IOException
     {
         assert neoStores == null : "Already opened";
+        if ( fs == null )
+        {
+            fs = efs = new EphemeralFileSystemAbstraction();
+        }
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
         File storeDir = testDirectory.makeGraphDbDir();
+        if ( config == null )
+        {
+            config = new String[0];
+        }
         Config configuration = Config.embeddedDefaults( stringMap( config ) );
-        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
+        if ( pageCache == null )
+        {
+            pageCache = this.pageCache = getOrCreatePageCache( configuration, fs );
+        }
+        if ( format == null )
+        {
+            format = RecordFormatSelector.defaultFormat();
+        }
+        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, idGeneratorFactory.apply( fs ),
                 pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
@@ -92,14 +117,7 @@ public class NeoStoresRule extends ExternalResource
     @Override
     protected void after( boolean successful ) throws Throwable
     {
-        if ( neoStores != null )
-        {
-            neoStores.close();
-        }
-        if ( pageCache != null )
-        {
-            pageCache.close();
-        }
+        IOUtils.closeAll( neoStores, pageCache );
         if ( efs != null )
         {
             efs.close();
@@ -112,5 +130,49 @@ public class NeoStoresRule extends ExternalResource
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, NULL,
                 PageCursorTracerSupplier.NULL, log );
         return pageCacheFactory.getOrCreatePageCache();
+    }
+
+    public class Builder
+    {
+        private FileSystemAbstraction fs;
+        private String[] config;
+        private RecordFormats format;
+        private PageCache pageCache;
+        private Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory;
+
+        public Builder with( FileSystemAbstraction fs )
+        {
+            this.fs = fs;
+            return this;
+        }
+
+        public Builder with( String... config )
+        {
+            this.config = config;
+            return this;
+        }
+
+        public Builder with( RecordFormats format )
+        {
+            this.format = format;
+            return this;
+        }
+
+        public Builder with( PageCache pageCache )
+        {
+            this.pageCache = pageCache;
+            return this;
+        }
+
+        public Builder with( Function<FileSystemAbstraction,IdGeneratorFactory> idGeneratorFactory )
+        {
+            this.idGeneratorFactory = idGeneratorFactory;
+            return this;
+        }
+
+        public NeoStores build() throws IOException
+        {
+            return open( fs, pageCache, format, idGeneratorFactory, config );
+        }
     }
 }
