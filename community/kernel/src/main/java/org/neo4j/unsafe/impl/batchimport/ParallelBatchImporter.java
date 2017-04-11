@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -64,7 +65,6 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
@@ -181,7 +181,8 @@ public class ParallelBatchImporter implements BatchImporter
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
 
             // Stage 1 -- nodes, properties, labels
-            NodeStage nodeStage = new NodeStage( config, writeMonitor,
+            Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
+            NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
                     storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
             neoStore.startFlushingPageCache();
@@ -199,8 +200,10 @@ public class ParallelBatchImporter implements BatchImporter
             }
 
             // Stage 2 -- calculate dense node threshold
+            Configuration relationshipConfig =
+                    configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage(
-                    withBatchSize( config, config.batchSize()*10 ),
+                    relationshipConfig,
                     relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
             executeStage( calculateDenseNodesStage );
 
@@ -299,9 +302,9 @@ public class ParallelBatchImporter implements BatchImporter
         // all sparse relationship chains together.
 
         long nextRelationshipId = 0;
-        Configuration relationshipConfig = withBatchSize( config,
-                neoStore.getRelationshipStore().getRecordsPerPage() );
-        Configuration nodeConfig = withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
+        Configuration relationshipConfig =
+                configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
+        Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
         Iterator<Collection<Object>> rounds = nodeRelationshipCache.splitRelationshipTypesIntoRounds(
                 typeDistribution.iterator(), freeMemoryForDenseNodeCache );
 
@@ -367,6 +370,11 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore.getRelationshipStore(), nodeRelationshipCache, 0, nextRelationshipId,
                     NodeType.NODE_TYPE_SPARSE ) );
         }
+    }
+
+    private static Configuration configWithRecordsPerPageBasedBatchSize( Configuration source, RecordStore<?> store )
+    {
+        return Configuration.withBatchSize( source, store.getRecordsPerPage() * 100 );
     }
 
     private void executeStage( Stage stage )
