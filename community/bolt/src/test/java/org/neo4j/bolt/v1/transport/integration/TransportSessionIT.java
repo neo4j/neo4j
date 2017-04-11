@@ -381,36 +381,6 @@ public class TransportSessionIT
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
     }
 
-    @Test
-    public void shouldFailNicelyOnBinary() throws Throwable
-    {
-        //Given
-        GraphDatabaseService db = server.graphDatabaseService();
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            node.setProperty( "binary", new byte[]{(byte) 0xB0, 0x17} );
-            tx.success();
-        }
-
-        // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", emptyMap() ),
-                        run( "MATCH (n) RETURN n.binary" ),
-                        pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
-                msgSuccess(),
-                msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n.binary" ) ) ),
-                        hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( nullValue() ) ),
-                msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt" ) ) );
-    }
-
     private byte[] bytes( int... ints )
     {
         byte[] bytes = new byte[ints.length];

@@ -132,9 +132,7 @@ public class Neo4jPack
             }
             else if ( obj instanceof byte[] )
             {
-                error = Optional.of(new Error( Status.Request.Invalid,
-                        "Byte array is not yet supported in Bolt"));
-                packNull();
+                pack( (byte[]) obj );
             }
             else if ( obj instanceof char[] )
             {
@@ -276,6 +274,8 @@ public class Neo4jPack
             PackType valType = peekNextType();
             switch ( valType )
             {
+                case BYTES:
+                    return unpackBytes();
                 case STRING:
                     return unpackString();
                 case INTEGER:
