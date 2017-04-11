@@ -196,7 +196,7 @@ public class ConfiguringPageCacheFactory
     private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
     {
         PageSwapperFactory factory = getPageSwapperFactory( config, log );
-        factory.configure( fs, config );
+        factory.open( fs, config );
         return factory;
     }
 

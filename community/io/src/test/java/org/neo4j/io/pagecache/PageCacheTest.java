@@ -59,6 +59,7 @@ import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.pagecache.AdversarialPagedFile;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -3744,7 +3745,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 };
             }
         };
-        factory.configure( fs );
+        factory.open( fs, Configuration.EMPTY );
         return factory;
     }
 

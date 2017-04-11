@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.stress;
 
 import java.io.File;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -87,7 +88,7 @@ public class PageCacheStressTest
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-            swapperFactory.configure( fs );
+            swapperFactory.open( fs, Configuration.EMPTY );
 
             try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, numberOfCachePages, cachePageSize,
                     tracer, pageCursorTracerSupplier ) )

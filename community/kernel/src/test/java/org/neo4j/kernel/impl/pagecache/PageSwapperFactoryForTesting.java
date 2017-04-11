@@ -81,9 +81,9 @@ public class PageSwapperFactoryForTesting
     }
 
     @Override
-    public void configure( FileSystemAbstraction fs, Configuration configuration )
+    public void open( FileSystemAbstraction fs, Configuration configuration )
     {
-        super.configure( fs, configuration );
+        super.open( fs, configuration );
         configuredCounter.getAndIncrement();
     }
 }

@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -117,7 +118,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             PageCursorTracerSupplier cursorTracerSupplier )
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.configure( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         return createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
     }
 

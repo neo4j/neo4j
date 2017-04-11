@@ -46,7 +46,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     private FileSystemAbstraction fs;
 
     @Override
-    public void configure( FileSystemAbstraction fs, Configuration config )
+    public void open( FileSystemAbstraction fs, Configuration config )
     {
         this.fs = fs;
     }

@@ -41,20 +41,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 public interface PageSwapperFactory
 {
     /**
-     * Configure page swapper factory with filesystem and config
+     * Open page swapper factory with provided filesystem and config
      * @param fs file system to use in page swappers
      * @param config custom page swapper configuration
      */
-    void configure( FileSystemAbstraction fs, Configuration config );
-
-    /**
-     * Configure swapper with filesystem to use.
-     * @param fs file system to use in page swappers
-     */
-    default void configure( FileSystemAbstraction fs )
-    {
-        this.configure( fs, Configuration.EMPTY );
-    }
+    void open( FileSystemAbstraction fs, Configuration config );
 
     /**
      * Get the name of this PageSwapperFactory implementation, for configuration purpose.

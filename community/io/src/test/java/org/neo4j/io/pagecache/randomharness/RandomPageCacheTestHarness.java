@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -382,7 +383,7 @@ public class RandomPageCacheTestHarness implements Closeable
         }
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.configure( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer,
                 cursorTracerSupplier );
         cache.setPrintExceptionsOnClose( false );
