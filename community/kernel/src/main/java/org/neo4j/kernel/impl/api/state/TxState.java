@@ -37,13 +37,13 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -139,7 +139,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private Map<Integer/*Token ID*/, String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
-    private DiffSets<NewIndexDescriptor> indexChanges;
+    private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
     private PropertyChanges propertyChangesForNodes;
@@ -367,19 +367,19 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    private static DiffSetsVisitor<NewIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
+    private static DiffSetsVisitor<IndexDescriptor> indexVisitor( final TxStateVisitor visitor )
     {
-        return new DiffSetsVisitor<NewIndexDescriptor>()
+        return new DiffSetsVisitor<IndexDescriptor>()
         {
             @Override
-            public void visitAdded( NewIndexDescriptor index )
+            public void visitAdded( IndexDescriptor index )
                     throws ConstraintValidationException, CreateConstraintFailureException
             {
                 visitor.visitAddedIndex( index );
             }
 
             @Override
-            public void visitRemoved( NewIndexDescriptor index ) throws ConstraintValidationException
+            public void visitRemoved( IndexDescriptor index ) throws ConstraintValidationException
             {
                 visitor.visitRemovedIndex( index );
             }
@@ -792,9 +792,9 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexRuleDoAdd( NewIndexDescriptor descriptor )
+    public void indexRuleDoAdd( IndexDescriptor descriptor )
     {
-        DiffSets<NewIndexDescriptor> diff = indexChangesDiffSets();
+        DiffSets<IndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )
         {
             diff.add( descriptor );
@@ -803,31 +803,31 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexDoDrop( NewIndexDescriptor descriptor )
+    public void indexDoDrop( IndexDescriptor descriptor )
     {
         indexChangesDiffSets().remove( descriptor );
         changed();
     }
 
     @Override
-    public boolean indexDoUnRemove( NewIndexDescriptor descriptor )
+    public boolean indexDoUnRemove( IndexDescriptor descriptor )
     {
         return indexChangesDiffSets().unRemove( descriptor );
     }
 
     @Override
-    public ReadableDiffSets<NewIndexDescriptor> indexDiffSetsByLabel( int labelId )
+    public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public ReadableDiffSets<NewIndexDescriptor> indexChanges()
+    public ReadableDiffSets<IndexDescriptor> indexChanges()
     {
         return ReadableDiffSets.Empty.ifNull( indexChanges );
     }
 
-    private DiffSets<NewIndexDescriptor> indexChangesDiffSets()
+    private DiffSets<IndexDescriptor> indexChangesDiffSets()
     {
         if ( indexChanges == null )
         {
@@ -975,7 +975,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterable<NewIndexDescriptor> constraintIndexesCreatedInTx()
+    public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
@@ -992,20 +992,20 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForScan( NewIndexDescriptor descriptor )
+    public ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor descriptor )
     {
         return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForScan( descriptor.schema() ) );
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForSeek( NewIndexDescriptor descriptor, OrderedPropertyValues values )
+    public ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor descriptor, OrderedPropertyValues values )
     {
         assert values != null;
         return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false ) );
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( NewIndexDescriptor descriptor,
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor,
                                                                     Number lower, boolean includeLower,
                                                                     Number upper, boolean includeUpper )
     {
@@ -1014,7 +1014,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         );
     }
 
-    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByNumber( NewIndexDescriptor descriptor,
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor,
                                                                         Number lower, boolean includeLower,
                                                                         Number upper, boolean includeUpper )
     {
@@ -1067,7 +1067,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( NewIndexDescriptor descriptor,
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
                                                                     String lower, boolean includeLower,
                                                                     String upper, boolean includeUpper )
     {
@@ -1076,7 +1076,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         );
     }
 
-    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByString( NewIndexDescriptor descriptor,
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
                                                                         String lower, boolean includeLower,
                                                                         String upper, boolean includeUpper )
     {
@@ -1128,12 +1128,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( NewIndexDescriptor descriptor, String prefix )
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
         return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForRangeSeekByPrefix( descriptor, prefix ) );
     }
 
-    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByPrefix( NewIndexDescriptor descriptor, String prefix )
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
         TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
@@ -1280,7 +1280,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return createdConstraintIndexesByConstraint;
     }
 
-    private NewIndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
+    private IndexDescriptor getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
     {
         return constraint.ownedIndexDescriptor();
     }

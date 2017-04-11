@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -46,7 +46,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
@@ -100,11 +100,11 @@ public class BuiltInProcedures
             ReadOperations operations = statement.readOperations();
             TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-            List<NewIndexDescriptor> indexes = asList( operations.indexesGetAll() );
+            List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( NewIndexDescriptor index : indexes )
+            for ( IndexDescriptor index : indexes )
             {
                 try
                 {

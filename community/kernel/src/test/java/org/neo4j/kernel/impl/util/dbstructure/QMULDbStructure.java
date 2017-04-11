@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 //
 // GENERATED FILE. DO NOT EDIT.
@@ -60,7 +60,7 @@ implements Visitable<DbStructureVisitor>
         visitor.visitPropertyKey( 16, "location_lat" );
         visitor.visitRelationshipType( 0, "friends" );
         visitor.visitRelationshipType( 1, "FRIEND" );
-        visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 1, 2 ), ":Person(uid)", 1.0d, 135164L );
+        visitor.visitIndex( IndexDescriptorFactory.forLabel( 1, 2 ), ":Person(uid)", 1.0d, 135164L );
         visitor.visitAllNodesCount( 135242L );
         visitor.visitNodeCount( 1, "Person", 135213L );
         visitor.visitRelCount( -1, -1, -1, "MATCH ()-[]->() RETURN count(*)", 4537616L );

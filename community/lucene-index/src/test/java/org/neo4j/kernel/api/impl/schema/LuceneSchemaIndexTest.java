@@ -31,8 +31,8 @@ import java.util.UUID;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -47,7 +47,7 @@ public class LuceneSchemaIndexTest
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private SchemaIndex index;
-    private final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 3, 5 );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 3, 5 );
 
     @After
     public void closeIndex() throws Exception

@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -40,9 +40,9 @@ public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneIndexWriter writer;
     private final SchemaIndex luceneIndex;
-    private final NewIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, NewIndexDescriptor descriptor ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
     {
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;

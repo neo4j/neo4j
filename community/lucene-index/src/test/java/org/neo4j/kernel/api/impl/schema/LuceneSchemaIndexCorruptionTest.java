@@ -35,13 +35,13 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -70,7 +70,7 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -88,7 +88,7 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -106,7 +106,7 @@ public class LuceneSchemaIndexCorruptionTest
         LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then

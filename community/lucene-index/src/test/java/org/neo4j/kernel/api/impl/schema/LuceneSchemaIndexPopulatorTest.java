@@ -43,8 +43,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -74,7 +74,7 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexSearcher searcher;
     private final long indexId = 0;
     private static final int propertyKeyId = 666;
-    private static final NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 42, propertyKeyId );
+    private static final IndexDescriptor index = IndexDescriptorFactory.forLabel( 42, propertyKeyId );
 
     @Before
     public void before() throws Exception

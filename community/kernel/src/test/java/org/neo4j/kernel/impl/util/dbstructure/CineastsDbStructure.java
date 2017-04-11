@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 //
 // GENERATED FILE. DO NOT EDIT.
@@ -77,11 +77,11 @@ implements Visitable<DbStructureVisitor>
         visitor.visitRelationshipType( 2, "ACTS_IN" );
         visitor.visitRelationshipType( 3, "RATED" );
         visitor.visitRelationshipType( 4, "ROOT" );
-        visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 0, 9 ), ":Movie(title)", 1.0d, 12462L );
-        visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 1, 5 ), ":Person(name)", 1.0d, 49845L );
-        visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
-        visitor.visitIndex( NewIndexDescriptorFactory.forLabel( 4, 5 ), ":Director(name)", 1.0d, 6010L );
-        visitor.visitIndex( NewIndexDescriptorFactory.uniqueForLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
+        visitor.visitIndex( IndexDescriptorFactory.forLabel( 0, 9 ), ":Movie(title)", 1.0d, 12462L );
+        visitor.visitIndex( IndexDescriptorFactory.forLabel( 1, 5 ), ":Person(name)", 1.0d, 49845L );
+        visitor.visitIndex( IndexDescriptorFactory.forLabel( 3, 5 ), ":Actor(name)", 1.0d, 44689L );
+        visitor.visitIndex( IndexDescriptorFactory.forLabel( 4, 5 ), ":Director(name)", 1.0d, 6010L );
+        visitor.visitIndex( IndexDescriptorFactory.uniqueForLabel( 2, 3 ), ":User(login)", 1.0d, 45L );
         visitor.visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 2, 3 ),
                 "CONSTRAINT ON ( " + "user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042L );

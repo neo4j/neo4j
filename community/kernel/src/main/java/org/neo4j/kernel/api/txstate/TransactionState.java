@@ -21,11 +21,11 @@ package org.neo4j.kernel.api.txstate;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -79,11 +79,11 @@ public interface TransactionState extends ReadableTransactionState
 
     // SCHEMA RELATED
 
-    void indexRuleDoAdd( NewIndexDescriptor descriptor );
+    void indexRuleDoAdd( IndexDescriptor descriptor );
 
-    void indexDoDrop( NewIndexDescriptor descriptor );
+    void indexDoDrop( IndexDescriptor descriptor );
 
-    boolean indexDoUnRemove( NewIndexDescriptor constraint );
+    boolean indexDoUnRemove( IndexDescriptor constraint );
 
     void constraintDoAdd( ConstraintDescriptor constraint );
 

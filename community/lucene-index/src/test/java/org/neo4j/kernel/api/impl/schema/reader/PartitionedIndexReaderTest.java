@@ -33,9 +33,9 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 public class PartitionedIndexReaderTest
 {
 
-    private NewIndexDescriptor indexDescriptor = NewIndexDescriptorFactory.forLabel( 0, 1 );
+    private IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 0, 1 );
     @Mock
     private IndexSamplingConfig samplingConfig;
     @Mock

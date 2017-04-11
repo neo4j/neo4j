@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -47,7 +47,7 @@ public class FailedIndexProxyTest
     {
         // given
         FailedIndexProxy index = new FailedIndexProxy(
-                NewIndexDescriptorFactory.forLabel( 1, 2 ), providerDescriptor, userDescription,
+                IndexDescriptorFactory.forLabel( 1, 2 ), providerDescriptor, userDescription,
                 indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
@@ -66,7 +66,7 @@ public class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( NewIndexDescriptorFactory.forLabel( 0, 0 ),
+        new FailedIndexProxy( IndexDescriptorFactory.forLabel( 0, 0 ),
                 new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
                 mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover,
                 logProvider ).drop();

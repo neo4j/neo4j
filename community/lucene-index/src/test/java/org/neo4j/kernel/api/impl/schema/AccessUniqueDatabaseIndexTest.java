@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -48,7 +48,7 @@ public class AccessUniqueDatabaseIndexTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );
-    private final NewIndexDescriptor index = NewIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
+    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
     public void shouldAddUniqueEntries() throws Exception

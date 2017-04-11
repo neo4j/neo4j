@@ -35,15 +35,15 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -88,7 +88,7 @@ public class StateHandlingStatementOperationsTest
     StoreReadLayer inner = mock( StoreReadLayer.class );
 
     private LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 10, 66 );
-    private NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 1, 2 );
+    private IndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 2 );
 
     @Test
     public void shouldNeverDelegateWrites() throws Exception
@@ -98,7 +98,7 @@ public class StateHandlingStatementOperationsTest
         when( state.txState() ).thenReturn( new TxState() );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
-        when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( NewIndexDescriptorFactory.forLabel( 0, 0 ) ) );
+        when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( IndexDescriptorFactory.forLabel( 0, 0 ) ) );
         when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).thenReturn( asNodeCursor( 0 ) );
         when( inner.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) ).
                 thenReturn( asPropertyCursor() );
@@ -109,7 +109,7 @@ public class StateHandlingStatementOperationsTest
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
         ctx.indexCreate( state, descriptor );
         ctx.nodeAddLabel( state, 0, 0 );
-        ctx.indexDrop( state, NewIndexDescriptorFactory.forSchema( descriptor ) );
+        ctx.indexDrop( state, IndexDescriptorFactory.forSchema( descriptor ) );
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
@@ -492,7 +492,7 @@ public class StateHandlingStatementOperationsTest
 
         operations.nodeGetFromUniqueIndexSeek(
                 kernelStatement,
-                NewIndexDescriptorFactory.uniqueForLabel( 1, 1 ),
+                IndexDescriptorFactory.uniqueForLabel( 1, 1 ),
                 IndexQuery.exact( 1, "foo" ) );
 
         verify( indexReader ).close();
@@ -629,7 +629,7 @@ public class StateHandlingStatementOperationsTest
             throws IndexNotFoundKernelException
     {
         IndexReader indexReader = mock( IndexReader.class );
-        when( storeStatement.getIndexReader( any( NewIndexDescriptor.class ) ) ).thenReturn( indexReader );
+        when( storeStatement.getIndexReader( any( IndexDescriptor.class ) ) ).thenReturn( indexReader );
         return indexReader;
     }
 }

@@ -26,9 +26,9 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -86,7 +86,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0 );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
         when( operations.indexGetForSchema( anyObject() ) ).thenReturn( index );
@@ -100,7 +100,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 0, 0, 1 );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( "name" ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( "lastName" ) ).thenReturn( 1 );
@@ -137,7 +137,7 @@ public class ResampleIndexProcedureTest
     public void shouldTriggerResampling()
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
-        NewIndexDescriptor index = NewIndexDescriptorFactory.forLabel( 123, 456 );
+        IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
         when( operations.indexGetForSchema( anyObject() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );

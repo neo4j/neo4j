@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 
 public class CreateConstraintFailureException extends SchemaKernelException
 {

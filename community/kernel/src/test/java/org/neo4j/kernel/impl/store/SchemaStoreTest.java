@@ -32,8 +32,8 @@ import java.util.stream.IntStream;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -86,7 +86,7 @@ public class SchemaStoreTest
     {
         // GIVEN
         IndexRule indexRule = IndexRule.indexRule( store.nextId(),
-                NewIndexDescriptorFactory.forLabel( 1, 4 ), PROVIDER_DESCRIPTOR );
+                IndexDescriptorFactory.forLabel( 1, 4 ), PROVIDER_DESCRIPTOR );
 
         // WHEN
         IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
@@ -105,7 +105,7 @@ public class SchemaStoreTest
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
         IndexRule indexRule = IndexRule.indexRule( store.nextId(),
-                NewIndexDescriptorFactory.forLabel( 2, propertyIds ), PROVIDER_DESCRIPTOR );
+                IndexDescriptorFactory.forLabel( 2, propertyIds ), PROVIDER_DESCRIPTOR );
 
         // WHEN
         IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
@@ -123,7 +123,7 @@ public class SchemaStoreTest
     {
         // GIVEN
         IndexRule indexRule = IndexRule.indexRule( store.nextId(),
-                NewIndexDescriptorFactory.forLabel( 2, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
+                IndexDescriptorFactory.forLabel( 2, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
 
         // WHEN
         IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
@@ -175,14 +175,14 @@ public class SchemaStoreTest
     private IndexRule indexRule( long ruleId, SchemaIndexProvider.Descriptor descriptor,
             int labelId, int... propertyIds )
     {
-        return IndexRule.indexRule( ruleId, NewIndexDescriptorFactory.forLabel( labelId, propertyIds ), descriptor );
+        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyIds ), descriptor );
     }
 
     private IndexRule uniqueIndexRule( long ruleId, long owningConstraint,
             SchemaIndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
     {
         return IndexRule.constraintIndexRule( ruleId,
-                NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyIds ), descriptor, owningConstraint );
+                IndexDescriptorFactory.uniqueForLabel( labelId, propertyIds ), descriptor, owningConstraint );
     }
 
     private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )

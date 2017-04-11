@@ -46,10 +46,10 @@ import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -58,7 +58,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
@@ -74,7 +74,7 @@ public class CompositeIndexingIT
     @Rule
     public Timeout globalTimeout = Timeout.seconds( 2 );
 
-    private final NewIndexDescriptor index;
+    private final IndexDescriptor index;
     private GraphDatabaseAPI graphDatabaseAPI;
 
     @Before
@@ -133,17 +133,17 @@ public class CompositeIndexingIT
     @Parameterized.Parameters( name = "Index: {0}" )
     public static Iterable<Object[]> parameterValues() throws IOException
     {
-        return Arrays.asList( Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
-                Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
-                Iterators.array( NewIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
-                Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-                Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( NewIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
+        return Arrays.asList( Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
+                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
+                Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
+                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
+                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
+                Iterators.array( IndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
         );
     }
 
-    public CompositeIndexingIT( NewIndexDescriptor nodeDescriptor )
+    public CompositeIndexingIT( IndexDescriptor nodeDescriptor )
     {
         this.index = nodeDescriptor;
     }

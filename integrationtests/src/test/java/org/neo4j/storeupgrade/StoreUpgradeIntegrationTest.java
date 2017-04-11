@@ -47,14 +47,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
@@ -452,11 +451,11 @@ public class StoreUpgradeIntegrationTest
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            Iterator<NewIndexDescriptor> indexes = NewIndexDescriptor.sortByType( getAllIndexes( db ) );
+            Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( db ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
-                NewIndexDescriptor descriptor = indexes.next();
+                IndexDescriptor descriptor = indexes.next();
 
                 // wait index to be online since sometimes we need to rebuild the indexes on migration
                 awaitOnline( statement.readOperations(), descriptor );
@@ -471,7 +470,7 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    private static Iterator<NewIndexDescriptor> getAllIndexes( GraphDatabaseAPI db )
+    private static Iterator<IndexDescriptor> getAllIndexes( GraphDatabaseAPI db )
     {
         try ( Transaction ignored = db.beginTx() )
         {
@@ -582,7 +581,7 @@ public class StoreUpgradeIntegrationTest
         return new long[]{upgrade, size, unique, sampleSize};
     }
 
-    private static NewIndexDescriptor awaitOnline( ReadOperations readOperations, NewIndexDescriptor index )
+    private static IndexDescriptor awaitOnline( ReadOperations readOperations, IndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();

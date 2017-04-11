@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 

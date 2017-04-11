@@ -58,16 +58,16 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -80,7 +80,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 public class SchemaImpl implements Schema
@@ -111,8 +111,8 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<NewIndexDescriptor> indexes = statement.readOperations().indexesGetForLabel( labelId );
-            addDefinitions( definitions, statement.readOperations(), NewIndexDescriptor.sortByType( indexes ) );
+            Iterator<IndexDescriptor> indexes = statement.readOperations().indexesGetForLabel( labelId );
+            addDefinitions( definitions, statement.readOperations(), IndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
@@ -123,13 +123,13 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
-            Iterator<NewIndexDescriptor> indexes = statement.readOperations().indexesGetAll();
-            addDefinitions( definitions, statement.readOperations(), NewIndexDescriptor.sortByType( indexes ) );
+            Iterator<IndexDescriptor> indexes = statement.readOperations().indexesGetAll();
+            addDefinitions( definitions, statement.readOperations(), IndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
 
-    private IndexDefinition descriptorToDefinition( final ReadOperations statement, NewIndexDescriptor index )
+    private IndexDefinition descriptorToDefinition( final ReadOperations statement, IndexDescriptor index )
     {
         try
         {
@@ -145,7 +145,7 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
-                                 Iterator<NewIndexDescriptor> indexes )
+                                 Iterator<IndexDescriptor> indexes )
     {
         addToCollection(
                 map( index -> descriptorToDefinition( statement, index ), indexes ),
@@ -212,7 +212,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             ReadOperations readOps = statement.readOperations();
-            NewIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            IndexDescriptor descriptor = getIndexDescriptor( readOps, index );
             InternalIndexState indexState = readOps.indexGetState( descriptor );
             switch ( indexState )
             {
@@ -240,7 +240,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             ReadOperations readOps = statement.readOperations();
-            NewIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            IndexDescriptor descriptor = getIndexDescriptor( readOps, index );
             PopulationProgress progress = readOps.indexGetPopulationProgress( descriptor );
             return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
         }
@@ -258,7 +258,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             ReadOperations readOps = statement.readOperations();
-            NewIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            IndexDescriptor descriptor = getIndexDescriptor( readOps, index );
             return readOps.indexGetFailure( descriptor );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -320,7 +320,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static NewIndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
+    private static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );

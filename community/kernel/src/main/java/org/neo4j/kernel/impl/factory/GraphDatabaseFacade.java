@@ -70,9 +70,9 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema_new.IndexQuery;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -595,7 +595,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             return emptyIterator();
         }
 
-        NewIndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
+        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
 
         try
         {
@@ -614,13 +614,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
     }
 
-    private NewIndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
+    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
     {
         try
         {
-            final int labelId1 = labelId;
-            final int[] propertyKeyIds = new int[]{propertyId};
-            NewIndexDescriptor descriptor =
+            IndexDescriptor descriptor =
                     readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )

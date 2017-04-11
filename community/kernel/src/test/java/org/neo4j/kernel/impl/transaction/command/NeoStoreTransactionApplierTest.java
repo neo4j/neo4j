@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -935,7 +935,7 @@ public class NeoStoreTransactionApplierTest
             SchemaIndexProvider.Descriptor providerDescriptor )
     {
         //TODO: Consider testing composite indexes
-        return IndexRule.indexRule( id, NewIndexDescriptorFactory.forLabel( label, propertyKeyId ),
+        return IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKeyId ),
                 providerDescriptor );
     }
 
@@ -943,7 +943,7 @@ public class NeoStoreTransactionApplierTest
             SchemaIndexProvider.Descriptor providerDescriptor, Long owningConstraint )
     {
         //TODO: Consider testing composite indexes
-        return IndexRule.constraintIndexRule( id, NewIndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
+        return IndexRule.constraintIndexRule( id, IndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),
                 providerDescriptor, owningConstraint );
     }
 

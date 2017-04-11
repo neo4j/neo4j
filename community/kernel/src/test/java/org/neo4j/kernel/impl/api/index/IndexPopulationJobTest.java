@@ -52,10 +52,10 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
@@ -595,7 +595,7 @@ public class IndexPopulationJobTest
     private IndexPopulator inMemoryPopulator( boolean constraint ) throws TransactionFailureException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
-        NewIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, samplingConfig );
     }
 
@@ -622,7 +622,7 @@ public class IndexPopulationJobTest
                                                       LogProvider logProvider, boolean constraint )
                                                               throws TransactionFailureException
     {
-        NewIndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
+        IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
@@ -633,16 +633,16 @@ public class IndexPopulationJobTest
         return job;
     }
 
-    private NewIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint ) throws TransactionFailureException
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            NewIndexDescriptor descriptor = constraint ?
-                                            NewIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
-                                            NewIndexDescriptorFactory.forLabel( labelId, propertyKeyId );
+            IndexDescriptor descriptor = constraint ?
+                                         IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
+                                         IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
             tx.success();
             return descriptor;
         }

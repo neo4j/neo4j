@@ -31,8 +31,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -110,7 +110,7 @@ public class IndexProcedures implements AutoCloseable
         return propertyKeyIds;
     }
 
-    private NewIndexDescriptor getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
+    private IndexDescriptor getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
             ProcedureException
     {
         try
@@ -124,7 +124,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void waitUntilOnline( NewIndexDescriptor index, IndexSpecifier indexDescription,
+    private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription,
             long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
@@ -139,7 +139,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private boolean isOnline( IndexSpecifier indexDescription, NewIndexDescriptor index ) throws ProcedureException
+    private boolean isOnline( IndexSpecifier indexDescription, IndexDescriptor index ) throws ProcedureException
     {
         InternalIndexState state = getState( indexDescription, index );
         switch ( state )
@@ -156,7 +156,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private InternalIndexState getState( IndexSpecifier indexDescription, NewIndexDescriptor index )
+    private InternalIndexState getState( IndexSpecifier indexDescription, IndexDescriptor index )
             throws ProcedureException
     {
         try
@@ -169,7 +169,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void triggerSampling( NewIndexDescriptor index ) throws IndexNotFoundKernelException
+    private void triggerSampling( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         indexingService.triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }

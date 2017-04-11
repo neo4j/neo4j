@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.LabelSchemaSupplier;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -73,7 +73,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, long, NewIndexDescriptor, Descriptor,
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, long, IndexDescriptor, Descriptor,
  * FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
@@ -111,7 +111,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     public IndexPopulation addPopulator(
             IndexPopulator populator,
             long indexId,
-            NewIndexDescriptor descriptor,
+            IndexDescriptor descriptor,
             Descriptor providerDescriptor,
             FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory,
@@ -123,7 +123,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         return population;
     }
 
-    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId, NewIndexDescriptor descriptor,
+    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId, IndexDescriptor descriptor,
             Descriptor providerDescriptor, FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
@@ -457,7 +457,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     {
         public final IndexPopulator populator;
         final long indexId;
-        final NewIndexDescriptor descriptor;
+        final IndexDescriptor descriptor;
         final SchemaIndexProvider.Descriptor providerDescriptor;
         final IndexCountsRemover indexCountsRemover;
         final FlippableIndexProxy flipper;
@@ -467,7 +467,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         IndexPopulation(
                 IndexPopulator populator,
                 long indexId,
-                NewIndexDescriptor descriptor,
+                IndexDescriptor descriptor,
                 Descriptor providerDescriptor,
                 FlippableIndexProxy flipper,
                 FailedIndexProxyFactory failedIndexProxyFactory,

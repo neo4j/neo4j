@@ -23,9 +23,9 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
@@ -95,9 +95,9 @@ public class SchemaRuleDeserializer2_0to3_1
     {
         SchemaIndexProvider.Descriptor providerDescriptor = readIndexProviderDescriptor( serialized );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
-        NewIndexDescriptor descriptor = constraintIndex ?
-                NewIndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
-                NewIndexDescriptorFactory.forLabel( label, propertyKeyIds );
+        IndexDescriptor descriptor = constraintIndex ?
+                                     IndexDescriptorFactory.uniqueForLabel( label, propertyKeyIds ) :
+                                     IndexDescriptorFactory.forLabel( label, propertyKeyIds );
         long owningConstraint = constraintIndex ? readOwningConstraint( serialized ) : NO_OWNING_CONSTRAINT;
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }

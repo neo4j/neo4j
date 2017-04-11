@@ -23,20 +23,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -50,14 +43,14 @@ public class IndexUpdaterMapTest
     private IndexMap indexMap;
 
     private IndexProxy indexProxy1;
-    private NewIndexDescriptor indexDescriptor1;
+    private IndexDescriptor indexDescriptor1;
     private IndexUpdater indexUpdater1;
 
     private IndexProxy indexProxy2;
-    private NewIndexDescriptor indexDescriptor2;
+    private IndexDescriptor indexDescriptor2;
 
     private IndexProxy indexProxy3;
-    private NewIndexDescriptor indexDescriptor3;
+    private IndexDescriptor indexDescriptor3;
 
     private IndexUpdaterMap updaterMap;
 
@@ -67,19 +60,19 @@ public class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        indexDescriptor1 = NewIndexDescriptorFactory.forLabel( 2, 3 );
+        indexDescriptor1 = IndexDescriptorFactory.forLabel( 2, 3 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( indexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        indexDescriptor2 = NewIndexDescriptorFactory.forLabel( 5, 6 );
+        indexDescriptor2 = IndexDescriptorFactory.forLabel( 5, 6 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( indexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         indexProxy3 = mock( IndexProxy.class );
-        indexDescriptor3 = NewIndexDescriptorFactory.forLabel( 5, 7, 8 );
+        indexDescriptor3 = IndexDescriptorFactory.forLabel( 5, 7, 8 );
         IndexUpdater indexUpdater3 = mock( IndexUpdater.class );
         when( indexProxy3.getDescriptor() ).thenReturn( indexDescriptor3 );
         when( indexProxy3.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater3 );

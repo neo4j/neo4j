@@ -31,8 +31,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -58,7 +58,7 @@ public class LuceneSchemaIndexProviderTest
 
     private File graphDbDir;
     private FileSystemAbstraction fs;
-    private static final NewIndexDescriptor descriptor = NewIndexDescriptorFactory.forLabel( 1, 1 );
+    private static final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setup()

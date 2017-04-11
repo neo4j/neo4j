@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -58,12 +58,12 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
-    private final NewIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
-    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, NewIndexDescriptor descriptor,
+    LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, IndexPartitionFactory partitionFactory )
     {
         super( indexStorage, partitionFactory );
@@ -85,7 +85,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
                                                 : createPartitionedReader( partitions );
     }
 
-    public NewIndexDescriptor getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return descriptor;
     }

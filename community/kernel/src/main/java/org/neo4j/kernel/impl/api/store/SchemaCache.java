@@ -32,11 +32,11 @@ import java.util.function.Function;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorPredicates;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorPredicates;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -57,12 +57,12 @@ public class SchemaCache
     private final Map<Long, ConstraintRule> constraintRuleById = new HashMap<>();
     private final Set<ConstraintDescriptor> constraints = new HashSet<>();
 
-    private final Map<SchemaDescriptor, NewIndexDescriptor> indexDescriptors = new HashMap<>();
-    private final PrimitiveIntObjectMap<Set<NewIndexDescriptor>> indexDescriptorsByLabel = Primitive.intObjectMap();
+    private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors = new HashMap<>();
+    private final PrimitiveIntObjectMap<Set<IndexDescriptor>> indexDescriptorsByLabel = Primitive.intObjectMap();
     private final ConstraintSemantics constraintSemantics;
 
     private final Map<Class<?>,Object> dependantState = new ConcurrentHashMap<>();
-    private final PrimitiveIntObjectMap<List<NewIndexDescriptor>> indexByProperty = Primitive.intObjectMap();
+    private final PrimitiveIntObjectMap<List<IndexDescriptor>> indexByProperty = Primitive.intObjectMap();
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
@@ -157,7 +157,7 @@ public class SchemaCache
             LabelSchemaDescriptor schema = indexRule.schema();
             indexDescriptors.put( schema, indexRule.getIndexDescriptor() );
 
-            Set<NewIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
+            Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
             if ( forLabel == null )
             {
                 forLabel = new HashSet<>();
@@ -167,7 +167,7 @@ public class SchemaCache
 
             for ( int propertyId : indexRule.schema().getPropertyIds() )
             {
-                List<NewIndexDescriptor> indexesForProperty = indexByProperty.get( propertyId );
+                List<IndexDescriptor> indexesForProperty = indexByProperty.get( propertyId );
                 if ( indexesForProperty == null )
                 {
                     indexesForProperty = new LinkedList<>();
@@ -210,7 +210,7 @@ public class SchemaCache
             LabelSchemaDescriptor schema = rule.schema();
             indexDescriptors.remove( schema );
 
-            Set<NewIndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
+            Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
             forLabel.remove( rule.getIndexDescriptor() );
             if ( forLabel.isEmpty() )
             {
@@ -219,7 +219,7 @@ public class SchemaCache
 
             for ( int propertyId : rule.schema().getPropertyIds() )
             {
-                List<NewIndexDescriptor> forProperty = indexByProperty.get( propertyId );
+                List<IndexDescriptor> forProperty = indexByProperty.get( propertyId );
                 forProperty.remove( rule.getIndexDescriptor() );
                 if ( forProperty.isEmpty() )
                 {
@@ -229,20 +229,20 @@ public class SchemaCache
         }
     }
 
-    public NewIndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
     {
         return indexDescriptors.get( descriptor );
     }
 
-    public Iterator<NewIndexDescriptor> indexDescriptorsForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
     {
-        Set<NewIndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
+        Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
         return forLabel == null ? Iterators.emptyIterator() : forLabel.iterator();
     }
 
-    public Iterator<NewIndexDescriptor> indexesByProperty( int propertyId )
+    public Iterator<IndexDescriptor> indexesByProperty( int propertyId )
     {
-        List<NewIndexDescriptor> indexes = indexByProperty.get( propertyId );
+        List<IndexDescriptor> indexes = indexByProperty.get( propertyId );
         return (indexes == null) ? Iterators.emptyIterator() : indexes.iterator();
     }
 }

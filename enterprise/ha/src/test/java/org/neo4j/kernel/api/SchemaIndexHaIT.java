@@ -57,7 +57,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -510,7 +510,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor,
+        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
                                             IndexSamplingConfig samplingConfig )
         {
             IndexPopulator populator = delegate.getPopulator( indexId, descriptor, samplingConfig );
@@ -518,14 +518,14 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
                                                 IndexSamplingConfig samplingConfig  ) throws IOException
         {
             return delegate.getOnlineAccessor(indexId, descriptor, samplingConfig );
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
+        public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
         {
             return delegate.getInitialState( indexId, descriptor );
         }

@@ -23,12 +23,12 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterators.loop;
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 /**
@@ -52,7 +52,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            for ( NewIndexDescriptor index : loop( statement.readOperations().indexesGetAll() ) )
+            for ( IndexDescriptor index : loop( statement.readOperations().indexesGetAll() ) )
             {
                 if ( index.type() == UNIQUE &&
                      statement.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )

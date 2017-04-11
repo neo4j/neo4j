@@ -25,10 +25,10 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -37,43 +37,43 @@ public interface SchemaReadOperations
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    NewIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor );
+    IndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor );
 
     /**
      * Get all indexes for a label.
      */
-    Iterator<NewIndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Returns all indexes.
      */
-    Iterator<NewIndexDescriptor> indexesGetAll( KernelStatement state );
+    Iterator<IndexDescriptor> indexesGetAll( KernelStatement state );
 
     /**
      * Retrieve the state of an index.
      */
-    InternalIndexState indexGetState( KernelStatement state, NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Retrieve the population progress of an index.
      */
-    PopulationProgress indexGetPopulationProgress( KernelStatement state, NewIndexDescriptor descriptor ) throws
+    PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
             IndexNotFoundKernelException;
 
     /**
      * Get the index size.
      **/
-    long indexSize( KernelStatement state, NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Calculate the index unique values percentage.
      **/
-    double indexUniqueValuesPercentage( KernelStatement state, NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Returns the failure description of a failed index.
      */
-    String indexGetFailure( Statement state, NewIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKeys.
@@ -103,11 +103,11 @@ public interface SchemaReadOperations
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( KernelStatement state, NewIndexDescriptor index ) throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
 
     /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( KernelStatement state, NewIndexDescriptor index ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
 }

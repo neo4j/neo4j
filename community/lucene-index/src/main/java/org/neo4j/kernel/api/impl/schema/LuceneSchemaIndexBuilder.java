@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
@@ -43,11 +43,11 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
  */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
-    private final NewIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
     private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
-    private LuceneSchemaIndexBuilder( NewIndexDescriptor descriptor )
+    private LuceneSchemaIndexBuilder( IndexDescriptor descriptor )
     {
         this.descriptor = descriptor;
     }
@@ -58,7 +58,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @return new LuceneSchemaIndexBuilder
      * @param descriptor The descriptor for this index
      */
-    public static LuceneSchemaIndexBuilder create( NewIndexDescriptor descriptor )
+    public static LuceneSchemaIndexBuilder create( IndexDescriptor descriptor )
     {
         return new LuceneSchemaIndexBuilder( descriptor );
     }

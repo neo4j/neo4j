@@ -40,10 +40,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -113,7 +113,7 @@ public class MultipleIndexPopulatorUpdatesTest
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( indexUpdater );
 
-        addPopulator( indexPopulator, populator, 1, NewIndexDescriptorFactory.forLabel( 1, 1 ) );
+        addPopulator( indexPopulator, populator, 1, IndexDescriptorFactory.forLabel( 1, 1 ) );
 
         indexPopulator.create();
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
@@ -149,14 +149,14 @@ public class MultipleIndexPopulatorUpdatesTest
     }
 
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            IndexPopulator indexPopulator, long indexId, NewIndexDescriptor descriptor )
+            IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
     {
         return addPopulator( multipleIndexPopulator, indexId, descriptor, indexPopulator,
                 mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
     }
 
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            long indexId, NewIndexDescriptor descriptor, IndexPopulator indexPopulator,
+            long indexId, IndexDescriptor descriptor, IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId, descriptor,

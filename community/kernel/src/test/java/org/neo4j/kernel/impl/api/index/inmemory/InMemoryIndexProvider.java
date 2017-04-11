@@ -27,13 +27,13 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-import static org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
@@ -56,7 +56,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, NewIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         InMemoryIndex index = indexes.get( indexId );
         return index != null ? index.getState() : InternalIndexState.POPULATING;
@@ -70,7 +70,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, NewIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = descriptor.type() == UNIQUE
                 ? new UniqueInMemoryIndex( descriptor.schema() ) : new InMemoryIndex();
@@ -79,7 +79,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, NewIndexDescriptor descriptor,
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
                                             IndexSamplingConfig samplingConfig )
     {
         InMemoryIndex index = indexes.get( indexId );

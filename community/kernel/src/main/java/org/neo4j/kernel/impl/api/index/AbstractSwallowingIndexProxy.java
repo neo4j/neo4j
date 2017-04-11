@@ -23,21 +23,21 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema_new.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema_new.index.NewIndexDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
-    private final NewIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationFailure populationFailure;
 
-    public AbstractSwallowingIndexProxy( NewIndexDescriptor descriptor,
+    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor,
             SchemaIndexProvider.Descriptor providerDescriptor, IndexPopulationFailure populationFailure )
     {
         this.descriptor = descriptor;
@@ -76,7 +76,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public NewIndexDescriptor getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return descriptor;
     }
