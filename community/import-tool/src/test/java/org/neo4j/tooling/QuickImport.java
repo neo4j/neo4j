@@ -34,7 +34,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
@@ -86,18 +85,20 @@ public class QuickImport
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
 
         FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        org.neo4j.unsafe.impl.batchimport.Configuration importConfig = new Default()
+        org.neo4j.unsafe.impl.batchimport.Configuration importConfig =
+                new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
             @Override
             public int maxNumberOfProcessors()
             {
-                return args.getNumber( ImportTool.Options.PROCESSORS.key(), super.maxNumberOfProcessors() ).intValue();
+                return args.getNumber( ImportTool.Options.PROCESSORS.key(),
+                        DEFAULT.maxNumberOfProcessors() ).intValue();
             }
 
             @Override
             public int denseNodeThreshold()
             {
-                return args.getNumber( dense_node_threshold.name(), super.denseNodeThreshold() ).intValue();
+                return args.getNumber( dense_node_threshold.name(), DEFAULT.denseNodeThreshold() ).intValue();
             }
         };
 

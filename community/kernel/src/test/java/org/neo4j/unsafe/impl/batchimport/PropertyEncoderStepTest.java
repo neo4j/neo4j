@@ -59,7 +59,7 @@ public class PropertyEncoderStepTest
     {
         StageControl control = mock( StageControl.class );
         int batchSize = 100;
-        Configuration config = new Configuration.Default()
+        Configuration config = new Configuration()
         {
             @Override
             public int batchSize()

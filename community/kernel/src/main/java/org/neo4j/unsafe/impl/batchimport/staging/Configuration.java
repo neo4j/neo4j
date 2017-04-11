@@ -28,14 +28,20 @@ public interface Configuration
      * A {@link Stage} works with batches going through one or more {@link Step steps} where one or more threads
      * process batches at each {@link Step}. This setting dictates how big the batches that are passed around are.
      */
-    int batchSize();
+    default int batchSize()
+    {
+        return 10_000;
+    }
 
     /**
      * For statistics the average processing time is based on total processing time divided by
      * number of batches processed. A total average is probably not that interesting so this configuration
      * option specifies how many of the latest processed batches counts in the equation above.
      */
-    int movingAverageSize();
+    default int movingAverageSize()
+    {
+        return 100;
+    }
 
     /**
      * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
@@ -48,30 +54,14 @@ public interface Configuration
      * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
      * of a processor.
      */
-    int maxNumberOfProcessors();
-
-    class Default implements Configuration
+    default int maxNumberOfProcessors()
     {
-        @Override
-        public int batchSize()
-        {
-            return 10_000;
-        }
-
-        @Override
-        public int movingAverageSize()
-        {
-            return 100;
-        }
-
-        @Override
-        public int maxNumberOfProcessors()
-        {
-            return Runtime.getRuntime().availableProcessors();
-        }
+        return Runtime.getRuntime().availableProcessors();
     }
 
-    Configuration DEFAULT = new Default();
+    Configuration DEFAULT = new Configuration()
+    {
+    };
 
     class Overridden implements Configuration
     {

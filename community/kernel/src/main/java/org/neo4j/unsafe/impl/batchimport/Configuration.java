@@ -41,7 +41,10 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     /**
      * @return number of relationships threshold for considering a node dense.
      */
-    int denseNodeThreshold();
+    default int denseNodeThreshold()
+    {
+        return Integer.parseInt( dense_node_threshold.getDefaultValue() );
+    }
 
     /**
      * @return amount of memory to reserve for the page cache. This should just be "enough" for it to be able
@@ -50,29 +53,17 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
      * with slightly bigger page size than "normal" random access use cases.
      */
-    long pageCacheMemory();
-
-    class Default
-            extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
-            implements Configuration
+    default long pageCacheMemory()
     {
-        @Override
-        public long pageCacheMemory()
-        {
-            // Get the upper bound of what we can get from the default config calculation
-            // We even want to limit amount of memory a bit more since we don't need very much during import
-            long defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
-            return min( MAX_PAGE_CACHE_MEMORY, defaultPageCacheMemory );
-        }
-
-        @Override
-        public int denseNodeThreshold()
-        {
-            return Integer.parseInt( dense_node_threshold.getDefaultValue() );
-        }
+        // Get the upper bound of what we can get from the default config calculation
+        // We even want to limit amount of memory a bit more since we don't need very much during import
+        long defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
+        return min( MAX_PAGE_CACHE_MEMORY, defaultPageCacheMemory );
     }
 
-    Configuration DEFAULT = new Default();
+    Configuration DEFAULT = new Configuration()
+    {
+    };
 
     class Overridden
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Overridden
