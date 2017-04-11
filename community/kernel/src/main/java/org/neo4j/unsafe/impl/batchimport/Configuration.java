@@ -53,6 +53,14 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      */
     long pageCacheMemory();
 
+    /**
+     * @return whether or not to do sequential flushing of the page cache in the during stages which
+     * import nodes and relationships. Having this {@code true} will reduce random I/O and make most
+     * writes happen in this single background thread and will greatly benefit hardware which generally
+     * benefits from single sequential writer.
+     */
+    boolean sequentialBackgroundFlushing();
+
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
@@ -70,6 +78,12 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int denseNodeThreshold()
         {
             return Integer.parseInt( dense_node_threshold.getDefaultValue() );
+        }
+
+        @Override
+        public boolean sequentialBackgroundFlushing()
+        {
+            return true;
         }
     }
 
@@ -120,6 +134,12 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
+        }
+
+        @Override
+        public boolean sequentialBackgroundFlushing()
+        {
+            return defaults.sequentialBackgroundFlushing();
         }
     }
 
