@@ -22,21 +22,28 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
+import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
+import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutionPanicException;
 
+import static java.lang.Integer.parseInt;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static java.lang.Integer.parseInt;
-
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class TicketedProcessingTest
@@ -128,6 +135,62 @@ public class TicketedProcessingTest
             assertEquals( 2, processing.next().intValue() );
             assertEquals( 3, processing.next().intValue() );
         }
+    }
+
+    @Test
+    public void shouldNoticeSlurpPanic() throws Exception
+    {
+        // GIVEN
+        IllegalStateException failure = new IllegalStateException( "Consistently failing" );
+        try ( TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
+                (job,state) -> parseInt( job.string ), () -> null ) )
+        {
+            processing.processors( 1 );
+
+            // WHEN
+            Future<Void> slurp = processing.slurp( failingIterator( iterator(
+                    () -> new StringJob( "1" ),
+                    () ->
+                    {
+                        throw failure;
+                    } ) ), true );
+            try
+            {
+                while ( processing.next() != null )
+                {
+                    // Just read through them
+                }
+                fail( "Should have noticed the slurp failure" );
+            }
+            catch ( TaskExecutionPanicException e )
+            {
+                // THEN good
+                assertSame( failure, e.getCause() );
+            }
+
+            // also THEN
+            try
+            {
+                slurp.get();
+                fail( "Should have noticed the slurp failure" );
+            }
+            catch ( ExecutionException e )
+            {
+                assertSame( failure, e.getCause() );
+            }
+        }
+    }
+
+    private static Iterator<StringJob> failingIterator( Iterator<Supplier<StringJob>> suppliers )
+    {
+        return new IteratorWrapper<StringJob,Supplier<StringJob>>( suppliers )
+        {
+            @Override
+            protected StringJob underlyingObjectToObject( Supplier<StringJob> object )
+            {
+                return object.get();
+            }
+        };
     }
 
     private static class StringJob

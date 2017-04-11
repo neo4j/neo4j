@@ -79,6 +79,7 @@ import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -227,7 +228,11 @@ public class ImportTool
                         + GraphDatabaseSettings.array_block_size.name(), true ),
         LEGACY_STYLE_QUOTING( "legacy-style-quoting", Configuration.DEFAULT_LEGACY_STYLE_QUOTING,
                 "<true/false>",
-                "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." );
+                "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." ),
+        READ_BUFFER_SIZE( "read-buffer-size", org.neo4j.csv.reader.Configuration.DEFAULT.bufferSize(),
+                "<bytes, e.g. 10k, 4M>",
+                "Size of each buffer for reading input data. It has to at least be large enough to hold the " +
+                "biggest single value in the input data." );
 
         private final String key;
         private final Object defaultValue;
@@ -812,6 +817,9 @@ public class ImportTool
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         final Boolean trimStrings = args.getBoolean( Options.TRIM_STRINGS.key(), null);
         final Boolean legacyStyleQuoting = args.getBoolean( Options.LEGACY_STYLE_QUOTING.key(), null );
+        final Number bufferSize = args.has( Options.READ_BUFFER_SIZE.key() )
+                ? parseLongWithUnit( args.get( Options.READ_BUFFER_SIZE.key(), null ) )
+                : null;
         return new Configuration.Default()
         {
             @Override
@@ -857,7 +865,9 @@ public class ImportTool
             @Override
             public int bufferSize()
             {
-                return defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
+                return bufferSize != null
+                        ? bufferSize.intValue()
+                        : defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
             }
 
             @Override

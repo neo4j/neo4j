@@ -67,9 +67,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -77,6 +75,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -1710,6 +1713,31 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             assertNotNull( db.findNode( Label.label( labelName ), "name", "abc\"def\\\"ghi" ) );
+        }
+    }
+
+    @Test
+    public void shouldRespectBufferSizeSetting() throws Exception
+    {
+        // GIVEN
+        List<String> lines = new ArrayList<>();
+        lines.add( ":ID,name,:LABEL" );
+        lines.add( "id," + repeat( 'l', 2_000 ) + ",Person" );
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
+                    "--read-buffer-size", "1k"
+                    );
+            fail( "Should've failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN good
+            assertThat( e.getMessage(), containsString( "input data" ) );
         }
     }
 
