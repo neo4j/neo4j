@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -190,7 +191,7 @@ public class IndexingService extends LifecycleAdapter
     {
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
-        Map<InternalIndexState, List<IndexLogRecord>> indexStates = new HashMap<>();
+        Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
         for ( IndexRule indexRule : indexRules )
         {
             IndexProxy indexProxy;
@@ -251,13 +252,14 @@ public class IndexingService extends LifecycleAdapter
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
-        Map<InternalIndexState, List<IndexLogRecord>> indexStates = new HashMap<>();
+        Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
         indexMap.foreachIndexProxy( ( indexId, proxy ) -> {
             InternalIndexState state = proxy.getState();
             IndexDescriptor descriptor = proxy.getDescriptor();
-            indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord(indexId, descriptor) );
+            indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
+                    .add( new IndexLogRecord( indexId, descriptor ) );
             log.debug( indexStateInfo( "start", indexId, state, descriptor ) );
             switch ( state )
             {
@@ -778,13 +780,13 @@ public class IndexingService extends LifecycleAdapter
         return samplingController;
     }
 
-    private void logIndexStateSummary( String method,  Map<InternalIndexState, List<IndexLogRecord>> indexStates )
+    private void logIndexStateSummary( String method, Map<InternalIndexState,List<IndexLogRecord>> indexStates )
     {
         int mostPopularStateCount = Integer.MIN_VALUE;
         InternalIndexState mostPopularState = null;
         for ( Map.Entry<InternalIndexState,List<IndexLogRecord>> indexStateEntry : indexStates.entrySet() )
         {
-            if (indexStateEntry.getValue().size() > mostPopularStateCount)
+            if ( indexStateEntry.getValue().size() > mostPopularStateCount )
             {
                 mostPopularState = indexStateEntry.getKey();
                 mostPopularStateCount = indexStateEntry.getValue().size();
