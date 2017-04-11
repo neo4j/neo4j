@@ -127,6 +127,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
+    protected void verifyClusterState( File storeDir, File dataDir )
+    {
+
+    }
+
     @Override
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
@@ -159,6 +164,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final File storeDir = platformModule.storeDir;
         final LifeSupport life = platformModule.life;
         final Monitors monitors = platformModule.monitors;
+
+        verifyClusterState( storeDir, config.get(GraphDatabaseSettings.data_directory) );
 
         final File dataDir = config.get( DatabaseManagementSystemSettings.data_directory );
         final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );

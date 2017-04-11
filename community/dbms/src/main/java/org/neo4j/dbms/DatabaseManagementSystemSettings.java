@@ -25,6 +25,7 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.configuration.Internal;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -39,7 +40,7 @@ public class DatabaseManagementSystemSettings implements LoadableConfig
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )
-    public static final Setting<File> data_directory = pathSetting( "dbms.directories.data", "data" );
+    public static final Setting<File> data_directory = GraphDatabaseSettings.data_directory;
 
     @Internal
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",

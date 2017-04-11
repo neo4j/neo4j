@@ -151,6 +151,26 @@ public abstract class EditionModule
         config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
     }
 
+    protected void verifyClusterState( File storeDir, File dataDir )
+    {
+        File storeDirClusterStateDir = new File( storeDir, "cluster-state" );
+        if ( storeDirClusterStateDir.exists() )
+        {
+            throw new RuntimeException( clusterStateExistsMessage( storeDirClusterStateDir ) );
+        }
+
+        File dataDirClusterStateDir = new File( dataDir, "cluster-state" );
+        if ( dataDirClusterStateDir.exists() )
+        {
+            throw new RuntimeException( clusterStateExistsMessage( dataDirClusterStateDir ) );
+        }
+    }
+
+    private String clusterStateExistsMessage(File clusterStateDir)
+    {
+        return String.format("%s exists but server is not being started in Causal Clustering mode. The unbind command must be executed before starting the server in this mode.", clusterStateDir);
+    }
+
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );
 
     protected static void setupSecurityModule( PlatformModule platformModule, Log log, Procedures procedures,

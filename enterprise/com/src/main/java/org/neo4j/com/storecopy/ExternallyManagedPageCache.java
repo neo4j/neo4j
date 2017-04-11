@@ -22,7 +22,6 @@ package org.neo4j.com.storecopy;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -39,7 +38,6 @@ import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;

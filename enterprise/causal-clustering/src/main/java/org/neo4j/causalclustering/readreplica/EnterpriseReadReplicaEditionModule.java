@@ -125,6 +125,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         LifeSupport life = platformModule.life;
         Monitors monitors = platformModule.monitors;
 
+        verifyClusterState( storeDir, config.get(GraphDatabaseSettings.data_directory) );
+
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         this.accessCapability = new ReadOnly();

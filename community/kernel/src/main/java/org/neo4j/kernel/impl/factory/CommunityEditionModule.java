@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -91,6 +92,8 @@ public class CommunityEditionModule extends EditionModule
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
+
+        verifyClusterState( storeDir, config.get(GraphDatabaseSettings.data_directory) );
 
         watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
                 platformModule.jobScheduler, fileWatcherFileNameFilter() );

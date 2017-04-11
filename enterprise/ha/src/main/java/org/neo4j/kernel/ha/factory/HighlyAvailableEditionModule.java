@@ -208,6 +208,8 @@ public class HighlyAvailableEditionModule
         final LogService logging = platformModule.logging;
         final Monitors monitors = platformModule.monitors;
 
+        verifyClusterState( storeDir, config.get(GraphDatabaseSettings.data_directory) );
+
         this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );

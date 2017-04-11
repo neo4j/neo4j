@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
