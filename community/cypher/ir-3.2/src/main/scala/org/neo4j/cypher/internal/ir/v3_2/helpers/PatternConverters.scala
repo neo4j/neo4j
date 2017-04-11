@@ -50,14 +50,14 @@ object PatternConverters {
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
     def destructedRelationshipChain: DestructResult = chain match {
       // (a)->[r]->(b)
-      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None), RelationshipPattern(Some(relId), relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None)) =>
+      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None), RelationshipPattern(Some(relId), relTypes, length, None, direction, _), NodePattern(Some(rightNodeId), Seq(), None)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
         val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
         DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
 
       // ...->[r]->(b)
-      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None)) =>
+      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), relTypes, length, None, direction, _), NodePattern(Some(rightNodeId), Seq(), None)) =>
         val destructed = relChain.destructedRelationshipChain
         val leftNode = IdName(destructed.rels.last.right.name)
         val rightNode = IdName(rightNodeId.name)

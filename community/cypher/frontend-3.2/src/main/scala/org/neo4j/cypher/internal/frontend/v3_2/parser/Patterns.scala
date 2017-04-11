@@ -29,7 +29,7 @@ package org.neo4j.cypher.internal.frontend.v3_2.parser
  *    p =      shortestPath(    (a)             -[r1]->           (b)            -[r2]->           (c)       )
  */
 
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, SemanticDirection, ast}
 import org.parboiled.scala._
 
 trait Patterns extends Parser
@@ -74,12 +74,12 @@ trait Patterns extends Parser
       | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
       | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
-    ) ~~>> (ast.RelationshipPattern(_, _, _, _, _))
+    ) ~~>> ((variable, relTypes, range, props, dir) => ast.RelationshipPattern(variable, relTypes.types, range, props, dir, relTypes.legacySeparator))
   }
 
   private def RelationshipDetail: Rule4[
       Option[ast.Variable],
-      Seq[ast.RelTypeName],
+      MaybeLegacyRelTypes,
       Option[Option[ast.Range]],
       Option[ast.Expression]] = rule("[") {
     (
@@ -88,14 +88,21 @@ trait Patterns extends Parser
           RelationshipTypes ~~ MaybeVariableLength ~
           MaybeProperties ~~
         "]"
-      | EMPTY ~ push(None) ~ push(Seq()) ~ push(None) ~ push(None)
+      | EMPTY ~ push(None) ~ push(MaybeLegacyRelTypes()) ~ push(None) ~ push(None)
     )
   }
 
-  private def RelationshipTypes: Rule1[Seq[ast.RelTypeName]] = rule("relationship types") (
-      ":" ~~ oneOrMore(RelTypeName, separator = WS ~ "|" ~~ optional(":") ~ WS)
-    | EMPTY ~ push(Seq())
+  private def RelationshipTypes: Rule1[MaybeLegacyRelTypes] = rule("relationship types") (
+    (":" ~~ RelTypeName ~~ zeroOrMore(WS ~ "|" ~~ LegacyCompatibleRelTypeName)) ~~>> (
+      (first: ast.RelTypeName, more: List[(Boolean, ast.RelTypeName)]) => (pos: InputPosition) => {
+        MaybeLegacyRelTypes(first +: more.map(_._2), more.exists(_._1))
+      })
+    | EMPTY ~ push(MaybeLegacyRelTypes())
   )
+
+  private def LegacyCompatibleRelTypeName: Rule1[(Boolean, ast.RelTypeName)] =
+    ((":" ~ push(true)) | EMPTY ~ push(false)) ~~ RelTypeName ~~>> (
+      (legacy: Boolean, name: ast.RelTypeName) => (pos: InputPosition) => (legacy,name))
 
   private def MaybeVariableLength: Rule1[Option[Option[ast.Range]]] = rule("a length specification") (
       "*" ~~ (
@@ -122,3 +129,5 @@ trait Patterns extends Parser
     optional(WS ~ (MapLiteral | Parameter))
   )
 }
+
+case class MaybeLegacyRelTypes(types: Seq[ast.RelTypeName] = Seq.empty, legacySeparator: Boolean = false)

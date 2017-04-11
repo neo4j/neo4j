@@ -19,21 +19,24 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.Map;
-import java.util.stream.Stream;
-
 import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK;
@@ -134,8 +137,97 @@ public class NotificationAcceptanceTest
         });
     }
 
+    @Test
+    public void shouldWarnOnFutureAmbiguousRelTypeSeparator() throws Exception
+    {
+        for ( String pattern : Arrays.asList("[:A|:B|:C {foo:'bar'}]", "[:A|:B|:C*]", "[x:A|:B|:C]") )
+        {
+            assertNotifications("CYPHER 3.2 explain MATCH (a)-" + pattern + "-(b) RETURN a,b",
+                    containsItem(notification(
+                            "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                            containsString(
+                                    "The semantics of using colon in the separation of alternative relationship types in conjunction with the " +
+                                              "use of variable binding, inlined property predicates, or variable length will change in a future version."
+                            ),
+                            any(InputPosition.class),
+                            SeverityLevel.WARNING)));
+        }
+    }
+
+    @Test
+    public void shouldWarnOnBindingVariableLengthRelationship() throws Exception
+    {
+        assertNotifications("CYPHER 3.2 explain MATCH ()-[rs*]-() RETURN rs", containsItem( notification(
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                containsString( "Binding relationships to a list in a variable length pattern is deprecated." ),
+                any( InputPosition.class ),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    private void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
+    {
+        try (Result result = db().execute( query ) )
+        {
+            assertThat( result.getNotifications(), matchesExpectation );
+        }
+    }
+
+    private Matcher<Notification> notification(
+            String code,
+            Matcher<String> description,
+            Matcher<InputPosition> position,
+            SeverityLevel severity)
+    {
+        return new TypeSafeMatcher<Notification>()
+        {
+            @Override
+            protected boolean matchesSafely( Notification item )
+            {
+                return code.equals( item.getCode() ) &&
+                        description.matches( item.getDescription() ) &&
+                        position.matches( item.getPosition() ) &&
+                        severity.equals( item.getSeverity() );
+            }
+
+            @Override
+            public void describeTo( Description target )
+            {
+                target.appendText( "Notification{code=" ).appendValue( code )
+                        .appendText( ", description=[" ).appendDescriptionOf( description )
+                        .appendText( "], position=[" ).appendDescriptionOf( position )
+                        .appendText( "], severity=" ).appendValue( severity )
+                        .appendText( "}" );
+            }
+        };
+    }
+
     private GraphDatabaseAPI db()
     {
         return rule.getGraphDatabaseAPI();
+    }
+
+    private <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
+    {
+        return new TypeSafeMatcher<Iterable<T>>()
+        {
+            @Override
+            protected boolean matchesSafely( Iterable<T> items )
+            {
+                for ( T item : items )
+                {
+                    if ( itemMatcher.matches( item ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "an iterable containing " ).appendDescriptionOf( itemMatcher );
+            }
+        };
     }
 }

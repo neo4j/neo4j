@@ -34,22 +34,22 @@ case object getDegreeRewriter extends Rewriter {
 
   private def rewriter = Rewriter.lift {
     // LENGTH( (a)-[]->() )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, types, None, None, dir), NodePattern(None, List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(None, List(), None))))))
       if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir)
 
     // LENGTH( ()-[]->(a) )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir), NodePattern(Some(node), List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(Some(node), List(), None))))))
       if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir.reversed)
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, types, None, None, dir), NodePattern(None, List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(None, List(), None))))))
       if func.function == functions.Exists  =>
       GreaterThan(calculateUsingGetDegree(func, node, types, dir), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
 
     // EXISTS( ()-[]->(a) ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir), NodePattern(Some(node), List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(Some(node), List(), None))))))
       if func.function == functions.Exists =>
       GreaterThan(calculateUsingGetDegree(func, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
   }
