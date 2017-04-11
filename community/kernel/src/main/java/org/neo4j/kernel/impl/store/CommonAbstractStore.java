@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -566,11 +567,23 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public long nextId()
     {
+        assertIdGeneratorInitialized();
+        return idGenerator.nextId();
+    }
+
+    private void assertIdGeneratorInitialized()
+    {
         if ( idGenerator == null )
         {
             throw new IllegalStateException( "IdGenerator is not initialized" );
         }
-        return idGenerator.nextId();
+    }
+
+    @Override
+    public IdRange nextIdBatch( int size )
+    {
+        assertIdGeneratorInitialized();
+        return idGenerator.nextIdBatch( size );
     }
 
     /**
@@ -923,10 +936,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /** @return The total number of ids in use. */
     public long getNumberOfIdsInUse()
     {
-        if ( idGenerator == null )
-        {
-            throw new IllegalStateException( "IdGenerator is not initialized" );
-        }
+        assertIdGeneratorInitialized();
         return idGenerator.getNumberOfIdsInUse();
     }
 
