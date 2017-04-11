@@ -40,7 +40,7 @@ public class NodeFirstGroupStage extends Stage
     {
         super( "Node --> Group", config );
         add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, groupStore ) );
+        add( new ReadRecordsStep<>( control(), config, true, groupStore ) );
         add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }
