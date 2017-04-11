@@ -37,7 +37,6 @@ import org.junit.rules.ExternalResource;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.ConcurrentTransfer;
-import org.neo4j.test.Barrier;
 import org.neo4j.test.ReflectionUtil;
 
 public class ThreadingRule extends ExternalResource
@@ -71,7 +70,7 @@ public class ThreadingRule extends ExternalResource
     public <FROM, TO, EX extends Exception> Future<TO> execute( ThrowingFunction<FROM,TO,EX> function, FROM parameter )
     {
         final Consumer<Thread> threadConsumer = (t) -> {};
-        return executor.submit( task( Barrier.NONE, function, function.toString(), parameter, threadConsumer ) );
+        return executor.submit( task( function, function.toString(), parameter, threadConsumer ) );
     }
 
     public <FROM, TO, EX extends Exception> List<Future<TO>> multiple( int threads, ThrowingFunction<FROM,TO,EX> function, FROM parameter )
@@ -80,7 +79,7 @@ public class ThreadingRule extends ExternalResource
         for ( int i = 0; i < threads; i++ )
         {
             result.add( executor.submit( task(
-                    Barrier.NONE, function, function.toString() + ":task=" + i, parameter, ( t ) -> {} ) ) );
+                    function, function.toString() + ":task=" + i, parameter, ( t ) -> {} ) ) );
         }
         return result;
     }
@@ -127,21 +126,19 @@ public class ThreadingRule extends ExternalResource
             long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException
     {
         ConcurrentTransfer<Thread> transfer = new ConcurrentTransfer<>();
-        Future<TO> future = executor.submit( task( Barrier.NONE, function, function.toString(), parameter, transfer ) );
+        Future<TO> future = executor.submit( task( function, function.toString(), parameter, transfer ) );
         Predicates.await( transfer, threadCondition, timeout, unit );
         return future;
     }
 
     private static <FROM, TO, EX extends Exception> Callable<TO> task(
-            final Barrier barrier, final ThrowingFunction<FROM,TO,EX> function, final String name, final FROM parameter,
-            final Consumer<Thread> threadConsumer )
+            ThrowingFunction<FROM,TO,EX> function, String name, FROM parameter, Consumer<Thread> threadConsumer )
     {
         return () -> {
             Thread thread = Thread.currentThread();
             String previousName = thread.getName();
             thread.setName( name );
             threadConsumer.accept( thread );
-            barrier.reached();
             try
             {
                 return function.apply( parameter );
