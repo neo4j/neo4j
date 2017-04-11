@@ -21,10 +21,13 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 import static java.lang.Math.min;
+import static java.lang.Math.round;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -40,6 +43,7 @@ public interface Configuration
      */
     String BAD_FILE_NAME = "bad.log";
     long MAX_PAGE_CACHE_MEMORY = mebiBytes( 240 );
+    int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**
      * A {@link Stage} works with batches going through one or more {@link Step steps} where one or more threads
@@ -97,6 +101,18 @@ public interface Configuration
         // We even want to limit amount of memory a bit more since we don't need very much during import
         long defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
         return min( MAX_PAGE_CACHE_MEMORY, defaultPageCacheMemory );
+    }
+
+    /**
+     * @return max memory to use for import cache data structures while importing.
+     * This should exclude the memory acquired by this JVM. By default this returns total physical
+     * memory on the machine it's running on minus the max memory of this JVM.
+     * {@value #DEFAULT_MAX_MEMORY_PERCENT}% of that figure.
+     * @throws UnsupportedOperationException if available memory couldn't be determined.
+     */
+    default long maxMemoryUsage()
+    {
+        return calculateMaxMemoryFromPercent( DEFAULT_MAX_MEMORY_PERCENT );
     }
 
     Configuration DEFAULT = new Configuration()
@@ -158,5 +174,26 @@ public interface Configuration
                 return batchSize;
             }
         };
+    }
+
+    public static long calculateMaxMemoryFromPercent( int percent )
+    {
+        if ( percent < 1 )
+        {
+            throw new IllegalArgumentException( "Expected percentage to be > 0, was " + percent );
+        }
+        if ( percent > 100 )
+        {
+            throw new IllegalArgumentException( "Expected percentage to be < 100, was " + percent );
+        }
+        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
+        if ( freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
+        {
+            throw new UnsupportedOperationException(
+                    "Unable to detect amount of free memory, so max memory has to be explicitly set" );
+        }
+
+        double factor = percent / 100D;
+        return round( (freePhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
     }
 }

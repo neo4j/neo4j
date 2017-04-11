@@ -37,14 +37,12 @@ public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecor
 {
     private final RecordStore<RelationshipGroupRecord> relGroupStore;
     private final NodeRelationshipCache cache;
-    private final int relationshipType;
 
     public NodeFirstRelationshipProcessor( RecordStore<RelationshipGroupRecord> relGroupStore,
-            NodeRelationshipCache cache, int relationshipType )
+            NodeRelationshipCache cache )
     {
         this.relGroupStore = relGroupStore;
         this.cache = cache;
-        this.relationshipType = relationshipType;
     }
 
     @Override
@@ -64,18 +62,17 @@ public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecor
     }
 
     @Override
-    public long visit( long nodeId, long next, long out, long in, long loop )
+    public long visit( long nodeId, int typeId, long out, long in, long loop )
     {
         // Here we'll use the already generated id (below) from the previous visit, if that so happened
         long id = relGroupStore.nextId();
         RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id );
-        groupRecord.setType( relationshipType );
+        groupRecord.setType( typeId );
         groupRecord.setInUse( true );
         groupRecord.setFirstOut( out );
         groupRecord.setFirstIn( in );
         groupRecord.setFirstLoop( loop );
         groupRecord.setOwningNode( nodeId );
-        groupRecord.setNext( next );
         relGroupStore.prepareForCommit( groupRecord );
         relGroupStore.updateRecord( groupRecord );
         return id;

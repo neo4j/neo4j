@@ -37,17 +37,17 @@ import static java.lang.System.nanoTime;
  */
 public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
 {
-    private final boolean denseNodes;
+    private final int nodeTypes;
     private final NodeRelationshipCache cache;
     private final int batchSize;
     private final RecordCursor<NodeRecord> recordCursor;
 
     public ReadNodeRecordsByCacheStep( StageControl control, Configuration config,
-            NodeStore nodeStore, NodeRelationshipCache cache, boolean denseNodes )
+            NodeStore nodeStore, NodeRelationshipCache cache, int nodeTypes )
     {
         super( control, ">", config );
         this.cache = cache;
-        this.denseNodes = denseNodes;
+        this.nodeTypes = nodeTypes;
         this.batchSize = config.batchSize();
         this.recordCursor = nodeStore.newRecordCursor( nodeStore.newRecord() );
     }
@@ -77,7 +77,7 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
                 assertHealthy();
                 try ( NodeVisitor visitor = new NodeVisitor() )
                 {
-                    cache.visitChangedNodes( visitor, denseNodes );
+                    cache.visitChangedNodes( visitor, nodeTypes );
                 }
                 endOfUpstream();
             }

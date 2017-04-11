@@ -19,13 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.TreeSet;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -39,6 +42,8 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+
+import static org.neo4j.helpers.collection.Iterables.reverse;
 import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
@@ -75,12 +80,10 @@ public class RelationshipTypeCheckerStepTest
         step.done();
 
         // THEN
-        Object[] processed = step.getRelationshipTypes( 100 );
-
         InOrder inOrder = inOrder( repository );
-        for ( Object type : reversed( processed ) )
+        for ( Entry<Object,MutableLong> type : reverse( step.getDistribution() ) )
         {
-            inOrder.verify( repository ).getOrCreateId( type );
+            inOrder.verify( repository ).getOrCreateId( type.getKey() );
         }
         inOrder.verifyNoMoreInteractions();
     }
@@ -101,11 +104,11 @@ public class RelationshipTypeCheckerStepTest
 
         // THEN
         TreeSet<Integer> expected = idsOf( relationships );
-        Object[] processed = step.getRelationshipTypes( 100 );
-        int i = 0;
+        Iterator<Entry<Object,MutableLong>> processed = step.getDistribution().iterator();
         for ( Object expectedType : loop( expected.descendingIterator() ) )
         {
-            assertEquals( expectedType, processed[i++] );
+            Entry<Object,MutableLong> entry = processed.next();
+            assertEquals( expectedType, entry.getKey() );
         }
     }
 

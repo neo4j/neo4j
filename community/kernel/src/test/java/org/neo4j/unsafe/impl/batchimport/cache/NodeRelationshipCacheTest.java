@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,20 +29,28 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 
 import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -126,30 +135,31 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
         int nodes = 100;
+        int typeId = 5;
         Direction[] directions = Direction.values();
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
-        cache.setForwardScan( true );
+        cache.setForwardScan( true, true );
         cache.setHighNodeId( nodes+1 );
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
             cache.incrementCount( i );
-            long previous = cache.getAndPutRelationship( i, directions[i % directions.length],
+            long previous = cache.getAndPutRelationship( i, typeId, directions[i % directions.length],
                     random.nextInt( 1_000_000 ), true );
             assertEquals( -1L, previous );
         }
 
         // WHEN
-        cache.setForwardScan( false );
+        cache.setForwardScan( false, true );
         for ( int i = 0; i < nodes; i++ )
         {
-            long previous = cache.getAndPutRelationship( i, directions[i % directions.length],
+            long previous = cache.getAndPutRelationship( i, typeId, directions[i % directions.length],
                     random.nextInt( 1_000_000 ), false );
             assertEquals( -1L, previous );
         }
 
         // THEN
-        cache.setForwardScan( true );
+        cache.setForwardScan( true, true );
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
@@ -162,19 +172,20 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
         long nodeId = 0;
+        int typeId = 3;
         cache.setHighNodeId( 1 );
         cache.incrementCount( nodeId );
         cache.incrementCount( nodeId );
-        cache.getAndPutRelationship( nodeId, OUTGOING, 10, true );
-        cache.getAndPutRelationship( nodeId, OUTGOING, 12, true );
+        cache.getAndPutRelationship( nodeId, typeId, OUTGOING, 10, true );
+        cache.getAndPutRelationship( nodeId, typeId, OUTGOING, 12, true );
         assertTrue( cache.isDense( nodeId ) );
 
         // WHEN
-        long count = cache.getCount( nodeId, OUTGOING );
+        long count = cache.getCount( nodeId, typeId, OUTGOING );
         assertEquals( 2, count );
 
         // THEN
-        assertEquals( 0, cache.getCount( nodeId, OUTGOING ) );
+        assertEquals( 0, cache.getCount( nodeId, typeId, OUTGOING ) );
     }
 
     @Test
@@ -185,10 +196,11 @@ public class NodeRelationshipCacheTest
 
         // WHEN
         long nodeId = 1_000_000 - 1;
-        cache.setHighNodeId( nodeId+1 );
+        int typeId = 10;
+        cache.setHighNodeId( nodeId + 1 );
         Direction direction = Direction.OUTGOING;
         long relId = 10;
-        cache.getAndPutRelationship( nodeId, direction, relId, false );
+        cache.getAndPutRelationship( nodeId, typeId, direction, relId, false );
 
         // THEN
         assertEquals( relId, cache.getFirstRel( nodeId, mock( GroupVisitor.class ) ) );
@@ -198,6 +210,7 @@ public class NodeRelationshipCacheTest
     public void shouldPutRandomStuff() throws Exception
     {
         // GIVEN
+        int typeId = 10;
         int nodes = 10_000;
         PrimitiveLongObjectMap<long[]> key = Primitive.longObjectMap( nodes );
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 1000, base );
@@ -219,7 +232,7 @@ public class NodeRelationshipCacheTest
             boolean dense = cache.isDense( nodeId );
             Direction direction = random.among( Direction.values() );
             long relationshipId = random.nextLong( 1_000_000 );
-            long previousHead = cache.getAndPutRelationship( nodeId, direction, relationshipId, false );
+            long previousHead = cache.getAndPutRelationship( nodeId, typeId, direction, relationshipId, false );
             long[] keyIds = key.get( nodeId );
             int keyIndex = dense ? direction.ordinal() : 0;
             if ( keyIds == null )
@@ -239,30 +252,32 @@ public class NodeRelationshipCacheTest
         long sparseNode = 0;
         long denseNode = 1;
         long relationshipId = (1L << 48) - 2;
+        int typeId = 10;
         cache.setHighNodeId( 2 );
         cache.incrementCount( denseNode );
 
         // WHEN
-        assertEquals( -1L, cache.getAndPutRelationship( sparseNode, OUTGOING, relationshipId, false ) );
-        assertEquals( -1L, cache.getAndPutRelationship( denseNode, OUTGOING, relationshipId, false ) );
+        assertEquals( -1L, cache.getAndPutRelationship( sparseNode, typeId, OUTGOING, relationshipId, false ) );
+        assertEquals( -1L, cache.getAndPutRelationship( denseNode, typeId, OUTGOING, relationshipId, false ) );
 
         // THEN
-        assertEquals( relationshipId, cache.getAndPutRelationship( sparseNode, OUTGOING, 1, false ) );
-        assertEquals( relationshipId, cache.getAndPutRelationship( denseNode, OUTGOING, 1, false ) );
+        assertEquals( relationshipId, cache.getAndPutRelationship( sparseNode, typeId, OUTGOING, 1, false ) );
+        assertEquals( relationshipId, cache.getAndPutRelationship( denseNode, typeId, OUTGOING, 1, false ) );
     }
 
     @Test
     public void shouldFailFastIfTooBigRelationshipId() throws Exception
     {
         // GIVEN
+        int typeId = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         cache.setHighNodeId( 1 );
 
         // WHEN
-        cache.getAndPutRelationship( 0, OUTGOING, (1L << 48) - 2, false );
+        cache.getAndPutRelationship( 0, typeId, OUTGOING, (1L << 48) - 2, false );
         try
         {
-            cache.getAndPutRelationship( 0, OUTGOING, (1L << 48) - 1, false );
+            cache.getAndPutRelationship( 0, typeId, OUTGOING, (1L << 48) - 1, false );
             fail( "Should fail" );
         }
         catch ( IllegalArgumentException e )
@@ -277,6 +292,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN
         int nodes = 10;
+        int typeId = 10;
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 2, 100, base );
         cache.setHighNodeId( nodes );
         for ( long nodeId = 0; nodeId < nodes; nodeId++ )
@@ -292,7 +308,7 @@ public class NodeRelationshipCacheTest
         for ( int i = 0; i < nodes / 2; i++ )
         {
             long nodeId = random.nextLong( nodes );
-            cache.getAndPutRelationship( nodeId, Direction.OUTGOING, random.nextLong( 1_000_000 ), false );
+            cache.getAndPutRelationship( nodeId, typeId, Direction.OUTGOING, random.nextLong( 1_000_000 ), false );
             boolean dense = cache.isDense( nodeId );
             (dense ? keyDenseChanged : keySparseChanged).add( nodeId );
         }
@@ -304,7 +320,7 @@ public class NodeRelationshipCacheTest
                 // THEN (sparse)
                 assertTrue( "Unexpected sparse change reported for " + nodeId, keySparseChanged.remove( nodeId ) );
             };
-            cache.visitChangedNodes( visitor, false/*sparse*/ );
+            cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_SPARSE );
             assertTrue( "There was " + keySparseChanged.size() + " expected sparse changes that weren't reported",
                     keySparseChanged.isEmpty() );
         }
@@ -316,7 +332,7 @@ public class NodeRelationshipCacheTest
                 // THEN (dense)
                 assertTrue( "Unexpected dense change reported for " + nodeId, keyDenseChanged.remove( nodeId ) );
             };
-            cache.visitChangedNodes( visitor, true/*dense*/ );
+            cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );
             assertTrue( "There was " + keyDenseChanged.size() + " expected dense changes that weren reported",
                     keyDenseChanged.isEmpty() );
         }
@@ -329,8 +345,9 @@ public class NodeRelationshipCacheTest
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10, 100, base );
         long nodeId = 5;
         long count = NodeRelationshipCache.MAX_COUNT - 1;
+        int typeId = 10;
         cache.setHighNodeId( 10 );
-        cache.setCount( nodeId, count, OUTGOING );
+        cache.setCount( nodeId, count, typeId, OUTGOING );
 
         // WHEN
         cache.incrementCount( nodeId );
@@ -351,52 +368,53 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 0;
-        cache.setHighNodeId( nodeId+1 );
+        int typeId = 10;
+        cache.setHighNodeId( nodeId + 1 );
         cache.incrementCount( nodeId );
         GroupVisitor groupVisitor = mock( GroupVisitor.class );
-        when( groupVisitor.visit( anyLong(), anyLong(), anyLong(), anyLong(), anyLong() ) ).thenReturn( 1L, 2L, 3L );
+        when( groupVisitor.visit( anyLong(), anyInt(), anyLong(), anyLong(), anyLong() ) ).thenReturn( 1L, 2L, 3L );
 
         long firstRelationshipGroupId;
         {
             // WHEN importing the first type
             long relationshipId = 10;
-            cache.getAndPutRelationship( nodeId, OUTGOING, relationshipId, true );
+            cache.getAndPutRelationship( nodeId, typeId, OUTGOING, relationshipId, true );
             firstRelationshipGroupId = cache.getFirstRel( nodeId, groupVisitor );
 
             // THEN
             assertEquals( 1L, firstRelationshipGroupId );
-            verify( groupVisitor ).visit( nodeId, -1L, relationshipId, -1L, -1L );
+            verify( groupVisitor ).visit( nodeId, typeId, relationshipId, -1L, -1L );
 
             // Also simulate going back again ("clearing" of the cache requires this)
-            cache.setForwardScan( false );
-            cache.getAndPutRelationship( nodeId, OUTGOING, relationshipId, false );
-            cache.setForwardScan( true );
+            cache.setForwardScan( false, true );
+            cache.getAndPutRelationship( nodeId, typeId, OUTGOING, relationshipId, false );
+            cache.setForwardScan( true, true );
         }
 
         long secondRelationshipGroupId;
         {
             // WHEN importing the second type
             long relationshipId = 11;
-            cache.getAndPutRelationship( nodeId, INCOMING, relationshipId, true );
+            cache.getAndPutRelationship( nodeId, typeId, INCOMING, relationshipId, true );
             secondRelationshipGroupId = cache.getFirstRel( nodeId, groupVisitor );
 
             // THEN
             assertEquals( 2L, secondRelationshipGroupId );
-            verify( groupVisitor ).visit( nodeId, firstRelationshipGroupId, -1, relationshipId, -1L );
+            verify( groupVisitor ).visit( nodeId, typeId, -1, relationshipId, -1L );
 
             // Also simulate going back again ("clearing" of the cache requires this)
-            cache.setForwardScan( false );
-            cache.getAndPutRelationship( nodeId, OUTGOING, relationshipId, false );
-            cache.setForwardScan( true );
+            cache.setForwardScan( false, true );
+            cache.getAndPutRelationship( nodeId, typeId, OUTGOING, relationshipId, false );
+            cache.setForwardScan( true, true );
         }
 
         {
             // WHEN importing the third type
             long relationshipId = 10;
-            cache.getAndPutRelationship( nodeId, BOTH, relationshipId, true );
+            cache.getAndPutRelationship( nodeId, typeId, BOTH, relationshipId, true );
             long thirdRelationshipGroupId = cache.getFirstRel( nodeId, groupVisitor );
             assertEquals( 3L, thirdRelationshipGroupId );
-            verify( groupVisitor ).visit( nodeId, secondRelationshipGroupId, -1L, -1L, relationshipId );
+            verify( groupVisitor ).visit( nodeId, typeId, -1L, -1L, relationshipId );
         }
     }
 
@@ -406,11 +424,12 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 1;
+        int typeId = 10;
         cache.setHighNodeId( nodeId + 1 );
 
         // WHEN
         long highCount = NodeRelationshipCache.MAX_COUNT - 100;
-        cache.setCount( nodeId, highCount, OUTGOING );
+        cache.setCount( nodeId, highCount, typeId, OUTGOING );
         long nextHighCount = cache.incrementCount( nodeId );
 
         // THEN
@@ -427,30 +446,118 @@ public class NodeRelationshipCacheTest
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
         long nodeId = 1;
+        int typeId = 10;
         cache.setHighNodeId( nodeId + 1 );
-        cache.setCount( nodeId, 2, OUTGOING ); // surely dense now
-        cache.getAndPutRelationship( nodeId, OUTGOING, 1, true );
-        cache.getAndPutRelationship( nodeId, INCOMING, 2, true );
+        cache.setCount( nodeId, 2, typeId, OUTGOING ); // surely dense now
+        cache.getAndPutRelationship( nodeId, typeId, OUTGOING, 1, true );
+        cache.getAndPutRelationship( nodeId, typeId, INCOMING, 2, true );
 
         // WHEN
         long highCountOut = NodeRelationshipCache.MAX_COUNT - 100;
         long highCountIn = NodeRelationshipCache.MAX_COUNT - 50;
-        cache.setCount( nodeId, highCountOut, OUTGOING );
-        cache.setCount( nodeId, highCountIn, INCOMING );
-        cache.getAndPutRelationship( nodeId, OUTGOING, 1, true /*increment count*/ );
-        cache.getAndPutRelationship( nodeId, INCOMING, 2, true /*increment count*/ );
+        cache.setCount( nodeId, highCountOut, typeId, OUTGOING );
+        cache.setCount( nodeId, highCountIn, typeId, INCOMING );
+        cache.getAndPutRelationship( nodeId, typeId, OUTGOING, 1, true /*increment count*/ );
+        cache.getAndPutRelationship( nodeId, typeId, INCOMING, 2, true /*increment count*/ );
 
         // THEN
-        assertEquals( highCountOut + 1, cache.getCount( nodeId, OUTGOING ) );
-        assertEquals( highCountIn + 1, cache.getCount( nodeId, INCOMING ) );
+        assertEquals( highCountOut + 1, cache.getCount( nodeId, typeId, OUTGOING ) );
+        assertEquals( highCountIn + 1, cache.getCount( nodeId, typeId, INCOMING ) );
+    }
+
+    @Test
+    public void shouldCacheMultipleDenseNodeRelationshipHeads() throws Exception
+    {
+        // GIVEN
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );
+        cache.setHighNodeId( 10 );
+        long nodeId = 3;
+        cache.setCount( nodeId, 10, /*these do not matter ==>*/ 0, OUTGOING );
+
+        // WHEN
+        Map<Pair<Integer,Direction>,Long> firstRelationshipIds = new HashMap<>();
+        int typeCount = 3;
+        for ( int typeId = 0, relationshipId = 0; typeId < typeCount; typeId++ )
+        {
+            for ( Direction direction : Direction.values() )
+            {
+                long firstRelationshipId = relationshipId++;
+                cache.getAndPutRelationship( nodeId, typeId, direction, firstRelationshipId, true );
+                firstRelationshipIds.put( Pair.of( typeId, direction ), firstRelationshipId );
+            }
+        }
+        AtomicInteger visitCount = new AtomicInteger();
+        GroupVisitor visitor = new GroupVisitor()
+        {
+            @Override
+            public long visit( long nodeId, int typeId, long out, long in, long loop )
+            {
+                visitCount.incrementAndGet();
+                assertEquals( firstRelationshipIds.get( Pair.of( typeId, OUTGOING ) ).longValue(), out );
+                assertEquals( firstRelationshipIds.get( Pair.of( typeId, INCOMING ) ).longValue(), in );
+                assertEquals( firstRelationshipIds.get( Pair.of( typeId, BOTH ) ).longValue(), loop );
+                return 0;
+            }
+        };
+        cache.getFirstRel( nodeId, visitor );
+
+        // THEN
+        assertEquals( typeCount, visitCount.get() );
+    }
+
+    @Test
+    public void shouldSplitUpRelationshipTypesInBatches() throws Exception
+    {
+        // GIVEN
+        int denseNodeThreshold = 5;
+        int numberOfNodes = 100;
+        int numberOfTypes = 10;
+        cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, denseNodeThreshold );
+        cache.setHighNodeId( numberOfNodes + 1 );
+        Direction[] directions = Direction.values();
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            int count = random.nextInt( 1, denseNodeThreshold * 2 );
+            cache.setCount( i, count, random.nextInt( numberOfTypes ), random.among( directions ) );
+        }
+        int numberOfDenseNodes = toIntExact( cache.calculateNumberOfDenseNodes() );
+        Map<Object,MutableLong> types = new HashMap<>();
+        for ( int i = 0; i < numberOfTypes; i++ )
+        {
+            types.put( "TYPE" + i, new MutableLong( random.nextInt( 1, 1_000 ) ) );
+        }
+
+        // WHEN enough memory for all types
+        {
+            long memory = numberOfDenseNodes * numberOfTypes * NodeRelationshipCache.GROUP_ENTRY_SIZE;
+            Collection<Object> fits =
+                    Iterators.single( cache.splitRelationshipTypesIntoRounds( types.entrySet().iterator(), memory ) );
+            // THEN
+            assertEquals( types.size(), fits.size() );
+        }
+
+        // and WHEN less than enough memory for all types
+        {
+            int memory = numberOfDenseNodes * numberOfTypes / 5 * NodeRelationshipCache.GROUP_ENTRY_SIZE;
+            int total = 0;
+            Iterator<Collection<Object>> rounds =
+                    cache.splitRelationshipTypesIntoRounds( types.entrySet().iterator(), memory );
+            while ( rounds.hasNext() )
+            {
+                Collection<Object> round = rounds.next();
+                total += round.size();
+            }
+            assertEquals( types.size(), total );
+        }
     }
 
     private void testNode( NodeRelationshipCache link, long node, Direction direction )
     {
-        long count = link.getCount( node, direction );
-        assertEquals( -1, link.getAndPutRelationship( node, direction, 5, false ) );
-        assertEquals( 5, link.getAndPutRelationship( node, direction, 10, false ) );
-        assertEquals( count, link.getCount( node, direction ) );
+        int typeId = 0; // doesn't matter here because it's all sparse
+        long count = link.getCount( node, typeId, direction );
+        assertEquals( -1, link.getAndPutRelationship( node, typeId, direction, 5, false ) );
+        assertEquals( 5, link.getAndPutRelationship( node, typeId, direction, 10, false ) );
+        assertEquals( count, link.getCount( node, typeId, direction ) );
     }
 
     private long findNode( NodeRelationshipCache link, long nodeCount, boolean isDense )

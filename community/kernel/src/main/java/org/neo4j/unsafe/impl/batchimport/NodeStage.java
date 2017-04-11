@@ -72,7 +72,7 @@ public class NodeStage extends Stage
     {
         super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
         this.cache = cache;
-        add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
+        add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class, t -> true ) );
         if ( !nodes.supportsMultiplePasses() )
         {
             add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes( MAIN ) ) );

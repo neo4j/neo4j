@@ -68,7 +68,7 @@ public class CalculateDenseNodesStage extends Stage
     {
         super( "Calculate dense nodes", config );
         add( new InputIteratorBatcherStep<>( control(), config,
-                relationships.iterator(), InputRelationship.class ) );
+                relationships.iterator(), InputRelationship.class, t -> true ) );
         if ( !relationships.supportsMultiplePasses() )
         {
             add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships( MAIN ) ) );
@@ -79,11 +79,8 @@ public class CalculateDenseNodesStage extends Stage
         add( new CalculateDenseNodesStep( control(), config, cache, badCollector ) );
     }
 
-    /*
-     * @see RelationshipTypeCheckerStep#getRelationshipTypes(int)
-     */
-    public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
+    public RelationshipTypeDistribution getDistribution()
     {
-        return typer.getRelationshipTypes( belowOrEqualToThreshold );
+        return typer.getDistribution();
     }
 }

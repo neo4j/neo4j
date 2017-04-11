@@ -21,11 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -53,7 +51,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
             (e1,e2) -> Integer.compare( (Integer)e2.getKey(), (Integer)e1.getKey() );
     private final Map<Thread,Map<Object,MutableLong>> typeCheckers = new ConcurrentHashMap<>();
     private final BatchingRelationshipTypeTokenRepository typeTokenRepository;
-    private Map.Entry<Object,MutableLong>[] sortedTypes;
+    private RelationshipTypeDistribution distribution;
 
     public RelationshipTypeCheckerStep( StageControl control, Configuration config,
             BatchingRelationshipTypeTokenRepository typeTokenRepository )
@@ -81,7 +79,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
             localTypes.forEach( (type,localCount) ->
                 mergedTypes.computeIfAbsent( type, t -> new MutableLong() ).add( localCount.longValue() ) ) );
 
-        sortedTypes = mergedTypes.entrySet().toArray( new Map.Entry[mergedTypes.size()] );
+        Map.Entry<Object,MutableLong>[] sortedTypes = mergedTypes.entrySet().toArray( new Map.Entry[mergedTypes.size()] );
         if ( sortedTypes.length > 0 )
         {
             Comparator<Map.Entry<Object,MutableLong>> comparator = sortedTypes[0].getKey() instanceof Integer ?
@@ -101,32 +99,12 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
         {
             typeTokenRepository.getOrCreateId( sortedTypes[i].getKey() );
         }
+        distribution = new RelationshipTypeDistribution( sortedTypes );
         super.done();
     }
 
-    /**
-     * Returns relationship types which have number of relationships equal to or lower than the given threshold.
-     *
-     * @param belowOrEqualToThreshold threshold where relationship types which have this amount of relationships
-     * or less will be returned.
-     * @return the order of which to order {@link InputRelationship} when importing relationships.
-     * The order in which these relationships are returned will be the reverse order of relationship type ids.
-     * There are two modes of relationship types here, one is user defined String where this step
-     * have full control of assigning ids to those and will do so based on size of types. The other mode
-     * is where types are given as ids straight away (as Integer) where the order is already set and so
-     * the types will not be sorted by size (which is simply an optimization anyway).
-     */
-    public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
+    public RelationshipTypeDistribution getDistribution()
     {
-        List<Object> result = new ArrayList<>();
-        for ( Map.Entry<Object,MutableLong> candidate : sortedTypes )
-        {
-            if ( candidate.getValue().longValue() <= belowOrEqualToThreshold )
-            {
-                result.add( candidate.getKey() );
-            }
-        }
-
-        return result.toArray();
+        return distribution;
     }
 }

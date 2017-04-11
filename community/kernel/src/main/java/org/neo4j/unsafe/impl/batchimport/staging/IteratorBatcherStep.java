@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
@@ -33,29 +34,36 @@ public abstract class IteratorBatcherStep<T> extends IoProducerStep
     private final Iterator<T> data;
     private final Class<T> itemClass;
     protected long cursor;
+    private final Predicate<T> filter;
 
-    public IteratorBatcherStep( StageControl control, Configuration config, Iterator<T> data, Class<T> itemClass )
+    public IteratorBatcherStep( StageControl control, Configuration config, Iterator<T> data, Class<T> itemClass,
+            Predicate<T> filter )
     {
         super( control, config );
         this.data = data;
         this.itemClass = itemClass;
+        this.filter = filter;
     }
 
     @Override
     protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        if ( !data.hasNext() )
-        {
-            return null;
-        }
-
         @SuppressWarnings( "unchecked" )
         T[] batch = (T[]) Array.newInstance( itemClass, batchSize );
         int i = 0;
-        for ( ; i < batchSize && data.hasNext(); i++ )
+        for ( ; i < batchSize && data.hasNext(); )
         {
-            batch[i] = data.next();
-            cursor++;
+            T candidate = data.next();
+            if ( filter.test( candidate ) )
+            {
+                batch[i++] = candidate;
+                cursor++;
+            }
+        }
+
+        if ( i == 0 )
+        {
+            return null; // marks the end
         }
         return i == batchSize ? batch : Arrays.copyOf( batch, i );
     }
