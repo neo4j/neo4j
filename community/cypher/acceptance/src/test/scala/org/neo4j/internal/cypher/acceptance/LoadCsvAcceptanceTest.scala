@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.{File, PrintWriter}
-import java.net.{URLConnection, URLStreamHandler, URLStreamHandlerFactory, URL}
+import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
@@ -459,6 +459,17 @@ class LoadCsvAcceptanceTest
 
     val result = execute(s"MATCH (n) WITH n, '$first' as prefix  LOAD CSV FROM prefix + n.prop AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
+  }
+
+  test("empty headers file should not throw") {
+    val urls = csvUrls({ _ => {} })
+    for (url <- urls) {
+      val result = execute(
+        s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN count(*)"
+      )
+
+      result.toList should equal(List(Map("count(*)" -> 0)))
+    }
   }
 
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
