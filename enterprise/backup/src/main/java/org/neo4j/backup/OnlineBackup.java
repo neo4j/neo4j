@@ -302,7 +302,7 @@ public class OnlineBackup
     public OnlineBackup incremental( String targetDirectory )
     {
         outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ),
-                getConsistencyCheck( true ), timeoutMillis, defaultConfig() );
+                getConsistencyCheck( false ), timeoutMillis, defaultConfig() );
         return this;
     }
 
