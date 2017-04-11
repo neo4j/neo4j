@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
  */
 public class Standard
 {
-    public static final String LATEST_STORE_VERSION = StandardV3_0.STORE_VERSION;
-    public static final RecordFormats LATEST_RECORD_FORMATS = StandardV3_0.RECORD_FORMATS;
-    public static final String LATEST_NAME = StandardV3_0.NAME;
+    public static final String LATEST_STORE_VERSION = StandardV3_2.STORE_VERSION;
+    public static final RecordFormats LATEST_RECORD_FORMATS = StandardV3_2.RECORD_FORMATS;
+    public static final String LATEST_NAME = StandardV3_2.NAME;
 }
