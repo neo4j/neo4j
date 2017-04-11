@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import static java.lang.String.format;
 
 // Class with static methods used by compiled execution plans
+@SuppressWarnings( "unused" )
 public abstract class CompiledConversionUtils
 {
     public static boolean coerceToPredicate( Object value )
@@ -73,7 +75,8 @@ public abstract class CompiledConversionUtils
         }
         // TODO: Handle primitive streams
 
-        throw new CypherTypeException( "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
+        throw new CypherTypeException(
+                "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
     }
 
     public static CompositeKey compositeKey( long... keys )
@@ -127,7 +130,7 @@ public abstract class CompiledConversionUtils
             throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
         }
 
-      return CompiledEquivalenceUtils.equals( lhs, rhs );
+        return CompiledEquivalenceUtils.equals( lhs, rhs );
     }
 
     public static Boolean or( Object lhs, Object rhs )
@@ -185,7 +188,8 @@ public abstract class CompiledConversionUtils
         }
     }
 
-    public static final Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
+    @SuppressWarnings( {"unchecked", "WeakerAccess"} )
+    public static Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
     {
         if ( anyValue instanceof NodeIdWrapper )
         {
@@ -202,8 +206,13 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof Map )
         {
-            ((Map) anyValue).replaceAll( (k, v) -> materializeAnyResult( nodeManager, v ) );
-            return anyValue;
+            Map<String,?> incoming = (Map<String,?>) anyValue;
+            HashMap<String,Object> outgoing = new HashMap<>( incoming.size() );
+            for ( Map.Entry<String,?> entry : incoming.entrySet() )
+            {
+                outgoing.put( entry.getKey(), materializeAnyResult( nodeManager, entry.getValue() ) );
+            }
+            return outgoing;
         }
         else if ( anyValue instanceof PrimitiveNodeStream )
         {
@@ -236,7 +245,7 @@ public abstract class CompiledConversionUtils
         }
     }
 
-    public static final Iterator iteratorFrom( Object iterable )
+    public static Iterator iteratorFrom( Object iterable )
     {
         if ( iterable instanceof Iterable )
         {
@@ -264,10 +273,12 @@ public abstract class CompiledConversionUtils
         }
         else
         {
-            throw new CypherTypeException( "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
+            throw new CypherTypeException(
+                    "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     public static LongStream toLongStream( Object list )
     {
         if ( list == null )
@@ -303,6 +314,7 @@ public abstract class CompiledConversionUtils
         throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     public static DoubleStream toDoubleStream( Object list )
     {
         if ( list == null )
@@ -329,6 +341,7 @@ public abstract class CompiledConversionUtils
         throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     public static IntStream toBooleanStream( Object list )
     {
         if ( list == null )
