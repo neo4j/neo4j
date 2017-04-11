@@ -29,8 +29,8 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,15 +44,11 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
@@ -67,17 +63,13 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {
-
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -90,16 +82,13 @@ public class StoreUpgraderInterruptionTestIT
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private LabelScanStoreProvider labelScanStoreProvider;
-    protected static final Config CONFIG = Config.defaults().augment(
+    private static final Config CONFIG = Config.defaults().augment(
             stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
     @Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return Arrays.asList(
-                StandardV2_0.STORE_VERSION,
-                StandardV2_1.STORE_VERSION,
-                StandardV2_2.STORE_VERSION,
+        return Collections.singletonList(
                 StandardV2_3.STORE_VERSION
         );
     }
@@ -125,10 +114,10 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), Standard.LATEST_RECORD_FORMATS );
+                new UpgradableDatabase( fs, check, Standard.LATEST_RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, CONFIG, logService, schemaIndexProvider )
+        StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, CONFIG, logService )
         {
             @Override
             public void migrate( File sourceStoreDir, File targetStoreDir,
@@ -141,9 +130,6 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
-                allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
-
         try
         {
             newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
@@ -155,17 +141,13 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
-                allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
-
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader(upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded(
                 workingDirectory );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( workingDirectory );
@@ -187,10 +169,10 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), Standard.LATEST_RECORD_FORMATS );
+                new UpgradableDatabase( fs, check, Standard.LATEST_RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider )
+        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
         {
             @Override
             public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
@@ -200,9 +182,6 @@ public class StoreUpgraderInterruptionTestIT
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
-
-        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
-                allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try
         {
@@ -216,15 +195,13 @@ public class StoreUpgraderInterruptionTestIT
         }
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
-        assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         pageCache.close();
 

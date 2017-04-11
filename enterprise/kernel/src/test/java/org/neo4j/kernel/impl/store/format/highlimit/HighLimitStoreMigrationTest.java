@@ -45,7 +45,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 public class HighLimitStoreMigrationTest
@@ -71,8 +70,8 @@ public class HighLimitStoreMigrationTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
 
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), NullLogService.getInstance(),
-                                                    schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), NullLogService.getInstance()
+        );
 
         File storeDir = new File( testDirectory.graphDbDir(), "storeDir" );
         File migrationDir = new File( testDirectory.graphDbDir(), "migrationDir" );

@@ -25,10 +25,14 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,9 +46,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -56,13 +57,11 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -82,6 +81,12 @@ public class RecordStorageEngineTest
     public RuleChain ruleChain = RuleChain.outerRule( fsRule )
             .around( pageCacheRule )
             .around( storageEngineRule );
+
+    private static final Function<Optional<StoreType>,StoreType> assertIsPresentAndGet = optional ->
+    {
+        assert optional.isPresent() : "Expected optional to be present";
+        return optional.get();
+    };
 
     @Test( timeout = 30_000 )
     public void shutdownRecordStorageEngineAfterFailedTransaction() throws Throwable
@@ -167,42 +172,19 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void shouldListAllFiles() throws Throwable
+    public void shouldListAllStoreFiles() throws Throwable
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
 
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
-        assertTrue( files.size() > 0 );
-        files.forEach( this::verifyMeta );
-    }
+        Set<StoreType> expectedStoreTypes = Arrays.stream( StoreType.values() ).collect( Collectors.toSet() );
 
-    private void verifyMeta( StoreFileMetadata meta )
-    {
-        final Optional<StoreType> optional = meta.storeType();
-        if ( optional.isPresent() )
-        {
-            final StoreType type = optional.get();
-            final File file = meta.file();
-            final String fileName = file.getName();
-            if ( type == StoreType.COUNTS )
-            {
-                final String left = StoreFile.COUNTS_STORE_LEFT.fileName( StoreFileType.STORE );
-                final String right = StoreFile.COUNTS_STORE_RIGHT.fileName( StoreFileType.STORE );
-                assertThat( fileName, anyOf( equalTo( left ), equalTo( right ) ) );
-            }
-            else
-            {
-                final String expected = type.getStoreFile().fileName( StoreFileType.STORE );
-                assertThat( fileName, equalTo( expected ) );
-                assertTrue( "File does not exist " + file.getAbsolutePath(), fsRule.get().fileExists( file ) );
-            }
-            final int recordSize = meta.recordSize();
-            assertTrue( recordSize == RecordFormat.NO_RECORD_SIZE || recordSize > 0 );
-        }
-        else
-        {
-            fail( "Assumed all files to have a store type" );
-        }
+        Set<StoreType> actualStoreTypes = files.stream()
+                .map( storeFileMetadata -> StoreType.typeOf( storeFileMetadata.file().getName() ) )
+                .map( assertIsPresentAndGet )
+                .collect( Collectors.toSet() );
+
+        assertEquals( expectedStoreTypes, actualStoreTypes );
     }
 
     private RecordStorageEngine buildRecordStorageEngine() throws Throwable

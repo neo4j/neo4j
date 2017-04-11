@@ -27,7 +27,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
 
 public enum StoreType
 {
@@ -175,6 +174,13 @@ public enum StoreType
                 {
                     return StoreFactory.COUNTS_STORE;
                 }
+
+                @Override
+                protected boolean isStoreFile( String fileName)
+                {
+                    return matchStoreName( fileName, getStoreName() + CountsTracker.RIGHT ) ||
+                           matchStoreName( fileName, getStoreName() + CountsTracker.LEFT );
+                }
             },
     META_DATA( StoreFile.NEO_STORE ) // Make sure this META store is last
             {
@@ -233,7 +239,7 @@ public enum StoreType
         StoreType[] values = StoreType.values();
         for ( StoreType value : values )
         {
-            if ( fileName.equals( MetaDataStore.DEFAULT_NAME + value.getStoreName() ) )
+            if ( value.isStoreFile( fileName ) )
             {
                 return Optional.of( value );
             }
@@ -252,5 +258,15 @@ public enum StoreType
     {
         boolean isLabelScanStore = NativeLabelScanStore.FILE_NAME.equals( storeFileName );
         return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( false );
+    }
+
+    protected boolean isStoreFile( String fileName )
+    {
+        return matchStoreName( fileName, getStoreName() );
+    }
+
+    protected boolean matchStoreName( String fileName, String storeName )
+    {
+        return fileName.equals( MetaDataStore.DEFAULT_NAME + storeName );
     }
 }
