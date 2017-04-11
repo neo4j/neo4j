@@ -40,7 +40,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.neo4j.causalclustering.PortPicker;
+import org.neo4j.causalclustering.PortAuthority;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.LeaderCanWrite;
@@ -106,7 +106,7 @@ public class Cluster
     private List<AdvertisedSocketAddress> initialHosts( int noOfCoreMembers )
     {
         return IntStream.range( 0, noOfCoreMembers )
-                .mapToObj( ignored -> PortPicker.pickPort() )
+                .mapToObj( ignored -> PortAuthority.allocatePort() )
                 .map( port -> new AdvertisedSocketAddress( "127.0.0.1", port ) )
                 .collect( toList() );
     }
@@ -160,7 +160,7 @@ public class Cluster
             List<AdvertisedSocketAddress> advertisedAddresses )
     {
         CoreClusterMember coreClusterMember =
-                createCoreClusterMember( memberId, PortPicker.pickPort(), DEFAULT_CLUSTER_SIZE, advertisedAddresses, recordFormat, extraParams, instanceExtraParams );
+                createCoreClusterMember( memberId, PortAuthority.allocatePort(), DEFAULT_CLUSTER_SIZE, advertisedAddresses, recordFormat, extraParams, instanceExtraParams );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
     }
@@ -420,11 +420,11 @@ public class Cluster
                                                        Map<String, String> extraParams,
                                                        Map<String, IntFunction<String>> instanceExtraParams )
     {
-        int txPort = PortPicker.pickPort();
-        int raftPort = PortPicker.pickPort();
-        int boltPort = PortPicker.pickPort();
-        int httpPort = PortPicker.pickPort();
-        int backupPort = PortPicker.pickPort();
+        int txPort = PortAuthority.allocatePort();
+        int raftPort = PortAuthority.allocatePort();
+        int boltPort = PortAuthority.allocatePort();
+        int httpPort = PortAuthority.allocatePort();
+        int backupPort = PortAuthority.allocatePort();
 
         return new CoreClusterMember(
                 serverId,
@@ -451,9 +451,9 @@ public class Cluster
                                            String recordFormat,
                                            Monitors monitors )
     {
-        int boltPort = PortPicker.pickPort();
-        int httpPort = PortPicker.pickPort();
-        int txPort = PortPicker.pickPort();
+        int boltPort = PortAuthority.allocatePort();
+        int httpPort = PortAuthority.allocatePort();
+        int txPort = PortAuthority.allocatePort();
 
         return new ReadReplica(
                 parentDir,

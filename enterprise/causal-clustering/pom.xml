@@ -257,6 +257,9 @@
                     <parallelTestsTimeoutInSeconds>1200</parallelTestsTimeoutInSeconds>
                     <parallelTestsTimeoutForcedInSeconds>1800</parallelTestsTimeoutForcedInSeconds>
                     <workingDirectory>${project.build.directory}/FORK_DIRECTORY_${surefire.forkNumber}</workingDirectory>
+                    <systemPropertyVariables>
+                        <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
