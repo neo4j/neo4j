@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
-import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;

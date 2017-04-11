@@ -629,18 +629,18 @@ public class ImportTool
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
             final boolean defaultSettingsSuitableForTests, final Config dbConfig, int pageSize )
     {
-        return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
+        return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
             @Override
             public long pageCacheMemory()
             {
-                return defaultSettingsSuitableForTests ? mebiBytes( 8 ) : super.pageCacheMemory();
+                return defaultSettingsSuitableForTests ? mebiBytes( 8 ) : DEFAULT.pageCacheMemory();
             }
 
             @Override
             public int maxNumberOfProcessors()
             {
-                return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
+                return processors != null ? processors.intValue() : DEFAULT.maxNumberOfProcessors();
             }
 
             @Override

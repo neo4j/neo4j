@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.Collection;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.IoThroughputStat;
 import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;

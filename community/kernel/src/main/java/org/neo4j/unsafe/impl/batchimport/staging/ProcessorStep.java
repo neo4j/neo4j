@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
@@ -30,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 

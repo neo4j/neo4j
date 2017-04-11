@@ -23,9 +23,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
 import static org.neo4j.unsafe.impl.batchimport.IdRangeInput.idRangeInput;
