@@ -184,7 +184,9 @@ public class ParallelBatchImporter implements BatchImporter
             NodeStage nodeStage = new NodeStage( config, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
                     storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
+            neoStore.startFlushingPageCache();
             executeStage( nodeStage );
+            neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
                 executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
@@ -327,7 +329,9 @@ public class ParallelBatchImporter implements BatchImporter
             RelationshipStage relationshipStage = new RelationshipStage( topic, config,
                     writeMonitor, typeFilter, relationships.iterator(), idMapper, neoStore,
                     nodeRelationshipCache, storeUpdateMonitor, nextRelationshipId );
+            neoStore.startFlushingPageCache();
             executeStage( relationshipStage );
+            neoStore.stopFlushingPageCache();
 
             int nodeTypes = thisIsTheOnlyRound ? NodeType.NODE_TYPE_ALL : NodeType.NODE_TYPE_DENSE;
 
