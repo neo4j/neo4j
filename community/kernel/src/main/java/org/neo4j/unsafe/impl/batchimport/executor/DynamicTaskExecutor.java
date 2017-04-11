@@ -24,6 +24,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
@@ -47,7 +48,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @SuppressWarnings( "unchecked" )
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
-    private volatile Throwable panic;
+    private final AtomicReference<Throwable> panic = new AtomicReference<>();
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
 
@@ -142,6 +143,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     {
         if ( shutDown )
         {
+            Throwable panic = this.panic.get();
             if ( panic != null )
             {
                 throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
@@ -160,7 +162,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @Override
     public void receivePanic( Throwable cause )
     {
-        panic = cause;
+        panic.compareAndSet( null, cause );
     }
 
     @Override
@@ -171,12 +173,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             return;
         }
 
-        while ( !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
+        while ( !queue.isEmpty() && panic.get() == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
         this.shutDown = true;
-        while ( anyAlive() && panic == null /*all bets are off in the event of panic*/ )
+        while ( anyAlive() && panic.get() == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
