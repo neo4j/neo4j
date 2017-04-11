@@ -378,6 +378,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
         }
 
+        // Counts store application
+        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
+
         // Schema index application
         appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
                 neoStores.getNodeStore(),
@@ -387,9 +390,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         appliers.add(
                 new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
                         mode ) );
-
-        // Counts store application
-        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
 
         // Perform the application
         return new BatchTransactionApplierFacade(
