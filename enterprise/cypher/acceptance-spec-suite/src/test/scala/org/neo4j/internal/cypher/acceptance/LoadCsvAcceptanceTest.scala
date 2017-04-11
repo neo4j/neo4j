@@ -515,6 +515,17 @@ class LoadCsvAcceptanceTest
     result.close()
   }
 
+  test("empty headers file should not throw") {
+    val urls = csvUrls({ _ => {} })
+    for (url <- urls) {
+      val result = executeWithAllPlanners(
+        s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN count(*)"
+      )
+
+      result.toList should equal(List(Map("count(*)" -> 0)))
+    }
+  }
+
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
     // isWindows?
     if ('\\' == File.separatorChar) {
