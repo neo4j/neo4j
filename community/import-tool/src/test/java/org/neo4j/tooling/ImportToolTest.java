@@ -67,6 +67,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1635,7 +1636,7 @@ public class ImportToolTest
         // GIVEN
         List<String> lines = new ArrayList<>();
         lines.add( ":ID,name,:LABEL" );
-        lines.add( "id," + longName( 2_000 ) + ",Person" );
+        lines.add( "id," + repeat( 'l', 2_000 ) + ",Person" );
 
         // WHEN
         try
@@ -1652,16 +1653,6 @@ public class ImportToolTest
             // THEN good
             assertThat( e.getMessage(), containsString( "input data" ) );
         }
-    }
-
-    private static String longName( int characters )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < characters; i++ )
-        {
-            builder.append( 'l' );
-        }
-        return builder.toString();
     }
 
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException

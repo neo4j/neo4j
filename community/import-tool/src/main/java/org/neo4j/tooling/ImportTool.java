@@ -213,9 +213,8 @@ public class ImportTool
                 "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote." ),
         READ_BUFFER_SIZE( "read-buffer-size", org.neo4j.csv.reader.Configuration.DEFAULT.bufferSize(),
                 "<bytes, e.g. 10k, 4M>",
-                "Size of the buffer for reading input data. It has to be large enough to hold at least the " +
-                "biggest single value in the data. Actual memory used may be bigger than specified, " +
-                "given some amount of internal overhead" );
+                "Size of each buffer for reading input data. It has to at least be large enough to hold the " +
+                "biggest single value in the input data." );
 
         private final String key;
         private final Object defaultValue;
