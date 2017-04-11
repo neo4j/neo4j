@@ -62,7 +62,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             PropertyStore propertyStore, IoMonitor ioMonitor,
             Monitor monitor )
     {
-        super( control, "v", config, 0, ioMonitor );
+        super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, ioMonitor );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.monitor = monitor;

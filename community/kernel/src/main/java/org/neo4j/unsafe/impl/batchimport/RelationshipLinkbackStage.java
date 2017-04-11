@@ -52,7 +52,7 @@ public class RelationshipLinkbackStage extends Stage
         super( "Relationship --> Relationship" + topic, config );
         add( new BatchFeedStep( control(), config, backwards( lowRelationshipId, highRelationshipId, config ),
                 store.getRecordSize()) );
-        add( new ReadRecordsStep<>( control(), config, store ) );
+        add( new ReadRecordsStep<>( control(), config, true, store ) );
         add( new RelationshipLinkbackStep( control(), config, cache, nodeTypes ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
     }
