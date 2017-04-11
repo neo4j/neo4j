@@ -22,4 +22,6 @@ package org.neo4j.kernel.impl.store.id;
 public interface IdSequence
 {
     long nextId();
+
+    IdRange nextIdBatch( int size );
 }
