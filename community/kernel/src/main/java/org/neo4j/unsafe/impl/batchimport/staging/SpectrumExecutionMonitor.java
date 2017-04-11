@@ -29,6 +29,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Math.pow;
+
+import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -68,7 +70,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     @Override
     public void start( StageExecution execution )
     {
-        out.println( execution.getStageName() );
+        out.println( execution.getStageName() + ": " + date() );
         lastProgress = 0;
     }
 

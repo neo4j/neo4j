@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 import static java.lang.Math.min;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
@@ -30,7 +32,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 /**
  * User controlled configuration for a {@link BatchImporter}.
  */
-public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging.Configuration
+public interface Configuration
 {
     /**
      * File name in which bad entries from the import will end up. This file will be created in the
@@ -40,9 +42,47 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     long MAX_PAGE_CACHE_MEMORY = mebiBytes( 240 );
 
     /**
+     * A {@link Stage} works with batches going through one or more {@link Step steps} where one or more threads
+     * process batches at each {@link Step}. This setting dictates how big the batches that are passed around are.
+     */
+    default int batchSize()
+    {
+        return 10_000;
+    }
+
+    /**
+     * For statistics the average processing time is based on total processing time divided by
+     * number of batches processed. A total average is probably not that interesting so this configuration
+     * option specifies how many of the latest processed batches counts in the equation above.
+     */
+    default int movingAverageSize()
+    {
+        return 100;
+    }
+
+    /**
+     * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
+     * This value should be set while taking the necessary IO threads into account; the page cache and the operating
+     * system will require a couple of threads between them, to handle the IO workload the importer generates.
+     * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
+     * number of threads that needs to be used just to get the very basics of the import working,
+     * so for that reason there's no lower bound to this value.
+     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
+     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
+     * of a processor.
+     */
+    default int maxNumberOfProcessors()
+    {
+        return Runtime.getRuntime().availableProcessors();
+    }
+
+    /**
      * @return number of relationships threshold for considering a node dense.
      */
-    int denseNodeThreshold();
+    default int denseNodeThreshold()
+    {
+        return Integer.parseInt( dense_node_threshold.getDefaultValue() );
+    }
 
     /**
      * @return amount of memory to reserve for the page cache. This should just be "enough" for it to be able
@@ -51,33 +91,50 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
      * with slightly bigger page size than "normal" random access use cases.
      */
-    long pageCacheMemory();
-
-    class Default
-            extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
-            implements Configuration
+    default long pageCacheMemory()
     {
-        @Override
-        public long pageCacheMemory()
-        {
-            // Get the upper bound of what we can get from the default config calculation
-            // We even want to limit amount of memory a bit more since we don't need very much during import
-            long defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
-            return min( MAX_PAGE_CACHE_MEMORY, defaultPageCacheMemory );
-        }
-
-        @Override
-        public int denseNodeThreshold()
-        {
-            return Integer.parseInt( dense_node_threshold.getDefaultValue() );
-        }
+        // Get the upper bound of what we can get from the default config calculation
+        // We even want to limit amount of memory a bit more since we don't need very much during import
+        long defaultPageCacheMemory = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
+        return min( MAX_PAGE_CACHE_MEMORY, defaultPageCacheMemory );
     }
 
-    Configuration DEFAULT = new Default();
+    /**
+     * Controls whether or not to write records in parallel. Multiple threads writing records in parallel
+     * doesn't necessarily mean concurrent I/O because writing is separate from page cache eviction/flushing.
+     */
+    default boolean parallelRecordWrites()
+    {
+        // Defaults to true since this benefits virtually all environments
+        return true;
+    }
 
-    class Overridden
-            extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Overridden
-            implements Configuration
+    /**
+     * Controls whether or not to read records in parallel in stages where there's no record writing.
+     * Enabling this may result in multiple pages being read from underlying storage concurrently.
+     */
+    default boolean parallelRecordReads()
+    {
+        // Defaults to true since this benefits most environments
+        return true;
+    }
+
+    /**
+     * Controls whether or not to read records in parallel in stages where there's concurrent record writing.
+     * Enabling will probably increase concurrent I/O to a point which reduces performance if underlying storage
+     * isn't great at concurrent I/O, especially if also {@link #parallelRecordWrites()} is enabled.
+     */
+    default boolean parallelRecordReadsWhenWriting()
+    {
+        // Defaults to false since some environments sees less performance with this enabled
+        return false;
+    }
+
+    Configuration DEFAULT = new Configuration()
+    {
+    };
+
+    class Overridden implements Configuration
     {
         private final Configuration defaults;
         private final Config config;
@@ -89,7 +146,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
 
         public Overridden( Configuration defaults, Config config )
         {
-            super( defaults );
             this.defaults = defaults;
             this.config = config;
         }
@@ -120,6 +176,36 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
+        }
+
+        @Override
+        public int batchSize()
+        {
+            return defaults.batchSize();
+        }
+
+        @Override
+        public int maxNumberOfProcessors()
+        {
+            return defaults.maxNumberOfProcessors();
+        }
+
+        @Override
+        public boolean parallelRecordWrites()
+        {
+            return defaults.parallelRecordWrites();
+        }
+
+        @Override
+        public boolean parallelRecordReads()
+        {
+            return defaults.parallelRecordReads();
+        }
+
+        @Override
+        public boolean parallelRecordReadsWhenWriting()
+        {
+            return defaults.parallelRecordReadsWhenWriting();
         }
     }
 

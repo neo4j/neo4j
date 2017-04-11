@@ -59,7 +59,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -165,9 +164,9 @@ public class CsvInputBatchImportIT
         return labels;
     }
 
-    private Default smallBatchSizeConfig()
+    private Configuration smallBatchSizeConfig()
     {
-        return new Configuration.Default()
+        return new Configuration()
         {
             @Override
             public int batchSize()

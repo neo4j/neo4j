@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -27,40 +26,23 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Assigns record ids to {@link Batch} for later record allocation. Since this step is single-threaded
- * we can safely assign these ids here.
+ * Exists only as an adapter in front of {@link PropertyEncoderStep} in {@link BatchInsertRelationshipsStage}.
  */
-public class AssignRelationshipIdBatchStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
+public class CreateRelationshipRecordsStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
-    private long nextId;
-
-    public AssignRelationshipIdBatchStep( StageControl control, Configuration config, long firstRelationshipId )
+    public CreateRelationshipRecordsStep( StageControl control, Configuration config )
     {
-        super( control, "ASSIGN", config, 1 );
-        this.nextId = firstRelationshipId;
+        super( control, "RECORD", config, 0 );
     }
 
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        if ( nextId <= IdGeneratorImpl.INTEGER_MINUS_ONE &&
-                nextId + batch.input.length >= IdGeneratorImpl.INTEGER_MINUS_ONE )
+        batch.records = new RelationshipRecord[batch.input.length];
+        for ( int i = 0; i < batch.records.length; i++ )
         {
-            // There's this pesky INTEGER_MINUS_ONE ID again. Easiest is to simply skip this batch of ids
-            // or at least the part up to that id and just continue after it.
-            nextId = IdGeneratorImpl.INTEGER_MINUS_ONE + 1;
+            batch.records[i] = new RelationshipRecord( -1 );
         }
-
-        // Assign first record id and send
-        batch.firstRecordId = nextId;
         sender.send( batch );
-
-        // Set state for the next batch
-        nextId += batch.input.length;
-    }
-
-    public long getNextRelationshipId()
-    {
-        return nextId;
     }
 }

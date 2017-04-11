@@ -19,44 +19,35 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Iterator;
-
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.RecordIdIterator;
 
 /**
- * Takes an Iterator and chops it up into array batches downstream.
+ * Releases batches of record ids to be read, potentially in parallel, by downstream batches.
  */
-public abstract class IteratorBatcherStep<T> extends IoProducerStep
+public class BatchFeedStep extends IoProducerStep
 {
-    private final Iterator<T> data;
-    private final Class<T> itemClass;
-    protected long cursor;
+    private final RecordIdIterator ids;
+    private final int recordSize;
+    private volatile long count;
 
-    public IteratorBatcherStep( StageControl control, Configuration config, Iterator<T> data, Class<T> itemClass )
+    public BatchFeedStep( StageControl control, Configuration config, RecordIdIterator ids, int recordSize )
     {
         super( control, config );
-        this.data = data;
-        this.itemClass = itemClass;
+        this.ids = ids;
+        this.recordSize = recordSize;
     }
 
     @Override
     protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        if ( !data.hasNext() )
-        {
-            return null;
-        }
+        count += batchSize;
+        return ids.nextBatch();
+    }
 
-        @SuppressWarnings( "unchecked" )
-        T[] batch = (T[]) Array.newInstance( itemClass, batchSize );
-        int i = 0;
-        for ( ; i < batchSize && data.hasNext(); i++ )
-        {
-            batch[i] = data.next();
-            cursor++;
-        }
-        return i == batchSize ? batch : Arrays.copyOf( batch, i );
+    @Override
+    protected long position()
+    {
+        return count * recordSize;
     }
 }

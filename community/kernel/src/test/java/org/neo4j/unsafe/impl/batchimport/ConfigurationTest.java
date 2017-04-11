@@ -86,7 +86,7 @@ public class ConfigurationTest
 
     private Configuration configWithPageCacheMemory( long bytes )
     {
-        return new Configuration.Default()
+        return new Configuration()
         {
             @Override
             public long pageCacheMemory()

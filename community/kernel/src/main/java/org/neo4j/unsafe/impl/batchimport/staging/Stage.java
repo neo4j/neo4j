@@ -22,6 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**

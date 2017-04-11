@@ -86,10 +86,10 @@ public class RelationshipStage extends Stage
         add( idAssigner = new AssignRelationshipIdBatchStep( control(), config, firstRelationshipId ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new RelationshipRecordPreparationStep( control(), config, neoStore.getRelationshipTypeRepository() ) );
-        add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
         add( new RelationshipEncoderStep( control(), config, cache ) );
-        add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore, writeMonitor,
-                storeUpdateMonitor ) );
+        add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
+        add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore,
+                writeMonitor, storeUpdateMonitor ) );
     }
 
     public long getNextRelationshipId()

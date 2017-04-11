@@ -52,6 +52,7 @@ public class BatchInsertRelationshipsStage extends Stage
         super( "Minority relationships", config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, relationships, InputRelationship.class ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
+        add( new CreateRelationshipRecordsStep( control(), config ) );
         add( new PropertyEncoderStep<>( control(), config, store.getPropertyKeyRepository(),
                 store.getPropertyStore() ) );
         add( new BatchInsertRelationshipsStep( control(), config, store,

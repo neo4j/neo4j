@@ -218,7 +218,7 @@ public class BatchingNeoStores implements AutoCloseable
         return neoStores.getNodeStore().getHighId() > 0 || neoStores.getRelationshipStore().getHighId() > 0;
     }
 
-        private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
+    private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
                 new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,

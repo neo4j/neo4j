@@ -19,106 +19,125 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.junit.After;
-import org.junit.Before;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.test.Race;
+import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.staging.Step;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingIdGeneratorFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class PropertyEncoderStepTest
 {
+    private static final String LONG_STRING = StringUtils.repeat( "12%$heya", 40 );
+
     @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private NeoStores neoStores;
-    private PageCache pageCache;
+    public final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass(),
+            StoreType.PROPERTY, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
+            StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
 
-    @Before
-    public void setUpNeoStore()
-    {
-        File storeDir = new File( "dir" );
-        pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        StoreFactory factory = new StoreFactory( storeDir, pageCache, fsRule.get(), NullLogProvider.getInstance() );
-        neoStores = factory.openAllNeoStores( true );
-    }
-
-    @After
-    public void closeNeoStore() throws IOException
-    {
-        neoStores.close();
-        pageCache.close();
-    }
-
-    @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldGrowPropertyBlocksArrayProperly() throws Exception
+    public void shouldAssignCorrectIdsOnParallelExecution() throws Throwable
     {
-        // GIVEN
         StageControl control = mock( StageControl.class );
-        BatchingPropertyKeyTokenRepository tokens =
-                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore() );
-        Step<Batch<InputNode,NodeRecord>> step =
-                new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStores.getPropertyStore() );
-        @SuppressWarnings( "rawtypes" )
-        Step downstream = mock( Step.class );
-        step.setDownstream( downstream );
+        int batchSize = 100;
+        Configuration config = new Configuration()
+        {
+            @Override
+            public int batchSize()
+            {
+                return batchSize;
+            }
+        };
+        NeoStores stores = neoStoresRule.builder().with( fs -> new BatchingIdGeneratorFactory( fs ) ).build();
+        BatchingPropertyKeyTokenRepository keyRepository =
+                new BatchingPropertyKeyTokenRepository( stores.getPropertyKeyTokenStore() );
+        PropertyStore propertyStore = stores.getPropertyStore();
+        PropertyEncoderStep<NodeRecord,InputNode> encoder =
+                new PropertyEncoderStep<>( control, config, keyRepository, propertyStore );
+        BatchCollector<Batch<InputNode,NodeRecord>> sender = new BatchCollector<>();
 
         // WHEN
-        step.start( 0 );
-        step.receive( 0, smallbatch() );
-        step.endOfUpstream();
-        awaitCompleted( step, control );
+        Race race = new Race();
+        for ( int i = 0; i < Runtime.getRuntime().availableProcessors(); i++ )
+        {
+            int id = i;
+            race.addContestant( () -> encoder.process( batch( id, batchSize ), sender ) );
+        }
+        race.go();
 
-        // THEN
-        verify( downstream ).receive( anyLong(), any() );
-        verifyNoMoreInteractions( control );
-        step.close();
+        assertUniqueIds( sender.getBatches() );
     }
 
-    private void awaitCompleted( Step<?> step, StageControl control ) throws InterruptedException
+    private void assertUniqueIds( List<Batch<InputNode,NodeRecord>> batches )
     {
-        while ( !step.isCompleted() )
+        PrimitiveLongSet ids = Primitive.longSet( 1_000 );
+        PrimitiveLongSet stringIds = Primitive.longSet( 100 );
+        PrimitiveLongSet arrayIds = Primitive.longSet( 100 );
+        for ( Batch<InputNode,NodeRecord> batch : batches )
         {
-            Thread.sleep( 10 );
-            verifyNoMoreInteractions( control );
+            for ( PropertyRecord[] records : batch.propertyRecords )
+            {
+                for ( PropertyRecord record : records )
+                {
+                    assertTrue( ids.add( record.getId() ) );
+                    for ( PropertyBlock block : record )
+                    {
+                        for ( DynamicRecord dynamicRecord : block.getValueRecords() )
+                        {
+                            switch ( dynamicRecord.getType() )
+                            {
+                            case STRING:
+                                assertTrue( stringIds.add( dynamicRecord.getId() ) );
+                                break;
+                            case ARRAY:
+                                assertTrue( arrayIds.add( dynamicRecord.getId() ) );
+                                break;
+                            default: // don't care about the others
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private Batch<InputNode,NodeRecord> smallbatch()
+    protected Batch<InputNode,NodeRecord> batch( int id, int batchSize )
     {
-        return new Batch<>( new InputNode[] {new InputNode( "source", 1, 0, "1", new Object[] {
-                "key1", "value1",
-                "key2", "value2",
-                "key3", "value3",
-                "key4", "value4",
-                "key5", "value5"
-        }, null, new String[] {
-                "label1",
-                "label2",
-                "label3",
-                "label4"
-        }, null )} );
+        InputNode[] input = new InputNode[batchSize];
+        NodeRecord[] records = new NodeRecord[batchSize];
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for ( int i = 0; i < batchSize; i++ )
+        {
+            String value = id + "_" + i;
+            if ( random.nextFloat() < 0.01 )
+            {
+                value += LONG_STRING;
+            }
+            input[i] = new InputNode( "source", 0, 0, null,
+                    new Object[] {"key", value}, null, InputNode.NO_LABELS, null );
+            records[i] = new NodeRecord( -1 );
+        }
+        Batch<InputNode,NodeRecord> batch = new Batch<>( input );
+        batch.records = records;
+        return batch;
     }
 }

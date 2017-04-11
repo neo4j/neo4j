@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
@@ -43,8 +43,8 @@ public class CountGroupsStage extends Stage
             RelationshipGroupCache groupCache )
     {
         super( "Count groups", config );
-
-        add( new ReadRecordsStep<>( control(), config, store, allIn( store, config ) ) );
+        add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
+        add( new ReadRecordsStep<>( control(), config, false, store ) );
         add( new CountGroupsStep( control(), config, groupCache ) );
     }
 }
