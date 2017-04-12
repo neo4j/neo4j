@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -34,7 +35,7 @@ import org.neo4j.logging.LogProvider;
 
 public class PruningScheduler extends LifecycleAdapter
 {
-    private final LogPruner logPruner;
+    private final RaftLogPruner logPruner;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
     private final Runnable job = new Runnable()
@@ -82,7 +83,7 @@ public class PruningScheduler extends LifecycleAdapter
         }
     };
 
-    public PruningScheduler( LogPruner logPruner, JobScheduler scheduler, long recurringPeriodMillis, LogProvider
+    public PruningScheduler( RaftLogPruner logPruner, JobScheduler scheduler, long recurringPeriodMillis, LogProvider
             logProvider )
     {
         this.logPruner = logPruner;

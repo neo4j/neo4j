@@ -179,7 +179,7 @@ public class ClusterBindingIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().prune();
+            db.raftLogPruner().prune();
         }
 
         // WHEN
@@ -214,7 +214,7 @@ public class ClusterBindingIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().prune();
+            db.raftLogPruner().prune();
         }
 
         // WHEN
@@ -244,7 +244,7 @@ public class ClusterBindingIT
 
         for ( CoreClusterMember db : cluster.coreMembers() )
         {
-            db.coreState().prune();
+            db.raftLogPruner().prune();
         }
 
         // WHEN

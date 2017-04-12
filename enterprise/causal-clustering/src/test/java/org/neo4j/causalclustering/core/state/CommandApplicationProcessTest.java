@@ -22,35 +22,37 @@ package org.neo4j.causalclustering.core.state;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.SessionTracker;
+import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
+import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
+import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ProgressTrackerImpl;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.GlobalSessionTrackerState;
 import org.neo4j.causalclustering.core.replication.session.LocalOperationId;
-import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
-import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
-import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
-import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
+import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -63,13 +65,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CommandApplicationProcessTest
 {
     private final InMemoryRaftLog raftLog = spy( new InMemoryRaftLog() );
 
-    private final InMemoryStateStorage<Long> lastFlushedStorage = new InMemoryStateStorage<>( -1L );
-    private final SessionTracker sessionStorage = new SessionTracker(
+    private final SessionTracker sessionTracker = new SessionTracker(
             new InMemoryStateStorage<>( new GlobalSessionTrackerState() ) );
 
     private final DatabaseHealth dbHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
@@ -79,22 +81,22 @@ public class CommandApplicationProcessTest
     private final int flushEvery = 10;
     private final int batchSize = 16;
 
-    private final CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
     private InFlightMap<RaftLogEntry> inFlightMap = spy( new InFlightMap<>() );
     private final Monitors monitors = new Monitors();
-    private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
+    private CoreState coreState = mock( CoreState.class );
     private final CommandApplicationProcess applicationProcess = new CommandApplicationProcess(
-            coreStateMachines, raftLog, batchSize, flushEvery, () -> dbHealth,
-            NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ), lastFlushedStorage,
-            sessionStorage, applier, inFlightMap, monitors );
+            raftLog, batchSize, flushEvery, () -> dbHealth,
+            NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ),
+            sessionTracker, coreState, inFlightMap, monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
     private final CommandDispatcher commandDispatcher = mock( CommandDispatcher.class );
 
     {
-        when( coreStateMachines.commandDispatcher() ).thenReturn( commandDispatcher );
-        when( coreStateMachines.getLastAppliedIndex() ).thenReturn( -1L );
+        when( coreState.commandDispatcher() ).thenReturn( commandDispatcher );
+        when( coreState.getLastAppliedIndex() ).thenReturn( -1L );
+        when( coreState.getLastFlushed() ).thenReturn( -1L );
     }
 
     private ReplicatedTransaction tx( byte dataValue )
@@ -105,6 +107,7 @@ public class CommandApplicationProcessTest
     }
 
     private int sequenceNumber = 0;
+
     private synchronized ReplicatedContent operation( CoreReplicatedContent tx )
     {
         return new DistributedOperation( tx, globalSession, new LocalOperationId( 0, sequenceNumber++ ) );
@@ -116,38 +119,37 @@ public class CommandApplicationProcessTest
         // given
         RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
         monitors.addMonitorListener( listener );
-        applicationProcess.start();
 
-        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
+        InOrder inOrder = inOrder( coreState, commandDispatcher );
+
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
 
         // when
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         applicationProcess.notifyCommitted( 2 );
-        applier.sync( false );
+        applicationProcess.start();
 
         // then
-        inOrder.verify( coreStateMachines ).commandDispatcher();
+        inOrder.verify( coreState ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
         inOrder.verify( commandDispatcher ).close();
 
-        verify( listener).commitIndex( 2 );
+        verify( listener ).commitIndex( 2 );
     }
 
     @Test
     public void shouldNotApplyUncommittedCommands() throws Throwable
     {
         // given
-        applicationProcess.start();
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
 
         // when
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         applicationProcess.notifyCommitted( -1 );
-        applier.sync( false );
+        applicationProcess.start();
 
         // then
         verifyZeroInteractions( commandDispatcher );
@@ -157,18 +159,16 @@ public class CommandApplicationProcessTest
     public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Throwable
     {
         // given
-        applicationProcess.start();
-
-        // when
         raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-        applicationProcess.notifyCommitted( 1 );
-        applier.sync( false );
 
-        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
+        // when
+        applicationProcess.notifyCommitted( 1 );
+        applicationProcess.start();
 
         // then
-        inOrder.verify( coreStateMachines ).commandDispatcher();
+        InOrder inOrder = inOrder( coreState, commandDispatcher );
+        inOrder.verify( coreState ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
         inOrder.verify( commandDispatcher ).close();
     }
@@ -177,21 +177,18 @@ public class CommandApplicationProcessTest
     public void duplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
     {
         // given
-        applicationProcess.start();
-
-        // when
         raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( nullTx, globalSession, new LocalOperationId( 0, 0 ) ) ) );
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( nullTx, globalSession, new LocalOperationId( 0, 0 ) ) ) ); // duplicate
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( nullTx, globalSession, new LocalOperationId( 0, 1 ) ) ) );
 
+        // when
         applicationProcess.notifyCommitted( 3 );
-        applier.sync( false );
-
-        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
+        applicationProcess.start();
 
         // then
-        inOrder.verify( coreStateMachines ).commandDispatcher();
+        InOrder inOrder = inOrder( coreState, commandDispatcher );
+        inOrder.verify( coreState ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
         // duplicate not dispatched
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 3L ), anyCallback() );
@@ -203,9 +200,6 @@ public class CommandApplicationProcessTest
     public void outOfOrderDuplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
     {
         // given
-        applicationProcess.start();
-
-        // when
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 100 ), globalSession, new LocalOperationId( 0, 0 ) ) ) );
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 101 ), globalSession, new LocalOperationId( 0, 1 ) ) ) );
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 102 ), globalSession, new LocalOperationId( 0, 2 ) ) ) );
@@ -214,13 +208,13 @@ public class CommandApplicationProcessTest
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 103 ), globalSession, new LocalOperationId( 0, 3 ) ) ) );
         raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 104 ), globalSession, new LocalOperationId( 0, 4 ) ) ) );
 
+        // when
         applicationProcess.notifyCommitted( 6 );
-        applier.sync( false );
-
-        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
+        applicationProcess.start();
 
         // then
-        inOrder.verify( coreStateMachines ).commandDispatcher();
+        InOrder inOrder = inOrder( coreState, commandDispatcher );
+        inOrder.verify( coreState ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 100 ) ), eq( 0L ), anyCallback() );
         inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 101 ) ), eq( 1L ), anyCallback() );
         inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 102 ) ), eq( 2L ), anyCallback() );
@@ -238,8 +232,6 @@ public class CommandApplicationProcessTest
     public void shouldPeriodicallyFlushState() throws Throwable
     {
         // given
-        applicationProcess.start();
-
         int interactions = flushEvery * 5;
         for ( int i = 0; i < interactions; i++ )
         {
@@ -247,46 +239,39 @@ public class CommandApplicationProcessTest
         }
 
         // when
-        applicationProcess.notifyCommitted( interactions );
-        applier.sync( false );
+        applicationProcess.notifyCommitted( raftLog.appendIndex() );
+        applicationProcess.start();
 
         // then
-        verify( coreStateMachines, times( interactions / batchSize ) ).flush();
-        assertEquals( interactions - ( interactions % batchSize) - 1, (long) lastFlushedStorage.getInitialState() );
+        verify( coreState ).flush( batchSize - 1 );
+        verify( coreState ).flush( 2 * batchSize - 1 );
+        verify( coreState ).flush( 3 * batchSize - 1 );
     }
 
     @Test
     public void shouldPanicIfUnableToApply() throws Throwable
     {
         // given
-        doThrow( IllegalStateException.class ).when( commandDispatcher )
+        doThrow( IOException.class ).when( commandDispatcher )
                 .dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
         applicationProcess.start();
 
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-
         // when
-        assertEquals( true, dbHealth.isHealthy() );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         applicationProcess.notifyCommitted( 0 );
-        applier.sync( false );
 
-        // then
-        assertEquals( false, dbHealth.isHealthy() );
+        assertEventually( "failed apply", dbHealth::isHealthy, is( false ), 5, SECONDS );
     }
 
     @Test
     public void shouldApplyToLogFromCache() throws Throwable
     {
-        //given n things to apply in the cache, check that they are actually applied.
-
         // given
-        applicationProcess.start();
-
         inFlightMap.put( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
 
         //when
         applicationProcess.notifyCommitted( 0 );
-        applier.sync( false );
+        applicationProcess.start();
 
         //then the cache should have had it's get method called.
         verify( inFlightMap, times( 1 ) ).get( 0L );
@@ -296,16 +281,14 @@ public class CommandApplicationProcessTest
     @Test
     public void cacheEntryShouldBePurgedWhenApplied() throws Throwable
     {
-        //given a cache in submitApplyJob, the contents of the cache should only contain unapplied "things"
-        applicationProcess.start();
-
+        // given
         inFlightMap.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
         inFlightMap.put( 1L, new RaftLogEntry( 0, operation( nullTx ) ) );
         inFlightMap.put( 2L, new RaftLogEntry( 0, operation( nullTx ) ) );
-        //when
-        applicationProcess.notifyCommitted( 0 );
 
-        applier.sync( false );
+        // when
+        applicationProcess.notifyCommitted( 0 );
+        applicationProcess.start();
 
         //then the cache should have had its get method called.
         assertNull( inFlightMap.get( 0L ) );
@@ -316,11 +299,7 @@ public class CommandApplicationProcessTest
     @Test
     public void shouldFallbackToLogCursorOnCacheMiss() throws Throwable
     {
-        // if the cache does not contain all things to be applied, make sure we fall back to the log
-        // should only happen in recovery, otherwise this is probably a bug.
-        applicationProcess.start();
-
-        //given cache with missing entry
+        // given cache with missing entry
         ReplicatedContent operation0 = operation( nullTx );
         ReplicatedContent operation1 = operation( nullTx );
         ReplicatedContent operation2 = operation( nullTx );
@@ -332,12 +311,11 @@ public class CommandApplicationProcessTest
         raftLog.append( new RaftLogEntry( 1, operation1 ) );
         raftLog.append( new RaftLogEntry( 2, operation2 ) );
 
-        //when
+        // when
         applicationProcess.notifyCommitted( 2 );
+        applicationProcess.start();
 
-        applier.sync( false );
-
-        //then the cache stops being used after it finds 1 is missing
+        // then the cache stops being used after it finds 1 is missing
         verify( inFlightMap, times( 1 ) ).get( 0L );
         verify( inFlightMap, times( 1 ) ).get( 1L );
         verify( inFlightMap, times( 0 ) ).get( 2L );
@@ -355,33 +333,35 @@ public class CommandApplicationProcessTest
     @Test
     public void shouldFailWhenCacheAndLogMiss() throws Throwable
     {
-        //When an entry is not in the log, we must fail.
-        applicationProcess.start();
-
+        // given
         inFlightMap.put( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 1, operation( nullTx ) ) );
 
-        //when
+        // when
         applicationProcess.notifyCommitted( 2 );
-        applier.sync( false );
-
-        //then
-        assertFalse( dbHealth.isHealthy() );
+        try
+        {
+            applicationProcess.start();
+            fail();
+        }
+        catch ( IllegalStateException e )
+        {
+            // expected
+        }
     }
 
     @Test
     public void shouldIncreaseLastAppliedForStateMachineCommands() throws Exception
     {
         // given
-        applicationProcess.start();
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
 
         // when
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
-        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         applicationProcess.notifyCommitted( 2 );
-        applier.sync( false );
+        applicationProcess.start();
 
         // then
         assertEquals( 2, applicationProcess.lastApplied() );
@@ -391,14 +371,13 @@ public class CommandApplicationProcessTest
     public void shouldIncreaseLastAppliedForOtherCommands() throws Exception
     {
         // given
-        applicationProcess.start();
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
 
         // when
-        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
-        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
-        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
         applicationProcess.notifyCommitted( 2 );
-        applier.sync( false );
+        applicationProcess.start();
 
         // then
         assertEquals( 2, applicationProcess.lastApplied() );

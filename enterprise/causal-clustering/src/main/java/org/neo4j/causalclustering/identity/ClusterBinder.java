@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -69,16 +68,17 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
      * @throws InterruptedException If the process gets interrupted.
      * @throws TimeoutException If the process times out.
      */
-    public void bindToCluster( ThrowingConsumer<CoreSnapshot, Throwable> snapshotInstaller ) throws Throwable
+    public BoundState bindToCluster() throws Throwable
     {
         if ( clusterIdStorage.exists() )
         {
             clusterId = clusterIdStorage.readState();
             publishClusterId( clusterId );
             log.info( "Already bound to cluster: " + clusterId );
-            return;
+            return new BoundState( clusterId );
         }
 
+        CoreSnapshot snapshot = null;
         CoreTopology topology;
         long endTime = clock.millis() + timeoutMillis;
 
@@ -94,10 +94,9 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
             else if ( topology.canBeBootstrapped() )
             {
                 clusterId = new ClusterId( UUID.randomUUID() );
-                CoreSnapshot snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
+                snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
                 log.info( String.format( "Bootstrapped with snapshot: %s and clusterId: %s", snapshot, clusterId ) );
 
-                snapshotInstaller.accept( snapshot );
                 publishClusterId( clusterId );
             }
             else
@@ -114,6 +113,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         }
 
         clusterIdStorage.writeState( clusterId );
+        return new BoundState( clusterId, snapshot );
     }
 
     public Optional<ClusterId> get()

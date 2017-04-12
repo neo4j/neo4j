@@ -112,7 +112,7 @@ public class CoreToCoreCopySnapshotIT
         // when
         for ( CoreClusterMember coreDb : cluster.coreMembers() )
         {
-            coreDb.coreState().prune();
+            coreDb.raftLogPruner().prune();
         }
 
         cluster.removeCoreMember( leader ); // to force a change of leader

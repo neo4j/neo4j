@@ -70,7 +70,6 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
 
     @Override
     public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException, NoLeaderFoundException
-
     {
         OperationContext session = sessionPool.acquireSession();
 

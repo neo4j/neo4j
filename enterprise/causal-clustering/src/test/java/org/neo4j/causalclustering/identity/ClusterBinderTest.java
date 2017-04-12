@@ -19,26 +19,24 @@
  */
 package org.neo4j.causalclustering.identity;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Test;
-
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.emptyMap;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -68,7 +66,7 @@ public class ClusterBinderTest
         try
         {
             // when
-            binder.bindToCluster( null );
+            binder.bindToCluster();
             fail( "Should have timed out" );
         }
         catch ( TimeoutException e )
@@ -96,7 +94,7 @@ public class ClusterBinderTest
                 coreBootstrapper );
 
         // when
-        binder.bindToCluster( null );
+        binder.bindToCluster();
 
         // then
         Optional<ClusterId> clusterId = binder.get();
@@ -122,7 +120,7 @@ public class ClusterBinderTest
                 coreBootstrapper );
 
         // when
-        binder.bindToCluster( null );
+        binder.bindToCluster();
 
         // then
         verify( topologyService ).setClusterId( previouslyBoundClusterId );
@@ -150,7 +148,7 @@ public class ClusterBinderTest
         // when
         try
         {
-            binder.bindToCluster( null );
+            binder.bindToCluster();
             fail( "Should have thrown exception" );
         }
         catch ( BindingException e )
@@ -168,22 +166,23 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers() ).thenReturn( bootstrappableTopology );
         when( topologyService.setClusterId( any() ) ).thenReturn( true );
+        CoreSnapshot snapshot = mock( CoreSnapshot.class );
+        when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );
 
         ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
-                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper );
-
-        ThrowingConsumer<CoreSnapshot, Throwable> snapshotInstaller = mock( ThrowingConsumer.class );
+                NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ),
+                3_000, coreBootstrapper );
 
         // when
-        binder.bindToCluster( snapshotInstaller );
+        BoundState boundState = binder.bindToCluster();
 
         // then
         verify( coreBootstrapper ).bootstrap( any() );
         Optional<ClusterId> clusterId = binder.get();
         assertTrue( clusterId.isPresent() );
         verify( topologyService ).setClusterId( clusterId.get() );
-        verify( snapshotInstaller ).accept( any() );
+        assertTrue( boundState.snapshot().isPresent() );
+        assertEquals( boundState.snapshot().get(), snapshot );
     }
 
     private class StubClusterIdStorage implements SimpleStorage<ClusterId>
