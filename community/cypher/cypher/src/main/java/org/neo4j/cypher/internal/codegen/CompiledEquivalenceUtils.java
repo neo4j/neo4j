@@ -555,7 +555,7 @@ public final class CompiledEquivalenceUtils
 
     private static boolean mixedFloatEquality( Float a, Double b )
     {
-        return a == b.floatValue();
+        return a.doubleValue() == b;
     }
 }
 
