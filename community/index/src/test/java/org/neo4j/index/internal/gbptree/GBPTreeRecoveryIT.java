@@ -388,7 +388,7 @@ public class GBPTreeRecoveryIT
 
     private static GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache, File file ) throws IOException
     {
-        return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER );
+        return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER, false );
     }
 
     private PageCache createPageCache()

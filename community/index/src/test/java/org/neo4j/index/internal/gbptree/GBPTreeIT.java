@@ -76,7 +76,7 @@ public class GBPTreeIT
     {
         pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER );
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, false );
     }
 
     @After

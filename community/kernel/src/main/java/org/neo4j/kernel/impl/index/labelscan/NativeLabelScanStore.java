@@ -370,7 +370,7 @@ public class NativeLabelScanStore implements LabelScanStore
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
         MutableBoolean isDirty = new MutableBoolean();
         Header.Reader getDirty = (pageCursor, length) -> isDirty.setValue( pageCursor.getByte() == DIRTY );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty, readOnly );
         return isDirty.getValue();
     }
 

@@ -54,13 +54,17 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -746,6 +750,8 @@ public class GBPTreeTest
         }
     }
 
+    /* Checkpoint tests */
+
     @Test
     public void shouldCheckpointAfterInitialCreation() throws Exception
     {
@@ -782,6 +788,143 @@ public class GBPTreeTest
         assertEquals( 1, checkpointCounter.count() );
     }
 
+    /* Read only mode tests */
+
+    @Test
+    public void openIndexInReadOnlyMustNotWriteAnything() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
+        {
+            // simply create
+        }
+        PageCacheTracer tracer = new DefaultPageCacheTracer();
+        PageCacheRule.PageCacheConfig config = PageCacheRule.config().withTracer( tracer );
+
+        // WHEN
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, config );
+              GBPTree<MutableLong,MutableLong> ignored = index().readOnly().with( pageCache ).build() )
+        {
+            assertThat( tracer.bytesWritten(), is( 0L ) );
+        }
+    }
+
+    @Test
+    public void checkpointInReadOnlyModeMustThrow() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
+        {
+            // simply create
+        }
+
+        // WHEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().readOnly().build() )
+        {
+            index.checkpoint( IOLimiter.unlimited() );
+            fail( "Expected checkpoint in read only mode to throw" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // THEN
+            // good
+            assertThat( e.getMessage(),
+                    allOf( containsString( "read only" ), containsString( "checkpoint" ) ) );
+        }
+    }
+
+    @Test
+    public void openWriterInReadOnlyMustThrow() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
+        {
+            // simply create
+        }
+
+        // WHEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().readOnly().build() )
+        {
+            index.writer();
+            fail( "Expected open writer in read only mode to throw" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // THEN
+            // good
+            assertThat( e.getMessage(),
+                    allOf( containsString( "read only" ), containsString( "writer" ) ) );
+        }
+    }
+
+    @Test
+    public void createNewIndexInReadOnlyModeMustThrow() throws Exception
+    {
+        // GIVEN
+        // no existing index
+
+        // WHEN
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().readOnly().build() )
+        {
+            fail( "Expected creation of new index in read only mode to throw" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // THEN
+            // good
+            assertThat( e.getMessage(),
+                    allOf( containsString( "read only" ), containsString( "create" ) ) );
+        }
+    }
+
+    @Test
+    public void prepareForRecoveryInReadOnlyMustThrow() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
+        {
+            // simply create
+        }
+
+        // WHEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().readOnly().build() )
+        {
+            index.prepareForRecovery();
+            fail( "Expected prepare for recovery in read only mode to throw" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // THEN
+            // good
+            assertThat( e.getMessage(),
+                    allOf( containsString( "read only" ), containsString( "prepare for recovery" ) ) );
+        }
+    }
+
+    @Test
+    public void finishRecoveryInReadOnlyMustThrow() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
+        {
+            // simply create
+        }
+
+        // WHEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().readOnly().build() )
+        {
+            index.finishRecovery();
+            fail( "Expected finish recovery in read only mode to throw" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            // THEN
+            // good
+            assertThat( e.getMessage(),
+                    allOf( containsString( "read only" ), containsString( "finish recovery" ) ) );
+        }
+    }
+
     private void wait( Future<?> future )throws InterruptedException, ExecutionException
     {
         try
@@ -813,6 +956,7 @@ public class GBPTreeTest
         private Header.Reader headerReader = NO_HEADER;
         private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;
         private PageCache specificPageCache;
+        private boolean readOnly = false;
 
         private GBPTreeBuilder withPageCachePageSize( int pageSize )
         {
@@ -850,6 +994,12 @@ public class GBPTreeTest
             return this;
         }
 
+        private GBPTreeBuilder readOnly()
+        {
+            this.readOnly = true;
+            return this;
+        }
+
         private GBPTree<MutableLong,MutableLong> build() throws IOException
         {
             PageCache pageCacheToUse;
@@ -867,7 +1017,8 @@ public class GBPTreeTest
                 pageCacheToUse = specificPageCache;
             }
 
-            return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader );
+            return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader,
+                    readOnly );
         }
     }
 

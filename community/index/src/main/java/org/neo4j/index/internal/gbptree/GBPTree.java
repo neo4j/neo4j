@@ -289,6 +289,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Monitor monitor;
 
     /**
+     * Indicate that index was opened in a read only mode.
+     */
+    private final boolean readOnly;
+
+    /**
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
@@ -300,6 +305,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
      * in the header. At the very least {@link Layout#identifier()} will be matched.
+     * If index is opened in read only mode, no writes are allowed.
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
@@ -310,13 +316,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
+     * @param readOnly true if tree should be opened in read only mode.
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader ) throws IOException
+            Monitor monitor, Header.Reader headerReader, boolean readOnly ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
+        this.readOnly = readOnly;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -408,6 +416,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // First time
             monitor.noStoreFile();
+            if ( readOnly )
+            {
+                throw new UnsupportedOperationException( "Can't create new GBPTree in read only mode." );
+            }
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
@@ -690,6 +702,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can't checkpoint in read only mode." );
+        }
+
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
@@ -774,6 +791,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Writer<KEY,VALUE> writer() throws IOException
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can't open writer in read only mode." );
+        }
         if ( !writerTaken.compareAndSet( false, true ) )
         {
             throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
@@ -823,6 +844,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public void prepareForRecovery() throws IOException
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can't prepare for recovery in read only mode." );
+        }
         if ( changesSinceLastCheckpoint )
         {
             throw new IllegalStateException( "It seems that this method has been called in the wrong state. " +
@@ -845,6 +870,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public void finishRecovery() throws IOException
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Can't initiate finish recovery in read only mode." );
+        }
         // For the time being there's an issue where update that come in before a crash
         // may be applied in a different order than when they get recovered.
         // This may have structural changes be different during recovery than what they were
