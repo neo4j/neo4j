@@ -27,8 +27,11 @@ import org.junit.runners.Parameterized.Parameter;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
 @RunWith( Parameterized.class )

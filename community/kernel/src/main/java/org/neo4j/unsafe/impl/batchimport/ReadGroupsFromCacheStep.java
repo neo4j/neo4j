@@ -24,7 +24,6 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.IoProducerStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
