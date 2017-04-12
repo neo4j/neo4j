@@ -23,6 +23,8 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+
 /**
  * Takes an Iterator and chops it up into array batches downstream.
  */

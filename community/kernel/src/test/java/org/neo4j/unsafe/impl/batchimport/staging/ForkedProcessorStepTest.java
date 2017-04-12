@@ -30,13 +30,15 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.unsafe.impl.batchimport.staging.Configuration.DEFAULT;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class ForkedProcessorStepTest
 {

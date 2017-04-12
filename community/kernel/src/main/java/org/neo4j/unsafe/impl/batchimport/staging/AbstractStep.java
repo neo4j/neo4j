@@ -28,6 +28,7 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;

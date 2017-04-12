@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+
 import static java.util.concurrent.locks.LockSupport.park;
 
 /**

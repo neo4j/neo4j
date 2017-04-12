@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 public class LonelyProcessingStepTest
 {

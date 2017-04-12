@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;

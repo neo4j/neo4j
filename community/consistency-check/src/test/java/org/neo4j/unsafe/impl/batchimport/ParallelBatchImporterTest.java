@@ -103,7 +103,7 @@ public class ParallelBatchImporterTest
     private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIPS_PER_NODE = 5;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
-    protected final Configuration config = new Configuration.Default()
+    protected final Configuration config = new Configuration()
     {
         @Override
         public int batchSize()

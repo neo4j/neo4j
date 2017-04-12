@@ -151,7 +151,7 @@ public class DynamicProcessorAssignerTest
 
     private Configuration movingAverageConfig( final int movingAverage )
     {
-        return new Configuration.Default()
+        return new Configuration()
         {
             @Override
             public int movingAverageSize()
