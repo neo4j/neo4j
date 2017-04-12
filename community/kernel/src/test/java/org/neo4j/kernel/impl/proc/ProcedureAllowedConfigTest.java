@@ -73,6 +73,7 @@ public class ProcedureAllowedConfigTest
                 .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, ""));
         new ProcedureAllowedConfig( config );
     }
+
     @Test
     public void shouldNotFailOnEmptyStringRoles()
     {
@@ -80,6 +81,15 @@ public class ProcedureAllowedConfigTest
                 .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "" ) );
         new ProcedureAllowedConfig( config );
     }
+
+    @Test
+    public void shouldNotFailOnBadStringRoles()
+    {
+        Config config = Config.defaults()
+                .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "matrix" ) );
+        new ProcedureAllowedConfig( config );
+    }
+
     @Test
     public void shouldNotFailOnEmptyStringBoth()
     {
