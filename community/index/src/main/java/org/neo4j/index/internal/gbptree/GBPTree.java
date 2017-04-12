@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -107,7 +106,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * The tree can however get back to a consistent state by:
  * <ol>
  * <li>Creator of this tree detects that recovery is required (i.e. non-clean shutdown) and if so must call
- * {@link #prepareForRecovery()} ones, before any writes during recovery are made.</li>
+ * {@link #bumpUnstableGeneration()} ones, before any writes during recovery are made.</li>
  * <li>Replaying all the writes, exactly as they were made, since the last checkpoint all the way up
  * to the crash ({@code x}). Even including writes before the last checkpoint is OK, important is that
  * <strong>at least</strong> writes since last checkpoint are included.
@@ -460,6 +459,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         int freeListWritePos = state.freeListWritePos();
         int freeListReadPos = state.freeListReadPos();
         freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
+        if ( !readOnly )
+        {
+            bumpUnstableGeneration();
+        }
     }
 
     private void writeState( PagedFile pagedFile, Header.Writer headerWriter ) throws IOException
@@ -673,7 +676,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * the data is durable and safe. {@link #writer() Changes} made after this call and until crashing or
      * otherwise non-clean shutdown (by omitting call to {@link #close()}) will need to be replayed
      * next time this tree is opened. Re-applying such changes will then require a call to
-     * {@link #prepareForRecovery()} before {@link #writer() writing} the changes.
+     * {@link #bumpUnstableGeneration()} before {@link #writer() writing} the changes.
      *
      * A call to {@link #close()} will automatically do a checkpoint as well, if there have been changes made
      * since last call to {@link #checkpoint(IOLimiter)} or since opening this tree.
@@ -836,18 +839,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * {@link GBPTree} class-level javadoc mentions how this method interacts with recovery,
-     * it's an essential piece to be able to recover properly and must be called when external party
-     * detects that recovery is required, before re-applying the recovered updates.
+     * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
+     * with generation in this gap are considered to be 'crashed' and will be cleaned up if {@link #finishRecovery()} is
+     * triggered.
      *
      * @throws IOException on {@link PageCache} error.
      */
-    public void prepareForRecovery() throws IOException
+    private void bumpUnstableGeneration() throws IOException
     {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can't prepare for recovery in read only mode." );
-        }
         if ( changesSinceLastCheckpoint )
         {
             throw new IllegalStateException( "It seems that this method has been called in the wrong state. " +

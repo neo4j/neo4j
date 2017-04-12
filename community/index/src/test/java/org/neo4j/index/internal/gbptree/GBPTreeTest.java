@@ -788,6 +788,35 @@ public class GBPTreeTest
         assertEquals( 1, checkpointCounter.count() );
     }
 
+    @Test
+    public void mustBumpUnstableGenerationOnOpen() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().build() )
+        {
+            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+            }
+
+            // no checkpoint
+        }
+
+        // WHEN
+        SimpleRecoveryCompleteMonitor monitor = new SimpleRecoveryCompleteMonitor();
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( monitor ).build() )
+        {
+            index.finishRecovery();
+        }
+
+        // THEN
+        assertTrue( "Expected monitor to get recovery complete message", monitor.recoveryCompleted );
+        assertEquals( "Expected index to have exactly 1 crash pointer from root to successor of root",
+                1, monitor.numberOfCleanedCrashPointers );
+        assertEquals( "Expected index to have exactly 2 tree node pages, root and successor of root",
+                2, monitor.numberOfPagesVisited ); // Root and successor of root
+    }
+
     /* Read only mode tests */
 
     @Test
@@ -874,30 +903,6 @@ public class GBPTreeTest
             // good
             assertThat( e.getMessage(),
                     allOf( containsString( "read only" ), containsString( "create" ) ) );
-        }
-    }
-
-    @Test
-    public void prepareForRecoveryInReadOnlyMustThrow() throws Exception
-    {
-        // GIVEN
-        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
-        {
-            // simply create
-        }
-
-        // WHEN
-        try ( GBPTree<MutableLong, MutableLong> index = index().readOnly().build() )
-        {
-            index.prepareForRecovery();
-            fail( "Expected prepare for recovery in read only mode to throw" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            // THEN
-            // good
-            assertThat( e.getMessage(),
-                    allOf( containsString( "read only" ), containsString( "prepare for recovery" ) ) );
         }
     }
 

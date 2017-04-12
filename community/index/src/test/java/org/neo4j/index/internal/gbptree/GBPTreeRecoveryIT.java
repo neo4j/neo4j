@@ -95,7 +95,6 @@ public class GBPTreeRecoveryIT
               GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             // this is the mimic:ed recovery
-            index.prepareForRecovery();
             index.finishRecovery();
 
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
@@ -253,7 +252,6 @@ public class GBPTreeRecoveryIT
 
     private void recover( List<Action> load, GBPTree<MutableLong,MutableLong> index ) throws IOException
     {
-        index.prepareForRecovery();
         execute( load, index );
     }
 

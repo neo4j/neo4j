@@ -227,7 +227,6 @@ public class NativeLabelScanStore implements LabelScanStore
             {
                 // Let's notify our index that recovery is about to commence, we do this once before
                 // the first recovered transaction gets applied.
-                index.prepareForRecovery();
                 recoveryStarted = true;
             }
 
