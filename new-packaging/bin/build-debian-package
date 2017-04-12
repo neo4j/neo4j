@@ -95,4 +95,4 @@ chmod 700 ${package_directory}/server/bin/*
 chmod 700 ${scripts_directory}/*
 
 # build package and metadata files
-(cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
+(cd ${package_directory} && debuild -A -uc -us --lintian-opts --profile debian)
