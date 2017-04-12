@@ -52,9 +52,10 @@ public class ProcedureAllowedConfig
     {
         Map<String,String> params = config.getParams();
         this.defaultValue = params.get( PROC_ALLOWED_SETTING_DEFAULT_NAME );
-        if ( params.containsKey( PROC_ALLOWED_SETTING_ROLES ) )
+        String allowedRoles = params.get( PROC_ALLOWED_SETTING_ROLES );
+        if ( allowedRoles != null && allowedRoles.length() != 0 )
         {
-            this.matchers = Stream.of( params.get( PROC_ALLOWED_SETTING_ROLES ).split( SETTING_DELIMITER ) )
+            this.matchers = Stream.of( allowedRoles.split( SETTING_DELIMITER ) )
                     .map( procToRoleSpec ->
                     {
                         String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
