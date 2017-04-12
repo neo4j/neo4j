@@ -283,9 +283,10 @@ public class OperationsFacade
         {
             return false;
         }
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return dataRead().nodeHasProperty( statement, node.get(), propertyKeyId );
+            return dataRead.nodeHasProperty( statement, node.get(), propertyKeyId );
         }
     }
 
@@ -297,9 +298,10 @@ public class OperationsFacade
         {
             return null;
         }
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return dataRead().nodeGetProperty( statement, node.get(), propertyKeyId );
+            return dataRead.nodeGetProperty( statement, node.get(), propertyKeyId );
         }
         finally
         {
@@ -312,9 +314,10 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return new CursorRelationshipIterator( dataRead()
+            return new CursorRelationshipIterator( dataRead
                     .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ) );
         }
     }
@@ -335,10 +338,11 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
             return new CursorRelationshipIterator(
-                    dataRead().nodeGetRelationships( statement, node.get(), direction( direction ) ) );
+                    dataRead.nodeGetRelationships( statement, node.get(), direction( direction ) ) );
         }
     }
 
@@ -346,9 +350,10 @@ public class OperationsFacade
     public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return dataRead().degree( statement, node.get(), direction( direction ), relType );
+            return dataRead.degree( statement, node.get(), direction( direction ), relType );
         }
     }
 
@@ -356,9 +361,10 @@ public class OperationsFacade
     public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return dataRead().degree( statement, node.get(), direction( direction ) );
+            return dataRead.degree( statement, node.get(), direction( direction ) );
         }
     }
 
@@ -376,9 +382,10 @@ public class OperationsFacade
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return dataRead().relationshipTypes( statement,node.get() ).iterator();
+            return dataRead.relationshipTypes( statement,node.get() ).iterator();
         }
     }
 
@@ -390,9 +397,10 @@ public class OperationsFacade
         {
             return false;
         }
-        try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<RelationshipItem> relationship = dataRead.relationshipCursorById( statement, relationshipId ) )
         {
-            return dataRead().relationshipHasProperty( statement, relationship.get(), propertyKeyId );
+            return dataRead.relationshipHasProperty( statement, relationship.get(), propertyKeyId );
         }
     }
 
@@ -404,9 +412,10 @@ public class OperationsFacade
         {
             return null;
         }
-        try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<RelationshipItem> relationship = dataRead.relationshipCursorById( statement, relationshipId ) )
         {
-            return dataRead().relationshipGetProperty( statement, relationship.get(), propertyKeyId );
+            return dataRead.relationshipGetProperty( statement, relationship.get(), propertyKeyId );
         }
         finally
         {
@@ -440,9 +449,10 @@ public class OperationsFacade
     public PrimitiveIntIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<NodeItem> node = dataRead.nodeCursorById( statement, nodeId ) )
         {
-            return dataRead().nodeGetPropertyKeys( statement, node.get() ).iterator();
+            return dataRead.nodeGetPropertyKeys( statement, node.get() ).iterator();
         }
         finally
         {
@@ -454,9 +464,10 @@ public class OperationsFacade
     public PrimitiveIntIterator relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
+        EntityReadOperations dataRead = dataRead();
+        try ( Cursor<RelationshipItem> relationship = dataRead.relationshipCursorById( statement, relationshipId ) )
         {
-            return dataRead().relationshipGetPropertyKeys( statement, relationship.get() ).iterator();
+            return dataRead.relationshipGetPropertyKeys( statement, relationship.get() ).iterator();
         }
         finally
         {
