@@ -103,18 +103,18 @@ class SessionRule implements TestRule
         return new BasicAuthentication( authManager );
     }
 
-    BoltStateMachine newMachine( String connectionDescriptor )
+    BoltStateMachine newMachine( String source, String connectionDescriptor )
     {
-        return newMachine( connectionDescriptor, Clock.systemUTC() );
+        return newMachine( source, connectionDescriptor, Clock.systemUTC() );
     }
 
-    BoltStateMachine newMachine( String connectionDescriptor, Clock clock )
+    BoltStateMachine newMachine( String source, String connectionDescriptor, Clock clock )
     {
         if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, () -> {}, clock );
+        BoltStateMachine connection = boltFactory.newMachine( source, connectionDescriptor, () -> {}, clock );
         runningMachines.add( connection );
         return connection;
     }

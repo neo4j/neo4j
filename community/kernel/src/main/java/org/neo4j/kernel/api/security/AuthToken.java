@@ -39,6 +39,7 @@ public interface AuthToken
     String NEW_CREDENTIALS = "new_credentials";
     String BASIC_SCHEME = "basic";
     String NATIVE_REALM = "native";
+    String SOURCE = "source";
 
     static String safeCast( String key, Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
@@ -84,28 +85,28 @@ public interface AuthToken
         return new InvalidAuthTokenException( format( "Unsupported authentication token%s", explanation ) );
     }
 
-    static Map<String,Object> newBasicAuthToken( String username, String password )
+    static Map<String,Object> newBasicAuthToken( String username, String password, String source )
     {
         return map( AuthToken.SCHEME_KEY, BASIC_SCHEME, AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS,
-                password );
+                password, AuthToken.SOURCE, source );
     }
 
-    static Map<String,Object> newBasicAuthToken( String username, String password, String realm )
+    static Map<String,Object> newBasicAuthToken( String username, String password, String source, String realm )
     {
         return map( AuthToken.SCHEME_KEY, BASIC_SCHEME, AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password,
-                AuthToken.REALM_KEY, realm );
+                AuthToken.REALM_KEY, realm, AuthToken.SOURCE, source );
     }
 
-    static Map<String,Object> newCustomAuthToken( String principle, String credentials, String realm, String scheme )
+    static Map<String,Object> newCustomAuthToken( String principle, String credentials, String source, String realm, String scheme )
     {
         return map( AuthToken.SCHEME_KEY, scheme, AuthToken.PRINCIPAL, principle, AuthToken.CREDENTIALS, credentials,
-                AuthToken.REALM_KEY, realm );
+                AuthToken.REALM_KEY, realm, AuthToken.SOURCE, source );
     }
 
-    static Map<String,Object> newCustomAuthToken( String principle, String credentials, String realm, String scheme,
+    static Map<String,Object> newCustomAuthToken( String principle, String credentials, String source, String realm, String scheme,
             Map<String,Object> parameters )
     {
         return map( AuthToken.SCHEME_KEY, scheme, AuthToken.PRINCIPAL, principle, AuthToken.CREDENTIALS, credentials,
-                AuthToken.REALM_KEY, realm, AuthToken.PARAMETERS, parameters );
+                AuthToken.REALM_KEY, realm, AuthToken.PARAMETERS, parameters, AuthToken.SOURCE, source );
     }
 }

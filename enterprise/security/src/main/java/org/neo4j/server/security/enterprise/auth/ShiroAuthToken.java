@@ -54,6 +54,11 @@ public class ShiroAuthToken implements AuthenticationToken
         return authToken.get( AuthToken.CREDENTIALS );
     }
 
+    public Object getSource()
+    {
+        return authToken.get( AuthToken.SOURCE );
+    }
+
     public String getScheme() throws InvalidAuthTokenException
     {
         return AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );

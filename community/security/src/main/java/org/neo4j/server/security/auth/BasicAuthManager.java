@@ -115,12 +115,13 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
         String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
+        String source = AuthToken.safeCast( AuthToken.SOURCE, authToken );
 
         User user = userRepository.getUserByName( username );
         AuthenticationResult result = AuthenticationResult.FAILURE;
         if ( user != null )
         {
-            result = authStrategy.authenticate( user, password );
+            result = authStrategy.authenticate( user, password, source );
             if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
             {
                 result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;

@@ -54,6 +54,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.server.security.auth.SecurityTestUtils.SOURCE;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class AuthorizationFilterTest
@@ -174,7 +175,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( servletRequest.getRemoteAddr() ).thenReturn( "remote_ip_address" );
-        when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
+        when( authManager.login( authToken( "foo", "bar", "remote_ip_address" ) ) ).thenReturn( securityContext );
         when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
@@ -203,6 +204,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
+        when( servletRequest.getRemoteAddr() ).thenReturn( SOURCE );
         when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
         when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
@@ -228,6 +230,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
         when( servletRequest.getRequestURI() ).thenReturn( "/db/data/" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
+        when( servletRequest.getRemoteAddr() ).thenReturn( SOURCE );
         when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
         when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
@@ -255,6 +258,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
+        when( servletRequest.getRemoteAddr() ).thenReturn( SOURCE );
         when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
         when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
@@ -281,6 +285,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
+        when( servletRequest.getRemoteAddr() ).thenReturn( SOURCE );
         when( authManager.login( authToken( "foo", "bar" ) ) ).thenReturn( securityContext );
         when( securityContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );

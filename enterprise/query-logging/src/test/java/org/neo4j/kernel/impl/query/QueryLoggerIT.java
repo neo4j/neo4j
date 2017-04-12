@@ -47,15 +47,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.server.security.auth.SecurityTestUtils;
 import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
-import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -338,7 +337,7 @@ public class QueryLoggerIT
                 .newGraphDatabase();
 
         EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
-        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+        EnterpriseSecurityContext neo = authManager.login( SecurityTestUtils.authToken( "neo4j", "neo4j" ) );
 
         String query = "CALL dbms.security.changePassword('abc123')";
         try ( InternalTransaction tx = database

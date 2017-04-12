@@ -29,10 +29,11 @@ public interface BoltFactory
     /**
      * Generate a new state machine.
      *
+     * @param source textual description of the source for rate limiting
      * @param connectionDescriptor textual description of the connection for logging purposes
      * @param onClose callback to call on shutdown of the state machine
      * @param clock used to keep track of execution times
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock );
+    BoltStateMachine newMachine( String source, String connectionDescriptor, Runnable onClose, Clock clock );
 }

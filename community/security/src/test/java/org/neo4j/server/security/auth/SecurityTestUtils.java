@@ -25,8 +25,15 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class SecurityTestUtils
 {
+    public static final String SOURCE = "127.0.0.1";
+
     public static Map<String,Object> authToken( String username, String password )
     {
-        return newBasicAuthToken( username, password );
+        return newBasicAuthToken( username, password, SOURCE );
+    }
+
+    public static Map<String,Object> authToken( String username, String password, String source )
+    {
+        return newBasicAuthToken( username, password, source );
     }
 }

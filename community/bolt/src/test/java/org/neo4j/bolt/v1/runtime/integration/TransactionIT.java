@@ -61,6 +61,7 @@ public class TransactionIT
 {
     private static final String USER_AGENT = "TransactionIT/0.0";
     private static final Pattern BOOKMARK_PATTERN = Pattern.compile( "neo4j:bookmark:v1:tx[0-9]+" );
+    private static final String SOURCE = "127.0.0.1";
 
     @Rule
     public SessionRule env = new SessionRule();
@@ -70,7 +71,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -94,7 +95,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -119,7 +120,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
         BoltResponseRecorder pullAllRecorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -136,7 +137,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -163,7 +164,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -203,7 +204,7 @@ public class TransactionIT
             @Override
             public void run()
             {
-                try ( BoltStateMachine machine = env.newMachine( "<write>" ) )
+                try ( BoltStateMachine machine = env.newMachine( SOURCE, "<write>" ) )
                 {
                     machine.init( USER_AGENT, emptyMap(), null );
                     latch.await();
@@ -219,7 +220,7 @@ public class TransactionIT
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
-        try ( BoltStateMachine machine = env.newMachine( "<read>" ) )
+        try ( BoltStateMachine machine = env.newMachine( SOURCE, "<read>" ) )
         {
             BoltResponseRecorder recorder = new BoltResponseRecorder();
             machine.init( USER_AGENT, emptyMap(), null );
@@ -267,7 +268,7 @@ public class TransactionIT
             @Override
             public void run()
             {
-                try ( BoltStateMachine stateMachine = env.newMachine( "<write>" ) )
+                try ( BoltStateMachine stateMachine = env.newMachine( SOURCE, "<write>" ) )
                 {
                     machine[0] = stateMachine;
                     stateMachine.init( USER_AGENT, emptyMap(), null );

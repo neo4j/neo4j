@@ -33,7 +33,7 @@ public class AuthTokenTest
     @Test
     public void shouldMakeBasicAuthToken() throws Exception
     {
-        Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret" );
+        Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "127.0.0.1" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
         assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
@@ -43,7 +43,7 @@ public class AuthTokenTest
     @Test
     public void shouldMakeBasicAuthTokenWithRealm() throws Exception
     {
-        Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "my realm" );
+        Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "127.0.0.1", "my realm" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
         assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
@@ -53,7 +53,7 @@ public class AuthTokenTest
     @Test
     public void shouldMakeCustomAuthTokenAndBasicScheme() throws Exception
     {
-        Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "basic" );
+        Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "127.0.0.1", "my realm", "basic" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
         assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo(AuthToken.BASIC_SCHEME));
@@ -63,7 +63,7 @@ public class AuthTokenTest
     @Test
     public void shouldMakeCustomAuthTokenAndCustomcScheme() throws Exception
     {
-        Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme" );
+        Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "127.0.0.1", "my realm", "my scheme" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
         assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo("my scheme"));
@@ -73,7 +73,7 @@ public class AuthTokenTest
     @Test
     public void shouldMakeCustomAuthTokenAndCustomcSchemeWithParameters() throws Exception
     {
-        Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme", map("a", "A", "b", "B") );
+        Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "127.0.0.1", "my realm", "my scheme", map("a", "A", "b", "B") );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
         assertThat("Should have correct password", token.get(AuthToken.CREDENTIALS), equalTo("my secret"));
         assertThat("Should have correct scheme", token.get(AuthToken.SCHEME_KEY), equalTo("my scheme"));
