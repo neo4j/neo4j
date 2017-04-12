@@ -63,18 +63,28 @@ class PageList
     // todo the addresses are page aligned, and we can assume them to be at least 4096 bytes in size.
 
     // xxx Thinking about it some more, it might even be possible to get down to just 16 bytes per page.
-    // xxx We cannot change the lock work, but if we change the eviction scheme to always go through the translation
+    // xxx We cannot change the lock word, but if we change the eviction scheme to always go through the translation
     // xxx tables to find pages, then we won't need the file page id. The address ought to have its lower 13 bits free.
     // xxx Two of these can go to the usage counter, and the rest to the swapper id, for up to 2048 swappers.
     // xxx Do we even need the swapper id at this point? If we can already infer the file page id, the same should be
     // xxx true for the swapper.
-    // xxx The trouble with this idea is that we won't be able to seamlessly turn the transaction tables into hash
+    // xxx The trouble with this idea is that we won't be able to seamlessly turn the translation tables into hash
     // xxx tables when they get too big - at least not easily - since the index into the table no longer corresponds to
     // xxx the file page id. We might still be able to get away with it, if with the page id we also keep a counter for
     // xxx how many times the file page id loop around the translation table before arriving at the given entry.
     // xxx That is, what the entry index should be multiplied by to get the file page id. To do this, we would, however,
     // xxx have to either grab bits from the page id space, or make each entry more than 4 bytes. This will all depend
     // xxx on where the cut-off point is. That is, what the max entry capacity for a translation table should be.
+    // xxx One potential cut-off point could be 2^29. That many 4 byte translation table entries would take up 2 GiB.
+    // xxx If we can then somehow put the wrap-around counter in the page meta-data by, for instance, taking a byte
+    // xxx from the bits in the address that we are no longer using for the swapper id, then we can support 255
+    // xxx wrap-arounds with bits to spare. This will allow us to address files that are up to 1 peta-byte in size.
+    // xxx At such extremes we'd only be able to keep up to 1/256th of the file in memory, which is 4 TiB, which in
+    // xxx turn is 1/8th of the 8192 * 2^32 = 32 TiB max memory capacity. To increase the potential utilisation, we can
+    // xxx raise the cut-off point to up to 2^32, which would require 16 GiBs of memory to represent.
+    // xxx Since we know up front how many pages we have at our disposal, and that 32 TiB of RAM is far from common,
+    // xxx we can place our preferred cut-off point at one or two bit-widths higher than the required bits to address
+    // xxx the memory. This would keep the risk of collisions down. Hopefully to a somewhat reasonable level.
 
     private final int pageCount;
     private final int cachePageSize;
