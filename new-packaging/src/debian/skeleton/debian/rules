@@ -1,8 +1,0 @@
-#!/usr/bin/make -f
-# -*- makefile -*-
-
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-
-%:
-	dh $@

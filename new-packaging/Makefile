@@ -15,6 +15,10 @@ CYPHER_SHELL := ../packaging/standalone/src/main/distribution/cypher-shell
 OUT := out
 SHELL_SCRIPTS := ../packaging/standalone/src/main/distribution/shell-scripts/bin
 
+COMMON_FILES := $(shell find src/common -type f)
+RPM_FILES := $(shell find src/rpm -type f)
+DEBIAN_FILES := $(shell find src/debian -type f)
+
 DEBS=$(patsubst ${ARTIFACTS}/%-unix.tar.gz,${OUT}/debian/%,${TARBALLS})
 RPMS=$(patsubst ${ARTIFACTS}/%-unix.tar.gz,${OUT}/rpm/%,${TARBALLS})
 
@@ -41,10 +45,12 @@ ${OUT}/neo4j-desktop/uberjar-filename.txt: ${OUT}/neo4j-desktop/community-versio
 	mkdir -p ${OUT}/neo4j-desktop
 	bin/generate-uberjar-filename ${OUT}/neo4j-desktop/community-version.txt >${OUT}/neo4j-desktop/uberjar-filename.txt
 
-${OUT}/rpm/%: ${ARTIFACTS}/%-unix.tar.gz src/common/** src/rpm/**
+${OUT}/rpm/%: ${ARTIFACTS}/%-unix.tar.gz $(COMMON_FILES) $(RPM_FILES)
+	rm -rf $@
 	bin/build-rpm-package $@ $< ${DISTRIBUTION}
 
-${OUT}/debian/%: ${ARTIFACTS}/%-unix.tar.gz src/common/** src/debian/**
+${OUT}/debian/%: ${ARTIFACTS}/%-unix.tar.gz $(COMMON_FILES) $(DEBIAN_FILES)
+	rm -rf $@
 	bin/build-debian-package $@ $< ${DISTRIBUTION}
 
 $(TARBALLS):
