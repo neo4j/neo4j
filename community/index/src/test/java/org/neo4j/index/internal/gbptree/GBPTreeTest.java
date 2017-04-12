@@ -789,6 +789,66 @@ public class GBPTreeTest
     }
 
     @Test
+    public void mustNotSeeUpdatesThatWasNotCheckpointed() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().build() )
+        {
+            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            {
+                MutableLong key = new MutableLong( 1 );
+                MutableLong value = new MutableLong( 1 );
+                writer.put( key, value );
+            }
+
+            // WHEN
+            // No checkpoint before close
+        }
+
+        // THEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().build() )
+        {
+            MutableLong from = new MutableLong( Long.MIN_VALUE );
+            MutableLong to = new MutableLong( Long.MAX_VALUE );
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( from, to ) )
+            {
+                assertFalse( seek.next() );
+            }
+        }
+    }
+
+    @Test
+    public void mustSeeUpdatesThatWasCheckpointed() throws Exception
+    {
+        // GIVEN
+        int key = 1;
+        int value = 2;
+        try ( GBPTree<MutableLong, MutableLong> index = index().build() )
+        {
+            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( key ), new MutableLong( value ) );
+            }
+
+            // WHEN
+            index.checkpoint( IOLimiter.unlimited() );
+        }
+
+        // THEN
+        try ( GBPTree<MutableLong, MutableLong> index = index().build() )
+        {
+            MutableLong from = new MutableLong( Long.MIN_VALUE );
+            MutableLong to = new MutableLong( Long.MAX_VALUE );
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( from, to ) )
+            {
+                assertTrue( seek.next() );
+                assertEquals( key, seek.get().key().longValue() );
+                assertEquals( value, seek.get().value().longValue() );
+            }
+        }
+    }
+
+    @Test
     public void mustBumpUnstableGenerationOnOpen() throws Exception
     {
         // GIVEN
