@@ -518,7 +518,7 @@ class LoadCsvAcceptanceTest
   test("empty headers file should not throw") {
     val urls = csvUrls({ _ => {} })
     for (url <- urls) {
-      val result = executeWithAllPlanners(
+      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
         s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN count(*)"
       )
 
