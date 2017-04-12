@@ -73,14 +73,26 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
     }
   }
 
-  object IntegerFloatMix extends TestTricks {
-    override def apply(v1: Any, v2: Any): (Any, Any) = {
+  val LARGEST_DOUBLE = 1L << 53
+  val LARGEST_FLOAT = 1L << 24
 
+  def canFitInInt(a: Double) = -Int.MinValue < a && a < Int.MaxValue
+  def canFitInLong(a: Double) = -Long.MinValue < a && a < Long.MaxValue
+  def canBeExactlyAnIntegerD(a: Double) = -LARGEST_DOUBLE < a && a < LARGEST_DOUBLE
+  def canBeExactlyAnIntegerF(a: Float) = -LARGEST_FLOAT < a && a < LARGEST_FLOAT
+
+  object IntegerFloatMix extends TestTricks {
+
+    // This is the largest integer that can be exactly represented using a double
+
+    override def apply(v1: Any, v2: Any): (Any, Any) = {
       def fix(x: Any, y: Any): Option[(Any, Any)] = (x, y) match {
-        case (a: Double, _) => Some((a, Math.nextUp(a)))
-        case (a: Float, _) => Some((a, Math.nextUp(a)))
-        case (a: Int, _) => Some((a, a + 1))
-        case (a: Long, _) => Some((a, a + 1))
+        case (a: Double, _) if canFitInInt(a) && canBeExactlyAnIntegerD(a) => Some((Math.rint(a), a.toInt))
+        case (a: Double, _) if canFitInLong(a) && canBeExactlyAnIntegerD(a) => Some((Math.rint(a), a.toLong))
+        case (a: Float, _) if canBeExactlyAnIntegerF(a) => Some((Math.rint(a), a.toInt))
+        case (a: Int, _) if canBeExactlyAnIntegerF(a) => Some(a, a.toFloat)
+        case (a: Long, _) if canBeExactlyAnIntegerF(a) => Some(a, a.toFloat)
+        case (a: Long, _) if canBeExactlyAnIntegerD(a) => Some(a, a.toDouble)
         case _ => None
       }
 
@@ -95,7 +107,8 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
   val testTricks = Gen.oneOf(
     TwoIndependentValues,
     ChangePrecision,
-    SlightlyMore
+    SlightlyMore,
+    IntegerFloatMix
   )
 
   val arbAnyVal: Gen[Any] = Gen.oneOf(
