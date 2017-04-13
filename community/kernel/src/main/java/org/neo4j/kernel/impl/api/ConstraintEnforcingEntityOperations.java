@@ -115,17 +115,21 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Iterator<ConstraintDescriptor> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
-            while ( constraints.hasNext() )
+            if ( !node.hasLabel( labelId ) )
             {
-                ConstraintDescriptor constraint = constraints.next();
-                if ( constraint.enforcesUniqueness() )
+                // no need to verify if the node already had the label
+                Iterator<ConstraintDescriptor> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
+                while ( constraints.hasNext() )
                 {
-                    IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
-                    ExactPredicate[] propertyValues = getAllPropertyValues( state, uniqueConstraint.schema(), node );
-                    if ( propertyValues != null )
+                    ConstraintDescriptor constraint = constraints.next();
+                    if ( constraint.enforcesUniqueness() )
                     {
-                        validateNoExistingNodeWithExactValues( state, uniqueConstraint, propertyValues, node.id() );
+                        IndexBackedConstraintDescriptor uniqueConstraint = (IndexBackedConstraintDescriptor) constraint;
+                        ExactPredicate[] propertyValues = getAllPropertyValues( state, uniqueConstraint.schema(), node );
+                        if ( propertyValues != null )
+                        {
+                            validateNoExistingNodeWithExactValues( state, uniqueConstraint, propertyValues, node.id() );
+                        }
                     }
                 }
             }
@@ -141,14 +145,28 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            Iterator<ConstraintDescriptor> constraints = getConstraintsInvolvingProperty( state, property.propertyKeyId() );
+            Iterator<ConstraintDescriptor> constraints =
+                    getConstraintsInvolvingProperty( state, property.propertyKeyId() );
             Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
                     new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
 
             nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, property.propertyKeyId(),
-                    constraint -> validateNoExistingNodeWithExactValues( state, constraint,
-                            getAllPropertyValues( state, constraint.schema(), node, property ),
-                            node.id() ) );
+                    ( constraint, propertyIds ) ->
+                    {
+
+                        if ( propertyIds.contains( property.propertyKeyId() ) )
+                        {
+                            Object previousValue = nodeGetProperty( state, node, property.propertyKeyId() );
+                            if ( property.valueEquals( previousValue ) )
+                            {
+                                // since we are changing to the same value, there is no need to check
+                                return;
+                            }
+                        }
+                        validateNoExistingNodeWithExactValues( state, constraint,
+                                getAllPropertyValues( state, constraint.schema(), node, property ),
+                                node.id() );
+                    } );
         }
 
         return entityWriteOperations.nodeSetProperty( state, nodeId, property );

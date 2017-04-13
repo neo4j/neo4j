@@ -29,7 +29,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -38,7 +37,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -53,15 +52,8 @@ public class NodeIdReuseStressIT
     private static final int OPERATIONS_COUNT = 10_000;
 
     @Rule
-    public EmbeddedDatabaseRule db = new EnterpriseDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE.name() );
-        }
-    };
+    public DatabaseRule db = new EnterpriseDatabaseRule()
+            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE.name() );
 
     @Before
     public void verifyParams() throws Exception

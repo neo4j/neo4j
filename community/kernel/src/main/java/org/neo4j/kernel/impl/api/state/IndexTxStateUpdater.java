@@ -106,7 +106,7 @@ public class IndexTxStateUpdater
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( after.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, after.propertyKeyId(),
-                index ->
+                ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
                     OrderedPropertyValues values =
@@ -122,7 +122,7 @@ public class IndexTxStateUpdater
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
-                index ->
+                ( index, propertyKeyIds ) ->
                 {
                     OrderedPropertyValues values =
                             getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
@@ -138,7 +138,7 @@ public class IndexTxStateUpdater
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( before.propertyKeyId() );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, before.propertyKeyId(),
-                index ->
+                ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
                     int[] indexPropertyIds = index.schema().getPropertyIds();

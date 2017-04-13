@@ -97,7 +97,7 @@ public class NodeSchemaMatcherTest
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema(
-                state, iterator( index1 ), node, unIndexedPropId, matched::add );
+                state, iterator( index1 ), node, unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, contains( index1 ) );
@@ -109,7 +109,7 @@ public class NodeSchemaMatcherTest
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema(
-                state, iterator( index1_2 ), node, unIndexedPropId, matched::add );
+                state, iterator( index1_2 ), node, unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, contains( index1_2 ) );
@@ -120,8 +120,8 @@ public class NodeSchemaMatcherTest
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
-        nodeSchemaMatcher.onMatchingSchema(
-                state, iterator( indexWithMissingProperty ), node, unIndexedPropId, matched::add );
+        nodeSchemaMatcher.onMatchingSchema( state, iterator( indexWithMissingProperty ), node, unIndexedPropId,
+                ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, empty() );
@@ -132,8 +132,8 @@ public class NodeSchemaMatcherTest
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
-        nodeSchemaMatcher.onMatchingSchema(
-                state, iterator( indexWithMissingLabel ), node, unIndexedPropId, matched::add );
+        nodeSchemaMatcher.onMatchingSchema( state, iterator( indexWithMissingLabel ), node, unIndexedPropId,
+                ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, empty() );
@@ -144,8 +144,8 @@ public class NodeSchemaMatcherTest
     {
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
-        nodeSchemaMatcher.onMatchingSchema(
-                state, iterator( indexOnSpecialProperty ), node, specialPropId, matched::add );
+        nodeSchemaMatcher.onMatchingSchema( state, iterator( indexOnSpecialProperty ), node, specialPropId,
+                ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, contains( indexOnSpecialProperty ) );
@@ -160,7 +160,7 @@ public class NodeSchemaMatcherTest
         // when
         final List<IndexDescriptor> matched = new ArrayList<>();
         nodeSchemaMatcher.onMatchingSchema(
-                state, indexes.iterator(), node, unIndexedPropId, matched::add );
+                state, indexes.iterator(), node, unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, equalTo( indexes ) );

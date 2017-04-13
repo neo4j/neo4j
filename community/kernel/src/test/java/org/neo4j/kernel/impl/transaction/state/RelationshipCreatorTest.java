@@ -29,7 +29,6 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -65,13 +64,7 @@ public class RelationshipCreatorTest
     private static final int DENSE_NODE_THRESHOLD = 5;
     @Rule
     public final DatabaseRule dbRule = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
-        }
-    };
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
     private IdGeneratorFactory idGeneratorFactory;
 
     @Before

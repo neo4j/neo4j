@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -50,14 +50,14 @@ public class NodeSchemaMatcher
      * To avoid unnecessary store lookups, this implementation only gets propertyKeyIds for the node if some
      * descriptor has a valid label.
      *
+     * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
+     * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @param state The current statement
      * @param schemaSuppliers The suppliers to match
      * @param node The node
      * @param specialPropertyId This property id will always count as a match for the descriptor, regardless of
      *                          whether the node has this property or not
      * @param callback The action to take on match
-     * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
-     * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @throws EXCEPTION This exception is propagated from the action
      */
     public <SUPPLIER extends LabelSchemaSupplier,EXCEPTION extends Exception> void onMatchingSchema(
@@ -65,7 +65,7 @@ public class NodeSchemaMatcher
             Iterator<SUPPLIER> schemaSuppliers,
             NodeItem node,
             int specialPropertyId,
-            ThrowingConsumer<SUPPLIER, EXCEPTION> callback
+            ThrowingBiConsumer<SUPPLIER,PrimitiveIntSet,EXCEPTION> callback
     ) throws EXCEPTION
     {
         PrimitiveIntSet nodePropertyIds = null;
@@ -83,7 +83,7 @@ public class NodeSchemaMatcher
 
                 if ( nodeHasSchemaProperties( nodePropertyIds, schema.getPropertyIds(), specialPropertyId ) )
                 {
-                    callback.accept( schemaSupplier );
+                    callback.accept( schemaSupplier, nodePropertyIds );
                 }
             }
         }
