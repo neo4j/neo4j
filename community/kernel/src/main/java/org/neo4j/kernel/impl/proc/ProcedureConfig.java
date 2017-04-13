@@ -59,12 +59,18 @@ public class ProcedureConfig
         this.defaultValue = config.getValue( PROC_ALLOWED_SETTING_DEFAULT_NAME )
                 .map( Object::toString )
                 .orElse( "" );
-        this.matchers = parseMatchers( PROC_ALLOWED_SETTING_ROLES, config, SETTING_DELIMITER, procToRoleSpec ->
-        {
-            String[] spec = procToRoleSpec.split( MAPPING_DELIMITER );
-            String[] roles = stream( spec[1].split( ROLES_DELIMITER ) ).map( String::trim ).toArray( String[]::new );
-            return new ProcMatcher( spec[0].trim(), roles );
-        } );
+
+        String allowedRoles = config.getValue( PROC_ALLOWED_SETTING_ROLES ).map( Object::toString )
+                .orElse( "" );
+        this.matchers = Stream.of( allowedRoles.split( SETTING_DELIMITER ) )
+                .map( procToRoleSpec -> procToRoleSpec.split( MAPPING_DELIMITER ) )
+                .filter( spec -> spec.length > 1 )
+                .map( spec ->
+                {
+                    String[] roles =
+                            stream( spec[1].split( ROLES_DELIMITER ) ).map( String::trim ).toArray( String[]::new );
+                    return new ProcMatcher( spec[0].trim(), roles );
+                } ).collect( Collectors.toList() );
 
         this.accessPatterns =
                 parseMatchers( GraphDatabaseSettings.procedure_unrestricted.name(), config, PROCEDURE_DELIMITER,
