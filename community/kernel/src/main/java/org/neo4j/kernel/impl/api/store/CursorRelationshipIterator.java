@@ -29,7 +29,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 /**
  * Convert a {@link RelationshipItem} cursor into a {@link RelationshipIterator} that implements {@link Resource}.
  */
-public class CursorRelationshipIterator implements RelationshipIterator, Resource
+public class CursorRelationshipIterator implements RelationshipIterator
 {
     private Cursor<RelationshipItem> cursor;
     private boolean hasDeterminedNext;
