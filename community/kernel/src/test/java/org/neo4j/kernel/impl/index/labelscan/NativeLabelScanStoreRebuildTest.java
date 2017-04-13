@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -42,7 +43,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.labelscan.LabelScanStore.Monitor.EMPTY;
+import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
 public class NativeLabelScanStoreRebuildTest
@@ -75,7 +76,7 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false, EMPTY );
+                    new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false, new Monitors() );
 
             nativeLabelScanStore.init();
             nativeLabelScanStore.start();
@@ -92,7 +93,7 @@ public class NativeLabelScanStoreRebuildTest
         RecordingMonitor monitor = new RecordingMonitor();
 
         nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, monitor );
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, new Monitors() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -115,7 +116,7 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, changeStream, false, EMPTY );
+                    new NativeLabelScanStore( pageCache, storeDir, changeStream, false, new Monitors() );
             nativeLabelScanStore.init();
 
             // when
