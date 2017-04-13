@@ -26,8 +26,13 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import java.util.UUID;
 
+import org.neo4j.SchemaHelper;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -41,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import org.neo4j.test.assertion.Assert;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -49,17 +55,67 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.NodePropertyExistenceExistenceConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintValidationIT.RelationshipPropertyExistenceExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodeKeyConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodePropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.RelationshipPropertyExistenceConstraintValidationIT;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
-        NodePropertyExistenceExistenceConstraintValidationIT.class,
-        RelationshipPropertyExistenceExistenceConstraintValidationIT.class
+        NodePropertyExistenceConstraintValidationIT.class,
+        RelationshipPropertyExistenceConstraintValidationIT.class,
+        NodeKeyConstraintValidationIT.class
 } )
-public class PropertyExistenceConstraintValidationIT
+public class PropertyConstraintValidationIT
 {
-    public static class NodePropertyExistenceExistenceConstraintValidationIT
+    public static class NodeKeyConstraintValidationIT extends NodePropertyExistenceConstraintValidationIT
+    {
+        @Override
+        void createConstraint( String key, String property ) throws KernelException
+        {
+            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+            int label = tokenWriteOperations.labelGetOrCreateForName( key );
+            int propertyKey = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            commit();
+
+            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            schemaWrite.nodeKeyConstraintCreate( forLabel( label, propertyKey ) );
+            commit();
+        }
+
+        @Test
+        public void requirePropertyFromMultipleNodeKeys() throws Exception
+        {
+            Label label = Label.label( "multiNodeKeyLabel" );
+            SchemaHelper.createNodeKeyConstraint( db, label,  "property1", "property2" );
+            SchemaHelper.createNodeKeyConstraint( db, label,  "property2", "property3" );
+            SchemaHelper.createNodeKeyConstraint( db, label,  "property3", "property4" );
+
+            Assert.assertException( () ->
+            {
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    Node node = db.createNode( label );
+                    node.setProperty( "property1", "1" );
+                    node.setProperty( "property2", "2" );
+                    transaction.success();
+                }
+            }, ConstraintViolationException.class, "Node(0) with label `multiNodeKeyLabel` must have the properties `property2, property3`" );
+
+            Assert.assertException( () ->
+            {
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    Node node = db.createNode( label );
+                    node.setProperty( "property1", "1" );
+                    node.setProperty( "property2", "2" );
+                    node.setProperty( "property3", "3" );
+                    transaction.success();
+                }
+            }, ConstraintViolationException.class, "Node(1) with label `multiNodeKeyLabel` must have the properties `property3, property4`" );
+        }
+    }
+
+    public static class NodePropertyExistenceConstraintValidationIT
             extends AbstractPropertyExistenceConstraintValidationIT
     {
         @Test
@@ -155,7 +211,7 @@ public class PropertyExistenceConstraintValidationIT
         }
     }
 
-    public static class RelationshipPropertyExistenceExistenceConstraintValidationIT
+    public static class RelationshipPropertyExistenceConstraintValidationIT
             extends AbstractPropertyExistenceConstraintValidationIT
     {
         @Override
@@ -360,7 +416,7 @@ public class PropertyExistenceConstraintValidationIT
             createEntity( statement, "key1", "value1" );
             createEntity( statement, "Type2" );
             createEntity( statement, "Type1", "key1", "value2" );
-            createEntity( statement, "Type1", "key1", "value1" );
+            createEntity( statement, "Type1", "key1", "value3" );
 
             commit();
 

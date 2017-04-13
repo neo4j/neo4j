@@ -19,12 +19,16 @@
  */
 package org.neo4j;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 
 public final class SchemaHelper
 {
@@ -40,7 +44,7 @@ public final class SchemaHelper
 
     public static void createIndex( GraphDatabaseService db, String label, String property )
     {
-        db.execute( String.format( "CREATE INDEX ON :`%s`(`%s`)", label, property ) );
+        db.execute( format( "CREATE INDEX ON :`%s`(`%s`)", label, property ) );
     }
 
     public static void createUniquenessConstraint( GraphDatabaseService db, Label label, String property )
@@ -50,17 +54,20 @@ public final class SchemaHelper
 
     public static void createUniquenessConstraint( GraphDatabaseService db, String label, String property )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT n.`%s` IS UNIQUE", label, property ) );
+        db.execute( format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT n.`%s` IS UNIQUE", label, property ) );
     }
 
-    public static void createNodeKeyConstraint( GraphDatabaseService db, Label label, String property )
+    public static void createNodeKeyConstraint( GraphDatabaseService db, Label label, String... properties )
     {
-        createNodeKeyConstraint( db, label.name(), property );
+        createNodeKeyConstraint( db, label.name(), properties );
     }
 
-    public static void createNodeKeyConstraint( GraphDatabaseService db, String label, String property )
+    public static void createNodeKeyConstraint( GraphDatabaseService db, String label, String... properties )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT (n.`%s`) IS NODE KEY", label, property ) );
+        String keyProperties = Arrays.stream( properties )
+                .map( property -> format("n.`%s`", property))
+                .collect( joining( "," ) );
+        db.execute( format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT (%s) IS NODE KEY", label, keyProperties ) );
     }
 
     public static void createNodePropertyExistenceConstraint( GraphDatabaseService db, Label label, String property )
@@ -70,7 +77,7 @@ public final class SchemaHelper
 
     public static void createNodePropertyExistenceConstraint( GraphDatabaseService db, String label, String property )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT exists(n.`%s`)", label, property ) );
+        db.execute( format( "CREATE CONSTRAINT ON (n:`%s`) ASSERT exists(n.`%s`)", label, property ) );
     }
 
     public static void createRelPropertyExistenceConstraint( GraphDatabaseService db, RelationshipType type,
@@ -81,7 +88,7 @@ public final class SchemaHelper
 
     public static void createRelPropertyExistenceConstraint( GraphDatabaseService db, String type, String property )
     {
-        db.execute( String.format( "CREATE CONSTRAINT ON ()-[r:`%s`]-() ASSERT exists(r.`%s`)", type, property ) );
+        db.execute( format( "CREATE CONSTRAINT ON ()-[r:`%s`]-() ASSERT exists(r.`%s`)", type, property ) );
     }
 
     public static void awaitIndexes( GraphDatabaseService db )

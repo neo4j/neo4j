@@ -57,7 +57,7 @@ public class PrimitiveArrays
         int[] merged = null;
         int m = 0;
         int l = 0;
-        for ( int r = 0; l < lhs.length && r < rhs.length; )
+        for ( int r = 0; l <= lhs.length && r < rhs.length; )
         {
             while ( l < lhs.length && lhs[l] < rhs[r] )
             {

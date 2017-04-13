@@ -19,11 +19,11 @@
  */
 package org.neo4j.collection.primitive;
 
-import java.util.Arrays;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertSame;
@@ -47,7 +47,9 @@ public class PrimitiveArraysUnionTest
                 lhs( 1, 3, 5 ).rhs( 2, 4, 6 ).expect( 1, 2, 3, 4, 5, 6 ),
                 lhs( 1, 2, 3, 5 ).rhs( 2, 4, 6 ).expect( 1, 2, 3, 4, 5, 6 ),
                 lhs( 2, 3, 4, 7, 8, 9, 12, 16, 19 ).rhs( 4, 6, 9, 11, 12, 15 )
-                        .expect( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 )
+                        .expect( 2, 3, 4, 6, 7, 8, 9, 11, 12, 15, 16, 19 ),
+                lhs( 10, 13 ).rhs( 13, 18 ).expect( 10, 13, 18 ),
+                lhs( 13, 18 ).rhs( 10, 13 ).expect( 10, 13, 18 )
         );
     }
 
@@ -63,7 +65,7 @@ public class PrimitiveArraysUnionTest
     }
 
     @Test
-    public void testMerge() throws Exception
+    public void testUnion() throws Exception
     {
         int[] actual = union( lhs, rhs );
         if ( lhs == expected || rhs == expected )

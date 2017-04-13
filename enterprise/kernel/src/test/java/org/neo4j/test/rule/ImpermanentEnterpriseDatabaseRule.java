@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.enterprise;
+package org.neo4j.test.rule;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 public class ImpermanentEnterpriseDatabaseRule extends ImpermanentDatabaseRule
 {
