@@ -163,6 +163,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.test</groupId>
+      <artifactId>neo4j-harness-enterprise</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-consistency-check</artifactId>
       <version>${project.version}</version>

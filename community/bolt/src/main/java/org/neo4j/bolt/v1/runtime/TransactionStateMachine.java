@@ -95,6 +95,14 @@ public class TransactionStateMachine implements StatementProcessor
         }
     }
 
+    /**
+     * Rollback and close transaction. Move back to {@link State#AUTO_COMMIT}.
+     * <p>
+     * <b>Warning:</b>This method should only be called by the bolt worker thread during it's regular message
+     * processing. It is wrong to call it from a different thread because kernel transactions are not thread-safe.
+     *
+     * @throws TransactionFailureException when transaction fails to close.
+     */
     @Override
     public void reset() throws TransactionFailureException
     {

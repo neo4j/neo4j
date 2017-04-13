@@ -278,6 +278,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         return ctx.closed;
     }
 
+    @Override
     public void close()
     {
         try
