@@ -55,7 +55,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-
+import static org.neo4j.bolt.v1.messaging.Neo4jPack.EMPTY_MAP;
 
 public class TransactionIT
 {
@@ -72,7 +72,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -96,7 +96,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -121,7 +121,7 @@ public class TransactionIT
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
         BoltResponseRecorder pullAllRecorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "ROLLBACK", emptyMap(), runRecorder );
@@ -138,7 +138,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -165,7 +165,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -206,7 +206,7 @@ public class TransactionIT
             {
                 try ( BoltStateMachine machine = env.newMachine( SOURCE, "<write>" ) )
                 {
-                    machine.init( USER_AGENT, emptyMap(), null );
+                    machine.init( USER_AGENT, EMPTY_MAP, null );
                     latch.await();
                     machine.run( "MATCH (n:A) SET n.prop = 'two'", emptyMap(), nullResponseHandler() );
                     machine.pullAll( nullResponseHandler() );
@@ -223,7 +223,7 @@ public class TransactionIT
         try ( BoltStateMachine machine = env.newMachine( SOURCE, "<read>" ) )
         {
             BoltResponseRecorder recorder = new BoltResponseRecorder();
-            machine.init( USER_AGENT, emptyMap(), null );
+            machine.init( USER_AGENT, EMPTY_MAP, null );
             latch.release();
             final String bookmark = "neo4j:bookmark:v1:tx" + Long.toString( dbVersionAfterWrite );
             machine.run( "BEGIN", singletonMap( "bookmark", bookmark ), nullResponseHandler() );
@@ -271,7 +271,7 @@ public class TransactionIT
                 try ( BoltStateMachine stateMachine = env.newMachine( SOURCE, "<write>" ) )
                 {
                     machine[0] = stateMachine;
-                    stateMachine.init( USER_AGENT, emptyMap(), null );
+                    stateMachine.init( USER_AGENT, EMPTY_MAP, null );
                     String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
                                            "CREATE (n:A {id: line[0], square: line[1]}) " +
                                            "WITH count(*) as number " +

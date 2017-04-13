@@ -26,7 +26,6 @@ import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -48,6 +47,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.v1.messaging.Neo4jPack.EMPTY_MAP;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @SuppressWarnings( "unchecked" )
@@ -135,7 +135,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -158,7 +158,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -177,7 +177,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -196,7 +196,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -222,7 +222,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran one statement
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -240,7 +240,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -259,7 +259,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -278,7 +278,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -297,7 +297,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -316,7 +316,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
         machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );
 
@@ -343,7 +343,7 @@ public class BoltConnectionIT
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
         BoltStateMachine machine = env.newMachine( SOURCE, "bolt-test" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );
@@ -372,7 +372,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
@@ -427,9 +427,9 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine firstMachine = env.newMachine( SOURCE, "<test>" );
-        firstMachine.init( USER_AGENT, emptyMap(), null );
+        firstMachine.init( USER_AGENT, EMPTY_MAP, null );
         BoltStateMachine secondMachine = env.newMachine( SOURCE, "<test>" );
-        secondMachine.init( USER_AGENT, emptyMap(), null );
+        secondMachine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And given I've started a transaction in one session
         runAndPull( firstMachine, "BEGIN" );
@@ -451,7 +451,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( machine ) );
 
@@ -498,7 +498,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( machine ) );
         runAndPull( machine, "BEGIN" );
@@ -527,7 +527,7 @@ public class BoltConnectionIT
     {
         // Given
         BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And given I've started a transaction that failed
         runAndPull( machine, "BEGIN" );
