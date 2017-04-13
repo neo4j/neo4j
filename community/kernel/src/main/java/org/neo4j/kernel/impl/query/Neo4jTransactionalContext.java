@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -43,8 +41,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTerminated;
-
 public class Neo4jTransactionalContext implements TransactionalContext
 {
     private final GraphDatabaseQueryService graph;
@@ -57,10 +53,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
 
-    private InternalTransaction transaction;
+    /**
+     * Current transaction.
+     * Field can be read from a different thread in {@link #terminate()}.
+     */
+    private volatile InternalTransaction transaction;
     private Statement statement;
     private boolean isOpen = true;
-    private AtomicBoolean terminated = new AtomicBoolean(false);
 
     private long pageHits;
     private long pageMisses;
@@ -141,22 +140,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
         }
     }
 
-    @Override // TODO: Make the state of this class a state machine that is a single value and maybe CAS state
-    // transitions
+    @Override
     public void terminate()
     {
-        if ( isOpen )
+        InternalTransaction currentTransaction = transaction;
+        if ( currentTransaction != null )
         {
-            terminated.set(true);
-            try
-            {
-                transaction.terminate();
-                isOpen = false;
-            }
-            catch ( NotInTransactionException e )
-            {
-                // Ok then. Nothing to do
-            }
+            currentTransaction.terminate();
         }
     }
 
@@ -243,9 +233,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
     private void checkNotTerminated()
     {
-        if ( terminated.get() )
+        InternalTransaction currentTransaction = transaction;
+        if ( currentTransaction != null )
         {
-            throw new TransactionTerminatedException( TransactionTerminated );
+            currentTransaction.terminationReason().ifPresent( status ->
+            {
+                throw new TransactionTerminatedException( status );
+            } );
         }
     }
 
