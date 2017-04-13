@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,21 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v2_3
+package org.neo4j.cypher.internal.frontend.v2_3.ast.functions
 
-package object symbols {
-  val CTAny = AnyType.instance
-  val CTBoolean = BooleanType.instance
-  val CTString = StringType.instance
-  val CTNumber = NumberType.instance
-  val CTFloat = FloatType.instance
-  val CTInteger = IntegerType.instance
-  val CTMap = MapType.instance
-  val CTNode = NodeType.instance
-  val CTRelationship = RelationshipType.instance
-  val CTGeometry = GeometryType.instance
-  val CTPath = PathType.instance
-  def CTCollection(inner: CypherType) = CollectionType(inner)
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 
-  implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
+case object Distance extends Function with SimpleTypedFunction {
+  def name = "distance"
+
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat)
+  )
 }

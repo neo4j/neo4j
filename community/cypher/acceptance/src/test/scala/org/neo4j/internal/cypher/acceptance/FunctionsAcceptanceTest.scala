@@ -219,6 +219,51 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("n" -> node)))
   }
 
+  test("point function should work wiht literal map") {
+    val result = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
+    println(result.executionPlanDescription())
+    result.toList should equal(List(Map("point" -> Map("latitude" -> 12.78, "longitude" -> 56.7))))
+  }
 
+  test("point function should work with previous map") {
+    val result = executeWithAllPlanners("WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point")
+    println(result.executionPlanDescription())
+    result.toList should equal(List(Map("point" -> Map("latitude" -> 12.78, "longitude" -> 56.7))))
+  }
 
+  test("distance function should work on co-located points") {
+    val result = executeWithAllPlanners("WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist")
+    println(result.executionPlanDescription())
+    result.toList should equal(List(Map("dist" -> 0.0)))
+  }
+
+  test("distance function should work on nearby points") {
+    val result = executeWithAllPlanners(
+      """
+        |WITH point({longitude: 12.78, latitude: 56.7}) as p1, point({latitude: 56.71, longitude: 12.79}) as p2
+        |RETURN distance(p1,p2) as dist
+      """.stripMargin)
+    println(result.executionPlanDescription())
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1270)
+  }
+
+  test("distance function should work on distant points") {
+    val result = executeWithAllPlanners(
+      """
+        |WITH point({latitude: 56.7, longitude: 12.78}) as p1, point({longitude: -51.9, latitude: -16.7}) as p2
+        |RETURN distance(p1,p2) as dist
+      """.stripMargin)
+    println(result.executionPlanDescription())
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
+  }
+
+  test("distance function should measure distance from Copenhagen train station to Neo4j in Malmö") {
+    val result = executeWithAllPlanners(
+      """
+        |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1, point({latitude: 55.611784, longitude: 12.994341}) as p2
+        |RETURN distance(p1,p2) as dist
+      """.stripMargin)
+    println(result.executionPlanDescription())
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(27842)
+  }
 }
