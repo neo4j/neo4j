@@ -22,6 +22,7 @@ package org.neo4j.test.rule;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -67,6 +68,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     private String storeDir;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
+    private Map<Setting<?>, String> config;
 
     /**
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
@@ -296,6 +298,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         // Override to configure the database
 
         // Adjusted defaults for testing
+        if ( config != null )
+        {
+            for ( Map.Entry<Setting<?>,String> setting : config.entrySet() )
+            {
+                builder.setConfig( setting.getKey(), setting.getValue() );
+            }
+        }
     }
 
     public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
@@ -326,6 +335,26 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
             storeDir = database.getStoreDir();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
+    }
+
+    public DatabaseRule withSetting( Setting<?> key, String value )
+    {
+        if ( this.config == null )
+        {
+            this.config = new HashMap<>();
+        }
+        this.config.put( key, value );
+        return this;
+    }
+
+    public DatabaseRule withConfiguration( Map<Setting<?>,String> configuration )
+    {
+        if ( this.config == null )
+        {
+            this.config = new HashMap<>();
+        }
+        this.config.putAll( configuration );
+        return this;
     }
 
     public interface RestartAction

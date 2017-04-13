@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.Query;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -51,15 +50,8 @@ public class QueryInvalidationIT
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            builder.setConfig( GraphDatabaseSettings.query_statistics_divergence_threshold, "0.5" );
-            builder.setConfig( GraphDatabaseSettings.cypher_min_replan_interval, "1s" );
-        }
-    };
+            .withSetting( GraphDatabaseSettings.query_statistics_divergence_threshold, "0.5" )
+            .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, "1s" );
 
     @Test
     public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
