@@ -11,7 +11,7 @@ Architecture: all
 Section: database
 Priority: optional
 Pre-Depends: dpkg (>= 1.15.7.2)
-Depends: ${misc:Depends}, bash, daemon, adduser, psmisc, lsb-base, openjdk-8-jre | java8-runtime
+Depends: ${misc:Depends}, bash, daemon, adduser, psmisc, lsb-base, openjdk-8-jre-headless | java8-runtime-headless
 Conflicts:
 Replaces: ${REPLACES}, neo4j-advanced
 Description: graph database server
