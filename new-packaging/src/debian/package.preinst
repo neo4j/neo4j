@@ -52,7 +52,7 @@ case "$1" in
         update-rc.d neo4j-service remove
 
         if [ -d "${OLD_CERTIFICATES_DIR}" ]; then
-          mkdir -p "${NEW_CERTIFICATES_DIR}" && chown neo4j.nogroup "${NEW_CERTIFICATES_DIR}" && chmod 0755 "${NEW_CERTIFICATES_DIR}"
+          mkdir -p "${NEW_CERTIFICATES_DIR}" && chown neo4j:nogroup "${NEW_CERTIFICATES_DIR}" && chmod 0755 "${NEW_CERTIFICATES_DIR}"
           mv "${OLD_CERTIFICATES_DIR}"/snakeoil.cert "${NEW_CERTIFICATES_DIR}"/neo4j.cert
           mv "${OLD_CERTIFICATES_DIR}"/snakeoil.key "${NEW_CERTIFICATES_DIR}"/neo4j.key
           if [ -n "$(ls -A ${OLD_CERTIFICATES_DIR})" ]; then

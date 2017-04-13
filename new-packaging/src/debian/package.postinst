@@ -34,10 +34,8 @@ case "$1" in
         fi
 
         # directories needed for neo4j
-        chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
-        chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
-
-        update-rc.d neo4j defaults
+        chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
+        chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
 
         if [ -f /tmp/neo4j-upgraded-from-2.x ]; then
             # remove the old conffiles
@@ -107,9 +105,6 @@ case "$1" in
                 cat /etc/neo4j/neo4j-wrapper.conf >> /etc/neo4j/neo4j.conf
                 rm /etc/neo4j/neo4j-wrapper.conf
             fi
-
-            # Start neo4j
-            invoke-rc.d neo4j start
         fi
     ;;
 

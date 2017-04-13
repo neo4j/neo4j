@@ -24,7 +24,6 @@ case "$1" in
     purge)
         rm -rf /var/log/neo4j
     ;;
-    
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
         # let the packaging system take care of removing the init script
     ;;
@@ -41,5 +40,3 @@ esac
 #DEBHELPER#
 
 exit 0
-
-
