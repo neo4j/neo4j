@@ -41,27 +41,49 @@ public class TreeStatePairTest
     {
         Collection<Object[]> variants = new ArrayList<>();
 
-        //               ┌──────────────────┬──────────────────┬───────────────┬───────────────┐
-        //               │ State A          │ State B          │ Select newest │ Select oldest │
-        //               └──────────────────┴──────────────────┴───────────────┴───────────────┘
-        variant( variants, State.EMPTY,       State.EMPTY,       Selected.FAIL,  Selected.A );
-        variant( variants, State.EMPTY,       State.BROKEN,      Selected.FAIL,  Selected.A );
-        variant( variants, State.EMPTY,       State.VALID,       Selected.B,     Selected.A );
+        //               ┌──────────────-───-────┬──────────────────────────┬───────────────┬───────────────┐
+        //               │ State A               │ State B                  │ Select newest │ Select oldest │
+        //               └───────────────────────┴──────────────────────────┴───────────────┴───────────────┘
+        variant( variants, State.EMPTY,             State.EMPTY,             Selected.FAIL,  Selected.A );
+        variant( variants, State.EMPTY,             State.BROKEN,            Selected.FAIL,  Selected.A );
+        variant( variants, State.EMPTY,             State.VALID,             Selected.B,     Selected.A );
 
-        variant( variants, State.BROKEN,      State.EMPTY,       Selected.FAIL,  Selected.A );
-        variant( variants, State.BROKEN,      State.BROKEN,      Selected.FAIL,  Selected.A );
-        variant( variants, State.BROKEN,      State.VALID,       Selected.B,     Selected.A );
+        variant( variants, State.BROKEN,            State.EMPTY,             Selected.FAIL,  Selected.A );
+        variant( variants, State.BROKEN,            State.BROKEN,            Selected.FAIL,  Selected.A );
+        variant( variants, State.BROKEN,            State.VALID,             Selected.B,     Selected.A );
 
-        variant( variants, State.VALID,       State.EMPTY,       Selected.A,     Selected.B );
-        variant( variants, State.VALID,       State.BROKEN,      Selected.A,     Selected.B );
-        variant( variants, State.VALID,       State.OLD_VALID,   Selected.A,     Selected.B );
-        variant( variants, State.VALID,       State.VALID,       Selected.FAIL,  Selected.A );
-        variant( variants, State.OLD_VALID,   State.VALID,       Selected.B,     Selected.A );
+        variant( variants, State.VALID,             State.EMPTY,             Selected.A,     Selected.B );
+        variant( variants, State.VALID,             State.BROKEN,            Selected.A,     Selected.B );
 
-        variant( variants, State.CRASH_VALID, State.VALID,       Selected.A,     Selected.B );
-        variant( variants, State.VALID,       State.CRASH_VALID, Selected.B,     Selected.A );
-        variant( variants, State.WIDE_VALID,  State.CRASH_VALID, Selected.FAIL,  Selected.A );
-        variant( variants, State.CRASH_VALID, State.WIDE_VALID,  Selected.FAIL,  Selected.A );
+        variant( variants, State.VALID,             State.OLD_VALID,         Selected.A,     Selected.B );
+        variant( variants, State.VALID,             State.OLD_VALID_DIRTY,   Selected.A,     Selected.B );
+        variant( variants, State.VALID_DIRTY,       State.OLD_VALID,         Selected.A,     Selected.B );
+
+        variant( variants, State.VALID,             State.VALID,             Selected.FAIL,  Selected.A );
+        variant( variants, State.VALID,             State.VALID_DIRTY,       Selected.A,     Selected.B );
+        variant( variants, State.VALID_DIRTY,       State.VALID,             Selected.B,     Selected.A );
+
+        variant( variants, State.OLD_VALID,         State.VALID,             Selected.B,     Selected.A );
+        variant( variants, State.OLD_VALID_DIRTY,   State.VALID,             Selected.B,     Selected.A );
+        variant( variants, State.OLD_VALID,         State.VALID_DIRTY,       Selected.B,     Selected.A );
+
+        variant( variants, State.CRASH_VALID,       State.VALID,             Selected.A,     Selected.B );
+        variant( variants, State.CRASH_VALID_DIRTY, State.VALID,             Selected.A,     Selected.B );
+        variant( variants, State.CRASH_VALID,       State.VALID_DIRTY,       Selected.A,     Selected.B );
+
+        variant( variants, State.VALID,             State.CRASH_VALID,       Selected.B,     Selected.A );
+        variant( variants, State.VALID_DIRTY,       State.CRASH_VALID,       Selected.B,     Selected.A );
+        variant( variants, State.VALID,             State.CRASH_VALID_DIRTY, Selected.B,     Selected.A );
+
+        variant( variants, State.WIDE_VALID,        State.CRASH_VALID,       Selected.FAIL,  Selected.A );
+        variant( variants, State.WIDE_VALID_DIRTY,  State.CRASH_VALID,       Selected.FAIL,  Selected.A );
+        variant( variants, State.WIDE_VALID,        State.CRASH_VALID_DIRTY, Selected.FAIL,  Selected.A );
+
+        variant( variants, State.CRASH_VALID,       State.WIDE_VALID,        Selected.FAIL,  Selected.A );
+        variant( variants, State.CRASH_VALID_DIRTY, State.WIDE_VALID,        Selected.FAIL,  Selected.A );
+        variant( variants, State.CRASH_VALID,       State.WIDE_VALID_DIRTY,  Selected.FAIL,  Selected.A );
+
+
         return variants;
     }
 
@@ -139,7 +161,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
+                TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9, true );
                 cursor.rewind();
                 // flip some of the bits as to break the checksum
                 long someOfTheBits = cursor.getLong( cursor.getOffset() );
@@ -151,7 +173,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13 );
+                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, true );
             }
         },
         CRASH_VALID // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
@@ -159,7 +181,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13 );
+                TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, true );
             }
         },
         WIDE_VALID // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
@@ -167,7 +189,7 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15 );
+                TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, true );
             }
         },
         OLD_VALID // stableGeneration:2 and unstableGeneration:3
@@ -175,7 +197,39 @@ public class TreeStatePairTest
             @Override
             void write( PageCursor cursor ) throws IOException
             {
-                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10 );
+                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, true );
+            }
+        },
+        VALID_DIRTY // stableGeneration:5 and unstableGeneration:6
+        {
+            @Override
+            void write( PageCursor cursor ) throws IOException
+            {
+                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, false );
+            }
+        },
+        CRASH_VALID_DIRTY // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
+        {
+            @Override
+            void write( PageCursor cursor ) throws IOException
+            {
+                TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, false );
+            }
+        },
+        WIDE_VALID_DIRTY // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
+        {
+            @Override
+            void write( PageCursor cursor ) throws IOException
+            {
+                TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, false );
+            }
+        },
+        OLD_VALID_DIRTY // stableGeneration:2 and unstableGeneration:3
+        {
+            @Override
+            void write( PageCursor cursor ) throws IOException
+            {
+                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, false );
             }
         };
 

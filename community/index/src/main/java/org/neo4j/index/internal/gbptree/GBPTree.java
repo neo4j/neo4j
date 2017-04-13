@@ -133,7 +133,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * If any of the above changes the on-page format then this version should be bumped, so that opening
      * an index on wrong format version fails and user will need to rebuild.
      */
-    static final int FORMAT_VERSION = 1;
+    static final int FORMAT_VERSION = 2;
 
     /**
      * For monitoring {@link GBPTree}.
@@ -162,8 +162,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * @param numberOfCleanedCrashPointers number of cleaned crashed pointers.
          * @param durationMillis time spent cleaning.
          */
-        default void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+        default void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                 long durationMillis )
+        {   // no-op by default
+        }
+
+        /**
+         * Report tree state on startup.
+         *
+         * @param clean true if tree was clean on startup.
+         */
+        default void startupState( boolean clean )
         {   // no-op by default
         }
     }
@@ -288,15 +297,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Monitor monitor;
 
     /**
-     * Indicate that index was opened in a read only mode.
-     */
-    private final boolean readOnly;
-
-    /**
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
     private boolean closed;
+
+    /**
+     * True if tree is clean, false if dirty
+     */
+    private boolean clean;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -304,7 +313,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
      * in the header. At the very least {@link Layout#identifier()} will be matched.
-     * If index is opened in read only mode, no writes are allowed.
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
@@ -315,15 +323,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
-     * @param readOnly true if tree should be opened in read only mode.
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader, boolean readOnly ) throws IOException
+            Monitor monitor, Header.Reader headerReader ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
-        this.readOnly = readOnly;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -335,6 +341,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         try
         {
+            // Create or load state
             if ( created )
             {
                 initializeAfterCreation( layout );
@@ -343,6 +350,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 loadState( pagedFile, headerReader );
             }
+            this.monitor.startupState( clean );
+
+            // Prepare tree for action
+            boolean needsCleaning = !clean;
+            clean = false;
+            bumpUnstableGeneration();
+            forceState();
+            if ( needsCleaning )
+            {
+                cleanCrashedPointers();
+            }
+
         }
         catch ( Throwable t )
         {
@@ -382,6 +401,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         freeList.initializeAfterCreation();
         changesSinceLastCheckpoint = true;
         checkpoint( IOLimiter.unlimited() );
+        clean = true;
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
@@ -415,10 +435,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // First time
             monitor.noStoreFile();
-            if ( readOnly )
-            {
-                throw new UnsupportedOperationException( "Can't create new GBPTree in read only mode." );
-            }
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
@@ -459,10 +475,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         int freeListWritePos = state.freeListWritePos();
         int freeListReadPos = state.freeListReadPos();
         freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
-        if ( !readOnly )
-        {
-            bumpUnstableGeneration();
-        }
+        clean = state.isClean();
     }
 
     private void writeState( PagedFile pagedFile, Header.Writer headerWriter ) throws IOException
@@ -477,7 +490,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ),
                     root.id(), root.generation(),
                     freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
-                    freeList.writePos(), freeList.readPos() );
+                    freeList.writePos(), freeList.readPos(), clean );
 
             writerHeader( pagedFile, headerWriter, other( states, oldestState ), cursor );
 
@@ -674,15 +687,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Checkpoints and flushes any pending changes to storage. After a successful call to this method
      * the data is durable and safe. {@link #writer() Changes} made after this call and until crashing or
-     * otherwise non-clean shutdown (by omitting call to {@link #close()}) will need to be replayed
-     * next time this tree is opened. Re-applying such changes will then require a call to
-     * {@link #bumpUnstableGeneration()} before {@link #writer() writing} the changes.
-     *
-     * A call to {@link #close()} will automatically do a checkpoint as well, if there have been changes made
-     * since last call to {@link #checkpoint(IOLimiter)} or since opening this tree.
+     * otherwise non-clean shutdown (by omitting calling checkpoint before {@link #close()}) will need to be replayed
+     * next time this tree is opened.
+     * <p>
+     * Header writer is expected to leave consumed {@link PageCursor} at end of written header for calculation of
+     * header size.
      *
      * @param ioLimiter for controlling I/O usage.
-     * @param headerWriter hook for writing header data.
+     * @param headerWriter hook for writing header data, must leave cursor at end of written header.
      * @throws IOException on error flushing to storage.
      */
     public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
@@ -705,11 +717,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can't checkpoint in read only mode." );
-        }
-
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
@@ -773,6 +780,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
             // Force close on writer to not risk deadlock on pagedFile.close()
             writer.close();
+            if ( !changesSinceLastCheckpoint )
+            {
+                clean = true;
+                forceState();
+            }
             pagedFile.close();
             closed = true;
         }
@@ -794,10 +806,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Writer<KEY,VALUE> writer() throws IOException
     {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can't open writer in read only mode." );
-        }
         if ( !writerTaken.compareAndSet( false, true ) )
         {
             throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
@@ -840,12 +848,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     /**
      * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
-     * with generation in this gap are considered to be 'crashed' and will be cleaned up if {@link #finishRecovery()} is
-     * triggered.
+     * with generation in this gap are considered to be 'crashed' and will be cleaned up if
+     * {@link #cleanCrashedPointers()} is triggered.
      *
      * @throws IOException on {@link PageCache} error.
      */
     private void bumpUnstableGeneration() throws IOException
+    {
+        generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
+    }
+
+    private void forceState() throws IOException
     {
         if ( changesSinceLastCheckpoint )
         {
@@ -854,25 +867,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     "have been made" );
         }
 
-        // Increment unstable generation, widening the gap between stable and unstable generation
-        // so that generations in between are considered crash generation(s).
-        generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
         writeState( pagedFile, CARRY_OVER_PREVIOUS_HEADER );
         pagedFile.flushAndForce();
     }
 
     /**
-     * Must be called after all recovered updates have been applied and before doing further work,
-     * be it reading or writing.
+     * Called on start if tree was not clean.
      *
      * @throws IOException on {@link PageCache} error.
      */
-    public void finishRecovery() throws IOException
+    private void cleanCrashedPointers() throws IOException
     {
-        if ( readOnly )
-        {
-            throw new UnsupportedOperationException( "Can't initiate finish recovery in read only mode." );
-        }
         // For the time being there's an issue where update that come in before a crash
         // may be applied in a different order than when they get recovered.
         // This may have structural changes be different during recovery than what they were

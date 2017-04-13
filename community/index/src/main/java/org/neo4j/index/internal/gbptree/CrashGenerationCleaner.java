@@ -114,7 +114,7 @@ class CrashGenerationCleaner
         }
 
         long endTime = currentTimeMillis();
-        monitor.recoveryCompleted( highTreeNodeId - lowTreeNodeId, cleanedPointers.get(), endTime - startTime );
+        monitor.cleanupFinished( highTreeNodeId - lowTreeNodeId, cleanedPointers.get(), endTime - startTime );
     }
 
     private Runnable cleaner( AtomicLong nextId, AtomicReference<Throwable> error, AtomicInteger cleanedPointers )

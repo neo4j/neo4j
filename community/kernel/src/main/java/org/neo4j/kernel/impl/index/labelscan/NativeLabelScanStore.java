@@ -138,19 +138,6 @@ public class NativeLabelScanStore implements LabelScanStore
     private GBPTree<LabelScanKey,LabelScanValue> index;
 
     /**
-     * Whether or not {@link #start()} has been called.
-     * This is read in {@link #newWriter()} which may be called from threads other than the one setting it.
-     */
-    private volatile boolean started;
-
-    /**
-     * If {@link #index} is {@code null} and {@link #started} is {@code false},
-     * then it's between {@link #init()} and {@link #start()}. If {@link #newWriter()} is called at this
-     * point we infer that recovery is taking place and so we notify the {@link GBPTree} about that fact.
-     */
-    private boolean recoveryStarted;
-
-    /**
      * Set during {@link #init()} if {@link #start()} will need to rebuild the whole label scan store from
      * {@link FullStoreChangeStream}.
      */
@@ -223,13 +210,6 @@ public class NativeLabelScanStore implements LabelScanStore
 
         try
         {
-            if ( !started && !recoveryStarted )
-            {
-                // Let's notify our index that recovery is about to commence, we do this once before
-                // the first recovered transaction gets applied.
-                recoveryStarted = true;
-            }
-
             return writer();
         }
         catch ( IOException e )
@@ -251,7 +231,6 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         try
         {
-            maybeCompleteRecovery();
             index.checkpoint( limiter );
         }
         catch ( IOException e )
@@ -369,7 +348,7 @@ public class NativeLabelScanStore implements LabelScanStore
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
         MutableBoolean isDirty = new MutableBoolean();
         Header.Reader getDirty = (pageCursor, length) -> isDirty.setValue( pageCursor.getByte() == DIRTY );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty, readOnly );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty );
         return isDirty.getValue();
     }
 
@@ -378,7 +357,7 @@ public class NativeLabelScanStore implements LabelScanStore
         return new GBPTree.Monitor()
         {
             @Override
-            public void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                     long durationMillis )
             {
                 monitor.recoveryCompleted( map(
@@ -438,19 +417,6 @@ public class NativeLabelScanStore implements LabelScanStore
 
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
-        }
-
-        maybeCompleteRecovery();
-
-        started = true;
-    }
-
-    private void maybeCompleteRecovery() throws IOException
-    {
-        if ( recoveryStarted )
-        {
-            index.finishRecovery();
-            recoveryStarted = false;
         }
     }
 

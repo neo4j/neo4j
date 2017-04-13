@@ -19,17 +19,17 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SimpleRecoveryCompleteMonitor implements GBPTree.Monitor
+class SimpleCleanupMonitor implements GBPTree.Monitor
 {
-    boolean recoveryCompleted;
+    boolean cleanupFinished;
     long numberOfPagesVisited;
     long numberOfCleanedCrashPointers;
 
     @Override
-    public void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+    public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
             long durationMillis )
     {
-        recoveryCompleted = true;
+        cleanupFinished = true;
         this.numberOfPagesVisited = numberOfPagesVisited;
         this.numberOfCleanedCrashPointers = numberOfCleanedCrashPointers;
     }

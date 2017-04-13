@@ -48,7 +48,9 @@ public class Header
 
     static final Writer CARRY_OVER_PREVIOUS_HEADER = (from,length,to) ->
     {
-        from.copyTo( from.getOffset(), to, to.getOffset(), length );
+        int toOffset = to.getOffset();
+        from.copyTo( from.getOffset(), to, toOffset, length );
+        to.setOffset( toOffset + length );
     };
 
     static Writer replace( Consumer<PageCursor> writer )

@@ -43,7 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -94,9 +93,6 @@ public class GBPTreeRecoveryIT
         try ( PageCache pageCache = createPageCache();
               GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
-            // this is the mimic:ed recovery
-            index.finishRecovery();
-
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( key, value );
@@ -222,7 +218,6 @@ public class GBPTreeRecoveryIT
                 GBPTree<MutableLong,MutableLong> index = createIndex( pageCache, file ) )
         {
             recover( recoveryActions, index );
-            index.finishRecovery();
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says
@@ -386,7 +381,7 @@ public class GBPTreeRecoveryIT
 
     private static GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache, File file ) throws IOException
     {
-        return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER, false );
+        return new GBPTree<>( pageCache, file, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER );
     }
 
     private PageCache createPageCache()
