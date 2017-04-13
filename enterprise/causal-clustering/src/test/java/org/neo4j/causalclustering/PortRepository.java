@@ -21,7 +21,10 @@ package org.neo4j.causalclustering;
 
 import static org.neo4j.causalclustering.PortConstants.EphemeralPortMaximum;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileLock;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,21 +42,48 @@ public class PortRepository
         this.currentPort = initialPort;
     }
 
+    // synchronize between threads in this JVM
     public synchronized int reserveNextPort()
     {
         while ( currentPort <= EphemeralPortMaximum )
         {
-            Path portFile = directory.resolve( "port" + currentPort );
+            Path portFilePath = directory.resolve( "port" + currentPort );
+
+            // fail fast
+            if ( Files.exists( portFilePath ) )
+            {
+                currentPort++;
+                continue;
+            }
 
             try
             {
-                Files.createFile( portFile );
+                File portFile = portFilePath.toFile();
+
+                // take a lock, do a test, plant a flag. Cannot. possibly. fail.
+                try ( FileOutputStream fileOutputStream = new FileOutputStream( portFile, true ) )
+                {
+                    // synchronize between processes running parallel builds
+                    FileLock fileLock = fileOutputStream.getChannel().tryLock();
+
+                    if ( fileLock == null )
+                    {
+                        currentPort++;
+                        continue;
+                    }
+
+                    // fail fast
+                    if (portFile.length() != 0)
+                    {
+                        currentPort++;
+                        continue;
+                    }
+
+                    fileOutputStream.write( "Hallelujah!".getBytes() );
+                    fileOutputStream.flush();
+                }
 
                 return currentPort++;
-            }
-            catch ( FileAlreadyExistsException e )
-            {
-                currentPort++;
             }
             catch ( IOException e )
             {
