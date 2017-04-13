@@ -78,14 +78,19 @@ cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
 cp ${script} ${scripts_directory}/neo4j-shell
 cp ${script} ${scripts_directory}/cypher-shell
-if [ ${package_name} = "neo4j-enterprise" ]
-then
-  cp ${script} ${scripts_directory}/neo4j-backup
-fi
 
 # Copy manpages
 rm -rf ${sources_directory}/manpages
 cp -r ${common_directory}/manpages ${sources_directory}
+
+# Backup script and manpage is enterprise only
+if [ ${package_name} = "neo4j-enterprise" ]
+then
+  cp ${script} ${scripts_directory}/neo4j-backup
+else
+  rm ${sources_directory}/manpages/neo4j-backup.1
+fi
+
 gzip ${sources_directory}/manpages/*
 
 # Make UDC successful

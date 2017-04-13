@@ -34,8 +34,8 @@ echo "Package name: ${package_name}"
 # Extract tarball and prepare workspace
 mkdir -p ${package_directory}/server
 tar --strip-components=1 -xf ${tarball} -C ${package_directory}/server
-skeleton_directory=src/debian/skeleton
-cp -r ${skeleton_directory}/* ${package_directory}
+
+cp -r src/debian ${package_directory}
 
 # Rename service files to match package-name so we still get a service called neo4j
 cp src/common/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
@@ -49,15 +49,12 @@ do
   mv ${package_directory}/debian/${file} ${newname}
 done
 
-# Copy in package extras
-extras_directory=src/debian/extras/${package_name}
-cp -r ${extras_directory}/* ${package_directory}
-
 # Update changelog, control and files with package name etc
-DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/changelog > ${package_directory}/debian/changelog
+DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < src/debian/changelog > ${package_directory}/debian/changelog
 [[ ${package_name} = "neo4j" ]] && replaces="neo4j-enterprise" || replaces="neo4j"
-PACKAGE_NAME=${package_name} REPLACES=${replaces} envsubst '${PACKAGE_NAME} ${REPLACES}' < ${skeleton_directory}/debian/control > ${package_directory}/debian/control
-PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${VERSION}' < ${skeleton_directory}/debian/files > ${package_directory}/debian/files
+PACKAGE_NAME=${package_name} REPLACES=${replaces} envsubst '${PACKAGE_NAME} ${REPLACES}' < src/debian/control > ${package_directory}/debian/control
+PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${VERSION}' < src/debian/files > ${package_directory}/debian/files
+PACKAGE_NAME=${package_name} envsubst '${PACKAGE_NAME}' < src/debian/package.lintian-overrides > ${package_directory}/debian/${package_name}.lintian-overrides
 
 # Make the Neo4j wrapper scripts available to debuild
 scripts_directory=${package_directory}/server/scripts
@@ -95,4 +92,4 @@ chmod 700 ${package_directory}/server/bin/*
 chmod 700 ${scripts_directory}/*
 
 # build package and metadata files
-(cd ${package_directory} && debuild -B -uc -us --lintian-opts --profile debian)
+cd ${package_directory} && debuild -A -uc -us --lintian-opts --profile debian
