@@ -67,6 +67,39 @@ public class ProcedureAllowedConfigTest
     }
 
     @Test
+    public void shouldNotFailOnEmptyStringDefaultName()
+    {
+        Config config = Config.defaults()
+                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, ""));
+        new ProcedureAllowedConfig( config );
+    }
+
+    @Test
+    public void shouldNotFailOnEmptyStringRoles()
+    {
+        Config config = Config.defaults()
+                .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "" ) );
+        new ProcedureAllowedConfig( config );
+    }
+
+    @Test
+    public void shouldNotFailOnBadStringRoles()
+    {
+        Config config = Config.defaults()
+                .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "matrix" ) );
+        new ProcedureAllowedConfig( config );
+    }
+
+    @Test
+    public void shouldNotFailOnEmptyStringBoth()
+    {
+        Config config = Config.defaults()
+                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "",
+                        PROC_ALLOWED_SETTING_ROLES, "" ) );
+       new ProcedureAllowedConfig( config );
+    }
+
+    @Test
     public void shouldHaveConfigsWithWildcardProcedureAllowed()
     {
         Config config = Config.defaults()
