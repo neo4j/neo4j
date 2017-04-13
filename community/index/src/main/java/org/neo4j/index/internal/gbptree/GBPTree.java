@@ -72,8 +72,6 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * while at the same time keeping one pointer to the stable version, in case there's a crash or non-clean
  * shutdown, followed by recovery.
  * <p>
- * Currently no leaves will be removed or merged as part of {@link Writer#remove(Object) removals}.
- * <p>
  * A single writer w/ multiple concurrent readers is supported. Assuming usage adheres to this
  * constraint neither writer nor readers are blocking. Readers are virtually garbage-free.
  * <p>
@@ -103,19 +101,16 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * </pre>
 
  * The writes that happened before the last checkpoint are durable and safe, but the writes after it are not.
- * The tree can however get back to a consistent state by:
- * <ol>
- * <li>Creator of this tree detects that recovery is required (i.e. non-clean shutdown) and if so must call
- * {@link #bumpUnstableGeneration()} ones, before any writes during recovery are made.</li>
- * <li>Replaying all the writes, exactly as they were made, since the last checkpoint all the way up
- * to the crash ({@code x}). Even including writes before the last checkpoint is OK, important is that
- * <strong>at least</strong> writes since last checkpoint are included.
- * </ol>
+ * The tree can however get back to a consistent state by replaying all the writes, exactly as they were made,
+ * since the last checkpoint all the way up to the crash ({@code x}). Even including writes before the last
+ * checkpoint is OK, important is that <strong>at least</strong> writes since last checkpoint are included.
  *
- * Failure to follow the above steps will result in unknown state of the tree after a crash.
+ * If failing to replay missing writes, that data will simply be missing from the tree and most likely leave the
+ * database inconsistent.
  * <p>
  * The reason as to why {@link #close()} doesn't do a checkpoint is that checkpointing as a whole should
- * be managed externally, keeping multiple resources in sync w/ regards to checkpoints.
+ * be managed externally, keeping multiple resources in sync w/ regards to checkpoints. This is especially important
+ * since a it is impossible to recognize crashed pointers after a checkpoint.
  *
  * @param <KEY> type of keys
  * @param <VALUE> type of values
@@ -187,7 +182,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    public static final Header.Reader NO_HEADER = (cursor,length) -> {};
+    static final Header.Reader NO_HEADER = (cursor,length) -> {};
 
     /**
      * Paged file in a {@link PageCache} providing the means of storage.
@@ -313,6 +308,19 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
      * in the header. At the very least {@link Layout#identifier()} will be matched.
+     * <p>
+     * On start, tree can be in a clean or dirty state. If dirty, it will
+     * {@link #cleanCrashedPointers() clean crashed pointers} as part of constructor. Tree is only clean if since last
+     * time it was opened it was {@link #close() closed} without any non-checkpointed changes present. Correct usage
+     * pattern of the GBPTree is:
+     *
+     * <pre>
+     *     try ( GBPTree tree = new GBPTree(...) )
+     *     {
+     *         // Use the tree
+     *         tree.checkpoint( ... );
+     *     }
+     * </pre>
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
