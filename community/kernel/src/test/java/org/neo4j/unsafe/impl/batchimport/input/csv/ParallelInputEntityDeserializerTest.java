@@ -38,6 +38,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -134,12 +135,14 @@ public class ParallelInputEntityDeserializerTest
         // WHEN closing before having consumed all results
         DeserializerFactory<InputNode> deserializerFactory =
                 defaultNodeDeserializer( groups, config, idType, badCollector );
+        boolean noticedPanic = false;
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
                 defaultFormatNodeFileHeader(), config, idType, 3, 3, deserializerFactory,
                 Validators.<InputNode>emptyValidator(), InputNode.class ) )
         {
             deserializer.hasNext();
-            deserializer.receivePanic( new RuntimeException() );
+            RuntimeException panic = new RuntimeException();
+            deserializer.receivePanic( panic );
 
             // Why pull some items after it has been closed? The above close() symbolizes a panic from
             // somewhere, anywhere in the importer. At that point there are still batches that have been
@@ -148,15 +151,26 @@ public class ParallelInputEntityDeserializerTest
             // result to the result queue (where the loop didn't care if it had been forcefully shut down.
             // To get one of the processing threads into doing that we need to pull some of the already
             // processed items so that it wants to go ahead and offer its result.
-            for ( int i = 0; i < 100 && deserializer.hasNext(); i++ )
+            try
             {
-                deserializer.next();
+                for ( int i = 0; i < 100 && deserializer.hasNext(); i++ )
+                {
+                    deserializer.next();
+                }
+            }
+            catch ( RuntimeException e )
+            {
+                // THEN it should notice as it goes through the results
+                assertSame( panic, e );
+                noticedPanic = true;
             }
         }
         catch ( TaskExecutionPanicException e )
         {
-            // THEN it should be able to exit (this exception comes as a side effect)
+            // THEN it should be able to exit (this exception comes as a side effect if iteration above didn't see it)
+            noticedPanic = true;
         }
+        assertTrue( noticedPanic );
     }
 
     private Data<InputNode> testData( int entities )
