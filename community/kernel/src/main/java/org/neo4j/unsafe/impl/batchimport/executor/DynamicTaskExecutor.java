@@ -142,13 +142,10 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @Override
     public void assertHealthy()
     {
-        if ( shutDown )
+        Throwable panic = this.panic.get();
+        if ( panic != null )
         {
-            Throwable panic = this.panic.get();
-            if ( panic != null )
-            {
-                throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
-            }
+            throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
         }
     }
 

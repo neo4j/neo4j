@@ -36,6 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -316,6 +317,42 @@ public class DynamicTaskExecutorTest
 
         // THEN we should be able to do so, there was a recent fix here and before that fix
         // shutdown() would hang, that's why we wait for 10 seconds here to cap it if there's an issue.
+    }
+
+    @Test
+    public void shouldNoticeBadHealthBeforeBeingClosed() throws Exception
+    {
+        // GIVEN
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
+        RuntimeException panic = new RuntimeException( "My failure" );
+
+        // WHEN
+        executor.receivePanic( panic );
+
+        try
+        {
+            // THEN
+            executor.assertHealthy();
+            fail( "Should have failed" );
+        }
+        catch ( TaskExecutionPanicException e )
+        {
+            assertSame( panic, e.getCause() );
+        }
+
+        // and WHEN
+        executor.close();
+
+        try
+        {
+            // THEN
+            executor.assertHealthy();
+            fail( "Should have failed" );
+        }
+        catch ( TaskExecutionPanicException e )
+        {
+            assertSame( panic, e.getCause() );
+        }
     }
 
     private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
