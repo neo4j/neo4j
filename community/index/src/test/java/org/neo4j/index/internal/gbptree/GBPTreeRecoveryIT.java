@@ -50,7 +50,7 @@ import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public class GBPTreeRecoveryTest
+public class GBPTreeRecoveryIT
 {
     private static final int PAGE_SIZE = 256;
     private static final Action CHECKPOINT = new CheckpointAction();
