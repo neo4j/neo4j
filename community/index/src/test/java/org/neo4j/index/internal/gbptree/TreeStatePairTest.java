@@ -83,7 +83,6 @@ public class TreeStatePairTest
         variant( variants, State.CRASH_VALID_DIRTY, State.WIDE_VALID,        Selected.FAIL,  Selected.A );
         variant( variants, State.CRASH_VALID,       State.WIDE_VALID_DIRTY,  Selected.FAIL,  Selected.A );
 
-
         return variants;
     }
 
