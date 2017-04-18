@@ -45,26 +45,12 @@ public class CursorRelationshipIterator implements RelationshipIterator
         cursor = resourceCursor;
     }
 
-    private boolean nextCursor()
-    {
-        if ( cursor != null )
-        {
-            boolean hasNext = cursor.next();
-            if ( !hasNext )
-            {
-                close();
-            }
-            return hasNext;
-        }
-        return false;
-    }
-
     @Override
     public boolean hasNext()
     {
         if ( !hasDeterminedNext )
         {
-            hasNext = nextCursor();
+            hasNext = cursor != null && cursor.next();
             hasDeterminedNext = true;
         }
         return hasNext;
@@ -83,8 +69,7 @@ public class CursorRelationshipIterator implements RelationshipIterator
                 type = item.type();
                 startNode = item.startNode();
                 endNode = item.endNode();
-
-                return item.id();
+                return id;
             }
             finally
             {

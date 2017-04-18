@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{CloseableResource, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, PlannerQuery}
@@ -42,6 +42,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
+    when(context.resources).thenReturn(mock[CloseableResource])
 
     val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
@@ -80,6 +81,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
+    when(context.resources).thenReturn(mock[CloseableResource])
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
 
