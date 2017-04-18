@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import org.hamcrest.Matcher;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
@@ -30,18 +35,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.kernel.enterprise.ImpermanentEnterpriseDatabaseRule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.Collections.singletonMap;
