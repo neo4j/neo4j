@@ -1037,6 +1037,7 @@ public class BatchInsertTest
         labelScanStore.assertRecivedUpdate( node3, 2 );
         labelScanStore.assertRecivedUpdate( node4, 0, 1 );
         labelScanStore.assertRecivedUpdate( node5, 0, 2 );
+        labelScanStore.assertForcedWithNoMoreChanges();
     }
 
     @Test
@@ -1436,9 +1437,12 @@ public class BatchInsertTest
     private static class UpdateTrackingLabelScanStore implements LabelScanStore
     {
         private final List<NodeLabelUpdate> allUpdates = new ArrayList<>();
+        private boolean forced;
+        private int forcedOnWriterCount;
+        private int writersClosed;
         int writersCreated;
 
-        public void assertRecivedUpdate( long node, long... labels )
+        void assertRecivedUpdate( long node, long... labels )
         {
             for ( NodeLabelUpdate update : allUpdates )
             {
@@ -1453,9 +1457,22 @@ public class BatchInsertTest
                     allUpdates );
         }
 
+        void assertForcedWithNoMoreChanges()
+        {
+            if ( !forced || forcedOnWriterCount != writersCreated || writersCreated != writersClosed )
+            {
+                fail( "Expected label scan store to be have been forced and free from new updates" );
+            }
+        }
+
         @Override
         public void force( IOLimiter limiter ) throws UnderlyingStorageException
         {
+            if ( writersCreated == writersClosed )
+            {
+                forced = true;
+                forcedOnWriterCount = writersCreated;
+            }
         }
 
         @Override
@@ -1510,6 +1527,7 @@ public class BatchInsertTest
         @Override
         public LabelScanWriter newWriter()
         {
+            forced = false;
             writersCreated++;
             return new LabelScanWriter()
             {
@@ -1522,6 +1540,7 @@ public class BatchInsertTest
                 @Override
                 public void close() throws IOException
                 {
+                    writersClosed++;
                 }
             };
         }
