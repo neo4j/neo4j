@@ -90,9 +90,9 @@ public class NativeLabelScanStore implements LabelScanStore
     private static final byte CLEAN = (byte) 0x00;
 
     /**
-     * Written in header to indicate native label scan store is dirty
+     * Written in header to indicate native label scan store is rebuilding
      */
-    private static final byte DIRTY = (byte) 0x01;
+    private static final byte REBUILDING = (byte) 0x01;
 
     /**
      * Whether or not this label scan store is read-only.
@@ -149,12 +149,12 @@ public class NativeLabelScanStore implements LabelScanStore
     private final NativeLabelScanWriter singleWriter;
 
     /**
-     * Write dirty bit to header
+     * Write rebuilding bit to header.
      */
-    private static final Consumer<PageCursor> writeDirty = pageCursor -> pageCursor.putByte( DIRTY );
+    private static final Consumer<PageCursor> writeRebuilding = pageCursor -> pageCursor.putByte( REBUILDING );
 
     /**
-     * Remove dirty bit from header
+     * Write clean header.
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
@@ -340,16 +340,17 @@ public class NativeLabelScanStore implements LabelScanStore
     }
 
     /**
-     * @return true instantiated tree needs to be rebuilt
+     * @return true if instantiated tree needs to be rebuilt.
      */
     private boolean instantiateTree() throws IOException
     {
         monitors.addMonitorListener( treeMonitor() );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
-        MutableBoolean isDirty = new MutableBoolean();
-        Header.Reader getDirty = (pageCursor, length) -> isDirty.setValue( pageCursor.getByte() == DIRTY );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, getDirty );
-        return isDirty.getValue();
+        MutableBoolean isRebuilding = new MutableBoolean();
+        Header.Reader readRebuilding =
+                (pageCursor, length) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding );
+        return isRebuilding.getValue();
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -405,7 +406,7 @@ public class NativeLabelScanStore implements LabelScanStore
             monitor.rebuilding();
             long numberOfNodes;
 
-            index.checkpoint( IOLimiter.unlimited(), writeDirty );
+            index.checkpoint( IOLimiter.unlimited(), writeRebuilding );
 
             // Intentionally ignore read-only flag here when rebuilding.
             try ( LabelScanWriter writer = writer() )
