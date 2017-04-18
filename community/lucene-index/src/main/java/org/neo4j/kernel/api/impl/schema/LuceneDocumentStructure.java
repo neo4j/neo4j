@@ -253,6 +253,12 @@ public class LuceneDocumentStructure
         }
     }
 
+    public static Field encodeValueField(Object value)
+    {
+        ValueEncoding encoding = ValueEncoding.forValue( value );
+        return encoding.encodeField( encoding.key(), value );
+    }
+
     private static class DocWithId
     {
         private final Document document;
