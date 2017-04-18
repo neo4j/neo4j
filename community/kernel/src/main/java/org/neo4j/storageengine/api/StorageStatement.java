@@ -69,7 +69,7 @@ public interface StorageStatement extends AutoCloseable
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
      * @param nodeId id of node to get cursor for.
-     * @param assertOpen to check if source transaction is still open on each property value fetch
+     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch.
      * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
      */
     Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, AssertOpen assertOpen );
@@ -80,7 +80,7 @@ public interface StorageStatement extends AutoCloseable
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
      * @param nodeIds ids of nodes to get cursor for.
-     * @param assertOpen to check if source transaction is still open on each property value fetch
+     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
      * @return a {@link Cursor} over {@link NodeItem} for the given node ids.
      */
     Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIds, AssertOpen assertOpen );
@@ -92,7 +92,7 @@ public interface StorageStatement extends AutoCloseable
      * through the selection.
      *
      * @param relationshipId id of relationship to get cursor for.
-     * @param assertOpen to check if source transaction is still open on each property value fetch
+     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
      * @return a {@link Cursor} over {@link RelationshipItem} for the given {@code relationshipId}.
      */
     Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId,
@@ -105,7 +105,7 @@ public interface StorageStatement extends AutoCloseable
      * through the selection.
      *
      * @param relationshipIds ids of relationships to get cursor for.
-     * @param assertOpen to check if source transaction is still open on each property value fetch
+     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
      * @return a {@link Cursor} over {@link RelationshipItem} for the given relationship ids.
      */
     Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator relationshipIds,
@@ -116,7 +116,7 @@ public interface StorageStatement extends AutoCloseable
      * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
-     * @param assertOpen to check if source transaction is still open on each property value fetch
+     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
      * @return {@link Cursor} over all stored nodes.
      */
     Cursor<NodeItem> nodesGetAllCursor( AssertOpen assertOpen );
@@ -127,7 +127,7 @@ public interface StorageStatement extends AutoCloseable
      * will have to be made to place the cursor over the first item and then more calls to move the cursor
      * through the selection.
      *
-     * @param assertOpen to check if source transaction is still open on each property value fetch
+     * @param assertOpen tied to resource(s) expected to still be open on each property value fetch
      * @return a {@link Cursor} over all stored relationships.
      */
     Cursor<RelationshipItem> relationshipsGetAllCursor( AssertOpen assertOpen );
