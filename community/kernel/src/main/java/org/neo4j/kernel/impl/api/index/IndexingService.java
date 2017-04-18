@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -190,6 +191,7 @@ public class IndexingService extends LifecycleAdapter
     {
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
+        Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
         for ( IndexRule indexRule : indexRules )
         {
             IndexProxy indexProxy;
@@ -199,6 +201,8 @@ public class IndexingService extends LifecycleAdapter
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
+            indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( indexId, descriptor ) );
+
             log.debug( indexStateInfo( "init", indexId, initialState, descriptor ) );
             boolean constraint = indexRule.isConstraintIndex();
 
@@ -233,42 +237,9 @@ public class IndexingService extends LifecycleAdapter
             }
             indexMap.putIndexProxy( indexId, indexProxy );
         }
-        logIndexStateSummary( "init" );
+        logIndexStateSummary( "init", indexStates );
 
         indexMapRef.setIndexMap( indexMap );
-    }
-
-    private void logIndexStateSummary( String method )
-    {
-        int[] counts = new int[InternalIndexState.values().length];
-        for ( IndexRule indexRule : indexRules )
-        {
-            SchemaIndexProvider provider = providerMap.apply( indexRule.getProviderDescriptor() );
-            InternalIndexState state = provider.getInitialState( indexRule.getId() );
-            counts[state.ordinal()]++;
-        }
-
-        int mostIndex = -1;
-        for ( int i = 0; i < counts.length; i++ )
-        {
-            if ( mostIndex == -1 || counts[i] > counts[mostIndex] )
-            {
-                mostIndex = i;
-            }
-        }
-        InternalIndexState mostState = InternalIndexState.values()[mostIndex];
-        for ( IndexRule indexRule : indexRules )
-        {
-            long id = indexRule.getId();
-            SchemaIndexProvider provider = providerMap.apply( indexRule.getProviderDescriptor() );
-            InternalIndexState state = provider.getInitialState( id );
-            if ( mostState != state )
-            {
-                IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
-                log.info( indexStateInfo( method, id, state, descriptor ) );
-            }
-        }
-        log.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostState ) );
     }
 
     // Recovery semantics: This is to be called after init, and after the database has run recovery.
@@ -281,11 +252,14 @@ public class IndexingService extends LifecycleAdapter
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
+        Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
         indexMap.foreachIndexProxy( ( indexId, proxy ) -> {
             InternalIndexState state = proxy.getState();
             IndexDescriptor descriptor = proxy.getDescriptor();
+            indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
+                    .add( new IndexLogRecord( indexId, descriptor ) );
             log.debug( indexStateInfo( "start", indexId, state, descriptor ) );
             switch ( state )
             {
@@ -304,7 +278,7 @@ public class IndexingService extends LifecycleAdapter
                     throw new IllegalStateException( "Unknown state: " + state );
             }
         } );
-        logIndexStateSummary( "start" );
+        logIndexStateSummary( "start", indexStates );
 
         // Drop placeholder proxies for indexes that need to be rebuilt
         dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
@@ -804,5 +778,52 @@ public class IndexingService extends LifecycleAdapter
     public IndexSamplingController getSamplingController()
     {
         return samplingController;
+    }
+
+    private void logIndexStateSummary( String method, Map<InternalIndexState,List<IndexLogRecord>> indexStates )
+    {
+        int mostPopularStateCount = Integer.MIN_VALUE;
+        InternalIndexState mostPopularState = null;
+        for ( Map.Entry<InternalIndexState,List<IndexLogRecord>> indexStateEntry : indexStates.entrySet() )
+        {
+            if ( indexStateEntry.getValue().size() > mostPopularStateCount )
+            {
+                mostPopularState = indexStateEntry.getKey();
+                mostPopularStateCount = indexStateEntry.getValue().size();
+            }
+        }
+        indexStates.remove( mostPopularState );
+        for ( Map.Entry<InternalIndexState,List<IndexLogRecord>> indexStateEntry : indexStates.entrySet() )
+        {
+            InternalIndexState state = indexStateEntry.getKey();
+            List<IndexLogRecord> logRecords = indexStateEntry.getValue();
+            for ( IndexLogRecord logRecord : logRecords )
+            {
+                log.info( indexStateInfo( method, logRecord.getIndexId(), state, logRecord.getDescriptor() ) );
+            }
+        }
+        log.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState ) );
+    }
+
+    private final class IndexLogRecord {
+
+        private final long indexId;
+        private final IndexDescriptor descriptor;
+
+        IndexLogRecord( long indexId, IndexDescriptor descriptor )
+        {
+            this.indexId = indexId;
+            this.descriptor = descriptor;
+        }
+
+        public long getIndexId()
+        {
+            return indexId;
+        }
+
+        public IndexDescriptor getDescriptor()
+        {
+            return descriptor;
+        }
     }
 }

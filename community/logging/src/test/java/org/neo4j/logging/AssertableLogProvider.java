@@ -647,16 +647,37 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     {
         synchronized (logCalls)
         {
-            for ( LogCall logCall : logCalls )
+            if ( containsMessage( partOfMessage ) )
             {
-                if ( logCall.message.contains( partOfMessage ) )
-                {
-                    return;
-                }
+                return;
             }
-            fail( format(
-                    "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s", partOfMessage, serialize( logCalls.iterator() )
-            ) );
+            fail( format( "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s",
+                    partOfMessage, serialize( logCalls.iterator() ) ) );
+        }
+    }
+
+    private boolean containsMessage( String partOfMessage )
+    {
+        for ( LogCall logCall : logCalls )
+        {
+            if ( logCall.message.contains( partOfMessage ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void assertNoMessagesContaining( String partOfMessage )
+    {
+        synchronized ( logCalls )
+        {
+            if ( containsMessage( partOfMessage ) )
+            {
+                fail( format(
+                        "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s",
+                        partOfMessage, serialize( logCalls.iterator() ) ) );
+            }
         }
     }
 

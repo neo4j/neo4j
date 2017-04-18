@@ -20,9 +20,6 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
@@ -244,18 +241,5 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
-    }
-
-    private Path tempFile( String name )
-    {
-        try
-        {
-            return Files.createTempFile( name, "tmp" );
-
-        }
-        catch ( IOException e )
-        {
-            throw new AssertionError( e );
-        }
     }
 }
