@@ -30,12 +30,9 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -47,6 +44,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
@@ -59,37 +57,45 @@ public class CompositeUniquenessConstraintValidationIT
 
     @Rule
     public final TestName testName = new TestName();
+    private final int numberOfProps;
+    private final Object[] aValues;
+    private final Object[] bValues;
 
-    @Parameterized.Parameters( name = "Collide ({0},{1}) with ({2},{3})" )
-    public static Iterable<Object[]> parameterValues() throws IOException
+    @Parameterized.Parameters( name = "{index}: {0}" )
+    public static Iterable<TestParams> parameterValues() throws IOException
     {
-        return Arrays.<Object[]>asList(
-                Iterators.array( "v1", "v2", "v1", "v2" ),
-                Iterators.array( 10, 20, 10, 20 ),
-                Iterators.array( 10L, 20L, 10, 20 ),
-                Iterators.array( 10, 20, 10L, 20L ),
-                Iterators.array( 10, 20, 10.0, 20.0 ),
-                Iterators.array( new int[]{1,2}, "v2", new int[]{1,2}, "v2" ),
-                Iterators.array( 'v', "v2", "v", "v2" )
+        return Arrays.asList(
+                param( values( 10 ), values( 10d ) ),
+                param( values( 10, 20 ), values( 10, 20 ) ),
+                param( values( 10L, 20L ), values( 10, 20 ) ),
+                param( values( 10, 20 ), values( 10L, 20L ) ),
+                param( values( 10, 20 ), values( 10.0, 20.0 ) ),
+                param( values( 10, 20 ), values( 10.0, 20.0 ) ),
+                param( values( new int[]{1, 2}, "v2" ), values( new int[]{1, 2}, "v2" ) ),
+                param( values( "a", "b", "c" ), values( "a", "b", "c" ) ),
+                param( values( 285414114323346805L ), values( 285414114323346805L ) ),
+                param( values( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), values( 1d, 2d, 3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d ) )
         );
     }
 
-    private static final int label = 1;
-    private static final int prop1 = 2;
-    private static final int prop2 = 3;
-
-    private final Object valueA1;
-    private final Object valueA2;
-
-    private final Object valueB1;
-    private final Object valueB2;
-
-    public CompositeUniquenessConstraintValidationIT( Object valueA1, Object valueA2, Object valueB1, Object valueB2 )
+    private static TestParams param( Object[] l, Object[] r )
     {
-        this.valueA1 = valueA1;
-        this.valueA2 = valueA2;
-        this.valueB1 = valueB1;
-        this.valueB2 = valueB2;
+        return new TestParams( l, r );
+    }
+
+    private static Object[] values( Object... values )
+    {
+        return values;
+    }
+
+    private static final int label = 1;
+
+    public CompositeUniquenessConstraintValidationIT( TestParams params )
+    {
+        assert params.lhs.length == params.rhs.length;
+        aValues = params.lhs;
+        bValues = params.rhs;
+        numberOfProps = aValues.length;
     }
 
     private KernelTransaction transaction;
@@ -100,11 +106,12 @@ public class CompositeUniquenessConstraintValidationIT
     @Before
     public void setup() throws Exception
     {
+
         graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( KernelAPI.class );
 
         newTransaction();
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( label, prop1, prop2 ) );
+        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
         commit();
     }
 
@@ -117,8 +124,8 @@ public class CompositeUniquenessConstraintValidationIT
         }
 
         newTransaction();
-        statement.schemaWriteOperations().constraintDrop(
-                ConstraintDescriptorFactory.uniqueForLabel( label, prop1, prop2 ) );
+        statement.schemaWriteOperations()
+                .constraintDrop( ConstraintDescriptorFactory.uniqueForLabel( label, propertyIds() ) );
         commit();
 
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -132,18 +139,114 @@ public class CompositeUniquenessConstraintValidationIT
     }
 
     @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception
+    {
+        // given
+        long node = createNodeWithLabelAndProps( label, aValues );
+
+        // when
+        newTransaction();
+        statement.dataWriteOperations().nodeDelete( node );
+        long newNode = createLabeledNode( label );
+        setProperties( newNode, aValues );
+
+        // then does not fail
+        commit();
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
+    {
+        // given
+        long node = createNodeWithLabelAndProps( label, aValues );
+
+        // when
+        newTransaction();
+        statement.dataWriteOperations().nodeRemoveLabel( node, label );
+        long newNode = createLabeledNode( label );
+        setProperties( newNode, aValues );
+
+        // then does not fail
+        commit();
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception
+    {
+        // given
+        long node = createNodeWithLabelAndProps( label, aValues );
+
+        // when
+        newTransaction();
+        statement.dataWriteOperations().nodeRemoveProperty( node, 0 );
+        long newNode = createLabeledNode( label );
+        setProperties( newNode, aValues );
+
+        // then does not fail
+        commit();
+    }
+
+    @Test
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception
+    {
+        // given
+        long node = createNodeWithLabelAndProps( label, aValues );
+
+        // when
+        newTransaction();
+        statement.dataWriteOperations().nodeSetProperty( node, property(0, "Alive!") );
+        long newNode = createLabeledNode( label );
+        setProperties( newNode, aValues );
+
+        // then does not fail
+        commit();
+    }
+
+    @Test
+    public void shouldPreventConflictingDataInTx() throws Throwable
+    {
+        // Given
+
+        // When
+        newTransaction();
+        long n1 = createLabeledNode( label );
+        long n2 = createLabeledNode( label );
+        setProperties( n1, aValues );
+        int lastPropertyOffset = numberOfProps - 1;
+        for ( int prop = 0; prop < lastPropertyOffset; prop++ )
+        {
+            setProperty( n2, prop, aValues[prop] ); // still ok
+        }
+
+        assertException( () ->
+        {
+            setProperty( n2, lastPropertyOffset, aValues[lastPropertyOffset] ); // boom!
+
+        }, UniquePropertyValueValidationException.class );
+
+        // Then should fail
+        commit();
+    }
+
+    @Test
     public void shouldEnforceOnSetProperty() throws Exception
     {
         // given
-        createNode( label, MapUtil.genericMap( prop1, valueA1, prop2, valueA2 ) );
+        createNodeWithLabelAndProps( label, this.aValues );
 
         // when
         newTransaction();
         long node = createLabeledNode( label );
+
+        int lastPropertyOffset = numberOfProps - 1;
+        for ( int prop = 0; prop < lastPropertyOffset; prop++ )
+        {
+            setProperty( node, prop, aValues[prop] ); // still ok
+        }
+
         assertException( () ->
         {
-            setProperty( node, prop1, valueB1 ); // still ok
-            setProperty( node, prop2, valueB2 ); // boom!
+            setProperty( node, lastPropertyOffset, aValues[lastPropertyOffset] ); // boom!
 
         }, UniquePropertyValueValidationException.class );
         commit();
@@ -153,16 +256,16 @@ public class CompositeUniquenessConstraintValidationIT
     public void shouldEnforceOnSetLabel() throws Exception
     {
         // given
-        createNode( label, MapUtil.genericMap( prop1, valueA1, prop2, valueA2 ) );
+        createNodeWithLabelAndProps( label, this.aValues );
 
         // when
         newTransaction();
         long node = createNode();
+        setProperties( node, bValues ); // ok because no label is set
+
         assertException( () ->
         {
-            setProperty( node, prop1, valueB1 ); // still ok
-            setProperty( node, prop2, valueB2 ); // and fine
-            addLabel( node, label ); // boom again
+            addLabel( node, label ); // boom!
 
         }, UniquePropertyValueValidationException.class );
         commit();
@@ -173,16 +276,19 @@ public class CompositeUniquenessConstraintValidationIT
     {
         // when
         newTransaction();
-        long nodeA = createLabeledNode( label );
-        setProperty( nodeA, prop1, valueA1 );
-        setProperty( nodeA, prop2, valueA2 );
+        long aNode = createLabeledNode( label );
+        setProperties( aNode, aValues );
 
         long nodeB = createLabeledNode( label );
+        int lastPropertyOffset = numberOfProps - 1;
+        for ( int prop = 0; prop < lastPropertyOffset; prop++ )
+        {
+            setProperty( nodeB, prop, bValues[prop] ); // still ok
+        }
+
         assertException( () ->
         {
-            setProperty( nodeB, prop1, valueB1 ); // still ok
-            setProperty( nodeB, prop2, valueB2 ); // boom!
-
+            setProperty( nodeB, lastPropertyOffset, bValues[lastPropertyOffset] ); // boom!
         }, UniquePropertyValueValidationException.class );
         commit();
     }
@@ -190,18 +296,17 @@ public class CompositeUniquenessConstraintValidationIT
     @Test
     public void shouldEnforceOnSetLabelInTx() throws Exception
     {
+        // given
+        createNodeWithLabelAndProps( label, aValues );
+
         // when
         newTransaction();
-        long nodeA = createLabeledNode( label );
-        setProperty( nodeA, prop1, valueA1 );
-        setProperty( nodeA, prop2, valueA2 );
-
         long nodeB = createNode();
+        setProperties( nodeB, bValues );
+
         assertException( () ->
         {
-            setProperty( nodeB, prop1, valueB1 ); // still ok
-            setProperty( nodeB, prop2, valueB2 ); // and fine
-            addLabel( nodeB, label ); // boom again
+            addLabel( nodeB, label ); // boom!
 
         }, UniquePropertyValueValidationException.class );
         commit();
@@ -209,6 +314,10 @@ public class CompositeUniquenessConstraintValidationIT
 
     private void newTransaction() throws KernelException
     {
+        if ( transaction != null )
+        {
+            fail( "tx already opened" );
+        }
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
         statement = transaction.acquireStatement();
     }
@@ -250,17 +359,129 @@ public class CompositeUniquenessConstraintValidationIT
         return statement.dataWriteOperations().nodeCreate();
     }
 
-    private long createNode( int labelId, Map<Integer,Object> properties )
+    private long createNodeWithLabelAndProps( int labelId, Object[] propertyValues )
             throws KernelException
     {
         newTransaction();
         long nodeId = createNode();
         addLabel( nodeId, labelId );
-        for ( Map.Entry<Integer,Object> entry : properties.entrySet() )
+        for ( int prop = 0; prop < numberOfProps; prop++ )
         {
-            setProperty( nodeId, entry.getKey(), entry.getValue() );
+            setProperty( nodeId, prop, propertyValues[prop] );
         }
         commit();
         return nodeId;
+    }
+
+    private void setProperties( long nodeId, Object[] propertyValues )
+            throws KernelException
+    {
+        for ( int prop = 0; prop < propertyValues.length; prop++ )
+        {
+            setProperty( nodeId, prop, propertyValues[prop] );
+        }
+    }
+
+    private int[] propertyIds()
+    {
+        int props[] = new int[numberOfProps];
+        for ( int i = 0; i < numberOfProps; i++ )
+        {
+            props[i] = i;
+        }
+        return props;
+    }
+
+    static class TestParams // Only here to be able to produce readable output
+    {
+        private final Object[] lhs;
+        private final Object[] rhs;
+
+        TestParams( Object[] lhs, Object[] rhs )
+        {
+            this.lhs = lhs;
+            this.rhs = rhs;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "lhs=%s, rhs=%s", toString( lhs ), toString( rhs ) );
+        }
+
+        private String toString( Object[] x )
+        {
+            boolean first = true;
+            StringBuilder buf = new StringBuilder( "[" );
+            for ( Object element : x )
+            {
+                if ( first )
+                {
+                    first = false;
+                }
+                else
+                {
+                    buf.append( ", " );
+                }
+                Class<?> eClass = element.getClass();
+
+                if ( eClass.isArray() )
+                {
+                    arrayToString( buf, element, eClass );
+                }
+                else if ( eClass == "".getClass() )
+                {
+                    buf.append( '"' ).append( element.toString() ).append( '"' );
+                }
+                else
+                {
+                    buf.append( element );
+                }
+                buf.append( ":" ).append( element.getClass().getSimpleName() );
+            }
+            buf.append( "]" );
+            return buf.toString();
+        }
+
+        private void arrayToString( StringBuilder buf, Object element, Class<?> eClass )
+        {
+            if ( eClass == byte[].class )
+            {
+                buf.append( Arrays.toString( (byte[]) element ) );
+            }
+            else if ( eClass == short[].class )
+            {
+                buf.append( Arrays.toString( (short[]) element ) );
+            }
+            else if ( eClass == int[].class )
+            {
+                buf.append( Arrays.toString( (int[]) element ) );
+            }
+            else if ( eClass == long[].class )
+            {
+                buf.append( Arrays.toString( (long[]) element ) );
+            }
+            else if ( eClass == char[].class )
+            {
+                buf.append( Arrays.toString( (char[]) element ) );
+            }
+            else if ( eClass == float[].class )
+            {
+                buf.append( Arrays.toString( (float[]) element ) );
+            }
+            else if ( eClass == double[].class )
+            {
+                buf.append( Arrays.toString( (double[]) element ) );
+            }
+            else if ( eClass == boolean[].class )
+            {
+                buf.append( Arrays.toString( (boolean[]) element ) );
+            }
+            else
+            {
+                String str = Arrays.toString( (Object[]) element );
+                buf.append( str );
+            }
+        }
     }
 }
