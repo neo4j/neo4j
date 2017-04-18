@@ -42,12 +42,6 @@ interface ConsistencyCheck
                 }
 
                 @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
-                {
-                    return true;
-                }
-
-                @Override
                 public boolean runFull( File storeDir, Config tuningConfiguration,
                         ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                         CheckConsistencyConfig checkConsistencyConfig )
@@ -64,13 +58,6 @@ interface ConsistencyCheck
                 public String name()
                 {
                     return "full";
-                }
-
-                @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose ) throws ConsistencyCheckFailedException
-                {
-                    return runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache,
-                            verbose, new CheckConsistencyConfig( tuningConfiguration ) );
                 }
 
                 @Override
@@ -93,11 +80,6 @@ interface ConsistencyCheck
             };
 
     String name();
-
-    @Deprecated
-    boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-                     LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
-            throws ConsistencyCheckFailedException;
 
     boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
@@ -127,15 +109,6 @@ interface ConsistencyCheck
             public String name()
             {
                 return "full";
-            }
-
-            @Override
-            public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
-                    LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
-                    throws ConsistencyCheckFailedException
-            {
-                return runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache,
-                        verbose, new CheckConsistencyConfig( tuningConfiguration ) );
             }
 
             @Override

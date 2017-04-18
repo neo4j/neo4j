@@ -225,7 +225,8 @@ public class OnlineBackupCommandTest
 
         execute( "--check-consistency=true", backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
+        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
+                anyLong(), any() );
         verifyNoMoreInteractions( backupService );
         verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
                 anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
@@ -240,7 +241,8 @@ public class OnlineBackupCommandTest
 
         execute( "--check-consistency=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
+        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
+                anyLong(), any() );
         verifyNoMoreInteractions( backupService );
         verifyNoMoreInteractions( consistencyCheckService );
     }
@@ -328,7 +330,8 @@ public class OnlineBackupCommandTest
 
         execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
 
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
+        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
+                anyLong(), any() );
         verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
         verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
         verifyNoMoreInteractions( backupService );
@@ -342,13 +345,15 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
         when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
+        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
+        ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
         execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
 
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
+        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
+                anyLong(), any() );
         verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
         verify( outsideWorld ).stdErrLine( "Incremental backup failed: nah-ah" );
         verify( outsideWorld ).stdErrLine( "Old backup renamed to 'ccInc.err.1'." );
@@ -366,7 +371,8 @@ public class OnlineBackupCommandTest
         File dir = testDirectory.directory( "ccInc" );
         when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
         when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
+        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
+        ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
         doThrow( new IOException( "kaboom" ) ).when( mockFs ).renameFile( any(), any() );
@@ -422,7 +428,8 @@ public class OnlineBackupCommandTest
     {
         File dir = testDirectory.directory( "ccInc" );
         assertTrue( new File( dir, "afile" ).createNewFile() );
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
+        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
+        ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
         expected.expectMessage( "Backup failed: nah-ah" );
@@ -444,13 +451,15 @@ public class OnlineBackupCommandTest
         {
             when( mockFs.fileExists( eq( new File( dir.getParentFile(), "ccInc.err." + i ) ) ) ).thenReturn( true );
         }
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
+        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
+        ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
         execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
                 "--name=" + dir.getName() );
 
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() );
+        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
+                anyLong(), any() );
         verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
         verify( outsideWorld ).stdErrLine( "Incremental backup failed: nah-ah" );
         verify( outsideWorld ).stdErrLine( "Old backup renamed to 'ccInc.err.50'." );
@@ -472,7 +481,8 @@ public class OnlineBackupCommandTest
         {
             when( mockFs.fileExists( eq( new File( dir.getParentFile(), "ccInc.err." + i ) ) ) ).thenReturn( true );
         }
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), anyLong(), any() ) )
+        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
+        ) )
                 .thenThrow( new RuntimeException( "nah-ah" ) );
 
         expected.expect( CommandFailed.class );

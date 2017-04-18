@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,6 +49,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -155,6 +157,27 @@ public class BackupServiceIT
     {
         return new BackupService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
                 logProvider, new Monitors() );
+    }
+
+    @Test
+    public void performConsistencyCheckAfterIncrementalBackup()
+    {
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE, defaultConfig,
+                BackupClient.BIG_READ_TIMEOUT, false );
+
+        createAndIndexNode( db, 1 );
+        TestFullConsistencyCheck consistencyCheck = new TestFullConsistencyCheck();
+        BackupService.BackupOutcome backupOutcome = backupService()
+                .doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir, consistencyCheck,
+                        defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+        assertTrue( "Consistency check invoked for incremental backup, ", consistencyCheck.isChecked() );
+        assertTrue( backupOutcome.isConsistent() );
     }
 
     @Test
@@ -647,7 +670,7 @@ public class BackupServiceIT
         try
         {
             backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
-                    BackupClient.BIG_READ_TIMEOUT, defaultConfig );
+                    ConsistencyCheck.NONE, BackupClient.BIG_READ_TIMEOUT, defaultConfig );
             fail( "Should have thrown exception." );
         }
         // Then
@@ -1073,4 +1096,32 @@ public class BackupServiceIT
         }
     }
 
+    private static class TestFullConsistencyCheck implements ConsistencyCheck
+    {
+        private boolean checked = false;
+        @Override
+        public String name()
+        {
+            return "testFull";
+        }
+
+        @Override
+        public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
+                LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+                CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckFailedException
+        {
+            markAsChecked();
+            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose, checkConsistencyConfig );
+        }
+
+        private void markAsChecked()
+        {
+            checked = true;
+        }
+
+        boolean isChecked()
+        {
+            return checked;
+        }
+    }
 }
