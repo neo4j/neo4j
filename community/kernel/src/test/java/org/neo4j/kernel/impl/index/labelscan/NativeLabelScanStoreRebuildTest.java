@@ -91,9 +91,11 @@ public class NativeLabelScanStoreRebuildTest
 
         // when
         RecordingMonitor monitor = new RecordingMonitor();
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
 
         nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, new Monitors() );
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, monitors );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
