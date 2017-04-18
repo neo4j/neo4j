@@ -19,11 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import java.util.concurrent.locks.LockSupport;
-
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.PageCache;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
@@ -34,10 +31,9 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 class PageCacheFlusher extends Thread
 {
     private final PageCache pageCache;
+    private final BinaryLatch halt = new BinaryLatch();
     private volatile boolean halted;
-    private volatile boolean done;
     private volatile Throwable error;
-    private volatile Thread halter;
 
     PageCacheFlusher( PageCache pageCache )
     {
@@ -47,23 +43,24 @@ class PageCacheFlusher extends Thread
     @Override
     public void run()
     {
-        while ( !halted )
+        try
         {
-            try
+            while ( !halted )
             {
-                pageCache.flushAndForce();
-            }
-            catch ( Throwable e )
-            {
-                error = e;
-                break;
+                try
+                {
+                    pageCache.flushAndForce();
+                }
+                catch ( Throwable e )
+                {
+                    error = e;
+                    break;
+                }
             }
         }
-        done = true;
-        Thread localHalter = halter;
-        if ( localHalter != null )
+        finally
         {
-            LockSupport.unpark( localHalter );
+            halt.release();
         }
     }
 
@@ -74,12 +71,8 @@ class PageCacheFlusher extends Thread
      */
     void halt()
     {
-        halter = Thread.currentThread();
         halted = true;
-        while ( !done )
-        {
-            LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
-        }
+        halt.await();
         if ( error != null )
         {
             throw launderedException( error );
