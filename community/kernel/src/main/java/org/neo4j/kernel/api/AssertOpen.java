@@ -31,16 +31,8 @@ public interface AssertOpen
      */
     void assertOpen();
 
-    AssertOpen ALWAYS_OPEN = AlwaysOpen.INSTANCE;
-
-    enum AlwaysOpen implements AssertOpen
+    AssertOpen ALWAYS_OPEN = () ->
     {
-        INSTANCE
-        {
-            @Override
-            public void assertOpen()
-            {   // no-op
-            }
-        }
-    }
+        // Always open
+    };
 }
