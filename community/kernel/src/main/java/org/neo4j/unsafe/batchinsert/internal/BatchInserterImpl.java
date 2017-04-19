@@ -50,6 +50,7 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -963,6 +964,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         try
         {
             repopulateAllIndexes();
+            labelScanStore.force( IOLimiter.unlimited() );
         }
         catch ( IOException | IndexEntryConflictException e )
         {

@@ -53,6 +53,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -74,6 +75,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -343,7 +345,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    protected void verifyData( int nodeCount, int relationshipCount, GraphDatabaseService db, IdGroupDistribution groups,
+    private void verifyData( int nodeCount, int relationshipCount, GraphDatabaseService db, IdGroupDistribution groups,
             long nodeRandomSeed, long relationshipRandomSeed )
     {
         // Read all nodes, relationships and properties ad verify against the input data.
@@ -355,6 +357,7 @@ public class ParallelBatchImporterTest
             Map<String,Node> nodeByInputId = new HashMap<>( nodeCount );
             Iterator<Node> dbNodes = db.getAllNodes().iterator();
             int verifiedNodes = 0;
+            long allNodesScanLabelCount = 0;
             while ( nodes.hasNext() )
             {
                 InputNode input = nodes.next();
@@ -364,8 +367,19 @@ public class ParallelBatchImporterTest
                 assertNull( nodeByInputId.put( inputId, node ) );
                 verifiedNodes++;
                 assertDegrees( node );
+                allNodesScanLabelCount += Iterables.count( node.getLabels() );
             }
             assertEquals( nodeCount, verifiedNodes );
+
+            // Labels
+            long labelScanStoreEntryCount = db.getAllLabels().stream()
+                    .flatMap( l -> db.findNodes( l ).stream() )
+                    .count();
+
+            assertEquals( format( "Expected label scan store and node store to have same number labels. But %n" +
+                            "#labelsInNodeStore=%d%n" +
+                            "#labelsInLabelScanStore=%d%n", allNodesScanLabelCount, labelScanStoreEntryCount ),
+                    allNodesScanLabelCount, labelScanStoreEntryCount );
 
             // Relationships
             Map<String,Relationship> relationshipByName = new HashMap<>();

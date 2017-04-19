@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -72,8 +71,6 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * two pointers to the new unstable version, redirecting readers and writers to the new unstable version,
  * while at the same time keeping one pointer to the stable version, in case there's a crash or non-clean
  * shutdown, followed by recovery.
- * <p>
- * Currently no leaves will be removed or merged as part of {@link Writer#remove(Object) removals}.
  * <p>
  * A single writer w/ multiple concurrent readers is supported. Assuming usage adheres to this
  * constraint neither writer nor readers are blocking. Readers are virtually garbage-free.
@@ -104,19 +101,16 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * </pre>
 
  * The writes that happened before the last checkpoint are durable and safe, but the writes after it are not.
- * The tree can however get back to a consistent state by:
- * <ol>
- * <li>Creator of this tree detects that recovery is required (i.e. non-clean shutdown) and if so must call
- * {@link #prepareForRecovery()} ones, before any writes during recovery are made.</li>
- * <li>Replaying all the writes, exactly as they were made, since the last checkpoint all the way up
- * to the crash ({@code x}). Even including writes before the last checkpoint is OK, important is that
- * <strong>at least</strong> writes since last checkpoint are included.
- * </ol>
+ * The tree can however get back to a consistent state by replaying all the writes, exactly as they were made,
+ * since the last checkpoint all the way up to the crash ({@code x}). Even including writes before the last
+ * checkpoint is OK, important is that <strong>at least</strong> writes since last checkpoint are included.
  *
- * Failure to follow the above steps will result in unknown state of the tree after a crash.
+ * If failing to replay missing writes, that data will simply be missing from the tree and most likely leave the
+ * database inconsistent.
  * <p>
  * The reason as to why {@link #close()} doesn't do a checkpoint is that checkpointing as a whole should
- * be managed externally, keeping multiple resources in sync w/ regards to checkpoints.
+ * be managed externally, keeping multiple resources in sync w/ regards to checkpoints. This is especially important
+ * since a it is impossible to recognize crashed pointers after a checkpoint.
  *
  * @param <KEY> type of keys
  * @param <VALUE> type of values
@@ -134,7 +128,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * If any of the above changes the on-page format then this version should be bumped, so that opening
      * an index on wrong format version fails and user will need to rebuild.
      */
-    static final int FORMAT_VERSION = 1;
+    static final int FORMAT_VERSION = 2;
 
     /**
      * For monitoring {@link GBPTree}.
@@ -163,8 +157,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * @param numberOfCleanedCrashPointers number of cleaned crashed pointers.
          * @param durationMillis time spent cleaning.
          */
-        default void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+        default void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                 long durationMillis )
+        {   // no-op by default
+        }
+
+        /**
+         * Report tree state on startup.
+         *
+         * @param clean true if tree was clean on startup.
+         */
+        default void startupState( boolean clean )
         {   // no-op by default
         }
     }
@@ -179,7 +182,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    public static final Header.Reader NO_HEADER = (cursor,length) -> {};
+    static final Header.Reader NO_HEADER = (cursor,length) -> {};
 
     /**
      * Paged file in a {@link PageCache} providing the means of storage.
@@ -295,11 +298,29 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean closed;
 
     /**
+     * True if tree is clean, false if dirty
+     */
+    private boolean clean;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
      * If the index exists it will be opened and the {@link Layout} will be matched with the information
      * in the header. At the very least {@link Layout#identifier()} will be matched.
+     * <p>
+     * On start, tree can be in a clean or dirty state. If dirty, it will
+     * {@link #cleanCrashedPointers() clean crashed pointers} as part of constructor. Tree is only clean if since last
+     * time it was opened it was {@link #close() closed} without any non-checkpointed changes present. Correct usage
+     * pattern of the GBPTree is:
+     *
+     * <pre>
+     *     try ( GBPTree tree = new GBPTree(...) )
+     *     {
+     *         // Use the tree
+     *         tree.checkpoint( ... );
+     *     }
+     * </pre>
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
@@ -328,6 +349,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         try
         {
+            // Create or load state
             if ( created )
             {
                 initializeAfterCreation( layout );
@@ -336,6 +358,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 loadState( pagedFile, headerReader );
             }
+            this.monitor.startupState( clean );
+
+            // Prepare tree for action
+            boolean needsCleaning = !clean;
+            clean = false;
+            bumpUnstableGeneration();
+            forceState();
+            if ( needsCleaning )
+            {
+                cleanCrashedPointers();
+            }
+
         }
         catch ( Throwable t )
         {
@@ -375,6 +409,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         freeList.initializeAfterCreation();
         changesSinceLastCheckpoint = true;
         checkpoint( IOLimiter.unlimited() );
+        clean = true;
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
@@ -448,6 +483,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         int freeListWritePos = state.freeListWritePos();
         int freeListReadPos = state.freeListReadPos();
         freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
+        clean = state.isClean();
     }
 
     private void writeState( PagedFile pagedFile, Header.Writer headerWriter ) throws IOException
@@ -462,7 +498,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ),
                     root.id(), root.generation(),
                     freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
-                    freeList.writePos(), freeList.readPos() );
+                    freeList.writePos(), freeList.readPos(), clean );
 
             writerHeader( pagedFile, headerWriter, other( states, oldestState ), cursor );
 
@@ -659,15 +695,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Checkpoints and flushes any pending changes to storage. After a successful call to this method
      * the data is durable and safe. {@link #writer() Changes} made after this call and until crashing or
-     * otherwise non-clean shutdown (by omitting call to {@link #close()}) will need to be replayed
-     * next time this tree is opened. Re-applying such changes will then require a call to
-     * {@link #prepareForRecovery()} before {@link #writer() writing} the changes.
-     *
-     * A call to {@link #close()} will automatically do a checkpoint as well, if there have been changes made
-     * since last call to {@link #checkpoint(IOLimiter)} or since opening this tree.
+     * otherwise non-clean shutdown (by omitting calling checkpoint before {@link #close()}) will need to be replayed
+     * next time this tree is opened.
+     * <p>
+     * Header writer is expected to leave consumed {@link PageCursor} at end of written header for calculation of
+     * header size.
      *
      * @param ioLimiter for controlling I/O usage.
-     * @param headerWriter hook for writing header data.
+     * @param headerWriter hook for writing header data, must leave cursor at end of written header.
      * @throws IOException on error flushing to storage.
      */
     public void checkpoint( IOLimiter ioLimiter, Consumer<PageCursor> headerWriter ) throws IOException
@@ -753,6 +788,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
             // Force close on writer to not risk deadlock on pagedFile.close()
             writer.close();
+            if ( !changesSinceLastCheckpoint )
+            {
+                clean = true;
+                forceState();
+            }
             pagedFile.close();
             closed = true;
         }
@@ -815,13 +855,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
-     * {@link GBPTree} class-level javadoc mentions how this method interacts with recovery,
-     * it's an essential piece to be able to recover properly and must be called when external party
-     * detects that recovery is required, before re-applying the recovered updates.
+     * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
+     * with generation in this gap are considered to be 'crashed' and will be cleaned up if
+     * {@link #cleanCrashedPointers()} is triggered.
      *
      * @throws IOException on {@link PageCache} error.
      */
-    public void prepareForRecovery() throws IOException
+    private void bumpUnstableGeneration() throws IOException
+    {
+        generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
+    }
+
+    private void forceState() throws IOException
     {
         if ( changesSinceLastCheckpoint )
         {
@@ -830,20 +875,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     "have been made" );
         }
 
-        // Increment unstable generation, widening the gap between stable and unstable generation
-        // so that generations in between are considered crash generation(s).
-        generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
         writeState( pagedFile, CARRY_OVER_PREVIOUS_HEADER );
         pagedFile.flushAndForce();
     }
 
     /**
-     * Must be called after all recovered updates have been applied and before doing further work,
-     * be it reading or writing.
+     * Called on start if tree was not clean.
      *
      * @throws IOException on {@link PageCache} error.
      */
-    public void finishRecovery() throws IOException
+    private void cleanCrashedPointers() throws IOException
     {
         // For the time being there's an issue where update that come in before a crash
         // may be applied in a different order than when they get recovered.
