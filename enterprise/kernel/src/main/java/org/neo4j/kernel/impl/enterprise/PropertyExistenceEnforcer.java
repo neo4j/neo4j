@@ -71,23 +71,32 @@ class PropertyExistenceEnforcer
         this.relationshipConstraints = rels;
         for ( LabelSchemaDescriptor constraint : nodes )
         {
-            update( mandatoryNodePropertiesByLabel, constraint.getLabelId(), constraint.getPropertyIds() );
+            update( mandatoryNodePropertiesByLabel, constraint.getLabelId(),
+                    copyAndSortPropertyIds( constraint.getPropertyIds() ) );
         }
         for ( RelationTypeSchemaDescriptor constraint : rels )
         {
-            update( mandatoryRelationshipPropertiesByType, constraint.getRelTypeId(), constraint.getPropertyIds() );
+            update( mandatoryRelationshipPropertiesByType, constraint.getRelTypeId(),
+                    copyAndSortPropertyIds( constraint.getPropertyIds() ) );
         }
     }
 
-    private static void update( PrimitiveIntObjectMap<int[]> map, int key, int[] values )
+    private static void update( PrimitiveIntObjectMap<int[]> map, int key, int[] sortedValues )
     {
-        Arrays.sort( values );
         int[] current = map.get( key );
         if ( current != null )
         {
-            values = union( current, values );
+            sortedValues = union( current, sortedValues );
         }
-        map.put( key, values );
+        map.put( key, sortedValues );
+    }
+
+    private static int[] copyAndSortPropertyIds( int[] propertyIds )
+    {
+        int[] values = new int[propertyIds.length];
+        System.arraycopy( propertyIds, 0, values, 0, propertyIds.length );
+        Arrays.sort( values );
+        return values;
     }
 
     TxStateVisitor decorate( TxStateVisitor visitor, ReadableTransactionState txState, StoreReadLayer storeLayer )
