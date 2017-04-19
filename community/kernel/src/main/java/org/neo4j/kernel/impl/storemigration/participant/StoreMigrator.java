@@ -50,7 +50,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
+import org.neo4j.kernel.impl.api.store.PropertyCursor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -93,7 +93,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -685,7 +684,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             };
         }
 
-        final StorePropertyCursor cursor = new StorePropertyCursor( propertyStore, ignored -> {} );
+        final PropertyCursor cursor = new PropertyCursor( propertyStore, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
         return ( ENTITY entity, RECORD record ) ->
         {
