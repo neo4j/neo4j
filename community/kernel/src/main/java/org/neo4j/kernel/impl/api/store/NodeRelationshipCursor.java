@@ -45,11 +45,11 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  * <p/>
  * This cursor handles both dense and non-dense nodes as source.
  */
-public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationshipCursor
+public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
 {
     private final RelationshipGroupRecord groupRecord;
     private final RelationshipGroupStore relationshipGroupStore;
-    private final Consumer<StoreNodeRelationshipCursor> instanceCache;
+    private final Consumer<NodeRelationshipCursor> instanceCache;
     private final PageCursor groupStorePageCursor;
 
     private boolean isDense;
@@ -60,9 +60,9 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     private int groupChainIndex;
     private boolean end;
 
-    public StoreNodeRelationshipCursor( RelationshipStore relationshipStore,
+    public NodeRelationshipCursor( RelationshipStore relationshipStore,
             RelationshipGroupStore relationshipGroupStore,
-            Consumer<StoreNodeRelationshipCursor> instanceCache,
+            Consumer<NodeRelationshipCursor> instanceCache,
             LockService lockService )
     {
         super( relationshipStore, lockService );
@@ -72,14 +72,14 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
         this.instanceCache = instanceCache;
     }
 
-    public StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
+    public NodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
             ReadableTransactionState state )
     {
         PrimitiveLongIterator addedNodeRelationships = addedNodeRelationships( fromNodeId, direction, null, state );
         return init( isDense, firstRelId, fromNodeId, direction, ALWAYS_TRUE_INT, state, addedNodeRelationships );
     }
 
-    public StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
+    public NodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
             int[] allowedTypes, ReadableTransactionState state )
     {
         PrimitiveLongIterator addedNodeRelationships =
@@ -87,7 +87,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
         return init( isDense, firstRelId, fromNodeId, direction, any( allowedTypes ), state, addedNodeRelationships );
     }
 
-    private StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
+    private NodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
             IntPredicate allowedTypes, ReadableTransactionState state, PrimitiveLongIterator addedNodeRelationships )
     {
         internalInitTxState( state, addedNodeRelationships );
