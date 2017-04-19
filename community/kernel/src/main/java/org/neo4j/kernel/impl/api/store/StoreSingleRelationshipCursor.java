@@ -91,6 +91,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     public void close()
     {
         super.close();
+        state = null;
         relationshipId = NO_SUCH_RELATIONSHIP;
         consumer.accept( this );
     }
