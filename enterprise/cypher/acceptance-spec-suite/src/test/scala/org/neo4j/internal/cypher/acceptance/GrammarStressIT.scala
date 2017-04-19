@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 import org.scalacheck.{Arbitrary, Gen, Shrink}
@@ -76,17 +77,38 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     override def toString: String = {
       val propString = if (properties.isEmpty) None else
         Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
-      val relTypeString = if (relType.isEmpty) None else Some(relType.mkString(":", "|", ""))
-
-      (name ++ relTypeString ++ propString).mkString("-[", " ", "]->")
+      val relTypeString = if (relType.isEmpty) None else Some(relType.mkString(":", "|", length.varArgPattern))
+      (name ++ relTypeString ++ propString).mkString(s"${length.left}[", " ", s"]${length.right}")
     }
   }
 
-  trait LengthPattern
-  case object DefaultLength extends LengthPattern
-  case class MinLength(value:Int) extends LengthPattern
-  case class MaxLength(value:Int) extends LengthPattern
-  case class MinMaxLength(min:Int, max:Int) extends LengthPattern
+  sealed trait LengthPattern {
+    def direction: SemanticDirection
+    def left: String = direction match {
+      case SemanticDirection.INCOMING => "<-"
+      case _ => "-"
+    }
+    def right: String = direction match {
+      case SemanticDirection.OUTGOING => "->"
+      case _ => "-"
+    }
+    def varArgPattern: String
+  }
+
+  case class DefaultLength(direction: SemanticDirection) extends LengthPattern {
+
+    override def varArgPattern: String = " "
+  }
+
+  case class MaxLength(direction: SemanticDirection, value: Int) extends LengthPattern {
+
+    override def varArgPattern: String = s"*..$value"
+  }
+
+  case class MinMaxLength(direction: SemanticDirection, min: Int, max: Int) extends LengthPattern {
+
+    override def varArgPattern: String = s"*$min..$max"
+  }
 
   def patterns:Gen[Pattern] = Gen.choose(1, NUM_LAYERS)
                                   .flatMap(depth => patternGen(depth, Gen.const(Set("L"+depth))))
@@ -110,7 +132,11 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
       relName <- Gen.option(Gen.identifier.map("r"+_))
       relType <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
-    } yield RelPattern(relName, relType, props, DefaultLength)
+      direction <- Gen.oneOf(SemanticDirection.OUTGOING, SemanticDirection.INCOMING, SemanticDirection.BOTH)
+      min <- Gen.choose(1, 2)
+      max <- Gen.choose(min, min + 1)
+      len: LengthPattern <- Gen.oneOf(DefaultLength(direction), MaxLength(direction, max), MinMaxLength(direction, min,max))
+    } yield RelPattern(relName, relType, props, len)
 
   private def maybeWrongLabelGen(d:Int) =
     Gen.listOf(
@@ -121,7 +147,6 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   override protected def initTest(): Unit = {
     super.initTest()
-
     graph.inTx {
       val nodes: Seq[IndexedSeq[Node]] =
         for (i <- 1 to NUM_LAYERS) yield {
@@ -142,7 +167,6 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
       }
     }
   }
-  //(:L1)-[:T1]->(:L2)-....
 
   //we don't want scala check to shrink patterns here since it will lead to invalid cypher
   //e.g. RETURN {, RETURN [, etc
