@@ -73,7 +73,13 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
                          properties:Map[String, Any],
                          length:LengthPattern ) {
 
-    override def toString: String = name.mkString("-[", "", "]->")
+    override def toString: String = {
+      val propString = if (properties.isEmpty) None else
+        Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
+      val relTypeString = if (relType.isEmpty) None else Some(relType.mkString(":", "|", ""))
+
+      (name ++ relTypeString ++ propString).mkString("-[", " ", "]->")
+    }
   }
 
   trait LengthPattern
@@ -95,16 +101,23 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   def tailPatternGen(d:Int):Gen[Option[(RelPattern, Pattern)]] =
     if (d < NUM_LAYERS)
-      Gen.zip(relPatternGen, patternGen(d, maybeWrongLabelGen(d))).map(Some(_))
+      Gen.zip(relPatternGen(d-1), patternGen(d, maybeWrongLabelGen(d))).map(Some(_))
     else
       Gen.const(None)
 
-  def relPatternGen:Gen[RelPattern] =
+  def relPatternGen(d:Int):Gen[RelPattern] =
     for {
       relName <- Gen.option(Gen.identifier.map("r"+_))
-    } yield RelPattern(relName, Set.empty, Map.empty, DefaultLength)
+      relType <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
+      props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
+    } yield RelPattern(relName, relType, props, DefaultLength)
 
-  private def maybeWrongLabelGen(d:Int) = Gen.listOf(Gen.frequency(100 -> Gen.const("L"+d), 1 -> Gen.const("X"+d))).map(_.toSet)
+  private def maybeWrongLabelGen(d:Int) =
+    Gen.listOf(
+      Gen.frequency(
+        100 -> Gen.const("L"+d),
+        1 -> Gen.const("X"+d)
+      )).map(_.toSet)
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -113,8 +126,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
       val nodes: Seq[IndexedSeq[Node]] =
         for (i <- 1 to NUM_LAYERS) yield {
           for (j <- 1 to NODES_PER_LAYER) yield {
-            val node = createLabeledNode("L" + i)
-            node.setProperty("p" + i, j)
+            val node = createLabeledNode(Map("p" + i -> j), "L" + i)
             node
           }
         }
@@ -124,10 +136,13 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
         for {
           n1 <- thisLayer
           n2 <- nextLayer
-        } relate(n1, n2, s"T$i")
+        } {
+          relate(n1, n2, s"T$i", Map("p"+i -> i))
+        }
       }
     }
   }
+  //(:L1)-[:T1]->(:L2)-....
 
   //we don't want scala check to shrink patterns here since it will lead to invalid cypher
   //e.g. RETURN {, RETURN [, etc
