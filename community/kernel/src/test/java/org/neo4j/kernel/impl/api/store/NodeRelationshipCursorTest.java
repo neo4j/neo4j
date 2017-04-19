@@ -60,7 +60,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -87,14 +86,14 @@ import static org.neo4j.storageengine.api.Direction.OUTGOING;
 import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 @RunWith( Parameterized.class )
-public class StoreNodeRelationshipCursorTest
+public class NodeRelationshipCursorTest
 {
     private static final long FIRST_OWNING_NODE = 1;
     private static final long SECOND_OWNING_NODE = 2;
     private static final int TYPE = 0;
 
     @ClassRule
-    public static TestDirectory directory = TestDirectory.testDirectory( StoreNodeRelationshipCursorTest.class );
+    public static TestDirectory directory = TestDirectory.testDirectory( NodeRelationshipCursorTest.class );
 
     private static FileSystemAbstraction fs;
     private static PageCache pageCache;
@@ -144,7 +143,7 @@ public class StoreNodeRelationshipCursorTest
     {
         createNodeRelationships();
 
-        try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
+        try ( NodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
             cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, EMPTY );
             assertTrue( cursor.next() );
@@ -162,7 +161,7 @@ public class StoreNodeRelationshipCursorTest
     {
         createRelationshipChain( 4 );
         long expectedNodeId = 1;
-        try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
+        try ( NodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
             cursor.init( dense, 1, FIRST_OWNING_NODE, direction, EMPTY );
             while ( cursor.next() )
@@ -180,7 +179,7 @@ public class StoreNodeRelationshipCursorTest
         unUseRecord( 3 );
         int[] expectedRelationshipIds = new int[]{1, 2, 4};
         int relationshipIndex = 0;
-        try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
+        try ( NodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
             cursor.init( dense, 1, FIRST_OWNING_NODE, direction, EMPTY );
             while ( cursor.next() )
@@ -198,7 +197,7 @@ public class StoreNodeRelationshipCursorTest
         // but we don't downgrade dense --> sparse when we delete relationships. So if we have a dense node
         // which no longer has relationships, there was this assumption that we could just call getRecord
         // on the NodeRecord#getNextRel() value. Although that value could actually be -1
-        try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
+        try ( NodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
             // WHEN
             cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, EMPTY );
@@ -291,8 +290,8 @@ public class StoreNodeRelationshipCursorTest
         RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
         PageCursor relationshipGroupCursor = mock( PageCursor.class );
         when( relationshipGroupStore.newPageCursor() ).thenReturn( relationshipGroupCursor );
-        StoreNodeRelationshipCursor cursor =
-                new StoreNodeRelationshipCursor( relationshipStore, relationshipGroupStore, this::noCache,
+        NodeRelationshipCursor cursor =
+                new NodeRelationshipCursor( relationshipStore, relationshipGroupStore, this::noCache,
                         NO_LOCK_SERVICE );
 
         cursor.close();
@@ -335,8 +334,8 @@ public class StoreNodeRelationshipCursorTest
             return record;
         } ).when( relationshipStore )
                 .readRecord( anyLong(), eq( relationshipRecord ), any( RecordLoad.class ), any( PageCursor.class ) );
-        StoreNodeRelationshipCursor cursor =
-                new StoreNodeRelationshipCursor( relationshipStore, mock( RelationshipGroupStore.class ), this::noCache,
+        NodeRelationshipCursor cursor =
+                new NodeRelationshipCursor( relationshipStore, mock( RelationshipGroupStore.class ), this::noCache,
                         NO_LOCK_SERVICE );
 
         return relationshipTypes == null
@@ -528,9 +527,9 @@ public class StoreNodeRelationshipCursorTest
         return direction == OUTGOING ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }
 
-    private StoreNodeRelationshipCursor nodeRelationshipCursor()
+    private NodeRelationshipCursor nodeRelationshipCursor()
     {
-        return new StoreNodeRelationshipCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(),
+        return new NodeRelationshipCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(),
                 this::noCache, NO_LOCK_SERVICE );
     }
 

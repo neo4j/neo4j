@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
-public class StoreSingleRelationshipCursorTest
+public class SingleRelationshipCursorTest
 {
 
     private static final long RELATIONSHIP_ID = 1L;
@@ -76,7 +76,7 @@ public class StoreSingleRelationshipCursorTest
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         createRelationshipRecord( relationshipStore, true );
 
-        try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
+        try ( SingleRelationshipCursor cursor = createRelationshipCursor() )
         {
             cursor.init( RELATIONSHIP_ID, EMPTY );
             assertTrue( cursor.next() );
@@ -91,7 +91,7 @@ public class StoreSingleRelationshipCursorTest
         relationshipStore.setHighId( 10 );
         createRelationshipRecord( relationshipStore, false );
 
-        try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
+        try ( SingleRelationshipCursor cursor = createRelationshipCursor() )
         {
             cursor.init( RELATIONSHIP_ID, EMPTY );
             assertFalse( cursor.next() );
@@ -110,12 +110,12 @@ public class StoreSingleRelationshipCursorTest
                 fileSystemRule.get(), NullLogProvider.getInstance() );
     }
 
-    private StoreSingleRelationshipCursor createRelationshipCursor()
+    private SingleRelationshipCursor createRelationshipCursor()
     {
-        return new StoreSingleRelationshipCursor( neoStores.getRelationshipStore(), this::noCache, NO_LOCK_SERVICE );
+        return new SingleRelationshipCursor( neoStores.getRelationshipStore(), this::noCache, NO_LOCK_SERVICE );
     }
 
-    private void noCache( StoreSingleRelationshipCursor c )
+    private void noCache( SingleRelationshipCursor c )
     {
     }
 }

@@ -23,14 +23,13 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.api.store.StoreNodeRelationshipCursor;
+import org.neo4j.kernel.impl.api.store.NodeRelationshipCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -39,13 +38,13 @@ import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
-    private final StoreNodeRelationshipCursor relationshipCursor;
+    private final NodeRelationshipCursor relationshipCursor;
 
     BatchRelationshipIterable( NeoStores neoStores, long nodeId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        this.relationshipCursor = new StoreNodeRelationshipCursor( relationshipStore, relationshipGroupStore,
+        this.relationshipCursor = new NodeRelationshipCursor( relationshipStore, relationshipGroupStore,
                 cursor -> {}, NO_LOCK_SERVICE );
 
         // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
