@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 
 import scala.collection.mutable
 
-class Profiler extends PipeDecorator {
+class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends PipeDecorator {
   outerProfiler =>
 
   val pageCacheStats: mutable.Map[Id, (Long, Long)] = mutable.Map.empty
@@ -40,9 +41,9 @@ class Profiler extends PipeDecorator {
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
     val oldCount = rowStats.get(pipe.id).map(_.count).getOrElse(0L)
-    val context = dbHitsStats(pipe.id)
-
-    val resultIter = new ProfilingIterator(iter, oldCount, context, pipe.id, pageCacheStats)
+    val resultIter = new ProfilingIterator(iter, oldCount, pipe.id, if (trackPageCacheStats) updatePageCacheStatistics
+    else {
+      (_) => Unit})
 
     rowStats(pipe.id) = resultIter
     resultIter
@@ -54,11 +55,23 @@ class Profiler extends PipeDecorator {
       case _ => new ProfilingPipeQueryContext(state.query, pipe)
     })
 
-    val statisticProvider = decoratedContext.transactionalContext.kernelStatisticProvider
-    pageCacheStats(pipe.id) = (statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+    if (trackPageCacheStats) {
+      val statisticProvider = decoratedContext.transactionalContext.kernelStatisticProvider
+      pageCacheStats(pipe.id) = (statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+    }
     state.withQueryContext(decoratedContext)
   }
 
+  private def updatePageCacheStatistics(pipeId: Id) = {
+    val context = dbHitsStats(pipeId)
+    val statisticProvider = context.transactionalContext.kernelStatisticProvider
+    val currentStat = pageCacheStats(pipeId)
+    pageCacheStats(pipeId) = (statisticProvider.getPageCacheHits - currentStat._1, statisticProvider.getPageCacheMisses - currentStat._2)
+  }
+
+  private def trackPageCacheStats = {
+    databaseInfo.edition != Edition.community
+  }
 
   def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = {
     if (!isProfileReady)
@@ -132,19 +145,15 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
 }
 
-class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, queryContext: ProfilingPipeQueryContext,
-                        pipeId: Id, pageCacheStats:mutable.Map[Id, (Long, Long)]) extends
-  Iterator[ExecutionContext] with Counter {
+class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: Id,
+                        updatePageCacheStatistics:Id => Unit) extends Iterator[ExecutionContext] with Counter {
 
   _count = startValue
 
   def hasNext: Boolean = {
     val hasNext = inner.hasNext
     if (!hasNext) {
-      val statisticProvider = queryContext.transactionalContext.kernelStatisticProvider
-      val currentStat = pageCacheStats(pipeId)
-      pageCacheStats(pipeId) = (statisticProvider.getPageCacheHits - currentStat._1,
-                                statisticProvider.getPageCacheMisses - currentStat._2)
+      updatePageCacheStatistics(pipeId)
     }
     hasNext
   }

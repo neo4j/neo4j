@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 class ProfilerTest extends CypherFunSuite {
 
@@ -37,7 +38,7 @@ class ProfilerTest extends CypherFunSuite {
     val start = SingleRowPipe()()
     val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20)
     val queryContext: QueryContext = prepareQueryContext()
-    val profiler = new Profiler
+    val profiler = new Profiler(DatabaseInfo.ENTERPRISE)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe)
 
@@ -55,7 +56,7 @@ class ProfilerTest extends CypherFunSuite {
     val statisticProvider = new ConfiguredKernelStatisticProvider()
     val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20, statisticProvider, hits = 2, misses = 7)
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
-    val profiler = new Profiler
+    val profiler = new Profiler(DatabaseInfo.ENTERPRISE)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe)
 
@@ -104,7 +105,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe2 = ProfilerTestPipe(pipe1, "bar", rows = 20, dbAccess = 40, statisticProvider, 12, 35)
     val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2, statisticProvider, 37, 68)
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
-    val profiler = new Profiler
+    val profiler = new Profiler(DatabaseInfo.ENTERPRISE)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe1, "bar" -> pipe2, "baz" -> pipe3)
 
@@ -182,7 +183,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipeUnderInspection = ProjectionPipe(start2, Map("x" -> innerPipe))()
 
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
-    val profiler = new Profiler
+    val profiler = new Profiler(DatabaseInfo.HA)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
     val planDescription = createPlanDescription(
       "start1" -> start1,

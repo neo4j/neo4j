@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.{IndexDescriptor, InternalQueryStatistics}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 import scala.collection.Iterator
 
@@ -228,5 +229,7 @@ trait QueryTransactionalContext {
   def commitAndRestartTx()
 
   def kernelStatisticProvider: KernelStatisticProvider
+
+  def databaseInfo: DatabaseInfo
 }
 
