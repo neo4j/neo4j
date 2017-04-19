@@ -214,7 +214,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
                   "A constraint cannot be created until the index has been dropped.")
   }
 
-  test("should give appropriate error message when there is already a constraint") {
+  test("should give appropriate error message when there is already a NODE KEY constraint") {
     // Given
     exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY")
 
