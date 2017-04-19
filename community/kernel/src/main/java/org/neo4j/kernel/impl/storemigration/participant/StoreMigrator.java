@@ -93,6 +93,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -687,7 +689,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final List<Object> scratch = new ArrayList<>();
         return ( ENTITY entity, RECORD record ) ->
         {
-            cursor.init( record.getNextProp(), LockService.NO_LOCK, null );
+            cursor.init( record.getNextProp(), LockService.NO_LOCK, PropertyContainerState.EMPTY );
             scratch.clear();
             while ( cursor.next() )
             {
