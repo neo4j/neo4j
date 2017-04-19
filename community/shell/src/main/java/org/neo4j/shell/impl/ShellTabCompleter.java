@@ -34,14 +34,14 @@ import org.neo4j.shell.TabCompletion;
  * This class is instantiated by reflection (in {@link JLineConsole#newConsoleOrNullIfNotFound}) in order to ensure
  * that there is no hard dependency on jLine and the console can run in degraded form without it.
  */
-class ShellTabCompleter implements Completer
+public class ShellTabCompleter implements Completer
 {
     private final ShellClient client;
 
     private long timeWhenCached;
     private Completer appNameCompleter;
 
-    ShellTabCompleter( ShellClient client )
+    public ShellTabCompleter( ShellClient client )
     {
         this.client = client;
     }
