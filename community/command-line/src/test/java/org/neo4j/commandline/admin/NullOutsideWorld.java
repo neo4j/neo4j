@@ -36,6 +36,24 @@ public class NullOutsideWorld implements OutsideWorld
     }
 
     @Override
+    public String readLine()
+    {
+        return "";
+    }
+
+    @Override
+    public String promptLine( String fmt, Object... args )
+    {
+        return "";
+    }
+
+    @Override
+    public char[] promptPassword( String fmt, Object... args )
+    {
+        return new char[0];
+    }
+
+    @Override
     public void exit( int status )
     {
     }

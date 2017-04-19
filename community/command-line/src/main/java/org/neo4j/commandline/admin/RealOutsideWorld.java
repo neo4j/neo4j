@@ -41,6 +41,24 @@ public class RealOutsideWorld implements OutsideWorld
     }
 
     @Override
+    public String readLine()
+    {
+        return System.console().readLine();
+    }
+
+    @Override
+    public String promptLine( String fmt, Object... args )
+    {
+        return System.console().readLine( fmt, args );
+    }
+
+    @Override
+    public char[] promptPassword( String fmt, Object... args )
+    {
+        return System.console().readPassword( fmt, args );
+    }
+
+    @Override
     public void exit( int status )
     {
         System.exit( status );
