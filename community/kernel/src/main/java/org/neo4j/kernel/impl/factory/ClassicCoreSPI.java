@@ -155,7 +155,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             msgLog.log( "Shutdown started" );
-            platform.availabilityGuard.shutdown();
             platform.life.shutdown();
         }
         catch ( LifecycleException throwable )
@@ -170,7 +169,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         try
         {
-            availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, securityContext, timeout );
             kernelTx.registerCloseListener(
                     (txId) -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
@@ -179,7 +177,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         }
         catch ( TransactionFailureException e )
         {
-            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
+            throw availability.convertUnavailabilityException( e );
         }
     }
 
