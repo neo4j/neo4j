@@ -19,16 +19,26 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.scalacheck.{Arbitrary, Gen, Shrink}
+import org.scalatest.prop.PropertyChecks
 
 /*
  * Tests so that the compiled runtime behaves in the same way as the interpreted runtime for randomized Cypher
  * statements
  */
-class GrammarStressIT extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport {
+class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with NewPlannerTestSupport {
 
   private val DEPTH: Int = 10
+  private def minPatternLength = 2
+  private def maxPatternLength = 8
+  private def numberOfTestRuns = 100
+  private def maxDiscardedInputs = 500
+  private def maxSize = 10
+
+  override implicit val generatorDrivenConfig = PropertyCheckConfig(
+    minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
+  )
   //we don't want scala check to shrink patterns here since it will lead to invalid cypher
   //e.g. RETURN {, RETURN [, etc
   implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
@@ -74,13 +84,4 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PatternGen with NewPl
   def mapLiteral(d: Int): Gen[String] = Gen.mapOf(Gen.zip(keyLiteral, literal(d - 1)))
     .map(_.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
 
-  override protected def numberOfTestRuns: Int = 100
-
-  override def relGen: Gen[Relationship] = Gen.oneOf(emptyRelGen, emptyRelWithLengthGen, namedRelGen,
-                                                     namedRelWithLengthGen, typedRelGen, typedRelWithLengthGen,
-                                                     namedTypedRelGen, namedTypedRelWithLengthGen,
-                                                     typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
-
-  override def nodeGen: Gen[Node] = Gen.oneOf(emptyNodeGen, namedNodeGen, labeledNodeGen, namedLabeledNodeGen,
-                                              labeledWithPropertiesNodeGen, namedLabeledWithPropertiesNodeGen)
 }
