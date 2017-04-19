@@ -398,6 +398,12 @@ public class CheckPointSchedulerTest
             throw new UnsupportedOperationException( "This should have not been called" );
         }
 
+        @Override
+        public long lastCheckPointedTransactionId()
+        {
+            return 0;
+        }
+
         boolean isCheckpointCreated()
         {
             return checkpointCreated;
