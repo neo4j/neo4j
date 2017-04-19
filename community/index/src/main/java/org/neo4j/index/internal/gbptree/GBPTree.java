@@ -101,9 +101,12 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  * </pre>
 
  * The writes that happened before the last checkpoint are durable and safe, but the writes after it are not.
- * The tree can however get back to a consistent state by replaying all the writes, exactly as they were made,
- * since the last checkpoint all the way up to the crash ({@code x}). Even including writes before the last
- * checkpoint is OK, important is that <strong>at least</strong> writes since last checkpoint are included.
+ * The tree can however get back to a consistent state by replaying all the writes since the last checkpoint
+ * all the way up to the crash ({@code x}). Even including writes before the last checkpoint is OK,
+ * important is that <strong>at least</strong> writes since last checkpoint are included. Note that the order
+ * in which the changes are applied is not important as long as they do not affect the same key. The order of
+ * updates targeting the same key needs to be preserved when replaying as only the last applied update will
+ * be visible.
  *
  * If failing to replay missing writes, that data will simply be missing from the tree and most likely leave the
  * database inconsistent.
