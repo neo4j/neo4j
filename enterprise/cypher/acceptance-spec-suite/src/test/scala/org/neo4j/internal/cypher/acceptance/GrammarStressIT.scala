@@ -38,7 +38,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   private def maxSize = 10
 
   val NODES_PER_LAYER = 10
-  val NUM_LAYERS = 10
+  val NUM_LAYERS = 3
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
     minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
@@ -46,7 +46,14 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {
 
-    override def toString: String = s"$startNode${tail.getOrElse("")}"
+    override def toString: String = {
+      val tailString = tail match {
+        case None => ""
+        case Some((r,p)) => s"$r$p"
+      }
+
+      s"$startNode$tailString"
+    }
   }
   case class NodePattern(name:Option[String], labels:Set[String], properties:Map[String, Any]) {
 
@@ -64,19 +71,40 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
                          name:Option[String],
                          relType:Set[String],
                          properties:Map[String, Any],
-                         length:LengthPattern )
+                         length:LengthPattern ) {
+
+    override def toString: String = name.mkString("-[", "", "]->")
+  }
+
   trait LengthPattern
   case object DefaultLength extends LengthPattern
   case class MinLength(value:Int) extends LengthPattern
   case class MaxLength(value:Int) extends LengthPattern
   case class MinMaxLength(min:Int, max:Int) extends LengthPattern
 
-  def patternGen(d:Int):Gen[Pattern] =
+  def patterns:Gen[Pattern] = Gen.choose(1, NUM_LAYERS)
+                                  .flatMap(depth => patternGen(depth, Gen.const(Set("L"+depth))))
+
+  def patternGen(d:Int, labelGen:Gen[Set[String]]):Gen[Pattern] =
     for {
-      nodeName <- Gen.option(Gen.identifier)
-      labels <- Gen.listOf(Gen.frequency(100 -> Gen.const("L"+d), 1 -> Gen.const("X"+d))).map(_.toSet)
+      nodeName <- Gen.option(Gen.identifier.map("n"+_))
+      labels <- labelGen
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.choose(1, NODES_PER_LAYER)))
-    } yield Pattern(NodePattern(nodeName, labels, props), None)
+      tail <- tailPatternGen(d+1)
+    } yield Pattern(NodePattern(nodeName, labels, props), tail)
+
+  def tailPatternGen(d:Int):Gen[Option[(RelPattern, Pattern)]] =
+    if (d < NUM_LAYERS)
+      Gen.zip(relPatternGen, patternGen(d, maybeWrongLabelGen(d))).map(Some(_))
+    else
+      Gen.const(None)
+
+  def relPatternGen:Gen[RelPattern] =
+    for {
+      relName <- Gen.option(Gen.identifier.map("r"+_))
+    } yield RelPattern(relName, Set.empty, Map.empty, DefaultLength)
+
+  private def maybeWrongLabelGen(d:Int) = Gen.listOf(Gen.frequency(100 -> Gen.const("L"+d), 1 -> Gen.const("X"+d))).map(_.toSet)
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -116,7 +144,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   }
 
   test("match pattern") {
-    forAll(patternGen(1)) { pattern =>
+    forAll(patterns) { pattern =>
       assertQuery(s"MATCH $pattern RETURN 42")
     }
   }
