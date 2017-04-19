@@ -33,19 +33,19 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 /**
  * Cursor for all properties on a node or relationship.
  */
-public class StorePropertyCursor extends StoreAbstractPropertyCursor
+public class PropertyCursor extends AbstractPropertyCursor
 {
-    private final Consumer<StorePropertyCursor> consumer;
+    private final Consumer<PropertyCursor> consumer;
 
     private Iterator<StorageProperty> storagePropertyIterator;
 
-    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> consumer )
+    public PropertyCursor( PropertyStore propertyStore, Consumer<PropertyCursor> consumer )
     {
         super( propertyStore );
         this.consumer = consumer;
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
+    public PropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
     {
         storagePropertyIterator = state.addedProperties();
         initialize( ALWAYS_TRUE_INT, firstPropertyId, lock, state );

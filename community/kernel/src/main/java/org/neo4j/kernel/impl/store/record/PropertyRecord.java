@@ -46,7 +46,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     private long nextProp;
     private long prevProp;
     // Holds the purely physical representation of the loaded properties in this record. This is so that
-    // StorePropertyCursor is able to use this raw data without the rather heavy and bloated data structures
+    // PropertyCursor is able to use this raw data without the rather heavy and bloated data structures
     // of PropertyBlock and thereabouts. So when a property record is loaded only these blocks are read,
     // the construction of all PropertyBlock instances are loaded lazile when they are first needed, loaded
     // by ensureBlocksLoaded().

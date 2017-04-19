@@ -35,9 +35,9 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public abstract class StoreAbstractPropertyCursor implements PropertyItem, Cursor<PropertyItem>, Disposable
+public abstract class AbstractPropertyCursor implements PropertyItem, Cursor<PropertyItem>, Disposable
 {
-    private final StorePropertyPayloadCursor payload;
+    private final PropertyPayloadCursor payload;
     private final PageCursor cursor;
     private final PropertyRecord record;
     private final PropertyStore propertyStore;
@@ -50,12 +50,12 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
     private Lock lock;
     protected PropertyContainerState state;
 
-    StoreAbstractPropertyCursor( PropertyStore propertyStore )
+    AbstractPropertyCursor( PropertyStore propertyStore )
     {
         this.cursor = propertyStore.newPageCursor();
         this.propertyStore = propertyStore;
         this.record = propertyStore.newRecord();
-        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
+        this.payload = new PropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
     }
 
     protected final void initialize( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock,
