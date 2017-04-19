@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.graphdb.Node
 import org.scalacheck.{Arbitrary, Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
@@ -36,9 +37,70 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   private def maxDiscardedInputs = 500
   private def maxSize = 10
 
+  val NODES_PER_LAYER = 10
+  val NUM_LAYERS = 10
+
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
     minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
   )
+
+  case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {
+
+    override def toString: String = s"$startNode${tail.getOrElse("")}"
+  }
+  case class NodePattern(name:Option[String], labels:Set[String], properties:Map[String, Any]) {
+
+    override def toString: String = {
+
+      val propString = if (properties.isEmpty) None else
+        Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
+      val labelString = if (labels.isEmpty) None else Some(labels.mkString(":", ":", ""))
+
+      (name ++ labelString ++ propString).mkString("(", " ", ")")
+    }
+  }
+
+  case class RelPattern(
+                         name:Option[String],
+                         relType:Set[String],
+                         properties:Map[String, Any],
+                         length:LengthPattern )
+  trait LengthPattern
+  case object DefaultLength extends LengthPattern
+  case class MinLength(value:Int) extends LengthPattern
+  case class MaxLength(value:Int) extends LengthPattern
+  case class MinMaxLength(min:Int, max:Int) extends LengthPattern
+
+  def patternGen(d:Int):Gen[Pattern] =
+    for {
+      nodeName <- Gen.option(Gen.identifier)
+      labels <- Gen.listOf(Gen.frequency(100 -> Gen.const("L"+d), 1 -> Gen.const("X"+d))).map(_.toSet)
+      props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.choose(1, NODES_PER_LAYER)))
+    } yield Pattern(NodePattern(nodeName, labels, props), None)
+
+  override protected def initTest(): Unit = {
+    super.initTest()
+
+    graph.inTx {
+      val nodes: Seq[IndexedSeq[Node]] =
+        for (i <- 1 to NUM_LAYERS) yield {
+          for (j <- 1 to NODES_PER_LAYER) yield {
+            val node = createLabeledNode("L" + i)
+            node.setProperty("p" + i, j)
+            node
+          }
+        }
+      for (i <- 1 until NUM_LAYERS) {
+        val thisLayer = nodes(i-1)
+        val nextLayer = nodes(i)
+        for {
+          n1 <- thisLayer
+          n2 <- nextLayer
+        } relate(n1, n2, s"T$i")
+      }
+    }
+  }
+
   //we don't want scala check to shrink patterns here since it will lead to invalid cypher
   //e.g. RETURN {, RETURN [, etc
   implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
@@ -53,6 +115,12 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     }
   }
 
+  test("match pattern") {
+    forAll(patternGen(1)) { pattern =>
+      assertQuery(s"MATCH $pattern RETURN 42")
+    }
+  }
+
   //Check that interpreted and compiled gives the same results, it might be the case
   //that the compiled runtime fallbacks to the interpreted but that is ok here just as
   //long as we fallback gracefully.
@@ -61,6 +129,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     val resultInterpreted = innerExecute(s"CYPHER runtime=interpreted $query")
     assertResultsAreSame(resultCompiled, resultInterpreted, query,
                          "Diverging results between interpreted and compiled runtime")
+    resultCompiled
   }
 
   def literal(implicit d: Int = DEPTH): Gen[String] =
