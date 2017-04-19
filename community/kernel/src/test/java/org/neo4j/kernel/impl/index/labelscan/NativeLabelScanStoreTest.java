@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.PageCacheRule;
 
+import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
+
 public class NativeLabelScanStoreTest extends LabelScanStoreTest
 {
     @Rule
