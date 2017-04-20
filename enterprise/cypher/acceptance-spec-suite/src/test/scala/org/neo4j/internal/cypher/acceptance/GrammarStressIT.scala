@@ -47,6 +47,11 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {
 
+    def identifiers: Set[String] = startNode.name.toSet ++ tail.map((kv) => {
+      val (r, p) = kv
+      r.name.toSet ++ p.identifiers
+    }).getOrElse(Set.empty)
+
     override def toString: String = {
       val tailString = tail match {
         case None => ""
@@ -184,8 +189,19 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   test("match pattern") {
     forAll(patterns) { pattern =>
-      assertQuery(s"MATCH $pattern RETURN 42")
+      assertQuery(s"MATCH $pattern ${returnClause(pattern)}")
     }
+  }
+
+  test("optional match pattern") {
+    forAll(patterns, patterns) { (matchPattern, optionalPattern) =>
+      assertQuery(s"MATCH $matchPattern OPTIONAL MATCH $optionalPattern ${returnClause(matchPattern, optionalPattern)}")
+    }
+  }
+
+  private def returnClause(pattern: Pattern*) = {
+    val identifiers = pattern.foldLeft(Set.empty[String])( (a, c) => a ++ c.identifiers)
+    if(identifiers.nonEmpty) s"RETURN ${identifiers.mkString(", ")}" else "RETURN 42"
   }
 
   //Check that interpreted and compiled gives the same results, it might be the case
