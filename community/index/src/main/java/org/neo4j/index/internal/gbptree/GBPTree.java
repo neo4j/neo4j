@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -953,6 +954,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
+    private TreeInconsistencyException appendTreeInformation( TreeInconsistencyException e )
+    {
+        return Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
+    }
+
     private class SingleWriter implements Writer<KEY,VALUE>
     {
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
@@ -975,6 +981,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
             cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
             stableGeneration = stableGeneration( generation );
             unstableGeneration = unstableGeneration( generation );
+            try
+            {
+                PointerChecking.assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                closeCursor();
+                throw appendTreeInformation( e );
+            }
             treeLogic.initialize( cursor );
         }
 
@@ -987,8 +1002,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
-                    stableGeneration, unstableGeneration );
+            try
+            {
+                treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
+                        stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
 
             if ( structurePropagation.hasRightKeyInsert )
             {
@@ -1024,8 +1046,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public VALUE remove( KEY key ) throws IOException
         {
-            VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
-                    stableGeneration, unstableGeneration );
+            VALUE result;
+            try
+            {
+                result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
+                        stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
+
             if ( structurePropagation.hasMidChildUpdate )
             {
                 setRoot( structurePropagation.midChild );
@@ -1044,9 +1075,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 return;
             }
 
+            closeCursor();
+            releaseWriter();
+        }
+
+        private void closeCursor()
+        {
             cursor.close();
             cursor = null;
-            releaseWriter();
         }
     }
 }
