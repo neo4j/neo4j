@@ -6,3 +6,7 @@ Ordering is well defined across all types, descending
 Ordering for lists, ascending
 Ordering for lists, descending
 
+// Long chain of comparison operators
+Long chains of integer comparisons
+Long chains of floating point comparisons
+Long chains of string comparisons
