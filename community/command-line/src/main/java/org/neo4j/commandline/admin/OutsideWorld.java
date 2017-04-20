@@ -30,6 +30,24 @@ public interface OutsideWorld extends Closeable
 
     void stdErrLine( String text );
 
+    /**
+     * @see java.io.Console#readLine()
+     */
+    String readLine();
+
+    /**
+     * @see java.io.Console#readLine(String, Object...)
+     */
+    String promptLine( String fmt, Object... args );
+
+    /**
+     * It is strongly advised that the return character array is overwritten as soon as the password has been processed,
+     * to avoid having it linger in memory any longer than strictly necessary.
+     *
+     * @see java.io.Console#readPassword(String, Object...)
+     */
+    char[] promptPassword( String fmt, Object... args );
+
     void exit( int status );
 
     void printStacktrace( Exception exception );
