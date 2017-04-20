@@ -893,7 +893,9 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
                     long relationshipCountForThisType = type.getValue().longValue();
                     long maxDenseNodesForThisType = min( numberOfDenseNodes, relationshipCountForThisType * 2/*nodes/rel*/ );
                     long memoryUsageForThisType = maxDenseNodesForThisType * NodeRelationshipCache.GROUP_ENTRY_SIZE;
-                    if ( currentSetOfRelationshipsMemoryUsage + memoryUsageForThisType > freeMemoryForDenseNodeCache &&
+                    long memoryUsageUpToAndIncludingThisType =
+                            currentSetOfRelationshipsMemoryUsage + memoryUsageForThisType;
+                    if ( memoryUsageUpToAndIncludingThisType > freeMemoryForDenseNodeCache &&
                             currentSetOfRelationshipsMemoryUsage > 0 )
                     {
                         // OK we've filled what we can into the cache, or worst-case at least

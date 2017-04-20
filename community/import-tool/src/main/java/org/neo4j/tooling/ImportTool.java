@@ -238,7 +238,7 @@ public class ImportTool
         MAX_MEMORY( "max-memory", null,
                 "<max memory that importer can use>",
                 "(advanced) Maximum memory that importer can use for various data structures and caching " +
-                "to improve performance. By default set to " + DEFAULT_MAX_MEMORY_PERCENT +
+                "to improve performance. If left as unspecified (null) it is set to " + DEFAULT_MAX_MEMORY_PERCENT +
                 "% of (free memory on machine - max JVM memory). " +
                 "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." );
 
@@ -465,6 +465,7 @@ public class ImportTool
     {
         if ( maxMemoryString != null )
         {
+            maxMemoryString = maxMemoryString.trim();
             if ( maxMemoryString.endsWith( "%" ) )
             {
                 int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );

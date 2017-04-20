@@ -176,7 +176,7 @@ public interface Configuration
         };
     }
 
-    public static long calculateMaxMemoryFromPercent( int percent )
+    static long calculateMaxMemoryFromPercent( int percent )
     {
         if ( percent < 1 )
         {

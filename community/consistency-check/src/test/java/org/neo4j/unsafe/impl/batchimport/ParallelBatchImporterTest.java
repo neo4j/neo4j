@@ -80,6 +80,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
@@ -133,7 +134,7 @@ public class ParallelBatchImporterTest
             // is split up into multiple rounds. Also to see that relationship group defragmentation works
             // well when doing multiple rounds.
             double ratio = (NODE_COUNT / 1_000D );
-            long mebi = 1024 * 1024;
+            long mebi = mebiBytes( 1 );
             return random.nextInt( (int) (ratio * mebi / 2), (int) (ratio * mebi) );
         }
     };
