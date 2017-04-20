@@ -38,9 +38,11 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
+import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
 @RunWith( Parameterized.class )
 public class LuceneLabelScanStoreTest extends LabelScanStoreTest

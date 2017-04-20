@@ -83,22 +83,6 @@ public class CrashGenerationCleanerTest
             crashed( successor() )
     );
 
-    private class SimpleMonitor implements GBPTree.Monitor
-    {
-        boolean recoveryCompleted;
-        private long numberOfPagesVisited;
-        private long numberOfCleanedCrashPointers;
-
-        @Override
-        public void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-                long durationMillis )
-        {
-            recoveryCompleted = true;
-            this.numberOfPagesVisited = numberOfPagesVisited;
-            this.numberOfCleanedCrashPointers = numberOfCleanedCrashPointers;
-        }
-    }
-
     @Before
     public void setupPagedFile() throws IOException
     {
@@ -122,7 +106,7 @@ public class CrashGenerationCleanerTest
         initializeFile( pagedFile, pages );
 
         // WHEN
-        SimpleMonitor monitor = new SimpleMonitor();
+        SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
@@ -141,7 +125,7 @@ public class CrashGenerationCleanerTest
         initializeFile( pagedFile, pages );
 
         // WHEN
-        SimpleMonitor monitor = new SimpleMonitor();
+        SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
@@ -174,7 +158,7 @@ public class CrashGenerationCleanerTest
         initializeFile( pagedFile, pages );
 
         // WHEN
-        SimpleMonitor monitor = new SimpleMonitor();
+        SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
@@ -202,7 +186,7 @@ public class CrashGenerationCleanerTest
         initializeFile( pagedFile, pages );
 
         // WHEN
-        SimpleMonitor monitor = new SimpleMonitor();
+        SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
         crashGenerationCleaner( pagedFile, 0, pages.length, monitor ).clean();
 
         // THEN
@@ -227,7 +211,7 @@ public class CrashGenerationCleanerTest
         initializeFile( pagedFile, pages );
 
         // WHEN
-        SimpleMonitor monitor = new SimpleMonitor();
+        SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
         crashGenerationCleaner( pagedFile, 0, numberOfPages, monitor ).clean();
 
         // THEN
@@ -236,7 +220,7 @@ public class CrashGenerationCleanerTest
     }
 
     private CrashGenerationCleaner crashGenerationCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId,
-            SimpleMonitor monitor )
+            SimpleCleanupMonitor monitor )
     {
         return new CrashGenerationCleaner( pagedFile, corruptableTreeNode, lowTreeNodeId, highTreeNodeId,
                 stableGeneration, unstableGeneration, monitor );
@@ -255,7 +239,7 @@ public class CrashGenerationCleanerTest
     }
 
     /* Assertions */
-    private void assertCleanedCrashPointers( SimpleMonitor monitor,
+    private void assertCleanedCrashPointers( SimpleCleanupMonitor monitor,
             int expectedNumberOfCleanedCrashPointers )
     {
         assertEquals( "Expected number of cleaned crash pointers to be " +
@@ -263,7 +247,7 @@ public class CrashGenerationCleanerTest
                 expectedNumberOfCleanedCrashPointers, monitor.numberOfCleanedCrashPointers );
     }
 
-    private void assertPagesVisisted( SimpleMonitor monitor, int expectedNumberOfPagesVisited )
+    private void assertPagesVisisted( SimpleCleanupMonitor monitor, int expectedNumberOfPagesVisited )
     {
         assertEquals( "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
                         " but was " + monitor.numberOfPagesVisited,

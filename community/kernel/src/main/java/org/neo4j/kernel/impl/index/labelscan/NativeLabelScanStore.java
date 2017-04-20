@@ -19,22 +19,27 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -48,7 +53,6 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 
 /**
@@ -79,6 +83,16 @@ public class NativeLabelScanStore implements LabelScanStore
      * Name of the file used for the native label scan store.
      */
     public static final String FILE_NAME = DEFAULT_NAME + ".labelscanstore.db";
+
+    /**
+     * Written in header to indicate native label scan store is clean
+     */
+    private static final byte CLEAN = (byte) 0x00;
+
+    /**
+     * Written in header to indicate native label scan store is rebuilding
+     */
+    private static final byte REBUILDING = (byte) 0x01;
 
     /**
      * Whether or not this label scan store is read-only.
@@ -124,25 +138,25 @@ public class NativeLabelScanStore implements LabelScanStore
     private GBPTree<LabelScanKey,LabelScanValue> index;
 
     /**
-     * Whether or not {@link #start()} has been called.
-     * This is read in {@link #newWriter()} which may be called from threads other than the one setting it.
-     */
-    private volatile boolean started;
-
-    /**
-     * If {@link #index} is {@code null} and {@link #started} is {@code false},
-     * then it's between {@link #init()} and {@link #start()}. If {@link #newWriter()} is called at this
-     * point we infer that recovery is taking place and so we notify the {@link GBPTree} about that fact.
-     */
-    private boolean recoveryStarted;
-
-    /**
      * Set during {@link #init()} if {@link #start()} will need to rebuild the whole label scan store from
      * {@link FullStoreChangeStream}.
      */
     private boolean needsRebuild;
 
+    /**
+     * The single instance of {@link NativeLabelScanWriter} used for updates.
+     */
     private final NativeLabelScanWriter singleWriter;
+
+    /**
+     * Write rebuilding bit to header.
+     */
+    private static final Consumer<PageCursor> writeRebuilding = pageCursor -> pageCursor.putByte( REBUILDING );
+
+    /**
+     * Write clean header.
+     */
+    private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     public NativeLabelScanStore( PageCache pageCache, File storeDir, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Monitors monitors )
@@ -169,7 +183,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * @return {@link LabelScanReader} capable of finding node ids with given label ids.
      * Readers will immediately see updates made by {@link LabelScanWriter}, although {@link LabelScanWriter}
-     * may internally batch updates so functionality isn't realiable. The only given is that readers will
+     * may internally batch updates so functionality isn't reliable. The only given is that readers will
      * see at least updates from closed {@link LabelScanWriter writers}.
      */
     @Override
@@ -196,14 +210,6 @@ public class NativeLabelScanStore implements LabelScanStore
 
         try
         {
-            if ( !started && !recoveryStarted )
-            {
-                // Let's notify our index that recovery is about to commence, we do this once before
-                // the first recovered transaction gets applied.
-                index.prepareForRecovery();
-                recoveryStarted = true;
-            }
-
             return writer();
         }
         catch ( IOException e )
@@ -225,7 +231,6 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         try
         {
-            maybeCompleteRecovery();
             index.checkpoint( limiter );
         }
         catch ( IOException e )
@@ -289,6 +294,7 @@ public class NativeLabelScanStore implements LabelScanStore
         monitor.init();
 
         boolean storeExists = hasStore();
+        boolean isDirty;
         try
         {
             needsRebuild = !storeExists;
@@ -297,11 +303,16 @@ public class NativeLabelScanStore implements LabelScanStore
                 monitor.noIndex();
             }
 
-            instantiateTree();
+            isDirty = instantiateTree();
         }
         catch ( MetadataMismatchException e )
         {
             // GBPTree is corrupt. Try to rebuild.
+            isDirty = true;
+        }
+
+        if ( isDirty )
+        {
             monitor.notValidIndex();
             dropStrict();
             instantiateTree();
@@ -328,11 +339,18 @@ public class NativeLabelScanStore implements LabelScanStore
         return single( pageCache.streamFilesRecursive( storeFile ).collect( Collectors.toList() ) );
     }
 
-    private void instantiateTree() throws IOException
+    /**
+     * @return true if instantiated tree needs to be rebuilt.
+     */
+    private boolean instantiateTree() throws IOException
     {
         monitors.addMonitorListener( treeMonitor() );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, NO_HEADER );
+        MutableBoolean isRebuilding = new MutableBoolean();
+        Header.Reader readRebuilding =
+                (pageCursor, length) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding );
+        return isRebuilding.getValue();
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -340,7 +358,7 @@ public class NativeLabelScanStore implements LabelScanStore
         return new GBPTree.Monitor()
         {
             @Override
-            public void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                     long durationMillis )
             {
                 monitor.recoveryCompleted( map(
@@ -366,6 +384,11 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private void dropStrict() throws IOException
     {
+        if ( index != null )
+        {
+            index.close();
+            index = null;
+        }
         storeFileHandle().delete();
     }
 
@@ -383,26 +406,18 @@ public class NativeLabelScanStore implements LabelScanStore
             monitor.rebuilding();
             long numberOfNodes;
 
+            index.checkpoint( IOLimiter.unlimited(), writeRebuilding );
+
             // Intentionally ignore read-only flag here when rebuilding.
             try ( LabelScanWriter writer = writer() )
             {
                 numberOfNodes = fullStoreChangeStream.applyTo( writer );
             }
+
+            index.checkpoint( IOLimiter.unlimited(), writeClean );
+
             monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
-        }
-
-        maybeCompleteRecovery();
-
-        started = true;
-    }
-
-    private void maybeCompleteRecovery() throws IOException
-    {
-        if ( recoveryStarted )
-        {
-            index.finishRecovery();
-            recoveryStarted = false;
         }
     }
 

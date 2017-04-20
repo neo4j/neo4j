@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -285,6 +286,9 @@ public class BatchingNeoStores implements AutoCloseable
         propertyKeyRepository.close();
         labelRepository.close();
         relationshipTypeRepository.close();
+
+        // Flush label scan store
+        labelScanStore.force( IOLimiter.unlimited() );
 
         // Close the neo store
         life.shutdown();

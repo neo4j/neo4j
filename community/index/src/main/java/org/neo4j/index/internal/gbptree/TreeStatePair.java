@@ -118,11 +118,18 @@ class TreeStatePair
         {
             // return newest
 
-            // compare unstable generations of A/B and include sanity check for stable generations
-            // such that there cannot be a state S compared to other state O where
+            // compare unstable generations of A/B, if equal, compare clean flag (clean is newer than dirty)
+            // and include sanity check for stable generations such that there cannot be a state S compared
+            // to other state O where
             // S.unstableGeneration > O.unstableGeneration AND S.stableGeneration < O.stableGeneration
 
-            if ( stateA.stableGeneration() >= stateB.stableGeneration() &&
+            if ( stateA.stableGeneration() == stateB.stableGeneration() &&
+                    stateA.unstableGeneration() == stateB.unstableGeneration() &&
+                    stateA.isClean() != stateB.isClean() )
+            {
+                return Optional.of( stateA.isClean() ? stateA : stateB );
+            }
+            else if ( stateA.stableGeneration() >= stateB.stableGeneration() &&
                     stateA.unstableGeneration() > stateB.unstableGeneration() )
             {
                 return Optional.of( stateA );

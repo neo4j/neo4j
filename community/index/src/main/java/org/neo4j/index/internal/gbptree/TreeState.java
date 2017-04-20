@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.Objects;
+
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -31,12 +32,16 @@ import org.neo4j.io.pagecache.PageCursor;
  * <li>last id, the page id which is the highest allocated in the store</li>
  * <li>pointers into free-list (page id + offset)</li>
  * </ul>
- * This class also knows how to {@link #write(PageCursor, long, long, long, long, long, long, long, int, int)}
- * and {@link #read(PageCursor)} tree state to and from a {@link PageCursor}, although doesn't care where
+ * This class also knows how to
+ * {@link #write(PageCursor, long, long, long, long, long, long, long, int, int, boolean) write} and
+ * {@link #read(PageCursor) read} tree state to and from a {@link PageCursor}, although doesn't care where
  * in the store that is.
  */
 class TreeState
 {
+    private static final byte CLEAN = 0x01;
+    private static final byte DIRTY = 0x00;
+
     /**
      * Page id this tree state has been read from.
      */
@@ -95,9 +100,14 @@ class TreeState
      */
     private boolean valid;
 
-    TreeState( long pageId, long stableGeneration, long unstableGeneration, long rootId, long rootGeneration, long lastId,
-            long freeListWritePageId, long freeListReadPageId, int freeListWritePos, int freeListReadPos,
-            boolean valid )
+    /**
+     * Is tree clean or dirty. Clean means it was closed without any non-checkpointed changes.
+     */
+    private boolean clean;
+
+    TreeState( long pageId, long stableGeneration, long unstableGeneration, long rootId, long rootGeneration,
+            long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos, int freeListReadPos,
+            boolean clean, boolean valid )
     {
         this.pageId = pageId;
         this.stableGeneration = stableGeneration;
@@ -109,6 +119,7 @@ class TreeState
         this.freeListReadPageId = freeListReadPageId;
         this.freeListWritePos = freeListWritePos;
         this.freeListReadPos = freeListReadPos;
+        this.clean = clean;
         this.valid = valid;
     }
 
@@ -181,18 +192,19 @@ class TreeState
      * @param freeListReadPageId free-list page id to read released ids from.
      * @param freeListWritePos offset into free-list write page id to write released ids into.
      * @param freeListReadPos offset into free-list read page id to read released ids from.
+     * @param clean is tree clean or dirty
      */
     static void write( PageCursor cursor, long stableGeneration, long unstableGeneration, long rootId,
             long rootGeneration, long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos,
-            int freeListReadPos )
+            int freeListReadPos, boolean clean )
     {
         GenerationSafePointer.assertGenerationOnWrite( stableGeneration );
         GenerationSafePointer.assertGenerationOnWrite( unstableGeneration );
 
         writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos ); // Write state
+                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean ); // Write state
         writeStateOnce( cursor, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos ); // Write checksum
+                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean ); // Write checksum
     }
 
     /**
@@ -239,13 +251,14 @@ class TreeState
         long freeListReadPageId = cursor.getLong();
         int freeListWritePos = cursor.getInt();
         int freeListReadPos = cursor.getInt();
+        boolean clean = cursor.getByte() == CLEAN;
         return new TreeState( pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, true );
+                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, true );
     }
 
     private static void writeStateOnce( PageCursor cursor, long stableGeneration, long unstableGeneration, long rootId,
             long rootGeneration, long lastId, long freeListWritePageId, long freeListReadPageId, int freeListWritePos,
-            int freeListReadPos )
+            int freeListReadPos, boolean clean )
     {
         cursor.putInt( (int) stableGeneration );
         cursor.putInt( (int) unstableGeneration );
@@ -256,6 +269,7 @@ class TreeState
         cursor.putLong( freeListReadPageId );
         cursor.putInt( freeListWritePos );
         cursor.putInt( freeListReadPos );
+        cursor.putByte( clean ? CLEAN : DIRTY );
     }
 
     @Override
@@ -263,9 +277,9 @@ class TreeState
     {
         return String.format( "pageId=%d, stableGeneration=%d, unstableGeneration=%d, rootId=%d, rootGeneration=%d, " +
                 "lastId=%d, freeListWritePageId=%d, freeListReadPageId=%d, freeListWritePos=%d, freeListReadPos=%d, " +
-                "valid=%b",
+                "clean=%b, valid=%b",
                 pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, valid );
+                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, valid );
     }
 
     @Override
@@ -286,6 +300,7 @@ class TreeState
                 freeListReadPageId == treeState.freeListReadPageId &&
                 freeListWritePos == treeState.freeListWritePos &&
                 freeListReadPos == treeState.freeListReadPos &&
+                clean == treeState.clean &&
                 valid == treeState.valid;
     }
 
@@ -293,6 +308,11 @@ class TreeState
     public int hashCode()
     {
         return Objects.hash( pageId, stableGeneration, unstableGeneration, rootId, rootGeneration, lastId,
-                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, valid );
+                freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos, clean, valid );
+    }
+
+    public boolean isClean()
+    {
+        return this.clean;
     }
 }
