@@ -89,6 +89,14 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     }
   }
 
+  test("optional match with predicate") {
+    forAll(optionalMatchWhere) { query =>
+      withClue(s"Failed on query: $query") {
+        assertQuery(query)
+      }
+    }
+  }
+
   case class Identifier( name:String, isSingleEntity:Boolean)
 
   case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {
@@ -202,7 +210,6 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   def relPatternGen(d:Int):Gen[RelPattern] =
     for {
-
       relName <- Gen.option(Gen.const("r"+ d))
       relType <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
@@ -242,27 +249,36 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     }
   }
 
-
-  def predicateForPattern(pattern: Pattern): Gen[String] =
-    if (pattern.identifiers.isEmpty) Gen.const("")
+  def predicateForPatterns(patterns: Pattern*): Gen[String] = {
+    val identifiers = patterns.foldLeft(Set.empty[Identifier])((a,c) => a ++ c.identifiers).toIndexedSeq
+    if (identifiers.isEmpty) Gen.const("")
     else
       Gen.zip(
-              Gen.oneOf(pattern.identifiers.toSeq),
-              Gen.choose(1, NUM_LAYERS),
-              Gen.choose(1, NODES_PER_LAYER)
+        Gen.oneOf(identifiers),
+        Gen.choose(1, NUM_LAYERS),
+        Gen.choose(1, NODES_PER_LAYER)
       ).map(t => {
-              val (id, layer, n) = t
-              if (id.isSingleEntity)
-                s" WHERE ${id.name}.p$layer < $n"
-              else
-                s" WHERE all(x IN ${id.name} WHERE x.p$layer < $n)"
-            })
+        val (id, layer, n) = t
+        if (id.isSingleEntity)
+          s" WHERE ${id.name}.p$layer < $n"
+        else
+          s" WHERE all(x IN ${id.name} WHERE x.p$layer < $n)"
+      })
+  }
 
   def matchWhere:Gen[String] =
     for {
       pattern <- patterns
-      predicateClause <- predicateForPattern(pattern)
+      predicateClause <- predicateForPatterns(pattern)
     } yield s"MATCH $pattern$predicateClause ${returnClause(pattern)}"
+
+  def optionalMatchWhere:Gen[String] =
+    for {
+      pattern <- patterns
+      optionalPattern <- patterns
+      predicateClause <- predicateForPatterns(pattern)
+      optionalPredicateClause <- predicateForPatterns(pattern, optionalPattern)
+    } yield s"MATCH $pattern$predicateClause OPTIONAL MATCH $optionalPattern$optionalPredicateClause ${returnClause(pattern, optionalPattern)}"
 
   private def returnClause(pattern: Pattern*) = {
     val identifiers = pattern.foldLeft(Set.empty[String])( (a, c) => a ++ c.identifiers.map(toReturnValue))
