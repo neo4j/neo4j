@@ -25,31 +25,77 @@ import org.neo4j.graphdb.Node
 import org.scalacheck.{Arbitrary, Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, TimeoutException}
+import scala.util.{Failure, Success, Try}
+
 /*
  * Tests so that the compiled runtime behaves in the same way as the interpreted runtime for randomized Cypher
  * statements
  */
 class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with NewPlannerTestSupport {
 
-  private val DEPTH: Int = 10
-  private def minPatternLength = 2
-  private def maxPatternLength = 8
+  //Since we can create pretty tricky patterns we add a timeout
+  //to keep the running time of the test down
+  private val TIMEOUT_MS = 5000
+  private val NESTING_DEPTH: Int = 10
   private def numberOfTestRuns = 100
   private def maxDiscardedInputs = 500
   private def maxSize = 10
-
-  val NODES_PER_LAYER = 10
-  val NUM_LAYERS = 3
+  private val NODES_PER_LAYER = 10
+  private val NUM_LAYERS = 3
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
     minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
   )
 
+  //we don't want scala check to shrink patterns here since it will lead to invalid cypher
+  //e.g. RETURN {, RETURN [, etc
+  implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
+
+  test("literal stress test") {
+    forAll(literal) { l =>
+      whenever(l.nonEmpty) {
+        withClue(s"failing on literal: $l") {
+          assertQuery(s"RETURN $l")
+        }
+      }
+    }
+  }
+
+  test("match pattern") {
+    forAll(patterns) { pattern =>
+      val query = s"MATCH $pattern ${returnClause(pattern)}"
+      withClue(s"Failed on query: $query") {
+        assertQuery(query)
+      }
+    }
+  }
+
+  test("optional match pattern") {
+    forAll(patterns, patterns) { (matchPattern, optionalPattern) =>
+      val query = s"MATCH $matchPattern OPTIONAL MATCH $optionalPattern ${returnClause(matchPattern, optionalPattern)}"
+      withClue(s"Failed on query: $query") {
+        assertQuery(query)
+      }
+    }
+  }
+
+  test("match with predicate") {
+    forAll(matchWhere) { query =>
+      withClue(s"Failed on query: $query") {
+        assertQuery(query)
+      }
+    }
+  }
+
+  case class Identifier( name:String, isSingleEntity:Boolean)
+
   case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {
 
-    def identifiers: Set[String] = startNode.name.toSet ++ tail.map((kv) => {
+    def identifiers: Set[Identifier] = startNode.name.map(Identifier(_, isSingleEntity = true)).toSet ++ tail.map((kv) => {
       val (r, p) = kv
-      r.name.toSet ++ p.identifiers
+      r.identifier ++ p.identifiers
     }).getOrElse(Set.empty)
 
     override def toString: String = {
@@ -73,17 +119,39 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     }
   }
 
-  case class RelPattern(
+  object RelPattern {
+    def relPattern(name:Option[String],
+                   relType:Set[String],
+                   properties:Map[String, Any],
+                   length:LengthPattern): RelPattern = {
+      val idName = length match {
+        case _: DefaultLength => name
+        case _ => name.map(_ + "s")
+      }
+      RelPattern(idName, relType, properties, length)
+    }
+  }
+
+  case class RelPattern private (
                          name:Option[String],
                          relType:Set[String],
                          properties:Map[String, Any],
                          length:LengthPattern ) {
 
+    def identifier:Option[Identifier] =
+      name.map(Identifier(_, isSingleEntity))
+
+    def isSingleEntity: Boolean =
+      length match {
+        case DefaultLength(_) => true
+        case _ => false
+      }
+
     override def toString: String = {
       val propString = if (properties.isEmpty) None else
         Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
-      val relTypeString = if (relType.isEmpty) None else Some(relType.mkString(":", "|", length.varArgPattern))
-      (name ++ relTypeString ++ propString).mkString(s"${length.left}[", " ", s"]${length.right}")
+      val relTypeString = if (relType.isEmpty) None else Some(relType.mkString(":", "|", ""))
+      (name ++ relTypeString ++ length.varArgPattern ++ propString).mkString(s"${length.left}[", " ", s"]${length.right}")
     }
   }
 
@@ -97,22 +165,22 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
       case SemanticDirection.OUTGOING => "->"
       case _ => "-"
     }
-    def varArgPattern: String
+    def varArgPattern: Option[String]
   }
 
   case class DefaultLength(direction: SemanticDirection) extends LengthPattern {
 
-    override def varArgPattern: String = " "
+    override def varArgPattern: Option[String] = None
   }
 
   case class MaxLength(direction: SemanticDirection, value: Int) extends LengthPattern {
 
-    override def varArgPattern: String = s"*..$value"
+    override def varArgPattern: Option[String] = Some(s"*..$value")
   }
 
   case class MinMaxLength(direction: SemanticDirection, min: Int, max: Int) extends LengthPattern {
 
-    override def varArgPattern: String = s"*$min..$max"
+    override def varArgPattern: Option[String] = Some(s"*$min..$max")
   }
 
   def patterns:Gen[Pattern] = Gen.choose(1, NUM_LAYERS)
@@ -120,28 +188,29 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   def patternGen(d:Int, labelGen:Gen[Set[String]]):Gen[Pattern] =
     for {
-      nodeName <- Gen.option(Gen.identifier.map("n"+_))
+      nodeName <- Gen.option(Gen.const("n" + d))
       labels <- labelGen
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.choose(1, NODES_PER_LAYER)))
       tail <- tailPatternGen(d+1)
     } yield Pattern(NodePattern(nodeName, labels, props), tail)
 
   def tailPatternGen(d:Int):Gen[Option[(RelPattern, Pattern)]] =
-    if (d < NUM_LAYERS)
+    if (d <= NUM_LAYERS)
       Gen.zip(relPatternGen(d-1), patternGen(d, maybeWrongLabelGen(d))).map(Some(_))
     else
       Gen.const(None)
 
   def relPatternGen(d:Int):Gen[RelPattern] =
     for {
-      relName <- Gen.option(Gen.identifier.map("r"+_))
+
+      relName <- Gen.option(Gen.const("r"+ d))
       relType <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
       direction <- Gen.oneOf(SemanticDirection.OUTGOING, SemanticDirection.INCOMING, SemanticDirection.BOTH)
       min <- Gen.choose(1, 2)
       max <- Gen.choose(min, min + 1)
-      len: LengthPattern <- Gen.oneOf(DefaultLength(direction), MaxLength(direction, max), MinMaxLength(direction, min,max))
-    } yield RelPattern(relName, relType, props, len)
+      len: LengthPattern <- Gen.oneOf(DefaultLength(direction), MaxLength(direction, max), MinMaxLength(direction, min, max))
+    } yield RelPattern.relPattern(relName, relType, props, len)
 
   private def maybeWrongLabelGen(d:Int) =
     Gen.listOf(
@@ -173,49 +242,66 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     }
   }
 
-  //we don't want scala check to shrink patterns here since it will lead to invalid cypher
-  //e.g. RETURN {, RETURN [, etc
-  implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
 
-  test("literal stress test") {
-    forAll(literal) { l =>
-      whenever(l.nonEmpty) {
-        withClue(s"failing on literal: $l") {
-          assertQuery(s"RETURN $l")
-        }
-      }
-    }
-  }
+  def predicateForPattern(pattern: Pattern): Gen[String] =
+    if (pattern.identifiers.isEmpty) Gen.const("")
+    else
+      Gen.zip(
+              Gen.oneOf(pattern.identifiers.toSeq),
+              Gen.choose(1, NUM_LAYERS),
+              Gen.choose(1, NODES_PER_LAYER)
+      ).map(t => {
+              val (id, layer, n) = t
+              if (id.isSingleEntity)
+                s" WHERE ${id.name}.p$layer < $n"
+              else
+                s" WHERE all(x IN ${id.name} WHERE x.p$layer < $n)"
+            })
 
-  test("match pattern") {
-    forAll(patterns) { pattern =>
-      assertQuery(s"MATCH $pattern ${returnClause(pattern)}")
-    }
-  }
-
-  test("optional match pattern") {
-    forAll(patterns, patterns) { (matchPattern, optionalPattern) =>
-      assertQuery(s"MATCH $matchPattern OPTIONAL MATCH $optionalPattern ${returnClause(matchPattern, optionalPattern)}")
-    }
-  }
+  def matchWhere:Gen[String] =
+    for {
+      pattern <- patterns
+      predicateClause <- predicateForPattern(pattern)
+    } yield s"MATCH $pattern$predicateClause ${returnClause(pattern)}"
 
   private def returnClause(pattern: Pattern*) = {
-    val identifiers = pattern.foldLeft(Set.empty[String])( (a, c) => a ++ c.identifiers)
+    val identifiers = pattern.foldLeft(Set.empty[String])( (a, c) => a ++ c.identifiers.map(toReturnValue))
     if(identifiers.nonEmpty) s"RETURN ${identifiers.mkString(", ")}" else "RETURN 42"
   }
+
+  private def toReturnValue(id:Identifier) =
+    if (id.isSingleEntity) s"id(${id.name})"
+    else s"size(${id.name})"
 
   //Check that interpreted and compiled gives the same results, it might be the case
   //that the compiled runtime fallbacks to the interpreted but that is ok here just as
   //long as we fallback gracefully.
   private def assertQuery(query: String) = {
-    val resultCompiled = innerExecute(s"CYPHER runtime=compiled $query")
-    val resultInterpreted = innerExecute(s"CYPHER runtime=interpreted $query")
-    assertResultsAreSame(resultCompiled, resultInterpreted, query,
-                         "Diverging results between interpreted and compiled runtime")
-    resultCompiled
+    runWithTimeout(TIMEOUT_MS) {
+      //this is an optimization just so that we only compare results when we have to
+      val runtimeUsed = graph.execute(s"EXPLAIN CYPHER runtime=compiled $query")
+        .getExecutionPlanDescription.getArguments.get("runtime").asInstanceOf[String]
+      if (runtimeUsed == "COMPILED") {
+        val resultInterpreted = innerExecute(s"CYPHER runtime=interpreted $query")
+        val resultCompiled = innerExecute(s"CYPHER runtime=compiled $query")
+        assertResultsAreSame(resultCompiled, resultInterpreted, query,
+                             "Diverging results between interpreted and compiled runtime")
+        resultCompiled
+      } else None
+    }
   }
 
-  def literal(implicit d: Int = DEPTH): Gen[String] =
+  def runWithTimeout[T](timeoutMs: Long)(f: => T) : Option[T] = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val res = Try(Await.result(scala.concurrent.Future(f), Duration.apply(timeoutMs, "ms")))
+    res match {
+      case Failure(_: TimeoutException) => None
+      case Failure(e) => throw e
+      case Success(r) => Some(r)
+      }
+    }
+
+  def literal(implicit d: Int = NESTING_DEPTH): Gen[String] =
     if (d == 0) Gen.oneOf(floatLiteral, stringLiteral, intLiteral, boolLiteral)
     else Gen.oneOf(floatLiteral, stringLiteral, intLiteral, boolLiteral, mapLiteral(d), listLiteral(d))
 
