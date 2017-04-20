@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,6 +75,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 @SuppressWarnings( "EmptyTryBlock" )
@@ -1035,6 +1037,49 @@ public class GBPTreeTest
         }
     }
 
+    /* TreeState has outdated root */
+
+    @Test
+    public void shouldThrowIfTreeStatePointToRootWithValidSuccessor() throws Exception
+    {
+        // GIVEN
+        int pageSize = 256;
+        try ( PageCache specificPageCache = createPageCache( pageSize ) )
+        {
+            try ( GBPTree<MutableLong,MutableLong> ignore = index().with( specificPageCache ).build() )
+            {
+            }
+
+            // a tree state pointing to root with valid successor
+            try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
+                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                Pair<TreeState,TreeState> treeStates =
+                        TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+                TreeState newestState = TreeStatePair.selectNewestValidState( treeStates );
+                long rootId = newestState.rootId();
+                long stableGeneration = newestState.stableGeneration();
+                long unstableGeneration = newestState.unstableGeneration();
+
+                TreeNode.goTo( cursor, "root", rootId );
+                TreeNode.setSuccessor( cursor, 42, stableGeneration + 1, unstableGeneration + 1 );
+            }
+
+            // WHEN
+            try ( GBPTree<MutableLong,MutableLong> index = index().with( specificPageCache ).build() )
+            {
+                try ( Writer<MutableLong, MutableLong> ignored = index.writer() )
+                {
+                    fail( "Expected to throw because root pointed to by tree state should have a valid successor." );
+                }
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
+            }
+        }
+    }
+
     private void insert( GBPTree<MutableLong,MutableLong> index, long key, long value ) throws IOException
     {
         try ( Writer<MutableLong, MutableLong> writer = index.writer() )
@@ -1171,7 +1216,7 @@ public class GBPTreeTest
     private void setFormatVersion( int pageSize, int formatVersion ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
-              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
+              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             cursor.putInt( formatVersion );
