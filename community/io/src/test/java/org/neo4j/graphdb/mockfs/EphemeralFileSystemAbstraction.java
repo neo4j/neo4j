@@ -960,7 +960,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         synchronized int write( Positionable fc, ByteBuffer src )
         {
-            int wanted = src.limit();
+            int wanted = src.limit() - src.position();
             int pending = wanted;
             byte[] scratchPad = SCRATCH_PAD.get();
 
