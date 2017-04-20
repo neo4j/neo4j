@@ -401,17 +401,27 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         }
         else
         {
-            int duplicateIndex = (int) randomLongInRange( 0, data.size() );
+            int duplicateIndex = randomIntInRange( 0, data.size() );
             int duplicateValueIndex;
             do
             {
                 duplicateValueIndex = ThreadLocalRandom.current().nextInt( data.size() );
             }
             while ( duplicateValueIndex == duplicateIndex );
-            PropertyValue duplicateValue = data.get( duplicateValueIndex );
-            data.set( duplicateIndex, duplicateValue );
+            PropertyValue duplicate = duplicatePropertyValue( data.get( duplicateValueIndex ) );
+            data.set( duplicateIndex, duplicate );
         }
         return data;
+    }
+
+    private static PropertyValue duplicatePropertyValue( PropertyValue propertyValue )
+    {
+        return new PropertyValue( propertyValue.value );
+    }
+
+    private static int randomIntInRange( int min, int max )
+    {
+        return ThreadLocalRandom.current().nextInt( min, max );
     }
 
     private static long randomLongInRange( long min, long max )
