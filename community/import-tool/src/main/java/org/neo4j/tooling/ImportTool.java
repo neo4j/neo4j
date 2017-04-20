@@ -44,6 +44,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
@@ -82,6 +83,8 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
@@ -99,7 +102,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 public class ImportTool
 {
     private static final String UNLIMITED = "true";
-    private static final int UNSPECIFIED = -1;
 
     enum Options
     {
@@ -232,7 +234,13 @@ public class ImportTool
         READ_BUFFER_SIZE( "read-buffer-size", org.neo4j.csv.reader.Configuration.DEFAULT.bufferSize(),
                 "<bytes, e.g. 10k, 4M>",
                 "Size of each buffer for reading input data. It has to at least be large enough to hold the " +
-                "biggest single value in the input data." );
+                "biggest single value in the input data." ),
+        MAX_MEMORY( "max-memory", null,
+                "<max memory that importer can use>",
+                "(advanced) Maximum memory that importer can use for various data structures and caching " +
+                "to improve performance. If left as unspecified (null) it is set to " + DEFAULT_MAX_MEMORY_PERCENT +
+                "% of (free memory on machine - max JVM memory). " +
+                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." );
 
         private final String key;
         private final Object defaultValue;
@@ -378,10 +386,10 @@ public class ImportTool
         Config dbConfig;
         OutputStream badOutput = null;
         IdType idType = null;
-        int pageSize = UNSPECIFIED;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
         File logsDir;
         File badFile = null;
+        Long maxMemory = null;
 
         boolean success = false;
         try
@@ -402,6 +410,8 @@ public class ImportTool
             }
             nodesFiles = extractInputFiles( args, Options.NODE_DATA.key(), err );
             relationshipsFiles = extractInputFiles( args, Options.RELATIONSHIP_DATA.key(), err );
+            String maxMemoryString = args.get( Options.MAX_MEMORY.key(), null );
+            maxMemory = parseMaxMemory( maxMemoryString );
 
             validateInputFiles( nodesFiles, relationshipsFiles );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
@@ -423,7 +433,7 @@ public class ImportTool
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
-            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, pageSize );
+            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
@@ -449,6 +459,21 @@ public class ImportTool
                 badOutput.close();
             }
         }
+    }
+
+    private static Long parseMaxMemory( String maxMemoryString )
+    {
+        if ( maxMemoryString != null )
+        {
+            maxMemoryString = maxMemoryString.trim();
+            if ( maxMemoryString.endsWith( "%" ) )
+            {
+                int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );
+                return calculateMaxMemoryFromPercent( percent );
+            }
+            return Settings.parseLongWithUnit( maxMemoryString );
+        }
+        return null;
     }
 
     public static void doImport( PrintStream out, PrintStream err, File storeDir, File logsDir, File badFile,
@@ -570,9 +595,11 @@ public class ImportTool
         printInputFiles( "Relationships", relationshipsFiles, out );
         out.println();
         out.println( "Available resources:" );
+        printIndented( "Total machine memory: " + bytes( OsBeanUtil.getTotalPhysicalMemory() ), out );
         printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ), out );
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
         printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
+        printIndented( "Configured max memory: " + bytes( configuration.maxMemoryUsage() ), out );
         out.println();
     }
 
@@ -623,11 +650,11 @@ public class ImportTool
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
             final boolean defaultSettingsSuitableForTests, final Config dbConfig )
     {
-        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, UNSPECIFIED );
+        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig, int pageSize )
+            final boolean defaultSettingsSuitableForTests, final Config dbConfig, Long maxMemory )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -647,6 +674,12 @@ public class ImportTool
             public int denseNodeThreshold()
             {
                 return dbConfig.get( GraphDatabaseSettings.dense_node_threshold );
+            }
+
+            @Override
+            public long maxMemoryUsage()
+            {
+                return maxMemory != null ? maxMemory.longValue() : DEFAULT.maxMemoryUsage();
             }
         };
     }

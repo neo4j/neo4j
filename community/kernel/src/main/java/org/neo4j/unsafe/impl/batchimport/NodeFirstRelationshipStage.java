@@ -42,12 +42,12 @@ public class NodeFirstRelationshipStage extends Stage
 {
     public NodeFirstRelationshipStage( String topic, Configuration config, NodeStore nodeStore,
             RecordStore<RelationshipGroupRecord> relationshipGroupStore, NodeRelationshipCache cache,
-            boolean denseNodes, int relationshipType )
+            int nodeTypes )
     {
         super( "Node --> Relationship" + topic, config );
-        add( new ReadNodeRecordsByCacheStep( control(), config, nodeStore, cache, denseNodes ) );
+        add( new ReadNodeRecordsByCacheStep( control(), config, nodeStore, cache, nodeTypes ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new NodeFirstRelationshipProcessor( relationshipGroupStore, cache, relationshipType ), false ) );
+                new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }
 }

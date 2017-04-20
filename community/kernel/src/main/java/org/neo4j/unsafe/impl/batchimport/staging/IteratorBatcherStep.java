@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
@@ -32,31 +33,68 @@ public abstract class IteratorBatcherStep<T> extends IoProducerStep
 {
     private final Iterator<T> data;
     private final Class<T> itemClass;
-    protected long cursor;
+    private final Predicate<T> filter;
 
-    public IteratorBatcherStep( StageControl control, Configuration config, Iterator<T> data, Class<T> itemClass )
+    protected long cursor;
+    private T[] batch;
+    private int batchCursor;
+    private int skipped;
+
+    public IteratorBatcherStep( StageControl control, Configuration config, Iterator<T> data, Class<T> itemClass,
+            Predicate<T> filter )
     {
         super( control, config );
         this.data = data;
         this.itemClass = itemClass;
+        this.filter = filter;
+        newBatch();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void newBatch()
+    {
+        batchCursor = 0;
+        batch = (T[]) Array.newInstance( itemClass, batchSize );
     }
 
     @Override
     protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        if ( !data.hasNext() )
+        while ( data.hasNext() )
         {
-            return null;
+            T candidate = data.next();
+            if ( filter.test( candidate ) )
+            {
+                batch[batchCursor++] = candidate;
+                cursor++;
+                if ( batchCursor == batchSize )
+                {
+                    T[] result = batch;
+                    newBatch();
+                    return result;
+                }
+            }
+            else
+            {
+                if ( ++skipped == batchSize )
+                {
+                    skipped = 0;
+                    return Array.newInstance( itemClass, 0 );
+                }
+            }
         }
 
-        @SuppressWarnings( "unchecked" )
-        T[] batch = (T[]) Array.newInstance( itemClass, batchSize );
-        int i = 0;
-        for ( ; i < batchSize && data.hasNext(); i++ )
+        if ( batchCursor == 0 )
         {
-            batch[i] = data.next();
-            cursor++;
+            return null; // marks the end
         }
-        return i == batchSize ? batch : Arrays.copyOf( batch, i );
+        try
+        {
+            return batchCursor == batchSize ? batch : Arrays.copyOf( batch, batchCursor );
+        }
+        finally
+        {
+            batchCursor = 0;
+        }
     }
 }

@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors;
@@ -41,7 +42,7 @@ public class RelationshipLinkbackStageTest
         long highId = 5;
         RelationshipStore store = StoreWithReservedId.newRelationshipStoreMock( highId );
         RelationshipLinkbackStage stage = new RelationshipLinkbackStage( "Test",
-                Configuration.DEFAULT, store, newCache(), 0, highId, false );
+                Configuration.DEFAULT, store, newCache(), 0, highId, NodeType.NODE_TYPE_SPARSE );
 
         ExecutionSupervisors.superviseExecution( ExecutionMonitors.invisible(), Configuration.DEFAULT, stage );
 
