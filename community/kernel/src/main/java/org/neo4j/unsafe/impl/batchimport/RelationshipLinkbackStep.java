@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
@@ -35,14 +36,14 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_
 public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRecord[]>
 {
     private final NodeRelationshipCache cache;
-    private final boolean denseNodes;
+    private final int nodeTypes;
 
     public RelationshipLinkbackStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, boolean denseNodes )
+            NodeRelationshipCache cache, int nodeTypes )
     {
         super( control, "LINK", config, 0 );
         this.cache = cache;
-        this.denseNodes = denseNodes;
+        this.nodeTypes = nodeTypes;
     }
 
     @Override
@@ -77,19 +78,20 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
         boolean firstIsDense = cache.isDense( record.getFirstNode() );
         boolean changed = false;
         boolean isLoop = record.getFirstNode() == record.getSecondNode();
+        int typeId = record.getType();
         if ( isLoop )
         {
-            if ( firstIsDense == denseNodes )
+            if ( NodeType.matchesDense( nodeTypes, firstIsDense ) )
             {
                 if ( processFirst )
                 {
                     long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                            Direction.BOTH, record.getId(), false );
+                            typeId, Direction.BOTH, record.getId(), false );
                     if ( prevRel == ID_NOT_FOUND )
                     {   // First one
                         record.setFirstInFirstChain( true );
                         record.setFirstInSecondChain( true );
-                        prevRel = cache.getCount( record.getFirstNode(), Direction.BOTH );
+                        prevRel = cache.getCount( record.getFirstNode(), typeId, Direction.BOTH );
                     }
                     record.setFirstPrevRel( prevRel );
                     record.setSecondPrevRel( prevRel );
@@ -100,16 +102,16 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
         else
         {
             // Start node
-            if ( firstIsDense == denseNodes )
+            if ( NodeType.matchesDense( nodeTypes, firstIsDense ) )
             {
                 if ( processFirst )
                 {
                     long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                            Direction.OUTGOING, record.getId(), false );
+                            typeId, Direction.OUTGOING, record.getId(), false );
                     if ( firstPrevRel == ID_NOT_FOUND )
                     {   // First one
                         record.setFirstInFirstChain( true );
-                        firstPrevRel = cache.getCount( record.getFirstNode(), Direction.OUTGOING );
+                        firstPrevRel = cache.getCount( record.getFirstNode(), typeId, Direction.OUTGOING );
                     }
                     record.setFirstPrevRel( firstPrevRel );
                 }
@@ -118,16 +120,16 @@ public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRe
 
             // End node
             boolean secondIsDense = cache.isDense( record.getSecondNode() );
-            if ( secondIsDense == denseNodes )
+            if ( NodeType.matchesDense( nodeTypes, secondIsDense ) )
             {
                 if ( processSecond )
                 {
                     long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
-                            Direction.INCOMING, record.getId(), false );
+                            typeId, Direction.INCOMING, record.getId(), false );
                     if ( secondPrevRel == ID_NOT_FOUND )
                     {   // First one
                         record.setFirstInSecondChain( true );
-                        secondPrevRel = cache.getCount( record.getSecondNode(), Direction.INCOMING );
+                        secondPrevRel = cache.getCount( record.getSecondNode(), typeId, Direction.INCOMING );
                     }
                     record.setSecondPrevRel( secondPrevRel );
                 }

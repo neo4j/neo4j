@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -74,12 +76,13 @@ public class RelationshipStage extends Stage
     private AssignRelationshipIdBatchStep idAssigner;
 
     public RelationshipStage( String topic, Configuration config, IoMonitor writeMonitor,
+            Predicate<InputRelationship> typeFilter,
             InputIterator<InputRelationship> relationships, IdMapper idMapper, BatchingNeoStores neoStore,
             NodeRelationshipCache cache, EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
             long firstRelationshipId )
     {
         super( "Relationships" + topic, config, ORDER_SEND_DOWNSTREAM );
-        add( new InputIteratorBatcherStep<>( control(), config, relationships, InputRelationship.class ) );
+        add( new InputIteratorBatcherStep<>( control(), config, relationships, InputRelationship.class, typeFilter ) );
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();

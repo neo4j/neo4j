@@ -83,6 +83,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
@@ -105,6 +106,7 @@ public class ParallelBatchImporterTest
     private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIPS_PER_NODE = 5;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
+    private static final int RELATIONSHIP_TYPES = 3;
     protected final Configuration config = new Configuration()
     {
         @Override
@@ -127,6 +129,17 @@ public class ParallelBatchImporterTest
             // Let's really crank up the number of threads to try and flush out all and any parallelization issues.
             int cores = Runtime.getRuntime().availableProcessors();
             return random.intBetween( cores, cores + 100 );
+        }
+
+        @Override
+        public long maxMemoryUsage()
+        {
+            // This calculation is just to try and hit some sort of memory limit so that relationship import
+            // is split up into multiple rounds. Also to see that relationship group defragmentation works
+            // well when doing multiple rounds.
+            double ratio = NODE_COUNT / 1_000D;
+            long mebi = mebiBytes( 1 );
+            return random.nextInt( (int) (ratio * mebi / 2), (int) (ratio * mebi) );
         }
     };
     private final InputIdGenerator inputIdGenerator;
@@ -257,7 +270,7 @@ public class ParallelBatchImporterTest
 
         String randomType( Random random )
         {
-            return "TYPE" + random.nextInt( 3 );
+            return "TYPE" + random.nextInt( RELATIONSHIP_TYPES );
         }
 
         @Override

@@ -20,37 +20,32 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Contains basic functionality of fixed size number arrays.
+ * Convenient way of selecting nodes based on their dense status.
  */
-abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<N>
+public class NodeType
 {
-    protected final int itemSize;
-    protected final long base;
+    public static final int NODE_TYPE_DENSE = 0x1;
+    public static final int NODE_TYPE_SPARSE = 0x2;
+    public static final int NODE_TYPE_ALL = NODE_TYPE_DENSE | NODE_TYPE_SPARSE;
 
-    /**
-     * @param itemSize byte size of each item in this array.
-     * @param base base index to rebase all indexes in accessor methods off of. See {@link #at(long)}.
-     */
-    protected BaseNumberArray( int itemSize, long base )
+    public static boolean isDense( int nodeTypes )
     {
-        this.itemSize = itemSize;
-        this.base = base;
+        return has( nodeTypes, NODE_TYPE_DENSE );
     }
 
-    @SuppressWarnings( "unchecked" )
-    @Override
-    public N at( long index )
+    public static boolean isSparse( int nodeTypes )
     {
-        return (N)this;
+        return has( nodeTypes, NODE_TYPE_SPARSE );
     }
 
-    /**
-     * Utility for rebasing an external index to internal index.
-     * @param index external index.
-     * @return index into internal data structure.
-     */
-    protected long rebase( long index )
+    private static boolean has( int nodeTypes, int mask )
     {
-        return index - base;
+        return (nodeTypes & mask) != 0;
+    }
+
+    public static boolean matchesDense( int nodeTypes, boolean isDense )
+    {
+        int mask = isDense ? NODE_TYPE_DENSE : NODE_TYPE_SPARSE;
+        return has( nodeTypes, mask );
     }
 }

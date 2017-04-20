@@ -27,6 +27,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
+import static java.lang.Long.max;
+
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
@@ -38,7 +40,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
  *
  * First all group counts per node are updated ({@link #incrementGroupCount(long)}).
  * Then {@link #prepare(long)} is called from lowest node id (0) and given the maximum configured memory
- * given to this cache in its constructor the highest node id to cacne is returned. Then groups are
+ * given to this cache in its constructor the highest node id to cache is returned. Then groups are
  * {@link #put(RelationshipGroupRecord)} and cached in here to later be {@link #iterator() retrieved}
  * where they are now ordered by node and type.
  * This will go on until the entire node range have been visited.
@@ -57,6 +59,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     private long fromNodeId;
     private long toNodeId;
     private long highCacheId;
+    private final long maxCacheLength;
 
     public RelationshipGroupCache( NumberArrayFactory arrayFactory, long maxMemory, long highNodeId )
     {
@@ -71,8 +74,8 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                     "Too little memory to cache any groups, provided " + bytes( maxMemory ) + " where " +
                             bytes( memoryDedicatedToCounting ) + " was dedicated to group counting" );
         }
-        this.cache =
-                arrayFactory.newByteArray( memoryLeftForGroupCache / GROUP_ENTRY_SIZE, new byte[GROUP_ENTRY_SIZE] );
+        maxCacheLength = memoryLeftForGroupCache / GROUP_ENTRY_SIZE;
+        this.cache = arrayFactory.newDynamicByteArray( max( 1_000, maxCacheLength / 100 ), new byte[GROUP_ENTRY_SIZE] );
     }
 
     /**
@@ -126,7 +129,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         for ( long nodeId = fromNodeId; nodeId < highNodeId; nodeId++ )
         {
             int count = groupCount( nodeId );
-            if ( highCacheId + count > cache.length() )
+            if ( highCacheId + count > maxCacheLength )
             {
                 // Cannot include this one, so up until the previous is good
                 return this.toNodeId = nodeId;
@@ -162,7 +165,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         long baseIndex = offsets.get( rebase( nodeId ) );
         // grouCount is extra validation, really
         int groupCount = groupCount( nodeId );
-        long index = scanForFreeFrom( baseIndex, groupCount, groupRecord.getType() );
+        long index = scanForFreeFrom( baseIndex, groupCount, groupRecord.getType(), groupRecord.getOwningNode() );
 
         // Put the group at this index
         cache.setByte( index, 0, (byte) 1 );
@@ -173,7 +176,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         return true;
     }
 
-    private long scanForFreeFrom( long startIndex, int groupCount, int type )
+    private long scanForFreeFrom( long startIndex, int groupCount, int type, long owningNodeId )
     {
         long desiredIndex = -1;
         long freeIndex = -1;
@@ -192,7 +195,8 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
                 int existingType = cache.get3ByteInt( candidateIndex, 1 );
                 if ( existingType == type )
                 {
-                    throw new IllegalStateException( "Tried to put multiple groups with same type " + type );
+                    throw new IllegalStateException(
+                            "Tried to put multiple groups with same type " + type + " for node " + owningNodeId );
                 }
 
                 if ( type < existingType )

@@ -233,6 +233,16 @@ public abstract class IoPrimitiveUtils
         return (int) value;
     }
 
+    public static short safeCastIntToUnsignedShort( int value )
+    {
+        if ( (value & ~0xFFFF) != 0 )
+        {
+            throw new IllegalArgumentException(
+                    "Casting int value " + value + " to an unsigned short would wrap around" );
+        }
+        return (short) value;
+    }
+
     public static int shortToUnsignedInt( short value )
     {
         return value & 0xFFFF;

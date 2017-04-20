@@ -62,10 +62,11 @@ public class RelationshipEncoderStep extends ForkedProcessorStep<Batch<InputRela
 
             // Set first/second next rel
             boolean loop = startNode == endNode;
+            int typeId = relationship.getType();
             if ( startNode % processors == id )
             {
                 long firstNextRel = cache.getAndPutRelationship(
-                        startNode, loop ? BOTH : OUTGOING, relationship.getId(), true );
+                        startNode, typeId, loop ? BOTH : OUTGOING, relationship.getId(), true );
                 relationship.setFirstNextRel( firstNextRel );
                 if ( loop )
                 {
@@ -76,7 +77,7 @@ public class RelationshipEncoderStep extends ForkedProcessorStep<Batch<InputRela
             if ( !loop && endNode % processors == id )
             {
                 relationship.setSecondNextRel( cache.getAndPutRelationship(
-                        endNode, INCOMING, relationship.getId(), true ) );
+                        endNode, typeId, INCOMING, relationship.getId(), true ) );
             }
         }
     }

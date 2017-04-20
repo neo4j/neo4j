@@ -1760,6 +1760,52 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldRespectMaxMemoryPercentageSetting() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds( 10 );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--max-memory", "60%" );
+    }
+
+    @Test
+    public void shouldFailOnInvalidMaxMemoryPercentageSetting() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds( 10 );
+
+        try
+        {
+            // WHEN
+            importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--nodes",
+                    nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(), "--max-memory", "110%" );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN good
+            assertThat( e.getMessage(), containsString( "percent" ) );
+        }
+    }
+
+    @Test
+    public void shouldRespectMaxMemorySuffixedSetting() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds( 10 );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).getAbsolutePath(),
+                "--max-memory", "100M" );
+    }
+
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
     {
         File data = file( fileName( "whitespace.csv" ) );

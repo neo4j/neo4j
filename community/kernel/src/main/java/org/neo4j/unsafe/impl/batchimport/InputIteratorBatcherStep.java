@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.function.Predicate;
+
 import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
@@ -30,9 +32,10 @@ public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
 {
     private final InputIterator<T> data;
 
-    InputIteratorBatcherStep( StageControl control, Configuration config, InputIterator<T> data, Class<T> itemClass )
+    InputIteratorBatcherStep( StageControl control, Configuration config, InputIterator<T> data, Class<T> itemClass,
+            Predicate<T> filter )
     {
-        super( control, config, data, itemClass );
+        super( control, config, data, itemClass, filter );
         this.data = data;
     }
 
