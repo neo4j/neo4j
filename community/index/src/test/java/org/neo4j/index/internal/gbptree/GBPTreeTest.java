@@ -1132,7 +1132,7 @@ public class GBPTreeTest
         }
     }
 
-    private static class CheckpointControlledMonitor implements Monitor
+    private static class CheckpointControlledMonitor extends Monitor.Adaptor
     {
         private final Barrier.Control barrier = new Barrier.Control();
         private volatile boolean enabled;
@@ -1147,7 +1147,7 @@ public class GBPTreeTest
         }
     }
 
-    private static class CheckpointCounter implements Monitor
+    private static class CheckpointCounter extends Monitor.Adaptor
     {
         private int count;
 
@@ -1178,7 +1178,7 @@ public class GBPTreeTest
         }
     }
 
-    private static class MonitorDirty implements Monitor
+    private static class MonitorDirty extends Monitor.Adaptor
     {
         private boolean called;
         private boolean cleanOnStart;
@@ -1204,7 +1204,7 @@ public class GBPTreeTest
         }
     }
 
-    private static class MonitorCleanup implements Monitor
+    private static class MonitorCleanup extends Monitor.Adaptor
     {
         private boolean cleanupCalled;
 
