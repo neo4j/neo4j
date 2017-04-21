@@ -320,18 +320,24 @@ public class RotatingFileOutputStreamSupplierTest
         } );
 
         ExecutorService rotationExecutor = Executors.newSingleThreadExecutor();
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
-                10, rotationExecutor, rotationListener );
+        try
+        {
+            RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0,
+                    10, rotationExecutor, rotationListener );
 
-        write( supplier, "A string longer than 10 bytes" );
-        write( supplier, "A string longer than 10 bytes" );
+            write( supplier, "A string longer than 10 bytes" );
+            write( supplier, "A string longer than 10 bytes" );
 
-        allowRotationComplete.countDown();
-        rotationComplete.await( 1L, TimeUnit.SECONDS );
+            allowRotationComplete.countDown();
+            rotationComplete.await( 1L, TimeUnit.SECONDS );
 
-        verify( rotationListener ).outputFileCreated( any( OutputStream.class ) );
-        verify( rotationListener ).rotationCompleted( any( OutputStream.class ) );
-        shutDownExecutor( rotationExecutor );
+            verify( rotationListener ).outputFileCreated( any( OutputStream.class ) );
+            verify( rotationListener ).rotationCompleted( any( OutputStream.class ) );
+        }
+        finally
+        {
+            shutDownExecutor( rotationExecutor );
+        }
     }
 
     @Test
@@ -423,16 +429,22 @@ public class RotatingFileOutputStreamSupplierTest
         };
 
         ExecutorService rotationExecutor = Executors.newSingleThreadExecutor();
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0,
-                10, rotationExecutor, rotationListener );
-        OutputStream outputStream = supplier.get();
+        try
+        {
+            RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0,
+                    10, rotationExecutor, rotationListener );
+            OutputStream outputStream = supplier.get();
 
-        write( supplier, "A string longer than 10 bytes" );
-        assertThat( supplier.get(), is( outputStream ) );
+            write( supplier, "A string longer than 10 bytes" );
+            assertThat( supplier.get(), is( outputStream ) );
 
-        allowRotationComplete.countDown();
-        supplier.close();
-        shutDownExecutor( rotationExecutor );
+            allowRotationComplete.countDown();
+            supplier.close();
+        }
+        finally
+        {
+            shutDownExecutor( rotationExecutor );
+        }
 
         assertStreamClosed( mockStreams.get( 0 ) );
     }
