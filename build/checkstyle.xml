@@ -78,6 +78,7 @@
       <property name="allowEmptyLambdas" value="true"/>
       <property name="allowEmptyMethods" value="true"/>
     </module>
+    <module name="OneStatementPerLine"/>
 
     <module name="ParenPad">
       <property name="tokens"

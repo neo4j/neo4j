@@ -74,11 +74,15 @@ public class InputNodeReader extends InputEntityReader<InputNode>
             {
                 switch ( labelsMode )
                 {
-                case LABEL_REMOVAL: remove( (String) readToken( LABEL_TOKEN, channel ), newLabels, cursor-- ); break;
+                case LABEL_REMOVAL:
+                    remove( (String) readToken( LABEL_TOKEN, channel ), newLabels, cursor-- );
+                    break;
                 case LABEL_ADDITION:
                     (newLabels = ensureRoomForOneMore( newLabels, cursor ))[cursor++] =
-                    (String) readToken( LABEL_TOKEN, channel ); break;
-                default: throw new IllegalArgumentException( "Unrecognized label mode " + labelsMode );
+                            (String) readToken( LABEL_TOKEN, channel );
+                    break;
+                default:
+                    throw new IllegalArgumentException( "Unrecognized label mode " + labelsMode );
                 }
                 labelsMode = channel.get();
             }

@@ -53,7 +53,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class SharedDiscoveryServiceIT
 {
     private static final long TIMEOUT_MS = 15_000;
-    private static final long RUN_TIME_MS = 1000;;
+    private static final long RUN_TIME_MS = 1000;
 
     private NullLogProvider logProvider = NullLogProvider.getInstance();
     private NullLogProvider userLogProvider = NullLogProvider.getInstance();

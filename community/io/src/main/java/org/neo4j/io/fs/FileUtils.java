@@ -560,11 +560,20 @@ public class FileUtils
         OpenOption[] options;
         switch ( mode )
         {
-        case "r": options = new OpenOption[]{READ}; break;
-        case "rw": options = new OpenOption[] {CREATE, READ, WRITE}; break;
-        case "rws": options = new OpenOption[] {CREATE, READ, WRITE, SYNC}; break;
-        case "rwd": options = new OpenOption[] {CREATE, READ, WRITE, DSYNC}; break;
-        default: throw new IllegalArgumentException( "Unsupported mode: " + mode );
+        case "r":
+            options = new OpenOption[]{READ};
+            break;
+        case "rw":
+            options = new OpenOption[]{CREATE, READ, WRITE};
+            break;
+        case "rws":
+            options = new OpenOption[]{CREATE, READ, WRITE, SYNC};
+            break;
+        case "rwd":
+            options = new OpenOption[]{CREATE, READ, WRITE, DSYNC};
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported mode: " + mode );
         }
         return options;
     }
