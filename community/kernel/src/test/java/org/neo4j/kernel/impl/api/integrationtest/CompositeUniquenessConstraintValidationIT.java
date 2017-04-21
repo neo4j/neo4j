@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -406,82 +407,7 @@ public class CompositeUniquenessConstraintValidationIT
         @Override
         public String toString()
         {
-            return String.format( "lhs=%s, rhs=%s", toString( lhs ), toString( rhs ) );
-        }
-
-        private String toString( Object[] x )
-        {
-            boolean first = true;
-            StringBuilder buf = new StringBuilder( "[" );
-            for ( Object element : x )
-            {
-                if ( first )
-                {
-                    first = false;
-                }
-                else
-                {
-                    buf.append( ", " );
-                }
-                Class<?> eClass = element.getClass();
-
-                if ( eClass.isArray() )
-                {
-                    arrayToString( buf, element, eClass );
-                }
-                else if ( eClass == "".getClass() )
-                {
-                    buf.append( '"' ).append( element.toString() ).append( '"' );
-                }
-                else
-                {
-                    buf.append( element );
-                }
-                buf.append( ":" ).append( element.getClass().getSimpleName() );
-            }
-            buf.append( "]" );
-            return buf.toString();
-        }
-
-        private void arrayToString( StringBuilder buf, Object element, Class<?> eClass )
-        {
-            if ( eClass == byte[].class )
-            {
-                buf.append( Arrays.toString( (byte[]) element ) );
-            }
-            else if ( eClass == short[].class )
-            {
-                buf.append( Arrays.toString( (short[]) element ) );
-            }
-            else if ( eClass == int[].class )
-            {
-                buf.append( Arrays.toString( (int[]) element ) );
-            }
-            else if ( eClass == long[].class )
-            {
-                buf.append( Arrays.toString( (long[]) element ) );
-            }
-            else if ( eClass == char[].class )
-            {
-                buf.append( Arrays.toString( (char[]) element ) );
-            }
-            else if ( eClass == float[].class )
-            {
-                buf.append( Arrays.toString( (float[]) element ) );
-            }
-            else if ( eClass == double[].class )
-            {
-                buf.append( Arrays.toString( (double[]) element ) );
-            }
-            else if ( eClass == boolean[].class )
-            {
-                buf.append( Arrays.toString( (boolean[]) element ) );
-            }
-            else
-            {
-                String str = Arrays.toString( (Object[]) element );
-                buf.append( str );
-            }
+            return String.format( "lhs=%s, rhs=%s", ArrayUtils.toString( lhs ), ArrayUtils.toString( rhs ) );
         }
     }
 }
