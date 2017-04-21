@@ -87,6 +87,7 @@ public class BatchingNeoStores implements AutoCloseable
     private final LogProvider logProvider;
     private final File storeDir;
     private final Config neo4jConfig;
+    private final Configuration importConfiguration;
     private final PageCache pageCache;
     private final NeoStores neoStores;
     private final LifeSupport life = new LifeSupport();
@@ -98,13 +99,15 @@ public class BatchingNeoStores implements AutoCloseable
     // into the main store. These temporary stores will live here
     private final NeoStores temporaryNeoStores;
     private final boolean externalPageCache;
+    private PageCacheFlusher flusher;
 
     private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-            RecordFormats recordFormats, Config neo4jConfig, LogService logService, AdditionalInitialIds initialIds,
-            boolean externalPageCache, IoTracer ioTracer )
+            RecordFormats recordFormats, Config neo4jConfig, Configuration importConfiguration, LogService logService,
+            AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer )
     {
         this.fileSystem = fileSystem;
         this.recordFormats = recordFormats;
+        this.importConfiguration = importConfiguration;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
         this.neo4jConfig = neo4jConfig;
@@ -183,7 +186,7 @@ public class BatchingNeoStores implements AutoCloseable
                 DefaultPageCursorTracerSupplier.INSTANCE );
 
         BatchingNeoStores batchingNeoStores =
-                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
+                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
                         initialIds, false, tracer::bytesWritten );
         return batchingNeoStores;
     }
@@ -195,7 +198,7 @@ public class BatchingNeoStores implements AutoCloseable
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
 
         BatchingNeoStores batchingNeoStores =
-                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, logService,
+                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
                         initialIds, true, tracer::bytesWritten );
         return batchingNeoStores;
     }
@@ -282,6 +285,12 @@ public class BatchingNeoStores implements AutoCloseable
     @Override
     public void close() throws IOException
     {
+        // Here as a safety mechanism when e.g. panicing.
+        if ( flusher != null )
+        {
+            stopFlushingPageCache();
+        }
+
         // Flush out all pending changes
         propertyKeyRepository.close();
         labelRepository.close();
@@ -314,5 +323,31 @@ public class BatchingNeoStores implements AutoCloseable
     public NeoStores getNeoStores()
     {
         return neoStores;
+    }
+
+    public void startFlushingPageCache()
+    {
+        if ( importConfiguration.sequentialBackgroundFlushing() )
+        {
+            if ( flusher != null )
+            {
+                throw new IllegalStateException( "Flusher already started" );
+            }
+            flusher = new PageCacheFlusher( pageCache );
+            flusher.start();
+        }
+    }
+
+    public void stopFlushingPageCache()
+    {
+        if ( importConfiguration.sequentialBackgroundFlushing() )
+        {
+            if ( flusher == null )
+            {
+                throw new IllegalStateException( "Flusher not started" );
+            }
+            flusher.halt();
+            flusher = null;
+        }
     }
 }
