@@ -26,6 +26,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
@@ -199,9 +202,8 @@ public abstract class FileSystemAbstractionTest
     {
         CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
 
-        CloseTrackingFileSystem fileSystem = fsa
-                .getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                        thirdPartyFileSystemClass -> closeTrackingFileSystem );
+        CloseTrackingFileSystem fileSystem = fsa.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
+                thirdPartyFileSystemClass -> closeTrackingFileSystem );
 
         assertSame( closeTrackingFileSystem, fileSystem );
         assertFalse( closeTrackingFileSystem.isClosed() );
@@ -209,5 +211,40 @@ public abstract class FileSystemAbstractionTest
         fsa.close();
 
         assertTrue( closeTrackingFileSystem.isClosed() );
+    }
+
+    @Test
+    public void readAndWriteMustTakeBufferPositionIntoAccount() throws Exception
+    {
+        byte[] bytes = new byte[] {1, 2, 3, 4, 5};
+        ByteBuffer buf = ByteBuffer.wrap( bytes );
+        buf.position( 1 );
+
+        fsa.mkdirs( path );
+        File file = new File( path, "file" );
+        try ( StoreChannel channel = fsa.open( file, "rw" ) )
+        {
+            assertThat( channel.write( buf ), is( 4 ) );
+        }
+        try ( InputStream stream = fsa.openAsInputStream( file ) )
+        {
+            assertThat( stream.read(), is( 2 ) );
+            assertThat( stream.read(), is( 3 ) );
+            assertThat( stream.read(), is( 4 ) );
+            assertThat( stream.read(), is( 5 ) );
+            assertThat( stream.read(), is( -1 ) );
+        }
+        Arrays.fill( bytes, (byte) 0 );
+        buf.position( 1 );
+        try ( StoreChannel channel = fsa.open( file, "rw" ) )
+        {
+            assertThat( channel.read( buf ), is( 4 ) );
+            buf.clear();
+            assertThat( buf.get(), is( (byte) 0 ) );
+            assertThat( buf.get(), is( (byte) 2 ) );
+            assertThat( buf.get(), is( (byte) 3 ) );
+            assertThat( buf.get(), is( (byte) 4 ) );
+            assertThat( buf.get(), is( (byte) 5 ) );
+        }
     }
 }
