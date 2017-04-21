@@ -398,6 +398,14 @@ public abstract class CompiledConversionUtils
         {
             return ((Relationship) obj).getId();
         }
+        else if (obj instanceof NodeIdWrapper)
+        {
+            return ((NodeIdWrapper) obj).id();
+        }
+        else if (obj instanceof RelationshipIdWrapper)
+        {
+            return ((RelationshipIdWrapper) obj).id();
+        }
         else if (obj instanceof Long)
         {
             return (Long) obj;

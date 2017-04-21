@@ -443,22 +443,22 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection,
-                                       toNode: String) = {
+  override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
+                                       toNode: String, toNodeType: CodeGenType) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(Methods.allConnectingRelationships,
-                                readOperations, body.load(fromNode), dir(direction),
-                                body.load(toNode)))
+                                readOperations, forceLong(fromNode, fromNodeType), dir(direction),
+                               forceLong(toNode, toNodeType)))
     }
   }
 
-  override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection,
-                                       typeVars: Seq[String], toNode: String) = {
+  override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
+                                       typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(Methods.connectingRelationships, readOperations, body.load(fromNode), dir(direction),
-                                body.load(toNode),
+      body.assign(local, invoke(Methods.connectingRelationships, readOperations, forceLong(fromNode, fromNodeType), dir(direction),
+                                forceLong(toNode, toNodeType),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
     }
   }
