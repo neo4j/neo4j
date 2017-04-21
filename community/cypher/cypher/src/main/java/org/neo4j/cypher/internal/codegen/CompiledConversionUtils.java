@@ -384,4 +384,29 @@ public abstract class CompiledConversionUtils
         return value.id();
     }
 
+    public static long extractLong(Object obj)
+    {
+        if (obj == null)
+        {
+            return -1L;
+        }
+        if (obj instanceof Node)
+        {
+            return ((Node) obj).getId();
+        }
+        else if (obj instanceof Relationship)
+        {
+            return ((Relationship) obj).getId();
+        }
+        else if (obj instanceof Long)
+        {
+            return (Long) obj;
+        }
+        else
+        {
+            throw new IllegalArgumentException( format( "Can not be converted to long: %s", obj.getClass().getName() ) );
+
+        }
+    }
+
 }

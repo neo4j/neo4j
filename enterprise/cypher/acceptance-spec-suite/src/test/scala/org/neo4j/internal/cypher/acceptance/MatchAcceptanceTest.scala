@@ -563,6 +563,23 @@ return p""")
     resultWithAlias.close()
   }
 
+  test("should handle unwind on a list of nodes in both runtimes") {
+    // Given
+    val node1 = createNode()
+    val node2 = createNode()
+    relate(createLabeledNode("Ping"), node1, "PING_DAY")
+    relate(createLabeledNode("Ping"), node2, "PING_DAY")
+    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
+    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
+
+    // When
+    val res =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
+
+    //Then
+    res.toList should equal(List(Map("c" -> 2)))
+  }
+
   /**
    * Append variable to keys and transform value arrays to lists
    */

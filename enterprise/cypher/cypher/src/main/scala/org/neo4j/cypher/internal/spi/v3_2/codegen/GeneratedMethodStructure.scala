@@ -423,20 +423,23 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def toFloat(expression: Expression) = toDouble(expression)
 
-  override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
+  override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, body.load(nodeVar), dir(direction)))
+      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
+                                dir(direction)))
     }
   }
 
-  override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection,
+  override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType,
+                                                         direction: SemanticDirection,
                                                          typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
-                                body.load(nodeVar), dir(direction),
+                                forceLong(nodeVar, nodeVarType), dir(direction),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
+
     }
   }
 
@@ -1413,5 +1416,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         val tupleType = aux.comparableTypeReference(tupleDescriptor)
         TypeReference.parameterizedType(classOf[DefaultTopTable[_]], tupleType)
     }
+  }
+
+  //Forces variable to be of type long or fails accordingly
+  private def forceLong(name: String, typ: CodeGenType): Expression = typ.repr match {
+    case LongType => generator.load(name)
+    case ReferenceType =>
+      invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Long], "extractLong", typeRef[Object]), generator.load(name))
+    case _ => throw new IllegalStateException(s"$name has type $typ which cannot be represented as a long")
   }
 }
