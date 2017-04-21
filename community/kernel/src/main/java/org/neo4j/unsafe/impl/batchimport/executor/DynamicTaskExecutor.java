@@ -130,7 +130,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             {   // Then just stay here and try
                 assertHealthy();
             }
-            notifyProcessors();
         }
         catch ( InterruptedException e )
         {
@@ -145,14 +144,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         if ( panic != null )
         {
             throw new TaskExecutionPanicException( "Executor has been shut down in panic", panic );
-        }
-    }
-
-    private void notifyProcessors()
-    {
-        for ( Processor processor : processors )
-        {
-            parkStrategy.unpark( processor );
         }
     }
 
@@ -228,7 +219,17 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             final LOCAL threadLocalState = initialLocalState.get();
             while ( !shutDown && !processorShutDown )
             {
-                Task<LOCAL> task = queue.poll();
+                Task<LOCAL> task;
+                try
+                {
+                    task = queue.poll( 10, MILLISECONDS );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                    break;
+                }
+
                 if ( task != null )
                 {
                     try
@@ -241,14 +242,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                         close();
                         throw launderedException( e );
                     }
-                }
-                else
-                {
-                    if ( processorShutDown )
-                    {
-                        break;
-                    }
-                    parkAWhile();
                 }
             }
         }

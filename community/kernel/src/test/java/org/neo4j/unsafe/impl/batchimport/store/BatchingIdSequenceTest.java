@@ -76,7 +76,7 @@ public class BatchingIdSequenceTest
         // GIVEN
         int batchSize = 10;
         BatchingIdSequence idSequence = new BatchingIdSequence(
-                IdGeneratorImpl.INTEGER_MINUS_ONE - batchSize - batchSize/2 );
+                IdGeneratorImpl.INTEGER_MINUS_ONE - batchSize - batchSize / 2 );
 
         // WHEN
         IdRange range1 = idSequence.nextIdBatch( batchSize );

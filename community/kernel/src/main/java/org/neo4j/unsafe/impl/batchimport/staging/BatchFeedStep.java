@@ -25,7 +25,7 @@ import org.neo4j.unsafe.impl.batchimport.RecordIdIterator;
 /**
  * Releases batches of record ids to be read, potentially in parallel, by downstream batches.
  */
-public class BatchFeedStep extends IoProducerStep
+public class BatchFeedStep extends PullingProducerStep
 {
     private final RecordIdIterator ids;
     private final int recordSize;

@@ -172,6 +172,12 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         completed = true;
     }
 
+    @Override
+    public long doneBatches()
+    {
+        return stats.get( Keys.done_batches ).value;
+    }
+
     private static class ControlledStat implements Stat
     {
         private final long value;

@@ -109,28 +109,36 @@ public class TicketedProcessingTest
                     return parseInt( job.string );
                 }, () -> null ) )
         {
-            processing.processors( 1 );
+            processing.processors( 1 ); // now at 2
             StringJob firstJob = new StringJob( "1" );
             processing.submit( firstJob );
             StringJob secondJob = new StringJob( "2" );
             processing.submit( secondJob );
+            // now both processors have taken the 2 submitted jobs and so there should be 2 slots available
 
             // WHEN
             StringJob thirdJob = new StringJob( "3" );
             thirdJob.latch.countDown();
-            Future<Void> thirdSubmit = t2.execute( new WorkerCommand<Void,Void>()
+            processing.submit( thirdJob );
+            StringJob fourthJob = new StringJob( "4" );
+            fourthJob.latch.countDown();
+            processing.submit( fourthJob );
+
+            StringJob fifthJob = new StringJob( "5" );
+            fifthJob.latch.countDown();
+            Future<Void> fifthSubmit = t2.execute( new WorkerCommand<Void,Void>()
             {
                 @Override
                 public Void doWork( Void state ) throws Exception
                 {
-                    processing.submit( thirdJob );
+                    processing.submit( fifthJob );
                     return null;
                 }
             } );
             t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
             firstJob.latch.countDown();
             assertEquals( 1, processing.next().intValue() );
-            thirdSubmit.get();
+            fifthSubmit.get();
             secondJob.latch.countDown();
             assertEquals( 2, processing.next().intValue() );
             assertEquals( 3, processing.next().intValue() );
