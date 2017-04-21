@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Logger;
 
 import static java.net.NetworkInterface.getNetworkInterfaces;
+
 import static org.neo4j.helpers.Format.bytes;
 
 enum SystemDiagnostics implements DiagnosticsProvider
@@ -164,12 +165,20 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 if ( loader instanceof URLClassLoader )
                 {
                     URLClassLoader urls = (URLClassLoader) loader;
-                    for ( URL url : urls.getURLs() )
+                    URL[] classLoaderUrls = urls.getURLs();
+                    if ( classLoaderUrls != null )
                     {
-                        if ( "file".equalsIgnoreCase( url.getProtocol() ) )
+                        for ( URL url : classLoaderUrls )
                         {
-                            paths.put( url.toString(), pathValue( paths, "loader." + level, url.getPath() ) );
+                            if ( "file".equalsIgnoreCase( url.getProtocol() ) )
+                            {
+                                paths.put( url.toString(), pathValue( paths, "loader." + level, url.getPath() ) );
+                            }
                         }
+                    }
+                    else
+                    {
+                        paths.put( loader.toString(), "<ClassLoader unexpectedly has null URL array>" );
                     }
                 }
                 loader = loader.getParent();
