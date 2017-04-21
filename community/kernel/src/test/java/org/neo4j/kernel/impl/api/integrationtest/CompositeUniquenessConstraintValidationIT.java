@@ -194,7 +194,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        statement.dataWriteOperations().nodeSetProperty( node, property(0, "Alive!") );
+        statement.dataWriteOperations().nodeSetProperty( node, property( 0, "Alive!" ) );
         long newNode = createLabeledNode( label );
         setProperties( newNode, aValues );
 
@@ -384,7 +384,7 @@ public class CompositeUniquenessConstraintValidationIT
 
     private int[] propertyIds()
     {
-        int props[] = new int[numberOfProps];
+        int[] props = new int[numberOfProps];
         for ( int i = 0; i < numberOfProps; i++ )
         {
             props[i] = i;
