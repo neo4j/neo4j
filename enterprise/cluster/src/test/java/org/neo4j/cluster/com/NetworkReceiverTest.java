@@ -32,7 +32,8 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

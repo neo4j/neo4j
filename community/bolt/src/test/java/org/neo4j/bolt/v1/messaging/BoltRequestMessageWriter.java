@@ -19,13 +19,19 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-
 import java.io.IOException;
 import java.util.Map;
 
-import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.*;
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.ACK_FAILURE;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.DISCARD_ALL;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.INIT;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.PULL_ALL;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RESET;
+import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
+
 
 public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOException>
 {

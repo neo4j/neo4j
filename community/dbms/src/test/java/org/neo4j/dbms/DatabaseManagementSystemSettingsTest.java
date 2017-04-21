@@ -19,15 +19,14 @@
  */
 package org.neo4j.dbms;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DatabaseManagementSystemSettingsTest
