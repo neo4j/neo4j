@@ -34,6 +34,11 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
  */
 class TreeStatePair
 {
+
+    private TreeStatePair()
+    {
+    }
+
     /**
      * Initialize state pages because new pages are expected to be allocated directly after
      * the existing highest allocated page. Otherwise there'd be a hole between meta and root pages

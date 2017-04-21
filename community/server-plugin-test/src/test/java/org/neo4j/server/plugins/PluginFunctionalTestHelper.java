@@ -41,6 +41,10 @@ import static org.junit.Assert.assertThat;
 
 public class PluginFunctionalTestHelper
 {
+    private PluginFunctionalTestHelper()
+    {
+    }
+
     public static Map<String, Object> makeGet( String url ) throws JsonParseException
     {
         JaxRsResponse response = new RestRequest().get(url);

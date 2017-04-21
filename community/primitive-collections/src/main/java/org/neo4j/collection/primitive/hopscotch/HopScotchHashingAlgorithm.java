@@ -62,6 +62,10 @@ public class HopScotchHashingAlgorithm
      */
     public static final int DEFAULT_H = 32;
 
+    private HopScotchHashingAlgorithm()
+    {
+    }
+
     public static <VALUE> VALUE get( Table<VALUE> table, Monitor monitor, HashFunction hashFunction, long key )
     {
         int tableMask = table.mask();

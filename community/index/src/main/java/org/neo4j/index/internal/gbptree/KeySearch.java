@@ -36,6 +36,10 @@ class KeySearch
     private static final int NO_SUCCESS_FLAG = 0x40000000;
     private static final int SUCCESS_MASK    = SUCCESS_FLAG | NO_SUCCESS_FLAG;
 
+    private KeySearch()
+    {
+    }
+
     /**
      * Search for left most pos such that keyAtPos obeys key <= keyAtPos.
      * Return pos (not offset) of keyAtPos, or key count if no such key exist.

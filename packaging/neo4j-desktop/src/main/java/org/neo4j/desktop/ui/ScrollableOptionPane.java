@@ -29,6 +29,10 @@ import static javax.swing.JOptionPane.showMessageDialog;
 @SuppressWarnings( "MagicConstant" )
 public class ScrollableOptionPane
 {
+    private ScrollableOptionPane()
+    {
+    }
+
     public static void showWrappedMessageDialog( Component parentComponent, String message, String title,
                                                  int messageType )
     {

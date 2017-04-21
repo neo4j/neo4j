@@ -29,6 +29,10 @@ import org.neo4j.helpers.collection.Pair;
 
 public class DataCreator
 {
+    private DataCreator()
+    {
+    }
+
     public static CoreClusterMember createLabelledNodesWithProperty( Cluster cluster, int numberOfNodes,
             Label label, Supplier<Pair<String,Object>> supplier ) throws Exception
     {

@@ -73,4 +73,8 @@ public class IndexDefinitionFacadeMethods
             DROP,
             IS_CONSTRAINT_INDEX
         ) );
+
+    private IndexDefinitionFacadeMethods()
+    {
+    }
 }

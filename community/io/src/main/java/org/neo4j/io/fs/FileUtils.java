@@ -62,6 +62,10 @@ public class FileUtils
 {
     private static final int WINDOWS_RETRY_COUNT = 5;
 
+    private FileUtils()
+    {
+    }
+
     public static void deleteRecursively( File directory ) throws IOException
     {
         if ( ! directory.exists() )

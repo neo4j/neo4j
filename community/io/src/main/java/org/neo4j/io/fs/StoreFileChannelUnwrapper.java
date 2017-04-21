@@ -28,6 +28,10 @@ import java.nio.channels.FileChannel;
  */
 public final class StoreFileChannelUnwrapper
 {
+    private StoreFileChannelUnwrapper()
+    {
+    }
+
     public static FileChannel unwrap( StoreChannel channel )
     {
         return StoreFileChannel.unwrap( channel );

@@ -39,6 +39,10 @@ import org.neo4j.graphdb.Relationship;
  */
 public class Util
 {
+    private Util()
+    {
+    }
+
     /**
      * Constructs a path to a given node, for a given set of predecessors
      * @param node

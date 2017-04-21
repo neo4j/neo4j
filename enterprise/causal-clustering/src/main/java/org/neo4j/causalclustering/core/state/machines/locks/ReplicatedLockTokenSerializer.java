@@ -28,6 +28,11 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedLockTokenSerializer
 {
+
+    private ReplicatedLockTokenSerializer()
+    {
+    }
+
     public static void marshal( ReplicatedLockTokenRequest tokenRequest, WritableChannel channel ) throws IOException
     {
         channel.putInt( tokenRequest.id() );

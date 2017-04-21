@@ -41,6 +41,10 @@ import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
  */
 public class StubCursors
 {
+    private StubCursors()
+    {
+    }
+
     public static Cursor<NodeItem> asNodeCursor( long... nodeIds )
     {
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];

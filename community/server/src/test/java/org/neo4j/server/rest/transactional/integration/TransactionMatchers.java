@@ -54,6 +54,10 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
  */
 public class TransactionMatchers
 {
+    private TransactionMatchers()
+    {
+    }
+
     static Matcher<String> isValidRFCTimestamp()
     {
         return new TypeSafeMatcher<String>()

@@ -35,6 +35,10 @@ import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
  */
 public class AncestorsUtil
 {
+    private AncestorsUtil()
+    {
+    }
+
     /**
      *
      * @param nodeSet Set of nodes for which the LCA will be found.

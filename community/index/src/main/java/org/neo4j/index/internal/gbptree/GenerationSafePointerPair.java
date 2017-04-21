@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.checksumOf;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readChecksum;
@@ -132,6 +131,10 @@ class GenerationSafePointerPair
     static final long GENERATION_OFFSET_TYPE_MASK = FLAG_ABS_OFFSET | FLAG_LOGICAL_POS;
     static final long HEADER_MASK          = ~POINTER_MASK;
     static final long MAX_GENERATION_OFFSET_MASK = 0xFFF;
+
+    private GenerationSafePointerPair()
+    {
+    }
 
     /**
      * Reads a GSPP, returning the read pointer or a failure. Check success/failure using {@link #isSuccess(long)}

@@ -36,7 +36,11 @@ public class JsonHelper
 {
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static JsonNode jsonNode( String json ) throws JsonParseException
+    private JsonHelper()
+    {
+    }
+
+    public static JsonNode jsonNode(String json) throws JsonParseException
     {
         try
         {

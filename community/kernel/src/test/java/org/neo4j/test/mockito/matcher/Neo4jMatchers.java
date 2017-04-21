@@ -53,6 +53,10 @@ import static org.neo4j.helpers.collection.Iterators.loop;
 
 public class Neo4jMatchers
 {
+    private Neo4jMatchers()
+    {
+    }
+
     public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final Matcher<T> inner )
     {
         return inTx( db, inner, false );

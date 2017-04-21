@@ -28,6 +28,10 @@ public class NodeType
     public static final int NODE_TYPE_SPARSE = 0x2;
     public static final int NODE_TYPE_ALL = NODE_TYPE_DENSE | NODE_TYPE_SPARSE;
 
+    private NodeType()
+    {
+    }
+
     public static boolean isDense( int nodeTypes )
     {
         return has( nodeTypes, NODE_TYPE_DENSE );

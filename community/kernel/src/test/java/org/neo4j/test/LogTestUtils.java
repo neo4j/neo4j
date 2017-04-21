@@ -56,6 +56,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  */
 public class LogTestUtils
 {
+    private LogTestUtils()
+    {
+    }
+
     public interface LogHook<RECORD> extends Predicate<RECORD>
     {
         void file( File file );

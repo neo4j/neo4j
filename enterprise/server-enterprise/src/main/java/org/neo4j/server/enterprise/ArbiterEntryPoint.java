@@ -32,6 +32,10 @@ public class ArbiterEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
+    private ArbiterEntryPoint()
+    {
+    }
+
     public static void main( String[] argv ) throws IOException
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );

@@ -32,6 +32,10 @@ class Generation
     private static final long UNSTABLE_GENERATION_MASK = 0xFFFFFFFFL;
     private static final int STABLE_GENERATION_SHIFT = Integer.SIZE;
 
+    private Generation()
+    {
+    }
+
     /**
      * Takes one stable and one unstable generation (both unsigned ints) and crams them into one {@code long}.
      *

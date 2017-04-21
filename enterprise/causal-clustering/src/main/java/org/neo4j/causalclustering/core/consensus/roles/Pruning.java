@@ -25,6 +25,11 @@ import org.neo4j.causalclustering.core.consensus.outcome.PruneLogCommand;
 
 class Pruning
 {
+
+    private Pruning()
+    {
+    }
+
     static void handlePruneRequest( Outcome outcome, RaftMessages.PruneRequest pruneRequest )
     {
         outcome.addLogCommand( new PruneLogCommand( pruneRequest.pruneIndex() ) );

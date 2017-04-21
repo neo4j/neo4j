@@ -20,7 +20,6 @@
 package org.neo4j.upgrade;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,7 +31,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class StoreMigratorTestUtil
 {
-    StoreMigratorTestUtil()
+    private StoreMigratorTestUtil()
     {
         // no instance allowed
     }

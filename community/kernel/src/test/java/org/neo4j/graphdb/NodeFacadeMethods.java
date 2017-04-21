@@ -282,6 +282,10 @@ public class NodeFacadeMethods
         GET_LABELS
     ) );
 
+    private NodeFacadeMethods()
+    {
+    }
+
     private static void consume( Iterable<?> iterable )
     {
         for ( Object o : iterable )

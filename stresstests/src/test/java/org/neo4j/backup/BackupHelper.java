@@ -42,6 +42,10 @@ public class BackupHelper
                     new IsChannelClosedException(),
                     new IsStoreClosed() );
 
+    private BackupHelper()
+    {
+    }
+
     public static BackupResult backup( String host, int port, File targetDirectory )
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

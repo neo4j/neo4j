@@ -67,6 +67,10 @@ public class KernelTransactionFactory
         }
     }
 
+    private KernelTransactionFactory()
+    {
+    }
+
     static Instances kernelTransactionWithInternals( SecurityContext securityContext )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );

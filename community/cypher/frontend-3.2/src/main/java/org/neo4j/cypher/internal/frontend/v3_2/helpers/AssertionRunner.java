@@ -29,6 +29,10 @@ We want the Java behaviour in Scala, and this is how we achieve that.
  */
 public class AssertionRunner
 {
+    private AssertionRunner()
+    {
+    }
+
     public static void runUnderAssertion( Thunk thunk )
     {
         assert runIt(thunk);

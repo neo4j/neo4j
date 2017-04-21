@@ -32,6 +32,10 @@ class PageCursorUtil
     static final long _4B_MASK = 0xFFFFFFFFL;
     static final long _6B_MASK = 0xFFFF_FFFFFFFFL;
 
+    private PageCursorUtil()
+    {
+    }
+
     /**
      * Puts the low 6 bytes of the {@code value} into {@code cursor} at current offset.
      * Puts {@link PageCursor#putInt(int) int} followed by {@link PageCursor#putShort(short) short}.

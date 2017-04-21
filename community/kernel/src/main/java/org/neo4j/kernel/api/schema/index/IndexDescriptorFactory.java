@@ -27,6 +27,10 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class IndexDescriptorFactory
 {
+    private IndexDescriptorFactory()
+    {
+    }
+
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );

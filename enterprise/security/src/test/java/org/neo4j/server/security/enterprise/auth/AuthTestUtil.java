@@ -27,6 +27,10 @@ import java.util.stream.Stream;
 
 class AuthTestUtil
 {
+    private AuthTestUtil()
+    {
+    }
+
     public static <T> T[] with( Class<T> clazz, T[] things, T... moreThings )
     {
         return Stream.concat( Arrays.stream(things), Arrays.stream( moreThings ) ).toArray(

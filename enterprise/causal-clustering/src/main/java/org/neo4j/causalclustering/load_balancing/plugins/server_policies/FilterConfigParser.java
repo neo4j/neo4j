@@ -35,6 +35,10 @@ import static java.util.Collections.singletonList;
 
 public class FilterConfigParser
 {
+    private FilterConfigParser()
+    {
+    }
+
     private static Filter<ServerInfo> filterFor( String filterName, String[] args ) throws InvalidFilterSpecification
     {
         switch ( filterName )

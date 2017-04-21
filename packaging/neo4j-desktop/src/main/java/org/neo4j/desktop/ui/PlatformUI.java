@@ -24,6 +24,10 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 public class PlatformUI
 {
+    private PlatformUI()
+    {
+    }
+
     public static void selectPlatformUI()
     {
         try

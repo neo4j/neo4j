@@ -22,7 +22,6 @@ package org.neo4j.function;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static java.lang.System.currentTimeMillis;
@@ -32,6 +31,10 @@ import static java.lang.System.currentTimeMillis;
  */
 public final class Suppliers
 {
+    private Suppliers()
+    {
+    }
+
     /**
      * Creates a {@link Supplier} that returns a single object
      *

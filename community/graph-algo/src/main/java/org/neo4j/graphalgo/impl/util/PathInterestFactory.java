@@ -34,6 +34,10 @@ public class PathInterestFactory
 {
     public static final Comparator<Comparable> STANDARD_COMPARATOR = Comparable::compareTo;
 
+    private PathInterestFactory()
+    {
+    }
+
     public static PathInterest<? extends Comparable> single()
     {
         return SINGLE;

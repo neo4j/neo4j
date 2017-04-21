@@ -27,6 +27,10 @@ public class EnterpriseEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
+    private EnterpriseEntryPoint()
+    {
+    }
+
     public static void main( String[] args )
     {
         int status = ServerBootstrapper.start( new EnterpriseBootstrapper(), args );

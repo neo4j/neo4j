@@ -33,6 +33,10 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiv
 
 public class Neo4jMockitoAnswers
 {
+    private Neo4jMockitoAnswers()
+    {
+    }
+
     public static <T> Answer<Iterator<T>> answerAsIteratorFrom( final Iterable<T> values )
     {
         return invocation -> values.iterator();

@@ -188,6 +188,10 @@ public class StorePropertyCursorTest
                     PropertyType.STRING}
     );
 
+    private StorePropertyCursorTest()
+    {
+    }
+
     /**
      * This is a work-around for a problem in Eclipse where a toString of a Parameter containing newline
      * would trigger a bug, making it impossible to run that test and any other test if this test

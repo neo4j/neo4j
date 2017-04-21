@@ -24,6 +24,11 @@ import org.neo4j.kernel.configuration.Config;
 
 public class CustomIOConfigValidator
 {
+
+    private CustomIOConfigValidator()
+    {
+    }
+
     public static void assertCustomIOConfigNotUsed( Config config, String message )
     {
         if ( customIOConfigUsed( config ) )

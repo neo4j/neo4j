@@ -66,6 +66,10 @@ class GenerationSafePointer
             POINTER_SIZE +
             CHECKSUM_SIZE;
 
+    private GenerationSafePointer()
+    {
+    }
+
     /**
      * Writes GSP at the given {@code offset}, the two fields (generation, pointer) + a checksum will be written.
      *

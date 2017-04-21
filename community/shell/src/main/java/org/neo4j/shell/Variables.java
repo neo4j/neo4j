@@ -51,6 +51,10 @@ public class Variables
      */
     public static final String TITLE_MAX_LENGTH = "TITLE_MAX_LENGTH";
 
+    private Variables()
+    {
+    }
+
     /**
      * @param key a variable name
      * @throws org.neo4j.shell.ShellException if key doesn't match a valid identifier name

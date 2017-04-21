@@ -24,7 +24,12 @@ import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-import static cypher.SpecSuiteConstants.*;
+import static cypher.SpecSuiteConstants.BLACKLIST_PLUGIN;
+import static cypher.SpecSuiteConstants.CYPHER_OPTION_PLUGIN;
+import static cypher.SpecSuiteConstants.DB_CONFIG;
+import static cypher.SpecSuiteConstants.GLUE_PATH;
+import static cypher.SpecSuiteConstants.HTML_REPORT;
+import static cypher.SpecSuiteConstants.JSON_REPORT;
 
 @RunWith( CompatibilitySpecSuiteResources.class )
 public class CompatibilitySpecSuiteTest
@@ -36,6 +41,10 @@ public class CompatibilitySpecSuiteTest
     // Do not forget to clear these strings to empty strings before you commit!!
     public static final String FEATURE_TO_RUN = "";
     public static final String SCENARIO_NAME_REQUIRED = "";
+
+    private CompatibilitySpecSuiteTest()
+    {
+    }
 
     @RunWith( Cucumber.class )
     @CucumberOptions(

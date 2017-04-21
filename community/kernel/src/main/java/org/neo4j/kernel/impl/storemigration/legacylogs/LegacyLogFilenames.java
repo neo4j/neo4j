@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import java.io.File;
 import java.io.FilenameFilter;
 
 public class LegacyLogFilenames
@@ -29,30 +28,24 @@ public class LegacyLogFilenames
     private static final String[] allLegacyLogFilesPatterns =
             {"active_tx_log", "tm_tx_log\\..*", "nioneo_logical\\.log\\..*"};
 
-    public static final FilenameFilter versionedLegacyLogFilesFilter = new FilenameFilter()
+    public static final FilenameFilter versionedLegacyLogFilesFilter =
+            ( dir, name ) -> name.matches( versionedLegacyLogFilesPattern );
+
+    static final FilenameFilter allLegacyLogFilesFilter = ( dir, name ) ->
     {
-        @Override
-        public boolean accept( File dir, String name )
+        for ( String pattern : allLegacyLogFilesPatterns )
         {
-            return name.matches( versionedLegacyLogFilesPattern );
+            if ( name.matches( pattern ) )
+            {
+                return true;
+            }
         }
+        return false;
     };
 
-    static final FilenameFilter allLegacyLogFilesFilter = new FilenameFilter()
+    private LegacyLogFilenames()
     {
-        @Override
-        public boolean accept( File dir, String name )
-        {
-            for ( String pattern : allLegacyLogFilesPatterns )
-            {
-                if ( name.matches( pattern ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    };
+    }
 
     static long getLegacyLogVersion( String filename )
     {

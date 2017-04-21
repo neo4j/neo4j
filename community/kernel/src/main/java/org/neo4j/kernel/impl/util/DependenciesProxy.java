@@ -35,6 +35,10 @@ import org.neo4j.graphdb.DependencyResolver;
  */
 public class DependenciesProxy
 {
+    private DependenciesProxy()
+    {
+    }
+
     /**
      * Create a dynamic proxy that implements the given interface and backs invocation with lookups into the given
      * dependency resolver.

@@ -29,6 +29,10 @@ import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 
 public class HttpConnectionInfoFactory
 {
+    private HttpConnectionInfoFactory()
+    {
+    }
+
     public static ClientConnectionInfo create( HttpServletRequest request )
     {
         return new HttpConnectionInfo(

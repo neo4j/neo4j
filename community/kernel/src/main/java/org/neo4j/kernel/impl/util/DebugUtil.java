@@ -43,6 +43,10 @@ import static org.neo4j.helpers.Format.duration;
 
 public class DebugUtil
 {
+    private DebugUtil()
+    {
+    }
+
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
     {
         System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines + 1 ) );

@@ -29,6 +29,10 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 /** Takes execution plans and converts them to the subset of types used in the Neo4j type system */
 class ExecutionPlanConverter
 {
+    private ExecutionPlanConverter()
+    {
+    }
+
     public static Map<String, Object> convert( ExecutionPlanDescription plan )
     {
         Map<String, Object> out = new HashMap<>();

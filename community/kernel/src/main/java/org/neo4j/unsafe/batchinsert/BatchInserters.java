@@ -38,6 +38,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public final class BatchInserters
 {
+    private BatchInserters()
+    {
+    }
+
     /**
      * Get a {@link BatchInserter} given a store directory.
      *

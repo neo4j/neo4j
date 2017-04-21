@@ -28,6 +28,10 @@ public class Ports
     public static final String INADDR_ANY = "0.0.0.0";
     public static final String INADDR_LOCALHOST = "localhost";
 
+    private Ports()
+    {
+    }
+
     public static InetSocketAddress findFreePort( String host, int[] portRange ) throws IOException
     {
         InetSocketAddress address = null;

@@ -31,6 +31,10 @@ import static java.util.Collections.emptyList;
 
 public class Util
 {
+    private Util()
+    {
+    }
+
     public static <T> List<T> asList( @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" ) Optional<T> optional )
     {
         return optional.map( Collections::singletonList ).orElse( emptyList() );

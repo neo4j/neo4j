@@ -55,6 +55,10 @@ public class Primitive
     public static final int DEFAULT_HEAP_CAPACITY = 1 << 4;
     public static final int DEFAULT_OFFHEAP_CAPACITY = 1 << 20;
 
+    private Primitive()
+    {
+    }
+
     // Some example would be...
     public static PrimitiveLongSet longSet()
     {

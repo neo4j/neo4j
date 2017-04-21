@@ -21,14 +21,13 @@ package org.neo4j.bolt.v1.messaging.example;
 
 import java.util.Collections;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
+import org.neo4j.graphdb.Node;
 
 import static java.util.Arrays.asList;
-
+import static org.neo4j.bolt.v1.messaging.example.Support.NO_LABELS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.bolt.v1.messaging.example.Support.NO_LABELS;
 
 public class Nodes
 {
@@ -49,4 +48,7 @@ public class Nodes
             NO_LABELS,
             map( "name", "Dave" ) );
 
+    private Nodes()
+    {
+    }
 }

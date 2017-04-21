@@ -21,14 +21,19 @@ package org.neo4j.causalclustering.core.state.machines.id;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedIdAllocationRequestSerializer
 {
+
+    private ReplicatedIdAllocationRequestSerializer()
+    {
+    }
+
     public static void marshal( ReplicatedIdAllocationRequest idRangeRequest, WritableChannel channel )
             throws IOException
     {

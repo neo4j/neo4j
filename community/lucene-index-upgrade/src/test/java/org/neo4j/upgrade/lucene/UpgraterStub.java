@@ -23,6 +23,10 @@ class UpgraterStub
 {
     private static boolean invocationMark;
 
+    private UpgraterStub()
+    {
+    }
+
     public static void main( String[] args )
     {
         invocationMark = true;

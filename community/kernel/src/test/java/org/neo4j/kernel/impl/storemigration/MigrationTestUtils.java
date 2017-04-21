@@ -58,6 +58,10 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {
+    private MigrationTestUtils()
+    {
+    }
+
     public static int[] makeLongArray()
     {
         int[] longArray = new int[100];

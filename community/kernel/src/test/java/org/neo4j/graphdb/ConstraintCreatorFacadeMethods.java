@@ -51,4 +51,8 @@ public class ConstraintCreatorFacadeMethods
                     UNIQUE,
                     CREATE
             ) );
+
+    private ConstraintCreatorFacadeMethods()
+    {
+    }
 }

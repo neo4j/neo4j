@@ -34,6 +34,10 @@ public class CheckTypes
     public static final CheckType<? extends Command, ? extends AbstractBaseRecord>[] CHECK_TYPES =
             new CheckType[]{NODE, PROPERTY, RELATIONSHIP, RELATIONSHIP_GROUP, NEO_STORE};
 
+    private CheckTypes()
+    {
+    }
+
     public static <C extends Command,R extends AbstractBaseRecord> CheckType<C,R> fromName( String name )
     {
         for ( CheckType<?,?> checkType : CHECK_TYPES )

@@ -19,16 +19,16 @@
  */
 package org.neo4j.bolt.v1.messaging.example;
 
+import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.bolt.v1.messaging.example.Support.NO_PROPERTIES;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.CAROL;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.DAVE;
+import static org.neo4j.bolt.v1.messaging.example.Support.NO_PROPERTIES;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class Relationships
 {
@@ -58,4 +58,7 @@ public class Relationships
             new ValueRelationship( 44L, DAVE.getId(), DAVE.getId(), WORKS_FOR,
                     NO_PROPERTIES );
 
+    private Relationships()
+    {
+    }
 }

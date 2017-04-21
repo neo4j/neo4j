@@ -24,6 +24,9 @@ package org.neo4j.collection.primitive;
  */
 class PrimitiveCommons
 {
+    private PrimitiveCommons()
+    {
+    }
 
     /**
      * If the given obj is AutoCloseable, then close it.

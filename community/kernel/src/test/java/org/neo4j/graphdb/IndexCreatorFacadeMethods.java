@@ -51,4 +51,8 @@ public class IndexCreatorFacadeMethods
                 ON,
                 CREATE
         ) );
+
+    private IndexCreatorFacadeMethods()
+    {
+    }
 }

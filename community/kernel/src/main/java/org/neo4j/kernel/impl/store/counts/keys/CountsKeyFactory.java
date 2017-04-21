@@ -21,6 +21,10 @@ package org.neo4j.kernel.impl.store.counts.keys;
 
 public class CountsKeyFactory
 {
+    private CountsKeyFactory()
+    {
+    }
+
     public static NodeKey nodeKey( int labelId )
     {
         return new NodeKey( labelId );

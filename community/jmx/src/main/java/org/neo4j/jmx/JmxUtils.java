@@ -34,6 +34,10 @@ public class JmxUtils
 {
     private static final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
+    private JmxUtils()
+    {
+    }
+
     public static ObjectName getObjectName( GraphDatabaseService db, String name )
     {
         if ( !(db instanceof GraphDatabaseAPI) )

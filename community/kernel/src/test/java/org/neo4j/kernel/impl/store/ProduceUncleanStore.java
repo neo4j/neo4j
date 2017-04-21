@@ -32,6 +32,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ProduceUncleanStore
 {
+    private ProduceUncleanStore()
+    {
+    }
+
     public static void main( String[] args ) throws Exception
     {
         String storeDir = args[0];

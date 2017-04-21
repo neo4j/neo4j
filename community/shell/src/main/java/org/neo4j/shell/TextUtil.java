@@ -29,6 +29,10 @@ import java.util.StringTokenizer;
 
 public class TextUtil
 {
+    private TextUtil()
+    {
+    }
+
     public static String templateString( String templateString,
             Map<String, ? extends Object> data )
     {

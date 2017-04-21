@@ -47,6 +47,11 @@ import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
  */
 public class CausalClusterInProcessRunner
 {
+
+    private CausalClusterInProcessRunner()
+    {
+    }
+
     public static void main( String[] args ) throws IOException, ExecutionException, InterruptedException
     {
         try

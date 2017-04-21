@@ -43,6 +43,10 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedTokenRequestSerializer
 {
+    private ReplicatedTokenRequestSerializer()
+    {
+    }
+
     public static void marshal( ReplicatedTokenRequest content, WritableChannel channel ) throws IOException
     {
         channel.putInt( content.type().ordinal() );

@@ -343,6 +343,10 @@ public class ImportTool
      */
     static final String MULTI_FILE_DELIMITER = ",";
 
+    private ImportTool()
+    {
+    }
+
     /**
      * Runs the import tool given the supplied arguments.
      *

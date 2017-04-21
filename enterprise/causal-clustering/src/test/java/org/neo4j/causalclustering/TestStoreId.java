@@ -39,6 +39,10 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSAC
 
 public class TestStoreId
 {
+    private TestStoreId()
+    {
+    }
+
     public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs )
             throws IOException
     {

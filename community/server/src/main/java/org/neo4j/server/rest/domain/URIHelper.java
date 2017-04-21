@@ -25,6 +25,10 @@ import java.nio.charset.StandardCharsets;
 
 public class URIHelper
 {
+    private URIHelper()
+    {
+    }
+
     public static String encode( String value )
     {
         try

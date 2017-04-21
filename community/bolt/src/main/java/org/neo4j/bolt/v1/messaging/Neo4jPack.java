@@ -483,4 +483,8 @@ public class Neo4jPack
             return msg;
         }
     }
+
+    private Neo4jPack()
+    {
+    }
 }
