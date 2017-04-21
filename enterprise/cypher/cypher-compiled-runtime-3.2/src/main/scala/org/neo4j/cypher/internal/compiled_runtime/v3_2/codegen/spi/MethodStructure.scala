@@ -128,7 +128,7 @@ trait MethodStructure[E] {
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
 
-  // parameters
+  // parameters, and external data loading
   def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
 
   // map
