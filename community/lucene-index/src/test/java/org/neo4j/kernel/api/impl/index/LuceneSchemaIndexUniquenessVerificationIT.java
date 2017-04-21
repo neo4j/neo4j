@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
+import org.neo4j.function.Factory;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
@@ -78,9 +80,11 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
+        Factory<IndexWriterConfig> configFactory = new VerboseConfigFactory();
         index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
+                .withWriterConfig( configFactory )
                 .withIndexIdentifier( "index" )
                 .build();
 
@@ -384,17 +388,27 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         }
         else
         {
-            int duplicateIndex = (int) randomLongInRange( 0, data.size() );
+            int duplicateIndex = randomIntInRange( 0, data.size() );
             int duplicateValueIndex;
             do
             {
                 duplicateValueIndex = ThreadLocalRandom.current().nextInt( data.size() );
             }
             while ( duplicateValueIndex == duplicateIndex );
-            PropertyValue duplicateValue = data.get( duplicateValueIndex );
-            data.set( duplicateIndex, duplicateValue );
+            PropertyValue duplicate = duplicatePropertyValue( data.get( duplicateValueIndex ) );
+            data.set( duplicateIndex, duplicate );
         }
         return data;
+    }
+
+    private static PropertyValue duplicatePropertyValue( PropertyValue propertyValue )
+    {
+        return new PropertyValue( propertyValue.value );
+    }
+
+    private static int randomIntInRange( int min, int max )
+    {
+        return ThreadLocalRandom.current().nextInt( min, max );
     }
 
     private static long randomLongInRange( long min, long max )
@@ -476,6 +490,18 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         public String toString()
         {
             return Strings.prettyPrint( value );
+        }
+    }
+
+    private static class VerboseConfigFactory implements Factory<IndexWriterConfig>
+    {
+
+        @Override
+        public IndexWriterConfig newInstance()
+        {
+            IndexWriterConfig verboseConfig = IndexWriterConfigs.standard();
+            verboseConfig.setInfoStream( System.out );
+            return verboseConfig;
         }
     }
 }
