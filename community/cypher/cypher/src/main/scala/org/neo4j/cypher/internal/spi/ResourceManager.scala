@@ -23,6 +23,7 @@ import java.util
 import java.util.Collections.newSetFromMap
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.CloseableResource
+import org.neo4j.helpers.Exceptions
 
 class ResourceManager extends CloseableResource {
   private val resources: util.Set[AutoCloseable] = newSetFromMap(new util.IdentityHashMap[AutoCloseable, java.lang.Boolean]())
@@ -41,10 +42,14 @@ class ResourceManager extends CloseableResource {
 
   override def close(success: Boolean): Unit = {
     val iterator = resources.iterator()
-    while ( iterator.hasNext )
-    {
-      iterator.next().close()
+    var error: Throwable = null
+    while (iterator.hasNext) {
+      try iterator.next().close()
+      catch {
+        case t: Throwable => error = Exceptions.chain(error, t)
+      }
       iterator.remove()
     }
+    if (error != null) throw error
   }
 }
