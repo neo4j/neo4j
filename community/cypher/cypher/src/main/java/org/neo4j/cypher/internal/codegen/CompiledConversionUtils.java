@@ -175,7 +175,11 @@ public abstract class CompiledConversionUtils
 
     public static Object loadParameter( Object value )
     {
-        if ( value instanceof Node )
+        if (value == null)
+        {
+            return null;
+        }
+        else if ( value instanceof Node )
         {
             return new NodeIdWrapperImpl( ((Node) value).getId() );
         }
