@@ -44,6 +44,15 @@ public class Usage
     {
         output.accept( format( "usage: %s <command>", scriptName ) );
         output.accept( "" );
+        output.accept( "Manage your Neo4j instance." );
+        output.accept( "" );
+        output.accept( "environment variables:" );
+        output.accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
+        output.accept( "    NEO4J_HOME    Neo4j home directory." );
+        output.accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
+        output.accept( "    HEAP_SIZE     Set size of JVM heap during command execution." );
+        output.accept( "                  Takes a number and a unit, for example 512m." );
+        output.accept( "" );
         output.accept( "available commands:" );
         printCommandsUnderASegment( output );
         output.accept( "" );
