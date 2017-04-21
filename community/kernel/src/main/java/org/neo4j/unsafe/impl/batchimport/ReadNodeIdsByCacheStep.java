@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
-import org.neo4j.unsafe.impl.batchimport.staging.AbstractStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProducerStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.System.nanoTime;
@@ -36,38 +36,27 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
  * {@link NodeRecord} and sends downwards.
  */
-public class ReadNodeIdsByCacheStep extends AbstractStep<Void>
+public class ReadNodeIdsByCacheStep extends ProducerStep
 {
     private final int nodeTypes;
     private final NodeRelationshipCache cache;
-    private final int batchSize;
+    private volatile long highId;
 
     public ReadNodeIdsByCacheStep( StageControl control, Configuration config,
             NodeRelationshipCache cache, int nodeTypes )
     {
-        super( control, ">", config );
+        super( control, config );
         this.cache = cache;
         this.nodeTypes = nodeTypes;
-        this.batchSize = config.batchSize();
     }
 
     @Override
-    public long receive( long ticket, Void ignored )
+    protected void process()
     {
-        new Thread()
+        try ( NodeVisitor visitor = new NodeVisitor() )
         {
-            @Override
-            public void run()
-            {
-                assertHealthy();
-                try ( NodeVisitor visitor = new NodeVisitor() )
-                {
-                    cache.visitChangedNodes( visitor, nodeTypes );
-                }
-                endOfUpstream();
-            }
-        }.start();
-        return 0;
+            cache.visitChangedNodes( visitor, nodeTypes );
+        }
     }
 
     private class NodeVisitor implements NodeChangeVisitor, AutoCloseable
@@ -88,13 +77,13 @@ public class ReadNodeIdsByCacheStep extends AbstractStep<Void>
             }
         }
 
-        @SuppressWarnings( "unchecked" )
         private void send()
         {
             totalProcessingTime.add( nanoTime() - time );
-            downstream.receive( doneBatches.getAndIncrement(), iterator( batch ) );
+            sendDownstream( iterator( batch ) );
             time = nanoTime();
             assertHealthy();
+            highId = batch[cursor - 1];
         }
 
         @Override
@@ -106,5 +95,11 @@ public class ReadNodeIdsByCacheStep extends AbstractStep<Void>
                 send();
             }
         }
+    }
+
+    @Override
+    protected long position()
+    {
+        return highId * Long.BYTES;
     }
 }

@@ -33,7 +33,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
-import static org.junit.Assert.assertTrue;
 
 /**
  * A bit like a mocked {@link Step}, but easier to work with.
@@ -171,6 +170,12 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     public void complete()
     {
         completed = true;
+    }
+
+    @Override
+    public long doneBatches()
+    {
+        return stats.get( Keys.done_batches ).value;
     }
 
     private static class ControlledStat implements Stat

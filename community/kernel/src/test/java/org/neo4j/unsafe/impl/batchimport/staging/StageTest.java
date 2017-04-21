@@ -49,7 +49,7 @@ public class StageTest
         Stage stage = new Stage( "Test stage", config, ORDER_SEND_DOWNSTREAM );
         long batches = 1000;
         final long items = batches*config.batchSize();
-        stage.add( new ProducerStep( stage.control(), "Producer", config )
+        stage.add( new PullingProducerStep( stage.control(), config )
         {
             private final Object theObject = new Object();
             private long i;
@@ -66,6 +66,12 @@ public class StageTest
                 Arrays.fill( batch, theObject );
                 i += batchSize;
                 return batch;
+            }
+
+            @Override
+            protected long position()
+            {
+                return 0;
             }
         } );
 

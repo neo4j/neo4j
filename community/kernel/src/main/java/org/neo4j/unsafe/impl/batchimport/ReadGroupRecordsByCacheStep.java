@@ -27,7 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
-import org.neo4j.unsafe.impl.batchimport.staging.AbstractStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProducerStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.System.nanoTime;
@@ -36,38 +36,26 @@ import static java.lang.System.nanoTime;
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
  * {@link NodeRecord} and sends downwards.
  */
-public class ReadGroupRecordsByCacheStep extends AbstractStep<Void>
+public class ReadGroupRecordsByCacheStep extends ProducerStep
 {
     private final RecordStore<RelationshipGroupRecord> store;
     private final NodeRelationshipCache cache;
-    private final int batchSize;
 
     public ReadGroupRecordsByCacheStep( StageControl control, Configuration config,
             RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
     {
-        super( control, ">", config );
+        super( control, config );
         this.store = store;
         this.cache = cache;
-        this.batchSize = config.batchSize();
     }
 
     @Override
-    public long receive( long ticket, Void ignored )
+    protected void process()
     {
-        new Thread()
+        try ( NodeVisitor visitor = new NodeVisitor() )
         {
-            @Override
-            public void run()
-            {
-                assertHealthy();
-                try ( NodeVisitor visitor = new NodeVisitor() )
-                {
-                    cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );
-                }
-                endOfUpstream();
-            }
-        }.start();
-        return 0;
+            cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );
+        }
     }
 
     private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, GroupVisitor
@@ -98,11 +86,10 @@ public class ReadGroupRecordsByCacheStep extends AbstractStep<Void>
             return id;
         }
 
-        @SuppressWarnings( "unchecked" )
         private void send()
         {
             totalProcessingTime.add( nanoTime() - time );
-            downstream.receive( doneBatches.getAndIncrement(), batch );
+            sendDownstream( batch );
             time = nanoTime();
             assertHealthy();
         }
@@ -115,5 +102,11 @@ public class ReadGroupRecordsByCacheStep extends AbstractStep<Void>
                 send();
             }
         }
+    }
+
+    @Override
+    protected long position()
+    {
+        return store.getHighId() * store.getRecordSize();
     }
 }
