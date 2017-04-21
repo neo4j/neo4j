@@ -19,46 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.functions
 
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, symbols}
+import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 
 sealed trait CodeGenFunction1 {
-  def apply(arg: CodeGenExpression)(implicit context: CodeGenContext): CodeGenExpression
+  def apply(arg: CodeGenExpression): CodeGenExpression
 }
 
 case object IdCodeGenFunction extends CodeGenFunction1 {
 
-  override def apply(arg: CodeGenExpression)(implicit context: CodeGenContext): CodeGenExpression = arg match {
-    case n: NodeExpression => load(n.nodeIdVar.name, n.nullable)
-    case n: NodeProjection => load(n.nodeIdVar.name, n.nullable)
-    case r: RelationshipExpression => load(r.relId.name, r.nullable)
-    case r: RelationshipProjection => load(r.relId.name, r.nullable)
+  override def apply(arg: CodeGenExpression): CodeGenExpression = arg match {
+    case NodeExpression(n) => IdOf(n)
+    case NodeProjection(n) => IdOf(n)
+    case RelationshipExpression(r) => IdOf(r)
+    case RelationshipProjection(r) => IdOf(r)
     case e => throw new InternalException(s"id function only accepts nodes or relationships not $e")
-  }
-
-  private def load(variable: String, canBeNull: Boolean) = new CodeGenExpression {
-    override def generateExpression[E](structure: MethodStructure[E])
-                                      (implicit
-                                       context: CodeGenContext): E =
-      if (nullable) structure.nullableReference(variable, CodeGenType.primitiveInt,
-                                                structure.box(structure.loadVariable(variable),
-                                                              CypherCodeGenType(symbols.CTInteger, ReferenceType)))
-      else structure.loadVariable(variable)
-
-    override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {}
-
-    override def nullable(implicit context: CodeGenContext): Boolean = canBeNull
-
-    override def codeGenType(implicit context: CodeGenContext): CypherCodeGenType =
-      if (nullable) CypherCodeGenType(symbols.CTInteger, ReferenceType) else CodeGenType.primitiveInt
   }
 }
 
 case object TypeCodeGenFunction extends CodeGenFunction1 {
 
-  override def apply(arg: CodeGenExpression)(implicit context: CodeGenContext): CodeGenExpression = arg match {
+  override def apply(arg: CodeGenExpression): CodeGenExpression = arg match {
     case r: RelationshipExpression => TypeOf(r.relId)
     case r: RelationshipProjection => TypeOf(r.relId)
     case e => throw new InternalException(s"type function only accepts relationships $e")
