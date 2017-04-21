@@ -37,6 +37,9 @@ tar --strip-components=1 -xf ${tarball} -C ${package_directory}/server
 
 cp -r src/debian ${package_directory}
 
+# Remove cypher-shell stuff if present
+find ${package_directory}/server -iname "*cypher-shell*" | xargs --no-run-if-empty rm
+
 # Rename service files to match package-name so we still get a service called neo4j
 cp src/common/neo4j.service ${package_directory}/debian/${package_name}.neo4j.service
 cp src/common/neo4j.default ${package_directory}/debian/${package_name}.neo4j.default
@@ -66,7 +69,6 @@ cp ${script} ${scripts_directory}/neo4j
 cp ${script} ${scripts_directory}/neo4j-admin
 cp ${script} ${scripts_directory}/neo4j-import
 cp ${script} ${scripts_directory}/neo4j-shell
-cp ${script} ${scripts_directory}/cypher-shell
 if [ ${package_name} = "neo4j-enterprise" ]
 then
   cp ${script} ${scripts_directory}/neo4j-backup
