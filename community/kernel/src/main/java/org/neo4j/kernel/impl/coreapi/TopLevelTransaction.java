@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -141,5 +142,11 @@ public class TopLevelTransaction implements InternalTransaction
     public KernelTransaction.Revertable overrideWith( SecurityContext context )
     {
         return transaction.overrideWith( context );
+    }
+
+    @Override
+    public Optional<Status> terminationReason()
+    {
+        return transaction.getReasonIfTerminated();
     }
 }
