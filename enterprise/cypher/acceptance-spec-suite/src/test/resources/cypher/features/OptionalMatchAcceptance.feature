@@ -34,3 +34,18 @@ Feature: OptionalMatchAcceptance
       | id(n2) | id(r) |
       | null   | null  |
     And no side effects
+
+  Scenario: type on null
+    Given an empty graph
+    And having executed:
+      """
+      UNWIND range(1,10) AS i CREATE (:L1 {prop:i})<-[:R]-(:L2)
+      """
+    When executing query:
+      """
+      MATCH (n1 :L1 {prop: 3}) OPTIONAL MATCH (n2 :L2)<-[r]-(n1) RETURN type(r)
+      """
+    Then the result should be:
+      | type(r) |
+      | null    |
+    And no side effects
