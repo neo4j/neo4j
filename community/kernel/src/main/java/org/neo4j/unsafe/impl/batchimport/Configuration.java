@@ -30,6 +30,7 @@ import static java.lang.Math.round;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
@@ -193,6 +194,11 @@ public interface Configuration
         };
     }
 
+    static boolean canDetectFreeMemory()
+    {
+        return OsBeanUtil.getFreePhysicalMemory() != OsBeanUtil.VALUE_UNAVAILABLE;
+    }
+
     static long calculateMaxMemoryFromPercent( int percent )
     {
         if ( percent < 1 )
@@ -206,8 +212,9 @@ public interface Configuration
         long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
         if ( freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
         {
-            throw new UnsupportedOperationException(
-                    "Unable to detect amount of free memory, so max memory has to be explicitly set" );
+            // Unable to detect amount of free memory, so rather max memory should be explicitly set
+            // in order to get best performance. However let's just go with a default of 2G in this case.
+            return gibiBytes( 2 );
         }
 
         double factor = percent / 100D;
