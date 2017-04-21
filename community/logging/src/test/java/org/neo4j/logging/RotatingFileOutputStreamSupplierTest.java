@@ -19,7 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -110,12 +109,6 @@ public class RotatingFileOutputStreamSupplierTest
         archiveLogFile7 = new File( logDir, "logfile.log.7" );
         archiveLogFile8 = new File( logDir, "logfile.log.8" );
         archiveLogFile9 = new File( logDir, "logfile.log.9" );
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        fileSystem.close();
     }
 
     @Test
