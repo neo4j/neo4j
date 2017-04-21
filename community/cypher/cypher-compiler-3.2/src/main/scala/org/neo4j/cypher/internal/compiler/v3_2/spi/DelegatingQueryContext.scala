@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 import scala.collection.Iterator
 
@@ -266,4 +267,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def close(success: Boolean) { inner.close(success) }
 
   override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
+
+  override def databaseInfo: DatabaseInfo = inner.databaseInfo
 }
