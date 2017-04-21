@@ -281,7 +281,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
 
   override def node(nodeIdVar: String, codeGenType: CodeGenType) =
-    generator.load(nodeIdVar)
+    if (codeGenType.isPrimitive) generator.load(nodeIdVar)
+    else invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId)
 
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CypherCodeGenType(CTNode, LongType) | CypherCodeGenType(CTRelationship, LongType) =>
@@ -1297,17 +1298,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     locals += (name -> generator.declare(typeRef[Boolean], name))
   }
 
-  override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
+  override def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)))
+      body.assign(local, invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), body.load(propIdVar)))
     }
   }
 
-  override def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String) = {
+  override def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), constant(propId)))
+      body.assign(local, invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), constant(propId)))
     }
   }
 

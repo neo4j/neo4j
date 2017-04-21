@@ -213,7 +213,7 @@ public abstract class CompiledConversionUtils
             }
             return copy;
         }
-        
+
         else
         {
             return value;

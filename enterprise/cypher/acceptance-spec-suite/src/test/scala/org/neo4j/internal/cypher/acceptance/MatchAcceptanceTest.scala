@@ -593,11 +593,11 @@ return p""")
     val res =
       executeWithAllPlannersAndRuntimesAndCompatibilityMode( """UNWIND {p1} AS n1
                                                                |UNWIND {p2} AS n2
-                                                               |MATCH (n1)<-[:PING_DAY]-(n2) RETURN 42""".stripMargin,
+                                                               |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
                                                              "p1" -> List(node1), "p2" -> List(node2))
 
     //Then
-    res.toList should equal(List(Map("42" -> 42)))
+    res.toList should equal(List(Map("n1.prop" -> 1, "n2.prop" -> 2)))
   }
 
   /**

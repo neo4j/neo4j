@@ -137,12 +137,12 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.lookupPropertyKey("prop", "prop")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.declareProperty("propVar")
-          m.nodeGetPropertyForVar("node", "prop", "propVar")
+          m.nodeGetPropertyForVar("node", CodeGenType.primitiveNode, "prop", "propVar")
         }),
         Operation("property by id for node", m => {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.declareProperty("propVar")
-          m.nodeGetPropertyById("node", 13, "propVar")
+          m.nodeGetPropertyById("node", CodeGenType.primitiveNode, 13, "propVar")
         }),
         Operation("property by name for relationship", m => {
           m.lookupPropertyKey("prop", "prop")
@@ -153,7 +153,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         Operation("property by id for relationship", m => {
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
           m.declareProperty("propVar")
-          m.nodeGetPropertyById("rel", 13, "propVar")
+          m.nodeGetPropertyById("rel", CodeGenType.primitiveNode, 13, "propVar")
         }),
         Operation("rel type", m => {
           m.createRelExtractor("bar")
