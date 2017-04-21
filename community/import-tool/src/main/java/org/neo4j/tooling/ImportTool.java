@@ -85,6 +85,7 @@ import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.calculateMaxMemoryFromPercent;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.canDetectFreeMemory;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
@@ -468,7 +469,14 @@ public class ImportTool
             if ( maxMemoryString.endsWith( "%" ) )
             {
                 int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );
-                return calculateMaxMemoryFromPercent( percent );
+                long result = calculateMaxMemoryFromPercent( percent );
+                if ( !canDetectFreeMemory() )
+                {
+                    System.err.println( "WARNING: amount of free memory couldn't be detected so defaults to " +
+                            bytes( result ) + ". For optimal performance instead explicitly specify amount of " +
+                            "memory that importer is allowed to use using " + Options.MAX_MEMORY.argument() );
+                }
+                return result;
             }
             return Settings.parseLongWithUnit( maxMemoryString );
         }
