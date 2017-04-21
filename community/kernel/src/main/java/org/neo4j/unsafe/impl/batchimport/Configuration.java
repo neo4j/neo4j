@@ -115,6 +115,17 @@ public interface Configuration
         return calculateMaxMemoryFromPercent( DEFAULT_MAX_MEMORY_PERCENT );
     }
 
+    /**
+     * @return whether or not to do sequential flushing of the page cache in the during stages which
+     * import nodes and relationships. Having this {@code true} will reduce random I/O and make most
+     * writes happen in this single background thread and will greatly benefit hardware which generally
+     * benefits from single sequential writer.
+     */
+    default boolean sequentialBackgroundFlushing()
+    {
+        return true;
+    }
+
     Configuration DEFAULT = new Configuration()
     {
     };
@@ -161,6 +172,12 @@ public interface Configuration
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
+        }
+
+        @Override
+        public boolean sequentialBackgroundFlushing()
+        {
+            return defaults.sequentialBackgroundFlushing();
         }
     }
 
