@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
+import java.io.IOException;
 import java.util.function.ToIntFunction;
 
+import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 public class NodeCountInputs implements Input
@@ -54,70 +54,33 @@ public class NodeCountInputs implements Input
     }
 
     @Override
-    public InputIterable<InputNode> nodes()
+    public InputIterable nodes()
     {
-        return new InputIterable<InputNode>()
+        return replayable( () -> new GeneratingInputIterator<>( nodeCount, 1_000, batch -> null, new GeneratingInputIterator.Generator<Void>()
         {
             @Override
-            public InputIterator<InputNode> iterator()
+            public void accept( Void state, InputEntityVisitor visitor, long id ) throws IOException
             {
-                return new InputIterator.Adapter<InputNode>()
+                visitor.id( id, Group.GLOBAL );
+                visitor.labels( labels );
+                for ( int i = 0; i < properties.length; i++ )
                 {
-                    private int lineNumber;
-
-                    @Override
-                    protected InputNode fetchNextOrNull()
-                    {
-                        return lineNumber < nodeCount
-                                ? new InputNode( "", ++lineNumber, 0, lineNumber, properties, null, labels, null )
-                                : null;
-                    }
-
-                    @Override
-                    public long lineNumber()
-                    {
-                        return lineNumber;
-                    }
-                };
+                    visitor.property( (String) properties[i++], properties[i] );
+                }
             }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        }, 0 ) );
     }
 
     @Override
-    public InputIterable<InputRelationship> relationships()
+    public InputIterable relationships()
     {
-        return new InputIterable<InputRelationship>()
-        {
-            @Override
-            public InputIterator<InputRelationship> iterator()
-            {
-                return new InputIterator.Empty<>();
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return GeneratingInputIterator.EMPTY_ITERABLE;
     }
 
     @Override
     public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
         return IdMappers.actual();
-    }
-
-    @Override
-    public IdGenerator idGenerator()
-    {
-        return IdGenerators.startingFromTheBeginning();
     }
 
     @Override

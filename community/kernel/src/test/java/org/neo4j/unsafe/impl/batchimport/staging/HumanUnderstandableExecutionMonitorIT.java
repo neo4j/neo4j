@@ -34,11 +34,12 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleDataGenerator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -69,10 +70,9 @@ public class HumanUnderstandableExecutionMonitorIT
         CapturingMonitor progress = new CapturingMonitor();
         HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( System.out, progress, NO_EXTERNAL_MONITOR );
         IdType idType = INTEGER;
-        SimpleDataGenerator generator = new SimpleDataGenerator( bareboneNodeHeader( idType, new Extractors( ';' ) ),
-                bareboneRelationshipHeader( idType, new Extractors( ';' ) ), random.seed(), NODE_COUNT, 1, 1, idType, 0, 0 );
-        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, generator.nodes(), generator.relationships(), idType,
-                Collector.EMPTY );
+        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, Collector.EMPTY, random.seed(),
+                0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
+                1, 1, 0, 0 );
 
         // when
         new ParallelBatchImporter( storage.directory().absolutePath(), storage.fileSystem(), storage.pageCache(), DEFAULT,

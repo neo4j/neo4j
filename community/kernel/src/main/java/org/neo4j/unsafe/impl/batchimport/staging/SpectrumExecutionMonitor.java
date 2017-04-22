@@ -164,7 +164,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         builder.append( "]" ).append( fitInProgress( progress ) );
     }
 
-    private static String fitInProgress( long value )
+    public static String fitInProgress( long value )
     {
         int weight = weight( value );
 

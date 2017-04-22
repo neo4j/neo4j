@@ -32,62 +32,74 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_REMOVAL;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 
 /**
- * Caches {@link InputNode} to disk using a binary format.
+ * Caches input nodes to disk using a binary format.
  */
-public class InputNodeCacher extends InputEntityCacher<InputNode>
+public class InputNodeCacher extends InputEntityCacher
 {
-    private String[] previousLabels = InputEntity.NO_LABELS;
-
-    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
-            int bufferSize, int batchSize )
+    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
             throws IOException
     {
-        super( channel, header, recordFormats, bufferSize, batchSize, 1 );
+        super( channel, header, recordFormats, chunkSize );
     }
 
     @Override
-    protected void writeEntity( InputNode node ) throws IOException
+    protected SerializingInputEntityVisitor instantiateWrapper( InputEntityVisitor visitor, int chunkSize )
     {
-        // properties
-        super.writeEntity( node );
-
-        // group
-        writeGroup( node.group(), 0 );
-
-        // id
-        writeValue( node.id() );
-
-        // labels
-        if ( node.hasLabelField() )
-        {   // label field
-            channel.put( HAS_LABEL_FIELD );
-            channel.putLong( node.labelField() );
-        }
-        else
-        {   // diff from previous node
-            String[] labels = node.labels();
-            writeLabelDiff( LABEL_REMOVAL, previousLabels, labels );
-            writeLabelDiff( LABEL_ADDITION, labels, previousLabels );
-            channel.put( END_OF_LABEL_CHANGES );
-            previousLabels = labels;
-        }
+        return new SerializingInputNodeVisitor( visitor, chunkSize );
     }
 
-    @Override
-    protected void clearState()
+    class SerializingInputNodeVisitor extends SerializingInputEntityVisitor
     {
-        previousLabels = InputEntity.NO_LABELS;
-        super.clearState();
-    }
+        private String[] previousLabels = EMPTY_STRING_ARRAY;
 
-    protected void writeLabelDiff( byte mode, String[] compare, String[] with ) throws IOException
-    {
-        for ( String value : compare )
+        SerializingInputNodeVisitor( InputEntityVisitor actual, int chunkSize )
         {
-            if ( !contains( with, value ) )
+            super( actual, chunkSize );
+        }
+
+        @Override
+        protected void serializeEntity() throws IOException
+        {
+            // properties
+            writeProperties();
+
+            // group
+            writeGroup( idGroup, 0 );
+
+            // id
+            writeValue( id() );
+
+            // labels
+            if ( hasLabelField )
+            {   // label field
+                buffer( 1 + 8 ).put( HAS_LABEL_FIELD ).putLong( labelField );
+            }
+            else
+            {   // diff from previous node
+                String[] labels = labels();
+                writeLabelDiff( LABEL_REMOVAL, previousLabels, labels );
+                writeLabelDiff( LABEL_ADDITION, labels, previousLabels );
+                buffer( 1 ).put( END_OF_LABEL_CHANGES );
+                previousLabels = labels;
+            }
+        }
+
+        @Override
+        protected void clearState()
+        {
+            previousLabels = EMPTY_STRING_ARRAY;
+            super.clearState();
+        }
+
+        protected void writeLabelDiff( byte mode, String[] compare, String[] with ) throws IOException
+        {
+            for ( String value : compare )
             {
-                channel.put( mode );
-                writeToken( LABEL_TOKEN, value );
+                if ( !contains( with, value ) )
+                {
+                    buffer( 1 ).put( mode );
+                    writeToken( LABEL_TOKEN, value );
+                }
             }
         }
     }

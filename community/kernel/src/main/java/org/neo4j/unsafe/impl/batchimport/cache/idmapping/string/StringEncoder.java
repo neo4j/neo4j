@@ -127,7 +127,13 @@ public class StringEncoder implements Encoder
         {
             if ( reMap[bytes[i]] == -1 )
             {
-                reMap[bytes[i]] = (byte) (numChars++ % 256);
+                synchronized ( this )
+                {
+                    if ( reMap[bytes[i]] == -1 )
+                    {
+                        reMap[bytes[i]] = (byte) (numChars++ % 256);
+                    }
+                }
             }
             bytes[i] = reMap[bytes[i]];
         }

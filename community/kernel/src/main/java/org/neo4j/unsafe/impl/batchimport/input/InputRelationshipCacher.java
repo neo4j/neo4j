@@ -30,57 +30,70 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TY
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 
 /**
- * Caches {@link InputRelationship} to disk using a binary format.
+ * Caches input relationships to disk using a binary format.
  */
-public class InputRelationshipCacher extends InputEntityCacher<InputRelationship>
+public class InputRelationshipCacher extends InputEntityCacher
 {
-    private String previousType;
-
-    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
-            int bufferSize, int batchSize )
+    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
             throws IOException
     {
-        super( channel, header, recordFormats, bufferSize, batchSize, 2 );
+        super( channel, header, recordFormats, chunkSize );
     }
 
     @Override
-    protected void writeEntity( InputRelationship relationship ) throws IOException
+    protected SerializingInputEntityVisitor instantiateWrapper( InputEntityVisitor visitor, int chunkSize )
     {
-        // properties
-        super.writeEntity( relationship );
+        return new SerializingInputRelationshipVisitor( visitor, chunkSize );
+    }
 
-        // groups
-        writeGroup( relationship.startNodeGroup(), 0 );
-        writeGroup( relationship.endNodeGroup(), 1 );
+    class SerializingInputRelationshipVisitor extends SerializingInputEntityVisitor
+    {
+        private String previousType;
 
-        // ids
-        writeValue( relationship.startNode() );
-        writeValue( relationship.endNode() );
-
-        // type
-        if ( relationship.hasTypeId() )
+        SerializingInputRelationshipVisitor( InputEntityVisitor actual, int chunkSize )
         {
-            channel.put( HAS_TYPE_ID );
-            channel.putInt( relationship.typeId() );
+            super( actual, chunkSize );
         }
-        else
+
+        @Override
+        protected void serializeEntity() throws IOException
         {
-            if ( previousType != null && relationship.type().equals( previousType ) )
+            // properties
+            writeProperties();
+
+            // groups
+            writeGroup( startIdGroup, 0 );
+            writeGroup( endIdGroup, 1 );
+
+            // ids
+            writeValue( startId() );
+            writeValue( endId() );
+
+            // type
+            if ( hasIntType )
             {
-                channel.put( SAME_TYPE );
+                buffer.put( HAS_TYPE_ID );
+                buffer.putInt( intType );
             }
             else
             {
-                channel.put( NEW_TYPE );
-                writeToken( RELATIONSHIP_TYPE_TOKEN, previousType = relationship.type() );
+                if ( previousType != null && stringType.equals( previousType ) )
+                {
+                    buffer.put( SAME_TYPE );
+                }
+                else
+                {
+                    buffer.put( NEW_TYPE );
+                    writeToken( RELATIONSHIP_TYPE_TOKEN, previousType = stringType );
+                }
             }
         }
-    }
 
-    @Override
-    protected void clearState()
-    {
-        previousType = null;
-        super.clearState();
+        @Override
+        protected void clearState()
+        {
+            previousType = null;
+            super.clearState();
+        }
     }
 }

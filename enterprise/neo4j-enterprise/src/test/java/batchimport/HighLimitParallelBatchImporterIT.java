@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporterTest;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
@@ -31,10 +30,9 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
  */
 public class HighLimitParallelBatchImporterIT extends ParallelBatchImporterTest
 {
-    public HighLimitParallelBatchImporterIT( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator,
-                                             boolean multiPassIterators )
+    public HighLimitParallelBatchImporterIT( InputIdGenerator inputIdGenerator, IdMapper idMapper )
     {
-        super( inputIdGenerator, idMapper, idGenerator, multiPassIterators );
+        super( inputIdGenerator, idMapper );
     }
 
     @Override

@@ -66,7 +66,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 return (RelationshipLinkingProgress) provider;
             }
         }
-        throw new IllegalStateException( "Expected to have a specific stats provider about progress" );
+        return new RelationshipLinkingProgress();
     }
 
     @Override

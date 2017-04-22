@@ -24,12 +24,11 @@ import java.util.TimeZone;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.unsafe.impl.batchimport.CountGroupsStage;
+import org.neo4j.unsafe.impl.batchimport.DataImporter;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics;
 import org.neo4j.unsafe.impl.batchimport.IdMapperPreparationStage;
 import org.neo4j.unsafe.impl.batchimport.NodeDegreeCountStage;
-import org.neo4j.unsafe.impl.batchimport.NodeStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipGroupStage;
-import org.neo4j.unsafe.impl.batchimport.RelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.ScanAndCacheGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.SparseNodeFirstRelationshipStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -171,7 +170,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     public void start( StageExecution execution )
     {
         // Divide into 4 progress stages:
-        if ( execution.getStageName().equals( NodeStage.NAME ) )
+        if ( execution.getStageName().equals( DataImporter.NODE_IMPORT_NAME ) )
         {
             // Import nodes:
             // - import nodes
@@ -181,7 +180,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                     dependencyResolver.resolveDependency( IdMapper.class ),
                     dependencyResolver.resolveDependency( BatchingNeoStores.class ) );
         }
-        else if ( execution.getStageName().equals( RelationshipStage.NAME ) )
+        else if ( execution.getStageName().equals( DataImporter.RELATIONSHIP_IMPORT_NAME ) )
         {
             endPrevious();
 

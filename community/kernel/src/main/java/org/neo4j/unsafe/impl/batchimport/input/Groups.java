@@ -28,9 +28,11 @@ import java.util.Map;
  */
 public class Groups
 {
+    public static final int MAX_NUMBER_OF_GROUPS = 0x10000;
+    static final int LOWEST_NONGLOBAL_ID = 1;
+
     private final Map<String,Group> byName = new HashMap<>();
-    private int nextId;
-    private Boolean globalMode;
+    private int nextId = LOWEST_NONGLOBAL_ID;
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
@@ -41,20 +43,7 @@ public class Groups
      */
     public synchronized Group getOrCreate( String name )
     {
-        boolean global = name == null;
-        if ( globalMode == null )
-        {
-            globalMode = global;
-        }
-        else
-        {
-            if ( global != globalMode )
-            {
-                throw mixingOfGroupModesException();
-            }
-        }
-
-        if ( name == null )
+        if ( isGlobalGroup( name ) )
         {
             return Group.GLOBAL;
         }
@@ -67,21 +56,14 @@ public class Groups
         return group;
     }
 
-    private IllegalStateException mixingOfGroupModesException()
+    private static boolean isGlobalGroup( String name )
     {
-        return new IllegalStateException( "Mixing specified and unspecified group belongings " +
-                "in a single import isn't supported" );
+        return name == null || Group.GLOBAL.name().equals( name );
     }
 
     public synchronized Group get( String name )
     {
-        boolean global = name == null;
-        if ( globalMode != null && global != globalMode )
-        {
-            throw mixingOfGroupModesException();
-        }
-
-        if ( name == null )
+        if ( isGlobalGroup( name ) )
         {
             return Group.GLOBAL;
         }

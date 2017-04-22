@@ -22,62 +22,67 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 /**
- * Reads cached {@link InputRelationship} previously stored using {@link InputRelationshipCacher}.
+ * Reads cached input relationships previously stored using {@link InputRelationshipCacher}.
  */
-public class InputRelationshipReader extends InputEntityReader<InputRelationship>
+public class InputRelationshipReader extends InputEntityReader
 {
-    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction,
-            int maxNbrOfProcessors ) throws IOException
+    public InputRelationshipReader( StoreChannel channel, StoreChannel header, Runnable closeAction ) throws IOException
     {
-        super( channel, header, bufferSize, closeAction, maxNbrOfProcessors );
+        super( channel, header, closeAction );
     }
 
     @Override
-    protected InputRelationship readNextOrNull( Object properties, ProcessorState state ) throws IOException
+    public InputChunk newChunk()
     {
-        ReadableClosablePositionAwareChannel channel = state.batchChannel;
+        return new InputRelationshipDeserializer();
+    }
 
-        // groups
-        Group startNodeGroup = readGroup( 0, state );
-        Group endNodeGroup = readGroup( 1, state );
+    class InputRelationshipDeserializer extends InputEntityDeserializer
+    {
+        protected String previousType;
 
-        // ids
-        Object startNodeId = readValue( channel );
-        Object endNodeId = readValue( channel );
-
-        // type
-        byte typeMode = channel.get();
-        Object type;
-        switch ( typeMode )
+        @Override
+        public boolean next( InputEntityVisitor visitor ) throws IOException
         {
-        case SAME_TYPE:
-            type = state.previousType;
-            break;
-        case NEW_TYPE:
-            type = state.previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN, channel );
-            break;
-        case HAS_TYPE_ID:
-            type = channel.getInt();
-            break;
-        default:
-            throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
-        }
+            if ( !readProperties( visitor ) )
+            {
+                return false;
+            }
 
-        return new InputRelationship( sourceDescription(), lineNumber(), position(),
-                properties.getClass().isArray() ? (Object[]) properties : NO_PROPERTIES,
-                properties.getClass().isArray() ? null : (Long) properties,
-                startNodeGroup, startNodeId,
-                endNodeGroup, endNodeId,
-                type instanceof String ? (String) type : null,
-                type instanceof String ? null : (Integer) type );
+            // groups
+            Group startNodeGroup = readGroup( 0 );
+            Group endNodeGroup = readGroup( 1 );
+
+            // ids
+            Object startNodeId = readValue();
+            Object endNodeId = readValue();
+            visitor.startId( startNodeId, startNodeGroup );
+            visitor.endId( endNodeId, endNodeGroup );
+
+            // type
+            byte typeMode = channel.get();
+            switch ( typeMode )
+            {
+            case SAME_TYPE:
+                visitor.type( previousType );
+                break;
+            case NEW_TYPE:
+                visitor.type( previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN ) );
+                break;
+            case HAS_TYPE_ID:
+                visitor.type( channel.getInt() );
+                break;
+            default:
+                throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
+            }
+            return true;
+        }
     }
 }
