@@ -271,7 +271,6 @@ public class BufferedCharSeeker implements CharSeeker
 
             if ( !first )
             {
-                currentChunk.close();
                 if ( bufferPos - seekStartPos >= dataCapacity )
                 {
                     throw new IllegalStateException( "Tried to read a field larger than buffer size " +

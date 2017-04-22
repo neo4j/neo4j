@@ -19,14 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.function.LongFunction;
+
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-
-import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 
 /**
  * Performs {@link IdMapper#prepare(InputIterable, Collector, ProgressListener)}
@@ -34,11 +33,11 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
  */
 public class IdMapperPreparationStage extends Stage
 {
-    public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodes,
+    public IdMapperPreparationStage( Configuration config, IdMapper idMapper, LongFunction<Object> inputIdLookup,
             Collector collector, StatsProvider memoryUsageStats )
     {
         super( "Prepare node index", config );
         add( new IdMapperPreparationStep( control(), config,
-                idMapper, idsOf( nodes ), collector, memoryUsageStats ) );
+                idMapper, inputIdLookup, collector, memoryUsageStats ) );
     }
 }

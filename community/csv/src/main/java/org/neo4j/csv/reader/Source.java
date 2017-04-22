@@ -65,11 +65,6 @@ public interface Source extends Closeable
          * and so those characters are transfered over to this data array before {@link #startPosition()}
          */
         int backPosition();
-
-        /**
-         * Close this chunk and any resources attached to it
-         */
-        void close();
     }
 
     Chunk EMPTY_CHUNK = new Chunk()
@@ -102,11 +97,6 @@ public interface Source extends Closeable
         public char[] data()
         {
             return null;
-        }
-
-        @Override
-        public void close()
-        {
         }
 
         @Override

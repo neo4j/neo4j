@@ -22,7 +22,6 @@ package org.neo4j.csv.reader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
@@ -32,66 +31,57 @@ import org.neo4j.csv.reader.Source.Chunk;
  * multiple {@link BufferedCharSeeker seeker instances}, each operating over one chunk, not transitioning itself
  * into the next.
  */
-public class ProcessingSource implements Closeable
+public class CharReadableChunker implements Closeable
 {
-    // Marker for a buffer slot being unallocated
-    private static final char[] UNALLOCATED = new char[0];
-    // Marker for a buffer being allocated, although currently used
-    private static final char[] IN_USE = new char[0];
-
     private final CharReadable reader;
     private final int chunkSize;
     private char[] backBuffer; // grows on demand
     private int backBufferCursor;
     private volatile long position;
 
-    // Buffer reuse. Each item starts out as UNALLOCATED, transitions into IN_USE and tied to a Chunk,
-    // which will put its allocated buffer back into that slot on Chunk#close(). After that flipping between
-    // an allocated char[] and IN_USE.
-    private final AtomicReferenceArray<char[]> buffers;
-
-    public ProcessingSource( CharReadable reader, int chunkSize, int maxNumberOfBufferedChunks )
+    public CharReadableChunker( CharReadable reader, int chunkSize )
     {
         this.reader = reader;
         this.chunkSize = chunkSize;
         this.backBuffer = new char[chunkSize >> 4];
-        this.buffers = new AtomicReferenceArray<>( maxNumberOfBufferedChunks );
-        for ( int i = 0; i < buffers.length(); i++ )
-        {
-            buffers.set( i, UNALLOCATED );
-        }
+    }
+
+    public ProcessingChunk newChunk()
+    {
+        return new ProcessingChunk( new char[chunkSize] );
     }
 
     /**
-     * Must be called by a single thread, the same thread every time.
+     * Fills the given chunk with data from the underlying {@link CharReadable}, up to a good cut-off point
+     * in the vicinity of the buffer size.
      *
+     * @param into {@link ProcessingChunk} to read data into.
      * @return the next {@link Chunk} of data, ending with a new-line or not for the last chunk.
      * @throws IOException on reading error.
      */
-    public Chunk nextChunk() throws IOException
+    public synchronized boolean nextChunk( ProcessingChunk into ) throws IOException
     {
-        Buffer buffer = newBuffer();
         int offset = 0;
 
         if ( backBufferCursor > 0 )
         {   // Read from and reset back buffer
             assert backBufferCursor < chunkSize;
-            System.arraycopy( backBuffer, 0, buffer.data, 0, backBufferCursor );
+            System.arraycopy( backBuffer, 0, into.buffer, 0, backBufferCursor );
             offset += backBufferCursor;
             backBufferCursor = 0;
         }
 
         int leftToRead = chunkSize - offset;
-        int read = reader.read( buffer.data, offset, leftToRead );
+        int read = reader.read( into.buffer, offset, leftToRead );
         if ( read == leftToRead )
         {   // Read from reader. We read data into the whole buffer and there seems to be more data left in reader.
             // This means we're most likely not at the end so seek backwards to the last newline character and
             // put the characters after the newline character(s) into the back buffer.
-            int newlineOffset = offsetOfLastNewline( buffer.data );
+            int newlineOffset = offsetOfLastNewline( into.buffer );
             if ( newlineOffset > -1 )
             {   // We found a newline character some characters back
                 backBufferCursor = chunkSize - (newlineOffset + 1);
-                System.arraycopy( buffer.data, newlineOffset + 1, backBuffer( backBufferCursor ), 0, backBufferCursor );
+                System.arraycopy( into.buffer, newlineOffset + 1, backBuffer( backBufferCursor ), 0, backBufferCursor );
                 read -= backBufferCursor;
             }
             else
@@ -102,13 +92,14 @@ public class ProcessingSource implements Closeable
         }
         // else we couldn't completely fill the buffer, this means that we're at the end of a data source, we're good.
 
-        if ( read > -1 )
+        if ( read > 0 )
         {
             offset += read;
             position += read;
+            into.initialize( offset, reader.sourceDescription() );
+            return true;
         }
-
-        return new ProcessingChunk( buffer, offset, reader.sourceDescription() );
+        return false;
     }
 
     private char[] backBuffer( int length )
@@ -118,25 +109,6 @@ public class ProcessingSource implements Closeable
             backBuffer = Arrays.copyOf( backBuffer, length );
         }
         return backBuffer;
-    }
-
-    private Buffer newBuffer()
-    {
-        // Scan through the array to find one
-        for ( int i = 0; i < buffers.length(); i++ )
-        {
-            char[] current = buffers.get( i );
-            if ( current == UNALLOCATED || current != IN_USE )
-            {
-                // Mark that this buffer is currently being used
-                buffers.set( i, IN_USE );
-                return new Buffer( current == UNALLOCATED ? new char[chunkSize] : current, i );
-            }
-        }
-
-        // With external push-back this shouldn't be an issue, but instead of introducing blocking
-        // here just fall back to creating a new buffer which will not be eligible for reuse.
-        return new Buffer( new char[chunkSize], -1 );
     }
 
     @Override
@@ -162,15 +134,19 @@ public class ProcessingSource implements Closeable
         return -1;
     }
 
-    private class ProcessingChunk implements Chunk
+    public static class ProcessingChunk implements Chunk
     {
-        private final Buffer buffer;
-        private final int length;
-        private final String sourceDescription;
+        private final char[] buffer;
+        private int length;
+        private String sourceDescription;
 
-        ProcessingChunk( Buffer buffer, int length, String sourceDescription )
+        public ProcessingChunk( char[] buffer )
         {
             this.buffer = buffer;
+        }
+
+        void initialize( int length, String sourceDescription )
+        {
             this.length = length;
             this.sourceDescription = sourceDescription;
         }
@@ -190,7 +166,7 @@ public class ProcessingSource implements Closeable
         @Override
         public int maxFieldSize()
         {
-            return chunkSize;
+            return buffer.length;
         }
 
         @Override
@@ -202,36 +178,13 @@ public class ProcessingSource implements Closeable
         @Override
         public char[] data()
         {
-            return buffer.data;
+            return buffer;
         }
 
         @Override
         public int backPosition()
         {
             return 0;
-        }
-
-        @Override
-        public void close()
-        {
-            if ( buffer.reuseIndex != -1 )
-            {
-                // Give the buffer back to the source so that it can be reused
-                buffers.set( buffer.reuseIndex, buffer.data );
-            }
-            // else this was a detached buffer which we cannot really put back into a reuse slot
-        }
-    }
-
-    private static class Buffer
-    {
-        private final char[] data;
-        private final int reuseIndex;
-
-        Buffer( char[] data, int reuseIndex )
-        {
-            this.data = data;
-            this.reuseIndex = reuseIndex;
         }
     }
 }

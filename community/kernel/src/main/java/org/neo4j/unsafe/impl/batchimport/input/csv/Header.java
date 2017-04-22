@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 /**
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
@@ -182,6 +183,12 @@ public class Header implements Cloneable
                 return first == other;
             }
             return first.getClass().equals( other.getClass() );
+        }
+
+        public Group group()
+        {
+            // TODO
+            return Group.GLOBAL;
         }
     }
 }

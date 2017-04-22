@@ -22,13 +22,15 @@ package org.neo4j.tooling;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
@@ -53,7 +55,7 @@ public class CsvOutput implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        consume( "nodes.csv", input.nodes(), nodeHeader, (node) ->
+        Function<CachingInputEntityVisitor,String> deserializer = (entity) ->
         {
             deserialization.clear();
             for ( Header.Entry entry : nodeHeader.entries() )
@@ -61,69 +63,60 @@ public class CsvOutput implements BatchImporter
                 switch ( entry.type() )
                 {
                 case ID:
-                    deserialization.handle( entry, node.id() );
+                    deserialization.handle( entry, entity.hasLongId ? entity.longId : entity.stringId );
                     break;
                 case PROPERTY:
-                    deserialization.handle( entry, property( node, entry.name() ) );
+                    deserialization.handle( entry, property( entity.properties, entry.name() ) );
                     break;
                 case LABEL:
-                    deserialization.handle( entry, node.labels() );
-                    break;
-                default: // ignore other types
-                }
-            }
-            return deserialization.materialize();
-        } );
-        consume( "relationships.csv", input.relationships(), relationshipHeader, (relationship) ->
-        {
-            deserialization.clear();
-            for ( Header.Entry entry : relationshipHeader.entries() )
-            {
-                switch ( entry.type() )
-                {
-                case PROPERTY:
-                    deserialization.handle( entry, property( relationship, entry.name() ) );
+                    deserialization.handle( entry, entity.labels.toArray( new String[entity.labels.size()] ) );
                     break;
                 case TYPE:
-                    deserialization.handle( entry, relationship.type() );
+                    deserialization.handle( entry, entity.hasIntType ? entity.intType : entity.stringType );
                     break;
                 case START_ID:
-                    deserialization.handle( entry, relationship.startNode() );
+                    deserialization.handle( entry, entity.hasLongStartId ? entity.longStartId : entity.stringStartId );
                     break;
                 case END_ID:
-                    deserialization.handle( entry, relationship.endNode() );
+                    deserialization.handle( entry, entity.hasLongEndId ? entity.longEndId : entity.stringEndId );
                     break;
                 default: // ignore other types
                 }
             }
             return deserialization.materialize();
-        } );
+        };
+        consume( "nodes.csv", input.nodes(), nodeHeader, deserializer );
+        consume( "relationships.csv", input.relationships(), relationshipHeader, deserializer );
     }
 
-    private Object property( InputEntity entity, String key )
+    private Object property( List<Object> properties, String key )
     {
-        Object[] properties = entity.properties();
-        for ( int i = 0; i < properties.length; i += 2 )
+        for ( int i = 0; i < properties.size(); i += 2 )
         {
-            if ( properties[i].equals( key ) )
+            if ( properties.get( i ).equals( key ) )
             {
-                return properties[i + 1];
+                return properties.get( i + 1 );
             }
         }
         return null;
     }
 
-    private <ENTITY extends InputEntity> void consume( String name, InputIterable<ENTITY> entities, Header header,
-            Function<ENTITY,String> deserializer ) throws IOException
+    private void consume( String name, InputIterable entities, Header header,
+            Function<CachingInputEntityVisitor,String> deserializer ) throws IOException
     {
         try ( PrintStream out = file( name ) )
         {
             serialize( out, header );
-            try ( InputIterator<ENTITY> iterator = entities.iterator() )
+            try ( InputIterator iterator = entities.iterator();
+                    InputChunk chunk = iterator.newChunk() )
             {
-                while ( iterator.hasNext() )
+                CachingInputEntityVisitor visitor = new CachingInputEntityVisitor();
+                while ( iterator.next( chunk ) )
                 {
-                    out.println( deserializer.apply( iterator.next() ) );
+                    while ( chunk.next( visitor ) )
+                    {
+                        out.println( deserializer.apply( visitor ) );
+                    }
                 }
             }
         }

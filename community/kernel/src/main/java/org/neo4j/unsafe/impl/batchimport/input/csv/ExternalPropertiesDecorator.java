@@ -27,7 +27,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 
 /**
  * Pulls in properties from an external CSV source and amends them to the "main" input nodes.
@@ -52,7 +51,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_N
  * NOTE that order the input data (where we key on ID) is assumed to be the same, there are no checks
  * for trying to verify this constraint though.
  */
-public class ExternalPropertiesDecorator implements Decorator<InputNode>
+public class ExternalPropertiesDecorator implements Decorator
 {
     private final InputEntityDeserializer<InputNode> deserializer;
     private final UpdateBehaviour updateBehaviour;
@@ -62,7 +61,7 @@ public class ExternalPropertiesDecorator implements Decorator<InputNode>
      * @param headerFactory creates a {@link Header} that will specify which field is the {@link Type#ID id field}
      * and which properties to extract. All other should be {@link Type#IGNORE ignored}. I think.
      */
-    public ExternalPropertiesDecorator( DataFactory<InputNode> data, Header.Factory headerFactory,
+    public ExternalPropertiesDecorator( DataFactory data, Header.Factory headerFactory,
             Configuration config, IdType idType, UpdateBehaviour updateBehaviour, Collector badCollector )
     {
         this.updateBehaviour = updateBehaviour;

@@ -27,7 +27,6 @@ import java.util.List;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
@@ -36,6 +35,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.InputIdIterable;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.InputIds;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -264,7 +265,7 @@ public class EncodingIdMapper implements IdMapper
      * </ol>
      */
     @Override
-    public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
+    public void prepare( InputIdIterable ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
         trackerCache = trackerFactory.create( cacheFactory, highestSetIndex + 1 );
@@ -277,7 +278,7 @@ public class EncodingIdMapper implements IdMapper
             int numberOfCollisions = detectAndMarkCollisions( progress );
             if ( numberOfCollisions > 0 )
             {
-                try ( InputIterator<Object> idIterator = ids.iterator() )
+                try ( InputIds idIterator = ids.iterator() )
                 {
                     buildCollisionInfo( idIterator, numberOfCollisions, collector, progress );
                 }
@@ -445,7 +446,7 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
-    private void buildCollisionInfo( InputIterator<Object> ids, int numberOfCollisions,
+    private void buildCollisionInfo( InputIds ids, int numberOfCollisions,
             Collector collector, ProgressListener progress )
             throws InterruptedException
     {

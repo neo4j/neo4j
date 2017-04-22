@@ -33,7 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
  * @param <U> Type of underlying item to convert from
  */
 public abstract class SourceInputIterator<T,U>
-        implements InputIterator<T>
+        implements InputIterator
 {
     private final SourceTraceability source;
 
@@ -58,11 +58,5 @@ public abstract class SourceInputIterator<T,U>
     public long position()
     {
         return source.position();
-    }
-
-    @Override
-    public void remove()
-    {
-        throw new UnsupportedOperationException();
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -31,23 +29,18 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
  * Imports nodes and their properties and labels. Steps:
  * <ol>
- * <li>{@link InputIteratorBatcherStep} reading from {@link InputIterator} produced from {@link Input#nodes()}.</li>
- * <li>{@link InputEntityCacherStep} alternatively {@link InputCache caches} this input data
- * (all the {@link InputNode input nodes}) if the iterator doesn't support
- * {@link InputIterable#supportsMultiplePasses() multiple passes}.</li>
+ * <li>{@link InputReaderStep} reading from {@link InputIterator} produced from {@link Input#nodes()}.</li>
  * <li>{@link PropertyEncoderStep} encodes properties from {@link InputNode input nodes} into {@link PropertyBlock},
  * low level kernel encoded values.</li>
  * <li>{@link NodeEncoderStep} creates the {@link NodeRecord node records} and assigns label ids from input data.
@@ -64,19 +57,15 @@ public class NodeStage extends Stage
     private final NodeStore nodeStore;
 
     public NodeStage( Configuration config, IoMonitor writeMonitor,
-            InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-            BatchingNeoStores neoStore, InputCache inputCache, LabelScanStore labelScanStore,
+            InputIterable nodes, IdMapper idMapper, IdGenerator idGenerator,
+            BatchingNeoStores neoStore, LabelScanStore labelScanStore,
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
             NodeRelationshipCache cache,
-            StatsProvider memoryUsage ) throws IOException
+            StatsProvider memoryUsage )
     {
         super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
         this.cache = cache;
-        add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class, t -> true ) );
-        if ( !nodes.supportsMultiplePasses() )
-        {
-            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes( MAIN ) ) );
-        }
+        add( new InputReaderStep( control(), config, nodes.iterator() ) );
 
         nodeStore = neoStore.getNodeStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();

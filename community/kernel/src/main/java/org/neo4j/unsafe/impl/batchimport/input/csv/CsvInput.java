@@ -21,8 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -30,12 +31,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
-
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultRelationshipDeserializer;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -44,15 +39,14 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.
  */
 public class CsvInput implements Input
 {
-    private final Iterable<DataFactory<InputNode>> nodeDataFactory;
+    private final Iterable<DataFactory> nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
-    private final Iterable<DataFactory<InputRelationship>> relationshipDataFactory;
+    private final Iterable<DataFactory> relationshipDataFactory;
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
     private final Configuration config;
     private final Groups groups = new Groups();
     private final Collector badCollector;
-    private final int maxProcessors;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -66,14 +60,12 @@ public class CsvInput implements Input
      * @param idType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
      * @param badCollector Collector getting calls about bad input data.
-     * @param maxProcessors maximum number of processors in scenarios where multiple threads may parse CSV data.
      */
     public CsvInput(
-            Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
-            Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Collector badCollector, int maxProcessors )
+            Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
+            Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
+            IdType idType, Configuration config, Collector badCollector )
     {
-        this.maxProcessors = maxProcessors;
         assertSaneConfiguration( config );
 
         this.nodeDataFactory = nodeDataFactory;
@@ -104,39 +96,26 @@ public class CsvInput implements Input
     }
 
     @Override
-    public InputIterable<InputNode> nodes()
+    public InputIterable nodes()
     {
-        return new InputIterable<InputNode>()
-        {
-            @Override
-            public InputIterator<InputNode> iterator()
-            {
-                DeserializerFactory<InputNode> factory = defaultNodeDeserializer( groups, config, idType, badCollector );
-                return new InputGroupsDeserializer<>( nodeDataFactory.iterator(), nodeHeaderFactory, config,
-                        idType, maxProcessors, 1, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return stream( nodeDataFactory, nodeHeaderFactory );
     }
 
     @Override
-    public InputIterable<InputRelationship> relationships()
+    public InputIterable relationships()
     {
-        return new InputIterable<InputRelationship>()
+        return stream( relationshipDataFactory, relationshipHeaderFactory );
+    }
+
+    private InputIterable stream( Iterable<DataFactory> data, Header.Factory headerFactory )
+    {
+        return new InputIterable()
         {
             @Override
-            public InputIterator<InputRelationship> iterator()
+            public InputIterator iterator()
             {
-                DeserializerFactory<InputRelationship> factory =
-                        defaultRelationshipDeserializer( groups, config, idType, badCollector );
-                return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(), relationshipHeaderFactory,
-                        config, idType, maxProcessors, 1, factory, new InputRelationshipValidator(),
-                        InputRelationship.class );
+                assert !config.multilineFields() : "TODO: support multi-line fields too";
+                return new CsvInputIterator( data.iterator(), headerFactory, idType, config, badCollector );
             }
 
             @Override

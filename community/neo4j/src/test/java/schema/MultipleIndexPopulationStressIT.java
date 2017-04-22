@@ -70,7 +70,6 @@ import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -372,13 +371,13 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public InputIterable<InputRelationship> relationships()
+        public InputIterable relationships()
         {
             return SimpleInputIteratorWrapper.wrap( "Empty", Collections.emptyList() );
         }
 
         @Override
-        public InputIterable<InputNode> nodes()
+        public InputIterable nodes()
         {
             return SimpleInputIteratorWrapper.wrap( "Nodes", randomNodes( count ) );
         }

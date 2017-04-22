@@ -30,13 +30,11 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
@@ -61,17 +59,12 @@ public class RelationshipStage extends Stage
     private RelationshipTypeCheckerStep typer;
 
     public RelationshipStage( Configuration config, IoMonitor writeMonitor,
-            InputIterable<InputRelationship> relationships, IdMapper idMapper,
-            Collector badCollector, InputCache inputCache, NodeRelationshipCache cache,
+            InputIterable relationships, IdMapper idMapper,
+            Collector badCollector, NodeRelationshipCache cache,
             BatchingNeoStores neoStore, EntityStoreUpdaterStep.Monitor storeUpdateMonitor ) throws IOException
     {
         super( "Relationships", config, ORDER_SEND_DOWNSTREAM );
-        add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(),
-                InputRelationship.class, r -> true ) );
-        if ( !relationships.supportsMultiplePasses() )
-        {
-            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships( MAIN ) ) );
-        }
+        add( new InputReaderStep( control(), config, relationships.iterator() ) );
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();

@@ -52,9 +52,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputCache;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -69,9 +66,7 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -166,8 +161,7 @@ public class ParallelBatchImporter implements BatchImporter
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStores neoStore = getBatchingNeoStores();
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                    neoStore.getLastCommittedTransactionId() );
-              InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
+                    neoStore.getLastCommittedTransactionId() ) )
         {
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
@@ -176,23 +170,22 @@ public class ParallelBatchImporter implements BatchImporter
             IdGenerator idGenerator = input.idGenerator();
             nodeRelationshipCache = new NodeRelationshipCache( AUTO, config.denseNodeThreshold() );
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
-            InputIterable<InputNode> nodes = input.nodes();
-            InputIterable<InputRelationship> relationships = input.relationships();
-            InputIterable<InputNode> cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
+            InputIterable nodes = input.nodes();
+            InputIterable relationships = input.relationships();
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
 
             // Import nodes, properties, labels
             Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
-                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
+                    nodes, idMapper, idGenerator, neoStore, neoStore.getLabelScanStore(),
                     storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
             neoStore.startFlushingPageCache();
             executeStage( nodeStage );
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
-                executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
+                executeStage( new IdMapperPreparationStage( config, idMapper, null, // TODO
                         badCollector, memoryUsageStats ) );
                 PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
                 if ( duplicateNodeIds.hasNext() )
@@ -206,7 +199,7 @@ public class ParallelBatchImporter implements BatchImporter
                     configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             RelationshipStage unlinkedRelationshipStage =
                     new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                            badCollector, inputCache, nodeRelationshipCache, neoStore, storeUpdateMonitor );
+                            badCollector, nodeRelationshipCache, neoStore, storeUpdateMonitor );
             neoStore.startFlushingPageCache();
             executeStage( unlinkedRelationshipStage );
             neoStore.stopFlushingPageCache();

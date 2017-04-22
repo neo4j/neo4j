@@ -21,15 +21,14 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
  * Produces a {@link CharSeeker} that can seek and extract values from a csv/tsv style data stream.
  * A decorator also comes with it which can specify global overrides/defaults of extracted input entities.
  */
-public interface Data<ENTITY extends InputEntity>
+public interface Data
 {
     CharReadable stream();
 
-    Decorator<ENTITY> decorator();
+    Decorator decorator();
 }

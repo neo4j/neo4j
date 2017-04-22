@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
@@ -54,7 +53,7 @@ public class IdMappers
         }
 
         @Override
-        public void prepare( InputIterable<Object> nodeData, Collector collector, ProgressListener progress )
+        public void prepare( InputIdIterable ids, Collector collector, ProgressListener progress )
         {   // No need to prepare anything
         }
 

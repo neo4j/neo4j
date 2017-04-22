@@ -35,7 +35,7 @@ public interface Input
      *
      * @return an {@link InputIterable} which will provide all {@link InputNode input nodes} for the whole import.
      */
-    InputIterable<InputNode> nodes();
+    InputIterable nodes();
 
     /**
      * Provides all {@link InputRelationship input relationships} for an import. The returned
@@ -44,7 +44,7 @@ public interface Input
      * @return an {@link InputIterable} which will provide all {@link InputRelationship input relationships}
      * for the whole import.
      */
-    InputIterable<InputRelationship> relationships();
+    InputIterable relationships();
 
     /**
      * @return {@link IdMapper} which will get populated by {@link InputNode#id() input node ids}

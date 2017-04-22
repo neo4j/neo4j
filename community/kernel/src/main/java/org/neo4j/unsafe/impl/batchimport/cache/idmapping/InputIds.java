@@ -17,18 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-/**
- * {@link Iterable} that returns {@link InputIterator} instances.
- */
-public interface InputIterable
+import java.util.Iterator;
+
+import org.neo4j.csv.reader.SourceTraceability;
+import org.neo4j.graphdb.Resource;
+
+public interface InputIds extends Iterator<Object>, SourceTraceability, Resource
 {
-    InputIterator iterator();
-
-    /**
-     * @return whether or not multiple calls to {@link #iterator()} and therefore multiple passes
-     * over its data is supported.
-     */
-    boolean supportsMultiplePasses();
 }

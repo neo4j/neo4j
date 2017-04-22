@@ -19,40 +19,42 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
+
+import static java.lang.Long.min;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * An {@link InputIterable} backed by a {@link RecordStore}, iterating over all used records.
  *
- * @param <INPUT> type of {@link InputEntity}
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class StoreScanAsInputIterable<INPUT extends InputEntity,RECORD extends AbstractBaseRecord>
-        implements InputIterable<INPUT>
+abstract class StoreScanAsInputIterable<RECORD extends AbstractBaseRecord> implements InputIterable
 {
     private final RecordStore<RECORD> store;
-    private final RecordCursor<RECORD> cursor;
     private final StoreSourceTraceability traceability;
+    private final int batchSize;
 
     StoreScanAsInputIterable( RecordStore<RECORD> store )
     {
         this.store = store;
-        this.cursor = store.newRecordCursor( store.newRecord() );
         this.traceability = new StoreSourceTraceability( store.toString(), store.getRecordSize() );
+        this.batchSize = store.getRecordsPerPage() * 10;
     }
 
     @Override
-    public InputIterator<INPUT> iterator()
+    public InputIterator iterator()
     {
-        cursor.acquire( 0, CHECK );
-        return new InputIterator.Adapter<INPUT>()
+        return new InputIterator.Adapter()
         {
             private final long highId = store.getHighId();
             private long id;
@@ -76,29 +78,69 @@ abstract class StoreScanAsInputIterable<INPUT extends InputEntity,RECORD extends
             }
 
             @Override
-            public void close()
+            public InputChunk newChunk()
             {
-                cursor.close();
+                RecordCursor<RECORD> cursor = store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
+                return new StoreScanChunk( cursor );
             }
 
             @Override
-            protected INPUT fetchNextOrNull()
+            public synchronized boolean next( InputChunk chunk ) throws IOException
             {
-                while ( id < highId )
+                if ( id >= highId )
                 {
-                    if ( cursor.next( id++ ) )
-                    {
-                        RECORD record = cursor.get();
-                        traceability.atId( record.getId() );
-                        return inputEntityOf( record );
-                    }
+                    return false;
                 }
-                return null;
+                long startId = id;
+                id = min( highId, startId + batchSize );
+                ((StoreScanChunk)chunk).initialize( startId, id );
+                traceability.atId( startId );
+                return true;
             }
         };
     }
 
-    protected abstract INPUT inputEntityOf( RECORD record );
+    private class StoreScanChunk implements InputChunk
+    {
+        private final RecordCursor<RECORD> cursor;
+        private long id;
+        private long endId;
+
+        public StoreScanChunk( RecordCursor<RECORD> cursor )
+        {
+            this.cursor = cursor;
+        }
+
+        @Override
+        public boolean next( InputEntityVisitor visitor ) throws IOException
+        {
+            if ( id < endId )
+            {
+                if ( cursor.next( id ) )
+                {
+                    visitRecord( cursor.get(), visitor );
+                    visitor.endOfEntity();
+                }
+                id++;
+                return true;
+            }
+            return false;
+        }
+
+        public void initialize( long startId, long endId )
+        {
+            this.id = startId;
+            this.endId = endId;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            cursor.close();
+        }
+    }
+
+    protected abstract boolean visitRecord( RECORD record, InputEntityVisitor visitor );
 
     @Override
     public boolean supportsMultiplePasses()

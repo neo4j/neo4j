@@ -42,6 +42,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
@@ -105,7 +106,10 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
@@ -454,9 +458,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat );
-            InputIterable<InputNode> nodes =
-                    legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
-            InputIterable<InputRelationship> relationships =
+            InputIterable nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
+            InputIterable relationships =
                     legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
@@ -641,45 +644,44 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 config, progressMonitor );
     }
 
-    private InputIterable<InputRelationship> legacyRelationshipsAsInput( NeoStores legacyStore,
+    private InputIterable legacyRelationshipsAsInput( NeoStores legacyStore,
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
         final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
-        return new StoreScanAsInputIterable<InputRelationship,RelationshipRecord>( store )
+        return new StoreScanAsInputIterable<RelationshipRecord>( store )
         {
             @Override
-            protected InputRelationship inputEntityOf( RelationshipRecord record )
+            protected boolean visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
             {
-                InputRelationship result = new InputRelationship(
-                        "legacy store", record.getId(), record.getId() * RelationshipRecordFormat.RECORD_SIZE,
-                        InputEntity.NO_PROPERTIES, record.getNextProp(),
-                        record.getFirstNode(), record.getSecondNode(), null, record.getType() );
-                propertyDecorator.accept( result, record );
-                return result;
+                visitor.startId( record.getFirstNode(), Group.GLOBAL );
+                visitor.endId( record.getSecondNode(), Group.GLOBAL );
+                visitor.type( record.getType() );
+                visitor.propertyId( record.getNextProp() );
+                // TODO visit properties too if needed
+                return true;
             }
         };
     }
 
-    private InputIterable<InputNode> legacyNodesAsInput( NeoStores legacyStore,
+    private InputIterable legacyNodesAsInput( NeoStores legacyStore,
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         NodeStore store = legacyStore.getNodeStore();
         final BiConsumer<InputNode,NodeRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
 
-        return new StoreScanAsInputIterable<InputNode,NodeRecord>( store )
+        return new StoreScanAsInputIterable<NodeRecord>( store )
         {
             @Override
-            protected InputNode inputEntityOf( NodeRecord record )
+            protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )
             {
-                InputNode node = new InputNode(
-                        "legacy store", record.getId(), record.getId() * NodeRecordFormat.RECORD_SIZE,
-                        record.getId(), InputEntity.NO_PROPERTIES, record.getNextProp(),
-                        InputNode.NO_LABELS, record.getLabelField() );
-                propertyDecorator.accept( node, record );
-                return node;
+                visitor.id( record.getId(), Group.GLOBAL );
+                visitor.propertyId( record.getNextProp() );
+                visitor.labelField( record.getLabelField() );
+                // TODO visit properties too if needed
+                return false;
             }
         };
     }

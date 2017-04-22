@@ -25,14 +25,16 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 /**
  * Crude implementation of an {@link InputIterator}.
  */
-public abstract class SimpleInputIterator<T> extends PrefetchingResourceIterator<T> implements InputIterator<T>
+public abstract class SimpleInputIterator extends PrefetchingResourceIterator<InputChunk> implements InputIterator
 {
     protected final String sourceDescription;
+    protected final int batchSize;
     protected int itemNumber;
 
-    public SimpleInputIterator( String sourceDescription )
+    public SimpleInputIterator( String sourceDescription, int batchSize )
     {
         this.sourceDescription = sourceDescription;
+        this.batchSize = batchSize;
     }
 
     @Override
@@ -41,10 +43,10 @@ public abstract class SimpleInputIterator<T> extends PrefetchingResourceIterator
     }
 
     @Override
-    public T next()
+    public InputChunk next()
     {
-        T result = super.next();
-        itemNumber++;
+        InputChunk result = super.next();
+        itemNumber += batchSize;
         return result;
     }
 

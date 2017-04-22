@@ -37,10 +37,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
@@ -57,7 +54,7 @@ public class DataFactories
      *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
-    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Decorator<ENTITY> decorator,
+    public static DataFactory data( final Decorator decorator,
             final Charset charset, final File... files )
     {
         if ( files.length == 0 )
@@ -65,7 +62,7 @@ public class DataFactories
             throw new IllegalArgumentException( "No files specified" );
         }
 
-        return config -> new Data<ENTITY>()
+        return config -> new Data()
         {
             @Override
             public CharReadable stream()
@@ -81,7 +78,7 @@ public class DataFactories
             }
 
             @Override
-            public Decorator<ENTITY> decorator()
+            public Decorator decorator()
             {
                 return decorator;
             }
@@ -93,10 +90,10 @@ public class DataFactories
      * multiple times.
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
-    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Decorator<ENTITY> decorator,
+    public static DataFactory data( final Decorator decorator,
             final Supplier<CharReadable> readable )
     {
-        return config -> new Data<ENTITY>()
+        return config -> new Data()
         {
             @Override
             public CharReadable stream()
@@ -105,7 +102,7 @@ public class DataFactories
             }
 
             @Override
-            public Decorator<ENTITY> decorator()
+            public Decorator decorator()
             {
                 return decorator;
             }
@@ -366,13 +363,7 @@ public class DataFactories
     }
 
     @SafeVarargs
-    public static Iterable<DataFactory<InputNode>> nodeData( DataFactory<InputNode>... factories )
-    {
-        return Iterables.iterable( factories );
-    }
-
-    @SafeVarargs
-    public static Iterable<DataFactory<InputRelationship>> relationshipData( DataFactory<InputRelationship>... factories )
+    public static Iterable<DataFactory> datas( DataFactory... factories )
     {
         return Iterables.iterable( factories );
     }

@@ -80,11 +80,6 @@ public class AutoReadingSource implements Source
             {
                 return charBuffer.array();
             }
-
-            @Override
-            public void close()
-            {   // Nothing to close
-            }
         };
     }
 

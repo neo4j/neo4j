@@ -60,6 +60,11 @@ public interface CharReadable extends Closeable, SourceTraceability
      * Reads characters into the given array starting at {@code offset}, reading {@code length} number of characters.
      *
      * Similar to {@link Reader#read(char[], int, int)}
+     * @param into char[] to read the data into.
+     * @param offset offset to start reading into the char[].
+     * @param length number of bytes to read maxuimum.
+     * @return number of bytes read, or 0 if there were no bytes read and end of readable is reached.
+     * @throws IOException on read error.
      */
     int read( char[] into, int offset, int length ) throws IOException;
 

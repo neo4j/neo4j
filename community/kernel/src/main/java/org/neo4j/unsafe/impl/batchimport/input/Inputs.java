@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
-
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -29,30 +28,29 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.nio.charset.Charset.defaultCharset;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_RELATIONSHIP_DECORATOR;
+
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 public class Inputs
 {
     public static Input input(
-            final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
+            final InputIterable nodes, final InputIterable relationships,
             final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector )
     {
         return new Input()
         {
             @Override
-            public InputIterable<InputRelationship> relationships()
+            public InputIterable relationships()
             {
                 return relationships;
             }
 
             @Override
-            public InputIterable<InputNode> nodes()
+            public InputIterable nodes()
             {
                 return nodes;
             }
@@ -78,12 +76,13 @@ public class Inputs
     }
 
     public static Input csv( File nodes, File relationships, IdType idType,
-            Configuration configuration, Collector badCollector, int maxProcessors )
+            Configuration configuration, Collector badCollector )
     {
         return new CsvInput(
-                nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
-                relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
+                datas( data( NO_DECORATOR, defaultCharset(), nodes ) ),
+                defaultFormatNodeFileHeader(),
+                datas( data( NO_DECORATOR, defaultCharset(), relationships ) ),
                 defaultFormatRelationshipFileHeader(), idType, configuration,
-                badCollector, maxProcessors );
+                badCollector );
     }
 }

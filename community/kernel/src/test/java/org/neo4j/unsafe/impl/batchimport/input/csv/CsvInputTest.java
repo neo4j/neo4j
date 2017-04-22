@@ -635,7 +635,7 @@ public class CsvInputTest
     public void shouldIncludeDataSourceInformationOnBadFieldValueOrLine() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.datas( CsvInputTest.<InputNode>data(
                 ":ID,name,other:int\n" +
                 "1,Mattias,10\n" +
                 "2,Johan,abc\n" +
@@ -665,7 +665,7 @@ public class CsvInputTest
     public void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.datas( CsvInputTest.<InputNode>data(
                 ":ID,name:IGNORE,other:int,:LABEL\n" +
                 "1,Mattias,10,Person\n" +
                 "2,Johan,111,Person\n" +
@@ -711,7 +711,7 @@ public class CsvInputTest
         // GIVEN
         RuntimeException failure = new RuntimeException( "FAILURE" );
         Iterable<DataFactory<InputNode>> data =
-                DataFactories.nodeData( CsvInputTest.<InputNode>data( ":ID,name\n1,Mattias",
+                DataFactories.datas( CsvInputTest.<InputNode>data( ":ID,name\n1,Mattias",
                         new FailingNodeDecorator( failure ) ) );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors() );
@@ -732,7 +732,7 @@ public class CsvInputTest
     public void shouldNotIncludeEmptyArraysInEntities() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.datas( CsvInputTest.<InputNode>data(
                 ":ID,sprop:String[],lprop:long[]\n" +
                 "1,,\n" +
                 "2,a;b,10;20"
@@ -800,7 +800,7 @@ public class CsvInputTest
     public void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.datas( CsvInputTest.<InputNode>data(
                 ":ID,one,two,three\n" +
                 "1,\"\",,value" ) );
         Configuration config = config( new Configuration.Overridden( COMMAS )
@@ -828,7 +828,7 @@ public class CsvInputTest
     public void shouldIgnoreEmptyExtraColumns() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.datas( CsvInputTest.<InputNode>data(
                 ":ID,one\n" +
                 "1,test,\n" +
                 "2,test,,additional" ) );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.csv.reader.SourceTraceability;
@@ -28,28 +29,28 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 /**
  * Makes an {@link Iterator} provide {@link SourceTraceability source information}.
  */
-public class SimpleInputIteratorWrapper<T> extends SimpleInputIterator<T>
+public class SimpleInputIteratorWrapper extends SimpleInputIterator
 {
-    private final Iterator<T> source;
+    private final Iterator<InputChunk> source;
 
-    public SimpleInputIteratorWrapper( String sourceDescription, Iterator<T> source )
+    public SimpleInputIteratorWrapper( String sourceDescription, int batchSize, Iterator<InputChunk> source )
     {
-        super( sourceDescription );
+        super( sourceDescription, batchSize );
         this.source = source;
     }
 
     @Override
-    protected T fetchNextOrNull()
+    protected InputChunk fetchNextOrNull()
     {
         return source.hasNext() ? source.next() : null;
     }
 
-    public static <T> InputIterable<T> wrap( final String sourceDescription, final Iterable<T> source )
+    public static InputIterable wrap( final String sourceDescription, final Iterable<InputChunk> source )
     {
-        return new InputIterable<T>()
+        return new InputIterable()
         {
             @Override
-            public InputIterator<T> iterator()
+            public InputIterator iterator()
             {
                 return new SimpleInputIteratorWrapper<>( sourceDescription, source.iterator() );
             }
@@ -60,5 +61,17 @@ public class SimpleInputIteratorWrapper<T> extends SimpleInputIterator<T>
                 return true;
             }
         };
+    }
+
+    @Override
+    public InputChunk newChunk()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean next( InputChunk chunk ) throws IOException
+    {
+        return source.hasNext() ? source.next() : null;
     }
 }

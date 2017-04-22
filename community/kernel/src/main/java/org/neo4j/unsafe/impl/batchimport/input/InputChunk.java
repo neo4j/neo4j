@@ -19,14 +19,24 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-/**
- * Listener which is designed to receive one or more items, to then finally be closed
- * when all items have been received.
- */
-public interface Receiver<T,EXCEPTION extends Exception> extends AutoCloseable
-{
-    void receive( T item ) throws EXCEPTION;
+import java.io.Closeable;
+import java.io.IOException;
 
-    @Override
-    void close() throws EXCEPTION;
+public interface InputChunk extends Closeable
+{
+    InputChunk EMPTY = new InputChunk()
+    {
+        @Override
+        public boolean next( InputEntityVisitor visitor ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
+    };
+
+    boolean next( InputEntityVisitor visitor ) throws IOException;
 }
