@@ -45,6 +45,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
@@ -102,6 +103,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
                 .uniqueIndex()
                 .withWriterConfig( configFactory )
                 .withIndexRootFolder( directory )
+                .withDirectoryFactory( new DirectoryFactory.InMemoryDirectoryFactory() )
                 .withIndexIdentifier( "index" )
                 .build();
 
