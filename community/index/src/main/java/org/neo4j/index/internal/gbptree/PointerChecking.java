@@ -28,9 +28,8 @@ class PointerChecking
 {
     static final String WRITER_TRAVERSE_OLD_STATE_MESSAGE =
                     "Writer traversed to a tree node that has a valid successor, " +
-                    "meaning writer will not act on latest version of the tree. This is not allowed. " +
                     "This is most likely due to failure to checkpoint the tree before shutdown and/or tree state " +
-                    "being out of date. Make a safety copy of tree file and delete.";
+                    "being out of date.";
 
     /**
      * Checks a read pointer for success/failure and throws appropriate exception with failure information
