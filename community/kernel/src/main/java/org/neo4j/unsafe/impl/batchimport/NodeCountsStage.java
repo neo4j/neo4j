@@ -40,7 +40,7 @@ public class NodeCountsStage extends Stage
     {
         super( "Node counts", config );
         add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, nodeStore ) );
+        add( new ReadRecordsStep<>( control(), config, false, nodeStore, null ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater ), true, additionalStatsProviders ) );
     }

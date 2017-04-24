@@ -41,12 +41,11 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class SparseNodeFirstRelationshipStage extends Stage
 {
-    public SparseNodeFirstRelationshipStage( String topic, Configuration config, NodeStore nodeStore,
-            NodeRelationshipCache cache )
+    public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache )
     {
-        super( "Node --> Relationship" + topic, config, ORDER_SEND_DOWNSTREAM );
+        super( "Node --> Relationship", config, ORDER_SEND_DOWNSTREAM );
         add( new ReadNodeIdsByCacheStep( control(), config, cache, NodeType.NODE_TYPE_SPARSE ) );
-        add( new ReadRecordsStep<>( control(), config, true, nodeStore ) );
+        add( new ReadRecordsStep<>( control(), config, true, nodeStore, null ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new SparseNodeFirstRelationshipProcessor( cache ), false ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );

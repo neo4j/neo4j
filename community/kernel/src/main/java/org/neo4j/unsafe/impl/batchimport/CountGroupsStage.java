@@ -44,7 +44,7 @@ public class CountGroupsStage extends Stage
     {
         super( "Count groups", config );
         add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store ) );
+        add( new ReadRecordsStep<>( control(), config, false, store, null ) );
         add( new CountGroupsStep( control(), config, groupCache ) );
     }
 }
