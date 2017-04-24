@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 class PointerChecking
 {
     static final String WRITER_TRAVERSE_OLD_STATE_MESSAGE =
-            "Writer traversed to a tree node that has a valid successor, " +
+                    "Writer traversed to a tree node that has a valid successor, " +
                     "This is most likely due to failure to checkpoint the tree before shutdown and/or tree state " +
                     "being out of date.";
 
