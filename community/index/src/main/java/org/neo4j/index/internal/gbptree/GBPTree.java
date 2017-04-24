@@ -937,7 +937,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
         private long stableGeneration;
         private long unstableGeneration;
 
-
         SingleWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
             this.structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
