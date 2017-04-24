@@ -63,7 +63,7 @@ public abstract class DefinedProperty extends Property
         }
 
         @Override
-        boolean hasEqualValue( DefinedProperty that )
+        public boolean hasEqualValue( DefinedProperty that )
         {
             return false;
         }
@@ -146,7 +146,7 @@ public abstract class DefinedProperty extends Property
     public abstract int valueHash();
 
     /** We never pass {@link LazyProperty} to this method, since we check for it in {@link #equals(Object)}. */
-    abstract boolean hasEqualValue( DefinedProperty that );
+    public abstract boolean hasEqualValue( DefinedProperty that );
 
     @Override
     public String valueAsString()

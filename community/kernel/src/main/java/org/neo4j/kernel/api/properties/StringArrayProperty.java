@@ -88,7 +88,7 @@ class StringArrayProperty extends DefinedProperty
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty other )
+    public boolean hasEqualValue( DefinedProperty other )
     {
         if ( other instanceof StringArrayProperty )
         {

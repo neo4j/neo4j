@@ -54,7 +54,7 @@ abstract class FloatingPointNumberProperty extends NumberProperty
     }
 
     @Override
-    final boolean hasEqualValue( DefinedProperty other )
+    public final boolean hasEqualValue( DefinedProperty other )
     {
         if ( other instanceof FloatingPointNumberProperty )
         {

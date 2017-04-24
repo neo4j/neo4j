@@ -99,7 +99,7 @@ abstract class IntegralArrayProperty extends DefinedProperty implements ArrayVal
     }
 
     @Override
-    final boolean hasEqualValue( DefinedProperty other )
+    public final boolean hasEqualValue( DefinedProperty other )
     {
         if ( other instanceof IntegralArrayProperty )
         {
