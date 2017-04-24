@@ -62,7 +62,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
       } else {
         if (input.hasNext) {
           context = input.next()
-          unwindIterator = makeTraversable(collection(context)(state)).iterator
+          unwindIterator = makeTraversableNull(collection(context)(state)).iterator
           prefetch()
         }
       }

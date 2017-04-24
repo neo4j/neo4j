@@ -84,6 +84,8 @@ trait ListSupport {
     if (z == null) Iterable() else Iterable(z)
   }
 
+  def makeTraversableNull(z: Any): Iterable[Any] = if (isList(z)) { castToIterable(z) } else Iterable(z)
+
   protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
     case x: Array[_]        => x
     case x: Map[_, _]       => Iterable(x)
