@@ -32,6 +32,9 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -130,5 +133,22 @@ public class TopLevelTransactionTest
             assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
             assertSame( error, e.getCause() );
         }
+    }
+
+    @Test
+    public void shouldReturnTerminationReason()
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.getReasonIfTerminated() ).thenReturn( null )
+                .thenReturn( Status.Transaction.Terminated );
+
+        TopLevelTransaction tx = new TopLevelTransaction( kernelTransaction, new ThreadToStatementContextBridge() );
+
+        Status terminationReason1 = tx.terminationReason();
+        Status terminationReason2 = tx.terminationReason();
+
+        assertNull( terminationReason1 );
+        assertNotNull( terminationReason2 );
+        assertEquals( Status.Transaction.Terminated, terminationReason2 );
     }
 }
