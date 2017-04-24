@@ -43,6 +43,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
@@ -76,7 +77,8 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false, new Monitors() );
+                    new NativeLabelScanStore( pageCache, storeDir, THROWING_STREAM, false, new Monitors(),
+                            IMMEDIATE );
 
             nativeLabelScanStore.init();
             nativeLabelScanStore.start();
@@ -95,7 +97,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, monitors );
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, false, monitors, IMMEDIATE );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -118,7 +120,7 @@ public class NativeLabelScanStoreRebuildTest
         try
         {
             nativeLabelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, changeStream, false, new Monitors() );
+                    new NativeLabelScanStore( pageCache, storeDir, changeStream, false, new Monitors(), IMMEDIATE );
             nativeLabelScanStore.init();
 
             // when

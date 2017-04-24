@@ -91,6 +91,9 @@ public class RecoveryCleanupWorkCollectorIT
                 fillWithData( tree, keysPerTree );
                 writeTime += System.nanoTime() - start;
                 tree.checkpoint( IOLimiter.unlimited() );
+
+                // Make dirty
+                tree.writer().close();
             }
         }
 
@@ -99,8 +102,6 @@ public class RecoveryCleanupWorkCollectorIT
         for ( int i = 0; i < numberOfTrees; i++ )
         {
             trees[i] = gbpTree( file[i] );
-            trees[i].prepareForRecovery();
-            trees[i].finishRecovery();
         }
         recoveryCleanupWorkCollector.run();
         IOUtils.closeAll( trees );
@@ -139,7 +140,7 @@ public class RecoveryCleanupWorkCollectorIT
         AtomicLong accumulatedNumberOfPages = new AtomicLong();
 
         @Override
-        public void recoveryCompleted( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
                 long durationMillis )
         {
             accumulatedCleanTime.accumulateAndGet( durationMillis, ADD );
