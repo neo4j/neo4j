@@ -39,6 +39,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
     private final RecordCursor<PropertyRecord> recordCursor;
 
     protected boolean fetched;
+    private boolean doneTraversingTheChain;
     private DefinedProperty property;
     private IntPredicate propertyKeyIds;
     private Lock lock;
@@ -68,7 +69,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
     private boolean fetchNext()
     {
         property = null;
-        while ( loadNextFromDisk() )
+        while ( !doneTraversingTheChain && loadNextFromDisk() )
         {
             // Are there more properties to return for this current record we're at?
             if ( payloadHasNext() )
@@ -89,7 +90,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
             else if ( Record.NO_NEXT_PROPERTY.is( recordCursor.get().getNextProp() ) )
             {
                 // No more records in this chain, i.e. no more properties.
-                break;
+                doneTraversingTheChain = true;
             }
 
             // Sort of alright, this record isn't in use, but could just be due to concurrent delete.
@@ -126,7 +127,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
     {
         if ( !fetched )
         {
-            throw new IllegalStateException();
+            throw new IllegalStateException( "No property has been fetched!" );
         }
 
         return this;
@@ -150,6 +151,7 @@ public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem
         try
         {
             fetched = false;
+            doneTraversingTheChain = false;
             payload.close();
             propertyKeyIds = null;
             property = null;
