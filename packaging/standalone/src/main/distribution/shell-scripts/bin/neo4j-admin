@@ -37,7 +37,7 @@ main() {
   build_classpath
   setup_java_opts
   export NEO4J_HOME NEO4J_CONF
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" "${JAVA_OPTS[@]:-}" -Dfile.encoding=UTF-8 "org.neo4j.commandline.admin.AdminTool" "$@"
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" ${JAVA_OPTS[@]:-} -Dfile.encoding=UTF-8 "org.neo4j.commandline.admin.AdminTool" "$@"
 }
 
 main "$@"
