@@ -27,6 +27,22 @@ import static java.lang.String.format;
 public class InFlightMap<V>
 {
     private final SortedMap<Long,V> map = new ConcurrentSkipListMap<>();
+    private volatile boolean enabled;
+
+    public InFlightMap()
+    {
+        this ( false );
+    }
+
+    public InFlightMap( boolean enabled )
+    {
+        this.enabled = enabled;
+    }
+
+    public void enable()
+    {
+        this.enabled = true;
+    }
 
     /**
      * Adds a new mapping.
@@ -37,6 +53,11 @@ public class InFlightMap<V>
      */
     public void put( Long key, V value )
     {
+        if ( !enabled )
+        {
+            return;
+        }
+
         V previousValue = map.putIfAbsent( key, value );
 
         if ( previousValue != null )

@@ -79,7 +79,7 @@ public class ElectionTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 
@@ -112,7 +112,7 @@ public class ElectionTest
 
         raft.installCoreState(
                 new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 ) ) ));
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( RaftMachine.Timeouts.ELECTION );
 

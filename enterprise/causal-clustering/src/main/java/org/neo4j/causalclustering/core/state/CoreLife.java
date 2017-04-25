@@ -81,7 +81,7 @@ public class CoreLife implements Lifecycle
         localDatabase.start();
         coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
         applicationProcess.start();
-        raftMachine.startTimers();
+        raftMachine.postRecoveryActions();
     }
 
     @Override
