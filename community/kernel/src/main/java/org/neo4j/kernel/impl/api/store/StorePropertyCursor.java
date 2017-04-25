@@ -48,7 +48,6 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
 
     public StorePropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
     {
-        fromDisk = true;
         storagePropertyIterator = state == null ? null : state.addedProperties();
         initialize( ALWAYS_TRUE_INT, firstPropertyId, lock, state );
         return this;
@@ -57,13 +56,12 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
     @Override
     protected boolean loadNextFromDisk()
     {
-        return fromDisk;
+        return true;
     }
 
     @Override
     protected DefinedProperty nextAdded()
     {
-        fromDisk = false;
         if ( storagePropertyIterator != null )
         {
             if ( storagePropertyIterator.hasNext() )

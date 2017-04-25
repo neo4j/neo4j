@@ -87,7 +87,7 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     @Override
     public boolean next()
     {
-        clearCurrentState();
+        clearCurrentNodeState();
         if ( nodeId == StatementConstants.NO_SUCH_NODE )
         {
             return false;
@@ -130,13 +130,13 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     public void close()
     {
         state = null;
-        clearCurrentState();
+        clearCurrentNodeState();
         fetched = false;
         nodeRecord.clear();
         instanceCache.accept( this );
     }
 
-    private void clearCurrentState()
+    private void clearCurrentNodeState()
     {
         labels = null;
         nodeState = null;

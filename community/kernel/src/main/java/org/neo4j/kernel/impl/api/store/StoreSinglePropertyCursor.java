@@ -48,7 +48,15 @@ public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
     @Override
     protected boolean loadNextFromDisk()
     {
-        return !fetched && (state == null || state.getAddedProperty( propertyKeyId ) == null);
+        // no if we have already fetched the property
+        if ( fetched )
+        {
+            return false;
+        }
+
+        // go to disk either if there is no state
+        // or if there is a state such state does not contain the keyId we are looking for
+        return state == null || state.getAddedProperty( propertyKeyId ) == null;
     }
 
     @Override
