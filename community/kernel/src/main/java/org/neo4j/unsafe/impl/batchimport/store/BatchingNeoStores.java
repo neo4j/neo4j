@@ -60,6 +60,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
@@ -78,7 +79,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_C
  * Creator and accessor of {@link NeoStores} with some logic to provide very batch friendly services to the
  * {@link NeoStores} when instantiating it. Different services for specific purposes.
  */
-public class BatchingNeoStores implements AutoCloseable
+public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visitable
 {
     private final FileSystemAbstraction fileSystem;
     private final BatchingPropertyKeyTokenRepository propertyKeyRepository;
@@ -349,5 +350,11 @@ public class BatchingNeoStores implements AutoCloseable
             flusher.halt();
             flusher = null;
         }
+    }
+
+    @Override
+    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+    {
+        visitor.offHeapUsage( (long) pageCache.maxCachedPages() * pageCache.pageSize() );
     }
 }

@@ -209,12 +209,12 @@ public class ParallelBatchImporter implements BatchImporter
             executeStage( unlinkedRelationshipStage );
             neoStore.stopFlushingPageCache();
 
-            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, idMapper );
+            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
             linkRelationships( nodeRelationshipCache, neoStore, unlinkedRelationshipStage.getDistribution(),
                     availableMemory );
 
             // Release this potentially really big piece of cached data
-            long peakMemoryUsage = totalMemoryUsageOf( idMapper, nodeRelationshipCache );
+            long peakMemoryUsage = totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
             long highNodeId = nodeRelationshipCache.getHighNodeId();
             idMapper.close();
             idMapper = null;
