@@ -178,7 +178,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
                 throw new IllegalStateException("Cannot call " + name + "() after index has been closed" );
         }
         else
-            throw new IllegalStateException("Cannot call " + name + "() before index has been started" );
+            throw new IllegalStateException("Cannot call " + name + "() when index state is " + state.get() );
     }
 
     private void ensureNoOpenCalls(String name)
