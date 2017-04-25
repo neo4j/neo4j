@@ -35,6 +35,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.MultiMap;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.state.RefuseToBeLeaderStrategy;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
-
 import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
@@ -162,7 +162,7 @@ public class HazelcastClusterTopology
     private static boolean canBeBootstrapped( HazelcastInstance hazelcastInstance, Config config )
     {
         Set<Member> members = hazelcastInstance.getCluster().getMembers();
-        Boolean refuseToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
+        Boolean refuseToBeLeader = RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config );
 
         if ( refuseToBeLeader )
         {
@@ -248,7 +248,7 @@ public class HazelcastClusterTopology
         memberAttributeConfig.setStringAttribute( CLIENT_CONNECTOR_ADDRESSES, clientConnectorAddresses.toString() );
 
         memberAttributeConfig.setBooleanAttribute( REFUSE_TO_BE_LEADER_KEY,
-                config.get( CausalClusteringSettings.refuse_to_be_leader ) );
+                RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config )  );
 
         return memberAttributeConfig;
     }
