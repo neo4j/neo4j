@@ -91,7 +91,7 @@ public class RaftTestFixture
         {
             member.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
             member.raftInstance().installCoreState( new RaftCoreState( new MembershipEntry( 0,  asSet( members )) ) );
-            member.raftInstance().startTimers();
+            member.raftInstance().postRecoveryActions();
         }
     }
 

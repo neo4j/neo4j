@@ -81,7 +81,7 @@ public class CommandApplicationProcessTest
     private final int flushEvery = 10;
     private final int batchSize = 16;
 
-    private InFlightMap<RaftLogEntry> inFlightMap = spy( new InFlightMap<>() );
+    private InFlightMap<RaftLogEntry> inFlightMap = spy( new InFlightMap<>( true ) );
     private final Monitors monitors = new Monitors();
     private CoreState coreState = mock( CoreState.class );
     private final CommandApplicationProcess applicationProcess = new CommandApplicationProcess(
