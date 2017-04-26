@@ -104,12 +104,13 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
-import static org.neo4j.function.Predicates.any;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
@@ -118,19 +119,13 @@ import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
-import static org.neo4j.kernel.impl.util.Cursors.empty;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.storageengine.api.NodeItem.transientNode;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
-public class StateHandlingStatementOperations implements
-        KeyReadOperations,
-        KeyWriteOperations,
-        EntityOperations,
-        SchemaReadOperations,
-        SchemaWriteOperations,
-        CountsOperations,
-        LegacyIndexReadOperations,
-        LegacyIndexWriteOperations
+public class StateHandlingStatementOperations
+        implements KeyReadOperations, KeyWriteOperations, EntityOperations, SchemaReadOperations, SchemaWriteOperations,
+        CountsOperations, LegacyIndexReadOperations, LegacyIndexWriteOperations
 {
     private final StoreReadLayer storeLayer;
     private final AutoIndexing autoIndexing;
@@ -138,10 +133,8 @@ public class StateHandlingStatementOperations implements
     private final LegacyIndexStore legacyIndexStore;
     private final IndexTxStateUpdater indexTxStateUpdater;
 
-    public StateHandlingStatementOperations(
-            StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
-            ConstraintIndexCreator constraintIndexCreator,
-            LegacyIndexStore legacyIndexStore )
+    public StateHandlingStatementOperations( StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
+            ConstraintIndexCreator constraintIndexCreator, LegacyIndexStore legacyIndexStore )
     {
         this.storeLayer = storeLayer;
         this.autoIndexing = propertyTrackers;
@@ -166,12 +159,8 @@ public class StateHandlingStatementOperations implements
 
     private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
-        Cursor<NodeItem> cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentSingleNodeCursor( cursor, nodeId );
-        }
-        return cursor;
+        TransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return statement.getStoreStatement().acquireSingleNodeCursor( nodeId, state );
     }
 
     @Override
@@ -189,84 +178,49 @@ public class StateHandlingStatementOperations implements
 
     private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
-        Cursor<RelationshipItem> cursor =
-                statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId );
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
-        }
-        return cursor;
+        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId, state );
     }
 
     @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
-        Cursor<RelationshipItem> cursor = statement.getStoreStatement().relationshipsGetAllCursor();
-        if ( statement.hasTxStateWithChanges() )
-        {
-            return statement.txState().augmentRelationshipsGetAllCursor( cursor );
-        }
-        return cursor;
+        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return statement.getStoreStatement().relationshipsGetAllCursor( state );
     }
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
             Direction direction )
     {
-        Cursor<RelationshipItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        final long id = node.id();
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( id ) )
         {
-            cursor = empty();
+            node = transientNode( id );
         }
-        else
-        {
-            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction );
-        }
-        if ( !statement.hasTxStateWithChanges() )
-        {
-            return cursor;
-        }
-        NodeState nodeState = statement.txState().getNodeState( node.id() );
-        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction );
+
+        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, state );
     }
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
             int[] relTypes )
     {
-        Cursor<RelationshipItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
+        final long id = node.id();
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( id ) )
         {
-            cursor = empty();
+            node = transientNode( id );
         }
-        else
-        {
-            cursor = storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, any( relTypes ) );
-        }
-        if ( !statement.hasTxStateWithChanges() )
-        {
-            return cursor;
-        }
-        NodeState nodeState = statement.txState().getNodeState( node.id() );
-        return statement.txState().augmentNodeRelationshipCursor( cursor, nodeState, direction, relTypes );
+        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
+        return storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, relTypes, state );
     }
 
     @Override
     public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
     {
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.nodeGetProperties( statement.getStoreStatement(), node );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState().augmentPropertyCursor( cursor, statement.txState().getNodeState( node.id() ) )
-               : cursor;
+        NodeState state = statement.hasTxStateWithChanges() ? statement.txState().getNodeState( node.id() ) : null;
+        return storeLayer.nodeGetProperties( statement.getStoreStatement(), node, state );
     }
 
     @Override
@@ -313,40 +267,17 @@ public class StateHandlingStatementOperations implements
 
     private Cursor<PropertyItem> nodeGetPropertyCursor( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
-
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState().augmentSinglePropertyCursor(
-                       cursor, statement.txState().getNodeState( node.id() ), propertyKeyId )
-               : cursor;
+        NodeState state = statement.hasTxStateWithChanges() ? statement.txState().getNodeState( node.id() ) : null;
+        return storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId, state );
     }
 
     @Override
     public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
     {
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationship.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState()
-                       .augmentPropertyCursor( cursor, statement.txState().getRelationshipState( relationship.id() ) )
-               : cursor;
+        RelationshipState state = statement.hasTxStateWithChanges()
+                                  ? statement.txState().getRelationshipState( relationship.id() )
+                                  : null;
+        return storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship, state );
     }
 
     @Override
@@ -384,7 +315,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    public boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship,
+            int propertyKeyId )
     {
         try ( Cursor<PropertyItem> cursor = relationshipGetPropertyCursor( statement, relationship, propertyKeyId ) )
         {
@@ -395,20 +327,10 @@ public class StateHandlingStatementOperations implements
     private Cursor<PropertyItem> relationshipGetPropertyCursor( KernelStatement statement,
             RelationshipItem relationship, int propertyKeyId )
     {
-        Cursor<PropertyItem> cursor;
-        if ( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationship.id() ) )
-        {
-            cursor = empty();
-        }
-        else
-        {
-            cursor = storeLayer.relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId );
-        }
-
-        return statement.hasTxStateWithChanges()
-               ? statement.txState().augmentSinglePropertyCursor( cursor, statement.txState()
-                        .getRelationshipState( relationship.id() ), propertyKeyId )
-               : cursor;
+        RelationshipState state = statement.hasTxStateWithChanges()
+                                  ? statement.txState().getRelationshipState( relationship.id() )
+                                  : null;
+        return storeLayer.relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId, state );
     }
 
     // </Cursors>
@@ -417,7 +339,7 @@ public class StateHandlingStatementOperations implements
     public long nodeCreate( KernelStatement state )
     {
         long nodeId = storeLayer.reserveNode();
-        state.txState().nodeDoCreate(nodeId);
+        state.txState().nodeDoCreate( nodeId );
         return nodeId;
     }
 
@@ -441,10 +363,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long relationshipCreate( KernelStatement state,
-            int relationshipTypeId,
-            long startNodeId,
-            long endNodeId )
+    public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
             throws EntityNotFoundException
     {
         try ( Cursor<NodeItem> startNode = nodeCursorById( state, startNodeId ) )
@@ -452,7 +371,8 @@ public class StateHandlingStatementOperations implements
             try ( Cursor<NodeItem> endNode = nodeCursorById( state, endNodeId ) )
             {
                 long id = storeLayer.reserveRelationship();
-                state.txState().relationshipDoCreate( id, relationshipTypeId, startNode.get().id(), endNode.get().id() );
+                state.txState()
+                        .relationshipDoCreate( id, relationshipTypeId, startNode.get().id(), endNode.get().id() );
                 return id;
             }
         }
@@ -532,7 +452,6 @@ public class StateHandlingStatementOperations implements
             state.txState().nodeDoRemoveLabel( labelId, node.id() );
 
             indexTxStateUpdater.onLabelChange( state, labelId, node, REMOVED_LABEL );
-
             return true;
         }
     }
@@ -542,9 +461,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            PrimitiveLongIterator wLabelChanges =
-                    state.txState().nodesWithLabelChanged( labelId ).augment(
-                            storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId ) );
+            PrimitiveLongIterator wLabelChanges = state.txState().nodesWithLabelChanged( labelId )
+                    .augment( storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId ) );
             return state.txState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges );
         }
 
@@ -596,8 +514,8 @@ public class StateHandlingStatementOperations implements
             { // creation is undoing a drop
                 if ( !state.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
-                    state.txState().constraintDoAdd(
-                            constraint, state.txState().indexCreatedForConstraint( constraint ) );
+                    state.txState()
+                            .constraintDoAdd( constraint, state.txState().indexCreatedForConstraint( constraint ) );
                 }
             }
             else // *CREATE*
@@ -758,8 +676,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
-            IndexNotFoundKernelException
+    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
     {
         // If index is in our state, then return 0%
         if ( state.hasTxStateWithChanges() )
@@ -940,8 +858,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChanges =
-                    state.txState().indexUpdatesForSeek( index, propertyValues );
+            ReadableDiffSets<Long> labelPropertyChanges = state.txState().indexUpdatesForSeek( index, propertyValues );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -959,8 +876,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChangesForNumber =
-                    state.txState().indexUpdatesForRangeSeekByNumber(
-                            index, lower, includeLower, upper, includeUpper );
+                    state.txState().indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -979,8 +895,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> labelPropertyChangesForString =
-                    state.txState().indexUpdatesForRangeSeekByString(
-                            index, lower, includeLower, upper, includeUpper );
+                    state.txState().indexUpdatesForRangeSeekByString( index, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -1048,9 +963,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state,
-            long relationshipId,
-            DefinedProperty property )
+    public Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         DataWriteOperations ops = state.dataWriteOperations();
@@ -1128,9 +1041,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state,
-            long relationshipId,
-            int propertyKeyId )
+    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         DataWriteOperations ops = state.dataWriteOperations();
@@ -1222,8 +1133,9 @@ public class StateHandlingStatementOperations implements
             CountsRecordState counts = new CountsRecordState();
             try
             {
-                statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
-                        statement.getStoreStatement(), statement.txState(), counts ) );
+                statement.txState().accept(
+                        new TransactionCountingStateVisitor( EMPTY, storeLayer, statement.getStoreStatement(),
+                                statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -1252,8 +1164,9 @@ public class StateHandlingStatementOperations implements
             CountsRecordState counts = new CountsRecordState();
             try
             {
-                statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
-                        statement.getStoreStatement(), statement.txState(), counts ) );
+                statement.txState().accept(
+                        new TransactionCountingStateVisitor( EMPTY, storeLayer, statement.getStoreStatement(),
+                                statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
@@ -1322,8 +1235,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public String indexGetFailure( Statement state, IndexDescriptor descriptor )
-            throws IndexNotFoundKernelException
+    public String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return storeLayer.indexGetFailure( descriptor.schema() );
     }
@@ -1377,15 +1289,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public String relationshipTypeGetName( Statement state, int relationshipTypeId ) throws
-            RelationshipTypeIdNotFoundKernelException
+    public String relationshipTypeGetName( Statement state, int relationshipTypeId )
+            throws RelationshipTypeIdNotFoundKernelException
     {
         return storeLayer.relationshipTypeGetName( relationshipTypeId );
     }
 
     @Override
-    public int labelGetOrCreateForName( Statement state, String labelName ) throws IllegalTokenNameException,
-            TooManyLabelsException
+    public int labelGetOrCreateForName( Statement state, String labelName )
+            throws IllegalTokenNameException, TooManyLabelsException
     {
         return storeLayer.labelGetOrCreateForName( labelName );
     }
@@ -1404,25 +1316,23 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void labelCreateForName( KernelStatement state, String labelName,
-            int id ) throws IllegalTokenNameException, TooManyLabelsException
+    public void labelCreateForName( KernelStatement state, String labelName, int id )
+            throws IllegalTokenNameException, TooManyLabelsException
     {
         state.txState().labelDoCreateForName( labelName, id );
     }
 
     @Override
-    public void propertyKeyCreateForName( KernelStatement state,
-            String propertyKeyName,
-            int id ) throws IllegalTokenNameException
+    public void propertyKeyCreateForName( KernelStatement state, String propertyKeyName, int id )
+            throws IllegalTokenNameException
     {
         state.txState().propertyKeyDoCreateForName( propertyKeyName, id );
 
     }
 
     @Override
-    public void relationshipTypeCreateForName( KernelStatement state,
-            String relationshipTypeName,
-            int id ) throws IllegalTokenNameException
+    public void relationshipTypeCreateForName( KernelStatement state, String relationshipTypeName, int id )
+            throws IllegalTokenNameException
     {
         state.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
     }
@@ -1447,8 +1357,8 @@ public class StateHandlingStatementOperations implements
 
     // <Legacy index>
     @Override
-    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement,
-            long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION
+    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
+            RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION
     {
         if ( statement.hasTxStateWithChanges() )
         {
@@ -1475,10 +1385,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement,
-            String indexName,
-            Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException
+    public LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement, String indexName,
+            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
     {
         return statement.legacyIndexTxState().nodeChanges( indexName ).query( queryOrQueryObject );
     }
@@ -1521,28 +1429,27 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public void nodeLegacyIndexCreateLazily( KernelStatement statement, String indexName,
-            Map<String, String> customConfig )
+            Map<String,String> customConfig )
     {
         legacyIndexStore.getOrCreateNodeIndexConfig( indexName, customConfig );
     }
 
     @Override
-    public void nodeLegacyIndexCreate( KernelStatement statement, String indexName, Map<String, String> customConfig )
+    public void nodeLegacyIndexCreate( KernelStatement statement, String indexName, Map<String,String> customConfig )
     {
         statement.legacyIndexTxState().createIndex( IndexEntityType.Node, indexName, customConfig );
     }
 
     @Override
     public void relationshipLegacyIndexCreateLazily( KernelStatement statement, String indexName,
-            Map<String, String> customConfig )
+            Map<String,String> customConfig )
     {
         legacyIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
     }
 
     @Override
-    public void relationshipLegacyIndexCreate( KernelStatement statement,
-            String indexName,
-            Map<String, String> customConfig )
+    public void relationshipLegacyIndexCreate( KernelStatement statement, String indexName,
+            Map<String,String> customConfig )
     {
         statement.legacyIndexTxState().createIndex( IndexEntityType.Relationship, indexName, customConfig );
     }
@@ -1580,85 +1487,52 @@ public class StateHandlingStatementOperations implements
             final long relationship, final String key, final Object value )
             throws EntityNotFoundException, LegacyIndexNotFoundKernelException
     {
-        relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-        {
-            @Override
-            public void visit( long relId, int type, long startNode, long endNode )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                statement.legacyIndexTxState().relationshipChanges( indexName ).addRelationship(
-                        relationship, key, value, startNode, endNode );
-            }
-        } );
+        relationshipVisit( statement, relationship,
+                ( relId, type, startNode, endNode ) -> statement.legacyIndexTxState().relationshipChanges( indexName )
+                        .addRelationship( relationship, key, value, startNode, endNode ) );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement,
-            final String indexName,
-            long relationship,
-            final String key,
-            final Object value ) throws LegacyIndexNotFoundKernelException, EntityNotFoundException
-    {
-        try
-        {
-            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                        throws LegacyIndexNotFoundKernelException
-                {
-                    statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
-                            relId, key, value, startNode, endNode );
-                }
-            } );
-        }
-        catch ( EntityNotFoundException e )
-        {   // Apparently this is OK
-        }
-    }
-
-    @Override
-    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement,
-            final String indexName,
-            long relationship,
-            final String key ) throws EntityNotFoundException, LegacyIndexNotFoundKernelException
-    {
-        try
-        {
-            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                        throws LegacyIndexNotFoundKernelException
-                {
-                    statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
-                            relId, key, startNode, endNode );
-                }
-            } );
-        }
-        catch ( EntityNotFoundException e )
-        {   // Apparently this is OK
-        }
-    }
-
-    @Override
-    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement,
-            final String indexName,
-            long relationship )
+    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName,
+            long relationship, final String key, final Object value )
             throws LegacyIndexNotFoundKernelException, EntityNotFoundException
     {
         try
         {
-            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                        throws LegacyIndexNotFoundKernelException
-                {
-                    statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
-                            relId, startNode, endNode );
-                }
-            } );
+            relationshipVisit( statement, relationship,
+                    ( relId, type, startNode, endNode ) -> statement.legacyIndexTxState()
+                            .relationshipChanges( indexName )
+                            .removeRelationship( relId, key, value, startNode, endNode ) );
+        }
+        catch ( EntityNotFoundException e )
+        {   // Apparently this is OK
+        }
+    }
+
+    @Override
+    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName,
+            long relationship, final String key ) throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    {
+        try
+        {
+            relationshipVisit( statement, relationship,
+                    ( relId, type, startNode, endNode ) -> statement.legacyIndexTxState()
+                            .relationshipChanges( indexName ).removeRelationship( relId, key, startNode, endNode ) );
+        }
+        catch ( EntityNotFoundException e )
+        {   // Apparently this is OK
+        }
+    }
+
+    @Override
+    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName,
+            long relationship ) throws LegacyIndexNotFoundKernelException, EntityNotFoundException
+    {
+        try
+        {
+            relationshipVisit( statement, relationship,
+                    ( relId, type, startNode, endNode ) -> statement.legacyIndexTxState()
+                            .relationshipChanges( indexName ).removeRelationship( relId, startNode, endNode ) );
         }
         catch ( EntityNotFoundException e )
         {
@@ -1672,8 +1546,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void nodeLegacyIndexDrop( KernelStatement statement,
-            String indexName ) throws LegacyIndexNotFoundKernelException
+    public void nodeLegacyIndexDrop( KernelStatement statement, String indexName )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.legacyIndexTxState().nodeChanges( indexName ).drop();
         statement.legacyIndexTxState().deleteIndex( IndexEntityType.Node, indexName );
@@ -1688,11 +1562,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public String nodeLegacyIndexSetConfiguration( KernelStatement statement,
-            String indexName,
-            String key,
-            String value )
-            throws LegacyIndexNotFoundKernelException
+    public String nodeLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key,
+            String value ) throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.setNodeIndexConfiguration( indexName, key, value );
     }
@@ -1719,14 +1590,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Map<String, String> nodeLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+    public Map<String,String> nodeLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
             throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.getNodeIndexConfiguration( indexName );
     }
 
     @Override
-    public Map<String, String> relationshipLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+    public Map<String,String> relationshipLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
             throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.getRelationshipIndexConfiguration( indexName );
@@ -1808,19 +1679,20 @@ public class StateHandlingStatementOperations implements
                : degree;
     }
 
-    private int computeDegree( KernelStatement statement, NodeItem node,  Direction direction, Integer relType )
+    private int computeDegree( KernelStatement statement, NodeItem node, Direction direction, Integer relType )
     {
         StorageStatement storeStatement = statement.getStoreStatement();
         if ( node.isDense() )
         {
-            return storeLayer.degreeRelationshipsInGroup( storeStatement, node.id(), node.nextGroupId(),
-                    direction, relType );
+            return storeLayer
+                    .degreeRelationshipsInGroup( storeStatement, node.id(), node.nextGroupId(), direction, relType );
         }
         else
         {
             return count( relType == null
-                          ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
-                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, t -> t == relType ) );
+                          ? storeLayer.nodeGetRelationships( storeStatement, node, direction, null )
+                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, new int[]{relType},null )
+            );
         }
     }
 }
