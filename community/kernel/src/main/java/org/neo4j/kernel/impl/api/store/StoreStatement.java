@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -54,7 +53,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public class StoreStatement implements StorageStatement
 {
-    private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
+    private final InstanceCache<NodeCursor> nodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
@@ -85,12 +84,12 @@ public class StoreStatement implements StorageStatement
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.recordCursors = new RecordCursors( neoStores );
 
-        singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
+        nodeCursor = new InstanceCache<NodeCursor>()
         {
             @Override
-            protected StoreSingleNodeCursor create()
+            protected NodeCursor create()
             {
-                return new StoreSingleNodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
+                return new NodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -147,10 +146,17 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
+    public Cursor<NodeItem> acquireNodeCursor( ReadableTransactionState state )
+    {
+        neoStores.assertOpen();
+        return nodeCursor.get().init( new AllNodeProgression( nodeStore ), state );
+    }
+
+    @Override
     public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId, state );
+        return nodeCursor.get().init( new SingleNodeProgression( nodeId ), state );
     }
 
     @Override
