@@ -235,8 +235,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         StoreLogService logService = life.add( StoreLogService.inLogsDirectory( fileSystem, this.storeDir ) );
         msgLog = logService.getInternalLog( getClass() );
-        storeLocker = new StoreLocker( fileSystem, this.storeDir );
-        storeLocker.checkLock();
+        storeLocker = tryLockStore( fileSystem );
 
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
@@ -302,6 +301,28 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
+    }
+
+    private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
+    {
+        StoreLocker storeLocker = new StoreLocker( fileSystem, this.storeDir );
+        try
+        {
+            storeLocker.checkLock();
+        }
+        catch ( Exception e )
+        {
+            try
+            {
+                storeLocker.close();
+            }
+            catch ( IOException ce )
+            {
+                e.addSuppressed( ce );
+            }
+            throw e;
+        }
+        return storeLocker;
     }
 
     private Map<String, String> getDefaultParams()
