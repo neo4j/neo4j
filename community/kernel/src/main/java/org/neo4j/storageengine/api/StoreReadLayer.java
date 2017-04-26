@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -167,6 +167,12 @@ public interface StoreReadLayer
      */
     String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
+    IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
+    IndexReader indexGetFreshReader( StorageStatement storeStatement, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
     /**
      * @param labelName name of label.
      * @return token id of label.
@@ -270,6 +276,13 @@ public interface StoreReadLayer
      * each relationship returned.
      */
     RelationshipIterator relationshipsGetAll();
+
+    Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, ReadableTransactionState state );
+
+    Cursor<RelationshipItem> relationshipCursor( StorageStatement storeStatement, long relationshipId,
+            ReadableTransactionState state );
+
+    Cursor<RelationshipItem> relationshipsGetAllCursor( StorageStatement storeStatement, ReadableTransactionState state );
 
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
             ReadableTransactionState state );
