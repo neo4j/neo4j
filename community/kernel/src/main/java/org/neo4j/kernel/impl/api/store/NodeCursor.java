@@ -40,8 +40,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -54,7 +54,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private final NodeStore nodeStore;
     private final LockService lockService;
 
-    private Progression progression;
+    private NodeProgression progression;
     private ReadableTransactionState state;
     private boolean fetched;
     private long[] labels;
@@ -71,7 +71,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         this.lockService = lockService;
     }
 
-    public Cursor<NodeItem> init( Progression progression, ReadableTransactionState state )
+    public Cursor<NodeItem> init( NodeProgression progression, ReadableTransactionState state )
     {
         this.progression = progression;
         this.state = state;

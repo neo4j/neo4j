@@ -38,7 +38,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.Progression.Mode;
+import org.neo4j.kernel.impl.api.store.NodeProgression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -57,8 +57,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
@@ -223,7 +223,7 @@ public class NodeCursorTest
         MutableBoolean called = new MutableBoolean();
         NodeCursor cursor =
                 new NodeCursor( nodeRecord, c -> called.setTrue(), nodeStore, NO_LOCK_SERVICE );
-        cursor.init( mock( Progression.class ), mock( ReadableTransactionState.class ) );
+        cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
@@ -235,7 +235,7 @@ public class NodeCursorTest
     {
         NodeCursor cursor =
                 new NodeCursor( nodeRecord, c -> {}, nodeStore, NO_LOCK_SERVICE );
-        cursor.init( mock( Progression.class ), mock( ReadableTransactionState.class ) );
+        cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
 
         cursor.close();
         cursor.dispose();
@@ -535,9 +535,9 @@ public class NodeCursorTest
             return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private Progression createProgression( Operation[] ops, Mode mode )
+        private NodeProgression createProgression( Operation[] ops, Mode mode )
         {
-            return new Progression()
+            return new NodeProgression()
             {
                 private int i = 0;
 
