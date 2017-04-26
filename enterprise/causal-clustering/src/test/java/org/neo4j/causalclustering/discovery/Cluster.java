@@ -454,6 +454,7 @@ public class Cluster
         int boltPort = PortAuthority.allocatePort();
         int httpPort = PortAuthority.allocatePort();
         int txPort = PortAuthority.allocatePort();
+        int backupPort = PortAuthority.allocatePort();
 
         return new ReadReplica(
                 parentDir,
@@ -461,7 +462,7 @@ public class Cluster
                 boltPort,
                 httpPort,
                 txPort,
-                discoveryServiceFactory,
+                backupPort, discoveryServiceFactory,
                 coreMemberHazelcastAddresses,
                 extraParams,
                 instanceExtraParams,

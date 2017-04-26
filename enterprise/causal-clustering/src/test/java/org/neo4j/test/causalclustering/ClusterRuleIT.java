@@ -30,6 +30,7 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
@@ -40,7 +41,7 @@ import org.neo4j.kernel.configuration.HttpConnector;
 
 public class ClusterRuleIT
 {
-    private static final int NumberOfPortsUsedByCoreMember = 5;
+    private static final int NumberOfPortsUsedByCoreMember = 6;
     private static final int NumberOfPortsUsedByReadReplica = 3;
 
     @Rule
@@ -93,6 +94,7 @@ public class ClusterRuleIT
             portsUsed.add( getPortFromSetting( coreClusterMember, CausalClusteringSettings.discovery_listen_address.name() ) );
             portsUsed.add( getPortFromSetting( coreClusterMember, CausalClusteringSettings.transaction_listen_address.name() ) );
             portsUsed.add( getPortFromSetting( coreClusterMember, CausalClusteringSettings.raft_listen_address.name() ) );
+            portsUsed.add( getPortFromSetting( coreClusterMember, OnlineBackupSettings.online_backup_server.name() ) );
             portsUsed.add( getPortFromSetting( coreClusterMember, new BoltConnector( "bolt" ).listen_address.name() ) );
             portsUsed.add( getPortFromSetting( coreClusterMember, new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name() ) );
         }
@@ -100,6 +102,7 @@ public class ClusterRuleIT
         for ( ReadReplica readReplica : cluster.readReplicas() )
         {
             portsUsed.add( getPortFromSetting( readReplica, CausalClusteringSettings.transaction_listen_address.name() ) );
+            portsUsed.add( getPortFromSetting( readReplica, OnlineBackupSettings.online_backup_server.name() ) );
             portsUsed.add( getPortFromSetting( readReplica, new BoltConnector( "bolt" ).listen_address.name() ) );
             portsUsed.add( getPortFromSetting( readReplica, new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name() ) );
         }
