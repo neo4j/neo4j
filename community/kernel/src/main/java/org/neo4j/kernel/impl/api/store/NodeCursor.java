@@ -19,147 +19,134 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-/**
- * Base cursor for nodes.
- */
-public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
+public class NodeCursor implements NodeItem, Cursor<NodeItem>
 {
     private final NodeRecord nodeRecord;
-    private final Consumer<StoreSingleNodeCursor> instanceCache;
-
-    private final LockService lockService;
+    private final Consumer<NodeCursor> instanceCache;
     private final RecordCursors recordCursors;
+    private final LockService lockService;
 
-    private long nodeId = StatementConstants.NO_SUCH_NODE;
+    private Progression progression;
     private ReadableTransactionState state;
-
-    private long[] labels;
     private boolean fetched;
-    private NodeState nodeState;
+    private long[] labels;
+    private Iterator<Long> added;
 
-    StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
-            RecordCursors recordCursors, LockService lockService )
+    NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, RecordCursors recordCursors,
+            LockService lockService )
     {
         this.nodeRecord = nodeRecord;
+        this.instanceCache = instanceCache;
         this.recordCursors = recordCursors;
         this.lockService = lockService;
-        this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId, ReadableTransactionState state )
+    public Cursor<NodeItem> init( Progression progression, ReadableTransactionState state )
     {
+        this.progression = progression;
         this.state = state;
-        this.nodeId = nodeId;
-        return this;
-    }
-
-    @Override
-    public NodeItem get()
-    {
+        this.added = state != null && progression.mode() == APPEND
+                     ? state.addedAndRemovedNodes().getAdded().iterator()
+                     : null;
         return this;
     }
 
     @Override
     public boolean next()
     {
-        clearCurrentNodeState();
-        if ( nodeId == StatementConstants.NO_SUCH_NODE )
+        return fetched = fetchNext();
+    }
+
+    private boolean fetchNext()
+    {
+        labels = null;
+        long id;
+        while ( (id = progression.nextId()) >= 0 )
         {
-            return false;
+            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) &&
+                    recordCursors.node().next( id, nodeRecord, RecordLoad.CHECK ) )
+            {
+                return true;
+            }
+
+            if ( state != null && progression.mode() == FETCH && state.nodeIsAddedInThisTx( id ) )
+            {
+                recordFromTxState( id );
+                return true;
+            }
         }
 
-        if ( hasNext() )
+        if ( added != null && added.hasNext() )
         {
-            nodeState = state != null ? state.getNodeState( nodeId ) : null;
+            recordFromTxState( added.next() );
             return true;
         }
 
-        nodeId = StatementConstants.NO_SUCH_NODE;
         return false;
     }
 
-    private boolean hasNext()
+    private void recordFromTxState( long id )
     {
-        // fetched makes sure we read the node from disk/tx state only once and we do not loop forever
-        if ( fetched )
-        {
-            return false;
-        }
-
-        try
-        {
-            if ( state != null && state.nodeIsDeletedInThisTx( nodeId ) )
-            {
-                return false;
-            }
-            return recordCursors.node().next( nodeId, nodeRecord, CHECK ) ||
-                    state != null && state.nodeIsAddedInThisTx( nodeId );
-        }
-        finally
-        {
-            fetched = true;
-        }
+        nodeRecord.clear();
+        nodeRecord.setId( id );
     }
 
     @Override
     public void close()
     {
+        labels = null;
+        added = null;
         state = null;
-        clearCurrentNodeState();
-        fetched = false;
-        nodeRecord.clear();
         instanceCache.accept( this );
     }
 
-    private void clearCurrentNodeState()
-    {
-        labels = null;
-        nodeState = null;
-    }
-
     @Override
-    public long id()
+    public NodeItem get()
     {
-        return nodeRecord.getId();
+        if ( fetched )
+        {
+            return this;
+        }
+
+        throw new IllegalStateException( "Nothing available" );
     }
 
     @Override
     public PrimitiveIntSet labels()
     {
-        PrimitiveIntSet baseLabels = state != null && state.nodeIsAddedInThisTx( nodeId )
-                                     ? intSet()
-                                     : asSet( loadedLabels(), IoPrimitiveUtils::safeCastLongToInt );
-        return state != null ? state.augmentLabels( baseLabels, nodeState ) : baseLabels;
+        PrimitiveIntSet labels = asSet( loadedLabels(), IoPrimitiveUtils::safeCastLongToInt );
+        return state != null ? state.augmentLabels( labels, state.getNodeState( id() ) ) : labels;
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
+        NodeState nodeState = state == null ? null : state.getNodeState( id() );
         if ( state != null && nodeState.labelDiffSets().getRemoved().contains( labelId ) )
         {
             return false;
@@ -190,9 +177,15 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     }
 
     @Override
+    public long id()
+    {
+        return nodeRecord.getId();
+    }
+
+    @Override
     public boolean isDense()
     {
-        return state != null && state.nodeIsAddedInThisTx( nodeId )  ? false : nodeRecord.isDense();
+        return nodeRecord.isDense();
     }
 
     @Override
@@ -205,21 +198,19 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     @Override
     public long nextRelationshipId()
     {
-        return state != null && state.nodeIsAddedInThisTx( nodeId ) ? NO_NEXT_RELATIONSHIP.longValue()
-                                                                 : nodeRecord.getNextRel();
+        return nodeRecord.getNextRel();
     }
 
     @Override
     public long nextPropertyId()
     {
-        return state != null && state.nodeIsAddedInThisTx( nodeId ) ? NO_NEXT_PROPERTY.longValue()
-                                                                 : nodeRecord.getNextProp();
+        return nodeRecord.getNextProp();
     }
 
     @Override
     public Lock lock()
     {
-        return state != null && state.nodeIsAddedInThisTx( nodeId ) ? NO_LOCK : acquireLock();
+        return state != null && state.nodeIsAddedInThisTx( id() ) ? NO_LOCK : acquireLock();
     }
 
     private Lock acquireLock()
