@@ -27,6 +27,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.function.LongFunction;
@@ -34,12 +35,12 @@ import java.util.function.LongFunction;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.Progression.Mode;
+import org.neo4j.kernel.impl.api.store.NodeProgression.Mode;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.RecordCursor;
-import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
@@ -50,12 +51,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
@@ -72,16 +75,14 @@ public class NodeCursorTest
     private static final int NON_EXISTING_LABEL = Integer.MAX_VALUE;
 
     private final NodeRecord nodeRecord = new NodeRecord( -1 );
-    private final RecordCursors recordCursors = mock( RecordCursors.class );
-    @SuppressWarnings( "unchecked" )
-    private final RecordCursor<NodeRecord> recordCursor = mock( RecordCursor.class );
-    // cursor is shared since it is designed to be reusable
-    private final NodeCursor reusableCursor = new NodeCursor( nodeRecord, i -> {}, recordCursors,
-            NO_LOCK_SERVICE );
-
+    private final NodeStore nodeStore = mock( NodeStore.class );
+    private final PageCursor pageCursor = mock( PageCursor.class );
     {
-        when( recordCursors.node() ).thenReturn( recordCursor );
+        when( nodeStore.newPageCursor() ).thenReturn( pageCursor );
     }
+
+    // cursor is shared since it is designed to be reusable
+    private final NodeCursor reusableCursor = new NodeCursor( nodeRecord, i -> {}, nodeStore, NO_LOCK_SERVICE );
 
     @SuppressWarnings( "unchecked" )
     @DataPoints
@@ -96,7 +97,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( APPEND, new Operation[0] );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -108,7 +109,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( FETCH, new Operation[0] );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -120,7 +121,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -132,7 +133,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -144,7 +145,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -156,7 +157,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -169,7 +170,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -182,7 +183,7 @@ public class NodeCursorTest
     {
         // given
         TestRun test = new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -196,7 +197,7 @@ public class NodeCursorTest
         // given
         TestRun test =
                 new TestRun( APPEND, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 ), op3.apply( 3 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -210,7 +211,7 @@ public class NodeCursorTest
         // given
         TestRun test =
                 new TestRun( FETCH, new Operation[]{op0.apply( 0 ), op1.apply( 1 ), op2.apply( 2 ), op3.apply( 3 )} );
-        Cursor<NodeItem> cursor = test.initialize( reusableCursor, recordCursor, nodeRecord );
+        Cursor<NodeItem> cursor = test.initialize( reusableCursor, nodeStore, pageCursor, nodeRecord );
 
         // when/then
         test.runAndVerify( cursor );
@@ -220,12 +221,25 @@ public class NodeCursorTest
     public void shouldCallTheConsumerOnClose()
     {
         MutableBoolean called = new MutableBoolean();
-        NodeCursor cursor = new NodeCursor( nodeRecord, c -> called.setTrue(), recordCursors, NO_LOCK_SERVICE );
-        cursor.init( mock( Progression.class ), mock( ReadableTransactionState.class ) );
+        NodeCursor cursor =
+                new NodeCursor( nodeRecord, c -> called.setTrue(), nodeStore, NO_LOCK_SERVICE );
+        cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
         assertTrue( called.booleanValue() );
+    }
+
+    @Test
+    public void shouldCloseThePageCursorWhenDisposed()
+    {
+        NodeCursor cursor =
+                new NodeCursor( nodeRecord, c -> {}, nodeStore, NO_LOCK_SERVICE );
+        cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
+
+        cursor.close();
+        cursor.dispose();
+        verify( pageCursor ).close();
     }
 
     private static class ModifiedNode extends NodeOnDisk
@@ -236,12 +250,12 @@ public class NodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
+        public TxState prepare( NodeStore nodeStore, PageCursor pageCursor, NodeRecord nodeRecord, TxState state )
         {
             state = state == null ? new TxState() : state;
             state.nodeDoAddLabel( 6 + (int) id, id );
             state.nodeDoRemoveLabel( 5 + (int) id, id );
-            return super.prepare( recordCursor, nodeRecord, state );
+            return super.prepare( nodeStore, pageCursor, nodeRecord, state );
         }
 
         @Override
@@ -269,7 +283,7 @@ public class NodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
+        public TxState prepare( NodeStore nodeStore, PageCursor pageCursor, NodeRecord nodeRecord, TxState state )
         {
             this.state = state = state == null ? new TxState() : state;
             state.nodeDoCreate( id );
@@ -326,11 +340,11 @@ public class NodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
+        public TxState prepare( NodeStore nodeStore, PageCursor pageCursor, NodeRecord nodeRecord, TxState state )
         {
             state = state == null ? new TxState() : state;
             state.nodeDoDelete( id );
-            record( id, recordCursor, nodeRecord, state );
+            record( id, nodeStore, pageCursor, nodeRecord, state );
             return state;
         }
 
@@ -370,9 +384,9 @@ public class NodeCursorTest
         }
 
         @Override
-        public TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state )
+        public TxState prepare( NodeStore nodeStore, PageCursor pageCursor, NodeRecord nodeRecord, TxState state )
         {
-            expected = record( id, recordCursor, nodeRecord, state );
+            expected = record( id, nodeStore, pageCursor, nodeRecord, state );
             return state;
         }
 
@@ -413,19 +427,26 @@ public class NodeCursorTest
         }
     }
 
-    private static NodeItem record( long id, RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord,
+    private static NodeItem record( long id, NodeStore nodeStore, PageCursor pageCursor, NodeRecord nodeRecord,
             ReadableTransactionState state )
     {
         boolean dense = id % 2 == 0;
         int nextProp = 42 + (int) id;
         long nextRel = 43 + id;
         long[] labelIds = new long[]{4 + id, 5 + id};
-        when( recordCursor.next( id, nodeRecord, CHECK ) ).thenAnswer( invocationOnMock ->
+        try
         {
-            nodeRecord.setId( id );
-            nodeRecord.initialize( true, nextProp, dense, nextRel, inlinedLabelsLongRepresentation( labelIds ) );
-            return true;
-        } );
+            doAnswer( invocationOnMock ->
+            {
+                nodeRecord.setId( id );
+                nodeRecord.initialize( true, nextProp, dense, nextRel, inlinedLabelsLongRepresentation( labelIds ) );
+                return null;
+            } ).when( nodeStore ).readIntoRecord( id, nodeRecord, CHECK, pageCursor );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         return new NodeItem()
         {
             @Override
@@ -484,7 +505,7 @@ public class NodeCursorTest
     {
         long id();
 
-        TxState prepare( RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord, TxState state );
+        TxState prepare( NodeStore nodeStore, PageCursor pageCursor, NodeRecord nodeRecord, TxState state );
 
         boolean fromDisk();
 
@@ -504,18 +525,19 @@ public class NodeCursorTest
             this.ops = ops;
         }
 
-        Cursor<NodeItem> initialize( NodeCursor cursor, RecordCursor<NodeRecord> recordCursor, NodeRecord nodeRecord )
+        Cursor<NodeItem> initialize( NodeCursor cursor, NodeStore nodeStore, PageCursor pageCursor,
+                NodeRecord nodeRecord )
         {
             for ( Operation op : ops )
             {
-                state = op.prepare( recordCursor, nodeRecord, state );
+                state = op.prepare( nodeStore, pageCursor, nodeRecord, state );
             }
             return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private Progression createProgression( Operation[] ops, Mode mode )
+        private NodeProgression createProgression( Operation[] ops, Mode mode )
         {
-            return new Progression()
+            return new NodeProgression()
             {
                 private int i = 0;
 

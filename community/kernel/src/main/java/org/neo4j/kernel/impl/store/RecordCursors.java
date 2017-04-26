@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -35,23 +33,19 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  */
 public class RecordCursors implements AutoCloseable
 {
-    private final RecordCursor<NodeRecord> node;
     private final RecordCursor<RelationshipRecord> relationship;
     private final RecordCursor<RelationshipGroupRecord> relationshipGroup;
     private final RecordCursor<PropertyRecord> property;
     private final RecordCursor<DynamicRecord> propertyString;
     private final RecordCursor<DynamicRecord> propertyArray;
-    private final RecordCursor<DynamicRecord> label;
 
     public RecordCursors( NeoStores neoStores )
     {
-        node = newCursor( neoStores.getNodeStore() );
         relationship = newCursor( neoStores.getRelationshipStore() );
         relationshipGroup = newCursor( neoStores.getRelationshipGroupStore() );
         property = newCursor( neoStores.getPropertyStore() );
         propertyString = newCursor( neoStores.getPropertyStore().getStringStore() );
         propertyArray = newCursor( neoStores.getPropertyStore().getArrayStore() );
-        label = newCursor( neoStores.getNodeStore().getDynamicLabelStore() );
     }
 
     private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
@@ -62,13 +56,8 @@ public class RecordCursors implements AutoCloseable
     @Override
     public void close()
     {
-        IOUtils.closeAll( RuntimeException.class,
-                node, relationship, relationshipGroup, property, propertyArray, propertyString, label );
-    }
-
-    public RecordCursor<NodeRecord> node()
-    {
-        return node;
+        IOUtils.closeAll( RuntimeException.class, relationship, relationshipGroup, property, propertyArray,
+                propertyString );
     }
 
     public RecordCursor<RelationshipRecord> relationship()
@@ -94,10 +83,5 @@ public class RecordCursors implements AutoCloseable
     public RecordCursor<DynamicRecord> propertyString()
     {
         return propertyString;
-    }
-
-    public RecordCursor<DynamicRecord> label()
-    {
-        return label;
     }
 }

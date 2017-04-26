@@ -89,7 +89,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected NodeCursor create()
             {
-                return new NodeCursor( nodeStore.newRecord(), this, recordCursors, lockService );
+                return new NodeCursor( nodeStore.newRecord(), this, nodeStore, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -210,6 +210,12 @@ public class StoreStatement implements StorageStatement
     {
         assert !closed;
         closeSchemaResources();
+        nodeCursor.close();
+        singleRelationshipCursor.close();
+        iteratorRelationshipCursor.close();
+        nodeRelationshipsCursor.close();
+        propertyCursorCache.close();
+        singlePropertyCursorCache.close();
         recordCursors.close();
         closed = true;
     }

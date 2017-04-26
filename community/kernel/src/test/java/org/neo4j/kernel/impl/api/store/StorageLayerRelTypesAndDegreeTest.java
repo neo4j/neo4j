@@ -472,8 +472,9 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     @SuppressWarnings( "unchecked" )
     private NodeCursor newCursor( long nodeId )
     {
-        NodeCursor cursor = new NodeCursor( new NodeRecord( -1 ), mock( Consumer.class ),
-                new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
+        NodeCursor cursor =
+                new NodeCursor( new NodeRecord( -1 ), mock( Consumer.class ), resolveNeoStores().getNodeStore(),
+                        NO_LOCK_SERVICE );
         cursor.init( new SingleNodeProgression( nodeId ), null );
         assertTrue( cursor.next() );
         return cursor;

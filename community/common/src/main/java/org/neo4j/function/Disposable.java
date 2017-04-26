@@ -17,33 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.function;
 
-import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.store.NodeStore;
-
-public class AllNodeProgression implements NodeProgression
+/**
+ * Dispose the object by freeing all the internal resources.
+ * The object can't be further reused.
+ */
+@FunctionalInterface
+public interface Disposable
 {
-    private final AllIdIterator allIdIterator;
-
-    AllNodeProgression( NodeStore nodeStore )
-    {
-        allIdIterator = new AllIdIterator( nodeStore );
-    }
-
-    @Override
-    public long nextId()
-    {
-        if ( allIdIterator.hasNext() )
-        {
-            return allIdIterator.next();
-        }
-        return StatementConstants.NO_SUCH_NODE;
-    }
-
-    @Override
-    public Mode mode()
-    {
-        return Mode.APPEND;
-    }
+    void dispose();
 }
