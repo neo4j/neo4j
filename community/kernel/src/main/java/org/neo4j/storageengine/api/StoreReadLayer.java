@@ -44,6 +44,8 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Abstraction for reading committed data from {@link StorageEngine store}.
@@ -269,18 +271,22 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
-    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction );
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
+            ReadableTransactionState state );
 
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
-            IntPredicate typeIds );
+            int[] relTypes, ReadableTransactionState state );
 
-    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node );
+    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, PropertyContainerState state );
 
-    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId );
+    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+            PropertyContainerState state );
 
-    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship );
+    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
+            PropertyContainerState state );
 
-    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem, int propertyKeyId );
+    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem,
+            int propertyKeyId, PropertyContainerState state );
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that

@@ -203,13 +203,13 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
+                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId, null ) )
                 {
                     if ( node.next() )
                     {
                         Lock lock = node.get().lock();
                         try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( node.get().nextPropertyId(), lock ) )
+                                .acquirePropertyCursor( node.get().nextPropertyId(), lock, null ) )
                         {
                             while ( properties.next() )
                             {
@@ -230,13 +230,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship = storeStatement
+                        .acquireSingleRelationshipCursor( relId, null ) )
                 {
                     if ( relationship.next() )
                     {
                         Lock lock = relationship.get().lock();
                         try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock ) )
+                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, null ) )
                         {
                             while ( properties.next() )
                             {
@@ -360,7 +361,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
+        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId(), null ) )
         {
             if ( !node.next() )
             {
@@ -369,7 +370,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
             Lock lock = node.get().lock();
             try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock ) )
+                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock, null ) )
             {
                 if ( properties.next() )
                 {
@@ -388,8 +389,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor(
-                relState.getId() ) )
+        try ( Cursor<RelationshipItem> relationship = storeStatement
+                .acquireSingleRelationshipCursor( relState.getId(), null ) )
         {
             if ( !relationship.next() )
             {
@@ -398,7 +399,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
             Lock lock = relationship.get().lock();
             try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock ) )
+                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, null ) )
             {
                 if ( properties.next() )
                 {

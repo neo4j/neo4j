@@ -64,7 +64,7 @@ public class StoreIteratorRelationshipCursorTest
         try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( relationshipRecord,
                 relationshipStore ) )
         {
-            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ) );
+            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), null );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }
@@ -82,7 +82,7 @@ public class StoreIteratorRelationshipCursorTest
         try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( relationshipRecord,
                 relationshipStore ) )
         {
-            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ) );
+            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), null );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }

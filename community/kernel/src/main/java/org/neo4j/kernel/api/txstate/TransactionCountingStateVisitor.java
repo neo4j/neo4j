@@ -67,7 +67,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        statement.acquireSingleNodeCursor( id ).forAll( this::decrementCountForLabelsAndRelationships );
+        statement.acquireSingleNodeCursor( id, null ).forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
     }
 
@@ -124,7 +124,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            statement.acquireSingleNodeCursor( id )
+            statement.acquireSingleNodeCursor( id, null )
                     .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
@@ -165,6 +165,6 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )
     {
-        return txState.augmentSingleNodeCursor( statement.acquireSingleNodeCursor( nodeId ), nodeId );
+        return statement.acquireSingleNodeCursor( nodeId, txState );
     }
 }

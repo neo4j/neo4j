@@ -61,6 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -203,8 +204,8 @@ public class KernelIT extends KernelIntegrationTest
         // THEN
         tx = db.beginTx();
         statement = statementContextSupplier.get();
-        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ),
-                PrimitiveIntCollections.asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( new int[]{labelId1} ),
+                asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
         tx.close();
     }
 
@@ -224,8 +225,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ),
-                PrimitiveIntCollections.asSet(  statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( new int[]{labelId1} ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
 
         statement.close();
         tx.success();
@@ -255,10 +255,10 @@ public class KernelIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeRemoveLabel( node.getId(), labelId2 );
 
         // THEN
-        PrimitiveIntSet labels = PrimitiveIntCollections.asSet(
+        PrimitiveIntSet labels = asSet(
                 statement.readOperations().nodeGetLabels( node.getId() ) );
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1} ), labels );
+        assertEquals( asSet( new int[]{labelId1} ), labels );
         statement.close();
         tx.success();
         tx.close();
