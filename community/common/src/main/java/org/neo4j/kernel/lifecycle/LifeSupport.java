@@ -437,6 +437,14 @@ public class LifeSupport
                 catch ( Throwable e )
                 {
                     currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED );
+                    try
+                    {
+                        instance.stop();
+                    }
+                    catch ( Throwable se )
+                    {
+                        e.addSuppressed( se );
+                    }
                     if ( e instanceof LifecycleException )
                     {
                         throw (LifecycleException) e;
