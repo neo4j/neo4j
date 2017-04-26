@@ -26,6 +26,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -82,7 +84,7 @@ public class SessionResetIT
     private static final String SHORT_QUERY_2 = "MATCH (n:Node {name: 'foo'}) RETURN count(n)";
     private static final String LONG_QUERY = "UNWIND range(0, 10000000) AS i CREATE (n:Node {idx: i}) DELETE n";
     private static final String LONG_PERIODIC_COMMIT_QUERY = "USING PERIODIC COMMIT 1 " +
-                                                             "LOAD CSV FROM 'file://" + createTmpCsvFile() + "' AS l " +
+                                                             "LOAD CSV FROM '" + createTmpCsvFile() + "' AS l " +
                                                              "UNWIND range(0, 10) AS i " +
                                                              "CREATE (n:Node {name: l[0], occupation: l[1], idx: i}) " +
                                                              "DELETE n";
@@ -129,7 +131,7 @@ public class SessionResetIT
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( LONG_PERIODIC_COMMIT_QUERY, true );
 
         assertNull( queryResult.get( 60, SECONDS ) );
-        assertNoActiveTransactions();
+        assertDatabaseIsIdle();
 
         // termination must cause transaction failure and no nodes should be committed
         assertEquals( 0, countNodes() );
@@ -149,7 +151,7 @@ public class SessionResetIT
 
     private void testRandomQueryTermination( boolean autoCommit ) throws Exception
     {
-        ExecutorService executor = Executors.newFixedThreadPool( STRESS_IT_THREAD_COUNT, daemon( "test-worker-" ) );
+        ExecutorService executor = Executors.newFixedThreadPool( STRESS_IT_THREAD_COUNT, daemon( "test-worker" ) );
         Set<Session> runningSessions = newSetFromMap( new ConcurrentHashMap<>() );
         AtomicBoolean stop = new AtomicBoolean();
         List<Future<?>> futures = new ArrayList<>();
@@ -179,8 +181,9 @@ public class SessionResetIT
             MILLISECONDS.sleep( 30 );
         }
 
+        driver.close();
         awaitAll( futures );
-        assertNoActiveTransactions();
+        assertDatabaseIsIdle();
     }
 
     private void runRandomQuery( boolean autoCommit, Random random, Set<Session> runningSessions, AtomicBoolean stop )
@@ -203,9 +206,7 @@ public class SessionResetIT
         catch ( Throwable error )
         {
             Throwable cause = rootCause( error );
-            if ( !isTransactionTerminatedException( cause ) &&
-                 !(cause instanceof ServiceUnavailableException) &&
-                 !(cause instanceof ClientException) )
+            if ( !isAcceptable( cause ) )
             {
                 stop.set( true );
                 throw error;
@@ -230,7 +231,7 @@ public class SessionResetIT
             assertTrue( isTransactionTerminatedException( e.getCause() ) );
         }
 
-        assertNoActiveTransactions();
+        assertDatabaseIsIdle();
     }
 
     private Future<Void> runQueryInDifferentThreadAndResetSession( String query, boolean autoCommit ) throws Exception
@@ -272,7 +273,7 @@ public class SessionResetIT
         }
     }
 
-    private void assertNoActiveTransactions()
+    private void assertDatabaseIsIdle()
     {
         assertEquals( 0, activeQueriesCount() );
         assertEquals( 0, activeTransactionsCount() );
@@ -280,25 +281,30 @@ public class SessionResetIT
 
     private long activeQueriesCount()
     {
-        try ( Result result = db.getGraphDatabaseService().execute( "CALL dbms.listQueries()" ) )
+        try ( Result result = db().execute( "CALL dbms.listQueries() YIELD queryId RETURN count(queryId) AS result" ) )
         {
-            return result.stream().count() - 1; // do not count listQueries procedure invocation
+            return (long) single( result ).get( "result" ) - 1; // do not count listQueries procedure invocation
         }
     }
 
     private long activeTransactionsCount()
     {
-        DependencyResolver resolver = ((GraphDatabaseAPI) db.getGraphDatabaseService()).getDependencyResolver();
+        DependencyResolver resolver = db().getDependencyResolver();
         KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
         return kernelTransactions.activeTransactions().size();
     }
 
     private long countNodes()
     {
-        try ( Result result = db.getGraphDatabaseService().execute( "MATCH (n) RETURN count(n) AS result" ) )
+        try ( Result result = db().execute( "MATCH (n) RETURN count(n) AS result" ) )
         {
             return (long) single( result ).get( "result" );
         }
+    }
+
+    private GraphDatabaseAPI db()
+    {
+        return (GraphDatabaseAPI) db.getGraphDatabaseService();
     }
 
     private static void resetAny( Set<Session> sessions )
@@ -331,19 +337,27 @@ public class SessionResetIT
         }
     }
 
+    private static boolean isAcceptable( Throwable error )
+    {
+        return isTransactionTerminatedException( error ) ||
+               error instanceof ServiceUnavailableException ||
+               error instanceof ClientException ||
+               error instanceof ClosedChannelException;
+    }
+
     private static boolean isTransactionTerminatedException( Throwable error )
     {
         return error instanceof TransientException &&
                error.getMessage().startsWith( "The transaction has been terminated" );
     }
 
-    private static Path createTmpCsvFile()
+    private static URI createTmpCsvFile()
     {
         try
         {
             Path csvFile = Files.createTempFile( "test", ".csv" );
             List<String> lines = range( 0, 50000 ).mapToObj( i -> "Foo-" + i + ", Bar-" + i ).collect( toList() );
-            return Files.write( csvFile, lines ).toAbsolutePath();
+            return Files.write( csvFile, lines ).toAbsolutePath().toUri();
         }
         catch ( IOException e )
         {
