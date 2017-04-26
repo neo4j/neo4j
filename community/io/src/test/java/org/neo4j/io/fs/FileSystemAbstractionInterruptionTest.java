@@ -101,6 +101,7 @@ public class FileSystemAbstractionInterruptionTest
                 // This is good. What we expect to see.
             }
         }
+        channel.close();
         fs.close();
     }
 
