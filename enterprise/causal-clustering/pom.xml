@@ -254,7 +254,7 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
-                    <forkCount>4</forkCount>
+                    <forkCount>2C</forkCount>
                     <parallel>classes</parallel>
                     <threadCount>4</threadCount>
                     <!-- slowest test class takes up to 10 minutes, so let's cater for that, with contingency -->

@@ -24,16 +24,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.PortAuthority;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -50,14 +48,13 @@ import static org.neo4j.function.Predicates.awaitEx;
 
 public class BackupReadReplicaIT
 {
-    private int backupPort = findFreePort( 22000, 23000);
-
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( BackupReadReplicaIT.class ).withNumberOfCoreMembers( 3 )
+    public ClusterRule clusterRule = new ClusterRule( BackupReadReplicaIT.class )
+            .withNumberOfCoreMembers( 3 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withNumberOfReadReplicas( 1 )
             .withSharedReadReplicaParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceReadReplicaParam( OnlineBackupSettings.online_backup_server, serverId -> ":" + backupPort );
+            .withInstanceReadReplicaParam( OnlineBackupSettings.online_backup_server, ignored -> ":" + PortAuthority.allocatePort() );
 
     private Cluster cluster;
     private File backupPath;
@@ -106,36 +103,11 @@ public class BackupReadReplicaIT
 
     private String backupAddress( ReadReplicaGraphDatabase readReplica )
     {
-        InetSocketAddress inetSocketAddress = readReplica.getDependencyResolver()
-                .resolveDependency( Config.class ).get( CausalClusteringSettings.transaction_advertised_address )
-                .socketAddress();
-        return inetSocketAddress.getHostName() + ":" + backupPort;
-    }
+        HostnamePort hostnamePort = readReplica
+                .getDependencyResolver()
+                .resolveDependency( Config.class )
+                .get( OnlineBackupSettings.online_backup_server );
 
-    private static int findFreePort( int startRange, int endRange )
-    {
-        InetSocketAddress address = null;
-        RuntimeException ex = null;
-        for ( int port = startRange; port <= endRange; port++ )
-        {
-            address = new InetSocketAddress( port );
-
-            try
-            {
-                new ServerSocket( address.getPort(), 100, address.getAddress() ).close();
-                ex = null;
-                break;
-            }
-            catch ( IOException e )
-            {
-                ex = new RuntimeException( e );
-            }
-        }
-        if ( ex != null )
-        {
-            throw ex;
-        }
-        assert address != null;
-        return address.getPort();
+        return hostnamePort.toString();
     }
 }
