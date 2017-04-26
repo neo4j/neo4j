@@ -37,7 +37,6 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
 {
     private final Consumer<StorePropertyCursor> instanceCache;
 
-    private boolean fromDisk;
     private Iterator<StorageProperty> storagePropertyIterator;
 
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
@@ -76,7 +75,6 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
     @Override
     protected void doClose()
     {
-        fromDisk = false;
         instanceCache.accept( this );
     }
 }

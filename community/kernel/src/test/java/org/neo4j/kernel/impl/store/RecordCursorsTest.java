@@ -66,13 +66,11 @@ public class RecordCursorsTest
 
     private static void verifyAllCursorsClosed( RecordCursors recordCursors )
     {
-        verify( recordCursors.node() ).close();
         verify( recordCursors.relationship() ).close();
         verify( recordCursors.relationshipGroup() ).close();
         verify( recordCursors.property() ).close();
         verify( recordCursors.propertyString() ).close();
         verify( recordCursors.propertyArray() ).close();
-        verify( recordCursors.label() ).close();
     }
 
     private static RecordCursors newRecordCursorsWithMockedNeoStores()
