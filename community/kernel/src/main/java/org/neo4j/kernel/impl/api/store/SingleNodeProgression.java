@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.api.StatementConstants;
 
-public class SingleNodeProgression implements Progression
+public class SingleNodeProgression implements NodeProgression
 {
     private long nodeId;
 
