@@ -35,27 +35,33 @@ with ListSupport {
         m(state.query).getOrElse(idx, null)
 
       case IsList(collection) =>
-        val number = CastSupport.castOrFail[Number](index(ctx))
+        val item = index(ctx)
+        if (item == null) null
+        else {
+          val number = CastSupport.castOrFail[Number](item)
 
-        val longValue = number match {
-          case _ : java.lang.Double | _: java.lang.Float =>
-            throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
-          case _ => number.longValue()
+          val longValue = number match {
+            case _: java.lang.Double | _: java.lang.Float =>
+              throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
+            case _ => number.longValue()
+          }
+
+          if (longValue > Int.MaxValue || longValue < Int.MinValue)
+            throw new InvalidArgumentException(
+              s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${
+                Int.MinValue
+              }, got $number")
+
+          var idx = longValue.toInt
+
+          val collectionValue = collection.toIndexedSeq
+
+          if (idx < 0)
+            idx = collectionValue.size + idx
+
+          if (idx >= collectionValue.size || idx < 0) null
+          else collectionValue.apply(idx)
         }
-
-        if (longValue > Int.MaxValue || longValue < Int.MinValue)
-          throw new InvalidArgumentException(s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
-
-        var idx = longValue.toInt
-
-        val collectionValue = collection.toIndexedSeq
-
-        if (idx < 0)
-          idx = collectionValue.size + idx
-
-        if (idx >= collectionValue.size || idx < 0) null
-        else collectionValue.apply(idx)
-
       case _ =>
         throw new CypherTypeException(
           s"`$value` is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: $value[${index(ctx)}])")

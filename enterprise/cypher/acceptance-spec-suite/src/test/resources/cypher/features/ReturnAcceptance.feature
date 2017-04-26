@@ -53,3 +53,14 @@ Feature: ReturnAcceptance
       | n            |
     And no side effects
 
+  Scenario: Accessing list with null should yield a null
+    Given an empty graph
+    When executing query:
+      """
+      WITH [1,2,3] AS list RETURN list[null]
+      """
+    Then the result should be:
+      | list[null] |
+      | null       |
+    And no side effects
+
