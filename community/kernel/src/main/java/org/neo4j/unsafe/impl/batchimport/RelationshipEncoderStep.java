@@ -41,7 +41,7 @@ public class RelationshipEncoderStep extends ForkedProcessorStep<Batch<InputRela
 
     public RelationshipEncoderStep( StageControl control, Configuration config, NodeRelationshipCache cache )
     {
-        super( control, "RELATIONSHIP", config, 0 );
+        super( control, "RELATIONSHIP", config );
         this.cache = cache;
     }
 

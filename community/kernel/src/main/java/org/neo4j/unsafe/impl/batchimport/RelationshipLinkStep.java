@@ -42,7 +42,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
     public RelationshipLinkStep( StageControl control, Configuration config,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes, boolean forwards )
     {
-        super( control, "LINK", config, 0 );
+        super( control, "LINK", config );
         this.cache = cache;
         this.filter = filter;
         this.nodeTypes = nodeTypes;

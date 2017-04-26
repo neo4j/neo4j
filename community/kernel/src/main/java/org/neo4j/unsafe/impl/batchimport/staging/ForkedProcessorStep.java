@@ -19,216 +19,267 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-import static java.util.concurrent.locks.LockSupport.park;
+import static java.lang.Integer.max;
+import static java.lang.Integer.min;
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFieldOffset;
 
 /**
- * Executes batches sequentially, one at a time, although running multiple processing threads on each batch.
- * This is almost the opposite of {@link ProcessorStep} which has ability of running multiple batches in parallel,
+ * Executes batches by multiple threads. Each threads only processes its own part, e.g. based on node id,
+ * of a batch such that all threads together fully processes the entire batch.
+ * This is a very useful technique when the code processing a batch uses data structures that aren't,
+ * or cannot trivially or efficiently be synchronized and access order, e.g. per node id, must be preserved.
+ * This is different from {@link ProcessorStep} which has ability of running multiple batches in parallel,
  * each batch processed by one thread.
- *
- * The purpose of this type of step is to much better be able to parallelize steps that are seen to be
- * bottlenecks, but are generally very hard to figure out how to parallelize.
- *
- * Extending {@link ProcessorStep} and providing max processors 1, i.e. always single-threaded, i.e. only
- * max one batch being processed at any given point in time. This thread instead starts its own army of
- * internal "forked" processors which will sit and wait for notifications to start processing the next batch.
  */
-public abstract class ForkedProcessorStep<T> extends ProcessorStep<T>
+public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 {
     // ID 0 is the id of a processor which is always present, no matter how many or few processors
     // are assigned to process a batch. Therefore some tasks can be put on this processor, tasks
     // which may affect the batches as a whole.
     protected static final int MAIN = 0;
+    private final long COMPLETED_PROCESSORS_OFFSET = getFieldOffset( Unit.class, "completedProcessors" );
+    private final long PROCESSING_TIME_OFFSET = getFieldOffset( Unit.class, "processingTime" );
+    private static final ParkStrategy PARK = new ParkStrategy.Park( 10, MILLISECONDS );
 
-    // used by forked processors to count down when they're done, so that main processing thread
-    // knows when they're all done
-    private final AtomicInteger doneSignal = new AtomicInteger();
-    private final int maxForkedProcessors;
-    protected final List<ForkedProcessor> forkedProcessors = new ArrayList<>();
-    // main processing thread communicates batch to process using this variable
-    // it's not volatile, but piggy-backs on globalTicket for that
-    private T currentBatch;
-    // this ticket helps coordinating with the forked processors. It's checked by the forked processors
-    // and so acts as a useful memory barrier for other variables
-    private volatile long globalTicket;
-    // processorCount can be changed asynchronically by calls to processors(int), although its
-    // changes will only be applied between processing batches as to not interfere
-    private volatile int processorCount = 1;
-    // forked processors can communicate errors via this variable.
-    // Doesn't need to be volatile - piggy-backs off of doneSignal access between submitter thread
-    // and the failing processor thread
-    private Throwable error;
-    // represents the submitter thread which called process() method. Forked processor threads can
-    // ping/unpark submitter thread via this variable. Piggy-backs off of globalTicket/doneSignal.
-    private Thread submitterThread;
+    private final Object[] forkedProcessors;
+    private volatile int numberOfForkedProcessors;
+    private final Unit noop = new Unit( -1, null, 0 );
+    private final AtomicReference<Unit> head = new AtomicReference<>( noop );
+    private final AtomicReference<Unit> tail = new AtomicReference<>( noop );
+    private final Thread downstreamSender = new CompletedBatchesSender();
+    private volatile int numberOfProcessors = 1;
+    private final int maxProcessors;
+    private Thread receiverThread;
 
-    protected ForkedProcessorStep( StageControl control, String name, Configuration config, int maxProcessors )
+    protected ForkedProcessorStep( StageControl control, String name, Configuration config )
     {
-        super( control, name, config, 1 );
-        this.maxForkedProcessors = maxProcessors == 0 ? config.maxNumberOfProcessors() : maxProcessors;
+        super( control, name, config );
+        this.maxProcessors = config.maxNumberOfProcessors();
+        this.forkedProcessors = new Object[this.maxProcessors];
+
         applyProcessorCount();
     }
 
-    @Override
-    protected void process( T batch, BatchSender sender ) throws Throwable
+    private void applyProcessorCount()
     {
-        applyProcessorCount();
-        int processorCount = forkedProcessors.size();
-        if ( processorCount == 1 )
+        if ( numberOfForkedProcessors != numberOfProcessors )
         {
-            // No need to complicate things, just do the "forked" processing right here
-            forkedProcess( 0, 1, batch );
-        }
-        else
-        {
-            // Multiple processors, hand over the state to the processors and let them loose
-            currentBatch = batch;
-            submitterThread = Thread.currentThread(); // so that forked processors can unpark
-            // ^^^ --- everything above this line will piggy-back on the volatility from globalTicket
-            doneSignal.set( processorCount );
-            globalTicket++;
-            notifyProcessors();
-            while ( doneSignal.get() > 0 )
+            synchronized ( this )
             {
-                LockSupport.park();
+                int processors = numberOfProcessors;
+                while ( numberOfForkedProcessors < processors )
+                {
+                    forkedProcessors[numberOfForkedProcessors] =
+                            new ForkedProcessor( numberOfForkedProcessors, head.get() );
+                    numberOfForkedProcessors++;
+                }
+                while ( numberOfForkedProcessors > processors )
+                {
+                    numberOfForkedProcessors--;
+                    // It will notice itself later, the most important thing here is that further Units
+                    // will have a lower number of processor as expected max
+                }
             }
-            // any write to "error" is now visible to us because of our check (and forked processor's write)
-            // to doneSignal
-            if ( error != null )
-            {
-                throw error;
-            }
-        }
-
-        if ( downstream != null )
-        {
-            sender.send( batch );
-        }
-    }
-
-    private void notifyProcessors()
-    {
-        for ( int i = 0; i < forkedProcessors.size(); i++ )
-        {
-            LockSupport.unpark( forkedProcessors.get( i ) );
         }
     }
 
     @Override
-    public void close() throws Exception
+    public synchronized int processors( int delta )
     {
-        super.close();
-        for ( ForkedProcessor forkedProcessor : forkedProcessors )
+        numberOfProcessors = max( 1, min( numberOfProcessors + delta, maxProcessors ) );
+        return numberOfProcessors;
+    }
+
+    @Override
+    public void start( int orderingGuarantees )
+    {
+        super.start( orderingGuarantees );
+        downstreamSender.start();
+    }
+
+    @Override
+    public long receive( long ticket, T batch )
+    {
+        applyProcessorCount();
+        while ( head.get().ticket - tail.get().ticket >= maxProcessors - 1 )
         {
-            forkedProcessor.halt();
+            PARK.park( receiverThread = Thread.currentThread() );
+        }
+
+        queuedBatches.incrementAndGet();
+        Unit unit = new Unit( ticket, batch, numberOfForkedProcessors );
+        long time = nanoTime();
+
+        // [old head] [unit]
+        //               ^
+        //              head
+        Unit myHead;
+        do
+        {
+            myHead = head.get();
+        }
+        while ( !head.compareAndSet( myHead, unit ) );
+
+        // [old head] -next-> [unit]
+        myHead.next = unit;
+
+        long queueTime = nanoTime() - time;
+
+        return queueTime;
+    }
+
+    protected abstract void forkedProcess( int id, int processors, T batch );
+
+    @SuppressWarnings( "unchecked" )
+    void sendDownstream( Unit unit )
+    {
+        downstreamIdleTime.addAndGet( downstream.receive( unit.ticket, unit.batch ) );
+    }
+
+    // One unit of work. Contains the batch along with ticket and meta state during processing such
+    // as how many processors are done with this batch and link to next batch in the queue.
+    class Unit
+    {
+        private final long ticket;
+        private final T batch;
+
+        // Number of processors which is expected to process this batch, this is the number of processors
+        // assigned at the time of enqueueing this unit.
+        private final int processors;
+
+        // Updated when a ForkedProcessor have processed this unit.
+        // Atomic since changed by UnsafeUtil#getAndAddInt/Long.
+        // Volatile since read by CompletedBatchesSender.
+        private volatile int completedProcessors;
+        private volatile long processingTime;
+
+        // Volatile since assigned by thread enqueueing this unit after changing head of the queue.
+        private volatile Unit next;
+
+        Unit( long ticket, T batch, int processors )
+        {
+            this.ticket = ticket;
+            this.batch = batch;
+            this.processors = processors;
+        }
+
+        boolean isCompleted()
+        {
+            return processors > 0 && processors == completedProcessors;
+        }
+
+        void processorDone( long time )
+        {
+            UnsafeUtil.getAndAddLong( this, PROCESSING_TIME_OFFSET, time );
+            int prevCompletedProcessors = UnsafeUtil.getAndAddInt( this, COMPLETED_PROCESSORS_OFFSET, 1 );
+            assert prevCompletedProcessors < processors;
+            if ( prevCompletedProcessors == processors - 1 )
+            {
+                PARK.unpark( downstreamSender );
+            }
         }
     }
 
     /**
-     * This method is called by one of the threads processing this batch, there are multiple threads processing
-     * this batch in parallel, each with its own {@code id}.
-     *
-     * @param id zero-based id of this thread
-     * @param processors number of processors concurrently processing this batch
-     * @param batch batch to process
+     * Checks tail of queue and sends fully completed units downstream. Since
+     * {@link ForkedProcessorStep#receive(long, Object)} may park on queue bound, this thread will
+     * unpark the most recent thread calling receive to close that wait gap.
+     * {@link ForkedProcessor}, the last one processing a unit, will unpark this thread.
      */
-    protected abstract void forkedProcess( int id, int processors, T batch );
-
-    private void applyProcessorCount()
+    private final class CompletedBatchesSender extends Thread
     {
-        int processorCount = this.processorCount;
-        while ( processorCount != forkedProcessors.size() )
+        @Override
+        public void run()
         {
-            if ( forkedProcessors.size() < processorCount )
+            Unit current = tail.get();
+            while ( !isCompleted() )
             {
-                forkedProcessors.add( new ForkedProcessor( forkedProcessors.size() ) );
-            }
-            else
-            {
-                forkedProcessors.remove( forkedProcessors.size() - 1 ).halt();
+                Unit candidate = current.next;
+                if ( candidate != null && candidate.isCompleted() )
+                {
+                    if ( downstream != null )
+                    {
+                        sendDownstream( candidate );
+                    }
+                    current.next = null;
+                    current = candidate;
+                    tail.set( current );
+                    queuedBatches.decrementAndGet();
+                    doneBatches.incrementAndGet();
+                    totalProcessingTime.add( candidate.processingTime );
+                    checkNotifyEndDownstream();
+                }
+                else
+                {
+                    if ( receiverThread != null )
+                    {
+                        PARK.unpark( receiverThread );
+                    }
+                    PARK.park( this );
+                }
             }
         }
     }
 
-    @Override
-    public int processors( int delta )
-    {
-        // Don't delegate to ProcessorStep, because we're not parallelizing on batches, we're parallelizing
-        // inside each batch and batches must be processed in order
-        int processors = this.processorCount;
-        processors += delta;
-        if ( processors < 1 )
-        {
-            processors = 1;
-        }
-        if ( processors > maxForkedProcessors )
-        {
-            processors = maxForkedProcessors;
-        }
-        return this.processorCount = processors;
-    }
-
+    // Processes units, forever walking the queue looking for more units to process.
+    // If there's no work to do it will park a while, otherwise it will exhaust the queue and process
+    // as far as it can without park. No external thread unparks these forked processors.
+    // So in scenarios where a processor isn't fully saturated there may be short periods of parking,
+    // but should saturate without any park as long as there are units to process.
     class ForkedProcessor extends Thread
     {
         private final int id;
-        private volatile boolean halted;
-        private long localTicket;
+        private Unit current;
 
-        ForkedProcessor( int id )
+        ForkedProcessor( int id, Unit startingUnit )
         {
             super( name() + "-" + id );
             this.id = id;
-            this.localTicket = globalTicket;
+            this.current = startingUnit;
             start();
         }
 
         @Override
         public void run()
         {
-            while ( !halted )
+            while ( !isCompleted() )
             {
-                boolean processed = false;
-                try
+                Unit candidate = current.next;
+                if ( candidate != null )
                 {
-                    park();
-                    if ( !halted && localTicket + 1 == globalTicket )
+                    if ( id < candidate.processors )
                     {
-                        // ^^^ we just accessed volatile variable 'globalTicket' and so currentBatch and
-                        // forkedProcessors will now be up to date for us
-                        processed = true;
-                        forkedProcess( id, forkedProcessors.size(), currentBatch );
+                        // There's work to do
+                        long time = nanoTime();
+                        forkedProcess( id, candidate.processors, candidate.batch );
+                        candidate.processorDone( nanoTime() - time );
                     }
-                }
-                catch ( Throwable t )
-                {
-                    error = t;
-                }
-                finally
-                {
-                    // ^^^ finish off with counting down doneSignal which serves two purposes:
-                    // - notifying the main submitter thread that we're done
-                    // - going through a volatile memory access to let our changes propagate
-                    if ( processed )
+                    else
                     {
-                        localTicket++;
-                        doneSignal.decrementAndGet();
-                        LockSupport.unpark( submitterThread );
+                        // The id of this processor is less than that of the next unit's expected max.
+                        // This means that the number of assigned processors to this step has decreased
+                        // and that this processor have reached the end of its life.
+                        break;
                     }
+
+                    current = candidate;
+                }
+                else
+                {
+                    // There's no work to be done right now, park a while. When we wake up and work have accumulated
+                    // we'll plow throw them w/o park in between anyway.
+                    PARK.park( this );
                 }
             }
-        }
-
-        void halt()
-        {
-            halted = true;
-            LockSupport.unpark( this );
         }
     }
 }

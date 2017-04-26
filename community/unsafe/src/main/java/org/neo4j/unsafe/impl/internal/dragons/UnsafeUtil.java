@@ -252,6 +252,16 @@ public final class UnsafeUtil
     }
 
     /**
+     * Atomically add the given delta to the long field, and return its previous value.
+     * <p>
+     * This has the memory visibility semantics of a volatile read followed by a volatile write.
+     */
+    public static long getAndAddLong( Object obj, long offset, long delta )
+    {
+        return unsafe.getAndAddLong( obj, offset, delta );
+    }
+
+    /**
      * Orders loads before the fence, with loads and stores after the fence.
      */
     public static void loadFence()
