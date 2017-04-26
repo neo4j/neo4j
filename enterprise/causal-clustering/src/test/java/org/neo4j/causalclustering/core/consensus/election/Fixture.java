@@ -106,7 +106,7 @@ public class Fixture
         {
             raft.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
             raft.raftMachine().installCoreState( new RaftCoreState( new MembershipEntry( 0, members  ) ) );
-            raft.raftMachine.startTimers();
+            raft.raftMachine.postRecoveryActions();
         }
         net.start();
         awaitBootstrapped();
