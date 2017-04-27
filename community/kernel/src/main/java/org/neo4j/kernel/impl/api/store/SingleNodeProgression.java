@@ -44,8 +44,8 @@ public class SingleNodeProgression implements NodeProgression
     }
 
     @Override
-    public Mode mode()
+    public TransactionStateAccessMode mode()
     {
-        return Mode.FETCH;
+        return TransactionStateAccessMode.FETCH;
     }
 }

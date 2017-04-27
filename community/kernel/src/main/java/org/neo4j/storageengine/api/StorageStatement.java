@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -121,6 +122,8 @@ public interface StorageStatement extends AutoCloseable
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, PropertyContainerState state );
 
     Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock, PropertyContainerState state );
+
+    DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long groupId );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

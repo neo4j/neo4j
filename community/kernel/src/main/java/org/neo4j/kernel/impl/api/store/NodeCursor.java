@@ -40,8 +40,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.APPEND;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -53,13 +53,13 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private final Consumer<NodeCursor> instanceCache;
     private final NodeStore nodeStore;
     private final LockService lockService;
+    private final PageCursor pageCursor;
 
     private NodeProgression progression;
     private ReadableTransactionState state;
     private boolean fetched;
     private long[] labels;
     private Iterator<Long> added;
-    private PageCursor pageCursor;
 
     NodeCursor( NodeStore nodeStore, Consumer<NodeCursor> instanceCache, LockService lockService )
     {
@@ -90,7 +90,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     {
         labels = null;
         long id;
-        while ( (id = progression.nextId()) >= 0 )
+        while ( progression != null && (id = progression.nextId()) >= 0 )
         {
             if ( (state == null || !state.nodeIsDeletedInThisTx( id )) && readNodeRecord( id ) )
             {
@@ -136,9 +136,11 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     @Override
     public void close()
     {
+        fetched = false;
         labels = null;
         added = null;
         state = null;
+        progression = null;
         instanceCache.accept( this );
     }
 
@@ -146,7 +148,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     public void dispose()
     {
         pageCursor.close();
-        pageCursor = null;
     }
 
     @Override

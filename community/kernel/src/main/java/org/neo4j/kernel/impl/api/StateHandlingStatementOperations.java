@@ -97,7 +97,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -118,7 +117,6 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
-import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -1654,7 +1652,7 @@ public class StateHandlingStatementOperations
     {
         int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
                      ? 0
-                     : computeDegree( statement, node, direction, null );
+                     : visitDegrees( statement, node, new CountingDegreeVisitor( direction, node.isDense() ) ).count();
 
         return statement.hasTxStateWithChanges()
                 ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree )
@@ -1666,27 +1664,16 @@ public class StateHandlingStatementOperations
     {
         int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
                      ? 0
-                     : computeDegree( statement, node, direction, relType );
+                     : visitDegrees( statement, node, new CountingDegreeVisitor( direction, relType, node.isDense() ) ).count();
 
         return statement.hasTxStateWithChanges()
                ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree, relType )
                : degree;
     }
 
-    private int computeDegree( KernelStatement statement, NodeItem node, Direction direction, Integer relType )
+    private <T extends DegreeVisitor> T visitDegrees( KernelStatement statement, NodeItem node, T visitor )
     {
-        StorageStatement storeStatement = statement.getStoreStatement();
-        if ( node.isDense() )
-        {
-            return storeLayer
-                    .degreeRelationshipsInGroup( storeStatement, node.id(), node.nextGroupId(), direction, relType );
-        }
-        else
-        {
-            return count( relType == null
-                          ? storeLayer.nodeGetRelationships( storeStatement, node, direction, null )
-                          : storeLayer.nodeGetRelationships( storeStatement, node, direction, new int[]{relType},null )
-            );
-        }
+        storeLayer.degrees( statement.getStoreStatement(), node, visitor );
+        return visitor;
     }
 }

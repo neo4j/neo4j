@@ -19,7 +19,28 @@
  */
 package org.neo4j.kernel.impl.api;
 
+@FunctionalInterface
 public interface DegreeVisitor
 {
-    void visitDegree( int type, long outgoing, long incoming );
+    interface Visitable extends AutoCloseable
+    {
+        void accept( DegreeVisitor visitor );
+
+        @Override
+        void close();
+
+        default void once( DegreeVisitor visitor )
+        {
+            try
+            {
+                accept( visitor );
+            }
+            finally
+            {
+                close();
+            }
+        }
+    }
+
+    boolean visitDegree( int type, long outgoing, long incoming, long loop );
 }
