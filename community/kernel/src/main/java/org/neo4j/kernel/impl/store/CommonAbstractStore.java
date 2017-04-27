@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.graphdb.config.Setting;
@@ -53,6 +54,7 @@ import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -1028,7 +1030,21 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    public void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
+    @Override
+    public RECORD readRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor )
+    {
+        try
+        {
+            readIntoRecord( id, record, mode, cursor );
+            return record;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id
@@ -1099,30 +1115,45 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        try ( PageCursor cursor = newPageCursor() )
         {
             long highId = getHighId();
-            cursor.acquire( getNumberOfReservedLowIds(), CHECK );
+            RECORD record = newRecord();
             for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
-                if ( cursor.next( id ) )
+                readRecord( id, record, CHECK, cursor );
+                if ( record.inUse() )
                 {
-                    visitor.visit( cursor.get() );
+                    visitor.visit( record );
                 }
             }
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
     {
-        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
+        RECORD record = newRecord();
+        ArrayList<RECORD> records = new ArrayList<>();
+        try ( PageCursor cursor = newPageCursor() )
         {
-            cursor.acquire( firstId, mode );
-            return cursor.getAll();
+            long id = firstId;
+            while ( !NULL_REFERENCE.is( id )  )
+            {
+                readRecord( id, record, mode, cursor );
+                if ( record.inUse() )
+                {
+                    records.add( (RECORD) record.clone() );
+                }
+                id = getNextRecordReference( record );
+            }
+
+            return records;
         }
     }
 
+    @Override
     public PageCursor newPageCursor()
     {
         try
@@ -1133,12 +1164,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public RecordCursor<RECORD> newRecordCursor( final RECORD record )
-    {
-        return new StoreRecordCursor<>( record, this );
     }
 
     private void verifyAfterNotRead( RECORD record, RecordLoad mode )

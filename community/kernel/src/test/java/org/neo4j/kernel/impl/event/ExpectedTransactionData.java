@@ -130,7 +130,7 @@ class ExpectedTransactionData
         {
             Map<String,PropertyEntryImpl<Node>> map = expectedAssignedNodeProperties.get( node );
             PropertyEntryImpl<Node> prev = map.get( key );
-            map.put( key, property( node, key, value, prev != null ? prev.previouslyCommitedValue() : valueBeforeTx ) );
+            map.put( key, property( node, key, value, prev != null ? prev.previouslyCommittedValue() : valueBeforeTx ) );
         }
     }
 
@@ -141,7 +141,7 @@ class ExpectedTransactionData
         {
             Map<String,PropertyEntryImpl<Relationship>> map = expectedAssignedRelationshipProperties.get( rel );
             PropertyEntryImpl<Relationship> prev = map.get( key );
-            map.put( key, property( rel, key, value, prev != null ? prev.previouslyCommitedValue() : valueBeforeTx ) );
+            map.put( key, property( rel, key, value, prev != null ? prev.previouslyCommittedValue() : valueBeforeTx ) );
         }
     }
 
@@ -216,9 +216,9 @@ class ExpectedTransactionData
             {
                 map.remove( entity );
             }
-            if ( entry.previouslyCommitedValue() != null )
+            if ( entry.previouslyCommittedValue() != null )
             {   // this means that we're removing a previously changed property, i.e. there's a value to remove
-                return entry.previouslyCommitedValue();
+                return entry.previouslyCommittedValue();
             }
             return null;
         }

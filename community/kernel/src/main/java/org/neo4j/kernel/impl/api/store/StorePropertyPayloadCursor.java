@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.IntPredicate;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -218,7 +216,7 @@ class StorePropertyPayloadCursor implements Disposable
         long blockId = PropertyBlock.fetchLong( currentHeader() );
         do
         {
-            readRecord( store, cursor, blockId );
+            store.readRecord( blockId, record, FORCE, cursor );
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )
             {
@@ -231,19 +229,6 @@ class StorePropertyPayloadCursor implements Disposable
             blockId = record.getNextBlock();
         }
         while ( !Record.NULL_REFERENCE.is( blockId ) );
-    }
-
-    private void readRecord( CommonAbstractStore<DynamicRecord,?> store, PageCursor cursor, long blockId )
-    {
-        try
-        {
-            record.clear();
-            store.readIntoRecord( blockId, record, FORCE, cursor );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 
     private ByteBuffer newBiggerBuffer( int requiredCapacity )

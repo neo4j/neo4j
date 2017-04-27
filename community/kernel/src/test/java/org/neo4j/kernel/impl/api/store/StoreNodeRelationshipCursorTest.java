@@ -330,9 +330,9 @@ public class StoreNodeRelationshipCursorTest
                 record.clear();
                 record.setFirstNode( nodeId );
             }
-            return relationshipItem != null;
-        } ).when( relationshipStore ).readIntoRecord( anyLong(), eq( relationshipRecord ), any( RecordLoad.class ),
-                any( PageCursor.class ) );
+            return record;
+        } ).when( relationshipStore )
+                .readRecord( anyLong(), eq( relationshipRecord ), any( RecordLoad.class ), any( PageCursor.class ) );
         StoreNodeRelationshipCursor cursor =
                 new StoreNodeRelationshipCursor( relationshipStore, mock( RelationshipGroupStore.class ), this::noCache,
                         NO_LOCK_SERVICE );

@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -60,6 +59,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -648,13 +648,12 @@ public class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             MetaDataRecord record = store.newRecord();
-            try ( RecordCursor<MetaDataRecord> cursor = store.newRecordCursor( record ) )
+            try ( PageCursor cursor = store.newPageCursor() )
             {
-                cursor.acquire( 0, RecordLoad.NORMAL );
                 long highId = store.getHighId();
                 for ( long id = 0; id < highId; id++ )
                 {
-                    if ( cursor.next( id ) )
+                    if ( store.readRecord( id, record, NORMAL, cursor ).inUse() )
                     {
                         actualValues.add( record.getValue() );
                     }

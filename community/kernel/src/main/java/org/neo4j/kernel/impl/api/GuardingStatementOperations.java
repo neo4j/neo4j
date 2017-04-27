@@ -235,15 +235,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
-            RelationshipVisitor<EXCEPTION> visitor )
-            throws EntityNotFoundException, EXCEPTION
-    {
-        guard.check( statement );
-        entityReadDelegate.relationshipVisit( statement, relId, visitor );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
     {
         guard.check( statement );

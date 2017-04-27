@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -55,13 +54,13 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
     /**
      * Causes {@link #visitAddedRelationship(long, int, long, long)} to be invoked for added relationships.
      */
-    public RelationshipChangeVisitorAdapter( ReadableTransactionState txState )
+    protected RelationshipChangeVisitorAdapter( ReadableTransactionState txState )
     {
         this.added = added( requireNonNull( txState, "ReadableTxState" ) );
         this.removed = null;
     }
 
-    protected void visitAddedRelationship( long relationshipId ) throws ConstraintValidationException
+    private void visitAddedRelationship( long relationshipId ) throws ConstraintValidationException
     {
         if ( added != null )
         {
@@ -69,7 +68,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
         }
     }
 
-    protected void visitRemovedRelationship( long relationshipId ) throws ConstraintValidationException
+    private void visitRemovedRelationship( long relationshipId ) throws ConstraintValidationException
     {
         if ( removed != null )
         {
@@ -79,10 +78,6 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
 
     protected void visitAddedRelationship( long relationshipId, int type, long startNode, long endNode )
             throws ConstraintValidationException
-    {
-    }
-
-    protected void visitRemovedRelationship( long relationshipId, int type, long startNode, long endNode )
     {
     }
 
@@ -108,7 +103,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
                 throws ConstraintValidationException;
     }
 
-    DetailVisitor added( final ReadableTransactionState txState )
+    private DetailVisitor added( final ReadableTransactionState txState )
     {
         return new DetailVisitor()
         {
@@ -126,31 +121,6 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
                     throws ConstraintValidationException
             {
                 visitAddedRelationship( relId, type, startNode, endNode );
-            }
-        };
-    }
-
-    DetailVisitor removed( final StoreReadLayer store )
-    {
-        return new DetailVisitor()
-        {
-            @Override
-            void visit( long relationshipId ) throws ConstraintValidationException
-            {
-                try
-                {
-                    store.relationshipVisit( relationshipId, this );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new IllegalStateException( "No RelationshipState for removed relationship!", e );
-                }
-            }
-
-            @Override
-            public void visit( long relId, int type, long startNode, long endNode )
-            {
-                visitRemovedRelationship( relId, type, startNode, endNode );
             }
         };
     }

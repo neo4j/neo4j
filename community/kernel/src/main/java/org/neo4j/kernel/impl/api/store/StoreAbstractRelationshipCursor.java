@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Disposable;
 import org.neo4j.io.pagecache.PageCursor;
@@ -28,9 +26,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -44,9 +40,9 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 public abstract class StoreAbstractRelationshipCursor
         implements RelationshipVisitor<RuntimeException>, RelationshipItem, Cursor<RelationshipItem>, Disposable
 {
-    private final RelationshipRecord relationshipRecord;
-    private final PageCursor cursor;
-    private final RelationshipStore relationshipStore;
+    protected final RelationshipRecord relationshipRecord;
+    protected final PageCursor cursor;
+    protected final RelationshipStore relationshipStore;
     private final LockService lockService;
     protected boolean fetched;
 
@@ -123,20 +119,6 @@ public abstract class StoreAbstractRelationshipCursor
         return relationshipRecord.getNextProp();
     }
 
-    RelationshipRecord readRecord( long id, RecordLoad mode )
-    {
-        try
-        {
-            relationshipRecord.clear();
-            relationshipStore.readIntoRecord( id, relationshipRecord, mode, cursor );
-            return relationshipRecord;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
     @Override
     public final Lock lock()
     {
@@ -146,7 +128,8 @@ public abstract class StoreAbstractRelationshipCursor
             boolean success = false;
             try
             {
-                RelationshipRecord record = readRecord( relationshipRecord.getId(), FORCE );
+                RelationshipRecord record =
+                        relationshipStore.readRecord( relationshipRecord.getId(), relationshipRecord, FORCE, cursor );
                 // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
                 if ( !record.inUse() )
                 {

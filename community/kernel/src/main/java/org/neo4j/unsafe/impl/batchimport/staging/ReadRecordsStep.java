@@ -23,7 +23,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
- * A {@link RecordCursor} is used during the life cycle of this {@link Step}, e.g. between
+ * A {@link PageCursor} is used during the life cycle of this {@link Step}, e.g. between
  * {@link #start(int)} and {@link #close()}.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
@@ -43,7 +43,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
 {
     protected final RecordStore<RECORD> store;
     protected final RECORD record;
-    protected final RecordCursor<RECORD> cursor;
+    protected final PageCursor cursor;
     protected final long highId;
     private final RecordIdIterator ids;
     private final Class<RECORD> klass;
@@ -60,15 +60,9 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
         this.ids = ids;
         this.klass = (Class<RECORD>) store.newRecord().getClass();
         this.recordSize = store.getRecordSize();
-        this.cursor = store.newRecordCursor( record = store.newRecord() );
+        this.record = store.newRecord();
+        this.cursor = store.newPageCursor();
         this.highId = store.getHighId();
-    }
-
-    @Override
-    public void start( int orderingGuarantees )
-    {
-        cursor.acquire( 0, CHECK );
-        super.start( orderingGuarantees );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -82,7 +76,8 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProduc
             int i = 0;
             while ( ids.hasNext() )
             {
-                if ( cursor.next( ids.next() ) && !IdValidator.isReservedId( record.getId() ) )
+                RECORD record = store.readRecord( ids.next(), this.record, CHECK, cursor );
+                if ( record.inUse() && !IdValidator.isReservedId( record.getId() ) )
                 {
                     batch[i++] = (RECORD) record.clone();
                 }

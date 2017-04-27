@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
@@ -29,7 +28,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -102,7 +100,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
 
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            readGroupRecord( firstRelId );
+            relationshipGroupStore.readRecord( firstRelId, groupRecord, FORCE, groupStorePageCursor );
             relationshipId = nextChainStart();
         }
         else
@@ -111,19 +109,6 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
         }
 
         return this;
-    }
-
-    private void readGroupRecord( long id )
-    {
-        try
-        {
-            groupRecord.clear();
-            relationshipGroupStore.readIntoRecord( id, groupRecord, FORCE, groupStorePageCursor );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 
     private PrimitiveLongIterator addedNodeRelationships( long fromNodeId, Direction direction,
@@ -143,7 +128,8 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     {
         while ( relationshipId != NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RelationshipRecord relationshipRecord = readRecord( relationshipId, FORCE );
+            RelationshipRecord record =
+                    relationshipStore.readRecord( relationshipId, relationshipRecord, FORCE, cursor );
 
             // If we end up on a relationship record that isn't in use there's a good chance there
             // have been a concurrent transaction deleting this record under our feet. Since we don't
@@ -152,7 +138,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
             try
             {
                 // Direction check
-                if ( relationshipRecord.inUse() )
+                if ( record.inUse() )
                 {
                     if ( direction != Direction.BOTH )
                     {
@@ -160,7 +146,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
                         {
                         case INCOMING:
                         {
-                            if ( relationshipRecord.getSecondNode() != fromNodeId )
+                            if ( record.getSecondNode() != fromNodeId )
                             {
                                 continue;
                             }
@@ -169,7 +155,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
 
                         case OUTGOING:
                         {
-                            if ( relationshipRecord.getFirstNode() != fromNodeId )
+                            if ( record.getFirstNode() != fromNodeId )
                             {
                                 continue;
                             }
@@ -182,7 +168,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
                     }
 
                     // Type check
-                    if ( !allowedTypes.test( relationshipRecord.getType() ) )
+                    if ( !allowedTypes.test( record.getType() ) )
                     {
                         continue;
                     }
@@ -192,22 +178,22 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
             finally
             {
                 // Pick next relationship
-                if ( relationshipRecord.getFirstNode() == fromNodeId )
+                if ( record.getFirstNode() == fromNodeId )
                 {
-                    relationshipId = relationshipRecord.getFirstNextRel();
+                    relationshipId = record.getFirstNextRel();
                 }
-                else if ( relationshipRecord.getSecondNode() == fromNodeId )
+                else if ( record.getSecondNode() == fromNodeId )
                 {
-                    relationshipId = relationshipRecord.getSecondNextRel();
+                    relationshipId = record.getSecondNextRel();
                 }
                 else
                 {
                     throw new InvalidRecordException( "While loading relationships for Node[" + fromNodeId +
-                                                      "] a Relationship[" + relationshipRecord.getId() +
+                                                      "] a Relationship[" + record.getId() +
                                                       "] was encountered that had startNode:" +
                                                       " " +
-                                                      relationshipRecord.getFirstNode() + " and endNode: " +
-                                                      relationshipRecord.getSecondNode() +
+                                                      record.getFirstNode() + " and endNode: " +
+                                                      record.getSecondNode() +
                                                       ", i.e. which had neither start nor end node as the node we're loading relationships for" );
                 }
 
@@ -253,7 +239,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
             // Go to the next group
             if ( !NULL_REFERENCE.is( groupRecord.getNext() ) )
             {
-                readGroupRecord( groupRecord.getNext() );
+                relationshipGroupStore.readRecord( groupRecord.getNext(), groupRecord, FORCE, groupStorePageCursor );
             }
             else
             {
