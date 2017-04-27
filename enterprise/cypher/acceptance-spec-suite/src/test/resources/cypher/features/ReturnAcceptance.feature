@@ -86,3 +86,14 @@ Feature: ReturnAcceptance
       | null |
     And no side effects
 
+  Scenario: Accessing map with null should yield a null
+    Given an empty graph
+    When executing query:
+      """
+      WITH {key: "value"} AS map RETURN map[null] AS item
+      """
+    Then the result should be:
+      | item |
+      | null |
+    And no side effects
+

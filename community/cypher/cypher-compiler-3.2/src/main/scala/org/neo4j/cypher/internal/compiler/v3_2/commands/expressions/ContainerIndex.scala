@@ -31,8 +31,12 @@ with ListSupport {
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     value match {
       case IsMap(m) =>
-        val idx = CastSupport.castOrFail[String](index(ctx))
-        m(state.query).getOrElse(idx, null)
+        val item = index(ctx)
+        if (item == null) null
+        else {
+          val idx = CastSupport.castOrFail[String](item)
+          m(state.query).getOrElse(idx, null)
+        }
 
       case IsList(collection) =>
         val item = index(ctx)
