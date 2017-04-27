@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -242,7 +243,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
-        indexMap.foreachIndexProxy( ( indexId, proxy ) ->
+        indexMap.forEachIndexProxy( ( indexId, proxy ) ->
         {
             InternalIndexState state = proxy.getState();
             IndexDescriptor descriptor = proxy.getDescriptor();
@@ -656,17 +657,31 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public void forceAll()
     {
-        for ( IndexProxy index : indexMapRef.getAllIndexProxies() )
+        indexMapRef.indexMapSnapshot().forEachIndexProxy( forceIndexProxy() );
+    }
+
+    private BiConsumer<Long,IndexProxy> forceIndexProxy()
+    {
+        return ( id, indexProxy ) ->
         {
             try
             {
-                index.force();
+                indexProxy.force();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
-                throw new UnderlyingStorageException( "Unable to force " + index, e );
+                try
+                {
+                    IndexProxy proxy = indexMapRef.getIndexProxy( id );
+                    throw new UnderlyingStorageException( "Unable to force " + proxy, e );
+                }
+                catch ( IndexNotFoundKernelException infe )
+                {
+                    // index was dropped while we where try to flush it, we can continue to flush other indexes
+                }
+
             }
-        }
+        };
     }
 
     private void closeAllIndexes()
@@ -679,7 +694,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             {
                 indexStopFutures.add( index.close() );
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 log.error( "Unable to close index", e );
             }
