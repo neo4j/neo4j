@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -143,7 +144,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
                 new AvailabilityGuard( clock, NullLog.getInstance() ), clock,
-                new CanWrite(), new StoreCopyCheckPointMutex() );
+                new CanWrite(), new StoreCopyCheckPointMutex(), GroupingRecoveryCleanupWorkCollector.IMMEDIATE );
 
         return dataSource;
     }
