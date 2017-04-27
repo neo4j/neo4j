@@ -66,7 +66,6 @@ public class RecordCursorsTest
 
     private static void verifyAllCursorsClosed( RecordCursors recordCursors )
     {
-        verify( recordCursors.relationship() ).close();
         verify( recordCursors.relationshipGroup() ).close();
     }
 

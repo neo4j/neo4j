@@ -17,25 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel.impl.api.store;
 
-/**
- * Single degree item from a node cursor.
- */
-public interface DegreeItem
+public enum TransactionStateAccessMode
 {
-    /**
-     * @return relationship type token id for this degree.
-     */
-    int type();
-
-    /**
-     * @return number of outgoing relationships for the {@link #type()}. Loops are included.
-     */
-    long outgoing();
-
-    /**
-     * @return number of incoming relationships for the {@link #type()}. Loops are included.
-     */
-    long incoming();
+    APPEND,
+    FETCH
 }
