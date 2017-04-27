@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
