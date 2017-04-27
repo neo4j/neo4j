@@ -302,6 +302,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean clean;
 
     /**
+     * Don't overwrite 'dirty' bit in header on close if tree still needs cleaning.
+     */
+    private volatile boolean needsCleaning;
+
+    /**
      * Clean jobs part of recovery is posted here.
      */
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
@@ -372,7 +377,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.monitor.startupState( clean );
 
             // Prepare tree for action
-            boolean needsCleaning = !clean;
+            needsCleaning = !clean;
             clean = false;
             bumpUnstableGeneration();
             forceState();
@@ -809,7 +814,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 return;
             }
 
-            if ( !changesSinceLastCheckpoint )
+            if ( !changesSinceLastCheckpoint && !needsCleaning )
             {
                 clean = true;
                 forceState();
@@ -905,6 +910,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             try
             {
                 crashGenerationCleaner.clean();
+                needsCleaning = false;
             }
             catch ( Throwable e )
             {
@@ -980,6 +986,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
+        private Lock readLock;
 
         // Writer can't live past a checkpoint because of the mutex with checkpoint,
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
@@ -1020,9 +1027,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
 
             boolean success = false;
-            writerCheckpointMutex.readLock().lock();
             try
             {
+                readLock = writerCheckpointMutex.readLock();
+                readLock.lock();
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
@@ -1040,7 +1048,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 {
                     closeCursor();
                     writerTaken.set( false );
-                    writerCheckpointMutex.readLock().unlock();
+                    releaseLock();
                 }
             }
         }
@@ -1128,7 +1136,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         ", but writer is already closed." );
             }
             closeCursor();
-            writerCheckpointMutex.readLock().unlock();
+            releaseLock();
+        }
+
+        private void releaseLock()
+        {
+            if ( readLock != null )
+            {
+                readLock.unlock();
+                readLock = null;
+            }
         }
 
         private void closeCursor()

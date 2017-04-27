@@ -610,7 +610,7 @@ public class GBPTreeTest
         assertArrayEquals( expectedHeader, readHeader );
     }
 
-    /* Check-pointing tests */
+    /* Mutex tests */
 
     @Test( timeout = 5_000L )
     public void checkPointShouldLockOutWriter() throws Exception
@@ -649,7 +649,7 @@ public class GBPTreeTest
         {
             // WHEN
             Barrier.Control barrier = new Barrier.Control();
-             Future<?> write = executor.submit( throwing( () ->
+            Future<?> write = executor.submit( throwing( () ->
             {
                 try ( Writer<MutableLong,MutableLong> writer = index.writer() )
                 {
@@ -734,7 +734,7 @@ public class GBPTreeTest
     }
 
     @Test( timeout = 5_000L )
-    public void closeShouldWaitForWriter() throws Exception
+    public void writerShouldLockOutClose() throws Exception
     {
         // GIVEN
         GBPTree<MutableLong,MutableLong> index = index().build();
@@ -757,6 +757,117 @@ public class GBPTreeTest
         barrier.release();
         close.get();
         write.get();
+    }
+
+    @Test( timeout = 5_000L )
+    public void cleanJobShouldLockOutCheckpoint() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Make dirty
+            index.writer().close();
+        }
+
+        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
+        {
+            // WHEN
+            // Cleanup not finished
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+            monitor.barrier.awaitUninterruptibly();
+            index.writer().close();
+
+            // THEN
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            shouldWait( checkpoint );
+
+            monitor.barrier.release();
+            cleanup.get();
+            checkpoint.get();
+        }
+    }
+
+    @Test( timeout = 5_000L )
+    public void cleanJobShouldLockOutClose() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Make dirty
+            index.writer().close();
+        }
+
+        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build();
+
+        // WHEN
+        // Cleanup not finished
+        Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+        monitor.barrier.awaitUninterruptibly();
+
+        // THEN
+        Future<?> close = executor.submit( throwing( index::close ) );
+        shouldWait( close );
+
+        monitor.barrier.release();
+        cleanup.get();
+        close.get();
+    }
+
+    @Test( timeout = 5_000L )
+    public void cleanJobShouldNotLockOutWriter() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Make dirty
+            index.writer().close();
+        }
+
+        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
+        {
+            // WHEN
+            // Cleanup not finished
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+            monitor.barrier.awaitUninterruptibly();
+
+            // THEN
+            Future<?> writer = executor.submit( throwing( () -> index.writer().close() ) );
+            writer.get();
+
+            monitor.barrier.release();
+            cleanup.get();
+        }
+    }
+
+    @Test
+    public void writerShouldNotLockOutCleanJob() throws Exception
+    {
+        // GIVEN
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Make dirty
+            index.writer().close();
+        }
+
+        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( cleanupWork ).build() )
+        {
+            // WHEN
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                // THEN
+                Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+                // Move writer to let cleaner pass
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+                cleanup.get();
+            }
+        }
     }
 
     /* Insertion and read tests */
@@ -1223,6 +1334,12 @@ public class GBPTreeTest
             return this;
         }
 
+        private GBPTreeBuilder with( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+        {
+            this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+            return this;
+        }
+
         private GBPTree<MutableLong,MutableLong> build() throws IOException
         {
             PageCache pageCacheToUse;
@@ -1242,6 +1359,17 @@ public class GBPTreeTest
 
             return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader,
                     recoveryCleanupWorkCollector );
+        }
+    }
+
+    private static class CleanJobControlledMonitor implements Monitor
+    {
+        private final Barrier.Control barrier = new Barrier.Control();
+
+        @Override
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+        {
+            barrier.reached();
         }
     }
 
