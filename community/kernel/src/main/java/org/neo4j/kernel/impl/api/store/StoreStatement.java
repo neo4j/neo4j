@@ -89,7 +89,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected NodeCursor create()
             {
-                return new NodeCursor( nodeStore.newRecord(), this, nodeStore, lockService );
+                return new NodeCursor( nodeStore, this, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -124,7 +124,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( recordCursors, this );
+                return new StorePropertyCursor( neoStores.getPropertyStore(), this );
             }
         };
         singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
@@ -132,7 +132,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( recordCursors, this );
+                return new StoreSinglePropertyCursor( neoStores.getPropertyStore(), this );
             }
         };
     }

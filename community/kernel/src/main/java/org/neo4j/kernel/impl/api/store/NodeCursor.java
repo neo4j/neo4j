@@ -61,11 +61,10 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private Iterator<Long> added;
     private PageCursor pageCursor;
 
-    NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, NodeStore nodeStore,
-            LockService lockService )
+    NodeCursor( NodeStore nodeStore, Consumer<NodeCursor> instanceCache, LockService lockService )
     {
         this.pageCursor = nodeStore.newPageCursor();
-        this.nodeRecord = nodeRecord;
+        this.nodeRecord = nodeStore.newRecord();
         this.instanceCache = instanceCache;
         this.nodeStore = nodeStore;
         this.lockService = lockService;

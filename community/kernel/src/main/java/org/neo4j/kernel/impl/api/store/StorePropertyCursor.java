@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -39,9 +40,9 @@ public class StorePropertyCursor extends StoreAbstractPropertyCursor
 
     private Iterator<StorageProperty> storagePropertyIterator;
 
-    public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
+    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
     {
-        super( cursors  );
+        super( propertyStore );
         this.instanceCache = instanceCache;
     }
 
