@@ -103,30 +103,27 @@ public class RemoteStore
         long lastTxId = BASE_TX_ID;
         try ( Lifespan ignored = new Lifespan( txStore ) )
         {
-            TransactionCursor cursor;
-            try
+            try ( TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
             {
-                cursor = txStore.getTransactions( lastCleanTxId );
+                while ( cursor.next() )
+                {
+                    CommittedTransactionRepresentation tx = cursor.get();
+                    lastTxId = tx.getCommitEntry().getTxId();
+                }
+
+                if ( lastTxId < lastCleanTxId )
+                {
+                    throw new IllegalStateException( "Metadata index was higher than transaction log index." );
+                }
+
+                // we don't want to pull a transaction we already have in the log, hence +1
+                return lastTxId + 1;
             }
             catch ( NoSuchTransactionException e )
             {
                 log.info( "No transaction logs found. Will use metadata store as base for pull request." );
                 return lastCleanTxId;
             }
-
-            while ( cursor.next() )
-            {
-                CommittedTransactionRepresentation tx = cursor.get();
-                lastTxId = tx.getCommitEntry().getTxId();
-            }
-
-            if ( lastTxId < lastCleanTxId )
-            {
-                throw new IllegalStateException( "Metadata index was higher than transaction log index." );
-            }
-
-            // we don't want to pull a transaction we already have in the log, hence +1
-            return lastTxId + 1;
         }
     }
 
