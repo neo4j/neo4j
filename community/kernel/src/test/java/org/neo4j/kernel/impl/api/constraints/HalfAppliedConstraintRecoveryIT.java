@@ -24,7 +24,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.function.BiConsumer;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -34,6 +35,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -41,11 +43,16 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
@@ -66,30 +73,38 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  */
 public class HalfAppliedConstraintRecoveryIT
 {
+    private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> REAPPLY =
+            (db,txs) -> apply( db, txs.subList( txs.size() - 1, txs.size() ) );
+    private static final BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> RECREATE =
+            (db,txs) -> createConstraint( db );
+
     private static final Label LABEL = TestLabels.LABEL_ONE;
     private static final String KEY = "key";
 
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
+    private final Monitors monitors = new Monitors();
 
     @Test
-    public void shouldBeAbleToRecoverFromAndContinueApplyHalfConstraintAppliedBeforeCrash() throws Exception
+    public void recoverFromAndContinueApplyHalfConstraintAppliedBeforeCrash() throws Exception
     {
-        shouldBeAbleToRecoverFromHalfConstraintAppliedBeforeCrash( true );
+        recoverFromHalfConstraintAppliedBeforeCrash( REAPPLY );
     }
 
     @Test
-    public void shouldBeAbleToRecoverFromAndRecreateHalfConstraintAppliedBeforeCrash() throws Exception
+    public void recoverFromAndRecreateHalfConstraintAppliedBeforeCrash() throws Exception
     {
-        shouldBeAbleToRecoverFromHalfConstraintAppliedBeforeCrash( false );
+        recoverFromHalfConstraintAppliedBeforeCrash( RECREATE );
     }
 
-    private void shouldBeAbleToRecoverFromHalfConstraintAppliedBeforeCrash( boolean reApply ) throws Exception
+    private void recoverFromHalfConstraintAppliedBeforeCrash(
+            BiConsumer<GraphDatabaseAPI,List<TransactionRepresentation>> applier ) throws Exception
     {
         // GIVEN
         List<TransactionRepresentation> transactions = createTransactionsForCreatingConstraint();
-        GraphDatabaseAPI db =
-                (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        GraphDatabaseAPI db = newDb();
         EphemeralFileSystemAbstraction crashSnapshot;
         try
         {
@@ -106,16 +121,7 @@ public class HalfAppliedConstraintRecoveryIT
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( crashSnapshot ).newImpermanentDatabase();
         try
         {
-            if ( reApply )
-            {
-                // Continue to apply this transaction, as if the rest of the creation was pulled
-                apply( db, transactions.subList( transactions.size() - 1, transactions.size() ) );
-            }
-            else
-            {
-                // Make another whole attempt to create this contraint, where this index should just be reused.
-                createConstraint( db );
-            }
+            applier.accept( db, transactions );
 
             // THEN
             try ( Transaction tx = db.beginTx() )
@@ -135,13 +141,87 @@ public class HalfAppliedConstraintRecoveryIT
         }
     }
 
-    private void flushStores( GraphDatabaseAPI db )
+    @Test
+    public void recoverFromNonUniqueHalfConstraintAppliedBeforeCrash() throws Exception
+    {
+        // GIVEN
+        List<TransactionRepresentation> transactions = createTransactionsForCreatingConstraint();
+        EphemeralFileSystemAbstraction crashSnapshot;
+        {
+            GraphDatabaseAPI db = newDb();
+            Barrier.Control barrier = new Barrier.Control();
+            monitors.addMonitorListener( new IndexingService.MonitorAdapter()
+            {
+                @Override
+                public void indexPopulationScanComplete()
+                {
+                    barrier.reached();
+                }
+            } );
+            try
+            {
+                // Create two nodes that have duplicate property values
+                String value = "v";
+                try ( Transaction tx = db.beginTx() )
+                {
+                    for ( int i = 0; i < 2; i++ )
+                    {
+                        db.createNode( LABEL ).setProperty( KEY, value );
+                    }
+                    tx.success();
+                }
+                t2.execute( state ->
+                {
+                    apply( db, transactions.subList( 0, transactions.size() - 1 ) );
+                    return null;
+                } );
+                barrier.await();
+                flushStores( db );
+                // Crash before index population have discovered that there are duplicates
+                // (nowadays happens in between index population and creating the constraint)
+                crashSnapshot = fs.snapshot();
+                barrier.release();
+            }
+            finally
+            {
+                db.shutdown();
+            }
+        }
+
+        // WHEN
+        {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( crashSnapshot )
+                    .newImpermanentDatabase();
+            try
+            {
+                RECREATE.accept( db, transactions );
+                fail( "Should not be able to create constraint on non-unique data" );
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // THEN good
+            }
+            finally
+            {
+                db.shutdown();
+            }
+        }
+    }
+
+    private GraphDatabaseAPI newDb()
+    {
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs ).setMonitors( monitors )
+                .newImpermanentDatabase();
+    }
+
+
+    private static void flushStores( GraphDatabaseAPI db )
     {
         db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                 .testAccessNeoStores().flush( IOLimiter.unlimited() );
     }
 
-    private void apply( GraphDatabaseAPI db, List<TransactionRepresentation> transactions )
+    private static void apply( GraphDatabaseAPI db, List<TransactionRepresentation> transactions )
     {
         TransactionCommitProcess committer =
                 db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
@@ -158,7 +238,7 @@ public class HalfAppliedConstraintRecoveryIT
         } );
     }
 
-    private List<TransactionRepresentation> createTransactionsForCreatingConstraint() throws Exception
+    private static List<TransactionRepresentation> createTransactionsForCreatingConstraint() throws Exception
     {
         // A separate db altogether
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -180,7 +260,7 @@ public class HalfAppliedConstraintRecoveryIT
         }
     }
 
-    private void createConstraint( GraphDatabaseAPI db )
+    private static void createConstraint( GraphDatabaseAPI db )
     {
         try ( Transaction tx = db.beginTx() )
         {
