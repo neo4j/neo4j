@@ -459,4 +459,8 @@ order by a.age""").toList)
   test("accessing a list with null as upper bound should return null") {
     executeWithAllPlanners("RETURN [1,2,3][1..null] AS result").toList should equal(List(Map("result" -> null)))
   }
+
+  test("accessing a map with null should return null") {
+    executeWithAllPlanners("RETURN {key: 1337}[null] AS result").toList should equal(List(Map("result" -> null)))
+  }
 }

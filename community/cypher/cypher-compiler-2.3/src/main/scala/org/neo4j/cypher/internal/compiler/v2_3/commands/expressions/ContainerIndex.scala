@@ -33,8 +33,9 @@ with CollectionSupport {
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     value match {
       case IsMap(m) =>
-        val idx = CastSupport.castOrFail[String](index(ctx))
-        m(state.query).getOrElse(idx, null)
+        val item = index(ctx)
+        if (item == null) null
+        else m(state.query).getOrElse(CastSupport.castOrFail[String](item), null)
 
       case IsCollection(collection) =>
         val item = index(ctx)
