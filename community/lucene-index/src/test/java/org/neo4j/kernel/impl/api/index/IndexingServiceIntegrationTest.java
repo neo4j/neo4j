@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -59,6 +61,8 @@ public class IndexingServiceIntegrationTest
     private static final SchemaIndexProvider.Descriptor indexDescriptor =
             LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private GraphDatabaseService database;
@@ -96,7 +100,7 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException
+    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException, IOException
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -122,6 +126,46 @@ public class IndexingServiceIntegrationTest
         IndexProxy weatherIndex = indexingService.getIndexProxy( new IndexDescriptor( weatherLabelId, propertyId) );
         assertEquals( InternalIndexState.ONLINE, clothesIndex.getState());
         assertEquals( InternalIndexState.ONLINE, weatherIndex.getState());
+    }
+
+    @Test
+    public void failForceIndexesWhenOneOfTheIndexesIsBroken() throws Exception
+    {
+        String constraintLabelPrefix = "ConstraintLabel";
+        String constraintPropertyPrefix = "ConstraintProperty";
+        String indexLabelPrefix = "Label";
+        String indexPropertyPrefix = "Property";
+        for ( int i = 0; i < 10; i++ )
+        {
+            try ( Transaction transaction = database.beginTx() )
+            {
+                database.schema().constraintFor( Label.label( constraintLabelPrefix + i ) )
+                        .assertPropertyIsUnique( constraintPropertyPrefix + i ).create();
+                database.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
+                transaction.success();
+            }
+        }
+
+        try ( Transaction ignored = database.beginTx() )
+        {
+            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+        }
+
+        IndexingService indexingService = getIndexingService( database );
+
+        LabelTokenHolder labelTokenHolder = getLabelTokenHolder( database );
+        PropertyKeyTokenHolder propertyKeyTokenHolder = getPropertyKeyTokenHolder( database );
+
+        int indexLabel7 = labelTokenHolder.getIdByName( indexLabelPrefix + 7 );
+        int indexProperty7 = propertyKeyTokenHolder.getIdByName( indexPropertyPrefix + 7 );
+
+        IndexProxy index = indexingService.getIndexProxy( new IndexDescriptor( indexLabel7, indexProperty7) );
+
+        index.drop();
+
+        expectedException.expect( UnderlyingStorageException.class );
+        expectedException.expectMessage( "Unable to force" );
+        indexingService.forceAll();
     }
 
     private PropertyKeyTokenHolder getPropertyKeyTokenHolder( GraphDatabaseService database )
