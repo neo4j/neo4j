@@ -73,7 +73,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     private boolean loadNextRecord()
     {
         return relationshipId != NO_SUCH_RELATIONSHIP &&
-                readRecord( relationshipId, CHECK ).inUse();
+                relationshipStore.readRecord( relationshipId, relationshipRecord, CHECK, cursor ).inUse();
     }
 
     private boolean fetchFromTxState()

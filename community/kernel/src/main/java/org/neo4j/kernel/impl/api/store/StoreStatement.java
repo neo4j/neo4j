@@ -283,19 +283,4 @@ public class StoreStatement implements StorageStatement
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
     }
-
-    public static <RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore<RECORD,?>> RECORD read( long id,
-            STORE store, RECORD record, RecordLoad mode, PageCursor cursor )
-    {
-        try
-        {
-            record.clear();
-            store.readIntoRecord( id, record, mode, cursor );
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
 }

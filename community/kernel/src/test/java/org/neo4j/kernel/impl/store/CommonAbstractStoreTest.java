@@ -145,26 +145,6 @@ public class CommonAbstractStoreTest
     }
 
     @Test
-    public void recordCursorCallsNextOnThePageCursor() throws IOException
-    {
-        TheStore store = newStore();
-        long recordId = 4;
-        long pageIdForRecord = store.pageIdForRecord( recordId );
-
-        when( pageCursor.getCurrentPageId() ).thenReturn( pageIdForRecord );
-        when( pageCursor.next( anyInt() ) ).thenReturn( true );
-
-        RecordCursor<TheRecord> cursor = store.newRecordCursor( newRecord( -1 ) );
-        cursor.acquire( recordId, RecordLoad.FORCE );
-
-        cursor.next( recordId );
-
-        InOrder order = inOrder( pageCursor );
-        order.verify( pageCursor ).next( pageIdForRecord );
-        order.verify( pageCursor ).shouldRetry();
-    }
-
-    @Test
     public void failStoreInitializationWhenHeaderRecordCantBeRead() throws IOException
     {
         File storeFile = dir.file( "a" );
@@ -188,67 +168,6 @@ public class CommonAbstractStoreTest
         {
             dynamicArrayStore.initialise( false );
         }
-    }
-
-    @Test
-    public void recordCursorPinsEachPageItReads() throws Exception
-    {
-        File storeFile = dir.file( "a" );
-        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
-        RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
-        PageCacheRule.PageCacheConfig pageCacheConfig = config().withTracer( tracer )
-                                        .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.empty() );
-
-        try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
-                pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
-        {
-            store.initialise( true );
-            assertNull( tracer.tryObserve( Event.class ) );
-
-            long nodeId1 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
-            long nodeId2 = insertNodeRecordAndObservePinEvent( pageCursorTracer, store );
-
-            try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() ) )
-            {
-                cursor.acquire( 0, RecordLoad.NORMAL );
-                assertTrue( cursor.next( nodeId1 ) );
-                assertTrue( cursor.next( nodeId2 ) );
-            }
-            // Because both nodes hit the same page, the code will only pin the page once and thus only emit one pin
-            // event. This pin event will not be observable until after we have closed the cursor. We could
-            // alternatively have chosen nodeId2 to be on a different page than nodeId1. In that case, the pin event
-            // for nodeId1 would have been visible after our call to cursor.next( nodeId2 ).
-            assertNotNull( pageCursorTracer.tryObserve( Pin.class ) );
-            assertNull( pageCursorTracer.tryObserve( Event.class ) );
-        }
-    }
-
-    @Test
-    public void recordCursorGetAllForEmptyCursor() throws IOException
-    {
-        TheStore store = newStore();
-        long recordId = 4;
-        long pageIdForRecord = store.pageIdForRecord( recordId );
-
-        when( pageCursor.getCurrentPageId() ).thenReturn( pageIdForRecord );
-        when( pageCursor.next( anyInt() ) ).thenReturn( false );
-
-        RecordCursor<TheRecord> cursor = store.newRecordCursor( newRecord( -1 ) );
-        cursor.acquire( recordId, RecordLoad.FORCE );
-
-        assertThat( cursor.getAll(), is( empty() ) );
-    }
-
-    @Test
-    public void recordCursorGetAll()
-    {
-        TheStore store = newStore();
-        RecordCursor<TheRecord> cursor = spy( store.newRecordCursor( store.newRecord() ) );
-        doReturn( true ).doReturn( true ).doReturn( true ).doReturn( false ).when( cursor ).next();
-        doReturn( newRecord( 1 ) ).doReturn( newRecord( 5 ) ).doReturn( newRecord( 42 ) ).when( cursor ).get();
-
-        assertEquals( Arrays.asList( newRecord( 1 ), newRecord( 5 ), newRecord( 42 ) ), cursor.getAll() );
     }
 
     @Test

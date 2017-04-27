@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.util.function.IntPredicate;
 
 import org.neo4j.cursor.Cursor;
@@ -28,7 +27,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -87,7 +85,7 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
             }
 
             // No, OK continue down the chain and hunt for more...
-            PropertyRecord propertyRecord = readRecord();
+            PropertyRecord propertyRecord = propertyStore.readRecord( nextPropertyId, record, FORCE, cursor );
             nextPropertyId = propertyRecord.getNextProp();
             if ( propertyRecord.inUse() )
             {
@@ -109,23 +107,6 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
 
         assert property == null;
         return (property = nextAdded()) != null;
-    }
-
-    private PropertyRecord readRecord()
-    {
-        try
-        {
-            record.clear();
-            if ( !Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
-            {
-                propertyStore.readIntoRecord( nextPropertyId, record, FORCE, cursor );
-            }
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 
     private boolean payloadHasNext()

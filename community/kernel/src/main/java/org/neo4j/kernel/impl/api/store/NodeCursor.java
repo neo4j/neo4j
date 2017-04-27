@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
@@ -31,7 +30,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -92,14 +90,16 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         long id;
         while ( progression != null && (id = progression.nextId()) >= 0 )
         {
-            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) && readNodeRecord( id ) )
-            {
-                return true;
-            }
 
             if ( state != null && progression.mode() == FETCH && state.nodeIsAddedInThisTx( id ) )
             {
                 recordFromTxState( id );
+                return true;
+            }
+
+            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) &&
+                    nodeStore.readRecord( id, nodeRecord, CHECK, pageCursor ).inUse() )
+            {
                 return true;
             }
         }
@@ -111,20 +111,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         }
 
         return false;
-    }
-
-    private boolean readNodeRecord( long id )
-    {
-        try
-        {
-            nodeRecord.clear();
-            nodeStore.readIntoRecord( id, nodeRecord, CHECK, pageCursor );
-            return nodeRecord.inUse();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 
     private void recordFromTxState( long id )
@@ -247,7 +233,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
             try
             {
                 // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
-                if ( !readNodeRecord( nodeRecord.getId() ) )
+                if ( !nodeStore.readRecord( nodeRecord.getId(), nodeRecord, CHECK, pageCursor ).inUse() )
                 {
                     // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
                     // is to only set the inUse field on loading an unused record. This should (and will)
