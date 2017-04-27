@@ -450,4 +450,8 @@ order by a.age""").toList)
 
     result.toList should equal(List(Map("n"-> n, "n.foo" -> 42)))
   }
+
+  test("accessing a list with null should return null") {
+    executeWithAllPlanners("RETURN [1,2,3][null] AS result").toList should equal(List(Map("result" -> null)))
+  }
 }

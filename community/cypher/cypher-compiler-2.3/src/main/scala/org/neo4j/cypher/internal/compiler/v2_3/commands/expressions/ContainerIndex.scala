@@ -37,14 +37,18 @@ with CollectionSupport {
         m(state.query).getOrElse(idx, null)
 
       case IsCollection(collection) =>
-        var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
-        val collectionValue = collection.toVector
+        val item = index(ctx)
+        if (item == null) null
+        else {
+          var idx = CastSupport.castOrFail[Number](item).intValue()
+          val collectionValue = collection.toVector
 
-        if (idx < 0)
-          idx = collectionValue.size + idx
+          if (idx < 0)
+            idx = collectionValue.size + idx
 
-        if (idx >= collectionValue.size || idx < 0) null
-        else collectionValue.apply(idx)
+          if (idx >= collectionValue.size || idx < 0) null
+          else collectionValue.apply(idx)
+        }
 
       case _ =>
         throw new CypherTypeException(s"""
