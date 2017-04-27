@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -46,7 +50,10 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationshipCursor
 {
     private final RelationshipGroupRecord groupRecord;
+    private final RelationshipGroupStore relationshipGroupStore;
     private final Consumer<StoreNodeRelationshipCursor> instanceCache;
+    private final PageCursor groupStorePageCursor;
+
     private boolean isDense;
     private long relationshipId;
     private long fromNodeId;
@@ -54,18 +61,17 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     private IntPredicate allowedTypes;
     private int groupChainIndex;
     private boolean end;
-    private final RecordCursors cursors;
 
-    public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
-            RelationshipGroupRecord groupRecord,
+    public StoreNodeRelationshipCursor( RelationshipStore relationshipStore,
+            RelationshipGroupStore relationshipGroupStore,
             Consumer<StoreNodeRelationshipCursor> instanceCache,
-            RecordCursors cursors,
             LockService lockService )
     {
-        super( relationshipRecord, cursors, lockService );
-        this.groupRecord = groupRecord;
+        super( relationshipStore, lockService );
+        this.relationshipGroupStore = relationshipGroupStore;
+        this.groupRecord = relationshipGroupStore.newRecord();
+        this.groupStorePageCursor = relationshipGroupStore.newPageCursor();
         this.instanceCache = instanceCache;
-        this.cursors = cursors;
     }
 
     public StoreNodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
@@ -96,7 +102,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
 
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            cursors.relationshipGroup().next( firstRelId, groupRecord, FORCE );
+            readGroupRecord( firstRelId );
             relationshipId = nextChainStart();
         }
         else
@@ -105,6 +111,19 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
         }
 
         return this;
+    }
+
+    private void readGroupRecord( long id )
+    {
+        try
+        {
+            groupRecord.clear();
+            relationshipGroupStore.readIntoRecord( id, groupRecord, FORCE, groupStorePageCursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     private PrimitiveLongIterator addedNodeRelationships( long fromNodeId, Direction direction,
@@ -124,7 +143,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     {
         while ( relationshipId != NO_NEXT_RELATIONSHIP.intValue() )
         {
-            relationshipRecordCursor.next( relationshipId, relationshipRecord, FORCE );
+            RelationshipRecord relationshipRecord = readRecord( relationshipId, FORCE );
 
             // If we end up on a relationship record that isn't in use there's a good chance there
             // have been a concurrent transaction deleting this record under our feet. Since we don't
@@ -236,7 +255,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
                 // Go to the next group
                 if ( !NULL_REFERENCE.is( groupRecord.getNext() ) )
                 {
-                    cursors.relationshipGroup().next( groupRecord.getNext(), groupRecord, FORCE );
+                    readGroupRecord( groupRecord.getNext() );
                 }
                 else
                 {
@@ -309,5 +328,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
     {
         return String
                 .format( "RelationShipItem[id=%d, type=%d, start=%d, end=%d]", id(), type(), startNode(), endNode() );
+    }
+
+    @Override
+    public void dispose()
+    {
+        super.dispose();
+        groupStorePageCursor.close();
     }
 }

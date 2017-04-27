@@ -396,7 +396,7 @@ public class NeoStores implements AutoCloseable
         return (DynamicStringStore) getStore( StoreType.PROPERTY_KEY_TOKEN_NAME );
     }
 
-    public RecordStore<RelationshipGroupRecord> getRelationshipGroupStore()
+    public RelationshipGroupStore getRelationshipGroupStore()
     {
         return (RelationshipGroupStore) getStore( StoreType.RELATIONSHIP_GROUP );
     }
