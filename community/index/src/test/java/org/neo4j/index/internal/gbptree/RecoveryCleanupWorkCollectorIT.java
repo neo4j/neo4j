@@ -73,7 +73,7 @@ public class RecoveryCleanupWorkCollectorIT
     @Test
     public void multipleTrees() throws Exception
     {
-        doTest( 1_000 );
+        doTest( 500 );
     }
 
     private void doTest( int numberOfTrees ) throws IOException
