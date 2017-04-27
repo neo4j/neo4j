@@ -98,8 +98,7 @@ public class ExecutionSupervisors
      */
     public static ExecutionMonitor withDynamicProcessorAssignment( ExecutionMonitor monitor, Configuration config )
     {
-        DynamicProcessorAssigner dynamicProcessorAssigner = new DynamicProcessorAssigner( config,
-                min( config.maxNumberOfProcessors(), getRuntime().availableProcessors() ) );
+        DynamicProcessorAssigner dynamicProcessorAssigner = new DynamicProcessorAssigner( config );
         return new MultiExecutionMonitor( monitor, dynamicProcessorAssigner );
     }
 }
