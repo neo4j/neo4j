@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -34,13 +33,11 @@ public class RecordCursors implements AutoCloseable
 {
     private final RecordCursor<RelationshipRecord> relationship;
     private final RecordCursor<RelationshipGroupRecord> relationshipGroup;
-    private final RecordCursor<PropertyRecord> property;
 
     public RecordCursors( NeoStores neoStores )
     {
         relationship = newCursor( neoStores.getRelationshipStore() );
         relationshipGroup = newCursor( neoStores.getRelationshipGroupStore() );
-        property = newCursor( neoStores.getPropertyStore() );
     }
 
     private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
@@ -51,7 +48,7 @@ public class RecordCursors implements AutoCloseable
     @Override
     public void close()
     {
-        IOUtils.closeAll( RuntimeException.class, relationship, relationshipGroup, property );
+        IOUtils.closeAll( RuntimeException.class, relationship, relationshipGroup );
     }
 
     public RecordCursor<RelationshipRecord> relationship()
@@ -62,10 +59,5 @@ public class RecordCursors implements AutoCloseable
     public RecordCursor<RelationshipGroupRecord> relationshipGroup()
     {
         return relationshipGroup;
-    }
-
-    public RecordCursor<PropertyRecord> property()
-    {
-        return property;
     }
 }

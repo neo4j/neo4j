@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -37,11 +37,11 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelati
     private PrimitiveLongIterator iterator;
     private final InstanceCache<StoreIteratorRelationshipCursor> instanceCache;
 
-    StoreIteratorRelationshipCursor( RelationshipRecord relationshipRecord,
-            InstanceCache<StoreIteratorRelationshipCursor> instanceCache, RecordCursors cursors,
+    StoreIteratorRelationshipCursor( RelationshipStore relationshipStore,
+            InstanceCache<StoreIteratorRelationshipCursor> instanceCache,
             LockService lockService )
     {
-        super( relationshipRecord, cursors, lockService );
+        super( relationshipStore, lockService );
         this.instanceCache = instanceCache;
     }
 
@@ -62,7 +62,8 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelati
     {
         while ( iterator != null && iterator.hasNext() )
         {
-            if ( relationshipRecordCursor.next( iterator.next(), relationshipRecord, CHECK ) )
+            RelationshipRecord relationshipRecord = readRecord( iterator.next(), CHECK );
+            if ( relationshipRecord.inUse() )
             {
                 return true;
             }
