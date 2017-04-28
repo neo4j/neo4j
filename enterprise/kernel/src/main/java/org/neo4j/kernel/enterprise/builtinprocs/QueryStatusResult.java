@@ -39,6 +39,7 @@ import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 
 public class QueryStatusResult
 {
+    public static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
     public final String queryId;
     public final String username;
     public final Map<String,Object> metaData;
@@ -119,7 +120,7 @@ public class QueryStatusResult
     private static String formatTime( final long startTime )
     {
         return OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
+                .ofInstant( Instant.ofEpochMilli( startTime ), UTC_ZONE_ID)
                 .format( ISO_OFFSET_DATE_TIME );
     }
 

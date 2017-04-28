@@ -27,6 +27,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +64,7 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.enterprise.builtinprocs.QueryStatusResult.UTC_ZONE_ID;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.matchers.CommonMatchers.matchesOneToOneInAnyOrder;
@@ -175,7 +177,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        OffsetDateTime startTime = OffsetDateTime.now();
+        OffsetDateTime startTime = OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
 
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
@@ -206,7 +209,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldOnlyListOwnQueriesWhenNotRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
-        OffsetDateTime startTime = OffsetDateTime.now();
+        OffsetDateTime startTime = OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
@@ -249,7 +253,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             server.start();
             int localPort = getLocalPort( server );
 
-            OffsetDateTime startTime = OffsetDateTime.now();
+            OffsetDateTime startTime = OffsetDateTime
+                    .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
 
             // When
             ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
@@ -294,7 +299,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         neo = setUpNeoServer( stringMap( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
         DoubleLatch latch = new DoubleLatch( 2, true );
-        OffsetDateTime startTime = OffsetDateTime.now();
+        OffsetDateTime startTime = OffsetDateTime
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
 
         ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
 
