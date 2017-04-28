@@ -27,7 +27,6 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
-
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -167,6 +166,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * Comparison with {@link #fromInclusive} decide if seeking forwards or backwards.
      */
     private final KEY toExclusive;
+
+    /**
+     * True if seeker is performing an exact match lookup, {@link #toExclusive} will then be treated as inclusive.
+     */
+    private final boolean exactMatch;
 
     /**
      * {@link Layout} instance used to perform some functions around keys, like copying and comparing.
@@ -361,6 +365,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
+        this.exactMatch = layout.compare( fromInclusive, toExclusive ) == 0;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.generationSupplier = generationSupplier;
@@ -561,7 +566,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     continue; // in the read loop above so that we can continue reading from next sibling
                 }
             }
-            else if ( 0 <= pos && pos < keyCount && insideEndRange() )
+            else if ( 0 <= pos && pos < keyCount && insideEndRange( exactMatch ) )
             {
                 if ( isResultKey() )
                 {
@@ -580,10 +585,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return whether or not the read key ({@link #mutableKey}) is "before" the end of the key range
      * ({@link #toExclusive}) of this seek.
      */
-    private boolean insideEndRange()
+    private boolean insideEndRange( boolean exactMatch)
     {
-        return seekForward ? layout.compare( mutableKey, toExclusive ) < 0
-                           : layout.compare( mutableKey, toExclusive ) > 0;
+        if ( exactMatch )
+        {
+            return seekForward ? layout.compare( mutableKey, toExclusive ) <= 0
+                               : layout.compare( mutableKey, toExclusive ) >= 0;
+        }
+        else
+        {
+            return seekForward ? layout.compare( mutableKey, toExclusive ) < 0
+                               : layout.compare( mutableKey, toExclusive ) > 0;
+        }
     }
 
     /**
