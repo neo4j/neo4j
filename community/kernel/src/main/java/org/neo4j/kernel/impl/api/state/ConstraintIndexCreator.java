@@ -25,16 +25,19 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -42,6 +45,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import static java.util.Collections.singleton;
+
+import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
@@ -86,9 +91,9 @@ public class ConstraintIndexCreator
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
             int labelId, int propertyKeyId )
             throws ConstraintVerificationFailedKernelException, TransactionFailureException,
-            CreateConstraintFailureException, DropIndexFailureException
+            CreateConstraintFailureException, DropIndexFailureException, AlreadyConstrainedException
     {
-        IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
+        IndexDescriptor descriptor = getOrCreateConstraintIndex( state, schema, labelId, propertyKeyId );
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
         boolean success = false;
@@ -208,7 +213,39 @@ public class ConstraintIndexCreator
         }
     }
 
-    public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
+    public IndexDescriptor getOrCreateConstraintIndex( KernelStatement state, SchemaReadOperations schema,
+            int labelId, int propertyKeyId ) throws AlreadyConstrainedException
+    {
+        for ( IndexDescriptor descriptor : loop( schema.uniqueIndexesGetForLabel( state, labelId ) ) )
+        {
+            if ( descriptor.getPropertyKeyId() == propertyKeyId )
+            {
+                // OK so we found a matching constraint index. We check whether or not it has an owner
+                // because this may have been a left-over constraint index from a previously failed
+                // constraint creation, due to crash or similar, hence the missing owner.
+                try
+                {
+                    if ( schema.indexGetOwningUniquenessConstraintId( state, descriptor ) == null )
+                    {
+                        return descriptor;
+                    }
+                    throw new AlreadyConstrainedException(
+                            new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
+                            OperationContext.CONSTRAINT_CREATION,
+                            new StatementTokenNameLookup( state.readOperations() ) );
+                }
+                catch ( SchemaRuleNotFoundException e )
+                {
+                    throw new IllegalStateException( "Unexpectedly index " + descriptor +
+                            " wasn't found right after getting it", e );
+                }
+            }
+        }
+
+        return createConstraintIndex( labelId, propertyKeyId );
+    }
+
+    public IndexDescriptor createConstraintIndex( int labelId, int propertyKeyId )
     {
         try ( KernelTransaction transaction =
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
