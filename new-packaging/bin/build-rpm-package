@@ -108,7 +108,7 @@ sed -i 's/#*dbms.directories.logs=.*/dbms.directories.logs=\/var\/log\/neo4j/'  
 sed -i 's/#*dbms.directories.run=.*/dbms.directories.run=\/var\/run\/neo4j/'     ${configuration_file}
 sed -i 's/#*dbms.directories.lib=.*/dbms.directories.lib=\/usr\/share\/neo4j\/lib/'     ${configuration_file}
 sed -i 's/#*dbms.directories.certificates=.*/dbms.directories.certificates=\/var\/lib\/neo4j\/certificates/'     ${configuration_file}
-sed -i 's/#*dbms.directories.metrics=.*/dbms.directories.metric=\/var\/lib\/neo4j\/metrics/'     ${configuration_file}
+sed -i 's/#*dbms.directories.metrics=.*/dbms.directories.metrics=\/var\/lib\/neo4j\/metrics/'     ${configuration_file}
 
 # Make scripts executable
 chmod 700 ${sources_directory}/server/bin/*
