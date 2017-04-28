@@ -214,7 +214,6 @@ public class HalfAppliedConstraintRecoveryIT
                 .newImpermanentDatabase();
     }
 
-
     private static void flushStores( GraphDatabaseAPI db )
     {
         db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
