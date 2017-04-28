@@ -51,7 +51,7 @@ public final class Iterables
     {
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> empty()
     {
         return EMPTY;

@@ -41,7 +41,7 @@ public class HttpHeaderUtils
     {
     }
 
-    public static MediaType mediaTypeWithCharsetUtf8(String mediaType)
+    public static MediaType mediaTypeWithCharsetUtf8( String mediaType )
     {
         return new MediaType( mediaType, null, CHARSET );
     }

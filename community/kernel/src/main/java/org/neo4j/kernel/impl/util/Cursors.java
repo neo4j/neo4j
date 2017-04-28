@@ -43,13 +43,12 @@ public class Cursors
         }
     };
 
-
     @SuppressWarnings( "unchecked" )
     private Cursors()
     {
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Cursor<T> empty()
     {
         return (Cursor<T>) EMPTY;

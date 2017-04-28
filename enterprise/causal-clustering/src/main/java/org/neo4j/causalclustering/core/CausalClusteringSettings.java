@@ -374,9 +374,9 @@ public class CausalClusteringSettings implements LoadableConfig
         };
     }
 
-    @Description("The configuration must be valid for the configured plugin and usually exists" +
+    @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +
-            "This is just a top-level placeholder for the plugin-specific configuration.")
+            "This is just a top-level placeholder for the plugin-specific configuration." )
     public static final Setting<String> load_balancing_config =
             prefixSetting( "causal_clustering.load_balancing.config", STRING, "" );
 

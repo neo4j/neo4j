@@ -40,7 +40,7 @@ public class JsonHelper
     {
     }
 
-    public static JsonNode jsonNode(String json) throws JsonParseException
+    public static JsonNode jsonNode( String json ) throws JsonParseException
     {
         try
         {

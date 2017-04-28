@@ -50,7 +50,7 @@ public class Header
     {
     }
 
-    static final Writer CARRY_OVER_PREVIOUS_HEADER = (from,length,to) ->
+    static final Writer CARRY_OVER_PREVIOUS_HEADER = ( from, length, to ) ->
     {
         int toOffset = to.getOffset();
         from.copyTo( from.getOffset(), to, toOffset, length );

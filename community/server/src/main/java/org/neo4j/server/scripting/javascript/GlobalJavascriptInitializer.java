@@ -54,7 +54,7 @@ public class GlobalJavascriptInitializer
     {
     }
 
-    public static synchronized void initialize(Mode requestedMode)
+    public static synchronized void initialize( Mode requestedMode )
     {
         if ( initializationMode != null )
         {
