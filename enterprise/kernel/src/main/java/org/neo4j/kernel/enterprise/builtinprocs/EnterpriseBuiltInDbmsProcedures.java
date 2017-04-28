@@ -449,6 +449,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     public static class QueryStatusResult
     {
+        public static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
         public final String queryId;
         public final String username;
         public final String query;
@@ -481,8 +482,8 @@ public class EnterpriseBuiltInDbmsProcedures
         private static String formatTime( final long startTime )
         {
             return OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( startTime ), ZoneId.systemDefault() )
-                .format( ISO_OFFSET_DATE_TIME );
+                    .ofInstant( Instant.ofEpochMilli( startTime ), UTC_ZONE_ID)
+                    .format( ISO_OFFSET_DATE_TIME );
         }
     }
 
