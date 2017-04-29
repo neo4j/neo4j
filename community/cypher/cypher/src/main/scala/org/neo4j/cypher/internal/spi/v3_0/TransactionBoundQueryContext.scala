@@ -136,6 +136,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val relationships = types match {
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
+      case Some(Seq(typeId)) =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeId)
       case Some(typeIds) =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
