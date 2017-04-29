@@ -140,7 +140,7 @@ public class LifeSupport
         if ( status == LifecycleStatus.STARTED )
         {
             status = changedStatus( this, status, LifecycleStatus.STOPPING );
-            LifecycleException ex = stopInstances(instances);
+            LifecycleException ex = stopInstances( instances );
             status = changedStatus( this, status, LifecycleStatus.STOPPED );
 
             if ( ex != null )
@@ -150,7 +150,7 @@ public class LifeSupport
         }
     }
 
-    private LifecycleException stopInstances(List<LifecycleInstance> instances)
+    private LifecycleException stopInstances( List<LifecycleInstance> instances )
     {
         LifecycleException ex = null;
         for ( int i = instances.size() - 1; i >= 0; i-- )
@@ -279,7 +279,7 @@ public class LifeSupport
 
     public Iterable<Lifecycle> getLifecycleInstances()
     {
-        return instances.stream().map( (l) -> l.instance ).collect( toList() );
+        return instances.stream().map( ( l ) -> l.instance ).collect( toList() );
     }
 
     /**
@@ -344,20 +344,20 @@ public class LifeSupport
     public String toString()
     {
         StringBuilder sb = new StringBuilder(  );
-        toString(0, sb);
+        toString( 0, sb );
         return sb.toString();
     }
 
-    private void toString(int indent, StringBuilder sb)
+    private void toString( int indent, StringBuilder sb )
     {
         for ( int i = 0; i < indent; i++ )
         {
             sb.append( ' ' );
         }
-        sb.append("Lifecycle status:" + status.name()).append( '\n' );
+        sb.append( "Lifecycle status:" + status.name() ).append( '\n' );
         for ( LifecycleInstance instance : instances )
         {
-            if (instance.instance instanceof LifeSupport)
+            if ( instance.instance instanceof LifeSupport )
             {
                 ((LifeSupport) instance.instance).toString( indent + 3, sb );
             }

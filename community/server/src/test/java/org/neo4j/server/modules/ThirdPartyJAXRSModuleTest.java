@@ -60,7 +60,8 @@ public class ThirdPartyJAXRSModuleTest
         when( config.get( ServerSettings.third_party_packages ) ).thenReturn( jaxRsPackages );
 
         // When
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, config, NullLogProvider.getInstance(), neoServer );
+        ThirdPartyJAXRSModule module =
+                new ThirdPartyJAXRSModule( webServer, config, NullLogProvider.getInstance(), neoServer );
         module.start();
 
         // Then

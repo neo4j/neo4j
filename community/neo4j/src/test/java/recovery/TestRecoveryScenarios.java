@@ -123,7 +123,7 @@ public class TestRecoveryScenarios
         // GIVEN
         createIndex( label, "key" );
         Label[] labels = new Label[16];
-        for (int i = 0; i < labels.length; i++ )
+        for ( int i = 0; i < labels.length; i++ )
         {
             labels[i] = label( "Label" + Integer.toHexString( i ) );
         }
@@ -242,7 +242,7 @@ public class TestRecoveryScenarios
         }
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> flushStrategy()
     {
         List<Object[]> parameters = new ArrayList<>(  );
@@ -253,7 +253,7 @@ public class TestRecoveryScenarios
         return parameters;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     public enum FlushStrategy
     {
         FORCE_EVERYTHING
@@ -291,7 +291,7 @@ public class TestRecoveryScenarios
         this.flush = flush;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     @Before
     public void before()
     {
@@ -335,11 +335,11 @@ public class TestRecoveryScenarios
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     private void crashAndRestart( InMemoryIndexProvider indexProvider ) throws Exception
     {
         final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( () -> db1.shutdown() );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( db1::shutdown );
         db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 }

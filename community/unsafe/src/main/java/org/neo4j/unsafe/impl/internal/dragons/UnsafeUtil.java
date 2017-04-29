@@ -434,7 +434,7 @@ public final class UnsafeUtil
         if ( size == null )
         {
             StringBuilder sb = new StringBuilder( format( "Bad free: 0x%x, valid pointers are:", pointer ) );
-            pointers.forEach( (k,v) -> sb.append( '\n' ).append( k ) );
+            pointers.forEach( ( k, v ) -> sb.append( '\n' ).append( k ) );
             throw new AssertionError( sb.toString() );
         }
         long count = freeTraceCounter.getAndIncrement();

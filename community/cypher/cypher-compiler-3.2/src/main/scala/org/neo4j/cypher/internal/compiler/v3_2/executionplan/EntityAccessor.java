@@ -24,6 +24,7 @@ import org.neo4j.graphdb.Relationship;
 
 public interface EntityAccessor
 {
-    Node newNodeProxyById(long id);
-    Relationship newRelationshipProxyById(long id);
+    Node newNodeProxyById( long id );
+
+    Relationship newRelationshipProxyById( long id );
 }

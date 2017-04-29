@@ -132,7 +132,7 @@ public interface Locks
     Client newClient();
 
     /** Visit all held locks. */
-    void accept(Visitor visitor);
+    void accept( Visitor visitor );
 
     void close();
 }

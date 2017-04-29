@@ -67,7 +67,7 @@ public interface GraphDatabaseQueryService
      * @return internal transaction
      */
     InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout,
-            TimeUnit unit);
+            TimeUnit unit );
 
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 

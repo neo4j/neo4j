@@ -36,7 +36,7 @@ public class StateMachineRules
 {
     private final MessageHolder outgoing;
 
-    private Map<State<?,?>,List<StateMachineRule>> rules = new HashMap<State<?, ?>, List<StateMachineRule>>(  );
+    private Map<State<?,?>,List<StateMachineRule>> rules = new HashMap<>();
 
     public StateMachineRules( MessageHolder outgoing )
     {
@@ -49,14 +49,8 @@ public class StateMachineRules
                                    Message<?>... messages
     )
     {
-        List<StateMachineRule> fromRules = rules.get( oldState );
-        if (fromRules == null)
-        {
-            fromRules = new ArrayList<StateMachineRule>(  );
-            rules.put( oldState, fromRules );
-        }
+        List<StateMachineRule> fromRules = rules.computeIfAbsent( oldState, k -> new ArrayList<>() );
         fromRules.add( new StateMachineRule( oldState,  messageType, newState, messages ) );
-
         return this;
     }
 
@@ -64,7 +58,7 @@ public class StateMachineRules
     public void stateTransition( StateTransition transition )
     {
         List<StateMachineRule> oldStateRules = rules.get( transition.getOldState() );
-        if (oldStateRules != null)
+        if ( oldStateRules != null )
         {
             for ( StateMachineRule oldStateRule : oldStateRules )
             {
@@ -93,9 +87,9 @@ public class StateMachineRules
         @Override
         public void stateTransition( StateTransition transition )
         {
-            if (oldState.equals( transition.getOldState() ) &&
-                transition.getMessage().getMessageType().equals( messageType ) &&
-                newState.equals( transition.getNewState() ))
+            if ( oldState.equals( transition.getOldState() ) &&
+                    transition.getMessage().getMessageType().equals( messageType ) &&
+                    newState.equals( transition.getNewState() ) )
             {
                 for ( Message<?> message : messages )
                 {

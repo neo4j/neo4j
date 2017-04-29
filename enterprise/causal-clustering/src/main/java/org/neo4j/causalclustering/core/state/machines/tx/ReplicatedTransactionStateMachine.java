@@ -61,7 +61,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     {
         this.lastCommittedIndex = lastCommittedIndex;
         log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
-        this.queue = new TransactionQueue( maxBatchSize,  (first, last) ->
+        this.queue = new TransactionQueue( maxBatchSize, ( first, last ) ->
             commitProcess.commit( first, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL ) );
     }
 

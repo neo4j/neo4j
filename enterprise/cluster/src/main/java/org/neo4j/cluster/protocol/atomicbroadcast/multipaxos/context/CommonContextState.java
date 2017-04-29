@@ -76,7 +76,7 @@ class CommonContextState
                 this.lastKnownAliveUpToDateInstance = instanceId;
             }
         }
-        else if (lastKnownLearnedInstanceInCluster == -1)
+        else if ( lastKnownLearnedInstanceInCluster == -1 )
         {
             // Special case for clearing the state
             this.lastKnownLearnedInstanceInCluster = -1;

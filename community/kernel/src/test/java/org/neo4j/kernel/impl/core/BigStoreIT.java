@@ -187,7 +187,7 @@ public class BigStoreIT implements RelationshipType
         }
     }
 
-    public static boolean machineIsOkToRunThisTest(int requiredHeapMb )
+    public static boolean machineIsOkToRunThisTest( int requiredHeapMb )
     {
         if ( SystemUtils.IS_OS_WINDOWS )
         {

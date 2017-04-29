@@ -44,7 +44,7 @@ public class IntegrityValidatorTest
         // Given
         NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
-        IntegrityValidator validator = new IntegrityValidator(store, indexes);
+        IntegrityValidator validator = new IntegrityValidator( store, indexes );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 1 );
 
         doThrow( new UniquePropertyValueValidationException( constraint,
@@ -71,7 +71,7 @@ public class IntegrityValidatorTest
         // Given
         NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
-        IntegrityValidator validator = new IntegrityValidator(store, indexes );
+        IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         NodeRecord record = new NodeRecord( 1L, false, 1L, -1L );
         record.setInUse( false );

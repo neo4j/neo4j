@@ -25,7 +25,7 @@ public class MissingRelationshipDataException extends DataException
 {
     private Type fieldType;
 
-    public MissingRelationshipDataException(Type missedField, String message )
+    public MissingRelationshipDataException( Type missedField, String message )
     {
         super( message );
         this.fieldType = missedField;

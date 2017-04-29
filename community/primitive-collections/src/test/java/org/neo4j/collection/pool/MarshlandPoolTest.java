@@ -35,16 +35,16 @@ public class MarshlandPoolTest
     public void shouldNotLooseObjectsWhenThreadsDie() throws Exception
     {
         // Given
-        Pool<Object> delegatePool = mock(Pool.class);
-        when(delegatePool.acquire()).thenReturn( 1337, -1 );
+        Pool<Object> delegatePool = mock( Pool.class );
+        when( delegatePool.acquire() ).thenReturn( 1337, -1 );
 
-        final MarshlandPool<Object> pool = new MarshlandPool<>(delegatePool);
+        final MarshlandPool<Object> pool = new MarshlandPool<>( delegatePool );
 
         // When
         claimAndReleaseInSeparateThread( pool );
 
         // Then
-        verify(delegatePool).acquire();
+        verify( delegatePool ).acquire();
         verifyNoMoreInteractions( delegatePool );
         assertPoolEventuallyReturns( pool, 1337 );
     }
@@ -53,14 +53,14 @@ public class MarshlandPoolTest
     public void shouldReturnToDelegatePoolIfLocalPoolIsFull() throws Exception
     {
         // Given
-        Pool<Object> delegatePool = mock(Pool.class);
-        when(delegatePool.acquire()).thenReturn( 1337 );
+        Pool<Object> delegatePool = mock( Pool.class );
+        when( delegatePool.acquire() ).thenReturn( 1337 );
 
-        final MarshlandPool<Object> pool = new MarshlandPool<>(delegatePool);
+        final MarshlandPool<Object> pool = new MarshlandPool<>( delegatePool );
 
-        Object first  = pool.acquire();
+        Object first = pool.acquire();
         Object second = pool.acquire();
-        Object third  = pool.acquire();
+        Object third = pool.acquire();
 
         // When
         pool.release( first );
@@ -68,8 +68,8 @@ public class MarshlandPoolTest
         pool.release( third );
 
         // Then
-        verify( delegatePool, times(3) ).acquire();
-        verify( delegatePool, times(2) ).release( any() );
+        verify( delegatePool, times( 3 ) ).acquire();
+        verify( delegatePool, times( 2 ) ).release( any() );
         verifyNoMoreInteractions( delegatePool );
     }
 
@@ -77,20 +77,20 @@ public class MarshlandPoolTest
     public void shouldReleaseAllSlotsOnClose() throws Exception
     {
         // Given
-        Pool<Object> delegatePool = mock(Pool.class);
-        when(delegatePool.acquire()).thenReturn( 1337 );
+        Pool<Object> delegatePool = mock( Pool.class );
+        when( delegatePool.acquire() ).thenReturn( 1337 );
 
-        final MarshlandPool<Object> pool = new MarshlandPool<>(delegatePool);
+        final MarshlandPool<Object> pool = new MarshlandPool<>( delegatePool );
 
-        Object first  = pool.acquire();
+        Object first = pool.acquire();
         pool.release( first );
 
         // When
         pool.close();
 
         // Then
-        verify( delegatePool, times(1) ).acquire();
-        verify( delegatePool, times(1) ).release( any() );
+        verify( delegatePool, times( 1 ) ).acquire();
+        verify( delegatePool, times( 1 ) ).release( any() );
         verifyNoMoreInteractions( delegatePool );
     }
 
@@ -108,7 +108,7 @@ public class MarshlandPoolTest
             }
         }
 
-        fail("Waited 10 seconds for pool to return object from dead thread, but it was never returned.");
+        fail( "Waited 10 seconds for pool to return object from dead thread, but it was never returned." );
     }
 
     private void claimAndReleaseInSeparateThread( final MarshlandPool<Object> pool ) throws InterruptedException
@@ -121,7 +121,7 @@ public class MarshlandPoolTest
                 Object obj = pool.acquire();
                 pool.release( obj );
             }
-        });
+        } );
         thread.start();
         thread.join();
     }

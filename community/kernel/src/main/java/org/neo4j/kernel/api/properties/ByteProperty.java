@@ -29,7 +29,7 @@ final class ByteProperty extends IntegralNumberProperty
 
     ByteProperty( int propertyKeyId, byte value )
     {
-        super(propertyKeyId);
+        super( propertyKeyId );
         this.value = value;
     }
 

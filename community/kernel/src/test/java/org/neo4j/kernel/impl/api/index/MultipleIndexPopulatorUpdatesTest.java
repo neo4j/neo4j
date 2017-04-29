@@ -197,7 +197,7 @@ public class MultipleIndexPopulatorUpdatesTest
         @Override
         public void receive( NodeRecord nodeRecord )
         {
-            if (nodeRecord.getId() == 7)
+            if ( nodeRecord.getId() == 7 )
             {
                 indexPopulator.queue( IndexEntryUpdate.change( 8L, index, "a", "b" ) );
             }
@@ -247,7 +247,7 @@ public class MultipleIndexPopulatorUpdatesTest
         }
 
         @Override
-        public void process( NodeRecord nodeRecord) throws FAILURE
+        public void process( NodeRecord nodeRecord ) throws FAILURE
         {
             processListener.receive( nodeRecord );
             super.process( nodeRecord );

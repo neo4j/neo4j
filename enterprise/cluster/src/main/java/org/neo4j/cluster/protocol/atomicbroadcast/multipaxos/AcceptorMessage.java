@@ -153,7 +153,7 @@ public enum AcceptorMessage
         public String toString()
         {
             Object toStringValue = value;
-            if (toStringValue instanceof Payload )
+            if ( toStringValue instanceof Payload )
             {
                 try
                 {

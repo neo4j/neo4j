@@ -70,7 +70,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
-        return (recordSize, format, recordId) -> new RelationshipTypeTokenRecord( toIntExact( recordId ) ).initialize(
+        return ( recordSize, format, recordId ) -> new RelationshipTypeTokenRecord( toIntExact( recordId ) ).initialize(
                 random.nextBoolean(),
                 randomInt( tokenBits ) );
     }
@@ -78,7 +78,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<RelationshipGroupRecord> relationshipGroup()
     {
-        return (recordSize, format, recordId) -> new RelationshipGroupRecord( recordId ).initialize(
+        return ( recordSize, format, recordId ) -> new RelationshipGroupRecord( recordId ).initialize(
                 random.nextBoolean(),
                 randomInt( tokenBits ),
                 randomLongOrOccasionallyNull( entityBits ),
@@ -91,7 +91,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<RelationshipRecord> relationship()
     {
-        return (recordSize, format, recordId) -> new RelationshipRecord( recordId ).initialize(
+        return ( recordSize, format, recordId ) -> new RelationshipRecord( recordId ).initialize(
                 random.nextBoolean(),
                 randomLongOrOccasionallyNull( propertyBits ),
                 random.nextLong( entityBits ), random.nextLong( entityBits ), randomInt( tokenBits ),
@@ -103,7 +103,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<PropertyKeyTokenRecord> propertyKeyToken()
     {
-        return (recordSize, format, recordId) -> new PropertyKeyTokenRecord( toIntExact( recordId ) ).initialize(
+        return ( recordSize, format, recordId ) -> new PropertyKeyTokenRecord( toIntExact( recordId ) ).initialize(
                 random.nextBoolean(),
                 random.nextInt( tokenBits ),
                 abs( random.nextInt() ) );
@@ -143,7 +143,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<NodeRecord> node()
     {
-        return (recordSize, format, recordId) -> new NodeRecord( recordId ).initialize(
+        return ( recordSize, format, recordId ) -> new NodeRecord( recordId ).initialize(
                 random.nextBoolean(),
                 randomLongOrOccasionallyNull( propertyBits ),
                 random.nextBoolean(),
@@ -154,7 +154,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<LabelTokenRecord> labelToken()
     {
-        return (recordSize, format, recordId) -> new LabelTokenRecord( toIntExact( recordId ) ).initialize(
+        return ( recordSize, format, recordId ) -> new LabelTokenRecord( toIntExact( recordId ) ).initialize(
                 random.nextBoolean(),
                 random.nextInt( tokenBits ) );
     }
@@ -162,7 +162,7 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<DynamicRecord> dynamic()
     {
-        return (recordSize, format, recordId) ->
+        return ( recordSize, format, recordId ) ->
         {
             int dataSize = recordSize - format.getRecordHeaderSize();
             int length = random.nextBoolean() ? dataSize : random.nextInt( dataSize );

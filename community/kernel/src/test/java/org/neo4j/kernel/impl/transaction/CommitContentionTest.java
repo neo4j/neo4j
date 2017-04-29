@@ -98,7 +98,7 @@ public class CommitContentionTest
 
     private void createNode()
     {
-        try (Transaction transaction = db.beginTx())
+        try ( Transaction transaction = db.beginTx() )
         {
             db.createNode();
             transaction.success();

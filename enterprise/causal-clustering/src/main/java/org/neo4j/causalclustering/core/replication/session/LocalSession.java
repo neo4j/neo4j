@@ -42,14 +42,16 @@ public class LocalSession
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         LocalSession that = (LocalSession) o;
-
         return localSessionId == that.localSessionId;
-
     }
 
     @Override

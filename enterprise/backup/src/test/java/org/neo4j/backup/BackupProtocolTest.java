@@ -83,8 +83,8 @@ public class BackupProtocolTest
         BackupClient client = life.add( new BackupClient( host, port, null, NullLogProvider.getInstance(), storeId, 10_000,
                 mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), reader ) );
         ControlledBackupInterface backup = new ControlledBackupInterface();
-        life.add( new BackupServer( backup, new HostnamePort( host, port ), NullLogProvider.getInstance(), mock( ByteCounterMonitor.class ),
-                mock( RequestMonitor.class )) );
+        life.add( new BackupServer( backup, new HostnamePort( host, port ), NullLogProvider.getInstance(),
+                mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) ) );
         life.start();
 
         try

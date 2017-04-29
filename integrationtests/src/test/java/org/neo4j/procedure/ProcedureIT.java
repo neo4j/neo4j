@@ -924,7 +924,7 @@ public class ProcedureIT
                                     "CALL org.neo4j.procedure.createNode(line[0]) YIELD node as n " +
                                     "RETURN n.prop" );
         // THEN
-        for (int i = 1; i <= 100; i++)
+        for ( int i = 1; i <= 100; i++ )
         {
             assertThat( result.next().get( "n.prop" ), equalTo( Integer.toString( i ) ) );
         }
@@ -1023,7 +1023,7 @@ public class ProcedureIT
     @Test
     public void shouldGiveNiceErrorMessageWhenAggregationFunctionInProcedureCall()
     {
-        try (Transaction ignore = db.beginTx())
+        try ( Transaction ignore = db.beginTx() )
         {
             db.createNode( Label.label( "Person" ) );
             db.createNode( Label.label( "Person" ) );
@@ -1040,7 +1040,7 @@ public class ProcedureIT
     @Test
     public void shouldWorkWhenUsingWithToProjectList()
     {
-        try (Transaction ignore = db.beginTx())
+        try ( Transaction ignore = db.beginTx() )
         {
             db.createNode( Label.label( "Person" ) );
             db.createNode( Label.label( "Person" ) );
@@ -1243,7 +1243,7 @@ public class ProcedureIT
     {
         public Map<String, Object> map;
 
-        public MapOutput(Map<String, Object> map)
+        public MapOutput( Map<String,Object> map )
         {
             this.map = map;
         }
@@ -1253,7 +1253,7 @@ public class ProcedureIT
     {
         public List<Long> list;
 
-        public ListOutput(List<Long> list)
+        public ListOutput( List<Long> list )
         {
             this.list = list;
         }
@@ -1282,7 +1282,7 @@ public class ProcedureIT
 
         }
 
-        public NodeOutput(Node node)
+        public NodeOutput( Node node )
         {
             this.node = node;
         }
@@ -1367,17 +1367,17 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<Output> simpleArgumentWithDefault( @Name( value = "name", defaultValue = "42") long someValue )
+        public Stream<Output> simpleArgumentWithDefault( @Name( value = "name", defaultValue = "42" ) long someValue )
         {
             return Stream.of( new Output( someValue ) );
         }
 
         @Procedure
         public Stream<PrimitiveOutput> defaultValues(
-                @Name( value = "string", defaultValue = "a string") String string,
-                @Name( value = "integer", defaultValue = "42") long integer,
-                @Name( value = "float", defaultValue = "3.14") double aFloat,
-                @Name( value = "boolean", defaultValue = "true") boolean aBoolean
+                @Name( value = "string", defaultValue = "a string" ) String string,
+                @Name( value = "integer", defaultValue = "42" ) long integer,
+                @Name( value = "float", defaultValue = "3.14" ) double aFloat,
+                @Name( value = "boolean", defaultValue = "true" ) boolean aBoolean
                 )
         {
             return Stream.of( new PrimitiveOutput( string, integer, aFloat, aBoolean ) );
@@ -1427,27 +1427,31 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<MapOutput> mapWithNullDefault( @Name( value = "map", defaultValue = "null") Map<String,Object> map )
+        public Stream<MapOutput> mapWithNullDefault( @Name( value = "map", defaultValue = "null" ) Map<String,Object>
+                map )
         {
             return Stream.of( new MapOutput( map ) );
         }
 
         @Procedure
-        public Stream<MapOutput> mapWithOtherDefault( @Name( value = "map", defaultValue = "{default: true}") Map<String,Object> map )
+        public Stream<MapOutput> mapWithOtherDefault( @Name( value = "map", defaultValue = "{default: true}" )
+                Map<String,Object> map )
         {
             return Stream.of( new MapOutput( map ) );
         }
 
         @Procedure
-        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]") List<Long> list )
+        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]" ) List<Long>
+                list )
         {
-            return Stream.of( new ListOutput(list ) );
+            return Stream.of( new ListOutput( list ) );
         }
 
         @Procedure
-        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]") List<List<Long>> list )
+        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" )
+                List<List<Long>> list )
         {
-            return Stream.of( new ListOutput(list.get(0) ) );
+            return Stream.of( new ListOutput( list.get( 0 ) ) );
         }
 
         @Procedure
@@ -1590,8 +1594,8 @@ public class ProcedureIT
 
         @Procedure( mode = WRITE )
         public void sideEffectWithDefault(
-                @Name("label") String label,
-                @Name("propertyKey") String propertyKey,
+                @Name( "label" ) String label,
+                @Name( "propertyKey" ) String propertyKey,
                 /* Most common name, according to the internet */
                 @Name( value = "value", defaultValue = "Zhang Wei" ) String value )
         {
@@ -1637,9 +1641,9 @@ public class ProcedureIT
         }
 
         @Procedure( mode = WRITE )
-        public Stream<NodeOutput> nodeWithDefault( @Name( value = "node", defaultValue = "null") Node node )
+        public Stream<NodeOutput> nodeWithDefault( @Name( value = "node", defaultValue = "null" ) Node node )
         {
-            return Stream.of(new NodeOutput(node));
+            return Stream.of( new NodeOutput( node ) );
         }
 
         @Description( "This is a description" )

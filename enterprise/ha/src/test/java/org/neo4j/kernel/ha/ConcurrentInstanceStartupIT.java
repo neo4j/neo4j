@@ -76,7 +76,7 @@ public class ConcurrentInstanceStartupIT
                         throw new RuntimeException( e );
                     }
                 }
-            });
+            } );
             daThreads.add( t );
             t.start();
         }
@@ -90,11 +90,11 @@ public class ConcurrentInstanceStartupIT
 
         for ( HighlyAvailableGraphDatabase db : dbs )
         {
-            if (db.isMaster())
+            if ( db.isMaster() )
             {
-                if (masterDone)
+                if ( masterDone )
                 {
-                    throw new Exception("Two masters discovered");
+                    throw new Exception( "Two masters discovered" );
                 }
                 masterDone = true;
             }

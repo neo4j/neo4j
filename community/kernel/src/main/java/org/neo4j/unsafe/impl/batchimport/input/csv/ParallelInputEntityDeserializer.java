@@ -93,7 +93,7 @@ public class ParallelInputEntityDeserializer<ENTITY extends InputEntity> extends
             boolean deferredValidation = decorator.isMutable();
             Decorator<ENTITY> batchDecorator = deferredValidation ? noDecorator() : decorator;
             Validator<ENTITY> batchValidator = deferredValidation ? emptyValidator() : validator;
-            processing = new TicketedProcessing<>( "Parallel input parser", maxProcessors, (seeker, header) ->
+            processing = new TicketedProcessing<>( "Parallel input parser", maxProcessors, ( seeker, header ) ->
             {
                 // Create a local deserializer for this chunk with NO decoration/validation,
                 // this will happen in an orderly fashion in our post-processor below and done like this

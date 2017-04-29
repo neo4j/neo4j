@@ -41,7 +41,7 @@ public class WritableIndexReferenceTest
     private IndexSearcher searcher = mock( IndexSearcher.class );
     private IndexWriter indexWriter = mock( IndexWriter.class );
     private CloseTrackingIndexReader reader = new CloseTrackingIndexReader();
-    private WritableIndexReference indexReference = new WritableIndexReference( identifier, searcher, indexWriter);
+    private WritableIndexReference indexReference = new WritableIndexReference( identifier, searcher, indexWriter );
 
     @Before
     public void setUp()

@@ -176,16 +176,16 @@ public class PaxosInstance
         return acceptors;
     }
 
-    public PaxosInstance snapshot(PaxosInstanceStore store)
+    public PaxosInstance snapshot( PaxosInstanceStore store )
     {
         PaxosInstance snap = new PaxosInstance( store, id );
 
         snap.state = state;
         snap.ballot = ballot;
-        snap.acceptors = acceptors == null ? null : new ArrayList<>(acceptors);
-        snap.promises = promises == null ? null : new ArrayList<>(promises);
-        snap.accepts = accepts == null ? null : new ArrayList<>(accepts);
-        snap.rejectedAccepts = rejectedAccepts == null ? null : new ArrayList<>(rejectedAccepts);
+        snap.acceptors = acceptors == null ? null : new ArrayList<>( acceptors );
+        snap.promises = promises == null ? null : new ArrayList<>( promises );
+        snap.accepts = accepts == null ? null : new ArrayList<>( accepts );
+        snap.rejectedAccepts = rejectedAccepts == null ? null : new ArrayList<>( rejectedAccepts );
         snap.value_1 = value_1;
         snap.phase1Ballot = phase1Ballot;
         snap.value_2 = value_2;
@@ -201,7 +201,7 @@ public class PaxosInstance
         try
         {
             Object toStringValue1 = null;
-            if (value_1 != null)
+            if ( value_1 != null )
             {
                 if ( value_1 instanceof Payload )
                 {
@@ -214,7 +214,7 @@ public class PaxosInstance
             }
 
             Object toStringValue2 = null;
-            if (value_2 != null)
+            if ( value_2 != null )
             {
                 if ( value_2 instanceof Payload )
                 {

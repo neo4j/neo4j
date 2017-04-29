@@ -729,13 +729,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public String setConfiguration( Index<? extends PropertyContainer> index, String key,
                                     String value )
     {
-        throw new IllegalStateException("Database is in read-only mode");
+        throw new IllegalStateException( "Database is in read-only mode" );
     }
 
     @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
-        throw new IllegalStateException("Database is in read-only mode");
+        throw new IllegalStateException( "Database is in read-only mode" );
     }
 
     @Override

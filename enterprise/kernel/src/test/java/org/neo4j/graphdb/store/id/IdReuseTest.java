@@ -54,7 +54,7 @@ public class IdReuseTest
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
 
@@ -65,7 +65,7 @@ public class IdReuseTest
 
         // When
         Node node;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
 
@@ -73,7 +73,7 @@ public class IdReuseTest
         }
 
         // Then
-        assertThat(node.getId(), equalTo(0L));
+        assertThat( node.getId(), equalTo( 0L ) );
     }
 
     @Test
@@ -82,7 +82,7 @@ public class IdReuseTest
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node1, node2;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node1 = db.createNode();
             node2 = db.createNode();
@@ -90,7 +90,7 @@ public class IdReuseTest
             tx.success();
         }
 
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node1.createRelationshipTo( node2, RelationshipType.withName( "LIKE" ) );
 
@@ -101,17 +101,17 @@ public class IdReuseTest
 
         // When
         Relationship relationship;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.getNodeById(node1.getId());
-            node2 = db.getNodeById(node2.getId());
+            node1 = db.getNodeById( node1.getId() );
+            node2 = db.getNodeById( node2.getId() );
             relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "LIKE" ) );
 
             tx.success();
         }
 
         // Then
-        assertThat(relationship.getId(), equalTo(0L));
+        assertThat( relationship.getId(), equalTo( 0L ) );
     }
 
     @Test

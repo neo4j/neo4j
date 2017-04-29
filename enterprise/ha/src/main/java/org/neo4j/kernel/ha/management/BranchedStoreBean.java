@@ -39,8 +39,7 @@ import org.neo4j.management.BranchedStoreInfo;
 
 import static org.neo4j.com.storecopy.StoreUtil.getBranchedDataRootDirectory;
 
-
-@Service.Implementation(ManagementBeanProvider.class)
+@Service.Implementation( ManagementBeanProvider.class )
 public final class BranchedStoreBean extends ManagementBeanProvider
 {
     public BranchedStoreBean()
@@ -132,7 +131,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             }
         }
 
-        private PageCache getPageCache( ManagementData management)
+        private PageCache getPageCache( ManagementData management )
         {
             return management.getKernelData().getPageCache();
         }

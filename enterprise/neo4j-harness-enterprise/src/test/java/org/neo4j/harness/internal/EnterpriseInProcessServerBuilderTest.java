@@ -49,15 +49,15 @@ public class EnterpriseInProcessServerBuilderTest
     public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
     {
         // Given
-        File workDir = new File(testDir.directory(), "specific");
+        File workDir = new File( testDir.directory(), "specific" );
         workDir.mkdir();
 
         // When
-        try (ServerControls server = getTestServerBuilder( workDir ).newServer())
+        try ( ServerControls server = getTestServerBuilder( workDir ).newServer() )
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );
-            assertThat( workDir.list().length, equalTo(1));
+            assertThat( workDir.list().length, equalTo( 1 ) );
         }
 
         // And after it's been closed, it should've cleaned up after itself.

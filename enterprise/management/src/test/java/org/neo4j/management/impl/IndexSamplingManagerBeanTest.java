@@ -96,7 +96,7 @@ public class IndexSamplingManagerBeanTest
                 IndexSamplingMode.TRIGGER_REBUILD_ALL);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void exceptionThrownWhenMissingLabel()
     {
         // Given
@@ -107,7 +107,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( NON_EXISTING_LABEL, EXISTING_PROPERTY, false );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void exceptionThrownWhenMissingProperty()
     {
         // Given
@@ -118,7 +118,7 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( EXISTING_LABEL, NON_EXISTING_PROPERTY, false );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void exceptionThrownWhenNotRegistered()
     {
         // Given

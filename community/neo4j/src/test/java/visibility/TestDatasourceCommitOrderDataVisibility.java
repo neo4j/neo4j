@@ -136,7 +136,7 @@ public class TestDatasourceCommitOrderDataVisibility
         }
     }
 
-    private void assertNodeIsIndexed(final Node commonNode) throws Exception
+    private void assertNodeIsIndexed( final Node commonNode ) throws Exception
     {
         final Collection<Exception> problems = new HashSet<>();
 

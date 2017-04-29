@@ -104,7 +104,7 @@ public class ReadOnlyIndexReferenceFactoryTest
 
     private ReadOnlyIndexReferenceFactory getReadOnlyIndexReferenceFactory()
     {
-        return new ReadOnlyIndexReferenceFactory( filesystemFacade, new File( getStoreDir(), "index"),
+        return new ReadOnlyIndexReferenceFactory( filesystemFacade, new File( getStoreDir(), "index" ),
                 new IndexTypeCache( indexStore ) );
     }
 

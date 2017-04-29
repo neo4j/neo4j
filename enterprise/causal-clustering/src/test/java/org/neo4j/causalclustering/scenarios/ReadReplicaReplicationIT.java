@@ -413,7 +413,7 @@ public class ReadReplicaReplicationIT
         awaitEx( () -> readReplicasUpToDateAsTheLeader( cluster.awaitLeader(), cluster.readReplicas() ), 1, TimeUnit.MINUTES );
 
         // when
-        cluster.coreTx( (db, tx) ->
+        cluster.coreTx( ( db, tx ) ->
         {
             createData( db, 10 );
             tx.success();

@@ -130,7 +130,7 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
             }
         }
 
-        for ( int i = buffer.length / 2; i < buffer.length; i++)
+        for ( int i = buffer.length / 2; i < buffer.length; i++ )
         {
             if ( buffer[i] != -1 )
             {

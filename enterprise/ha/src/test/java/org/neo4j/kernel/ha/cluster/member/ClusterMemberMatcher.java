@@ -50,7 +50,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         description.appendText( Arrays.toString( expectedMembers ) );
     }
 
-    public static Matcher<ClusterMember> sameMemberAs( final ClusterMember clusterMember)
+    public static Matcher<ClusterMember> sameMemberAs( final ClusterMember clusterMember )
     {
         return new BaseMatcher<ClusterMember>()
         {

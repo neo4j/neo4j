@@ -75,10 +75,10 @@ public class SuppliersTest
         Supplier<Object> mockSupplier = mock( Supplier.class );
         when( mockSupplier.get() ).thenReturn( o1, o1, o1, o2, o3, o3 );
 
-        Function<Object, Object> mockFunction = mock( Function.class );
-        when( mockFunction.apply( o1 ) ).thenReturn(o1a);
-        when( mockFunction.apply( o2 ) ).thenReturn(o2a);
-        when( mockFunction.apply( o3 ) ).thenReturn(o3a);
+        Function<Object,Object> mockFunction = mock( Function.class );
+        when( mockFunction.apply( o1 ) ).thenReturn( o1a );
+        when( mockFunction.apply( o2 ) ).thenReturn( o2a );
+        when( mockFunction.apply( o3 ) ).thenReturn( o3a );
 
         Supplier<Object> supplier = Suppliers.adapted( mockSupplier, mockFunction );
 

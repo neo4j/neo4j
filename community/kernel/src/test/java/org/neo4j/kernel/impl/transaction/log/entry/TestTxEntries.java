@@ -34,7 +34,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class TestTxEntries
 {
-    private final File storeDir = new File("dir");
+    private final File storeDir = new File( "dir" );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
@@ -48,7 +48,7 @@ public class TestTxEntries
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( () -> db.shutdown() );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( db::shutdown );
 
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }

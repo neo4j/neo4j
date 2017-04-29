@@ -112,7 +112,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         final MutableDouble startSideShortest = new MutableDouble( 0 );
         final MutableDouble endSideShortest = new MutableDouble( 0 );
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
-                startSideShortest, endSideShortest, epsilon);
+                startSideShortest, endSideShortest, epsilon );
 
         GraphDatabaseService db = start.getGraphDatabase();
 

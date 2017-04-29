@@ -63,6 +63,6 @@ public class LifecycleException
 
     public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
     {
-        super( humanReadableMessage( instance, from, to ), cause);
+        super( humanReadableMessage( instance, from, to ), cause );
     }
 }

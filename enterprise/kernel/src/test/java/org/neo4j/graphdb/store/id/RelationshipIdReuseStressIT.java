@@ -237,7 +237,7 @@ public class RelationshipIdReuseStressIT
                         newRelationships += connectBandToCities( bandNode );
                         break;
                     default:
-                        throw new IllegalStateException("Unsupported direction value:" + direction);
+                        throw new IllegalStateException( "Unsupported direction value:" + direction );
                     }
                     transaction.success();
                 }
@@ -381,7 +381,7 @@ public class RelationshipIdReuseStressIT
                     }
                     transaction.success();
                 }
-                catch ( DeadlockDetectedException | NotFoundException ignored)
+                catch ( DeadlockDetectedException | NotFoundException ignored )
                 {
                     // ignore deadlocks
                 }

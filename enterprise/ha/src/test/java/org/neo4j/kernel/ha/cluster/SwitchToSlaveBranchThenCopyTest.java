@@ -175,7 +175,8 @@ public class SwitchToSlaveBranchThenCopyTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1"), me, CancellationRequest.NEVER_CANCELLED );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId,
+                    new URI( "cluster://localhost?serverId=1" ), me, CancellationRequest.NEVER_CANCELLED );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )

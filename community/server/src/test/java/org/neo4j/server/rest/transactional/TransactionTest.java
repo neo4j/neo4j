@@ -313,11 +313,11 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @Documented("Handling errors in an open transaction\n" +
+    @Documented( "Handling errors in an open transaction\n" +
                 "\n" +
                 "Whenever there is an error in a request the server will rollback the transaction.\n" +
                   "By inspecting the response for the presence/absence of the `transaction` key you can tell if the " +
-                 "transaction is still open")
+                 "transaction is still open" )
     public void errors_in_open_transaction() throws JsonParseException
     {
         // Given
@@ -364,7 +364,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
     private void assertErrors( Map<String, Object> response, Status... expectedErrors )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
         Iterator<Status> expected = iterator( expectedErrors );
 
@@ -385,7 +385,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
         return resultCell( response.<Map<String, Object>>content(), row, column );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private <T> T resultCell( Map<String, Object> response, int row, int column )
     {
         Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );
@@ -393,7 +393,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
         return (T) data.get( row ).get( "row" ).get( column );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private Map<String, List<Object>> graphRow( Map<String, Object> response, int row )
     {
         Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );

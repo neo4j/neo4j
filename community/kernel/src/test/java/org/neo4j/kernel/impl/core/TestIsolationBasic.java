@@ -60,7 +60,7 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         final Node node2 = n2;
         final Relationship rel1 = r1;
 
-        try (Transaction tx = getGraphDb().beginTx())
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             node1.setProperty( "key", "old" );
             rel1.setProperty( "key", "old" );
@@ -141,7 +141,7 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
             throw t1Exception.get();
         }
 
-        try (Transaction tx = getGraphDb().beginTx())
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             for ( Relationship rel : node1.getRelationships() )
             {

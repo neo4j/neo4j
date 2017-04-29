@@ -1987,7 +1987,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void mustNotFlushCleanPagesWhenEvicting() throws Exception
     {
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -3019,7 +3019,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void shouldRetryMustClearBoundsFlagWhenReturningTrue() throws Exception
     {
         configureStandardPageCache();
@@ -3040,7 +3040,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void shouldRetryMustNotClearBoundsFlagWhenReturningFalse() throws Exception
     {
         configureStandardPageCache();
@@ -3061,7 +3061,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void nextThatReturnsTrueMustNotClearBoundsFlagOnReadCursor() throws Exception
     {
         configureStandardPageCache();
@@ -3082,7 +3082,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void nextThatReturnsTrueMustNotClearBoundsFlagOnWriteCursor() throws Exception
     {
         configureStandardPageCache();
@@ -3098,7 +3098,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void nextThatReturnsFalseMustNotClearBoundsFlagOnReadCursor() throws Exception
     {
         configureStandardPageCache();
@@ -3119,7 +3119,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void nextThatReturnsFalseMustNotClearBoundsFlagOnWriteCursor() throws Exception
     {
         File file = file( "a" );
@@ -3137,7 +3137,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void nextWithPageIdThatReturnsTrueMustNotClearBoundsFlagOnReadCursor() throws Exception
     {
         configureStandardPageCache();
@@ -3158,7 +3158,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(timeout = SHORT_TIMEOUT_MILLIS)
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void nextWithPageIdMustNotClearBoundsFlagOnWriteCursor() throws Exception
     {
         configureStandardPageCache();
@@ -3817,7 +3817,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test( expected = NoSuchFileException.class )
     public void mustThrowWhenMappingNonExistingFile() throws Exception
     {
         configureStandardPageCache();
@@ -3829,7 +3829,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "does not exist" ), filePageSize, StandardOpenOption.CREATE );
-              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ))
+                PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
         }
@@ -3840,7 +3840,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, StandardOpenOption.CREATE );
-              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ))
+                PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
         }
@@ -3853,7 +3853,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize,
                 StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.APPEND,
                 StandardOpenOption.SPARSE );
-              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ))
+                PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
         }
@@ -5104,7 +5104,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         File sub1 = existingDirectory( "sub1" );
         File sub2 = existingDirectory( "sub2" );
-        File sub2sub1 = new File( sub2, "sub1");
+        File sub2sub1 = new File( sub2, "sub1" );
         ensureDirectoryExists( sub2sub1 );
         existingDirectory( "sub3" ); // must not be observed in the stream
         File a = existingFile( "a" );

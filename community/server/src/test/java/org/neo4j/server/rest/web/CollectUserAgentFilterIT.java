@@ -56,7 +56,7 @@ public class CollectUserAgentFilterIT extends AbstractRestFunctionalTestBase
         assertThat( resolveDependency( UsageData.class ).get( UsageDataKeys.clientNames ), hasItem( USER_AGENT ) );
     }
 
-    private void sendRequest(String userAgent)
+    private void sendRequest( String userAgent )
     {
         String url = functionalTestHelper.baseUri().toString();
         JaxRsResponse resp = RestRequest.req().header( "User-Agent", userAgent ).get(url);

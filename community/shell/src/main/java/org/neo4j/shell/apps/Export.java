@@ -36,7 +36,7 @@ import static org.neo4j.shell.TextUtil.stripFromQuotes;
  * Mimics the Bash application "export" and uses the client session
  * {@link Session} as the data container.
  */
-@Service.Implementation(App.class)
+@Service.Implementation( App.class )
 public class Export extends AbstractApp
 {
     @Override

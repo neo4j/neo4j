@@ -52,15 +52,15 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     public void reportEvents()
     {
-        if (pins > 0)
+        if ( pins > 0 )
         {
             pageCacheTracer.pins( pins );
         }
-        if (unpins > 0)
+        if ( unpins > 0 )
         {
             pageCacheTracer.unpins( unpins );
         }
-        if (hits > 0)
+        if ( hits > 0 )
         {
             pageCacheTracer.hits( hits );
         }

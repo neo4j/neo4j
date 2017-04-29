@@ -78,7 +78,7 @@ public class LuceneAllDocumentsReaderTest
 
     private LuceneAllDocumentsReader createAllDocumentsReader()
     {
-        return new LuceneAllDocumentsReader(createPartitionReaders());
+        return new LuceneAllDocumentsReader( createPartitionReaders() );
     }
 
     private List<LucenePartitionAllDocumentsReader> createPartitionReaders()
@@ -106,15 +106,15 @@ public class LuceneAllDocumentsReaderTest
         return partitionSearcher;
     }
 
-    private static String uniqueDocValue(int value, int partition, int maxSize )
+    private static String uniqueDocValue( int value, int partition, int maxSize )
     {
         return String.valueOf( value + (partition * maxSize) );
     }
 
-    private static Document createDocument(String value)
+    private static Document createDocument( String value )
     {
         Document document = new Document();
-        document.add( new StoredField( "value",  value) );
+        document.add( new StoredField( "value", value ) );
         return document;
     }
 }

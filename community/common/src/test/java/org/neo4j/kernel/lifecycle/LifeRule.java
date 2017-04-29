@@ -81,7 +81,7 @@ public class LifeRule implements TestRule
 
     public <T extends Lifecycle> T add( T instance )
     {
-        return life.add(instance);
+        return life.add( instance );
     }
 
     public void init()

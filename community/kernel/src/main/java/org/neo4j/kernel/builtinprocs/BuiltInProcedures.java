@@ -164,10 +164,10 @@ public class BuiltInProcedures
     }
 
     @Description( "Show the schema of the data." )
-    @Procedure(name = "db.schema", mode = READ)
+    @Procedure( name = "db.schema", mode = READ )
     public Stream<SchemaProcedure.GraphResult> metaGraph() throws ProcedureException
     {
-        return Stream.of(new SchemaProcedure(graphDatabaseAPI, tx).buildSchemaGraph());
+        return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
     }
 
     @Description( "List all constraints in the database." )

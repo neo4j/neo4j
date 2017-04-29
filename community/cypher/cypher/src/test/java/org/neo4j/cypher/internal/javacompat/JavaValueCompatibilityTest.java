@@ -48,7 +48,7 @@ public class JavaValueCompatibilityTest
     {
         Result result = db.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = result.next();
-        @SuppressWarnings("unchecked") //We know it's a collection.
+        @SuppressWarnings( "unchecked" ) //We know it's a collection.
         List<List<Object>> x = (List<List<Object>>)next.get( "x" );
         Iterable objects = x.get( 0 );
 

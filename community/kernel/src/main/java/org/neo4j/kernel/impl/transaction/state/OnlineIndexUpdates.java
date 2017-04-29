@@ -86,7 +86,7 @@ public class OnlineIndexUpdates implements IndexUpdates
             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
         PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propertyCommands ).iterator();
-        while (nodeIds.hasNext())
+        while ( nodeIds.hasNext() )
         {
             long nodeId = nodeIds.next();
             gatherUpdatesFor( nodeId, nodeCommands.get( nodeId ), propertyCommands.get( nodeId ) );

@@ -72,7 +72,7 @@ public class ConversationTest
         assertFalse( conversation.isActive() );
     }
 
-    @Test(timeout = 3000)
+    @Test( timeout = 3000 )
     public void conversationCanNotBeStoppedAndClosedConcurrently() throws InterruptedException
     {
         final CountDownLatch answerLatch = new CountDownLatch( 1 );

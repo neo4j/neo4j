@@ -142,7 +142,7 @@ public class IncrementalBackupTest
     private DbRepresentation createInitialDataSet( File path )
     {
         db = startGraphDatabase( path );
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "name", "Goofy" );
             Node donald = db.createNode();

@@ -2312,7 +2312,7 @@ public class FullCheckIntegrationTest
     {
         private T value;
 
-        void set(T value)
+        void set( T value )
         {
             this.value = value;
         }

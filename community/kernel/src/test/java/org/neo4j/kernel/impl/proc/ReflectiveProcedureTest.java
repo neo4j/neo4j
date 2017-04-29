@@ -81,7 +81,7 @@ public class ReflectiveProcedureTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, (ctx) -> log );
+        components.register( Log.class, ( ctx ) -> log );
         CallableProcedure procedure =
                 procedureCompiler.compileProcedure( LoggingProcedure.class, Optional.empty(), true ).get( 0 );
 
@@ -487,9 +487,7 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
-            return Stream.of(
-                    new MyOutputRecord( "Bonnie" ),
-                    new MyOutputRecord( "Clyde" ) );
+            return Stream.of( new MyOutputRecord( "Bonnie" ), new MyOutputRecord( "Clyde" ) );
         }
     }
 
@@ -545,9 +543,7 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
-            return Stream.of(
-                    new MyOutputRecord( "Bonnie" ),
-                    new MyOutputRecord( "Clyde" ) );
+            return Stream.of( new MyOutputRecord( "Bonnie" ), new MyOutputRecord( "Clyde" ) );
         }
     }
 
@@ -566,13 +562,13 @@ public class ReflectiveProcedureTest
 
     public static class ProcedureWithOverriddenName
     {
-        @Procedure("org.mystuff.thisisActuallyTheName")
+        @Procedure( "org.mystuff.thisisActuallyTheName" )
         public void somethingThatShouldntMatter()
         {
 
         }
 
-        @Procedure("singleName")
+        @Procedure( "singleName" )
         public void blahDoesntMatterEither()
         {
 
@@ -581,7 +577,7 @@ public class ReflectiveProcedureTest
 
     public static class ProcedureWithSingleName
     {
-        @Procedure("singleName")
+        @Procedure( "singleName" )
         public void blahDoesntMatterEither()
         {
 
@@ -590,18 +586,18 @@ public class ReflectiveProcedureTest
 
     public static class ProcedureWithDeprecation
     {
-        @Procedure("newProc")
+        @Procedure( "newProc" )
         public void newProc()
         {
         }
 
         @Deprecated
-        @Procedure(value = "oldProc", deprecatedBy = "newProc")
+        @Procedure( value = "oldProc", deprecatedBy = "newProc" )
         public void oldProc()
         {
         }
 
-        @Procedure(value = "badProc", deprecatedBy = "newProc")
+        @Procedure( value = "badProc", deprecatedBy = "newProc" )
         public void badProc()
         {
         }

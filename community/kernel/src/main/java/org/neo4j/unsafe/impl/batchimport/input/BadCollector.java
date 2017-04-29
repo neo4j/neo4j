@@ -64,7 +64,7 @@ public class BadCollector implements Collector
 
     public BadCollector( OutputStream out, int tolerance, int collect )
     {
-        this(out, tolerance, collect, false);
+        this( out, tolerance, collect, false );
     }
 
     public BadCollector( OutputStream out, int tolerance, int collect, boolean skipBadEntriesLogging )

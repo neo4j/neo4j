@@ -20,11 +20,11 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 
@@ -45,7 +45,7 @@ import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 @Description( "High Availability configuration settings" )
 public class HaSettings implements LoadableConfig
 {
-    @SuppressWarnings("unused") // accessed by reflection
+    @SuppressWarnings( "unused" ) // accessed by reflection
     @Migrator
     public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
@@ -70,8 +70,8 @@ public class HaSettings implements LoadableConfig
     @Description( "Hostname and port to bind the HA server." )
     public static final Setting<HostnamePort> ha_server = setting( "ha.host.data", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
 
-    @Description("Whether this instance should only participate as slave in cluster. "
-            + "If set to `true`, it will never be elected as master.")
+    @Description( "Whether this instance should only participate as slave in cluster. "
+            + "If set to `true`, it will never be elected as master." )
     public static final Setting<Boolean> slave_only = setting( "ha.slave_only", BOOLEAN, Settings.FALSE );
 
     @Description( "Policy for how to handle branched data." )
@@ -116,32 +116,35 @@ public class HaSettings implements LoadableConfig
 
     public enum BranchedDataCopyingStrategy
     {
-        @Description("First handles the branched store, then copies down a new store from the master and replaces it." +
-                " This strategy, when combined with the keep_last or keep_none branch handling strategies results in " +
-                "less space used as the store is first removed and then the copy is fetched." )
+        @Description( "First handles the branched store, then copies down a new store from the master and " +
+                "replaces it. This strategy, when combined with the keep_last or keep_none branch handling " +
+                "strategies results in less space used as the store is first removed and then the copy is fetched." )
         branch_then_copy,
 
-        @Description("First copies down a new store from the master, then branches the existing store and replaces it" +
-                ". This strategy uses potentially more space than branch_then_copy but it allows for store copy " +
-                "failures to be recoverable as the original store is maintained until the store copy finishes " +
-                "successfully." )
+        @Description( "First copies down a new store from the master, then branches the existing store and " +
+                "replaces it. This strategy uses potentially more space than branch_then_copy but it allows " +
+                "for store copy failures to be recoverable as the original store is maintained until " +
+                "the store copy finishes successfully." )
         copy_then_branch;
     }
 
     public enum TxPushStrategy
     {
-        @Description("Round robin")
+        @Description( "Round robin" )
         round_robin,
 
-        @Description("Fixed, prioritized by server id in descending order. This strategy will push to the same set of instances, as long as they remain " +
-                     "available, and will prioritize available instances with the highest instance ids.")
+        @Description( "Fixed, prioritized by server id in descending order. This strategy will push to the same set " +
+                "of instances, as long as they remain available, and will prioritize available " +
+                "instances with the highest instance ids." )
         fixed_descending,
 
-        @Description("Fixed, prioritized by server id in ascending order. This strategy will push to the same set of instances, as long as they remain " +
-                     "available, and will prioritize those available instances with the lowest instance ids. This strategy makes it more likely that the most " +
-                     "up-to-date instance in a cluster will be an instance with a low id. This is consistent with the master reelection tie-breaking strategy of letting the " +
-                     "instance with the lowest id win an election if several instances are equally up-to-date. Thus, using this strategy makes it very likely " +
-                     "that failover will happen in a low-id part of the cluster, which can be very helpful in planning a multi-data center deployment.")
+        @Description( "Fixed, prioritized by server id in ascending order. This strategy will push to the same set of" +
+                " instances, as long as they remain available, and will prioritize those available instances " +
+                "with the lowest instance ids. This strategy makes it more likely that the most " +
+                 "up-to-date instance in a cluster will be an instance with a low id. This is consistent with the master reelection tie-breaking strategy of letting the " +
+                 "instance with the lowest id win an election if several instances are equally up-to-date. Thus, using this strategy makes it very likely " +
+                 "that failover will happen in a low-id part of the cluster, which can be very helpful in " +
+                "planning a multi-data center deployment." )
         fixed_ascending
     }
 }

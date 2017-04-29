@@ -39,16 +39,16 @@ class ProverTimeouts extends Timeouts
 
     ProverTimeouts( URI to )
     {
-        super(new FixedTimeoutStrategy(1));
+        super( new FixedTimeoutStrategy( 1 ) );
         this.to = to;
         timeouts = new LinkedHashMap<>();
     }
 
-    private ProverTimeouts( URI to, Map<Object, Pair<ProverTimeout, Long>> timeouts )
+    private ProverTimeouts( URI to, Map<Object,Pair<ProverTimeout,Long>> timeouts )
     {
         super( new FixedTimeoutStrategy( 0 ) );
         this.to = to;
-        this.timeouts = new LinkedHashMap<>(timeouts);
+        this.timeouts = new LinkedHashMap<>( timeouts );
     }
 
     @Override
@@ -99,7 +99,7 @@ class ProverTimeouts extends Timeouts
 
     public ProverTimeouts snapshot()
     {
-        return new ProverTimeouts(to, timeouts);
+        return new ProverTimeouts( to, timeouts );
     }
 
     @Override

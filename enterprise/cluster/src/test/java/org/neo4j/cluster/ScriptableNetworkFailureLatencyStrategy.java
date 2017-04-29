@@ -32,37 +32,37 @@ import org.neo4j.cluster.com.message.MessageType;
 public class ScriptableNetworkFailureLatencyStrategy
     implements NetworkLatencyStrategy
 {
-    List<String> nodesDown = new ArrayList<String>(  );
-    List<String[]> linksDown = new ArrayList<String[]>(  );
+    List<String> nodesDown = new ArrayList<String>();
+    List<String[]> linksDown = new ArrayList<String[]>();
 
-    public ScriptableNetworkFailureLatencyStrategy nodeIsDown(String id)
+    public ScriptableNetworkFailureLatencyStrategy nodeIsDown( String id )
     {
         nodesDown.add( id );
         return this;
     }
 
-    public ScriptableNetworkFailureLatencyStrategy nodeIsUp(String id)
+    public ScriptableNetworkFailureLatencyStrategy nodeIsUp( String id )
     {
         nodesDown.remove( id );
         return this;
     }
 
-    public ScriptableNetworkFailureLatencyStrategy linkIsDown(String node1, String node2)
+    public ScriptableNetworkFailureLatencyStrategy linkIsDown( String node1, String node2 )
     {
         linksDown.add( new String[]{node1, node2} );
-        linksDown.add( new String[]{ node2, node1 } );
+        linksDown.add( new String[]{node2, node1} );
         return this;
     }
 
-    public ScriptableNetworkFailureLatencyStrategy linkIsUp(String node1, String node2)
+    public ScriptableNetworkFailureLatencyStrategy linkIsUp( String node1, String node2 )
     {
-        linksDown.remove( new String[]{ node1, node2 } );
-        linksDown.remove( new String[]{ node2, node1 } );
+        linksDown.remove( new String[]{node1, node2} );
+        linksDown.remove( new String[]{node2, node1} );
         return this;
     }
 
     @Override
-    public long messageDelay(Message<? extends MessageType> message, String serverIdTo)
+    public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
         if ( nodesDown.contains( serverIdTo ) || nodesDown.contains( message.getHeader( Message.FROM ) ) )
         {

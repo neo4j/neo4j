@@ -22,5 +22,6 @@ package org.neo4j.collection.pool;
 public interface Pool<T>
 {
     T acquire();
-    void release(T obj);
+
+    void release( T obj );
 }

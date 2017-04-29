@@ -327,7 +327,7 @@ public class DbStructureCollector implements DbStructureVisitor
         private final double uniqueValuesPercentage;
         private final long size;
 
-        private IndexStatistics(double uniqueValuesPercentage, long size)
+        private IndexStatistics( double uniqueValuesPercentage, long size )
         {
             this.uniqueValuesPercentage = uniqueValuesPercentage;
             this.size = size;
@@ -354,7 +354,7 @@ public class DbStructureCollector implements DbStructureVisitor
                 );
             }
 
-            indexMap.put( descriptor, new IndexStatistics(uniqueValuesPercentage, size) );
+            indexMap.put( descriptor, new IndexStatistics( uniqueValuesPercentage, size ) );
         }
 
         public IndexStatistics getIndex( LabelSchemaDescriptor descriptor )

@@ -105,7 +105,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @After
     public void tearDown() throws Throwable
     {
-        if (indexService != null)
+        if ( indexService != null )
         {
             indexService.shutdown();
         }
@@ -405,7 +405,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     labelUpdateVisitor, forceStoreScan );
             return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
-                    (LabelScanViewNodeStoreScan) storeScan, updates);
+                    (LabelScanViewNodeStoreScan) storeScan, updates );
         }
     }
 

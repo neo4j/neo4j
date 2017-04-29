@@ -197,7 +197,7 @@ public abstract class SubProcess<T, P> implements Serializable
         return stream.filter( classPathFilter ).collect( Collectors.joining( File.pathSeparator ) );
     }
 
-    private static Process start(boolean inheritOutput, String... args )
+    private static Process start( boolean inheritOutput, String... args )
     {
         ProcessBuilder builder = new ProcessBuilder( args );
         if ( inheritOutput )

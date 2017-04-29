@@ -103,7 +103,7 @@ public class LuceneLegacyIndexUpgrader
                   IndexUpgraderWrapper lucene5Upgrader = createIndexUpgrader( getLucene5JarPaths() ) )
             {
                 List<Path> indexPaths = pathStream.filter( getIndexPathFilter() ).collect( Collectors.toList() );
-                for (Path indexPath : indexPaths )
+                for ( Path indexPath : indexPaths )
                 {
                     try
                     {
@@ -172,7 +172,7 @@ public class LuceneLegacyIndexUpgrader
 
     private static boolean isIndexDirectory( Path path ) throws IOException
     {
-        try (Stream<Path> pathStream = Files.list( path ))
+        try ( Stream<Path> pathStream = Files.list( path ) )
         {
             return  pathStream
                     .filter( child -> child.getFileName().toString().startsWith( SEGMENTS_FILE_NAME_PREFIX ) )

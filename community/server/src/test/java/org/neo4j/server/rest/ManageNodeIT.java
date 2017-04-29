@@ -177,7 +177,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         assertEquals( 400, response.getStatus() );
     }
 
-    private JaxRsResponse sendCreateRequestToServer(final String json)
+    private JaxRsResponse sendCreateRequestToServer( final String json )
     {
         return RestRequest.req().post( functionalTestHelper.dataUri() + "node/" , json );
     }
@@ -307,7 +307,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         response.close();
     }
 
-    private JaxRsResponse sendDeleteRequestToServer(final long id) throws Exception
+    private JaxRsResponse sendDeleteRequestToServer( final long id ) throws Exception
     {
         return RestRequest.req().delete(functionalTestHelper.dataUri() + "node/" + id);
     }
@@ -593,8 +593,8 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
             RootService svc = new RootService( new CommunityNeoServer( Config.embeddedDefaults( stringMap(
-                    new HttpConnector("http", Encryption.NONE).type.name(), "HTTP",
-                    new HttpConnector("http", Encryption.NONE).enabled.name(), "true"
+                    new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP",
+                    new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true"
             ) ),
                     GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
                             .monitors( new Monitors() ),

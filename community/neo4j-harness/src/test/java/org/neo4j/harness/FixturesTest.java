@@ -54,7 +54,7 @@ public class FixturesTest
     {
         // Given
         File targetFolder = testDir.directory();
-        File fixture = new File(targetFolder, "fixture.cyp");
+        File fixture = new File( targetFolder, "fixture.cyp" );
         FileUtils.writeToFile(fixture,
                 "CREATE (u:User)" +
                 "CREATE (a:OtherUser)", false);
@@ -76,19 +76,16 @@ public class FixturesTest
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
-        FileUtils.writeToFile( new File(targetFolder, "fixture1.cyp"),
-                "CREATE (u:User)\n" +
-                "CREATE (a:OtherUser)", false);
-        FileUtils.writeToFile( new File(targetFolder, "fixture2.cyp"),
-                "CREATE (u:User)\n" +
-                "CREATE (a:OtherUser)", false);
+        FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
+                false );
+        FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
+                false );
 
         // And given one file in a sub directory
-        File subDir = new File(targetFolder, "subdirectory");
+        File subDir = new File( targetFolder, "subdirectory" );
         subDir.mkdir();
-        FileUtils.writeToFile( new File(subDir, "subDirFixture.cyp"),
-                "CREATE (u:User)\n" +
-                "CREATE (a:OtherUser)", false);
+        FileUtils.writeToFile( new File( subDir, "subDirFixture.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
+                false );
 
         // When
         try ( ServerControls server = getServerBuilder( targetFolder ).withFixture( targetFolder ).newServer() )
@@ -153,10 +150,9 @@ public class FixturesTest
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
-        FileUtils.writeToFile( new File(targetFolder, "fixture1.cyp"),
-                "CREATE (u:User)\n" +
-                "CREATE (a:OtherUser)", false);
-        FileUtils.writeToFile( new File(targetFolder, "fixture2.cyp"), "", false);
+        FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "CREATE (u:User)\n" + "CREATE (a:OtherUser)",
+                false );
+        FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "", false );
 
         // When
         try ( ServerControls server = getServerBuilder( targetFolder )
@@ -175,7 +171,7 @@ public class FixturesTest
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
-        FileUtils.writeToFile( new File(targetFolder, "fixture1.cyp"), "this is not a valid cypher statement", false);
+        FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "this is not a valid cypher statement", false );
 
         // When
         try ( ServerControls ignore = getServerBuilder( targetFolder )

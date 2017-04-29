@@ -287,7 +287,9 @@ public class CypherOrderability
                 return ((String) lhs).compareTo( rhs.toString() );
             }
             else
-            { return ((Comparable) lhs).compareTo( rhs ); }
+            {
+                return ((Comparable) lhs).compareTo( rhs );
+            }
         }
     };
 

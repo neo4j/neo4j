@@ -57,7 +57,7 @@ public class TicketedProcessingTest
         // GIVEN
         int items = 1_000;
         ParkStrategy park = new ParkStrategy.Park( 2, MILLISECONDS );
-        BiFunction<Integer,Void,Integer> processor = (from,ignore) ->
+        BiFunction<Integer,Void,Integer> processor = ( from, ignore ) ->
         {
             if ( ThreadLocalRandom.current().nextFloat() < 0.01f )
             {
@@ -103,7 +103,7 @@ public class TicketedProcessingTest
     {
         // GIVEN
         try ( TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
-                (job,state) ->
+                ( job, state ) ->
                 {
                     awaitLatch( job.latch );
                     return parseInt( job.string );
@@ -143,7 +143,7 @@ public class TicketedProcessingTest
         // GIVEN
         IllegalStateException failure = new IllegalStateException( "Consistently failing" );
         try ( TicketedProcessing<StringJob,Void,Integer> processing = new TicketedProcessing<>( "Parser", 2,
-                (job,state) -> parseInt( job.string ), () -> null ) )
+                ( job, state ) -> parseInt( job.string ), () -> null ) )
         {
             processing.processors( 1 );
 

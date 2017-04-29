@@ -19,11 +19,11 @@
  */
 package org.neo4j.causalclustering;
 
-import java.util.ArrayList;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
+
+import java.util.ArrayList;
 
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -40,7 +40,7 @@ public class VersionDecoderTest
         byte currentVersion = (byte) 1;
         byte messageVersion = (byte) 0;
 
-        VersionDecoder versionDecoder = new VersionDecoder(logProvider, currentVersion );
+        VersionDecoder versionDecoder = new VersionDecoder( logProvider, currentVersion );
 
         ByteBuf incoming = Unpooled.buffer();
         incoming.writeByte( messageVersion );
@@ -59,7 +59,7 @@ public class VersionDecoderTest
         // given
         byte currentVersion = (byte) 1;
 
-        VersionDecoder versionDecoder = new VersionDecoder(logProvider, currentVersion );
+        VersionDecoder versionDecoder = new VersionDecoder( logProvider, currentVersion );
 
         ByteBuf incoming = Unpooled.buffer();
         incoming.writeByte( currentVersion );

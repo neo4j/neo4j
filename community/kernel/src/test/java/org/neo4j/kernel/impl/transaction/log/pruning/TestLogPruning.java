@@ -283,7 +283,7 @@ public class TestLogPruning
                     try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
                             new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
                     {
-                        while ( physicalTransactionCursor.next())
+                        while ( physicalTransactionCursor.next() )
                         {
                             counter++;
                         }

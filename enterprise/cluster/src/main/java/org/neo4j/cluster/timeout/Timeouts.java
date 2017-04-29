@@ -52,7 +52,7 @@ public class Timeouts implements MessageSource
     @Override
     public void addMessageProcessor( MessageProcessor messageProcessor )
     {
-        if (receiver != null)
+        if ( receiver != null )
         {
             throw new UnsupportedOperationException( "Timeouts does not yet support multiple message processors" );
         }

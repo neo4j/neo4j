@@ -51,9 +51,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
@@ -71,7 +71,7 @@ public class ProcedureJarLoaderTest
     private Log log = mock( Log.class );
     private final ProcedureJarLoader jarloader =
             new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
-                    registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance());
+                    registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance() );
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable
@@ -317,9 +317,9 @@ public class ProcedureJarLoaderTest
     public static class ClassWithProcedureWithArgument
     {
         @Procedure
-        public Stream<Output> myProcedure(@Name( "value" ) long value)
+        public Stream<Output> myProcedure( @Name( "value" ) long value )
         {
-            return Stream.of( new Output(value) );
+            return Stream.of( new Output( value ) );
         }
     }
 
@@ -397,7 +397,7 @@ public class ProcedureJarLoaderTest
     private ComponentRegistry registryWithUnsafeAPI()
     {
         ComponentRegistry allComponents = new ComponentRegistry();
-        allComponents.register( UnsafeAPI.class, (ctx) -> new UnsafeAPI() );
+        allComponents.register( UnsafeAPI.class, ( ctx ) -> new UnsafeAPI() );
         return allComponents;
     }
 

@@ -46,7 +46,8 @@ public final class RepresentationFormatRepository
         }
     }
 
-    public OutputFormat outputFormat(List<MediaType> acceptable, URI baseUri, MultivaluedMap<String, String> requestHeaders)
+    public OutputFormat outputFormat( List<MediaType> acceptable, URI baseUri,
+            MultivaluedMap<String,String> requestHeaders )
     {
         RepresentationFormat format = forHeaders( acceptable, requestHeaders );
         if ( format == null )
@@ -65,7 +66,7 @@ public final class RepresentationFormatRepository
         return injectorProvider == null ? null : injectorProvider.getExtensionManager();
     }
 
-    private RepresentationFormat forHeaders(List<MediaType> acceptable, MultivaluedMap<String, String> requestHeaders)
+    private RepresentationFormat forHeaders( List<MediaType> acceptable, MultivaluedMap<String,String> requestHeaders )
     {
         if ( requestHeaders == null )
         {
@@ -83,9 +84,9 @@ public final class RepresentationFormatRepository
         return null;
     }
 
-    private boolean containsType(List<MediaType> mediaTypes, MediaType mediaType)
+    private boolean containsType( List<MediaType> mediaTypes, MediaType mediaType )
     {
-        for (MediaType type : mediaTypes)
+        for ( MediaType type : mediaTypes )
         {
             if ( mediaType.getType().equals( type.getType() ) && mediaType.getSubtype().equals( type.getSubtype() ) )
             {
@@ -95,7 +96,7 @@ public final class RepresentationFormatRepository
         return false;
     }
 
-    private RepresentationFormat forMediaTypes(List<MediaType> acceptable)
+    private RepresentationFormat forMediaTypes( List<MediaType> acceptable )
     {
         for ( MediaType type : acceptable )
         {

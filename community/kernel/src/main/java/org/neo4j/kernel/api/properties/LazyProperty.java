@@ -77,7 +77,7 @@ abstract class LazyProperty<T> extends DefinedProperty
      * @param value the value to cast and prepare.
      * @return the cast and prepared value.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     protected T castAndPrepareForReturn( Object value )
     {
         return (T) value;

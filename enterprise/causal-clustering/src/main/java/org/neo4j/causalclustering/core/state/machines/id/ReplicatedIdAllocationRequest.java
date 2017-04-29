@@ -21,9 +21,9 @@ package org.neo4j.causalclustering.core.state.machines.id;
 
 import java.util.function.Consumer;
 
-import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
+import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 
@@ -50,20 +50,29 @@ public class ReplicatedIdAllocationRequest implements CoreReplicatedContent
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         ReplicatedIdAllocationRequest that = (ReplicatedIdAllocationRequest) o;
 
         if ( idRangeStart != that.idRangeStart )
-        { return false; }
+        {
+            return false;
+        }
         if ( idRangeLength != that.idRangeLength )
-        { return false; }
+        {
+            return false;
+        }
         if ( !owner.equals( that.owner ) )
-        { return false; }
+        {
+            return false;
+        }
         return idType == that.idType;
-
     }
 
     @Override

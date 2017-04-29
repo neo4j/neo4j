@@ -267,9 +267,9 @@ public class InternalJettyServletRequest extends Request
         return cookies;
     }
 
-    public void addHeader(String header, String value)
+    public void addHeader( String header, String value )
     {
-        headers.put(header, value);
+        headers.put( header, value );
     }
 
     @Override

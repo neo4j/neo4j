@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -32,7 +31,7 @@ import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
-@Service.Implementation(UpstreamDatabaseSelectionStrategy.class)
+@Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
 public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
 {
     private Random random = new Random();

@@ -79,7 +79,7 @@ abstract class Serializer
         list.done();
     }
 
-    final String relativeUri(String path)
+    final String relativeUri( String path )
     {
         return joinBaseWithRelativePath(baseUri, path);
     }
@@ -92,7 +92,7 @@ abstract class Serializer
     static String joinBaseWithRelativePath( URI baseUri, String path )
     {
         String base = baseUri.toString();
-        final StringBuilder result = new StringBuilder( base.length() + path.length() + 1).append(base);
+        final StringBuilder result = new StringBuilder( base.length() + path.length() + 1 ).append( base );
         if ( base.endsWith( "/" ) )
         {
             if ( path.startsWith( "/" ) )

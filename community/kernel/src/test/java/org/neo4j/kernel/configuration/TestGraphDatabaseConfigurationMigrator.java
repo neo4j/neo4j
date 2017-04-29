@@ -163,7 +163,7 @@ public class TestGraphDatabaseConfigurationMigrator
         logProvider.assertContainsMessageContaining( "WARNING! Deprecated configuration options used. See manual for details" );
     }
 
-    private void assertContainsWarningMessage(String deprecationMessage)
+    private void assertContainsWarningMessage( String deprecationMessage )
     {
         assertContainsWarningMessage();
         if ( StringUtils.isNotEmpty( deprecationMessage ) )

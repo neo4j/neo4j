@@ -39,8 +39,8 @@ import javax.rmi.ssl.SslRMIServerSocketFactory;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementSupport;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -62,7 +62,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             try
             {
                 Method importRemoteFrom = cal.getMethod( "importRemoteFrom", int.class );
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 Map<String, String> remote = (Map<String, String>) importRemoteFrom.invoke( null, 0 );
                 url = getUrlFrom( remote );
             }

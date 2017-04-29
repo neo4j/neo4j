@@ -165,7 +165,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
             addError( new Neo4jError( Status.Network.CommunicationError, e ) );
             return null;
         }
-        catch ( Exception e)
+        catch ( Exception e )
         {
             addError( new Neo4jError( Status.General.UnknownError, e ) );
             return null;
@@ -178,13 +178,13 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         input.readValueAs( Object.class );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static Map<String, Object> readMap( JsonParser input ) throws IOException
     {
         return input.readValueAs( Map.class );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static List<Object> readArray( JsonParser input ) throws IOException
     {
         return input.readValueAs( List.class );

@@ -81,7 +81,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
         response.close();
     }
 
-    private JaxRsResponse removeNodePropertiesOnServer(final long nodeId)
+    private JaxRsResponse removeNodePropertiesOnServer( final long nodeId )
     {
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
@@ -123,7 +123,7 @@ public class RemoveNodePropertiesIT extends AbstractRestFunctionalDocTestBase
         return functionalTestHelper.nodePropertyUri( nodeId, key );
     }
 
-    private JaxRsResponse removeNodePropertyOnServer(final long nodeId, final String key)
+    private JaxRsResponse removeNodePropertyOnServer( final long nodeId, final String key )
     {
         return RestRequest.req().delete(getPropertyUri(nodeId, key));
     }

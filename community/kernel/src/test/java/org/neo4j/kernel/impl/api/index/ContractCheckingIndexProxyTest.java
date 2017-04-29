@@ -107,7 +107,7 @@ public class ContractCheckingIndexProxyTest
         outer.close();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotUpdateBeforeCreate() throws Exception
     {
         // GIVEN
@@ -115,13 +115,13 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( null );
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotUpdateAfterClose() throws Exception
     {
         // GIVEN
@@ -131,13 +131,13 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+        try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( null );
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotForceBeforeCreate() throws IOException
     {
         // GIVEN
@@ -148,7 +148,7 @@ public class ContractCheckingIndexProxyTest
         outer.force();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void shouldNotForceAfterClose() throws IOException
     {
         // GIVEN
@@ -238,7 +238,7 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         runInSeparateThread( () ->
         {
-            try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 updater.process( null );
                 latch.startAndWaitForAllToStartAndFinish();
@@ -277,7 +277,7 @@ public class ContractCheckingIndexProxyTest
         outer.start();
 
         // WHEN
-        runInSeparateThread( () -> outer.force() );
+        runInSeparateThread( outer::force );
 
         try
         {

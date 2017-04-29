@@ -102,7 +102,7 @@ public class SchemaRecoveryIT
         @Override
         public void waitForSchemaTransactionCommitted() throws InterruptedException
         {
-            while (!started)
+            while ( !started )
             {
                 Thread.sleep( 10 );
             }

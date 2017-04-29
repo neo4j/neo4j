@@ -50,11 +50,11 @@ public class DummyThirdPartyWebService
     }
 
     @GET
-    @Path("/{something}/{somethingElse}")
+    @Path( "/{something}/{somethingElse}" )
     @Produces( MediaType.TEXT_PLAIN )
     public Response forSecurityTesting()
     {
-        return Response.ok().entity("you've reached a dummy service").build();
+        return Response.ok().entity( "you've reached a dummy service" ).build();
     }
 
     @GET
@@ -62,11 +62,9 @@ public class DummyThirdPartyWebService
     @Produces( MediaType.TEXT_PLAIN )
     public Response countNodes( @Context GraphDatabaseService db )
     {
-        try (Transaction transaction = db.beginTx())
+        try ( Transaction transaction = db.beginTx() )
         {
-            return Response.ok()
-                    .entity( String.valueOf( countNodesIn( db ) ) )
-                    .build();
+            return Response.ok().entity( String.valueOf( countNodesIn( db ) ) ).build();
         }
     }
 
@@ -80,10 +78,9 @@ public class DummyThirdPartyWebService
         while ( headerIt.hasNext() )
         {
             Map.Entry<String, List<String>> header = headerIt.next();
-            if (header.getValue().size() != 1)
+            if ( header.getValue().size() != 1 )
             {
-                throw new IllegalArgumentException( "Mutlivalued header: "
-                                                    + header.getKey() );
+                throw new IllegalArgumentException( "Mutlivalued header: " + header.getKey() );
             }
             theEntity.append( "\"" ).append( header.getKey() ).append( "\":\"" )
                      .append( header.getValue().get( 0 ) ).append( "\"" );

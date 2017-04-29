@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rest.domain;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonLocation;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonLocation;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import org.neo4j.server.rest.web.PropertyValueException;
 
@@ -36,7 +36,7 @@ public class JsonHelper
 {
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static JsonNode jsonNode(String json) throws JsonParseException
+    public static JsonNode jsonNode( String json ) throws JsonParseException
     {
         try
         {

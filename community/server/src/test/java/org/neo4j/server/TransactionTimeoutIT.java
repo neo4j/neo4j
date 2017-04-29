@@ -19,21 +19,19 @@
  */
 package org.neo4j.server;
 
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
@@ -62,7 +60,7 @@ public class TransactionTimeoutIT extends ExclusiveServerTestBase
         Map<String, Object> response = HTTP.POST( tx + "/commit" ).content();
 
         // Then
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
         assertThat( errors.get( 0 ).get( "code" ), equalTo( TransactionNotFound.code().serialize() ) );
     }

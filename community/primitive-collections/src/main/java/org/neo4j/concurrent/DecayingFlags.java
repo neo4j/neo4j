@@ -174,7 +174,7 @@ public class DecayingFlags
                 (bit( i + 6 ) << 1) |
                 (bit( i + 7 )) ) ;
         }
-        return printHexBinary(bits);
+        return printHexBinary( bits );
     }
 
     private int bit( int idx )

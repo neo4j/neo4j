@@ -41,7 +41,7 @@ public class TestLockManagerBean
 
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     private GraphDatabaseAPI graphDb;
 
     @Before

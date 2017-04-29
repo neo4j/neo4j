@@ -66,7 +66,7 @@ public class ElectionContextImpl
     {
         super( me, commonState, logging, timeouts );
         this.electionCredentialsProvider = electionCredentialsProvider;
-        this.roles = new ArrayList<>( asList(roles));
+        this.roles = new ArrayList<>( asList( roles ) );
         this.elections = new HashMap<>();
         this.clusterContext = clusterContext;
         this.heartbeatContext = heartbeatContext;
@@ -291,34 +291,34 @@ public class ElectionContextImpl
                                          ElectionCredentialsProvider credentialsProvider )
 
     {
-        Map<String, Election> electionsSnapshot = new HashMap<>();
-        for ( Map.Entry<String, Election> election : elections.entrySet() )
+        Map<String,Election> electionsSnapshot = new HashMap<>();
+        for ( Map.Entry<String,Election> election : elections.entrySet() )
         {
             electionsSnapshot.put( election.getKey(), election.getValue().snapshot() );
         }
 
         return new ElectionContextImpl( me, commonStateSnapshot, logging, timeouts, snapshotClusterContext,
-                snapshotHeartbeatContext, new ArrayList<>(roles), electionsSnapshot, credentialsProvider );
+                snapshotHeartbeatContext, new ArrayList<>( roles ), electionsSnapshot, credentialsProvider );
     }
 
     private static class Election
     {
         private final WinnerStrategy winnerStrategy;
-        private final Map<org.neo4j.cluster.InstanceId, Vote> votes;
+        private final Map<org.neo4j.cluster.InstanceId,Vote> votes;
 
         private Election( WinnerStrategy winnerStrategy )
         {
             this.winnerStrategy = winnerStrategy;
-            this.votes = new HashMap<InstanceId, Vote>();
+            this.votes = new HashMap<InstanceId,Vote>();
         }
 
-        private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId, Vote> votes )
+        private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId,Vote> votes )
         {
             this.votes = votes;
             this.winnerStrategy = winnerStrategy;
         }
 
-        public Map<InstanceId, Vote> getVotes()
+        public Map<InstanceId,Vote> getVotes()
         {
             return votes;
         }
@@ -330,7 +330,7 @@ public class ElectionContextImpl
 
         public Election snapshot()
         {
-            return new Election( winnerStrategy, new HashMap<>(votes));
+            return new Election( winnerStrategy, new HashMap<>( votes ) );
         }
     }
 

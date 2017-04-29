@@ -98,7 +98,7 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, verbose,
-                new CheckConsistencyConfig(tuningConfiguration) );
+                new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
@@ -131,7 +131,7 @@ public class ConsistencyCheckService
             boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                verbose, new CheckConsistencyConfig(tuningConfiguration) );
+                verbose, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
@@ -148,7 +148,7 @@ public class ConsistencyCheckService
             boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                verbose, reportDir, new CheckConsistencyConfig(tuningConfiguration ) );
+                verbose, reportDir, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
@@ -186,7 +186,7 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                pageCache, verbose, new CheckConsistencyConfig(tuningConfiguration ) );
+                pageCache, verbose, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( final File storeDir, Config config, ProgressMonitorFactory progressFactory,
@@ -205,7 +205,7 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                pageCache, verbose, reportDir, new CheckConsistencyConfig(tuningConfiguration) );
+                pageCache, verbose, reportDir, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( final File storeDir, Config config, ProgressMonitorFactory progressFactory,

@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rest.domain;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -160,7 +160,7 @@ public class PropertySettingStrategyTest
         assertThat( (String[]) node.getProperty( "arr" ), is(new String[]{}));
     }
 
-    @Test(expected = PropertyValueException.class)
+    @Test( expected = PropertyValueException.class )
     public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingProperty() throws Exception
     {
         // Given
@@ -170,7 +170,7 @@ public class PropertySettingStrategyTest
         propSetter.setProperty( node, "arr", new ArrayList<Object>() );
     }
 
-    @Test(expected = PropertyValueException.class)
+    @Test( expected = PropertyValueException.class )
     public void shouldThrowPropertyErrorWhenSettingEmptyArrayOnEntityWithNoPreExistingEmptyArray() throws Exception
     {
         // Given

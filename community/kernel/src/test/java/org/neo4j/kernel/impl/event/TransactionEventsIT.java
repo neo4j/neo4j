@@ -185,7 +185,7 @@ public class TransactionEventsIT
         assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
     }
 
-    private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler(Consumer<TransactionData> dataConsumer)
+    private TransactionEventHandler.Adapter<Object> getBeforeCommitHandler( Consumer<TransactionData> dataConsumer )
     {
         return new TransactionEventHandler.Adapter<Object>()
         {
@@ -203,7 +203,7 @@ public class TransactionEventsIT
         runTransaction( AnonymousContext.write(), Collections.emptyMap() );
     }
 
-    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData)
+    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData )
     {
         try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext ) )
         {

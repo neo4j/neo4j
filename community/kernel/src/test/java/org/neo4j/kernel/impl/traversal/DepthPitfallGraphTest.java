@@ -100,7 +100,7 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     {
         Traverser traversal = getGraphDb().traversalDescription().traverse( node( "1" ) );
         int count = 0;
-        try (Transaction transaction = beginTx())
+        try ( Transaction transaction = beginTx() )
         {
             for ( Path position : traversal )
             {

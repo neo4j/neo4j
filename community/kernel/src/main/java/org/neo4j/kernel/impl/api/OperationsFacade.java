@@ -760,7 +760,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
         int id = tokenRead().labelGetForName( statement, labelName );
-        if (id != KeyReadOperations.NO_SUCH_LABEL )
+        if ( id != KeyReadOperations.NO_SUCH_LABEL )
         {
             return id;
         }
@@ -773,7 +773,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
         int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
-        if (id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
             return id;
         }
@@ -786,7 +786,7 @@ public class OperationsFacade
     {
         statement.assertOpen();
         int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
-        if (id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+        if ( id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
         {
             return id;
         }

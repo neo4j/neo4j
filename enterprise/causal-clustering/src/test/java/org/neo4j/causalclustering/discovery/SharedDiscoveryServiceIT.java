@@ -58,7 +58,7 @@ public class SharedDiscoveryServiceIT
     private NullLogProvider logProvider = NullLogProvider.getInstance();
     private NullLogProvider userLogProvider = NullLogProvider.getInstance();
 
-    @Test(timeout = TIMEOUT_MS)
+    @Test( timeout = TIMEOUT_MS )
     public void shouldDiscoverCompleteTargetSetWithoutDeadlocks() throws Exception
     {
         // given

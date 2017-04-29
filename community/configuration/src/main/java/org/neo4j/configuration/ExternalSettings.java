@@ -57,7 +57,7 @@ public class ExternalSettings implements LoadableConfig
         return new DummySetting( name, "", "a string" );
     }
 
-    private static DummySetting dummySetting( String name, String defVal)
+    private static DummySetting dummySetting( String name, String defVal )
     {
         return new DummySetting( name, defVal, "a string" );
     }

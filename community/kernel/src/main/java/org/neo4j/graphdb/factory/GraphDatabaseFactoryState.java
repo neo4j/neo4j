@@ -109,7 +109,7 @@ public class GraphDatabaseFactoryState
         this.userLogProvider = userLogProvider;
     }
 
-    public void setMonitors(Monitors monitors)
+    public void setMonitors( Monitors monitors )
     {
         this.monitors = monitors;
     }

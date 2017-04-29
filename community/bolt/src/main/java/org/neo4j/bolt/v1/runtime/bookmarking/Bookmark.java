@@ -41,7 +41,7 @@ public class Bookmark
         return format( BOOKMARK_TX_PREFIX + "%d", txId );
     }
 
-    public static Bookmark fromString( String bookmarkString) throws BookmarkFormatException
+    public static Bookmark fromString( String bookmarkString ) throws BookmarkFormatException
     {
         if ( bookmarkString != null && bookmarkString.startsWith( BOOKMARK_TX_PREFIX ) )
         {

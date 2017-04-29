@@ -46,7 +46,7 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public final class Iterables
 {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> empty()
     {
         return EMPTY;
@@ -139,18 +139,18 @@ public final class Iterables
         Iterator<? extends T> iterator = iterable.iterator();
         try
         {
-            while (iterator.hasNext())
+            while ( iterator.hasNext() )
             {
                 collection.add( iterator.next() );
             }
         }
         finally
         {
-            if (iterator instanceof AutoCloseable)
+            if ( iterator instanceof AutoCloseable )
             {
                 try
                 {
-                    ((AutoCloseable)iterator).close();
+                    ((AutoCloseable) iterator).close();
                 }
                 catch ( Exception e )
                 {
@@ -281,20 +281,20 @@ public final class Iterables
     }
 
     @SafeVarargs
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
-        return (Iterable<T>) Arrays.asList(items);
+        return (Iterable<T>) Arrays.asList( items );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T, C> Iterable<T> cast( Iterable<C> iterable )
     {
         return (Iterable) iterable;
     }
 
     @SafeVarargs
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> concat( Iterable<? extends T>... iterables )
     {
         return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
@@ -402,7 +402,7 @@ public final class Iterables
         return asArray( Object.class, iterable );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> T[] asArray( Class<T> componentType, Iterable<T> iterable )
     {
         if ( iterable == null )
@@ -725,8 +725,7 @@ public final class Iterables
                     }
                 }
 
-                while ( !currentIterator.hasNext() &&
-                        iterator.hasNext() )
+                while ( !currentIterator.hasNext() && iterator.hasNext() )
                 {
                     currentIterator = iterator.next().iterator();
                 }

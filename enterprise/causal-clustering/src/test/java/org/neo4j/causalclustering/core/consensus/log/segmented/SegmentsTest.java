@@ -190,7 +190,7 @@ public class SegmentsTest
             segments.close();
             fail( "should have thrown" );
         }
-        catch ( RuntimeException ex)
+        catch ( RuntimeException ex )
         {
             // Then
             Throwable[] suppressed = ex.getSuppressed();

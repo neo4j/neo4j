@@ -23,6 +23,6 @@ public class LabelNotFoundKernelException extends KernelException
 {
     public LabelNotFoundKernelException( String message, Exception cause )
     {
-        super( Status.Schema.LabelAccessFailed, cause, message);
+        super( Status.Schema.LabelAccessFailed, cause, message );
     }
 }

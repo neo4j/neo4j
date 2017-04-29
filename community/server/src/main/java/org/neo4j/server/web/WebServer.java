@@ -59,8 +59,9 @@ public interface WebServer
     void addJAXRSClasses( List<String> classNames, String serverMountPoint, Collection<Injectable<?>> injectables );
     void removeJAXRSClasses( List<String> classNames, String serverMountPoint );
 
-    void addFilter(Filter filter, String pathSpec);
-    void removeFilter(Filter filter, String pathSpec);
+    void addFilter( Filter filter, String pathSpec );
+
+    void removeFilter( Filter filter, String pathSpec );
 
     void addStaticContent( String contentLocation, String serverMountPoint );
     void removeStaticContent( String contentLocation, String serverMountPoint );

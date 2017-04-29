@@ -232,7 +232,7 @@ public class NetworkSender
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if (!paused)
+        if ( !paused )
         {
             if ( message.hasHeader( Message.TO ) )
             {
@@ -247,7 +247,7 @@ public class NetworkSender
         return true;
     }
 
-    public void setPaused(boolean paused)
+    public void setPaused( boolean paused )
     {
         this.paused = paused;
     }
@@ -458,7 +458,7 @@ public class NetworkSender
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
                 // If we keep getting the same exception, only output the first one
-                if (lastException != null && !lastException.getClass().equals( cause.getClass() ))
+                if ( lastException != null && !lastException.getClass().equals( cause.getClass() ) )
                 {
                     msgLog.error( "Receive exception:", cause );
                     lastException = cause;
@@ -469,9 +469,9 @@ public class NetworkSender
         @Override
         public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
         {
-            if (lastException != null)
+            if ( lastException != null )
             {
-                msgLog.error( "Recovered from:", lastException);
+                msgLog.error( "Recovered from:", lastException );
                 lastException = null;
             }
             super.writeComplete( ctx, e );

@@ -71,14 +71,14 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * The pattern of immutable store files, and rotation strategy, et.c. is defined in the
  * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
-@Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
+@Rotation( value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT} )
 public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         implements CountsVisitor.Visitable, CountsAccessor
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
                                           'S', 't', 'o', 'r', 'e', /**/0, 2, 'V'};
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
@@ -308,7 +308,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
             return true;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public void visitMetadata( File path, Headers headers, int entryCount )
         {

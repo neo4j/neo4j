@@ -494,7 +494,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             read.closeAndAssertSuccess();
             write.closeAndAssertSuccess();
         }
-        catch (Throwable t)
+        catch ( Throwable t )
         {
             latch.finishAndWaitForAllToFinish();
             throw t;

@@ -120,11 +120,11 @@ public class LegacyIndexesUpgradeTest
         }
     }
 
-    private GraphDatabaseService startDatabase(boolean allowUpgread)
+    private GraphDatabaseService startDatabase( boolean allowUpgread )
     {
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
-        builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, Boolean.toString( allowUpgread ));
+        builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, Boolean.toString( allowUpgread ) );
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         return builder.newGraphDatabase();
     }
@@ -152,7 +152,7 @@ public class LegacyIndexesUpgradeTest
         }
     }
 
-    private void prepareStore(String store) throws IOException
+    private void prepareStore( String store ) throws IOException
     {
         Unzip.unzip( getClass(), store, testDir.graphDbDir() );
     }

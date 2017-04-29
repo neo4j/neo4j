@@ -43,7 +43,7 @@ public class CreateAndDeleteNodesIT
         Node myNode;
 
         // When
-        try (Transaction bobTransaction = dataBase.beginTx())
+        try ( Transaction bobTransaction = dataBase.beginTx() )
         {
             myNode = dataBase.createNode();
             myNode.setProperty( "Name", "Bob" );

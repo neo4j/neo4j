@@ -582,7 +582,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         Iterator<Cursor<NodeItem>> nodes = new NodeLoadingIterator( nodesGetForLabel( state, descriptor.getLabelId() ),
                 ( id ) -> nodeCursorById( state, id ) );
         constraintSemantics.validateNodeKeyConstraint( nodes, descriptor,
-                (node, propertyKey) -> entityReadOperations.nodeHasProperty(state, node, propertyKey) );
+                ( node, propertyKey ) -> entityReadOperations.nodeHasProperty( state, node, propertyKey ) );
         return schemaWriteOperations.nodeKeyConstraintCreate( state, descriptor );
     }
 
@@ -603,7 +603,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         Iterator<Cursor<NodeItem>> nodes = new NodeLoadingIterator( nodesGetForLabel( state, descriptor.getLabelId() ),
                 ( id ) -> nodeCursorById( state, id ) );
         constraintSemantics.validateNodePropertyExistenceConstraint( nodes, descriptor,
-                (node, propertyKey) -> entityReadOperations.nodeHasProperty(state, node, propertyKey) );
+                ( node, propertyKey ) -> entityReadOperations.nodeHasProperty( state, node, propertyKey ) );
         return schemaWriteOperations.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
 

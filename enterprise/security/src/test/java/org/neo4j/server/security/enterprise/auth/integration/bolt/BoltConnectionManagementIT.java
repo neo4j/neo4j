@@ -24,8 +24,6 @@ import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
@@ -355,7 +353,7 @@ public class BoltConnectionManagementIT
         Map<String, Object> authToken =
                 map( "principal", username, "credentials", password, "scheme", "basic" );
 
-        if ( newPassword != null)
+        if ( newPassword != null )
         {
             authToken.put( "new_credentials", newPassword );
         }

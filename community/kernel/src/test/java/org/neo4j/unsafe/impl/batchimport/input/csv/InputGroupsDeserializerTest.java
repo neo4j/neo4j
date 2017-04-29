@@ -62,7 +62,7 @@ public class InputGroupsDeserializerTest
         final AtomicReference<InputGroupsDeserializer<InputNode>> deserializerTestHack = new AtomicReference<>( null );
         InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
                 data.iterator(), defaultFormatNodeFileHeader(), lowBufferSize( COMMAS, true ), INTEGER,
-                Runtime.getRuntime().availableProcessors(), 1, (header,stream,decorator,validator) ->
+                Runtime.getRuntime().availableProcessors(), 1, ( header, stream, decorator, validator ) ->
                 {
                     // This is the point where the currentInput field in InputGroupsDeserializer was null
                     // so ensure that's no longer the case, just by poking those source methods right here and now.

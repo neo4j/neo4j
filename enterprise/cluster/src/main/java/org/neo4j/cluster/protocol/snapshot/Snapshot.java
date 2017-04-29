@@ -26,6 +26,7 @@ package org.neo4j.cluster.protocol.snapshot;
  */
 public interface Snapshot
 {
-    void setSnapshotProvider(SnapshotProvider snapshotProvider);
+    void setSnapshotProvider( SnapshotProvider snapshotProvider );
+
     void refreshSnapshot();
 }

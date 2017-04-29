@@ -163,7 +163,7 @@ public class PropertyBlock implements Cloneable
     @Override
     public String toString()
     {
-        StringBuilder result = new StringBuilder("PropertyBlock[");
+        StringBuilder result = new StringBuilder( "PropertyBlock[" );
         PropertyType type = getType();
         if ( valueBlocks != null )
         {

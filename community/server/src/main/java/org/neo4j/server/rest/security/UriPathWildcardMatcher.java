@@ -23,13 +23,13 @@ public class UriPathWildcardMatcher
 {
     private final String uriPath;
 
-    public UriPathWildcardMatcher(String uriPath)
+    public UriPathWildcardMatcher( String uriPath )
     {
-        this.uriPath = uriPath.replace("*", ".*");
+        this.uriPath = uriPath.replace( "*", ".*" );
     }
 
-    public boolean matches(String uri)
+    public boolean matches( String uri )
     {
-        return uri.matches(uriPath);
+        return uri.matches( uriPath );
     }
 }

@@ -32,7 +32,7 @@ public class PermanentlyForbiddenSecurityRule implements ForbiddingSecurityRule
     }
 
     @Override
-    public boolean isForbidden(HttpServletRequest request)
+    public boolean isForbidden( HttpServletRequest request )
     {
         return true;
     }

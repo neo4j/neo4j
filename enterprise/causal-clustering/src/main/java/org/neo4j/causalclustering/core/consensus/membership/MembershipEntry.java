@@ -24,9 +24,9 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.core.state.storage.SafeStateMarshal;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -58,12 +58,15 @@ public class MembershipEntry
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         MembershipEntry that = (MembershipEntry) o;
-        return logIndex == that.logIndex &&
-               Objects.equals( members, that.members );
+        return logIndex == that.logIndex && Objects.equals( members, that.members );
     }
 
     @Override

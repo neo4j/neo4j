@@ -49,7 +49,7 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 /**
  * Used by the robustness suite to check for partial failures.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings( "unchecked" )
 public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
 {
     private final FileSystemAbstraction delegate;
@@ -199,7 +199,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
             Function<Class<K>, K> creator )
     {
         ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
-        if (fileSystem == null)
+        if ( fileSystem == null )
         {
             fileSystem = creator.apply( clazz );
             fileSystem = adversarialProxy( fileSystem, clazz );

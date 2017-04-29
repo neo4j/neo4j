@@ -49,9 +49,13 @@ public class FilterChain<T> implements Filter<T>
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         FilterChain<?> that = (FilterChain<?>) o;
         return Objects.equals( chain, that.chain );
     }

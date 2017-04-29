@@ -162,7 +162,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         return new Prototype<>( this, version );
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     static <Key> void applyUpdate( ReadableState<Key> store, ConcurrentMap<Key, byte[]> changes,
                                    Key key, ValueUpdate update, boolean reset ) throws IOException
     {

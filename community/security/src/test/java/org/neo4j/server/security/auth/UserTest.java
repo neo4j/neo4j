@@ -35,8 +35,8 @@ public class UserTest
     {
         Credential abc = Credential.forPassword( "123abc" );
         Credential fruit = Credential.forPassword( "fruit" );
-        User u1 = new User.Builder("Steve", abc).build();
-        User u2 = new User.Builder("Steve", fruit)
+        User u1 = new User.Builder( "Steve", abc ).build();
+        User u2 = new User.Builder( "Steve", fruit )
                 .withRequiredPasswordChange( true )
                 .withFlag( "nice_guy" ).build();
         assertThat( u1, equalTo( u1 ) );

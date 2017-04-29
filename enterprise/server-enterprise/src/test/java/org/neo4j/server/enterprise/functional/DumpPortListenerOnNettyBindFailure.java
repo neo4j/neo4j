@@ -39,7 +39,7 @@ public class DumpPortListenerOnNettyBindFailure implements TestRule
 
     public DumpPortListenerOnNettyBindFailure()
     {
-        this(System.err);
+        this( System.err );
     }
 
     public DumpPortListenerOnNettyBindFailure( OutputStream out )

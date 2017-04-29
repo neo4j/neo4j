@@ -142,8 +142,8 @@ public class DefaultWinnerStrategyTest
 
         // when
         Collection<Vote> votes = Arrays.asList(
-                new Vote( instanceOne, new IntegerElectionCredentials(1) ),
-                new Vote( instanceTwo, new IntegerElectionCredentials(2) ) );
+                new Vote( instanceOne, new IntegerElectionCredentials( 1 ) ),
+                new Vote( instanceTwo, new IntegerElectionCredentials( 2 ) ) );
 
         DefaultWinnerStrategy strategy = new DefaultWinnerStrategy( clusterContext );
         org.neo4j.cluster.InstanceId winner = strategy.pickWinner( votes );

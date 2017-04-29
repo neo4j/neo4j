@@ -53,7 +53,7 @@ public class ExecutorLifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        if (executor != null)
+        if ( executor != null )
         {
             executor.shutdown();
             executor.awaitTermination( 30, TimeUnit.SECONDS );

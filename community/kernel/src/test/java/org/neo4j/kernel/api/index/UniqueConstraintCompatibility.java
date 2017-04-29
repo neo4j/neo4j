@@ -204,7 +204,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 assertLookupNode( COLLISION_Y, is( m ) ) );
     }
 
-    // Replaces UniqueIAC: shouldConsiderWholeTransactionForValidatingUniqueness
     @Test
     public void onlineConstraintShouldNotConflictOnIntermediateStatesInSameTransaction()
     {
@@ -223,7 +222,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 assertLookupNode( "b", is( a ) ) );
     }
 
-    // Replaces UniqueIAC: shouldRejectChangingEntryToAlreadyIndexedValue
     @Test( expected = ConstraintViolationException.class )
     public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValue()
     {
@@ -240,8 +238,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 fail( "Changing a property to an already indexed value should have thrown" ) );
     }
 
-    // Replaces UniqueIPC: should*EnforceUnqieConstraintsAgainstDataAddedInSameTx
-    @Test( expected = ConstraintViolationException.class)
+    @Test( expected = ConstraintViolationException.class )
     public void onlineConstraintShouldRejectConflictsInTheSameTransaction() throws Exception
     {
         // Given
@@ -871,7 +868,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action setProperty( final Node node, final Object value )
     {
-        return new Action( reprNode( node ) + ".setProperty( property, " + reprValue( value ) + " );")
+        return new Action( reprNode( node ) + ".setProperty( property, " + reprValue( value ) + " );" )
         {
             @Override
             public void accept( Transaction transaction )
@@ -883,7 +880,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action removeProperty( final Node node )
     {
-        return new Action( reprNode( node ) + ".removeProperty( property );")
+        return new Action( reprNode( node ) + ".removeProperty( property );" )
         {
             @Override
             public void accept( Transaction transaction )
@@ -907,7 +904,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private Action fail( final String message )
     {
-        return new Action( "fail( \"" + message + "\" );")
+        return new Action( "fail( \"" + message + "\" );" )
         {
             @Override
             public void accept( Transaction transaction )
@@ -973,7 +970,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private <T> T resolveInternalDependency( Class<T> type )
     {
-        @SuppressWarnings("deprecation")
+        @SuppressWarnings( "deprecation" )
         GraphDatabaseAPI api = (GraphDatabaseAPI) db;
         DependencyResolver resolver = api.getDependencyResolver();
         return resolver.resolveDependency( type );

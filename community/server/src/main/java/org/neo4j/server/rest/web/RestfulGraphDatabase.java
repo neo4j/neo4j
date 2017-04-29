@@ -80,7 +80,7 @@ import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRA
 @Path( "/" )
 public class RestfulGraphDatabase
 {
-    @SuppressWarnings("serial")
+    @SuppressWarnings( "serial" )
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
         public AmpersandSeparatedCollection( String path )
@@ -244,7 +244,7 @@ public class RestfulGraphDatabase
     // Nodes
 
     @POST
-    @Path(PATH_NODES)
+    @Path( PATH_NODES )
     public Response createNode( String body )
     {
         try
@@ -271,8 +271,8 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE)
-    public Response getNode( @PathParam("nodeId") long nodeId )
+    @Path( PATH_NODE )
+    public Response getNode( @PathParam( "nodeId" ) long nodeId )
     {
         try
         {
@@ -285,8 +285,8 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE)
-    public Response deleteNode( @PathParam("nodeId") long nodeId )
+    @Path( PATH_NODE )
+    public Response deleteNode( @PathParam( "nodeId" ) long nodeId )
     {
         try
         {
@@ -306,8 +306,8 @@ public class RestfulGraphDatabase
     // Node properties
 
     @PUT
-    @Path(PATH_NODE_PROPERTIES)
-    public Response setAllNodeProperties( @PathParam("nodeId") long nodeId, String body )
+    @Path( PATH_NODE_PROPERTIES )
+    public Response setAllNodeProperties( @PathParam( "nodeId" ) long nodeId, String body )
     {
         try
         {
@@ -333,8 +333,8 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_PROPERTIES)
-    public Response getAllNodeProperties( @PathParam("nodeId") long nodeId )
+    @Path( PATH_NODE_PROPERTIES )
+    public Response getAllNodeProperties( @PathParam( "nodeId" ) long nodeId )
     {
         try
         {
@@ -347,9 +347,9 @@ public class RestfulGraphDatabase
     }
 
     @PUT
-    @Path(PATH_NODE_PROPERTY)
-    public Response setNodeProperty( @PathParam("nodeId") long nodeId,
-                                     @PathParam("key") String key, String body )
+    @Path( PATH_NODE_PROPERTY )
+    public Response setNodeProperty( @PathParam( "nodeId" ) long nodeId,
+                                     @PathParam( "key" ) String key, String body )
     {
         try
         {
@@ -367,7 +367,7 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
-        catch ( org.neo4j.graphdb.ConstraintViolationException e)
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             return output.conflict( e );
         }
@@ -375,8 +375,8 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_PROPERTY)
-    public Response getNodeProperty( @PathParam("nodeId") long nodeId, @PathParam("key") String key )
+    @Path( PATH_NODE_PROPERTY )
+    public Response getNodeProperty( @PathParam( "nodeId" ) long nodeId, @PathParam( "key" ) String key )
     {
         try
         {
@@ -393,8 +393,8 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE_PROPERTY)
-    public Response deleteNodeProperty( @PathParam("nodeId") long nodeId, @PathParam("key") String key )
+    @Path( PATH_NODE_PROPERTY )
+    public Response deleteNodeProperty( @PathParam( "nodeId" ) long nodeId, @PathParam( "key" ) String key )
     {
         try
         {
@@ -412,8 +412,8 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE_PROPERTIES)
-    public Response deleteAllNodeProperties( @PathParam("nodeId") long nodeId )
+    @Path( PATH_NODE_PROPERTIES )
+    public Response deleteAllNodeProperties( @PathParam( "nodeId" ) long nodeId )
     {
         try
         {
@@ -531,7 +531,7 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_ALL_NODES_LABELED )
-    public Response getNodesWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    public Response getNodesWithLabelAndProperty( @PathParam( "label" ) String labelName, @Context UriInfo uriInfo )
     {
         try
         {
@@ -568,10 +568,10 @@ public class RestfulGraphDatabase
 
     // Relationships
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @POST
-    @Path(PATH_NODE_RELATIONSHIPS)
-    public Response createRelationship( @PathParam("nodeId") long startNodeId, String body )
+    @Path( PATH_NODE_RELATIONSHIPS )
+    public Response createRelationship( @PathParam( "nodeId" ) long startNodeId, String body )
     {
         final Map<String, Object> data;
         final long endNodeId;
@@ -615,8 +615,8 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP)
-    public Response getRelationship( @PathParam("relationshipId") long relationshipId )
+    @Path( PATH_RELATIONSHIP )
+    public Response getRelationship( @PathParam( "relationshipId" ) long relationshipId )
     {
         try
         {
@@ -629,8 +629,8 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_RELATIONSHIP)
-    public Response deleteRelationship( @PathParam("relationshipId") long relationshipId )
+    @Path( PATH_RELATIONSHIP )
+    public Response deleteRelationship( @PathParam( "relationshipId" ) long relationshipId )
     {
         try
         {
@@ -644,9 +644,9 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_RELATIONSHIPS_W_DIR)
-    public Response getNodeRelationships( @PathParam("nodeId") long nodeId,
-                                          @PathParam("direction") RelationshipDirection direction )
+    @Path( PATH_NODE_RELATIONSHIPS_W_DIR )
+    public Response getNodeRelationships( @PathParam( "nodeId" ) long nodeId,
+                                          @PathParam( "direction" ) RelationshipDirection direction )
     {
         try
         {
@@ -659,10 +659,10 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_RELATIONSHIPS_W_DIR_N_TYPES)
-    public Response getNodeRelationships( @PathParam("nodeId") long nodeId,
-                                          @PathParam("direction") RelationshipDirection direction,
-                                          @PathParam("types") AmpersandSeparatedCollection types )
+    @Path( PATH_NODE_RELATIONSHIPS_W_DIR_N_TYPES )
+    public Response getNodeRelationships( @PathParam( "nodeId" ) long nodeId,
+                                          @PathParam( "direction" ) RelationshipDirection direction,
+                                          @PathParam( "types" ) AmpersandSeparatedCollection types )
     {
         try
         {
@@ -677,9 +677,9 @@ public class RestfulGraphDatabase
     // Degrees
 
     @GET
-    @Path(PATH_NODE_DEGREE_W_DIR)
-    public Response getNodeDegree( @PathParam("nodeId") long nodeId,
-                                   @PathParam("direction") RelationshipDirection direction )
+    @Path( PATH_NODE_DEGREE_W_DIR )
+    public Response getNodeDegree( @PathParam( "nodeId" ) long nodeId,
+                                   @PathParam( "direction" ) RelationshipDirection direction )
     {
         try
         {
@@ -692,10 +692,10 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_DEGREE_W_DIR_N_TYPES)
-    public Response getNodeDegree(@PathParam("nodeId") long nodeId,
-                                  @PathParam("direction") RelationshipDirection direction,
-                                  @PathParam("types") AmpersandSeparatedCollection types )
+    @Path( PATH_NODE_DEGREE_W_DIR_N_TYPES )
+    public Response getNodeDegree( @PathParam( "nodeId" ) long nodeId,
+                                  @PathParam( "direction" ) RelationshipDirection direction,
+                                  @PathParam( "types" ) AmpersandSeparatedCollection types )
     {
         try
         {
@@ -710,8 +710,8 @@ public class RestfulGraphDatabase
     // Relationship properties
 
     @GET
-    @Path(PATH_RELATIONSHIP_PROPERTIES)
-    public Response getAllRelationshipProperties( @PathParam("relationshipId") long relationshipId )
+    @Path( PATH_RELATIONSHIP_PROPERTIES )
+    public Response getAllRelationshipProperties( @PathParam( "relationshipId" ) long relationshipId )
     {
         try
         {
@@ -724,9 +724,9 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP_PROPERTY)
-    public Response getRelationshipProperty( @PathParam("relationshipId") long relationshipId,
-                                             @PathParam("key") String key )
+    @Path( PATH_RELATIONSHIP_PROPERTY )
+    public Response getRelationshipProperty( @PathParam( "relationshipId" ) long relationshipId,
+                                             @PathParam( "key" ) String key )
     {
         try
         {
@@ -743,9 +743,9 @@ public class RestfulGraphDatabase
     }
 
     @PUT
-    @Path(PATH_RELATIONSHIP_PROPERTIES)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response setAllRelationshipProperties( @PathParam("relationshipId") long relationshipId, String body )
+    @Path( PATH_RELATIONSHIP_PROPERTIES )
+    @Consumes( MediaType.APPLICATION_JSON )
+    public Response setAllRelationshipProperties( @PathParam( "relationshipId" ) long relationshipId, String body )
     {
         try
         {
@@ -763,10 +763,10 @@ public class RestfulGraphDatabase
     }
 
     @PUT
-    @Path(PATH_RELATIONSHIP_PROPERTY)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response setRelationshipProperty( @PathParam("relationshipId") long relationshipId,
-                                             @PathParam("key") String key, String body )
+    @Path( PATH_RELATIONSHIP_PROPERTY )
+    @Consumes( MediaType.APPLICATION_JSON )
+    public Response setRelationshipProperty( @PathParam( "relationshipId" ) long relationshipId,
+                                             @PathParam( "key" ) String key, String body )
     {
         try
         {
@@ -784,8 +784,8 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_RELATIONSHIP_PROPERTIES)
-    public Response deleteAllRelationshipProperties( @PathParam("relationshipId") long relationshipId )
+    @Path( PATH_RELATIONSHIP_PROPERTIES )
+    public Response deleteAllRelationshipProperties( @PathParam( "relationshipId" ) long relationshipId )
     {
         try
         {
@@ -803,9 +803,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_RELATIONSHIP_PROPERTY)
-    public Response deleteRelationshipProperty( @PathParam("relationshipId") long relationshipId,
-                                                @PathParam("key") String key )
+    @Path( PATH_RELATIONSHIP_PROPERTY )
+    public Response deleteRelationshipProperty( @PathParam( "relationshipId" ) long relationshipId,
+                                                @PathParam( "key" ) String key )
     {
         try
         {
@@ -825,7 +825,7 @@ public class RestfulGraphDatabase
     // Index
 
     @GET
-    @Path(PATH_NODE_INDEX)
+    @Path( PATH_NODE_INDEX )
     public Response getNodeIndexRoot()
     {
         if ( actions.getNodeIndexNames().length == 0 )
@@ -836,8 +836,8 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_NODE_INDEX)
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Path( PATH_NODE_INDEX )
+    @Consumes( MediaType.APPLICATION_JSON )
     public Response jsonCreateNodeIndex(  String json )
     {
         try
@@ -855,7 +855,7 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP_INDEX)
+    @Path( PATH_RELATIONSHIP_INDEX )
     public Response getRelationshipIndexRoot()
     {
         if ( actions.getRelationshipIndexNames().length == 0 )
@@ -866,8 +866,8 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_RELATIONSHIP_INDEX)
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Path( PATH_RELATIONSHIP_INDEX )
+    @Consumes( MediaType.APPLICATION_JSON )
     public Response jsonCreateRelationshipIndex(  String json )
     {
         try
@@ -889,10 +889,10 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NAMED_NODE_INDEX)
-    public Response getIndexedNodesByQuery( @PathParam("indexName") String indexName,
-                                            @QueryParam("query") String query,
-                                            @QueryParam("order") String order )
+    @Path( PATH_NAMED_NODE_INDEX )
+    public Response getIndexedNodesByQuery( @PathParam( "indexName" ) String indexName,
+                                            @QueryParam( "query" ) String query,
+                                            @QueryParam( "order" ) String order )
     {
         try
         {
@@ -910,8 +910,8 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_AUTO_INDEX)
-    public Response getAutoIndexedNodesByQuery( @PathParam("type") String type, @QueryParam("query") String query )
+    @Path( PATH_AUTO_INDEX )
+    public Response getAutoIndexedNodesByQuery( @PathParam( "type" ) String type, @QueryParam( "query" ) String query )
     {
         try
         {
@@ -940,10 +940,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NAMED_NODE_INDEX)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response deleteNodeIndex(
-                                     @PathParam("indexName") String indexName )
+    @Path( PATH_NAMED_NODE_INDEX )
+    @Consumes( MediaType.APPLICATION_JSON )
+    public Response deleteNodeIndex( @PathParam( "indexName" ) String indexName )
     {
         try
         {
@@ -961,9 +960,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NAMED_RELATIONSHIP_INDEX)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response deleteRelationshipIndex( @PathParam("indexName") String indexName )
+    @Path( PATH_NAMED_RELATIONSHIP_INDEX )
+    @Consumes( MediaType.APPLICATION_JSON )
+    public Response deleteRelationshipIndex( @PathParam( "indexName" ) String indexName )
     {
         try
         {
@@ -981,10 +980,10 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_NAMED_NODE_INDEX)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response addToNodeIndex( @PathParam("indexName") String indexName, @QueryParam("unique") String unique,
-                                    @QueryParam("uniqueness") String uniqueness, String postBody )
+    @Path( PATH_NAMED_NODE_INDEX )
+    @Consumes( MediaType.APPLICATION_JSON )
+    public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique,
+                                    @QueryParam( "uniqueness" ) String uniqueness, String postBody )
     {
         int otherHeaders = 512;
         int maximumSizeInBytes = config.getInt( ServerSettings.maximum_response_header_size.name() ) - otherHeaders;
@@ -1091,10 +1090,10 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_NAMED_RELATIONSHIP_INDEX)
-    public Response addToRelationshipIndex( @PathParam("indexName") String indexName,
-                                            @QueryParam("unique") String unique, @QueryParam("uniqueness") String
-            uniqueness, String postBody )
+    @Path( PATH_NAMED_RELATIONSHIP_INDEX )
+    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName,
+                                            @QueryParam( "unique" ) String unique,
+                                            @QueryParam( "uniqueness" ) String uniqueness, String postBody )
     {
         try
         {
@@ -1214,7 +1213,7 @@ public class RestfulGraphDatabase
         throw new InvalidArgumentsException( "\"" + key + "\" should be a string" );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private static Map<String, Object> getMapOrNull( Map<String, Object> data, String key ) throws BadInputException
     {
         Object object = data.get( key );
@@ -1230,10 +1229,10 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_INDEX_ID)
-    public Response getNodeFromIndexUri( @PathParam("indexName") String indexName,
-                                         @PathParam("key") String key, @PathParam("value") String value,
-                                         @PathParam("id") long id )
+    @Path( PATH_NODE_INDEX_ID )
+    public Response getNodeFromIndexUri( @PathParam( "indexName" ) String indexName,
+                                         @PathParam( "key" ) String key, @PathParam( "value" ) String value,
+                                         @PathParam( "id" ) long id )
     {
         try
         {
@@ -1250,18 +1249,18 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP_INDEX_ID)
-    public Response getRelationshipFromIndexUri( @PathParam("indexName") String indexName,
-                                                 @PathParam("key") String key, @PathParam("value") String value,
-                                                 @PathParam("id") long id )
+    @Path( PATH_RELATIONSHIP_INDEX_ID )
+    public Response getRelationshipFromIndexUri( @PathParam( "indexName" ) String indexName,
+                                                 @PathParam( "key" ) String key, @PathParam( "value" ) String value,
+                                                 @PathParam( "id" ) long id )
     {
         return output.ok( actions.getIndexedRelationship( indexName, key, value, id ) );
     }
 
     @GET
-    @Path(PATH_NODE_INDEX_GET)
-    public Response getIndexedNodes( @PathParam("indexName") String indexName,
-                                     @PathParam("key") String key, @PathParam("value") String value )
+    @Path( PATH_NODE_INDEX_GET )
+    public Response getIndexedNodes( @PathParam( "indexName" ) String indexName,
+                                     @PathParam( "key" ) String key, @PathParam( "value" ) String value )
     {
         try
         {
@@ -1278,9 +1277,9 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_AUTO_INDEX_GET)
-    public Response getAutoIndexedNodes( @PathParam("type") String type, @PathParam("key") String key,
-                                         @PathParam("value") String value )
+    @Path( PATH_AUTO_INDEX_GET )
+    public Response getAutoIndexedNodes( @PathParam( "type" ) String type, @PathParam( "key" ) String key,
+                                         @PathParam( "value" ) String value )
     {
         try
         {
@@ -1309,12 +1308,12 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_NODE_INDEX_QUERY_WITH_KEY)
+    @Path( PATH_NODE_INDEX_QUERY_WITH_KEY )
     public Response getIndexedNodesByQuery(
-            @PathParam("indexName") String indexName,
-            @PathParam("key") String key,
-            @QueryParam("query") String query,
-            @PathParam("order") String order )
+            @PathParam( "indexName" ) String indexName,
+            @PathParam( "key" ) String key,
+            @QueryParam( "query" ) String query,
+            @PathParam( "order" ) String order )
     {
         try
         {
@@ -1332,9 +1331,9 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP_INDEX_GET)
-    public Response getIndexedRelationships( @PathParam("indexName") String indexName,
-                                             @PathParam("key") String key, @PathParam("value") String value )
+    @Path( PATH_RELATIONSHIP_INDEX_GET )
+    public Response getIndexedRelationships( @PathParam( "indexName" ) String indexName,
+                                             @PathParam( "key" ) String key, @PathParam( "value" ) String value )
     {
         try
         {
@@ -1351,30 +1350,30 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_AUTO_INDEX_STATUS)
-    public Response isAutoIndexerEnabled( @PathParam("type") String type )
+    @Path( PATH_AUTO_INDEX_STATUS )
+    public Response isAutoIndexerEnabled( @PathParam( "type" ) String type )
     {
         return output.ok( actions.isAutoIndexerEnabled( type ) );
     }
 
     @PUT
-    @Path(PATH_AUTO_INDEX_STATUS)
-    public Response setAutoIndexerEnabled( @PathParam("type") String type, String enable )
+    @Path( PATH_AUTO_INDEX_STATUS )
+    public Response setAutoIndexerEnabled( @PathParam( "type" ) String type, String enable )
     {
         actions.setAutoIndexerEnabled( type, Boolean.parseBoolean( enable ) );
         return output.ok( Representation.emptyRepresentation() );
     }
 
     @GET
-    @Path(PATH_AUTO_INDEXED_PROPERTIES)
-    public Response getAutoIndexedProperties( @PathParam("type") String type )
+    @Path( PATH_AUTO_INDEXED_PROPERTIES )
+    public Response getAutoIndexedProperties( @PathParam( "type" ) String type )
     {
         return output.ok( actions.getAutoIndexedProperties( type ) );
     }
 
     @POST
-    @Path(PATH_AUTO_INDEXED_PROPERTIES)
-    public Response startAutoIndexingProperty( @PathParam("type") String type, String property )
+    @Path( PATH_AUTO_INDEXED_PROPERTIES )
+    public Response startAutoIndexingProperty( @PathParam( "type" ) String type, String property )
     {
         actions.startAutoIndexingProperty( type, property );
         return output.ok( Representation.emptyRepresentation() );
@@ -1382,18 +1381,19 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_AUTO_INDEX_PROPERTY_DELETE)
-    public Response stopAutoIndexingProperty( @PathParam("type") String type, @PathParam("property") String property )
+    @Path( PATH_AUTO_INDEX_PROPERTY_DELETE )
+    public Response stopAutoIndexingProperty( @PathParam( "type" ) String type,
+            @PathParam( "property" ) String property )
     {
         actions.stopAutoIndexingProperty( type, property );
         return output.ok( Representation.emptyRepresentation() );
     }
 
     @GET
-    @Path(PATH_NAMED_RELATIONSHIP_INDEX)
-    public Response getIndexedRelationshipsByQuery( @PathParam("indexName") String indexName,
-                                                    @QueryParam("query") String query,
-                                                    @QueryParam("order") String order )
+    @Path( PATH_NAMED_RELATIONSHIP_INDEX )
+    public Response getIndexedRelationshipsByQuery( @PathParam( "indexName" ) String indexName,
+                                                    @QueryParam( "query" ) String query,
+                                                    @QueryParam( "order" ) String order )
     {
         try
         {
@@ -1411,11 +1411,11 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_RELATIONSHIP_INDEX_QUERY_WITH_KEY)
-    public Response getIndexedRelationshipsByQuery( @PathParam("indexName") String indexName,
-                                                    @PathParam("key") String key,
-                                                    @QueryParam("query") String query,
-                                                    @QueryParam("order") String order )
+    @Path( PATH_RELATIONSHIP_INDEX_QUERY_WITH_KEY )
+    public Response getIndexedRelationshipsByQuery( @PathParam( "indexName" ) String indexName,
+                                                    @PathParam( "key" ) String key,
+                                                    @QueryParam( "query" ) String query,
+                                                    @QueryParam( "order" ) String order )
     {
         try
         {
@@ -1433,10 +1433,10 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE_INDEX_ID)
-    public Response deleteFromNodeIndex( @PathParam("indexName") String indexName,
-                                         @PathParam("key") String key, @PathParam("value") String value,
-                                         @PathParam("id") long id )
+    @Path( PATH_NODE_INDEX_ID )
+    public Response deleteFromNodeIndex( @PathParam( "indexName" ) String indexName,
+                                         @PathParam( "key" ) String key, @PathParam( "value" ) String value,
+                                         @PathParam( "id" ) long id )
     {
         try
         {
@@ -1458,9 +1458,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE_INDEX_REMOVE_KEY)
-    public Response deleteFromNodeIndexNoValue( @PathParam("indexName") String indexName,
-                                                @PathParam("key") String key, @PathParam("id") long id )
+    @Path( PATH_NODE_INDEX_REMOVE_KEY )
+    public Response deleteFromNodeIndexNoValue( @PathParam( "indexName" ) String indexName,
+                                                @PathParam( "key" ) String key, @PathParam( "id" ) long id )
     {
         try
         {
@@ -1482,8 +1482,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_NODE_INDEX_REMOVE)
-    public Response deleteFromNodeIndexNoKeyValue( @PathParam("indexName") String indexName, @PathParam("id") long id )
+    @Path( PATH_NODE_INDEX_REMOVE )
+    public Response deleteFromNodeIndexNoKeyValue( @PathParam( "indexName" ) String indexName, @PathParam( "id" ) long
+            id )
     {
         try
         {
@@ -1505,10 +1506,10 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_RELATIONSHIP_INDEX_ID)
-    public Response deleteFromRelationshipIndex( @PathParam("indexName") String indexName,
-                                                 @PathParam("key") String key, @PathParam("value") String value,
-                                                 @PathParam("id") long id )
+    @Path( PATH_RELATIONSHIP_INDEX_ID )
+    public Response deleteFromRelationshipIndex( @PathParam( "indexName" ) String indexName,
+                                                 @PathParam( "key" ) String key, @PathParam( "value" ) String value,
+                                                 @PathParam( "id" ) long id )
     {
         try
         {
@@ -1530,9 +1531,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_RELATIONSHIP_INDEX_REMOVE_KEY)
-    public Response deleteFromRelationshipIndexNoValue( @PathParam("indexName") String indexName,
-                                                        @PathParam("key") String key, @PathParam("id") long id )
+    @Path( PATH_RELATIONSHIP_INDEX_REMOVE_KEY )
+    public Response deleteFromRelationshipIndexNoValue( @PathParam( "indexName" ) String indexName,
+                                                        @PathParam( "key" ) String key, @PathParam( "id" ) long id )
     {
         try
         {
@@ -1554,9 +1555,9 @@ public class RestfulGraphDatabase
     }
 
     @DELETE
-    @Path(PATH_RELATIONSHIP_INDEX_REMOVE)
-    public Response deleteFromRelationshipIndex( @PathParam("indexName") String indexName,
-                                                 @PathParam("id") long id )
+    @Path( PATH_RELATIONSHIP_INDEX_REMOVE )
+    public Response deleteFromRelationshipIndex( @PathParam( "indexName" ) String indexName,
+                                                 @PathParam( "id" ) long id )
     {
         try
         {
@@ -1580,9 +1581,9 @@ public class RestfulGraphDatabase
     // Traversal
 
     @POST
-    @Path(PATH_NODE_TRAVERSE)
-    public Response traverse( @PathParam("nodeId") long startNode,
-                              @PathParam("returnType") TraverserReturnType returnType, String body )
+    @Path( PATH_NODE_TRAVERSE )
+    public Response traverse( @PathParam( "nodeId" ) long startNode,
+                              @PathParam( "returnType" ) TraverserReturnType returnType, String body )
     {
         try
         {
@@ -1605,8 +1606,8 @@ public class RestfulGraphDatabase
     // Paged traversal
 
     @DELETE
-    @Path(PATH_TO_PAGED_TRAVERSERS)
-    public Response removePagedTraverser( @PathParam("traverserId") String traverserId )
+    @Path( PATH_TO_PAGED_TRAVERSERS )
+    public Response removePagedTraverser( @PathParam( "traverserId" ) String traverserId )
     {
         if ( actions.removePagedTraverse( traverserId ) )
         {
@@ -1619,9 +1620,9 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_TO_PAGED_TRAVERSERS)
-    public Response pagedTraverse( @PathParam("traverserId") String traverserId,
-                                   @PathParam("returnType") TraverserReturnType returnType )
+    @Path( PATH_TO_PAGED_TRAVERSERS )
+    public Response pagedTraverse( @PathParam( "traverserId" ) String traverserId,
+            @PathParam( "returnType" ) TraverserReturnType returnType )
     {
         try
         {
@@ -1638,12 +1639,11 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_TO_CREATE_PAGED_TRAVERSERS)
-    public Response createPagedTraverser( @PathParam("nodeId") long startNode,
-                                          @PathParam("returnType") TraverserReturnType returnType,
-                                          @QueryParam("pageSize") @DefaultValue(FIFTY_ENTRIES) int pageSize,
-                                          @QueryParam("leaseTime") @DefaultValue(SIXTY_SECONDS) int
-                                                  leaseTimeInSeconds, String body )
+    @Path( PATH_TO_CREATE_PAGED_TRAVERSERS )
+    public Response createPagedTraverser( @PathParam( "nodeId" ) long startNode,
+            @PathParam( "returnType" ) TraverserReturnType returnType,
+            @QueryParam( "pageSize" ) @DefaultValue( FIFTY_ENTRIES ) int pageSize,
+            @QueryParam( "leaseTime" ) @DefaultValue( SIXTY_SECONDS ) int leaseTimeInSeconds, String body )
     {
         try
         {
@@ -1693,8 +1693,8 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_NODE_PATH)
-    public Response singlePath( @PathParam("nodeId") long startNode, String body )
+    @Path( PATH_NODE_PATH )
+    public Response singlePath( @PathParam( "nodeId" ) long startNode, String body )
     {
         final Map<String, Object> description;
         final long endNode;
@@ -1720,8 +1720,8 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path(PATH_NODE_PATHS)
-    public Response allPaths( @PathParam("nodeId") long startNode, String body )
+    @Path( PATH_NODE_PATHS )
+    public Response allPaths( @PathParam( "nodeId" ) long startNode, String body )
     {
         final Map<String, Object> description;
         final long endNode;
@@ -1823,7 +1823,7 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_SCHEMA_INDEX_LABEL )
-    public Response getSchemaIndexesForLabel( @PathParam("label") String labelName )
+    public Response getSchemaIndexesForLabel( @PathParam( "label" ) String labelName )
     {
         return output.ok( actions.getSchemaIndexes( labelName ) );
     }
@@ -1924,7 +1924,7 @@ public class RestfulGraphDatabase
     }
 
     @GET
-    @Path(PATH_SCHEMA_CONSTRAINT)
+    @Path( PATH_SCHEMA_CONSTRAINT )
     public Response getSchemaConstraints()
     {
         return output.ok( actions.getConstraints() );

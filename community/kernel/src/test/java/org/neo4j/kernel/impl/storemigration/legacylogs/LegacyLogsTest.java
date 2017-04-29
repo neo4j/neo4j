@@ -222,7 +222,7 @@ public class LegacyLogsTest
         assertEquals( newTransactionId( 3 ), getTransactionInformation( legacyLogs, 3 ) );
     }
 
-    @Test(expected = IOException.class)
+    @Test( expected = IOException.class )
     @SuppressWarnings( "unchecked" )
     public void ioExceptionsPropagatedWhenFailToReadLegacyLog() throws IOException
     {

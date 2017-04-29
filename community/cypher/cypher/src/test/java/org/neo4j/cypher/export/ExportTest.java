@@ -308,7 +308,7 @@ public class ExportTest
                 "create (_0)-[:`REL`]->(_1)" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private ExecutionResult result( String column, Object value )
     {
         ExecutionResult result = Mockito.mock( ExecutionResult.class );

@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.rest.domain;
 
-import static org.neo4j.helpers.collection.MapUtil.map;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import org.junit.Test;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TraversalDescriptionBuilderTest
 {
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void throwsIllegalArgumentOnUnknownExpanderType() throws Exception
     {
         // Given
@@ -43,7 +43,7 @@ public class TraversalDescriptionBuilderTest
                 "expander", "Suddenly, a string!" ) );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void throwsIllegalArgumentOnNonStringExpanderType() throws Exception
     {
         // Given

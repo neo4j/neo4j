@@ -33,6 +33,6 @@ public interface ForbiddingSecurityRule extends SecurityRule
      * @return <code>true</code> if the rule is triggered and the request is to be rejected with a "403 Forbidden",
      *  and <code>false</code> otherwise.
      */
-    boolean isForbidden(HttpServletRequest request);
+    boolean isForbidden( HttpServletRequest request );
 
 }

@@ -387,12 +387,12 @@ public class LatestCheckPointFinderTest
 
     private LogCreator logFile( Entry... entries )
     {
-        return (logVersion, positions) ->
+        return ( logVersion, positions ) ->
         {
             try
             {
                 AtomicLong lastTxId = new AtomicLong();
-                Supplier<Long> lastTxIdSupplier = () -> lastTxId.get();
+                Supplier<Long> lastTxIdSupplier = lastTxId::get;
                 LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( logVersion );
                 LifeSupport life = new LifeSupport();
                 life.start();

@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -346,7 +346,7 @@ public class MasterImplTest
         when( conversationSpi.acquireClient() ).thenReturn( client );
         master.start();
         HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
-        RequestContext requestContext = new RequestContext( handshake.epoch(), machineId, 0, 0, 0);
+        RequestContext requestContext = new RequestContext( handshake.epoch(), machineId, 0, 0, 0 );
 
         // When
         master.newLockSession( requestContext );

@@ -23,8 +23,6 @@ import java.util.Objects;
 
 import org.neo4j.causalclustering.catchup.CatchupResult;
 
-import static java.lang.String.format;
-
 public class TxStreamFinishedResponse
 {
     private final CatchupResult status;
@@ -50,12 +48,15 @@ public class TxStreamFinishedResponse
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         TxStreamFinishedResponse that = (TxStreamFinishedResponse) o;
-        return latestTxId == that.latestTxId &&
-               status == that.status;
+        return latestTxId == that.latestTxId && status == that.status;
     }
 
     @Override

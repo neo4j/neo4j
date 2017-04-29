@@ -73,12 +73,13 @@ public class UserSerializationTest
                 "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n" ) );
 
         // Then
-        assertThat( deserialized, equalTo( asList(
-                new User.Builder( "Mike", new Credential( salt1, hash1 )).build(),
-                new User.Builder( "Steve", new Credential( salt1, hash1 ))
-                        .withRequiredPasswordChange( true ).withFlag("nice_guy").build(),
-                new User.Builder( "Bob", new Credential( salt2, hash2 ))
-                        .withRequiredPasswordChange( true ).build()
+        assertThat( deserialized, equalTo(
+                asList( new User.Builder( "Mike", new Credential( salt1, hash1 ) ).build(),
+                        new User.Builder( "Steve", new Credential( salt1, hash1 ) )
+                            .withRequiredPasswordChange( true ).withFlag("nice_guy").build(),
+                        new User.Builder( "Bob", new Credential( salt2, hash2 ) )
+                                .withRequiredPasswordChange( true )
+                                .build()
         ) ) );
     }
 }

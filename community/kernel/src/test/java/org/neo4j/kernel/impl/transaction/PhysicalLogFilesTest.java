@@ -170,7 +170,7 @@ public class PhysicalLogFilesTest
         }
     }
 
-    @Test(expected = NumberFormatException.class)
+    @Test( expected = NumberFormatException.class )
     public void shouldThrowIfVersionIsNotANumber()
     {
         // given

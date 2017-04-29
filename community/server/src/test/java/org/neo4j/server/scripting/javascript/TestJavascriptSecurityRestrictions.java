@@ -19,15 +19,16 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.scripting.ScriptExecutor;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class TestJavascriptSecurityRestrictions
 {
@@ -60,7 +61,7 @@ public class TestJavascriptSecurityRestrictions
         assertThat( (Evaluation) result, is(Evaluation.INCLUDE_AND_CONTINUE) );
     }
 
-    @Test(expected = EvaluationException.class)
+    @Test( expected = EvaluationException.class )
     public void shouldNotBeAbleToImportUnsafeClasses() throws Exception
     {
         // Given
@@ -73,7 +74,7 @@ public class TestJavascriptSecurityRestrictions
         executor.execute( null );
     }
 
-    @Test(expected = EvaluationException.class)
+    @Test( expected = EvaluationException.class )
     public void shouldNotBeAbleToUseReflectionToInstantiateThings() throws Exception
     {
         // Given

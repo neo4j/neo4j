@@ -271,7 +271,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
         {
             TransactionMarker marker = entry.getValue();
-            if (marker.isSuspended() && predicate.test(marker))
+            if ( marker.isSuspended() && predicate.test( marker ) )
             {
                 candidateTransactionIdsToRollback.add( entry.getKey() );
             }

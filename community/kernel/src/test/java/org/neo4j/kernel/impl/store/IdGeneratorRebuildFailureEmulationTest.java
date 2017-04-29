@@ -58,11 +58,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-@RunWith(Suite.class)
-@SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class})
+@RunWith( Suite.class )
+@SuiteClasses( {IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class} )
 public class IdGeneratorRebuildFailureEmulationTest
 {
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
@@ -210,8 +210,6 @@ public class IdGeneratorRebuildFailureEmulationTest
     {
         void disposeAndAssertNoOpenFiles() throws Exception
         {
-            //Collection<String> open = openFiles();
-            //assertTrue( "Open files: " + open, open.isEmpty() );
             assertNoOpenFiles();
             super.close();
         }
@@ -222,7 +220,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     private class Database extends ImpermanentGraphDatabase
     {
         Database( File storeDir )

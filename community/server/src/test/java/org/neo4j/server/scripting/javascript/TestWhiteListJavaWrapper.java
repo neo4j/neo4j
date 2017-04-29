@@ -53,11 +53,11 @@ public class TestWhiteListJavaWrapper
         }
     }
 
-    @Test(expected = SecurityException.class)
+    @Test( expected = SecurityException.class )
     public void shouldBlockAttemptsAtAccessingClassLoader() throws Exception
     {
         // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<String>(  ) ));
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<String>() ) );
 
         // When
         wrapper.wrap( null, null, getClass().getClassLoader(), null );
@@ -70,7 +70,7 @@ public class TestWhiteListJavaWrapper
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
 
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
 
         Context cx = Context.enter();
         Scriptable scope = cx.initStandardObjects();
@@ -86,14 +86,14 @@ public class TestWhiteListJavaWrapper
         assertThat( (UniqueTag) obj.get( "aGetter", scope ), is( UniqueTag.NOT_FOUND ) );
     }
 
-    @Test(expected = SecurityException.class)
+    @Test( expected = SecurityException.class )
     public void shouldThrowSecurityExceptionWhenAccessingLockedClasses() throws Exception
     {
         // Given
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
 
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
+        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
 
         Context cx = Context.enter();
         Scriptable scope = cx.initStandardObjects();
@@ -110,8 +110,8 @@ public class TestWhiteListJavaWrapper
         // other tests will already have configured global security settings that we cannot override.
 
         // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter(
-                UserScriptClassWhiteList.getWhiteList() ));
+        WhiteListJavaWrapper wrapper =
+                new WhiteListJavaWrapper( new WhiteListClassShutter( UserScriptClassWhiteList.getWhiteList() ) );
 
         Context cx = Context.enter();
         Scriptable scope = cx.initStandardObjects();

@@ -211,7 +211,7 @@ public class ProcedureRegistry
         return func.apply( ctx, input );
     }
 
-    public CallableUserAggregationFunction.Aggregator createAggregationFunction(Context ctx, QualifiedName name)
+    public CallableUserAggregationFunction.Aggregator createAggregationFunction( Context ctx, QualifiedName name )
             throws ProcedureException
     {
         CallableUserAggregationFunction func = aggregationFunctions.get( name );

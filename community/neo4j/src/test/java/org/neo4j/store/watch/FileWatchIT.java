@@ -86,7 +86,7 @@ public class FileWatchIT
         shutdownDatabaseSilently( database );
     }
 
-    @Test(timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void notifyAboutStoreFileDeletion() throws Exception
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
@@ -111,7 +111,7 @@ public class FileWatchIT
                 "'" + fileName + "' which belongs to the store was deleted while database was running." );
     }
 
-    @Test(timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void notifyWhenFileWatchingFailToStart()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -131,7 +131,7 @@ public class FileWatchIT
         }
     }
 
-    @Test(timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void notifyAboutLegacyIndexFolderRemoval() throws InterruptedException, IOException
     {
         String monitoredDirectory = getLegacyIndexDirectory( storeDir );
@@ -157,7 +157,7 @@ public class FileWatchIT
                 "'" + monitoredDirectory + "' which belongs to the store was deleted while database was running." );
     }
 
-    @Test(timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void doNotNotifyAboutLuceneIndexFilesDeletion() throws InterruptedException, IOException
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
@@ -196,7 +196,7 @@ public class FileWatchIT
         accumulativeListener.assertDoesNotHaveAnyDeletions();
     }
 
-    @Test(timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void doNotMonitorTransactionLogFiles() throws InterruptedException, IOException
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
@@ -226,7 +226,7 @@ public class FileWatchIT
         logProvider.assertNone( logMatcher );
     }
 
-    @Test(timeout = TEST_TIMEOUT)
+    @Test( timeout = TEST_TIMEOUT )
     public void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
@@ -319,7 +319,7 @@ public class FileWatchIT
         }
     }
 
-    private CheckPointer getCheckpointer(GraphDatabaseService database)
+    private CheckPointer getCheckpointer( GraphDatabaseService database )
     {
         return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( CheckPointer.class );
     }

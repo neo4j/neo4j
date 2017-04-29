@@ -41,11 +41,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-
-@RunWith(Enclosed.class)
+@RunWith( Enclosed.class )
 public class BackupToolUrisTest
 {
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class ValidUriTests extends UriTests
     {
         public ValidUriTests( String host, Integer port )
@@ -103,7 +102,7 @@ public class BackupToolUrisTest
         }
     }
 
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class InvalidUriTests extends UriTests
     {
         public InvalidUriTests( String host, Integer port )
@@ -152,7 +151,7 @@ public class BackupToolUrisTest
         }
     }
 
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class IPv6UriTests extends UriTests
     {
         public IPv6UriTests( String host, Integer port )

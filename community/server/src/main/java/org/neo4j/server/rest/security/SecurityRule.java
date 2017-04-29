@@ -28,7 +28,7 @@ public interface SecurityRule
      * @return <code>true</code> if the rule passes, <code>false</code> if the
      *         rule fails and the request is to be rejected with a "401 Unauthorized".
      */
-    boolean isAuthorized(HttpServletRequest request);
+    boolean isAuthorized( HttpServletRequest request );
 
     /**
      * @return the root of the URI path from which rules will be valid, e.g.

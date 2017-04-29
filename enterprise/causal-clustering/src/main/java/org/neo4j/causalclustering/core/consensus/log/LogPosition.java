@@ -36,12 +36,15 @@ public class LogPosition
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         LogPosition position = (LogPosition) o;
-        return logIndex == position.logIndex &&
-               byteOffset == position.byteOffset;
+        return logIndex == position.logIndex && byteOffset == position.byteOffset;
     }
 
     @Override

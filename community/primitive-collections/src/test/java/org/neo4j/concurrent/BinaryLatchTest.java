@@ -42,7 +42,7 @@ public class BinaryLatchTest
         executor.shutdown();
     }
 
-    @Test(timeout = 3000)
+    @Test( timeout = 3000 )
     public void releaseThenAwaitDoesNotBlock() throws Exception
     {
         BinaryLatch latch = new BinaryLatch();
@@ -50,7 +50,7 @@ public class BinaryLatchTest
         latch.await();
     }
 
-    @Test(timeout = 3000)
+    @Test( timeout = 3000 )
     public void releaseMustUnblockAwaiters() throws Exception
     {
         final BinaryLatch latch = new BinaryLatch();
@@ -87,7 +87,7 @@ public class BinaryLatchTest
         }
     }
 
-    @Test(timeout = 60000)
+    @Test( timeout = 60000 )
     public void stressLatch() throws Exception
     {
         final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );

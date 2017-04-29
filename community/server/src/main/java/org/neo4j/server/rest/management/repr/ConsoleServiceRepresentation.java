@@ -27,9 +27,9 @@ public class ConsoleServiceRepresentation extends ServiceDefinitionRepresentatio
 
     private Iterable<String> engines;
 
-    public ConsoleServiceRepresentation(String basePath, Iterable<String> engines)
+    public ConsoleServiceRepresentation( String basePath, Iterable<String> engines )
     {
-        super(basePath);
+        super( basePath );
         resourceUri( "exec", "" );
         this.engines = engines;
     }
@@ -37,8 +37,8 @@ public class ConsoleServiceRepresentation extends ServiceDefinitionRepresentatio
     @Override
     public void serialize( MappingSerializer serializer )
     {
-        super.serialize(serializer);
-        serializer.putList("engines", ListRepresentation.string(engines));
+        super.serialize( serializer );
+        serializer.putList( "engines", ListRepresentation.string( engines ) );
     }
 
 }

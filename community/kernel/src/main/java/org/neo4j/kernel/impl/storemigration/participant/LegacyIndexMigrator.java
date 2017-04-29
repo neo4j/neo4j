@@ -128,9 +128,9 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private boolean isNotEmptyDirectory(File file)
+    private boolean isNotEmptyDirectory( File file )
     {
-        if (fileSystem.isDirectory( file ))
+        if ( fileSystem.isDirectory( file ) )
         {
             File[] files = fileSystem.listFiles( file );
             return files != null && files.length > 0;

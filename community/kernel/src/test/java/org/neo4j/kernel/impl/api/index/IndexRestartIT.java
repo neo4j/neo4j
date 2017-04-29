@@ -148,7 +148,7 @@ public class IndexRestartIT
 
     private IndexDefinition createIndex()
     {
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
             tx.success();

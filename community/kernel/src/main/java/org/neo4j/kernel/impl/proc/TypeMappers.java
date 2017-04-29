@@ -60,8 +60,10 @@ public class TypeMappers
     interface NeoValueConverter
     {
         AnyType type();
+
         Object toNeoValue( Object javaValue ) throws ProcedureException;
-        Optional<Neo4jValue> defaultValue(Name parameter) throws ProcedureException;
+
+        Optional<Neo4jValue> defaultValue( Name parameter ) throws ProcedureException;
     }
 
     private final Map<Type,NeoValueConverter> javaToNeo = new HashMap<>();
@@ -140,7 +142,7 @@ public class TypeMappers
     private final NeoValueConverter TO_ANY = new SimpleConverter( NTAny, Object.class );
     private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class, Neo4jValue::ntString );
     private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class, s -> ntInteger( parseLong(s) ) );
-    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, s -> ntFloat( parseDouble(s) ));
+    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, s -> ntFloat( parseDouble( s ) ) );
     private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, s ->
     {
         try
@@ -151,14 +153,15 @@ public class TypeMappers
         {
             return ntFloat( parseDouble( s ) );
         }
-    });
-    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean(s) ));
-    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class, new MapConverter());
+    } );
+    private final NeoValueConverter TO_BOOLEAN =
+            new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean( s ) ) );
+    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class, new MapConverter() );
     private final NeoValueConverter TO_LIST = toList( TO_ANY, Object.class );
 
     private NeoValueConverter toList( NeoValueConverter inner, Type type )
     {
-        return new SimpleConverter( NTList( inner.type() ), List.class, new ListConverter(type, inner.type() ));
+        return new SimpleConverter( NTList( inner.type() ), List.class, new ListConverter( type, inner.type() ) );
     }
 
     private ProcedureException javaToNeoMappingError( Type cls )

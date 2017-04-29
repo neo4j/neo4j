@@ -77,7 +77,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         }
         catch ( LifecycleException e )
         {
-            @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+            @SuppressWarnings( {"ThrowableResultOfMethodCallIgnored", "unchecked"} )
             Throwable cause = peel( e, Predicates.<Throwable>instanceOf( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
             {
@@ -113,7 +113,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
     private static Config getConfig( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         Map<String, String> config = new HashMap<>();
-        configFile.ifPresent( (file) ->
+        configFile.ifPresent( ( file ) ->
         {
             try
             {

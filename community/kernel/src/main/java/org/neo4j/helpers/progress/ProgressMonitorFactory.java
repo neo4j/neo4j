@@ -99,7 +99,7 @@ public abstract class ProgressMonitorFactory
 
         private MultiPartBuilder( ProgressMonitorFactory factory, String process )
         {
-            this.aggregator = new Aggregator(factory.newIndicator( process ));
+            this.aggregator = new Aggregator( factory.newIndicator( process ) );
         }
 
         public ProgressListener progressForPart( String part, long totalCount )

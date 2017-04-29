@@ -510,7 +510,7 @@ public class ClusterManager
         return item ->
         {
             int clusterMembersChecked = 0;
-            for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
+            for ( HighlyAvailableGraphDatabase member : item.getAllMembers() )
             {
                 clusterMembersChecked++;
                 try

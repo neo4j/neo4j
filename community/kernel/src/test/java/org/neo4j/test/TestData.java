@@ -69,7 +69,7 @@ public class TestData<T> implements TestRule
             productOrFactory = new Factory( graph, title, documentation );
         }
 
-        @SuppressWarnings( "unchecked"/*cast to T*/)
+        @SuppressWarnings( "unchecked" )
         <T> T get( Producer<T> producer, boolean create )
         {
             Object result = productOrFactory;

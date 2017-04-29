@@ -118,10 +118,10 @@ public class LinkedQueuePool<R> implements Pool<R>
     private int currentPeakSize;
     private int targetSize;
 
-    public LinkedQueuePool( int minSize, Factory<R> factory)
+    public LinkedQueuePool( int minSize, Factory<R> factory )
     {
         this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-            new Monitor.Adapter() );
+                new Monitor.Adapter() );
     }
 
     public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor monitor )

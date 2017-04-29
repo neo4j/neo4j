@@ -42,7 +42,8 @@ public class NonStreamingBatchOperations extends BatchOperations
         super( webServer );
     }
 
-    public BatchOperationResults performBatchJobs( UriInfo uriInfo, HttpHeaders httpHeaders, HttpServletRequest req, InputStream body ) throws IOException, ServletException
+    public BatchOperationResults performBatchJobs( UriInfo uriInfo, HttpHeaders httpHeaders, HttpServletRequest req,
+            InputStream body ) throws IOException, ServletException
     {
         results = new BatchOperationResults();
         parseAndPerform( uriInfo, httpHeaders, req, body, results.getLocations() );
@@ -50,18 +51,19 @@ public class NonStreamingBatchOperations extends BatchOperations
     }
 
     @Override
-    protected void invoke( String method, String path, String body, Integer id, URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
+    protected void invoke( String method, String path, String body, Integer id, URI targetUri,
+            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
     {
-        webServer.invokeDirectly(targetUri.getPath(), req, res);
+        webServer.invokeDirectly( targetUri.getPath(), req, res );
 
         String resultBody = res.getOutputStream().toString();
-        if (is2XXStatusCode(res.getStatus()))
+        if ( is2XXStatusCode( res.getStatus() ) )
         {
-            results.addOperationResult(path, id, resultBody, res.getHeader("Location"));
+            results.addOperationResult( path, id, resultBody, res.getHeader( "Location" ) );
         }
         else
         {
-            throw new BatchOperationFailedException(res.getStatus(), resultBody, null );
+            throw new BatchOperationFailedException( res.getStatus(), resultBody, null );
         }
     }
 

@@ -56,7 +56,7 @@ public class JmxUtils
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> T getAttribute( ObjectName objectName, String attribute )
     {
         try
@@ -69,7 +69,7 @@ public class JmxUtils
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> T invoke( ObjectName objectName, String attribute, Object[] params, String[] signatur )
     {
         try

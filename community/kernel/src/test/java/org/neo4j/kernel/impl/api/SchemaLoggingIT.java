@@ -61,7 +61,7 @@ public class SchemaLoggingIT
         );
     }
 
-    private void createIndex( @SuppressWarnings("deprecation") GraphDatabaseAPI db, String labelName, String property )
+    private void createIndex( GraphDatabaseAPI db, String labelName, String property )
     {
         try ( Transaction tx = db.beginTx() )
         {

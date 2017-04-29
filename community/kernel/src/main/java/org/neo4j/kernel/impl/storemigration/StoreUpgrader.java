@@ -101,7 +101,7 @@ public class StoreUpgrader
         this.participants.add( participant );
     }
 
-    public void migrateIfNeeded( File storeDirectory)
+    public void migrateIfNeeded( File storeDirectory )
     {
         File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
 

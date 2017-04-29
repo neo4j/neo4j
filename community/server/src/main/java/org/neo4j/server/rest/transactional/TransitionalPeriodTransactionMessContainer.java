@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class TransitionalPeriodTransactionMessContainer
@@ -65,7 +65,7 @@ public class TransitionalPeriodTransactionMessContainer
             Type type,
             SecurityContext securityContext,
             String query,
-            Map<String, Object> queryParameters)
+            Map<String, Object> queryParameters )
     {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service, locker );
         ClientConnectionInfo clientConnection = HttpConnectionInfoFactory.create( request );

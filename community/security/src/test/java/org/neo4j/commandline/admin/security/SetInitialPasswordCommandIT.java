@@ -31,10 +31,10 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.api.security.UserManager;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -156,7 +156,7 @@ public class SetInitialPasswordCommandIT
         verify( out, times( 0 ) ).stdOutLine( anyString() );
     }
 
-    private void assertAuthIniFile(String password) throws Throwable
+    private void assertAuthIniFile( String password ) throws Throwable
     {
         File authIniFile = getAuthFile( "auth.ini" );
         assertTrue( fileSystem.fileExists( authIniFile ) );

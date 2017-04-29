@@ -759,7 +759,7 @@ public class ReflectiveUserAggregationFunctionTest
 
     public static class FunctionWithOverriddenName
     {
-        @UserAggregationFunction("org.mystuff.thisisActuallyTheName")
+        @UserAggregationFunction( "org.mystuff.thisisActuallyTheName" )
         public CoolPeopleAggregator collectCool()
         {
             return new CoolPeopleAggregator();
@@ -768,7 +768,7 @@ public class ReflectiveUserAggregationFunctionTest
 
     public static class FunctionWithSingleName
     {
-        @UserAggregationFunction("singleName")
+        @UserAggregationFunction( "singleName" )
         public CoolPeopleAggregator collectCool()
         {
             return new CoolPeopleAggregator();
@@ -784,13 +784,13 @@ public class ReflectiveUserAggregationFunctionTest
         }
 
         @Deprecated
-        @UserAggregationFunction(deprecatedBy = "newFunc")
+        @UserAggregationFunction( deprecatedBy = "newFunc" )
         public CoolPeopleAggregator oldFunc()
         {
             return new CoolPeopleAggregator();
         }
 
-        @UserAggregationFunction(deprecatedBy = "newFunc")
+        @UserAggregationFunction( deprecatedBy = "newFunc" )
         public CoolPeopleAggregator badFunc()
         {
             return new CoolPeopleAggregator();

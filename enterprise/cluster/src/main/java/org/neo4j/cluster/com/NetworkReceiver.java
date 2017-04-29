@@ -168,7 +168,7 @@ public class NetworkReceiver
     {
     }
 
-    public void setPaused(boolean paused)
+    public void setPaused( boolean paused )
     {
         this.paused = paused;
     }
@@ -183,7 +183,7 @@ public class NetworkReceiver
             {
                 String address = config.clusterServer().getHost();
                 InetSocketAddress localAddress;
-                if ( address == null || address.equals( INADDR_ANY ))
+                if ( address == null || address.equals( INADDR_ANY ) )
                 {
                     localAddress = new InetSocketAddress( checkPort );
                 }
@@ -219,7 +219,7 @@ public class NetworkReceiver
 
     public void receive( Message message )
     {
-        if (!paused)
+        if ( !paused )
         {
             for ( MessageProcessor processor : processors )
             {
@@ -318,9 +318,9 @@ public class NetworkReceiver
         @Override
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
-            if (!bindingDetected)
+            if ( !bindingDetected )
             {
-                InetSocketAddress local = (InetSocketAddress)event.getChannel().getLocalAddress();
+                InetSocketAddress local = (InetSocketAddress) event.getChannel().getLocalAddress();
                 bindingDetected = true;
                 listeningAt( getURI( local ) );
             }

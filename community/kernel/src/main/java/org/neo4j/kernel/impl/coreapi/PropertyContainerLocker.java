@@ -41,7 +41,7 @@ public class PropertyContainerLocker
             if ( container instanceof Node )
             {
                 statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-                return new CoreAPILock(stmtSupplier, ResourceTypes.NODE, ((Node) container).getId())
+                return new CoreAPILock( stmtSupplier, ResourceTypes.NODE, ((Node) container).getId() )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )
@@ -53,7 +53,7 @@ public class PropertyContainerLocker
             else if ( container instanceof Relationship )
             {
                 statement.readOperations().acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock(stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
+                return new CoreAPILock( stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )
@@ -118,7 +118,7 @@ public class PropertyContainerLocker
             else if ( container instanceof Relationship )
             {
                 statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock(stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
+                return new CoreAPILock( stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )

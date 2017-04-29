@@ -46,9 +46,13 @@ public class MinimumCountFilter<T> implements Filter<T>
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         MinimumCountFilter<?> that = (MinimumCountFilter<?>) o;
         return minCount == that.minCount;
     }

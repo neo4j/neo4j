@@ -47,7 +47,7 @@ public abstract class Headers
             return this;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public final <Value> Value get( HeaderField<Value> field )
         {
             return (Value) headers.get( field );
@@ -140,7 +140,7 @@ public abstract class Headers
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public <Value> Value get( HeaderField<Value> field )
         {
             Integer index = indexes.get( field );
@@ -164,7 +164,7 @@ public abstract class Headers
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public <Value> Value get( HeaderField<Value> field )
         {
             return (Value) headers.get( field );

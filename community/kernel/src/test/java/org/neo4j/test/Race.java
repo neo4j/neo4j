@@ -222,7 +222,9 @@ public class Race
         Contestant( Runnable code, int nr )
         {
             super( code, "Contestant#" + nr );
-            this.setUncaughtExceptionHandler( (thread,error) -> {} );
+            this.setUncaughtExceptionHandler( ( thread, error ) ->
+            {
+            } );
         }
 
         @Override

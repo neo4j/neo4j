@@ -70,7 +70,7 @@ public class NodePropertyExistenceConstraintCreationIT
     }
 
     @Override
-    NodeExistenceConstraintDescriptor newConstraintObject(LabelSchemaDescriptor descriptor )
+    NodeExistenceConstraintDescriptor newConstraintObject( LabelSchemaDescriptor descriptor )
     {
         return ConstraintDescriptorFactory.existsForSchema( descriptor );
     }

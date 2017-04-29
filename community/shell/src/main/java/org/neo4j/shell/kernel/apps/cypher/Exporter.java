@@ -32,7 +32,7 @@ public class Exporter
 {
     private final SubGraphExporter exporter;
 
-    Exporter(SubGraph graph)
+    Exporter( SubGraph graph )
     {
         exporter = new SubGraphExporter( graph );
     }

@@ -286,22 +286,20 @@ class TreeState
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         TreeState treeState = (TreeState) o;
-        return pageId == treeState.pageId &&
-                stableGeneration == treeState.stableGeneration &&
-                unstableGeneration == treeState.unstableGeneration &&
-                rootId == treeState.rootId &&
-                rootGeneration == treeState.rootGeneration &&
-                lastId == treeState.lastId &&
+        return pageId == treeState.pageId && stableGeneration == treeState.stableGeneration &&
+                unstableGeneration == treeState.unstableGeneration && rootId == treeState.rootId &&
+                rootGeneration == treeState.rootGeneration && lastId == treeState.lastId &&
                 freeListWritePageId == treeState.freeListWritePageId &&
-                freeListReadPageId == treeState.freeListReadPageId &&
-                freeListWritePos == treeState.freeListWritePos &&
-                freeListReadPos == treeState.freeListReadPos &&
-                clean == treeState.clean &&
-                valid == treeState.valid;
+                freeListReadPageId == treeState.freeListReadPageId && freeListWritePos == treeState.freeListWritePos &&
+                freeListReadPos == treeState.freeListReadPos && clean == treeState.clean && valid == treeState.valid;
     }
 
     @Override

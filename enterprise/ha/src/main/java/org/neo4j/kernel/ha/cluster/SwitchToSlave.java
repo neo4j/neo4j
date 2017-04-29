@@ -519,7 +519,7 @@ public abstract class SwitchToSlave
                 {   // Nothing to clean up here
                 }
             };
-            MoveAfterCopy moveAfterCopyWithLogging = (moves, fromDirectory, toDirectory) ->
+            MoveAfterCopy moveAfterCopyWithLogging = ( moves, fromDirectory, toDirectory ) ->
             {
                 userLog.info( "Copied store from master to " + fromDirectory );
                 msgLog.info( "Starting post copy operation to move store from " + fromDirectory + " to " + storeDir );

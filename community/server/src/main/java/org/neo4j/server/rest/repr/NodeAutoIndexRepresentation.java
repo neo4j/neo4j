@@ -28,7 +28,7 @@ public class NodeAutoIndexRepresentation extends IndexRepresentation
 
     public NodeAutoIndexRepresentation()
     {
-        super("", Collections.EMPTY_MAP);
+        super( "", Collections.EMPTY_MAP );
     }
 
     @Override

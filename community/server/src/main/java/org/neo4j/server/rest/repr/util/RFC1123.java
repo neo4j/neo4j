@@ -51,13 +51,13 @@ public final class RFC1123
         format.setTimeZone( GMT );
     }
 
-    public Date parse(String input) throws ParseException
+    public Date parse( String input ) throws ParseException
     {
         format.set2DigitYearStart( Y2K_START_DATE );
         return format.parse( input );
     }
 
-    public String format(Date date)
+    public String format( Date date )
     {
         if ( null == date )
         {
@@ -78,12 +78,12 @@ public final class RFC1123
         return instance;
     }
 
-    public static Date parseTimestamp(String input) throws ParseException
+    public static Date parseTimestamp( String input ) throws ParseException
     {
         return instance().parse( input );
     }
 
-    public static String formatDate(Date date)
+    public static String formatDate( Date date )
     {
         return instance().format( date );
     }

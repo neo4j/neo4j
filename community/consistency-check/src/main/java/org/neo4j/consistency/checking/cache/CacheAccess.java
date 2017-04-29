@@ -65,7 +65,7 @@ public interface CacheAccess
          * @param slot which cache slot for this id.
          * @return false if slot value is 0, true otherwise.
          */
-        boolean getBooleanFromCache(long id, int slot);
+        boolean getBooleanFromCache( long id, int slot );
 
         /**
          * Caches all values for an id, i.e. fills all slots.

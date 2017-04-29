@@ -62,7 +62,7 @@ public class BuiltInDbmsProcedures
     }
 
     @Description( "List all user functions in the DBMS." )
-    @Procedure(name = "dbms.functions", mode = DBMS)
+    @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
     {
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()

@@ -54,7 +54,7 @@ public class TimeoutLoopTest
         assertEquals( 12L, value );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldTimeoutIfNoActivity() throws Exception
     {
@@ -78,7 +78,7 @@ public class TimeoutLoopTest
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldTimeoutIfNoContinuedActivity() throws Exception
     {
@@ -102,7 +102,7 @@ public class TimeoutLoopTest
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldKeepWaitingIfThereIsSomeActivity() throws Exception
     {

@@ -32,16 +32,16 @@ public class FixedNetworkLatencyStrategy
 
     public FixedNetworkLatencyStrategy()
     {
-        this(0);
+        this( 0 );
     }
 
-    public FixedNetworkLatencyStrategy(long delay)
+    public FixedNetworkLatencyStrategy( long delay )
     {
         this.delay = delay;
     }
 
     @Override
-    public long messageDelay(Message<? extends MessageType> message, String serverIdTo)
+    public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
         return delay;
     }

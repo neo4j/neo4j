@@ -84,7 +84,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     @Test
     public void begin_and_execute_periodic_commit_that_fails() throws Exception
     {

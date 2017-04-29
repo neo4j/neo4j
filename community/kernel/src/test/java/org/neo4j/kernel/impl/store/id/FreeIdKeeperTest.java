@@ -328,7 +328,7 @@ public class FreeIdKeeperTest
     public void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveReuseIsFalse() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File("id.file" ), "rw" );
+        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
         FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, false );
@@ -368,7 +368,7 @@ public class FreeIdKeeperTest
             throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File("id.file" ), "rw" );
+        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
 
         int threshold = 10;
         FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, false );

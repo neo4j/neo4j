@@ -83,7 +83,7 @@ public class GetServersProcedureV1Test
     @Parameterized.Parameter( 2 )
     public boolean expectFollowersAsReadEndPoints;
 
-    @Parameterized.Parameters( name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> params()
     {
         return Arrays.asList(

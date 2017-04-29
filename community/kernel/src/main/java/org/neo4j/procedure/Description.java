@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * A procedure can optionally be annotated with a <code>@Description("a description")</code>.
  */
 @Retention( RetentionPolicy.RUNTIME )
-@Target({ElementType.METHOD,ElementType.TYPE})
+@Target( {ElementType.METHOD, ElementType.TYPE} )
 public @interface Description
 {
     String value();

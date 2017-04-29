@@ -118,7 +118,7 @@ class ThreadedTransaction<S>
                             tx.success();
                             return null;
                         }
-                        catch (Throwable t)
+                        catch ( Throwable t )
                         {
                             return t;
                         }

@@ -58,7 +58,7 @@ public class MapRepresentationTest
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldSerializeMapWithArrayTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map(
@@ -79,7 +79,7 @@ public class MapRepresentationTest
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldSerializeMapWithListsOfSimpleTypes() throws Exception
     {
         MapRepresentation rep = new MapRepresentation( map( "lists of nulls", asList( null, null ),
@@ -115,7 +115,7 @@ public class MapRepresentationTest
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldSerializeArbitrarilyNestedMapsAndLists() throws Exception
     {
         MapRepresentation rep = new MapRepresentation(

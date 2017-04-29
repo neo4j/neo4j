@@ -38,7 +38,7 @@ public class CommunityEntryPoint
         System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
-    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
+    public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
     {
         if ( bootstrapper != null )
         {

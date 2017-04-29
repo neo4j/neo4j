@@ -53,7 +53,7 @@ public class SimpleBitSet implements PrimitiveIntIterable
         data = new long[capacity];
     }
 
-    public boolean contains(int key)
+    public boolean contains( int key )
     {
         int idx = key >>> 6;
         return data.length > idx && (data[idx] & ((1L << (key & 63)))) != 0;

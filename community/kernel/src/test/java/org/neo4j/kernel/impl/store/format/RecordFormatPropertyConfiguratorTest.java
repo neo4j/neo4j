@@ -160,7 +160,7 @@ public class RecordFormatPropertyConfiguratorTest
         @Override
         public RecordFormat<DynamicRecord> dynamic()
         {
-            return new ResizableRecordFormat(dynamicRecordHeaderSize);
+            return new ResizableRecordFormat( dynamicRecordHeaderSize );
         }
 
         @Override

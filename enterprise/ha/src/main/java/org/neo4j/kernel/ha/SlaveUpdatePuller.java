@@ -156,7 +156,7 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, JobScheduler.C
             AvailabilityGuard availabilityGuard,
             InvalidEpochExceptionHandler invalidEpochHandler,
             JobScheduler jobScheduler,
-            Monitor monitor)
+            Monitor monitor )
     {
         this.requestContextFactory = requestContextFactory;
         this.master = master;

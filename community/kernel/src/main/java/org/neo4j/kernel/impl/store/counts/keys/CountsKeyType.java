@@ -34,7 +34,7 @@ public enum CountsKeyType
         this.code = (byte) code;
     }
 
-    public static CountsKeyType value(byte val)
+    public static CountsKeyType value( byte val )
     {
         switch ( val )
         {

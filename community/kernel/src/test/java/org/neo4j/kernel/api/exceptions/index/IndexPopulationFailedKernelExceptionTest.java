@@ -45,7 +45,7 @@ public class IndexPopulationFailedKernelExceptionTest
 
         // When
         IndexPopulationFailedKernelException index =
-                new IndexPopulationFailedKernelException( descriptor, "INDEX", new RuntimeException(  ));
+                new IndexPopulationFailedKernelException( descriptor, "INDEX", new RuntimeException() );
 
         // Then
         assertThat(index.getUserMessage( lookup ), equalTo(
@@ -65,7 +65,7 @@ public class IndexPopulationFailedKernelExceptionTest
 
         // When
         IndexPopulationFailedKernelException index =
-                new IndexPopulationFailedKernelException( descriptor, "INDEX", "an act of pure evil occurred");
+                new IndexPopulationFailedKernelException( descriptor, "INDEX", "an act of pure evil occurred" );
 
         // Then
         assertThat(index.getUserMessage( lookup ), equalTo(

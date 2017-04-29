@@ -187,7 +187,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         Node[] nodes = {};
         ArrayList<Node> result = new ArrayList<>();
-        for (String name : names)
+        for ( String name : names )
         {
             result.add( getNode( name ) );
         }

@@ -96,7 +96,7 @@ public class ByteBufferPage implements Page
 
     public void getBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        for (int i = 0; i < length; i++)
+        for ( int i = 0; i < length; i++ )
         {
             data[arrayOffset + i] = getByte( pageOffset + i );
         }
@@ -104,7 +104,7 @@ public class ByteBufferPage implements Page
 
     public void putBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        for (int i = 0; i < length; i++)
+        for ( int i = 0; i < length; i++ )
         {
             putByte( data[arrayOffset + i], pageOffset + i );
         }

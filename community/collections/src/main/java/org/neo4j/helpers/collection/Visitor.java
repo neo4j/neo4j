@@ -60,7 +60,7 @@ public interface Visitor<E, FAILURE extends Exception>
          * @param <F> type of the exception
          * @return the visitor cast to compatible type parameters or {@code null}
          */
-        @SuppressWarnings("unchecked"/*checked through reflection*/)
+        @SuppressWarnings( "unchecked"/*checked through reflection*/ )
         public static <T, F extends Exception>
         Visitor<? super T, ? extends F> castOrNull( Class<T> eType, Class<F> fType, Object visitor )
         {

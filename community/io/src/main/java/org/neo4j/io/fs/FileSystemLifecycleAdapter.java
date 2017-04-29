@@ -32,7 +32,7 @@ public class FileSystemLifecycleAdapter extends LifecycleAdapter
 {
     private FileSystemAbstraction fileSystemAbstraction;
 
-    public FileSystemLifecycleAdapter(FileSystemAbstraction fileSystemAbstraction)
+    public FileSystemLifecycleAdapter( FileSystemAbstraction fileSystemAbstraction )
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
     }

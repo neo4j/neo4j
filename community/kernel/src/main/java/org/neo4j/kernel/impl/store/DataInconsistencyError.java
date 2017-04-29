@@ -26,6 +26,6 @@ public class DataInconsistencyError extends Error
 {
     public DataInconsistencyError( String message )
     {
-        super(message);
+        super( message );
     }
 }

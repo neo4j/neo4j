@@ -56,7 +56,7 @@ public class MarshlandPool<T> implements Pool<T>
         @Override
         protected LocalSlot<T> initialValue()
         {
-            LocalSlot<T> localSlot = new LocalSlot<>(objectsFromDeadThreads);
+            LocalSlot<T> localSlot = new LocalSlot<>( objectsFromDeadThreads );
             slotReferences.add( localSlot.phantomReference );
             return localSlot;
         }
@@ -69,7 +69,7 @@ public class MarshlandPool<T> implements Pool<T>
 
     public MarshlandPool( Factory<T> objectFactory )
     {
-        this(new LinkedQueuePool<>( 4, objectFactory ));
+        this( new LinkedQueuePool<>( 4, objectFactory ) );
     }
 
     public MarshlandPool( Pool<T> delegatePool )
@@ -182,7 +182,7 @@ public class MarshlandPool<T> implements Pool<T>
             phantomReference = new LocalSlotReference( this, referenceQueue );
         }
 
-        public void set(T obj)
+        public void set( T obj )
         {
             phantomReference.object = obj;
             this.object = obj;

@@ -59,7 +59,7 @@ public class MapRepresentation extends MappingRepresentation
             {
                 serializer.putString( keyString, (String) val );
             }
-            else if (val instanceof Path )
+            else if ( val instanceof Path )
             {
                 PathRepresentation<Path> representation = new PathRepresentation<>( (Path) val );
                 serializer.putMapping( keyString, representation );
@@ -74,17 +74,17 @@ public class MapRepresentation extends MappingRepresentation
                 serializer.putMapping( keyString, ObjectToRepresentationConverter.getMapRepresentation( (Map)
                         val ) );
             }
-            else if (val == null)
+            else if ( val == null )
             {
                 serializer.putString( keyString, null );
             }
-            else if (val.getClass().isArray())
+            else if ( val.getClass().isArray() )
             {
                 Object[] objects = toArray( val );
 
                 serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( asList(objects) ) );
             }
-            else if (val instanceof Node || val instanceof Relationship )
+            else if ( val instanceof Node || val instanceof Relationship )
             {
                 Representation representation = ObjectToRepresentationConverter.getSingleRepresentation( val );
                 serializer.putMapping( keyString, (MappingRepresentation) representation );

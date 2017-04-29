@@ -41,11 +41,11 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class BatchOperationsTest
 {
 
-    private final BatchOperations ops = new BatchOperations(null)
+    private final BatchOperations ops = new BatchOperations( null )
     {
         @Override
-        protected void invoke(String method, String path, String body, Integer id,
-                URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res) throws IOException, ServletException
+        protected void invoke( String method, String path, String body, Integer id, URI targetUri,
+                InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
         {
         }
     };

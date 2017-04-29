@@ -105,7 +105,7 @@ public class IndexSamplingController
 
     public interface RecoveryCondition
     {
-        boolean test(long indexId, IndexDescriptor descriptor);
+        boolean test( long indexId, IndexDescriptor descriptor );
     }
 
     private void scheduleSampling( IndexSamplingMode mode, IndexMap indexMap )

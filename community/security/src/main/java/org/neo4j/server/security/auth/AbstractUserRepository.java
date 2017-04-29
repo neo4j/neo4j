@@ -66,7 +66,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     {
         assertValidUsername( user.name() );
 
-        synchronized (this)
+        synchronized ( this )
         {
             // Check for existing user
             for ( User other : users )
@@ -91,7 +91,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
             assertValidUsername( user.name() );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
             users.clear();
 
@@ -118,7 +118,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
                     "' to '" + updatedUser.name() + "' failed. Changing a roles name is not allowed." );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
             // Copy-on-write for the users list
             List<User> newUsers = new ArrayList<>();

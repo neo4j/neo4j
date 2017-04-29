@@ -230,14 +230,14 @@ public class AppCommandParser
     private static int findNextWhiteSpaceOrLeftParenthesis( String line, int fromIndex )
     {
         int indexOfWhiteSpace = line.indexOf( ' ', fromIndex );
-        if (indexOfWhiteSpace == - 1)
+        if ( indexOfWhiteSpace == -1 )
         {
             indexOfWhiteSpace = line.indexOf( '\t', fromIndex );
         }
         //allow using both create () and create()
         int indexOfLeftParenthesis = line.indexOf( '(', fromIndex );
 
-        if (indexOfLeftParenthesis != -1)
+        if ( indexOfLeftParenthesis != -1 )
         {
             return Math.min(indexOfWhiteSpace, indexOfLeftParenthesis);
         }

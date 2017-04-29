@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 /**
  * Defines valid property types.
  */
-@SuppressWarnings("UnnecessaryBoxing")
+@SuppressWarnings( "UnnecessaryBoxing" )
 public enum PropertyType
 {
     BOOL( 1 )

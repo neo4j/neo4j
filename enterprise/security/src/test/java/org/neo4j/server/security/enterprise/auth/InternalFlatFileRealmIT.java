@@ -180,7 +180,7 @@ public class InternalFlatFileRealmIT
         {
             assertThat( e.getMessage(), containsString(
                     "Unable to load valid flat file repositories! Attempts failed with:" ) );
-            File authFile = new File("dbms/auth");
+            File authFile = new File( "dbms/auth" );
             assertThat( e.getMessage(), containsString( "Failed to read authentication file: " + authFile ) );
             assertThat( e.getMessage(), containsString( "Role-auth file combination not valid" ) );
         }

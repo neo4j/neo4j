@@ -43,7 +43,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         this( true );
     }
 
-    public OnDemandJobScheduler( boolean removeJobsAfterExecution)
+    public OnDemandJobScheduler( boolean removeJobsAfterExecution )
     {
         this.removeJobsAfterExecution = removeJobsAfterExecution;
     }

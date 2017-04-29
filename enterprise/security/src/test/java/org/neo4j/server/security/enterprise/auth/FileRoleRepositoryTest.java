@@ -63,7 +63,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class FileRoleRepositoryTest
 {
     private File roleFile = new File( "dbms", "roles" );
@@ -71,7 +71,7 @@ public class FileRoleRepositoryTest
     private FileSystemAbstraction fs;
     private RoleRepository roleRepository;
 
-    @Parameterized.Parameters(name = "{1} filesystem")
+    @Parameterized.Parameters( name = "{1} filesystem" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]{

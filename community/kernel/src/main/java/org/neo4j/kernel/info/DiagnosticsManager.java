@@ -40,7 +40,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         this.targetLog = targetLog;
 
-        providers.add( new DiagnosticsProvider(/*self*/)
+        providers.add( new DiagnosticsProvider()
         {
             @Override
             public String getDiagnosticsIdentifier()

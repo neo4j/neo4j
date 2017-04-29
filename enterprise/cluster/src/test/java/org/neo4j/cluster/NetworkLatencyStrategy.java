@@ -29,5 +29,5 @@ public interface NetworkLatencyStrategy
 {
     long LOST = -1;
 
-    long messageDelay(Message<? extends MessageType> message, String serverIdTo);
+    long messageDelay( Message<? extends MessageType> message, String serverIdTo );
 }

@@ -115,7 +115,7 @@ public class WritableIndexReferenceFactoryTest
 
     private WritableIndexReferenceFactory createFactory()
     {
-        return new WritableIndexReferenceFactory( filesystemFacade,  new File( getStoreDir(), "index"),
+        return new WritableIndexReferenceFactory( filesystemFacade, new File( getStoreDir(), "index" ),
                 new IndexTypeCache( indexStore ) );
     }
 

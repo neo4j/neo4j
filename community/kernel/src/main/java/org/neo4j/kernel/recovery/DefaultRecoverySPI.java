@@ -91,7 +91,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         // Go and read more at {@link CommonAbstractStore#deleteIdGenerator()}
         storageEngine.prepareForRecoveryRequired();
 
-        transactionsToApply = new TransactionQueue( 10_000, (first,last) -> storageEngine.apply( first, RECOVERY ) );
+        transactionsToApply = new TransactionQueue( 10_000, ( first, last ) -> storageEngine.apply( first, RECOVERY ) );
         recoveryVisitor = new RecoveryVisitor( transactionsToApply );
 
         return recoveryVisitor;

@@ -77,7 +77,7 @@ public class ClusterBindingIT
     {
         fs = fileSystemRule.get();
         cluster = clusterRule.startCluster();
-        cluster.coreTx( (db,tx) ->
+        cluster.coreTx( ( db, tx ) ->
         {
             SampleData.createSchema( db );
             tx.success();

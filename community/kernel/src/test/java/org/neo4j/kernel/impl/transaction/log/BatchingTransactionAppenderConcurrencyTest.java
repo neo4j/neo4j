@@ -323,7 +323,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         NodeRecord before = new NodeRecord( 0 );
         NodeRecord after = new NodeRecord( 0 );
         after.setInUse( true );
-        Command.NodeCommand nodeCommand = new Command.NodeCommand(before, after);
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( before, after );
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
                 asList( (Command) nodeCommand ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );

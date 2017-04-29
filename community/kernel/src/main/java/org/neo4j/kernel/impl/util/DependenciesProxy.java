@@ -44,10 +44,10 @@ public class DependenciesProxy
      * @param <T>
      * @return
      */
-    public static <T> T dependencies(DependencyResolver dependencyResolver, Class<T> dependenciesInterface)
+    public static <T> T dependencies( DependencyResolver dependencyResolver, Class<T> dependenciesInterface )
     {
         return (T) Proxy.newProxyInstance( dependenciesInterface.getClassLoader(), new Class[]{dependenciesInterface},
-                new ProxyHandler(dependencyResolver) );
+                new ProxyHandler( dependencyResolver ) );
     }
 
     private static class ProxyHandler
@@ -65,7 +65,7 @@ public class DependenciesProxy
         {
             try
             {
-                if (method.getReturnType().equals( Supplier.class ))
+                if ( method.getReturnType().equals( Supplier.class ) )
                 {
                     return dependencyResolver.provideDependency( (Class)((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0] );
                 }

@@ -49,6 +49,6 @@ public interface CallableUserAggregationFunction
         }
 
         @Override
-        public abstract Aggregator create( Context ctx) throws ProcedureException;
+        public abstract Aggregator create( Context ctx ) throws ProcedureException;
     }
 }

@@ -297,9 +297,9 @@ public class StoreUpgradeIntegrationTest
         @Rule
         public TestDirectory testDir = TestDirectory.testDirectory();
 
-        @Parameterized.Parameter(0)
+        @Parameterized.Parameter( 0 )
         public String ignored; // to make JUnit happy...
-        @Parameterized.Parameter(1)
+        @Parameterized.Parameter( 1 )
         public String dbFileName;
 
         @Parameterized.Parameters( name = "{0}" )

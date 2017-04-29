@@ -34,7 +34,7 @@ final class BooleanProperty extends DefinedProperty
     }
 
     @Override
-    @SuppressWarnings("UnnecessaryUnboxing")
+    @SuppressWarnings( "UnnecessaryUnboxing" )
     public boolean valueEquals( Object other )
     {
         return other instanceof Boolean && value == ((Boolean) other).booleanValue();

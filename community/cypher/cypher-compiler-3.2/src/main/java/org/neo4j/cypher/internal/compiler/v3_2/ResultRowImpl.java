@@ -42,7 +42,7 @@ public class ResultRowImpl implements InternalResultRow
         this( new HashMap<>() );
     }
 
-    public void set( String k, Object value)
+    public void set( String k, Object value )
     {
         results.put( k, value );
     }
@@ -104,7 +104,7 @@ public class ResultRowImpl implements InternalResultRow
         {
             String message = String.format("The current item in column \"%s\" is not a %s; it's \"%s\"",
                     key, type.getSimpleName(), value);
-            throw new NoSuchElementException(message);
+            throw new NoSuchElementException( message );
         }
     }
 }

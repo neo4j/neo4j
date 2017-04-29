@@ -55,9 +55,13 @@ public class FirstValidRule<T> implements Filter<T>
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         FirstValidRule<?> that = (FirstValidRule<?>) o;
         return Objects.equals( rules, that.rules );
     }

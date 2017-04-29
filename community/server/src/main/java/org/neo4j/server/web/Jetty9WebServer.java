@@ -134,8 +134,8 @@ public class Jetty9WebServer implements WebServer
     public Jetty9WebServer( LogProvider logProvider, Config config )
     {
         this.log = logProvider.getLog( getClass() );
-        sslSocketFactory = new SslSocketConnectorFactory(config);
-        connectorFactory = new HttpConnectorFactory(config);
+        sslSocketFactory = new SslSocketConnectorFactory( config );
+        connectorFactory = new HttpConnectorFactory( config );
     }
 
     @Override

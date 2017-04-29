@@ -687,7 +687,7 @@ public class BoltCausalClusteringIT
 
         Driver driver = GraphDatabase.driver( cluster.awaitLeader().routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             session.writeTransaction( ( tx ) ->
             {
@@ -708,7 +708,7 @@ public class BoltCausalClusteringIT
         final int nodesToCreate = 20000;
         for ( int i = 0; i < iterations; i++ )
         {
-            try (Session writeSession = driver.session())
+            try ( Session writeSession = driver.session() )
             {
                 writeSession.writeTransaction( tx ->
                 {

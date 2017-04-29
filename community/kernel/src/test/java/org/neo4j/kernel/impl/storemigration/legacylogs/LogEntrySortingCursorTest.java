@@ -48,7 +48,7 @@ public class LogEntrySortingCursorTest
 {
     private static final Random random = new Random( 42L );
     private final ReadableLogChannel channel = mock( ReadableLogChannel.class );
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private final LogEntryReader<ReadableLogChannel> reader = mock( LogEntryReader.class );
 
     @Test

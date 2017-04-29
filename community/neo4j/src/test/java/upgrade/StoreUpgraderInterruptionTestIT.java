@@ -68,7 +68,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
@@ -129,7 +128,7 @@ public class StoreUpgraderInterruptionTestIT
                 new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), Standard.LATEST_RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, CONFIG, logService, schemaIndexProvider )
+        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider )
         {
             @Override
             public void migrate( File sourceStoreDir, File targetStoreDir,

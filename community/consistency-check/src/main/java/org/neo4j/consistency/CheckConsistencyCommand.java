@@ -63,7 +63,7 @@ public class CheckConsistencyCommand implements AdminCommand
                     "Path to backup to check consistency of. Cannot be used together with --database." ) )
             .withArgument( new OptionalBooleanArg( "verbose", false, "Enable verbose output." ) )
             .withArgument( new OptionalCanonicalPath( "report-dir", "directory", ".",
-                    "Directory to write report file in.") )
+                    "Directory to write report file in." ) )
             .withArgument( new OptionalCanonicalPath( "additional-config", "config-file-path", "",
                     "Configuration file to supply additional configuration in. This argument is DEPRECATED." ) )
             .withArgument( new OptionalBooleanArg( CHECK_GRAPH, true,

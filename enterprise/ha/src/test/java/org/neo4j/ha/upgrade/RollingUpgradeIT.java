@@ -67,7 +67,7 @@ import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
 @Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class RollingUpgradeIT
 {
     private static final int CLUSTER_SIZE = 3;
@@ -290,7 +290,7 @@ public class RollingUpgradeIT
             throws Exception
     {
         String storeDir = legacyDb.getStoreDir();
-        if ( i == 0)
+        if ( i == 0 )
         {
             storeDir += "new";
         }

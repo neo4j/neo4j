@@ -66,7 +66,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
                  "image::batch-request-api.png[]" )
     @SuppressWarnings( "unchecked" )
     @Test
-    @Graph("Joe knows John")
+    @Graph( "Joe knows John" )
     public void shouldPerformMultipleOperations() throws Exception
     {
         long idJoe = data.get().get( "Joe" ).getId();
@@ -310,7 +310,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldHandleUnicodeGetCorrectly() throws Exception
     {
         String asianText = "\u4f8b\u5b50";
@@ -380,7 +380,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph("Peter likes Jazz")
+    @Graph( "Peter likes Jazz" )
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
             UniformInterfaceException, JSONException, JsonParseException
     {

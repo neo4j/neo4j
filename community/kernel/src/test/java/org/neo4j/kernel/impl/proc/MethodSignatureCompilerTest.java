@@ -59,19 +59,19 @@ public class MethodSignatureCompilerTest
     public static class ClassWithProcedureWithSimpleArgs
     {
         @Procedure
-        public Stream<MyOutputRecord> echo( @Name("name") String in)
+        public Stream<MyOutputRecord> echo( @Name( "name" ) String in )
         {
             return Stream.of( new MyOutputRecord( in ));
         }
 
         @Procedure
-        public Stream<MyOutputRecord> echoWithoutAnnotations( @Name("name")String in1, String in2)
+        public Stream<MyOutputRecord> echoWithoutAnnotations( @Name( "name" ) String in1, String in2 )
         {
             return Stream.of( new MyOutputRecord( in1 + in2 ));
         }
 
         @Procedure
-        public Stream<MyOutputRecord> echoWithInvalidType( @Name("name") UnmappableRecord in)
+        public Stream<MyOutputRecord> echoWithInvalidType( @Name( "name" ) UnmappableRecord in )
         {
             return Stream.of( new MyOutputRecord( "echo" ));
         }
@@ -115,7 +115,7 @@ public class MethodSignatureCompilerTest
                                  "For your reference, known types are:" ));
 
         // When
-        new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );
+        new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
     }
 
     @Test
@@ -131,6 +131,6 @@ public class MethodSignatureCompilerTest
                                  "Please add the annotation, recompile the class and try again." ));
 
         // When
-        new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );
+        new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
     }
 }

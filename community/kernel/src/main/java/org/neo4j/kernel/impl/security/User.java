@@ -60,7 +60,7 @@ public class User
         return credential;
     }
 
-    public boolean hasFlag(String flag)
+    public boolean hasFlag( String flag )
     {
         return flags.contains( flag );
     }
@@ -192,7 +192,7 @@ public class User
 
         public User build()
         {
-            return new User(name, credential, flags );
+            return new User( name, credential, flags );
         }
     }
 }

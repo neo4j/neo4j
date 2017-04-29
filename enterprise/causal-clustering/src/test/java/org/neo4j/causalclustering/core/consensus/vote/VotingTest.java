@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class VotingTest
 {
     MemberId candidate = new MemberId( UUID.randomUUID() );

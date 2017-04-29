@@ -727,7 +727,8 @@ public enum LongerShortString
         return encodeWithCharSet( keyId, string, target, payloadSize, dataLength );
     }
 
-    private static boolean encodeWithCharSet(int keyId, String string, PropertyBlock target, int payloadSize, int stringLength)
+    private static boolean encodeWithCharSet( int keyId, String string, PropertyBlock target, int payloadSize,
+            int stringLength )
     {
         int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes - 5 )
@@ -979,7 +980,7 @@ public enum LongerShortString
         return Bits.bits(calculateNumberOfBlocksUsed( encoding, length ) << 3 ); //*8
     }
 
-    private static Bits newBitsForStep8(int length)
+    private static Bits newBitsForStep8( int length )
     {
         return Bits.bits(calculateNumberOfBlocksUsedForStep8(length) << 3 ); //*8
     }
@@ -1030,8 +1031,7 @@ public enum LongerShortString
         return true;
     }
 
-    private boolean doEncode(int keyId, byte[] data, PropertyBlock target,
-                             int payloadSize, final int length)
+    private boolean doEncode( int keyId, byte[] data, PropertyBlock target, int payloadSize, final int length )
     {
         if ( length > maxLength( payloadSize ) )
         {
@@ -1047,9 +1047,9 @@ public enum LongerShortString
         return true;
     }
 
-    private void translateData(Bits bits, byte[] data, int length, final int step)
+    private void translateData( Bits bits, byte[] data, int length, final int step )
     {
-        for (int i = 0; i < length; i++)
+        for ( int i = 0; i < length; i++ )
         {
             bits.put(encTranslate(data[i]), step);
         }

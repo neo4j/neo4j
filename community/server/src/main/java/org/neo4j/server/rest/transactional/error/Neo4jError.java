@@ -42,7 +42,7 @@ public class Neo4jError
 
     public Neo4jError( Status status, String message )
     {
-        this(status, new RuntimeException( message ));
+        this( status, new RuntimeException( message ) );
     }
 
     public Neo4jError( Status status, Throwable cause )

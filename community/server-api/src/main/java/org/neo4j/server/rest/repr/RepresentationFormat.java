@@ -258,7 +258,7 @@ public abstract class RepresentationFormat implements InputFormat
         }
         catch ( NotFoundException e )
         {
-            throw new NodeNotFoundException(e);
+            throw new NodeNotFoundException( e );
         }
     }
 

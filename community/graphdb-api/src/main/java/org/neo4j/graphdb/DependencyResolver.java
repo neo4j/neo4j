@@ -52,7 +52,7 @@ public interface DependencyResolver
      */
     <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
 
-    <T> Supplier<T> provideDependency( Class<T> type, SelectionStrategy selector);
+    <T> Supplier<T> provideDependency( Class<T> type, SelectionStrategy selector );
 
     <T> Supplier<T> provideDependency( Class<T> type );
 
@@ -101,7 +101,7 @@ public interface DependencyResolver
             return resolveDependency( type, FIRST );
         }
 
-        public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
+        public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector )
         {
             return () -> resolveDependency( type, selector );
         }

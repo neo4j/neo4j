@@ -41,7 +41,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     }
 
     @Override
-    public Stream<ExecutingQuery> executingQueries( KernelStatement statement)
+    public Stream<ExecutingQuery> executingQueries( KernelStatement statement )
     {
         return statement.executingQueryList().queries();
     }

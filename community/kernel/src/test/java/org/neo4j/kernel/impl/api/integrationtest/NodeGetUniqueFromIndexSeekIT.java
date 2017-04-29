@@ -150,7 +150,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
     }
 
-    @Test(timeout = 1000)
+    @Test( timeout = 1000 )
     public void shouldBlockUniqueIndexSeekFromCompetingTransaction() throws Exception
     {
         // This is the interleaving that we are trying to verify works correctly:
