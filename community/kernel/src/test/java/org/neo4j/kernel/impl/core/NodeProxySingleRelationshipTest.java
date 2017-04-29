@@ -134,7 +134,7 @@ public class NodeProxySingleRelationshipTest
         when( nodeActions.statement() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
-        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( 2 ) ) ).thenAnswer( new Answer<RelationshipIterator>()
+        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq(new int[] { 2 }) ) ).thenAnswer( new Answer<RelationshipIterator>()
         {
             @Override
             public RelationshipIterator answer( InvocationOnMock invocation ) throws Throwable

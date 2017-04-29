@@ -340,13 +340,24 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes )
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
             throws EntityNotFoundException
     {
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return node.get().getRelationships( direction( direction ), relTypes );
+        }
+    }
+
+    @Override
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int relType )
+            throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
+        {
+            return node.get().getRelationships( direction( direction ), relType );
         }
     }
 

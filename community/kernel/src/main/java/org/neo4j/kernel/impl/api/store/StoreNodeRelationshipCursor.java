@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -46,6 +47,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private long relationshipId;
     private long fromNodeId;
     private Direction direction;
+    private int relType = NO_SUCH_RELATIONSHIP_TYPE;
     private int[] relTypes;
     private int groupChainIndex;
     private boolean end;
@@ -63,25 +65,48 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.cursors = cursors;
     }
 
+    public StoreNodeRelationshipCursor init(boolean isDense,
+                                            long firstRelId,
+                                            long fromNodeId,
+                                            Direction direction, int relType)
+    {
+        return init( isDense, firstRelId, fromNodeId, direction, relType, null );
+    }
     public StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
             Direction direction )
     {
-        return init( isDense, firstRelId, fromNodeId, direction, null );
+        return init( isDense, firstRelId, fromNodeId, direction, NO_SUCH_RELATIONSHIP_TYPE, null );
+    }
+    public StoreNodeRelationshipCursor init( boolean isDense,
+            long firstRelId,
+            long fromNodeId,
+            Direction direction,
+            int[] relTypes)
+    {
+        return init( isDense, firstRelId, fromNodeId, direction, NO_SUCH_RELATIONSHIP_TYPE, relTypes );
     }
 
     public StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
             Direction direction,
-            int... relTypes )
+            int type,
+            int[] relTypes )
     {
+        assert type == NO_SUCH_RELATIONSHIP_TYPE || relTypes == null;
         this.isDense = isDense;
         this.relationshipId = firstRelId;
         this.fromNodeId = fromNodeId;
         this.direction = direction;
-        this.relTypes = relTypes;
+        if (relTypes!=null && relTypes.length == 1)
+        {
+            this.relType = relTypes[0];
+        } else {
+            this.relType = type;
+            this.relTypes = relTypes;
+        }
         this.end = false;
 
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -138,7 +163,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                     }
 
                     // Type check
-                    if ( !checkType( relationshipRecord.getType() ) )
+                    if ( !isDense && !checkType( relationshipRecord.getType() ) )
                     {
                         continue;
                     }
@@ -228,6 +253,10 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 
     private boolean checkType( int type )
     {
+        if ( relType != NO_SUCH_RELATIONSHIP_TYPE)
+        {
+            return type == relType;
+        }
         if ( relTypes != null )
         {
             for ( int relType : relTypes )

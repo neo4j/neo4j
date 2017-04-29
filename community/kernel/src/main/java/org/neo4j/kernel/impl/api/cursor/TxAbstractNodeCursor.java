@@ -126,12 +126,20 @@ public abstract class TxAbstractNodeCursor
     }
 
     @Override
-    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
+    public Cursor<RelationshipItem> relationships( Direction direction, int[] relTypes )
     {
         return state.augmentNodeRelationshipCursor(
                 nodeIsAddedInThisTx ? Cursors.<RelationshipItem>empty() : cursor.get().relationships( direction,
                         relTypes ), nodeState,
                 direction, relTypes );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationships(Direction direction, int relType)
+    {
+        return state.augmentNodeRelationshipCursor(
+                nodeIsAddedInThisTx ? Cursors.<RelationshipItem>empty() : cursor.get().relationships(direction, relType), nodeState,
+                direction, new int[]{relType} );
     }
 
     @Override

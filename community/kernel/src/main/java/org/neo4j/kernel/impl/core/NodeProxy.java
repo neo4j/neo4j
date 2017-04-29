@@ -186,8 +186,13 @@ public class NodeProxy
                 try
                 {
                     RelationshipConversion result = new RelationshipConversion( actions );
-                    result.iterator = statement.readOperations().nodeGetRelationships(
-                            nodeId, direction, typeIds );
+                    if ( /* typeIds.length == 1 */ false )
+                    {
+                        result.iterator = statement.readOperations().nodeGetRelationships( nodeId, direction, typeIds[0] );
+                    }
+                    else {
+                        result.iterator = statement.readOperations().nodeGetRelationships( nodeId, direction, typeIds );
+                    }
                     result.statement = statement;
                     return result;
                 }
