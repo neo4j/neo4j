@@ -134,7 +134,8 @@ public class BinaryLatchTest
             return;
         }
 
-        long now, deadline = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos( micros );
+        long now;
+        long deadline = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos( micros );
         do
         {
             now = System.nanoTime();

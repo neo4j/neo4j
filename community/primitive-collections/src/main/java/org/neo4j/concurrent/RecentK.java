@@ -98,7 +98,8 @@ public class RecentK<Type> implements Iterable<Type>
     {
         for ( AtomicLong count : recentItems.values() )
         {
-            long prev, next;
+            long prev;
+            long next;
             do
             {
                 prev = count.get();

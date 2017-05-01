@@ -40,7 +40,8 @@ public class CountingAdversary extends AbstractAdversary
     @Override
     public void injectFailure( Class<? extends Throwable>... failureTypes )
     {
-        int count, newCount;
+        int count;
+        int newCount;
         do
         {
             count = countDown.get();

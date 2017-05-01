@@ -383,7 +383,8 @@ public class SingleFilePageSwapper implements PageSwapper
         try
         {
             long toRead = filePageSize * (long) srcs.length;
-            long read, readTotal = 0;
+            long read;
+            long readTotal = 0;
             synchronized ( positionLock( channel ) )
             {
                 channel.position( fileOffset );

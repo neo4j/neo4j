@@ -70,7 +70,8 @@ public interface Configuration
         return DEFAULT_LEGACY_STYLE_QUOTING;
     }
 
-    int KB = 1024, MB = KB * KB;
+    int KB = 1024;
+    int MB = KB * KB;
 
     class Default implements Configuration
     {

@@ -38,14 +38,16 @@ public abstract class Expression extends ExpressionTemplate
         {
             return FALSE;
         }
-    }, FALSE = new Constant( BOOLEAN, Boolean.FALSE )
+    };
+    public static final Expression FALSE = new Constant( BOOLEAN, Boolean.FALSE )
     {
         @Override
         Expression not()
         {
             return TRUE;
         }
-    }, NULL = new Constant( OBJECT, null );
+    };
+    public static final Expression NULL = new Constant( OBJECT, null );
 
     protected Expression( TypeReference type )
     {

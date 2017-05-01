@@ -154,9 +154,17 @@ public class FullCheckIntegrationTest
     private static final Object VALUE1 = "value1";
     private static final Object VALUE2 = "value2";
 
-    private int label1, label2, label3, label4, draconian;
-    private int key1, key2, mandatory;
-    private int C, T, M;
+    private int label1;
+    private int label2;
+    private int label3;
+    private int label4;
+    private int  draconian;
+    private int key1;
+    private int key2;
+    private int mandatory;
+    private int C;
+    private int T;
+    private int M;
 
     private final List<Long> indexedNodes = new ArrayList<>();
 

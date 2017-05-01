@@ -70,7 +70,8 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         // GIVEN
         int key = 10;
-        int valueBefore = 12341, valueAfter = 738;
+        int valueBefore = 12341;
+        int valueAfter = 738;
         PropertyRecord before = propertyRecord( property( key, valueBefore ) );
         PropertyRecord after = propertyRecord( property( key, valueAfter ) );
 

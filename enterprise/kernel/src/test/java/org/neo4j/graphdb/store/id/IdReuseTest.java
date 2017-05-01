@@ -81,7 +81,8 @@ public class IdReuseTest
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Node node1, node2;
+        Node node1;
+        Node node2;
         try ( Transaction tx = db.beginTx() )
         {
             node1 = db.createNode();

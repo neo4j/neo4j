@@ -35,7 +35,9 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     private final LongArray labelsCounts;
     private final LongArray wildcardCounts;
 
-    private int[] startScratch = new int[20], endScratch = new int[20]; // and grows on demand
+    // and grows on demand
+    private int[] startScratch = new int[20];
+    private int[] endScratch = new int[20];
     private final CountsAccessor.Updater countsUpdater;
     private final long anyLabel;
     private final long anyRelationshipType;

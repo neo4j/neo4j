@@ -514,7 +514,9 @@ final class MuninnPagedFile implements PagedFile, Flushable
      */
     void increaseLastPageIdTo( long newLastPageId )
     {
-        long current, update, lastPageId;
+        long current;
+        long update;
+        long lastPageId;
         do
         {
             current = getHeaderState();
@@ -530,7 +532,8 @@ final class MuninnPagedFile implements PagedFile, Flushable
      */
     void incrementRefCount()
     {
-        long current, update;
+        long current;
+        long update;
         do
         {
             current = getHeaderState();
@@ -552,7 +555,9 @@ final class MuninnPagedFile implements PagedFile, Flushable
      */
     boolean decrementRefCount()
     {
-        long current, update, count;
+        long current;
+        long update;
+        long count;
         do
         {
             current = getHeaderState();

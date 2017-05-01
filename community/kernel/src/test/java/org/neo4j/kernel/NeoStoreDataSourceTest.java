@@ -179,7 +179,8 @@ public class NeoStoreDataSourceTest
     public void shouldLogCorrectTransactionLogDiagnosticsForTransactionsInOldestLog() throws Exception
     {
         // GIVEN
-        long logVersion = 2, prevLogLastTxId = 45;
+        long logVersion = 2;
+        long prevLogLastTxId = 45;
         NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
                 logWithTransactions( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -197,7 +198,8 @@ public class NeoStoreDataSourceTest
     public void shouldLogCorrectTransactionLogDiagnosticsForTransactionsInSecondOldestLog() throws Exception
     {
         // GIVEN
-        long logVersion = 2, prevLogLastTxId = 45;
+        long logVersion = 2;
+        long prevLogLastTxId = 45;
         NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
                 logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();

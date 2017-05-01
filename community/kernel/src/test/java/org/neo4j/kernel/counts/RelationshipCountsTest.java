@@ -102,7 +102,8 @@ public class RelationshipCountsTest
             node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
             tx.success();
         }
-        long before = numberOfRelationships(), during;
+        long before = numberOfRelationships();
+        long during;
         try ( Transaction tx = graphDb.beginTx() )
         {
             rel.delete();
@@ -386,7 +387,9 @@ public class RelationshipCountsTest
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
         ReadOperations read = statementSupplier.get().readOperations();
-        int startId, typeId, endId;
+        int startId;
+        int typeId;
+        int endId;
         // start
         if ( start == null )
         {

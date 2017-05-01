@@ -62,7 +62,9 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     {
         // Given
         long node = createLabeledNode( db, map() ).getId();
-        long created, createdAndRemoved, neverExisted;
+        long created;
+        long createdAndRemoved;
+        long neverExisted;
 
         try ( Transaction tx = db.beginTx() )
         {

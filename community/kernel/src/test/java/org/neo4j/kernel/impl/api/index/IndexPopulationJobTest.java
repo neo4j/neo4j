@@ -218,7 +218,10 @@ public class IndexPopulationJobTest
     public void shouldIndexConcurrentUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
-        Object value1 = "Mattias", value2 = "Jacob", value3 = "Stefan", changedValue = "changed";
+        Object value1 = "Mattias";
+        Object value2 = "Jacob";
+        Object value3 = "Stefan";
+        Object changedValue = "changed";
         long node1 = createNode( map( name, value1 ), FIRST );
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
@@ -246,7 +249,9 @@ public class IndexPopulationJobTest
     public void shouldRemoveViaConcurrentIndexUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
-        String value1 = "Mattias", value2 = "Jacob", value3 = "Stefan";
+        String value1 = "Mattias";
+        String value2 = "Jacob";
+        String value3 = "Stefan";
         long node1 = createNode( map( name, value1 ), FIRST );
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );

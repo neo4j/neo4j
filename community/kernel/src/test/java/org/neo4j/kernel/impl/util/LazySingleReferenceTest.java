@@ -148,7 +148,8 @@ public class LazySingleReferenceTest
         assertTrue( "Should be initialized after a re-evaluation", fourthResult );
     }
 
-    private OtherThreadExecutor<Void> t1, t2;
+    private OtherThreadExecutor<Void> t1;
+    private OtherThreadExecutor<Void> t2;
 
     @Before
     public void before()

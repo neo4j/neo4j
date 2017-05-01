@@ -75,8 +75,10 @@ public class DatabaseCompositeIndexAccessorTest
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
     private LuceneIndexAccessor accessor;
-    private final long nodeId = 1, nodeId2 = 2;
-    private final Object[] values = {"value1", "values2"}, values2 = {40, 42};
+    private final long nodeId = 1;
+    private final long nodeId2 = 2;
+    private final Object[] values = {"value1", "values2"};
+    private final Object[] values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory
             .forLabel( 0, PROP_ID1, PROP_ID2 );

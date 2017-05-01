@@ -121,7 +121,8 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     public long[] getOrCreateIds( String[] names )
     {
         long[] result = new long[names.length];
-        int from, to;
+        int from;
+        int to;
         for ( from = 0, to = 0; from < names.length; from++ )
         {
             int id = getOrCreateId( names[from] );

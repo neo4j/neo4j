@@ -1882,7 +1882,8 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            int nodeCount = 0, relationshipCount = 0;
+            int nodeCount = 0;
+            int relationshipCount = 0;
             for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );

@@ -34,7 +34,8 @@ public abstract class ArrayUtil
     {
         assert array.getClass().isArray() : array + " is not an array";
 
-        int length = Array.getLength( array ), result = length;
+        int length = Array.getLength( array );
+        int result = length;
         for ( int i = 0; i < length; i++ )
         {
             result = 31 * result + Array.get( array, i ).hashCode();

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -39,10 +40,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import static org.junit.Assert.assertNotNull;
 
 import static java.util.stream.Collectors.toList;
-
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
@@ -152,7 +152,8 @@ public class LabelAndIndexUpdateBatchingIT
 
     private static TransactionToApply toApply( Collection<TransactionRepresentation> transactions )
     {
-        TransactionToApply first = null, last = null;
+        TransactionToApply first = null;
+        TransactionToApply last = null;
         for ( TransactionRepresentation transactionRepresentation : transactions )
         {
             TransactionToApply transaction = new TransactionToApply( transactionRepresentation );

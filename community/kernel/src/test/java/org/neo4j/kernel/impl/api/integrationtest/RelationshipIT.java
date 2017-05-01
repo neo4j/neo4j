@@ -114,8 +114,11 @@ public class RelationshipIT extends KernelIntegrationTest
     public void shouldInterleaveModifiedRelationshipsWithExistingOnes() throws Exception
     {
         // given
-        long refNode, fromRefToOther1, fromRefToOther2;
-        int relType1, relType2;
+        long refNode;
+        long fromRefToOther1;
+        long fromRefToOther2;
+        int relType1;
+        int relType2;
         {
             Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
@@ -165,7 +168,8 @@ public class RelationshipIT extends KernelIntegrationTest
         // Given a dense node with one type of rels
         long[] rels = new long[200];
         long refNode;
-        int relTypeTheNodeDoesUse, relTypeTheNodeDoesNotUse;
+        int relTypeTheNodeDoesUse;
+        int relTypeTheNodeDoesNotUse;
         {
             Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 

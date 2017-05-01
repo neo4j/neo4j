@@ -179,7 +179,9 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         final InconsistencyReport report;
         private final ProxyFactory<REPORT> factory;
         final RecordType type;
-        private short errors = 0, warnings = 0, references = 1/*this*/;
+        private short errors = 0;
+        private short warnings = 0;
+        private short references = 1/*this*/;
         private final RecordAccess records;
         private final Monitor monitor;
 

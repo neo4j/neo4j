@@ -168,7 +168,8 @@ public abstract class LabelScanStoreTest
     public void shouldUpdateIndexOnAddedLabels() throws Exception
     {
         // GIVEN
-        int labelId1 = 1, labelId2 = 2;
+        int labelId1 = 1;
+        int labelId2 = 2;
         long nodeId = 10;
         start();
         write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1} ) ) );
@@ -186,7 +187,8 @@ public abstract class LabelScanStoreTest
     public void shouldUpdateIndexOnRemovedLabels() throws Exception
     {
         // GIVEN
-        int labelId1 = 1, labelId2 = 2;
+        int labelId1 = 1;
+        int labelId2 = 2;
         long nodeId = 10;
         start();
         write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
@@ -221,8 +223,10 @@ public abstract class LabelScanStoreTest
     public void shouldScanSingleRange() throws Exception
     {
         // GIVEN
-        int labelId1 = 1, labelId2 = 2;
-        long nodeId1 = 10, nodeId2 = 11;
+        int labelId1 = 1;
+        int labelId2 = 2;
+        long nodeId1 = 10;
+        long nodeId2 = 11;
         start( asList(
                 labelChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
                 labelChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
@@ -243,8 +247,10 @@ public abstract class LabelScanStoreTest
     public void shouldScanMultipleRanges() throws Exception
     {
         // GIVEN
-        int labelId1 = 1, labelId2 = 2;
-        long nodeId1 = 10, nodeId2 = 1280;
+        int labelId1 = 1;
+        int labelId2 = 2;
+        long nodeId1 = 10;
+        long nodeId2 = 1280;
         start( asList(
                 labelChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
                 labelChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
@@ -385,7 +391,8 @@ public abstract class LabelScanStoreTest
         // GIVEN
         // 16 is the magic number of the page iterator
         // 32 is the number of nodes in each lucene document
-        final int labelId = 1, nodeCount = 32 * 16 + 10;
+        final int labelId = 1;
+        int nodeCount = 32 * 16 + 10;
         start();
         write( new PrefetchingIterator<NodeLabelUpdate>()
         {
@@ -416,7 +423,9 @@ public abstract class LabelScanStoreTest
     public void shouldFindNodesWithAnyOfGivenLabels() throws Exception
     {
         // GIVEN
-        int labelId1 = 3, labelId2 = 5, labelId3 = 13;
+        int labelId1 = 3;
+        int labelId2 = 5;
+        int labelId3 = 13;
         start();
 
         // WHEN
@@ -450,7 +459,9 @@ public abstract class LabelScanStoreTest
     public void shouldFindNodesWithAllGivenLabels() throws Exception
     {
         // GIVEN
-        int labelId1 = 3, labelId2 = 5, labelId3 = 13;
+        int labelId1 = 3;
+        int labelId2 = 5;
+        int labelId3 = 13;
         start();
 
         // WHEN
@@ -596,7 +607,10 @@ public abstract class LabelScanStoreTest
 
     private static class TrackingMonitor implements LabelScanStore.Monitor
     {
-        boolean initCalled, rebuildingCalled, rebuiltCalled, noIndexCalled;
+        boolean initCalled;
+        boolean rebuildingCalled;
+        boolean rebuiltCalled;
+        boolean noIndexCalled;
         boolean corruptedIndex = false;
 
         @Override

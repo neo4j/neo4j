@@ -154,8 +154,11 @@ public class BatchingTransactionAppenderTest
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
-        final int masterId = 2, authorId = 1;
-        final long timeStarted = 12345, latestCommittedTxWhenStarted = nextTxId - 5, timeCommitted = timeStarted + 10;
+        final int masterId = 2;
+        int authorId = 1;
+        final long timeStarted = 12345;
+        long latestCommittedTxWhenStarted = nextTxId - 5;
+        long timeCommitted = timeStarted + 10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand( 0 ) );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
@@ -197,8 +200,11 @@ public class BatchingTransactionAppenderTest
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
-        final int masterId = 2, authorId = 1;
-        final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted + 10;
+        final int masterId = 2;
+        int authorId = 1;
+        final long timeStarted = 12345;
+        long latestCommittedTxWhenStarted = 4545;
+        long timeCommitted = timeStarted + 10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
                 singleCreateNodeCommand( 0 ) );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
@@ -398,7 +404,8 @@ public class BatchingTransactionAppenderTest
 
     private TransactionToApply batchOf( TransactionRepresentation... transactions )
     {
-        TransactionToApply first = null, last = null;
+        TransactionToApply first = null;
+        TransactionToApply last = null;
         for ( TransactionRepresentation transaction : transactions )
         {
             TransactionToApply tx = new TransactionToApply( transaction );

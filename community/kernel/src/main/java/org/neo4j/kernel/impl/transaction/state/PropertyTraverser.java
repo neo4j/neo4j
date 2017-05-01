@@ -98,7 +98,8 @@ public class PropertyTraverser
         assert last.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() : primitive
                                                                           + "->"
                                                                           + Arrays.toString( toCheck.toArray() );
-        PropertyRecord current, previous = first;
+        PropertyRecord current;
+        PropertyRecord previous = first;
         for ( int i = 1; i < toCheck.size(); i++ )
         {
             current = toCheck.get( i );

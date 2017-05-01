@@ -65,7 +65,9 @@ public final class QueryExecutionType
          * result.
          */
         SCHEMA_WRITE,;
-        private final QueryExecutionType query, profiled, explained;
+        private final QueryExecutionType query;
+        private final QueryExecutionType profiled;
+        private final QueryExecutionType explained;
 
         QueryType()
         {

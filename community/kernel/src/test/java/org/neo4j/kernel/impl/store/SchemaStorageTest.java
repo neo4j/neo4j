@@ -116,7 +116,12 @@ public class SchemaStorageTest
     @Test
     public void shouldReturnIndexRuleForLabelAndPropertyComposite() throws Exception
     {
-        String a = "a", b = "b", c = "c", d = "d", e = "e", f = "f";
+        String a = "a";
+        String b = "b";
+        String c = "c";
+        String d = "d";
+        String e = "e";
+        String f = "f";
         createSchema( db ->
         {
             db.schema().indexFor( Label.label( LABEL1 ) )

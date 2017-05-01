@@ -401,7 +401,8 @@ public class ProgressMonitorTest
         final Completion completion = builder.build();
 
         // when
-        final CountDownLatch begin = new CountDownLatch( 1 ), end = new CountDownLatch( 1 );
+        final CountDownLatch begin = new CountDownLatch( 1 );
+        final CountDownLatch end = new CountDownLatch( 1 );
         new Thread()
         {
             @Override

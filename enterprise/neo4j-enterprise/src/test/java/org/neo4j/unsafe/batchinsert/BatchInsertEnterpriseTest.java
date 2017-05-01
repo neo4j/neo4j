@@ -81,7 +81,9 @@ public class BatchInsertEnterpriseTest
                         GraphDatabaseSettings.record_format.name(), recordFormat,
                         GraphDatabaseSettings.log_queries_filename.name(),
                         directory.file( "query.log" ).getAbsolutePath() ) );
-        long node1Id, node2Id, relationshipId;
+        long node1Id;
+        long node2Id;
+        long relationshipId;
         try
         {
             // WHEN

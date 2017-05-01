@@ -133,8 +133,7 @@ abstract class ResultConverter
         }
     }
 
-    private static final ResultConverter//
-            IDENTITY_RESULT = new ResultConverter()
+    private static final ResultConverter IDENTITY_RESULT = new ResultConverter()
             {
                 @Override
                 Representation convert( Object obj )
@@ -147,50 +146,56 @@ abstract class ResultConverter
                 {
                     return null;
                 }
-            },
-            NODE_RESULT = new ValueResult( RepresentationType.NODE )
+            };
+    private static final ResultConverter NODE_RESULT = new ValueResult( RepresentationType.NODE )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return new NodeRepresentation( (Node) obj );
                 }
-            }, RELATIONSHIP_RESULT = new ValueResult( RepresentationType.RELATIONSHIP )
+            };
+    private static final ResultConverter RELATIONSHIP_RESULT = new ValueResult( RepresentationType.RELATIONSHIP )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return new RelationshipRepresentation( (Relationship) obj );
                 }
-            }, PATH_RESULT = new ValueResult( RepresentationType.PATH )
+            };
+    private static final ResultConverter PATH_RESULT = new ValueResult( RepresentationType.PATH )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return new PathRepresentation<Path>( (Path) obj );
                 }
-            }, STRING_RESULT = new ValueResult( RepresentationType.STRING )
+            };
+    private static final ResultConverter STRING_RESULT = new ValueResult( RepresentationType.STRING )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return ValueRepresentation.string( (String) obj );
                 }
-            }, LONG_RESULT = new ValueResult( RepresentationType.LONG )
+            };
+    private static final ResultConverter LONG_RESULT = new ValueResult( RepresentationType.LONG )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return ValueRepresentation.number( ( (Number) obj ).longValue() );
                 }
-            }, DOUBLE_RESULT = new ValueResult( RepresentationType.DOUBLE )
+            };
+    private static final ResultConverter DOUBLE_RESULT = new ValueResult( RepresentationType.DOUBLE )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return ValueRepresentation.number( ( (Number) obj ).doubleValue() );
                 }
-            }, BOOL_RESULT = new ValueResult( RepresentationType.BOOLEAN )
+            };
+    private static final ResultConverter BOOL_RESULT = new ValueResult( RepresentationType.BOOLEAN )
             {
                 @Override
                 @SuppressWarnings( "boxing" )
@@ -198,14 +203,16 @@ abstract class ResultConverter
                 {
                     return ValueRepresentation.bool( (Boolean) obj );
                 }
-            }, INT_RESULT = new ValueResult( RepresentationType.INTEGER )
+            };
+    private static final ResultConverter INT_RESULT = new ValueResult( RepresentationType.INTEGER )
             {
                 @Override
                 Representation convert( Object obj )
                 {
                     return ValueRepresentation.number( ( (Number) obj ).intValue() );
                 }
-            }, CHAR_RESULT = new ValueResult( RepresentationType.CHAR )
+            };
+    private static final ResultConverter CHAR_RESULT = new ValueResult( RepresentationType.CHAR )
             {
                 @Override
                 @SuppressWarnings( "boxing" )
@@ -213,7 +220,8 @@ abstract class ResultConverter
                 {
                     return ValueRepresentation.number( (Character) obj );
                 }
-            }, VOID_RESULT = new ValueResult( RepresentationType.NOTHING )
+            };
+    private static final ResultConverter VOID_RESULT = new ValueResult( RepresentationType.NOTHING )
             {
                 @Override
                 Representation convert( Object obj )

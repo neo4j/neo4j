@@ -98,7 +98,8 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             return;
         }
 
-        int propertyBlockCursor = 0, skipped = 0;
+        int propertyBlockCursor = 0;
+        int skipped = 0;
         for ( int i = 0; i < records.length; i++ )
         {
             RECORD record = records[i];

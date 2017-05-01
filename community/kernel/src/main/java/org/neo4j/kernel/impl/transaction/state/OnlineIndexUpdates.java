@@ -127,7 +127,8 @@ public class OnlineIndexUpdates implements IndexUpdates
             NodeCommand nodeChanges,
             List<PropertyCommand> propertyCommandsForNode )
     {
-        long[] nodeLabelsBefore, nodeLabelsAfter;
+        long[] nodeLabelsBefore;
+        long[] nodeLabelsAfter;
         if ( nodeChanges != null )
         {
             nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );

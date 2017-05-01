@@ -44,7 +44,9 @@ public abstract class LabelScanStoreUpdateIT
     @Rule
     public final TestName testName = new TestName();
 
-    private Label First, Second, Third;
+    private Label First;
+    private Label Second;
+    private Label Third;
 
     @Before
     public void setupLabels()

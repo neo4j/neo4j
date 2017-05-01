@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -43,7 +43,8 @@ public class TracerCompatibility extends LockingCompatibilityTestSuite.Compatibi
     public void shouldTraceWaitTimeWhenTryingToAcquireExclusiveLockAndExclusiveIsHeld() throws Exception
     {
         // given
-        Tracer tracerA = new Tracer(), tracerB = new Tracer();
+        Tracer tracerA = new Tracer();
+        Tracer tracerB = new Tracer();
         clientA.acquireExclusive( tracerA, NODE, 17 );
 
         // when
@@ -60,7 +61,8 @@ public class TracerCompatibility extends LockingCompatibilityTestSuite.Compatibi
     public void shouldTraceWaitTimeWhenTryingToAcquireSharedLockAndExclusiveIsHeld() throws Exception
     {
         // given
-        Tracer tracerA = new Tracer(), tracerB = new Tracer();
+        Tracer tracerA = new Tracer();
+        Tracer tracerB = new Tracer();
         clientA.acquireExclusive( tracerA, NODE, 17 );
 
         // when
@@ -77,7 +79,8 @@ public class TracerCompatibility extends LockingCompatibilityTestSuite.Compatibi
     public void shouldTraceWaitTimeWhenTryingToAcquireExclusiveLockAndSharedIsHeld() throws Exception
     {
         // given
-        Tracer tracerA = new Tracer(), tracerB = new Tracer();
+        Tracer tracerA = new Tracer();
+        Tracer tracerB = new Tracer();
         clientA.acquireShared( tracerA, NODE, 17 );
 
         // when

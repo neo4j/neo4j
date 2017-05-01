@@ -65,7 +65,8 @@ public class SynchronizedArrayIdOrderingQueueTest
     {
         // GIVEN
         IdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 5 );
-        long offeredId = 0, awaitedId = 0;
+        long offeredId = 0;
+        long awaitedId = 0;
         queue.offer( offeredId++ );
         queue.offer( offeredId++ );
 

@@ -304,7 +304,8 @@ public class LabelTransactionStateTest
 
     // exists
 
-    private final int labelId1 = 10, labelId2 = 12;
+    private final int labelId1 = 10;
+    private final int labelId2 = 12;
     private final long nodeId = 20;
 
     private StoreReadLayer store;

@@ -53,7 +53,8 @@ public class GraphDatabaseServiceExecuteTest
     {
         // given
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final long before, after;
+        final long before;
+        final long after;
         try ( Transaction tx = graphDb.beginTx() )
         {
             before = Iterables.count( graphDb.getAllNodes() );

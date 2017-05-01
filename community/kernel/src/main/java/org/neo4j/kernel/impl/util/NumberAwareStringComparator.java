@@ -49,7 +49,8 @@ public class NumberAwareStringComparator implements Comparator<String>
         Iterator<Comparable> c2 = comparables( o2 );
         // Single "|" to get both expressions always evaluated, you know, it's a good pattern to
         // call hasNext before next on iterators.
-        boolean c1Has, c2Has;
+        boolean c1Has;
+        boolean c2Has;
         while ( (c1Has = c1.hasNext()) | (c2Has = c2.hasNext()) )
         {
             if ( !c1Has )

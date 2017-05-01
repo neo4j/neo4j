@@ -30,7 +30,9 @@ import java.util.Map;
  */
 abstract class ExecutingQueryStatus
 {
-    static final String PLANNING_STATE = "planning", RUNNING_STATE = "running", WAITING_STATE = "waiting";
+    static final String PLANNING_STATE = "planning";
+    static final String RUNNING_STATE = "running";
+    static final String WAITING_STATE = "waiting";
     /**
      * Time in nanoseconds that has been spent waiting in the current state.
      * This is the portion of wait time not included in the {@link ExecutingQuery#waitTimeNanos} field.

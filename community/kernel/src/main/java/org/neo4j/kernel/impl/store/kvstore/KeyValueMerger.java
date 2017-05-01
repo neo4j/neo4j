@@ -26,11 +26,16 @@ import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.buffe
 
 class KeyValueMerger implements DataProvider
 {
-    private final DataProvider first, other;
+    private final DataProvider first;
+    private final DataProvider other;
     // We copy from the two sources to these extra buffers in order to compare the keys,
     // is there any way we could avoid this extra buffering?
-    private final BigEndianByteArrayBuffer firstKey, firstValue, otherKey, otherValue;
-    private boolean firstAvail, otherAvail;
+    private final BigEndianByteArrayBuffer firstKey;
+    private final BigEndianByteArrayBuffer firstValue;
+    private final BigEndianByteArrayBuffer otherKey;
+    private final BigEndianByteArrayBuffer otherValue;
+    private boolean firstAvail;
+    private boolean otherAvail;
 
     KeyValueMerger( DataProvider first, DataProvider other, int keySize, int valueSize ) throws IOException
     {

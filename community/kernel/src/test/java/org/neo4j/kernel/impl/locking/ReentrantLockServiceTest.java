@@ -129,7 +129,8 @@ public class ReentrantLockServiceTest
     {
         // given
         LockService locks = new ReentrantLockService();
-        Lock first, second;
+        Lock first;
+        Lock second;
 
         // when
         try ( Lock lock = first = locks.acquireNodeLock( 666, LockService.LockType.WRITE_LOCK ) )

@@ -108,7 +108,8 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createLabelPropertyExistenceConstraint( labelName, propertyKey );
 
         String result = gen.get().expectedStatus( 200 ).get(
@@ -132,7 +133,8 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         data.get();
 
-        String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
+        String typeName = relationshipTypes.newInstance();
+        String propertyKey = properties.newInstance();
         createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey );
 
         String result = gen.get().expectedStatus( 200 ).get(
@@ -156,8 +158,9 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 =
-                properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String propertyKey2 = properties.newInstance();
         createLabelPropertyExistenceConstraint( labelName, propertyKey1 );
         createLabelPropertyExistenceConstraint( labelName, propertyKey2 );
 
@@ -188,8 +191,9 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         data.get();
 
-        String typeName = relationshipTypes.newInstance(), propertyKey1 = properties.newInstance(),
-                propertyKey2 = properties.newInstance();
+        String typeName = relationshipTypes.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String propertyKey2 = properties.newInstance();
         createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey1 );
         createRelationshipTypePropertyExistenceConstraint( typeName, propertyKey2 );
 
@@ -219,8 +223,9 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 =
-                properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelPropertyExistenceConstraint( labelName, propertyKey2 );
 
@@ -250,8 +255,10 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         data.get();
 
-        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
-        String labelName2 = labels.newInstance(), propertyKey2 = properties.newInstance();
+        String labelName1 = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String labelName2 = labels.newInstance();
+        String propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
         createLabelPropertyExistenceConstraint( labelName2, propertyKey2 );
 

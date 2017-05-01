@@ -494,7 +494,8 @@ public class NodeProxy implements Node
     public int compareTo( Object node )
     {
         Node n = (Node) node;
-        long ourId = this.getId(), theirId = n.getId();
+        long ourId = this.getId();
+        long theirId = n.getId();
 
         if ( ourId < theirId )
         {

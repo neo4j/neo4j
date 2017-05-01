@@ -56,8 +56,11 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  */
 public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 {
-    private static final String REVERSE = "reverse", NODE = "node", FIRST = "first",
-            RELS = "relationships", PROPS = "properties";
+    private static final String REVERSE = "reverse";
+    private static final String NODE = "node";
+    private static final String FIRST = "first";
+    private static final String RELS = "relationships";
+    private static final String PROPS = "properties";
     private static final String RELSTORE = "neostore.relationshipstore.db";
     private static final String PROPSTORE = "neostore.propertystore.db";
     private static final String NODESTORE = "neostore.nodestore.db";

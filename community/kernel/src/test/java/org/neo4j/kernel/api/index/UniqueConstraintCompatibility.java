@@ -160,7 +160,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         givenOnlineConstraint();
 
         // When
-        Node n, m;
+        Node n;
+        Node m;
         try ( Transaction tx = db.beginTx() )
         {
             n = db.createNode( label );
@@ -182,7 +183,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         // Given
         givenOnlineConstraint();
-        Node n, m;
+        Node n;
+        Node m;
         try ( Transaction tx = db.beginTx() )
         {
             n = db.createNode( label );

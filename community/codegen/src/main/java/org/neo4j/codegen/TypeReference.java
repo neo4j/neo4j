@@ -61,7 +61,9 @@ public class TypeReference
         {
             return OBJECT;
         }
-        String packageName = "", name, declaringClassName = "";
+        String packageName = "";
+        String name;
+        String declaringClassName = "";
 
         Class<?> innerType = type.isArray() ? type.getComponentType() : type;
 

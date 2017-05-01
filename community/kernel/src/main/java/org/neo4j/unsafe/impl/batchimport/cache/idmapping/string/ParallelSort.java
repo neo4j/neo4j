@@ -101,7 +101,8 @@ public class ParallelSort
         sortBuckets = new long[threads][2];
         long dataSize = highestSetIndex + 1;
         long bucketSize = dataSize / threads;
-        long count = 0, fullCount = 0;
+        long count = 0;
+        long fullCount = 0;
         progress.started( "SPLIT" );
         for ( int i = 0, threadIndex = 0; i < radixIndexCount.length && threadIndex < threads; i++ )
         {
@@ -235,7 +236,8 @@ public class ParallelSort
      */
     private class SortWorker implements Runnable
     {
-        private final long start, size;
+        private final long start;
+        private final long size;
         private int threadLocalProgress;
         private final long[] pivotChoice = new long[10];
         private final ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -270,7 +272,9 @@ public class ParallelSort
 
         private long partition( long leftIndex, long rightIndex, long pivotIndex )
         {
-            long li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
+            long li = leftIndex;
+            long ri = rightIndex - 2;
+            long pi = pivotIndex;
             long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
             // save pivot in last index
             tracker.swap( pi, rightIndex - 1, 1 );

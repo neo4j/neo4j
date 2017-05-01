@@ -19,14 +19,11 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
-
 import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
@@ -46,6 +43,8 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 public class Dbinfo extends NonTransactionProvidingApp
 {
@@ -115,7 +114,8 @@ public class Dbinfo extends NonTransactionProvidingApp
     protected Continuation exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         Kernel kernel = getKernel();
-        boolean list = parser.options().containsKey( "l" ), get = parser.options().containsKey( "g" );
+        boolean list = parser.options().containsKey( "l" );
+        boolean get = parser.options().containsKey( "g" );
         if ( (list && get) || (!list && !get) )
         {
             StringBuilder usage = new StringBuilder();

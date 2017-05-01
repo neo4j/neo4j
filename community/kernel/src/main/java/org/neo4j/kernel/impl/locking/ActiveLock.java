@@ -25,7 +25,8 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 public interface ActiveLock
 {
-    String SHARED_MODE = "SHARED", EXCLUSIVE_MODE = "EXCLUSIVE";
+    String SHARED_MODE = "SHARED";
+    String EXCLUSIVE_MODE = "EXCLUSIVE";
 
     String mode();
 
@@ -59,7 +60,8 @@ public interface ActiveLock
 
     interface Factory
     {
-        Factory SHARED_LOCK = ActiveLock::sharedLock, EXCLUSIVE_LOCK = ActiveLock::exclusiveLock;
+        Factory SHARED_LOCK = ActiveLock::sharedLock;
+        Factory EXCLUSIVE_LOCK = ActiveLock::exclusiveLock;
 
         ActiveLock create( ResourceType resourceType, long resourceId );
     }

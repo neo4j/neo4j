@@ -57,7 +57,8 @@ public class ChannelOutputStream extends OutputStream
     @Override
     public void write( byte[] b, int off, int len ) throws IOException
     {
-        int written = 0, index = off;
+        int written = 0;
+        int index = off;
         while ( written < len )
         {
             buffer.clear();

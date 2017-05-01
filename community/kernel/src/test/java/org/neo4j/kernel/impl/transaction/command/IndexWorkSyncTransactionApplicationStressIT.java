@@ -146,7 +146,8 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private final NodeStore nodeIds;
         private final int batchSize;
         private final IndexProxy index;
-        private int i, base;
+        private int i;
+        private int base;
 
         Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
         {

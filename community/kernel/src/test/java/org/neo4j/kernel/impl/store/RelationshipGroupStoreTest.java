@@ -200,12 +200,15 @@ public class RelationshipGroupStoreTest
     @Test
     public void verifyRecordsForDenseNodeWithOneRelType() throws Exception
     {
-        // TODO test on a lower level instead
-
         newDb( 2 );
 
         Node node;
-        Relationship rel1, rel2, rel3, rel4, rel5, rel6;
+        Relationship rel1;
+        Relationship rel2;
+        Relationship rel3;
+        Relationship rel4;
+        Relationship rel5;
+        Relationship rel6;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
@@ -234,12 +237,15 @@ public class RelationshipGroupStoreTest
     @Test
     public void verifyRecordsForDenseNodeWithTwoRelTypes() throws Exception
     {
-        // TODO test on a lower level instead
-
         newDb( 2 );
 
         Node node;
-        Relationship rel1, rel2, rel3, rel4, rel5, rel6;
+        Relationship rel1;
+        Relationship rel2;
+        Relationship rel3;
+        Relationship rel4;
+        Relationship rel5;
+        Relationship rel6;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();

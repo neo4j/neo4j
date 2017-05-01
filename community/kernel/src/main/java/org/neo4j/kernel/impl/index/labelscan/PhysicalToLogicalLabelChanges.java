@@ -40,7 +40,8 @@ public class PhysicalToLogicalLabelChanges
         int beforeLength = update.getLabelsBefore().length;
         int afterLength = update.getLabelsAfter().length;
 
-        int bc = 0, ac = 0;
+        int bc = 0;
+        int ac = 0;
         long[] before = update.getLabelsBefore();
         long[] after = update.getLabelsAfter();
         for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )

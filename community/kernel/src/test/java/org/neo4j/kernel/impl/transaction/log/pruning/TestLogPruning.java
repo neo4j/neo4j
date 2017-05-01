@@ -63,7 +63,8 @@ public class TestLogPruning
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
     private PhysicalLogFiles files;
-    private int rotateEveryNTransactions, performedTransactions;
+    private int rotateEveryNTransactions;
+    private int performedTransactions;
 
     @After
     public void after() throws Exception

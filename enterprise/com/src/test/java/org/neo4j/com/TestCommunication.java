@@ -461,7 +461,8 @@ public class TestCommunication
     public void shouldStreamBackTransactions() throws Exception
     {
         // GIVEN
-        int value = 11, txCount = 5;
+        int value = 11;
+        int txCount = 5;
         life.add( builder.server() );
         MadeUpClient client = life.add( builder.client() );
         life.start();

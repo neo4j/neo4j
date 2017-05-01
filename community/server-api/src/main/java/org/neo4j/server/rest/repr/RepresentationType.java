@@ -49,43 +49,46 @@ public final class RepresentationType
     private static final Map<String, RepresentationType> types = new HashMap<>();
     private static final Map<Class<?>, RepresentationType> extended = new HashMap<>();
     // Graph database types
-    public static final RepresentationType
-            GRAPHDB = new RepresentationType( "graphdb", null, GraphDatabaseService.class ),
-            NODE = new RepresentationType( "node", "nodes", Node.class ),
-            RELATIONSHIP = new RepresentationType( "relationship", "relationships", Relationship.class ),
-            PATH = new RepresentationType( "path", "paths", Path.class ),
-            FULL_PATH = new RepresentationType( "full-path", "full-paths", FullPath.class ),
-            RELATIONSHIP_TYPE = new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class ),
-            PROPERTIES = new RepresentationType( "properties" ),
-            INDEX = new RepresentationType( "index" ),
-            NODE_INDEX_ROOT = new RepresentationType( "node-index" ),
-            RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),
-            INDEX_DEFINITION = new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class ),
-            CONSTRAINT_DEFINITION = new RepresentationType( "constraint-definition", "constraint-definitions", ConstraintDefinition.class ),
-            PLUGINS = new RepresentationType( "plugins" ),
-            PLUGIN = new RepresentationType( "plugin" ),
-            PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),
-            SERVER_PLUGIN_DESCRIPTION = new RepresentationType( "server-plugin", null ),
-            PLUGIN_PARAMETER = new RepresentationType( "plugin-parameter", "plugin-parameter-list" ),
-            // Value types
-            URI = new RepresentationType( "uri", null ),
-            TEMPLATE = new RepresentationType( "uri-template" ),
-            STRING = new RepresentationType( "string", "strings", String.class ),
-            // primitives
-            BYTE = new RepresentationType( "byte", "bytes", byte.class ),
-            CHAR = new RepresentationType( "character", "characters", char.class ),
-            SHORT = new RepresentationType( "short", "shorts", short.class ),
-            INTEGER = new RepresentationType( "integer", "integers", int.class ),
-            LONG = new RepresentationType( "long", "longs", long.class ),
-            FLOAT = new RepresentationType( "float", "floats", float.class ),
-            DOUBLE = new RepresentationType( "double", "doubles", double.class ),
-            BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),
-            NOTHING = new RepresentationType( "void", null ),
-            // System
-            EXCEPTION = new RepresentationType( "exception" ),
-            AUTHORIZATION = new RepresentationType( "authorization" ),
-            MAP = new RepresentationType( "map", "maps", Map.class ),
-            NULL = new RepresentationType( "null", "nulls", Object.class );
+    public static final RepresentationType GRAPHDB =
+            new RepresentationType( "graphdb", null, GraphDatabaseService.class );
+    public static final RepresentationType NODE = new RepresentationType( "node", "nodes", Node.class );
+    public static final RepresentationType RELATIONSHIP =
+            new RepresentationType( "relationship", "relationships", Relationship.class );
+    public static final RepresentationType PATH = new RepresentationType( "path", "paths", Path.class );
+    public static final RepresentationType FULL_PATH =
+            new RepresentationType( "full-path", "full-paths", FullPath.class );
+    public static final RepresentationType RELATIONSHIP_TYPE =
+            new RepresentationType( "relationship-type", "relationship-types", RelationshipType.class );
+    public static final RepresentationType PROPERTIES = new RepresentationType( "properties" );
+    public static final RepresentationType INDEX = new RepresentationType( "index" );
+    public static final RepresentationType NODE_INDEX_ROOT = new RepresentationType( "node-index" );
+    public static final RepresentationType RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" );
+    public static final RepresentationType INDEX_DEFINITION =
+            new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class );
+    public static final RepresentationType CONSTRAINT_DEFINITION =
+            new RepresentationType( "constraint-definition", "constraint-definitions", ConstraintDefinition.class );
+    public static final RepresentationType PLUGINS = new RepresentationType( "plugins" );
+    public static final RepresentationType PLUGIN = new RepresentationType( "plugin" );
+    public static final RepresentationType PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" );
+    public static final RepresentationType SERVER_PLUGIN_DESCRIPTION = new RepresentationType( "server-plugin", null );
+    public static final RepresentationType PLUGIN_PARAMETER =
+            new RepresentationType( "plugin-parameter", "plugin-parameter-list" );
+    public static final RepresentationType URI = new RepresentationType( "uri", null );
+    public static final RepresentationType TEMPLATE = new RepresentationType( "uri-template" );
+    public static final RepresentationType STRING = new RepresentationType( "string", "strings", String.class );
+    public static final RepresentationType BYTE = new RepresentationType( "byte", "bytes", byte.class );
+    public static final RepresentationType CHAR = new RepresentationType( "character", "characters", char.class );
+    public static final RepresentationType SHORT = new RepresentationType( "short", "shorts", short.class );
+    public static final RepresentationType INTEGER = new RepresentationType( "integer", "integers", int.class );
+    public static final RepresentationType LONG = new RepresentationType( "long", "longs", long.class );
+    public static final RepresentationType FLOAT = new RepresentationType( "float", "floats", float.class );
+    public static final RepresentationType DOUBLE = new RepresentationType( "double", "doubles", double.class );
+    public static final RepresentationType BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class );
+    public static final RepresentationType NOTHING = new RepresentationType( "void", null );
+    public static final RepresentationType EXCEPTION = new RepresentationType( "exception" );
+    public static final RepresentationType AUTHORIZATION = new RepresentationType( "authorization" );
+    public static final RepresentationType MAP = new RepresentationType( "map", "maps", Map.class );
+    public static final RepresentationType NULL = new RepresentationType( "null", "nulls", Object.class );
 
     final String valueName;
     final String listName;

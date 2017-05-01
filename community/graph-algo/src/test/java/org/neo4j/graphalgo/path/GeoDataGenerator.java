@@ -48,7 +48,8 @@ public class GeoDataGenerator
     private final Random random = new Random();
     private final int numberOfNodes;
     private final int numberOfConnections;
-    private final int width, height;
+    private final int width;
+    private final int height;
     private int maxDistance = 3;
     private double neighborConnectionFactor = 0.6;
 
@@ -95,7 +96,8 @@ public class GeoDataGenerator
     private static class PositionedNode
     {
         private final long node;
-        private final double x, y;
+        private final double x;
+        private final double y;
 
         PositionedNode( long node, double x, double y )
         {
@@ -127,8 +129,10 @@ public class GeoDataGenerator
 
     private class Grid
     {
-        private final int cellsX, cellsY;
-        private final double sizeX, sizeY;
+        private final int cellsX;
+        private final int cellsY;
+        private final double sizeX;
+        private final double sizeY;
         private final Cell[][] cells;
         private final Map<String, Object> nodePropertyScratchMap = new HashMap<String, Object>();
         private final Map<String, Object> relationshipPropertyScratchMap = new HashMap<String, Object>();
@@ -240,8 +244,10 @@ public class GeoDataGenerator
                 };
             }
 
-            double x = (Double)node.getProperty( "x" ), y = (Double)node.getProperty( "y" );
-            double deltaX = abs( x - cachedGoal[0] ), deltaY = abs( y - cachedGoal[1] );
+            double x = (Double)node.getProperty( "x" );
+            double y = (Double)node.getProperty( "y" );
+            double deltaX = abs( x - cachedGoal[0] );
+            double deltaY = abs( y - cachedGoal[1] );
             return sqrt( pow( deltaX, 2 ) + pow( deltaY, 2 ) );
         }
     };

@@ -758,7 +758,9 @@ public class IndexingServiceTest
     public void shouldNotLoseIndexDescriptorDueToOtherSimilarIndexDuringRecovery() throws Exception
     {
         // GIVEN
-        long nodeId = 0, indexId = 1, otherIndexId = 2;
+        long nodeId = 0;
+        long indexId = 1;
+        long otherIndexId = 2;
         NodeUpdates update = addNodeUpdate( nodeId, "value" );
         doAnswer( nodeUpdatesAnswer( update ) ).when( storeView )
                 .nodeAsUpdates( eq( nodeId ), any( Collection.class ) );

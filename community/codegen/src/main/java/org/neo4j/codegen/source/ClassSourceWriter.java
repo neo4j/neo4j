@@ -136,7 +136,8 @@ class ClassSourceWriter implements ClassEmitter
             for ( MethodDeclaration.TypeParameter parameter : parameters )
             {
                 target.append( sep ).append( parameter.name() );
-                TypeReference ext = parameter.extendsBound(), sup = parameter.superBound();
+                TypeReference ext = parameter.extendsBound();
+                TypeReference sup = parameter.superBound();
                 if ( ext != null )
                 {
                     target.append( " extends " ).append( ext.fullName() );

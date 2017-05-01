@@ -697,7 +697,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         JsonNode entry = data.get( 0 );
         assertTrue( "entry has row", entry.has( "row" ) );
         assertTrue( "entry has graph", entry.has( "graph" ) );
-        JsonNode nodes = entry.get( "graph" ).get( "nodes" ), rels = entry.get( "graph" ).get( "relationships" );
+        JsonNode nodes = entry.get( "graph" ).get( "nodes" );
+        JsonNode rels = entry.get( "graph" ).get( "relationships" );
         assertTrue( "nodes is a list", nodes.isArray() );
         assertTrue( "relationships is a list", rels.isArray() );
         assertEquals( "one node", 1, nodes.size() );

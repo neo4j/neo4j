@@ -75,11 +75,15 @@ public class AccessStatistics
 
     public static class AccessStats
     {
-        private long reads = 0, writes = 0, inUse = 0;
-        private long randomReads = 0, randomWrites = 0;
+        private long reads = 0;
+        private long writes = 0;
+        private long inUse = 0;
+        private long randomReads = 0;
+        private long randomWrites = 0;
         private int proximityValue = 0;
         private final String storeType;
-        private long prevReadId, prevWriteId;
+        private long prevReadId;
+        private long prevWriteId;
 
         public AccessStats( String type, int proximity )
         {

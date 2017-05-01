@@ -294,7 +294,8 @@ public class ListQueriesProcedureTest
     public void shouldListUsedIndexes() throws Exception
     {
         // given
-        String label = "IndexedLabel", property = "indexedProperty";
+        String label = "IndexedLabel";
+        String property = "indexedProperty";
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( label ) ).on( property ).create();
@@ -312,7 +313,8 @@ public class ListQueriesProcedureTest
     public void shouldListUsedUniqueIndexes() throws Exception
     {
         // given
-        String label = "UniqueLabel", property = "uniqueProperty";
+        String label = "UniqueLabel";
+        String property = "uniqueProperty";
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( property ).create();
@@ -471,7 +473,8 @@ public class ListQueriesProcedureTest
     private <T> Resource<T> test( Supplier<T> setup, BiConsumer<Transaction,T> lock, String query )
             throws TimeoutException, InterruptedException, ExecutionException
     {
-        CountDownLatch resourceLocked = new CountDownLatch( 1 ), listQueriesLatch = new CountDownLatch( 1 );
+        CountDownLatch resourceLocked = new CountDownLatch( 1 );
+        CountDownLatch listQueriesLatch = new CountDownLatch( 1 );
         T resource;
         try ( Transaction tx = db.beginTx() )
         {

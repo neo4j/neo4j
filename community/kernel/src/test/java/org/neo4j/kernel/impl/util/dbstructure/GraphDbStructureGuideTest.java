@@ -97,7 +97,8 @@ public class GraphDbStructureGuideTest
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
-        Node lhs = graph.createNode(), rhs = graph.createNode();
+        Node lhs = graph.createNode();
+        Node rhs = graph.createNode();
         lhs.createRelationshipTo( rhs, withName( "KNOWS" ) );
         lhs.createRelationshipTo( rhs, withName( "LOVES" ) );
         lhs.createRelationshipTo( rhs, withName( "FAWNS_AT" ) );

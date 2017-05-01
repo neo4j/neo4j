@@ -297,7 +297,10 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_relationship() throws Exception
     {
-        final String index = indexes.newInstance(), type = "knowledge", key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String type = "knowledge";
+        String key = "name";
+        String value = "Tobias";
         helper.createRelationshipIndex( index );
         long start = helper.createNode();
         long end = helper.createNode();
@@ -319,7 +322,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_unique_relationship_existing() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createRelationshipIndex( index );
         try ( Transaction tx = graphdb.beginTx() )
@@ -349,7 +354,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_a_unique_relationship_or_return_fail___create() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createRelationshipIndex( index );
         ResponseEntity response = gen
                 .get()
@@ -374,7 +381,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_a_unique_relationship_or_return_fail___fail() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createRelationshipIndex( index );
         try ( Transaction tx = graphdb.beginTx() )
@@ -407,7 +416,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void put_relationship_or_fail_if_absent() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         helper.createRelationshipIndex( index );
         gen.get()
                 .expectedStatus( 201 /* created */)
@@ -428,7 +439,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     public void put_relationship_if_absent_only_fail() throws Exception
     {
         // Given
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createRelationshipIndex( index );
         try ( Transaction tx = graphdb.beginTx() )
@@ -463,7 +476,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     public void already_indexed_relationship_should_not_fail_on_create_or_fail() throws Exception
     {
         // Given
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createRelationshipIndex( index );
         Relationship rel;
@@ -492,7 +507,9 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     @Test
     public void createUniqueShouldBeBackwardsCompatibleWith1_8() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createRelationshipIndex( index );
         try ( Transaction tx = graphdb.beginTx() )

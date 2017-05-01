@@ -184,7 +184,8 @@ public class HeartbeatStateTest
     public void shouldLogFirstHeartbeatAfterTimeout() throws Throwable
     {
         // given
-        InstanceId instanceId = new InstanceId( 1 ), otherInstance = new InstanceId( 2 );
+        InstanceId instanceId = new InstanceId( 1 );
+        InstanceId otherInstance = new InstanceId( 2 );
         ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
                 "cluster://1", "cluster://2" );
         configuration.getMembers().put( otherInstance, URI.create( "cluster://2" ) );

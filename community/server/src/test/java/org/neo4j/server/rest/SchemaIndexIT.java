@@ -62,7 +62,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get()
@@ -87,7 +88,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createIndex( labelName, propertyKey );
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
@@ -153,8 +155,10 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
-        String labelName2 = labels.newInstance(), propertyKey2 = properties.newInstance();
+        String labelName1 = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String labelName2 = labels.newInstance();
+        String propertyKey2 = properties.newInstance();
         createIndex( labelName1, propertyKey1 );
         createIndex( labelName2, propertyKey2 );
 
@@ -185,7 +189,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         IndexDefinition schemaIndex = createIndex( labelName, propertyKey );
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
 
@@ -203,7 +208,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_index()
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createIndex( labelName, propertyKey );
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
@@ -216,7 +222,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
     @Test
     public void drop_non_existent_index() throws Exception
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
 
         gen.get()
                 .expectedStatus( 404 )

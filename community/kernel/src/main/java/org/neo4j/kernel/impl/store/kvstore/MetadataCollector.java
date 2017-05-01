@@ -32,7 +32,8 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     private final HeaderField<?>[] headerFields;
     private final Map<HeaderField<?>, Integer> headerIndexes = new HashMap<>();
     private final Object[] headerValues;
-    private int header, data;
+    private int header;
+    private int data;
     private State state = State.expecting_format_specifier;
     private byte[] catalogue = NO_DATA;
 

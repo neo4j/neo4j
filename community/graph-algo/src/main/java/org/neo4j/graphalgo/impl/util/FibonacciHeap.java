@@ -47,7 +47,10 @@ public class FibonacciHeap<KeyType>
      */
     public class FibonacciHeapNode
     {
-        FibonacciHeapNode left, right, parent, child;
+        FibonacciHeapNode left;
+        FibonacciHeapNode right;
+        FibonacciHeapNode parent;
+        FibonacciHeapNode child;
         boolean marked = false;
         KeyType key;
         int degree = 0;

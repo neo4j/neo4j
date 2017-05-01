@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -67,7 +67,8 @@ public class QueryLoggerTest
     public final FakeCpuClock cpuClock = new FakeCpuClock();
     @Rule
     public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation();
-    private long pageHits, pageFaults;
+    private long pageHits;
+    private long pageFaults;
 
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception

@@ -139,7 +139,8 @@ public class SequenceLock
      */
     public boolean tryWriteLock()
     {
-        long s, n;
+        long s;
+        long n;
         for (; ; )
         {
             s = getState();
@@ -181,7 +182,8 @@ public class SequenceLock
      */
     public void unlockWrite()
     {
-        long s, n;
+        long s;
+        long n;
         do
         {
             s = getState();
@@ -284,7 +286,8 @@ public class SequenceLock
      */
     public void unlockFlush()
     {
-        long s, n;
+        long s;
+        long n;
         do
         {
             s = getState();

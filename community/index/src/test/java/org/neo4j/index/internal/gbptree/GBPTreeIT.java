@@ -122,7 +122,8 @@ public class GBPTreeIT
             {
                 MutableLong first = randomKey( random.random() );
                 MutableLong second = randomKey( random.random() );
-                MutableLong from, to;
+                MutableLong from;
+                MutableLong to;
                 if ( first.longValue() < second.longValue() )
                 {
                     from = first;

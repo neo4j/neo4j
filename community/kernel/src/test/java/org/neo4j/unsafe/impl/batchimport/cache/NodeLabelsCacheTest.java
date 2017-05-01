@@ -132,7 +132,8 @@ public class NodeLabelsCacheTest
     public void shouldSupportConcurrentGet() throws Throwable
     {
         // GIVEN
-        int highLabelId = 10, numberOfNodes = 100;
+        int highLabelId = 10;
+        int numberOfNodes = 100;
         int[][] expectedLabels = new int[numberOfNodes][];
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
         for ( int i = 0; i < numberOfNodes; i++ )

@@ -54,7 +54,8 @@ public class StoreAccess
     private RecordStore<DynamicRecord> nodeDynamicLabelStore;
     private RecordStore<PropertyRecord> propStore;
     // Transitive stores
-    private RecordStore<DynamicRecord> stringStore, arrayStore;
+    private RecordStore<DynamicRecord> stringStore;
+    private RecordStore<DynamicRecord> arrayStore;
     private RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
     private RecordStore<DynamicRecord> relationshipTypeNameStore;
     private RecordStore<DynamicRecord> labelNameStore;

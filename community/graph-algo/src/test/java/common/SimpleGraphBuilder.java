@@ -149,7 +149,8 @@ public class SimpleGraphBuilder
 
     public Relationship makeEdge( String node1, String node2, Map<String, Object> edgeProperties )
     {
-        Node n1 = getNode( node1, true ), n2 = getNode( node2, true );
+        Node n1 = getNode( node1, true );
+        Node n2 = getNode( node2, true );
         Relationship relationship = n1
             .createRelationshipTo( n2, currentRelType );
         for ( Map.Entry<String, Object> property : edgeProperties.entrySet() )

@@ -19,13 +19,13 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.function.Consumer;
-
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.function.Consumer;
 
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
@@ -184,7 +184,8 @@ class MethodByteCodeEmitter implements MethodEmitter
     @Override
     public void beginWhile( Expression test )
     {
-        Label repeat = new Label(), done = new Label();
+        Label repeat = new Label();
+        Label done = new Label();
         methodVisitor.visitLabel( repeat );
         test.accept( new JumpVisitor( expressionVisitor, methodVisitor, done ) );
 

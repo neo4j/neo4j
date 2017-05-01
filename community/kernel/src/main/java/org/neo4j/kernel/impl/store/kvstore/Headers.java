@@ -97,7 +97,8 @@ public abstract class Headers
         if ( obj instanceof Headers )
         {
             Headers that = (Headers) obj;
-            Iterable<HeaderField<?>> these = this.fields(), those = that.fields();
+            Iterable<HeaderField<?>> these = this.fields();
+            Iterable<HeaderField<?>> those = that.fields();
             if ( these.equals( those ) )
             {
                 for ( HeaderField<?> field : these )

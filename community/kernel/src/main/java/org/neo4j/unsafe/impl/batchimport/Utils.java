@@ -155,7 +155,8 @@ public class Utils
     // Values in the arrays are assumed to be sorted
     public static boolean anyIdCollides( long[] first, int firstLength, long[] other, int otherLength )
     {
-        int f = 0, o = 0;
+        int f = 0;
+        int o = 0;
         while ( f < firstLength && o < otherLength )
         {
             if ( first[f] == other[o] )

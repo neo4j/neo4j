@@ -58,7 +58,8 @@ public class Dijkstra<CostType> implements
 {
     protected CostType startCost; // starting cost for both the start node and
     // the end node
-    protected Node startNode, endNode;
+    protected Node startNode;
+    protected Node endNode;
     protected RelationshipType[] costRelationTypes;
     protected Direction relationDirection;
     protected CostEvaluator<CostType> costEvaluator = null;

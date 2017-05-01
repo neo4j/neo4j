@@ -100,7 +100,10 @@ public class PartialTransactionFailureIT
             }
         };
 
-        Node a, b, c, d;
+        Node a;
+        Node b;
+        Node c;
+        Node d;
         try ( Transaction tx = db.beginTx() )
         {
             a = db.createNode();

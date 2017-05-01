@@ -55,7 +55,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 
 class CsvImporter implements Importer
 {
-    private final Collection<Args.Option<File[]>> nodesFiles, relationshipsFiles;
+    private final Collection<Args.Option<File[]>> nodesFiles;
+    private final Collection<Args.Option<File[]>> relationshipsFiles;
     private final IdType idType;
     private final Charset inputEncoding;
     private final Config config;

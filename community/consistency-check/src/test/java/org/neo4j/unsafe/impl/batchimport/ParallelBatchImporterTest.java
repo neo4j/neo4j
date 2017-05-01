@@ -183,7 +183,8 @@ public class ParallelBatchImporterTest
 
         boolean successful = false;
         IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
-        long nodeRandomSeed = random.nextLong(), relationshipRandomSeed = random.nextLong();
+        long nodeRandomSeed = random.nextLong();
+        long relationshipRandomSeed = random.nextLong();
         try
         {
             // WHEN

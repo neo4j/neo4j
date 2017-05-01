@@ -537,7 +537,9 @@ public class GraphDescription implements GraphDefinition
 
     private static class DefaultRel extends Default implements REL
     {
-        private final String start, type, end;
+        private final String start;
+        private final String type;
+        private final String end;
 
         DefaultRel( String start, String type, String end )
         {

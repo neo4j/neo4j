@@ -192,8 +192,8 @@ public class Format
      */
     public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
 
-    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT ),
-            TIME = new ThreadLocalFormat( TIME_FORMAT );
+    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT );
+    private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
 
     private static class ThreadLocalFormat extends ThreadLocal<DateFormat>
     {

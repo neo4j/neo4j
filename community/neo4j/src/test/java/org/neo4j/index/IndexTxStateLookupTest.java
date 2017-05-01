@@ -113,7 +113,8 @@ public class IndexTxStateLookupTest
 
     private static Object[] randomNumbers( int length, Class<?> lhsType, Class<?> rhsType )
     {
-        Object lhs = Array.newInstance( lhsType, length ), rhs = Array.newInstance( rhsType, length );
+        Object lhs = Array.newInstance( lhsType, length );
+        Object rhs = Array.newInstance( rhsType, length );
         for ( int i = 0; i < length; i++ )
         {
             int value = random.nextInt( 128 );

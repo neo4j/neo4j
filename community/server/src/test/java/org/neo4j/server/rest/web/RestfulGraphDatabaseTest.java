@@ -1131,7 +1131,8 @@ public class RestfulGraphDatabaseTest
     @Test
     public void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws Exception
     {
-        final String key = "somekey", value = "somevalue";
+        final String key = "somekey";
+        String value = "somevalue";
 
         Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
@@ -1152,7 +1153,8 @@ public class RestfulGraphDatabaseTest
     @Test
     public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes() throws Exception
     {
-        final String key = "a_key", value = "a value";
+        final String key = "a_key";
+        String value = "a value";
 
         Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
@@ -1252,7 +1254,8 @@ public class RestfulGraphDatabaseTest
     public void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws
             Exception
     {
-        final String key = "somekey", value = "somevalue";
+        final String key = "somekey";
+        String value = "somevalue";
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
@@ -1278,7 +1281,8 @@ public class RestfulGraphDatabaseTest
     @Test
     public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships() throws Exception
     {
-        final String key = "a_key", value = "a value";
+        final String key = "a_key";
+        String value = "a value";
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 

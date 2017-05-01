@@ -25,7 +25,8 @@ import org.neo4j.kernel.impl.store.PropertyType;
 public class DynamicRecord extends AbstractBaseRecord
 {
     public static final byte[] NO_DATA = new byte[0];
-    private static final int MAX_BYTES_IN_TO_STRING = 8, MAX_CHARS_IN_TO_STRING = 16;
+    private static final int MAX_BYTES_IN_TO_STRING = 8;
+    private static final int MAX_CHARS_IN_TO_STRING = 16;
 
     private byte[] data;
     private int length;

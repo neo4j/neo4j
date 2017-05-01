@@ -33,7 +33,10 @@ class QueryLogger implements QueryExecutionMonitor
 {
     private final Log log;
     private final long thresholdMillis;
-    private final boolean logQueryParameters, logDetailedTime, logAllocatedBytes, logPageDetails;
+    private final boolean logQueryParameters;
+    private final boolean logDetailedTime;
+    private final boolean logAllocatedBytes;
+    private final boolean logPageDetails;
 
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
             // call signature

@@ -43,8 +43,10 @@ public class OwningNodeRelationshipChainTest
     public void shouldFindBothChainsThatTheRelationshipRecordShouldBelongTo() throws Exception
     {
         // given
-        long node1 = 101, node1Rel = 1001;
-        long node2 = 201, node2Rel = 2001;
+        long node1 = 101;
+        long node1Rel = 1001;
+        long node2 = 201;
+        long node2Rel = 2001;
         long sharedRel = 1000;
         int relType = 0;
 

@@ -42,7 +42,8 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 
 public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater
 {
-    private static final long DEFAULT_FIRST_VALUE = 0, DEFAULT_SECOND_VALUE = 0;
+    private static final long DEFAULT_FIRST_VALUE = 0;
+    private static final long DEFAULT_SECOND_VALUE = 0;
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
     @Override

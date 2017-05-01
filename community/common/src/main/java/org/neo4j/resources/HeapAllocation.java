@@ -27,7 +27,8 @@ import static java.util.Objects.requireNonNull;
 
 public abstract class HeapAllocation
 {
-    public static final HeapAllocation HEAP_ALLOCATION, NOT_AVAILABLE;
+    public static final HeapAllocation HEAP_ALLOCATION;
+    public static final HeapAllocation NOT_AVAILABLE;
 
     static
     {

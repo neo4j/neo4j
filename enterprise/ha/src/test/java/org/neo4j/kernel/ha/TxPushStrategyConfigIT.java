@@ -112,7 +112,8 @@ public class TxPushStrategyConfigIT
             createTransactionOnMaster( cluster );
         }
 
-        long min = -1, max = -1;
+        long min = -1;
+        long max = -1;
         for ( GraphDatabaseAPI db : cluster.getAllMembers() )
         {
             long tx = getLastTx( db );

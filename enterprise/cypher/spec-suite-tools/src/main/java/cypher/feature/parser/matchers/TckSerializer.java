@@ -93,7 +93,8 @@ class TckSerializer
                 public String relationshipRepresentation( Path path,
                         Node from, Relationship relationship )
                 {
-                    String prefix = "-", suffix = "-";
+                    String prefix = "-";
+                    String suffix = "-";
                     if ( from.equals( relationship.getEndNode() ) )
                     {
                         prefix = "<-";

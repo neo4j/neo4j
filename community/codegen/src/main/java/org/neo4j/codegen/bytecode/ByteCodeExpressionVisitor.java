@@ -19,10 +19,10 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import java.lang.reflect.Modifier;
-
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+
+import java.lang.reflect.Modifier;
 
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
@@ -360,7 +360,8 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void or( Expression... expressions )
     {
         assert expressions.length == 2 : "only supports or(lhs, rhs)";
-        Expression lhs = expressions[0], rhs = expressions[1];
+        Expression lhs = expressions[0];
+        Expression rhs = expressions[1];
         /*
          * something like:
          *
@@ -396,7 +397,8 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void and( Expression... expressions )
     {
         assert expressions.length == 2 : "only supports and(lhs, rhs)";
-        Expression lhs = expressions[0], rhs = expressions[1];
+        Expression lhs = expressions[0];
+        Expression rhs = expressions[1];
         /*
          * something like:
          *

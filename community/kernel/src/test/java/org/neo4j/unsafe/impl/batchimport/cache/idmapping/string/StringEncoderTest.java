@@ -49,7 +49,8 @@ public class StringEncoderTest
 
         // WHEN
         PrimitiveLongSet encoded = Primitive.longSet();
-        int total = 1_000, duplicates = 0;
+        int total = 1_000;
+        int duplicates = 0;
         for ( int i = 0; i < total; i++ )
         {
             // THEN

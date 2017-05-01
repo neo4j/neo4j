@@ -174,7 +174,8 @@ public class BufferedCharSeekerTest
     public void shouldHandleReallyWeirdChars() throws Exception
     {
         // GIVEN
-        int cols = 3, rows = 3;
+        int cols = 3;
+        int rows = 3;
         char delimiter = '\t';
         String[][] data = randomWeirdValues( cols, rows, delimiter, '\n', '\r' );
         seeker = seeker( join( data, delimiter ) );

@@ -151,7 +151,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     {
         byte[] header = null;
         List<byte[]> byteList = new ArrayList<>();
-        int totalSize = 0, i = 0;
+        int totalSize = 0;
+        int i = 0;
         for ( DynamicRecord record : records )
         {
             int offset = 0;

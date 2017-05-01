@@ -45,16 +45,21 @@ public class SchemaRuleSerialization
 {
     // Schema rule type
     // Legacy schema store reserves 1,2,3,4 and 5
-    private static final byte INDEX_RULE = 11, CONSTRAINT_RULE = 12;
+    private static final byte INDEX_RULE = 11;
+    private static final byte CONSTRAINT_RULE = 12;
 
     // Index type
-    private static final byte GENERAL_INDEX = 31, UNIQUE_INDEX = 32;
+    private static final byte GENERAL_INDEX = 31;
+    private static final byte UNIQUE_INDEX = 32;
 
     // Constraint type
-    private static final byte EXISTS_CONSTRAINT = 61, UNIQUE_CONSTRAINT = 62, UNIQUE_EXISTS_CONSTRAINT = 63;
+    private static final byte EXISTS_CONSTRAINT = 61;
+    private static final byte UNIQUE_CONSTRAINT = 62;
+    private static final byte UNIQUE_EXISTS_CONSTRAINT = 63;
 
     // Schema type
-    private static final byte SIMPLE_LABEL = 91, SIMPLE_REL_TYPE = 92;
+    private static final byte SIMPLE_LABEL = 91;
+    private static final byte SIMPLE_REL_TYPE = 92;
 
     private static final long NO_OWNING_CONSTRAINT_YET = -1;
     private static final int LEGACY_LABEL_OR_REL_TYPE_ID = -1;

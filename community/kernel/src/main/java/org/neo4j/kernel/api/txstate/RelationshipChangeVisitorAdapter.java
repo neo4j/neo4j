@@ -49,7 +49,8 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisitor<Long>
 {
-    private final DetailVisitor added, removed;
+    private final DetailVisitor added;
+    private final DetailVisitor removed;
 
     /**
      * Causes {@link #visitAddedRelationship(long, int, long, long)} to be invoked for added relationships.

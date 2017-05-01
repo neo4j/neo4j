@@ -115,7 +115,8 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
 
         public void triggerIndexSampling( String labelKey, String propertyKey, boolean forceSample )
         {
-            int labelKeyId = -1, propertyKeyId = -1;
+            int labelKeyId = -1;
+            int propertyKeyId = -1;
             State state = this.state;
             if ( state != null )
             {

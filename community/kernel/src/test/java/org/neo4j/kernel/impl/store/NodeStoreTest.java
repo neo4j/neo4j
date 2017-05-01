@@ -155,7 +155,8 @@ public class NodeStoreTest
         nodeStore = newNodeStore( fs );
 
         // -- a record with the msb carrying a negative value
-        long nodeId = 0, labels = 0x8000000001L;
+        long nodeId = 0;
+        long labels = 0x8000000001L;
         NodeRecord record =
                 new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
