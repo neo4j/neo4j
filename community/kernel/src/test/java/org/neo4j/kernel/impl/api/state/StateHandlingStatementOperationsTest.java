@@ -95,8 +95,9 @@ public class StateHandlingStatementOperationsTest
     public void shouldNeverDelegateWrites() throws Exception
     {
         KernelStatement state = mockedState( new TxState() );
+
         when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( IndexDescriptorFactory.forLabel( 0, 0 ) ) );
-        when( inner.nodeCursor( any( StorageStatement.class ), anyLong(), any( ReadableTransactionState.class ) ) )
+        when( inner.nodeGetSingleCursor( any( StorageStatement.class ), anyLong(), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 0 ) );
         when( inner.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
                 any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
@@ -112,7 +113,7 @@ public class StateHandlingStatementOperationsTest
 
         // one for add and one for remove
         verify( inner, times( 2 ) )
-                .nodeCursor( any( StorageStatement.class ), eq( 0L ), any( ReadableTransactionState.class ) );
+                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 0L ), any( ReadableTransactionState.class ) );
     }
 
     @Test
@@ -415,10 +416,9 @@ public class StateHandlingStatementOperationsTest
         IndexQuery.NumberRangePredicate indexQuery =
                 IndexQuery.range( index.schema().getPropertyId(), lower, true, upper, false );
         when( indexReader.query( indexQuery ) ).thenReturn(
-                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
-        );
-        when( storeReadLayer.nodeCursor( any( StorageStatement.class ), anyLong(), any( ReadableTransactionState.class ) ) )
-                .thenAnswer( invocationOnMock ->
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
+        when( storeReadLayer.nodeGetSingleCursor( any( StorageStatement.class ), anyLong(),
+                any( ReadableTransactionState.class ) ) ).thenAnswer( invocationOnMock ->
         {
             long nodeId = (long) invocationOnMock.getArguments()[1];
             when( storeReadLayer
@@ -501,7 +501,7 @@ public class StateHandlingStatementOperationsTest
         when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
         Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId );
         when( storeReadLayer
-                .nodeCursor( any( StorageStatement.class ), eq( nodeId ), any( ReadableTransactionState.class ) ) )
+                .nodeGetSingleCursor( any( StorageStatement.class ), eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( ourNode );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );

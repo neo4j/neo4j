@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AllNodeProgressionTest
+public class AllNodeScanTest
 {
     private final int start = 1;
     private final long end = 42L;
@@ -46,7 +46,7 @@ public class AllNodeProgressionTest
     public void shouldReturnABatchFromLowReservedIdsToHighIdPossibleInUse() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore );
+        AllNodeScan progression = new AllNodeScan( nodeStore );
 
         // when
         boolean hasNext = progression.nextBatch( batch );
@@ -62,7 +62,7 @@ public class AllNodeProgressionTest
     public void shouldCheckIfTheHighIdHasChangedAndIssueAnExtraBatchWithTheRemainingElements() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore );
+        AllNodeScan progression = new AllNodeScan( nodeStore );
         assertTrue( progression.nextBatch( batch ) );
         checkBatch( start, end );
 
@@ -79,7 +79,7 @@ public class AllNodeProgressionTest
     public void shouldNeverReturnNewBatchesIfTheProgressionHasReturnFalseToSignalTermination() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore );
+        AllNodeScan progression = new AllNodeScan( nodeStore );
         assertTrue( progression.nextBatch( batch ) );
         checkBatch( start, end );
 
@@ -100,7 +100,7 @@ public class AllNodeProgressionTest
         }
     }
 
-    private void assertNoMoreValueInBatchAndProgression( AllNodeProgression progression )
+    private void assertNoMoreValueInBatchAndProgression( AllNodeScan progression )
     {
         assertFalse( batch.hasNext() );
         assertFalse( progression.nextBatch( batch ) );

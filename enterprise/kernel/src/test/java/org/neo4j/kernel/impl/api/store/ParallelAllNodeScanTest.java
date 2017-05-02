@@ -44,7 +44,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ParallelAllNodeProgressionTest
+public class ParallelAllNodeScanTest
 {
     @Rule
     public RandomRule random = new RandomRule();
@@ -81,7 +81,7 @@ public class ParallelAllNodeProgressionTest
     {
         // given
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( (long) end );
-        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore );
+        ParallelAllNodeScan progression = new ParallelAllNodeScan( nodeStore );
         ExecutorService service = Executors.newFixedThreadPool( threads );
         try
         {
@@ -101,7 +101,7 @@ public class ParallelAllNodeProgressionTest
     {
         // given
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( (long) end, end + 1L, end + 2L );
-        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore );
+        ParallelAllNodeScan progression = new ParallelAllNodeScan( nodeStore );
         ExecutorService service = Executors.newFixedThreadPool( threads );
         try
         {
@@ -119,7 +119,7 @@ public class ParallelAllNodeProgressionTest
     @Test
     public void onlyOneShouldRetrieveTheAddedNodes() throws Throwable
     {
-        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( null );
+        ParallelAllNodeScan progression = new ParallelAllNodeScan( nodeStore );
         ExecutorService service = Executors.newFixedThreadPool( threads );
         try
         {
@@ -157,7 +157,7 @@ public class ParallelAllNodeProgressionTest
         return mergedResults;
     }
 
-    private Future<Set<Long>>[] runInParallel( int threads, ParallelAllNodeProgression progression,
+    private Future<Set<Long>>[] runInParallel( int threads, ParallelAllNodeScan progression,
             ExecutorService service )
     {
         @SuppressWarnings( "unchecked" )
