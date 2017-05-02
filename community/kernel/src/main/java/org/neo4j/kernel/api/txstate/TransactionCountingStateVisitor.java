@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -66,7 +65,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        storeLayer.nodeCursor( statement, id, null ).forAll( this::decrementCountForLabelsAndRelationships );
+        storeLayer.nodeCursor( statement, id, ReadableTransactionState.EMPTY )
+                .forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
     }
 
@@ -94,7 +94,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     @Override
     public void visitDeletedRelationship( long id )
     {
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipCursor( statement, id, null ) )
+        try ( Cursor<RelationshipItem> cursor = storeLayer
+                .relationshipCursor( statement, id, ReadableTransactionState.EMPTY ) )
         {
             if ( !cursor.next() )
             {
@@ -124,7 +125,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            storeLayer.nodeCursor( statement, id, null )
+            storeLayer.nodeCursor( statement, id, ReadableTransactionState.EMPTY )
                     .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );

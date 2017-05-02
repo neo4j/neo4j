@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
@@ -44,17 +45,18 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
 {
-    private final NodeProgression.Batch batch = new NodeProgression.Batch();
+    private final Batch batch = new Batch();
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
     private final NodeStore nodeStore;
     private final LockService lockService;
     private final PageCursor pageCursor;
 
-    private NodeProgression progression;
+    private BatchingLongProgression progression;
     private boolean fetched;
     private long[] labels;
     private Iterator<Long> added;
+    private NodeTransactionStateView stateView;
 
     NodeCursor( NodeStore nodeStore, Consumer<NodeCursor> instanceCache, LockService lockService )
     {
@@ -65,10 +67,11 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         this.lockService = lockService;
     }
 
-    public Cursor<NodeItem> init( NodeProgression progression )
+    public Cursor<NodeItem> init( BatchingLongProgression progression, NodeTransactionStateView stateView )
     {
         this.progression = progression;
-        this.added = progression.addedNodes();
+        this.added = progression.appendAdded() ? stateView.addedAndRemovedNodes().getAdded().iterator() : null;
+        this.stateView = stateView;
         return this;
     }
 
@@ -84,13 +87,14 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         while ( progression != null && (batch.hasNext() || progression.nextBatch( batch ) ) )
         {
             long id = batch.next();
-            if ( progression.fetchFromTxState( id ) )
+            if ( progression.fetchAdded() && stateView.nodeIsAddedInThisTx( id ) )
             {
                 recordFromTxState( id );
                 return true;
             }
 
-            if ( progression.fetchFromDisk( id ) && nodeStore.readRecord( id, nodeRecord, CHECK, pageCursor ).inUse() )
+            if ( !stateView.nodeIsDeletedInThisTx( id ) &&
+                    nodeStore.readRecord( id, nodeRecord, CHECK, pageCursor ).inUse() )
             {
                 return true;
             }
@@ -143,13 +147,13 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     public PrimitiveIntSet labels()
     {
         PrimitiveIntSet labels = asSet( loadedLabels(), IoPrimitiveUtils::safeCastLongToInt );
-        return progression.nodeState( id() ).augmentLabels( labels );
+        return stateView.getNodeState( id() ).augmentLabels( labels );
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        NodeState nodeState = progression.nodeState( id() );
+        NodeState nodeState = stateView.getNodeState( id() );
         if ( nodeState.labelDiffSets().getRemoved().contains( labelId ) )
         {
             return false;
@@ -213,7 +217,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     @Override
     public Lock lock()
     {
-        return progression.fetchFromTxState( id() ) ? NO_LOCK : acquireLock();
+        return stateView.nodeIsAddedInThisTx( id() ) ? NO_LOCK : acquireLock();
     }
 
     private Lock acquireLock()

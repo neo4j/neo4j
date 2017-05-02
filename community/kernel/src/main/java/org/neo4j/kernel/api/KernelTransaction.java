@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.function.Disposable;
@@ -182,6 +183,10 @@ public interface KernelTransaction extends AutoCloseable, Disposable
      * @return transaction timeout in milliseconds.
      */
     long timeout();
+
+    void setUserMetaData( Map<String, Object> data );
+
+    Map<String, Object> getUserMetaData();
 
     /**
      * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks

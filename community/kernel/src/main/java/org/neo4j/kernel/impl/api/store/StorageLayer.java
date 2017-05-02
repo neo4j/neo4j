@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -73,6 +72,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -82,6 +82,7 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 /**
  * Default implementation of StoreReadLayer. Delegates to NeoStores and indexes.
@@ -394,15 +395,15 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, TransactionState state )
+    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore, state ) );
+        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore ), stateView );
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, ReadableTransactionState state )
+    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId, state ) );
+        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId ), stateView );
     }
 
     @Override
@@ -577,7 +578,7 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            nodeGetRelationships( statement, node, BOTH, null )
+            nodeGetRelationships( statement, node, BOTH, EMPTY )
                     .forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
@@ -621,7 +622,7 @@ public class StorageLayer implements StoreReadLayer
             }
             else
             {
-                count = count( nodeGetRelationships( statement, node, direction, null ) );
+                count = count( nodeGetRelationships( statement, node, direction, EMPTY ) );
             }
         }
 
@@ -649,7 +650,7 @@ public class StorageLayer implements StoreReadLayer
             }
             else
             {
-                count = count( nodeGetRelationships( statement, node, direction, new int[]{relType}, null ) );
+                count = count( nodeGetRelationships( statement, node, direction, new int[]{relType}, EMPTY ) );
             }
         }
 
@@ -658,7 +659,7 @@ public class StorageLayer implements StoreReadLayer
 
     private void visitNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, null ) )
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, EMPTY ) )
         {
             while ( relationships.next() )
             {

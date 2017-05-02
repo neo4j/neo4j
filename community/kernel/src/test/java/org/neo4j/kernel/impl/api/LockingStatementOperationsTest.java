@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.RelationshipData;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -59,6 +58,8 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -88,8 +89,9 @@ public class LockingStatementOperationsTest
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
-    private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
-            mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
+    private final KernelStatementImplementation state =
+            new KernelStatementImplementation( transaction, new SimpleTxStateHolder( txState ),
+                    mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
     private final SchemaStateOperations schemaStateOps;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -533,7 +535,13 @@ public class LockingStatementOperationsTest
         }
 
         @Override
-        public TransactionState txState()
+        public ReadableTransactionState readableTxState()
+        {
+            return txState;
+        }
+
+        @Override
+        public WritableTransactionState writableTxState()
         {
             return txState;
         }
@@ -542,12 +550,6 @@ public class LockingStatementOperationsTest
         public LegacyIndexTransactionState legacyIndexTxState()
         {
             return null;
-        }
-
-        @Override
-        public boolean hasTxStateWithChanges()
-        {
-            return txState.hasChanges();
         }
     }
 }

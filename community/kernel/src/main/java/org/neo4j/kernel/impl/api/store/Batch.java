@@ -19,53 +19,37 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.storageengine.api.txstate.NodeState;
 
-public interface NodeProgression
+public class Batch implements PrimitiveLongIterator
 {
-    boolean nextBatch( Batch batch );
+    private long first;
+    private long last;
 
-    Iterator<Long> addedNodes();
-
-    boolean fetchFromTxState( long id );
-
-    boolean fetchFromDisk( long id );
-
-    NodeState nodeState( long id );
-
-    class Batch implements PrimitiveLongIterator
     {
-        private long first;
-        private long last;
+        nothing();
+    }
 
-        {
-            nothing();
-        }
+    public void init( long first, long last )
+    {
+        this.first = first;
+        this.last = last;
+    }
 
-        public void init( long first, long last )
-        {
-            this.first = first;
-            this.last = last;
-        }
+    public void nothing()
+    {
+        init( -1, -2 );
+    }
 
-        public void nothing()
-        {
-            init( -1, -2 );
-        }
+    @Override
+    public boolean hasNext()
+    {
+        return first <= last;
+    }
 
-        @Override
-        public boolean hasNext()
-        {
-            return first <= last;
-        }
-
-        @Override
-        public long next()
-        {
-            return first++;
-        }
+    @Override
+    public long next()
+    {
+        return first++;
     }
 }

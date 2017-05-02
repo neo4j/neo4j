@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.txstate;
+package org.neo4j.storageengine.api.txstate;
 
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.storageengine.api.txstate.WritableTransactionState;
-
-/**
- * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.
- *
- * This interface defines the mutating methods for the transaction state, methods for reading are defined in
- * {@link ReadableTransactionState}. These mutating methods follow the rule that they all contain the word "Do" in the name.
- * This naming convention helps deciding where to set {@link #hasChanges()} in the
- * {@link org.neo4j.kernel.impl.api.state.TxState main implementation class}.
- */
-public interface TransactionState extends ReadableTransactionState, WritableTransactionState
+public interface NodeTransactionStateView
 {
+    /**
+     * Returns nodes that have been added and removed in this tx.
+     */
+    ReadableDiffSets<Long> addedAndRemovedNodes();
+
+    boolean nodeIsAddedInThisTx( long nodeId );
+
+    boolean nodeIsDeletedInThisTx( long nodeId );
+
+    NodeState getNodeState( long id );
 }

@@ -19,24 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
-
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-public class AllNodeProgression implements NodeProgression
+public class AllNodeProgression implements BatchingLongProgression
 {
     private final NodeStore nodeStore;
-    private final ReadableTransactionState state;
 
     private long start;
     private boolean done;
 
-    AllNodeProgression( NodeStore nodeStore, ReadableTransactionState state )
+    AllNodeProgression( NodeStore nodeStore )
     {
         this.nodeStore = nodeStore;
-        this.state = state;
         this.start = nodeStore.getNumberOfReservedLowIds();
     }
 
@@ -64,26 +58,14 @@ public class AllNodeProgression implements NodeProgression
     }
 
     @Override
-    public Iterator<Long> addedNodes()
+    public boolean appendAdded()
     {
-        return state == null ? null : state.addedAndRemovedNodes().getAdded().iterator();
+        return true;
     }
 
     @Override
-    public boolean fetchFromTxState( long id )
+    public boolean fetchAdded()
     {
         return false;
-    }
-
-    @Override
-    public boolean fetchFromDisk( long id )
-    {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
-    }
-
-    @Override
-    public NodeState nodeState( long id )
-    {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
     }
 }
