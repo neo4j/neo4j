@@ -372,12 +372,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.getOrCreate( this, labelId ).getOrCreateNodeDiffSets();
     }
 
-    @Override
-    public ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
-    {
-        return NODE_STATE.get( this, nodeId ).labelDiffSets();
-    }
-
     private DiffSets<Integer> getOrCreateNodeStateLabelDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).getOrCreateLabelDiffSets();
@@ -472,12 +466,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
         return nodesDeletedInTx != null && nodesDeletedInTx.contains( nodeId );
-    }
-
-    @Override
-    public boolean nodeModifiedInThisTx( long nodeId )
-    {
-        return nodeIsAddedInThisTx( nodeId ) || nodeIsDeletedInThisTx( nodeId ) || hasNodeState( nodeId );
     }
 
     @Override
@@ -730,24 +718,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             nodes = new DiffSets<>();
         }
         return nodes;
-    }
-
-    @Override
-    public int augmentNodeDegree( long nodeId, int degree, Direction direction )
-    {
-        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree );
-    }
-
-    @Override
-    public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
-    {
-        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree, typeId );
-    }
-
-    @Override
-    public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
-    {
-        return NODE_STATE.get( this, nodeId ).relationshipTypes();
     }
 
     @Override

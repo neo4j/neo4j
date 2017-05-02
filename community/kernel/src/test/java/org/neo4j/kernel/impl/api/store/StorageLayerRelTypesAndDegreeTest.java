@@ -32,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.api.CountingDegreeVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -241,16 +240,12 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 
     private int degreeForDirection( NodeCursor node, Direction direction )
     {
-        CountingDegreeVisitor visitor = new CountingDegreeVisitor( direction, node.isDense() );
-        disk.degrees( disk.newStatement(), node, visitor );
-        return visitor.count();
+        return disk.countDegrees( disk.newStatement(), node, direction, null );
     }
 
-    private int degreeForDirectionAndType( NodeCursor node, Direction direction, Integer relType )
+    private int degreeForDirectionAndType( NodeCursor node, Direction direction, int relType )
     {
-        CountingDegreeVisitor visitor = new CountingDegreeVisitor( direction, relType, node.isDense() );
-        disk.degrees( disk.newStatement(), node, visitor );
-        return visitor.count();
+        return disk.countDegrees( disk.newStatement(), node, direction, relType, null );
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
@@ -414,15 +409,15 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         Set<TestDegreeItem> expectedDegrees = new HashSet<>();
         if ( outRelCount != 0 )
         {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( OUT ), outRelCount, 0, 0 ) );
+            expectedDegrees.add( new TestDegreeItem( relTypeId( OUT ), outRelCount, 0 ) );
         }
         if ( inRelCount != 0 )
         {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( IN ), 0, inRelCount, 0 ) );
+            expectedDegrees.add( new TestDegreeItem( relTypeId( IN ), 0, inRelCount ) );
         }
         if ( loopRelCount != 0 )
         {
-            expectedDegrees.add( new TestDegreeItem( relTypeId( LOOP ), 0, 0, loopRelCount ) );
+            expectedDegrees.add( new TestDegreeItem( relTypeId( LOOP ), loopRelCount, loopRelCount ) );
         }
 
         Set<TestDegreeItem> actualDegrees = degrees( cursor );
@@ -454,9 +449,9 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
         }
 
         Set<TestDegreeItem> expectedDegrees = new HashSet<>(
-                asList( new TestDegreeItem( relTypeId( OUT ), outRelCount, 0, 0 ),
-                        new TestDegreeItem( relTypeId( IN ), 0, inRelCount, 0 ),
-                        new TestDegreeItem( relTypeId( LOOP ), 0, 0, loopRelCount ) ) );
+                asList( new TestDegreeItem( relTypeId( OUT ), outRelCount, 0 ),
+                        new TestDegreeItem( relTypeId( IN ), 0, inRelCount ),
+                        new TestDegreeItem( relTypeId( LOOP ), loopRelCount, loopRelCount ) ) );
 
         Set<TestDegreeItem> actualDegrees = degrees( cursor.get() );
 
@@ -466,8 +461,8 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     private Set<TestDegreeItem> degrees( NodeItem nodeItem )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
-        disk.degrees( disk.newStatement(), nodeItem, ( type, outgoing, incoming, loop ) -> degrees
-                .add( new TestDegreeItem( type, outgoing, incoming, loop ) ) );
+        disk.degrees( disk.newStatement(), nodeItem, ( type, outgoing, incoming ) -> degrees
+                .add( new TestDegreeItem( type, outgoing, incoming ) ) );
         return degrees;
     }
 

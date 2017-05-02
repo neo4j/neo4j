@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.kernel.impl.api.store.NodeDegreeCounter;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -124,7 +124,7 @@ public interface StorageStatement extends AutoCloseable
 
     Cursor<RelationshipGroupItem> acquireRelationshipGroupCursor( long relationshipGroupId );
 
-    DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId );
+    NodeDegreeCounter acquireNodeDegreeCounter( long nodeId, long relationshipGroupId );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

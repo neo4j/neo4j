@@ -21,21 +21,20 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
-import org.neo4j.function.Disposable;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
+public class DenseNodeDegreeCounter implements NodeDegreeCounter
 {
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord relationshipRecord;
@@ -43,13 +42,13 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
     private final RelationshipGroupStore groupStore;
     private final RelationshipGroupRecord groupRecord;
     private final PageCursor groupCursor;
-    private final Consumer<DegreeVisitable> cache;
+    private final Consumer<DenseNodeDegreeCounter> cache;
 
     private long nodeId;
     private long groupId;
 
-    DegreeVisitable( RelationshipStore relationshipStore, RelationshipGroupStore groupStore,
-            Consumer<DegreeVisitable> cache )
+    DenseNodeDegreeCounter( RelationshipStore relationshipStore, RelationshipGroupStore groupStore,
+            Consumer<DenseNodeDegreeCounter> cache )
     {
         this.relationshipStore = relationshipStore;
         this.relationshipRecord = relationshipStore.newRecord();
@@ -60,7 +59,7 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
         this.cache = cache;
     }
 
-    public DegreeVisitable init( long nodeId, long firstGroupId )
+    public DenseNodeDegreeCounter init( long nodeId, long firstGroupId )
     {
         this.nodeId = nodeId;
         this.groupId = firstGroupId;
@@ -70,25 +69,35 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
     @Override
     public void accept( DegreeVisitor visitor )
     {
-        boolean keepGoing = true;
-        while ( keepGoing && groupId != NO_NEXT_RELATIONSHIP.longValue() )
+        while ( !NO_NEXT_RELATIONSHIP.is( groupId ) )
         {
             RelationshipGroupRecord record = groupStore.readRecord( groupId, groupRecord, FORCE, groupCursor );
             if ( record.inUse() )
             {
                 int type = record.getType();
                 long loop = countByFirstPrevPointer( record.getFirstLoop() );
-                long outgoing = countByFirstPrevPointer( record.getFirstOut() );
-                long incoming = countByFirstPrevPointer( record.getFirstIn() );
-                keepGoing = visitor.visitDegree( type, outgoing, incoming, loop );
+                long outgoing = countByFirstPrevPointer( record.getFirstOut() ) + loop;
+                long incoming = countByFirstPrevPointer( record.getFirstIn() ) + loop;
+                visitor.visitDegree( type, outgoing, incoming );
             }
             groupId = record.getNext();
         }
     }
 
+    @Override
+    public int count( Direction direction )
+    {
+        return countRelationshipsInGroup( direction, -1 );
+    }
+
+    public int count( Direction direction, int relType )
+    {
+        return countRelationshipsInGroup( direction, relType );
+    }
+
     private long countByFirstPrevPointer( long relationshipId )
     {
-        if ( Record.NO_NEXT_RELATIONSHIP.is( relationshipId ) )
+        if ( NO_NEXT_RELATIONSHIP.is( relationshipId ) )
         {
             return 0;
         }
@@ -103,6 +112,54 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
             return record.getSecondPrevRel();
         }
         throw new InvalidRecordException( "Node " + nodeId + " neither start nor end node of " + record );
+    }
+
+    private int countRelationshipsInGroup( Direction direction, int type )
+    {
+        int count = 0;
+        while ( !NO_NEXT_RELATIONSHIP.is( groupId ) )
+        {
+            RelationshipGroupRecord record = groupStore.readRecord( groupId, groupRecord, FORCE, groupCursor );
+            if ( record.inUse() && ( type == -1 || groupRecord.getType() == type ) )
+            {
+                count += nodeDegreeByDirection( direction );
+                if ( type != -1 )
+                {
+                    // we have read the only type we were interested on, so break the look
+                    break;
+                }
+            }
+            groupId = groupRecord.getNext();
+        }
+        return count;
+    }
+
+    private long nodeDegreeByDirection( Direction direction )
+    {
+        long firstLoop = groupRecord.getFirstLoop();
+        long loopCount = countByFirstPrevPointer( firstLoop );
+        switch ( direction )
+        {
+        case OUTGOING:
+        {
+            long firstOut = groupRecord.getFirstOut();
+            return countByFirstPrevPointer( firstOut ) + loopCount;
+        }
+        case INCOMING:
+        {
+            long firstIn = groupRecord.getFirstIn();
+            return countByFirstPrevPointer( firstIn ) + loopCount;
+        }
+        case BOTH:
+        {
+            long firstOut = groupRecord.getFirstOut();
+            long firstIn = groupRecord.getFirstIn();
+            return countByFirstPrevPointer( firstOut ) +
+                    countByFirstPrevPointer( firstIn ) + loopCount;
+        }
+        default:
+            throw new IllegalArgumentException( direction.name() );
+        }
     }
 
     @Override

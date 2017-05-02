@@ -17,10 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+
+import java.util.function.Supplier;
+
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 @FunctionalInterface
-public interface DegreeVisitor
+public interface StorageStatementFactory
 {
-    void visitDegree( int type, long outgoing, long incoming );
+    StorageStatement create( NeoStores neoStores, Supplier<IndexReaderFactory> indexReaderFactory,
+            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService );
 }
