@@ -52,7 +52,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private final LockService lockService;
     private final PageCursor pageCursor;
 
-    private Progression progression;
+    private BatchingLongProgression progression;
     private boolean fetched;
     private long[] labels;
     private Iterator<Long> added;
@@ -67,7 +67,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         this.lockService = lockService;
     }
 
-    public Cursor<NodeItem> init( Progression progression, NodeTransactionStateView stateView )
+    public Cursor<NodeItem> init( BatchingLongProgression progression, NodeTransactionStateView stateView )
     {
         this.progression = progression;
         this.added = progression.appendAdded() ? stateView.addedAndRemovedNodes().getAdded().iterator() : null;

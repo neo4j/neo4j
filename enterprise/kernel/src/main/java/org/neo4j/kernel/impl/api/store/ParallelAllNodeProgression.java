@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 
-class ParallelAllNodeProgression implements Progression
+class ParallelAllNodeProgression implements BatchingLongProgression
 {
     private final NodeStore nodeStore;
     private final AtomicLong nextPageId;

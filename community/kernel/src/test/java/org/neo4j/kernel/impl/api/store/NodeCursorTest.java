@@ -228,7 +228,7 @@ public class NodeCursorTest
     {
         MutableBoolean called = new MutableBoolean();
         NodeCursor cursor = new NodeCursor( nodeStore, c -> called.setTrue(), NO_LOCK_SERVICE );
-        cursor.init( mock( Progression.class ), mock( NodeTransactionStateView.class ) );
+        cursor.init( mock( BatchingLongProgression.class ), mock( NodeTransactionStateView.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
@@ -239,7 +239,7 @@ public class NodeCursorTest
     public void shouldCloseThePageCursorWhenDisposed()
     {
         NodeCursor cursor = new NodeCursor( nodeStore, c -> {}, NO_LOCK_SERVICE );
-        cursor.init( mock( Progression.class ), mock( NodeTransactionStateView.class ) );
+        cursor.init( mock( BatchingLongProgression.class ), mock( NodeTransactionStateView.class ) );
 
         cursor.close();
         cursor.dispose();
@@ -533,9 +533,9 @@ public class NodeCursorTest
             return cursor.init( createProgression( ops, mode ), state == null ? EMPTY : state );
         }
 
-        private Progression createProgression( Operation[] ops, Mode mode )
+        private BatchingLongProgression createProgression( Operation[] ops, Mode mode )
         {
-            return new Progression()
+            return new BatchingLongProgression()
             {
                 private int i = 0;
 

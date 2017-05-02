@@ -152,7 +152,7 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Progression parallelNodeScanProgression()
+    public BatchingLongProgression parallelNodeScanProgression()
     {
         throw unsupportedOperation();
     }
@@ -164,7 +164,7 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireNodeCursor( Progression progression, NodeTransactionStateView stateView )
+    public Cursor<NodeItem> acquireNodeCursor( BatchingLongProgression progression, NodeTransactionStateView stateView )
     {
         neoStores.assertOpen();
         return nodeCursor.get().init( progression, stateView );

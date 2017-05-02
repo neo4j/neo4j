@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
@@ -115,7 +114,7 @@ public class EnterpriseStoreStatementTest
             localStatements[i] = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         }
         // use any of the local statements to build the shared progression
-        Progression progression = localStatements[0].parallelNodeScanProgression();
+        BatchingLongProgression progression = localStatements[0].parallelNodeScanProgression();
 
         @SuppressWarnings( "unchecked" )
         Future<Set<Long>>[] futures = new Future[threads];

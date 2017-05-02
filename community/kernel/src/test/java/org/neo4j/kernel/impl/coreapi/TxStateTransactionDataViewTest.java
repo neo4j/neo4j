@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.Progression;
+import org.neo4j.kernel.impl.api.store.BatchingLongProgression;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -304,7 +304,7 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoAddLabel( 2, 1L );
         when( ops.labelGetName( 2 ) ).thenReturn( "theLabel" );
-        when( storeStatement.acquireNodeCursor( any( Progression.class ), any( NodeTransactionStateView.class ) ) )
+        when( storeStatement.acquireNodeCursor( any( BatchingLongProgression.class ), any( NodeTransactionStateView.class ) ) )
                 .thenReturn( asNodeCursor( 1 ) );
 
         // When
