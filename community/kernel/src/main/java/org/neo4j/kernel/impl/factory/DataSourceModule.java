@@ -213,6 +213,7 @@ public class DataSourceModule
                 autoIndexing,
                 pageCache,
                 editionModule.constraintSemantics,
+                editionModule.storageStatementFactory,
                 platformModule.monitors,
                 platformModule.tracers,
                 procedures,

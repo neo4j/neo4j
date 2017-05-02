@@ -77,6 +77,7 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
@@ -549,6 +550,12 @@ public class StorageLayer implements StoreReadLayer
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
+    @Override
+    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer,T> factory )
+    {
+        return schemaCache.getOrCreateDependantState( type, factory, this );
+    }
+
     private long tryGetIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexId( descriptor );
@@ -581,7 +588,11 @@ public class StorageLayer implements StoreReadLayer
     {
         if ( node.isDense() )
         {
-            statement.acquireDenseNodeDegreeCounter( node.id(), node.nextGroupId() ).once( visitor );
+            try ( NodeDegreeCounter degreeCounter = statement
+                    .acquireNodeDegreeCounter( node.id(), node.nextGroupId() ) )
+            {
+                degreeCounter.accept( visitor );
+            }
         }
         else
         {
@@ -590,30 +601,79 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer,T> factory )
+    public int countDegrees( StorageStatement statement, NodeItem node, Direction direction,
+            ReadableTransactionState state )
     {
-        return schemaCache.getOrCreateDependantState( type, factory, this );
+        int count;
+        if ( state != null && state.nodeIsAddedInThisTx( node.id() ) )
+        {
+            count = 0;
+        }
+        else
+        {
+            if ( node.isDense() )
+            {
+                try ( NodeDegreeCounter degreeCounter = statement
+                        .acquireNodeDegreeCounter( node.id(), node.nextGroupId() ) )
+                {
+                    count = degreeCounter.count( direction );
+                }
+            }
+            else
+            {
+                count = count( nodeGetRelationships( statement, node, direction, null ) );
+            }
+        }
+
+        return state == null ? count : state.getNodeState( node.id() ).augmentDegree( direction, count );
+    }
+
+    @Override
+    public int countDegrees( StorageStatement statement, NodeItem node, Direction direction, int relType,
+            ReadableTransactionState state )
+    {
+        int count;
+        if ( state != null && state.nodeIsAddedInThisTx( node.id() ) )
+        {
+            count = 0;
+        }
+        else
+        {
+            if ( node.isDense() )
+            {
+                try ( NodeDegreeCounter degreeCounter = statement
+                        .acquireNodeDegreeCounter( node.id(), node.nextGroupId() ) )
+                {
+                    count = degreeCounter.count( direction, relType );
+                }
+            }
+            else
+            {
+                count = count( nodeGetRelationships( statement, node, direction, new int[]{relType}, null ) );
+            }
+        }
+
+        return state == null ? count : state.getNodeState( node.id() ).augmentDegree( direction, count, relType );
     }
 
     private void visitNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
     {
         try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, null ) )
         {
-            boolean keepGoing = true;
-            while ( keepGoing && relationships.next() )
+            while ( relationships.next() )
             {
                 RelationshipItem rel = relationships.get();
                 int type = rel.type();
                 switch ( directionOf( node.id(), rel.id(), rel.startNode(), rel.endNode() ) )
                 {
                 case OUTGOING:
-                    keepGoing = visitor.visitDegree( type, 1, 0, 0 );
+                    visitor.visitDegree( type, 1, 0 );
                     break;
                 case INCOMING:
-                    keepGoing = visitor.visitDegree( type, 0, 1, 0 );
+                    visitor.visitDegree( type, 0, 1 );
                     break;
                 case BOTH:
-                    keepGoing = visitor.visitDegree( type, 0, 0, 1 );
+                    visitor.visitDegree( type, 1, 1 );
                     break;
                 default:
                     throw new IllegalStateException( "You found the missing direction!" );
