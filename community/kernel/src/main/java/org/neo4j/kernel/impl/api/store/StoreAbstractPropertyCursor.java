@@ -85,20 +85,23 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
             }
 
             // No, OK continue down the chain and hunt for more...
-            PropertyRecord propertyRecord = propertyStore.readRecord( nextPropertyId, record, FORCE, cursor );
-            nextPropertyId = propertyRecord.getNextProp();
-            if ( propertyRecord.inUse() )
-            {
-                payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
-                if ( payloadHasNext() )
-                {
-                    return true;
-                }
-            }
-            else if ( Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
+            if ( Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
             {
                 // No more records in this chain, i.e. no more properties.
                 doneTraversingTheChain = true;
+            }
+            else
+            {
+                PropertyRecord propertyRecord = propertyStore.readRecord( nextPropertyId, record, FORCE, cursor );
+                nextPropertyId = propertyRecord.getNextProp();
+                if ( propertyRecord.inUse() )
+                {
+                    payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
+                    if ( payloadHasNext() )
+                    {
+                        return true;
+                    }
+                }
             }
 
             // Sort of alright, this record isn't in use, but could just be due to concurrent delete.
