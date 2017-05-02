@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 
-public class AllNodeProgression implements Progression
+public class AllNodeProgression implements BatchingLongProgression
 {
     private final NodeStore nodeStore;
 

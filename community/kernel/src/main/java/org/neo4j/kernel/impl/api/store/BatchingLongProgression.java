@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-public interface Progression
+public interface BatchingLongProgression
 {
     boolean nextBatch( Batch batch );
 
