@@ -199,7 +199,7 @@ public class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnOutOfBoundsAccess( () ->
         {
-            try( PageCursor cursor = store.newPageCursor() )
+            try ( PageCursor cursor = store.newPageCursor() )
             {
                 store.readRecord( 5, new IntRecord( 5 ), NORMAL, cursor );
             }
@@ -234,7 +234,7 @@ public class CommonAbstractStoreBehaviourTest
     public void readRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
-        try( PageCursor pageCursor = store.newPageCursor() )
+        try ( PageCursor pageCursor = store.newPageCursor() )
         {
             store.readRecord( 5, new IntRecord( 5 ), FORCE, pageCursor );
         }
@@ -256,7 +256,7 @@ public class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnCursorError( () ->
         {
-            try( PageCursor cursor = store.newPageCursor() )
+            try ( PageCursor cursor = store.newPageCursor() )
             {
                 store.readRecord( 5, new IntRecord( 5 ), NORMAL, cursor );
             }
@@ -274,7 +274,7 @@ public class CommonAbstractStoreBehaviourTest
     public void readRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
     {
         prepareStoreForCursorError();
-        try( PageCursor cursor = store.newPageCursor() )
+        try ( PageCursor cursor = store.newPageCursor() )
         {
             store.readRecord( 5, new IntRecord( 5 ), CHECK, cursor );
         }
