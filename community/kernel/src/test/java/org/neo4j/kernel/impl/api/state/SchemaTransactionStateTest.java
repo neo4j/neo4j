@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -42,20 +39,20 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.store.SingleNodeProgression;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 
@@ -245,27 +242,15 @@ public class SchemaTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId1 ) ).then( invocation -> emptyIterator() );
+        when( store.indexesGetForLabel( labelId2 ) ).then( invocation -> emptyIterator() );
+        when( store.indexesGetAll() ).then( invocation -> emptyIterator() );
 
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
-        storeStatement = mock(StoreStatement.class);
+        storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
-    }
-
-    private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
-    {
-        return new Answer<Iterator<T>>()
-        {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return values.iterator();
-            }
-        };
     }
 
     private static class Labels
@@ -290,18 +275,13 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId, null ) )
+            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId, null ) ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {
 
-                Collection<Long> nodes = allLabels.get( label );
-                if ( nodes == null )
-                {
-                    nodes = new ArrayList<>();
-                    allLabels.put( label, nodes );
-                }
+                Collection<Long> nodes = allLabels.computeIfAbsent( label, k -> new ArrayList<>() );
                 nodes.add( nodeLabels.nodeId );
             }
         }
@@ -309,7 +289,7 @@ public class SchemaTransactionStateTest
         for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
             when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
-                    .then( asAnswer( entry.getValue() ) );
+                    .then( invocation -> entry.getValue().iterator() );
         }
     }
 

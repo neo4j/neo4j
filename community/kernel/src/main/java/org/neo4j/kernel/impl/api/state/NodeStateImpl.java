@@ -119,6 +119,18 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
     }
 
     @Override
+    public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels )
+    {
+        ReadableDiffSets<Integer> labelDiffSets = labelDiffSets();
+        if ( !labelDiffSets.isEmpty() )
+        {
+            labelDiffSets.getRemoved().forEach( labels::remove );
+            labelDiffSets.getAdded().forEach( labels::add );
+        }
+        return labels;
+    }
+
+    @Override
     public int augmentDegree( Direction direction, int degree )
     {
         if ( hasAddedRelationships() )
@@ -242,116 +254,7 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
         @Override
         final NodeState defaultValue()
         {
-            return DEFAULT;
+            return NodeState.EMPTY;
         }
-
-        private static final NodeState DEFAULT = new NodeState()
-        {
-            @Override
-            public Iterator<StorageProperty> addedProperties()
-            {
-                return Iterators.emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> changedProperties()
-            {
-                return Iterators.emptyIterator();
-            }
-
-            @Override
-            public Iterator<Integer> removedProperties()
-            {
-                return Iterators.emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> addedAndChangedProperties()
-            {
-                return Iterators.emptyIterator();
-            }
-
-            @Override
-            public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-            {
-                return iterator;
-            }
-
-            @Override
-            public void accept( PropertyContainerState.Visitor visitor ) throws ConstraintValidationException
-            {
-            }
-
-            @Override
-            public ReadableDiffSets<Integer> labelDiffSets()
-            {
-                return ReadableDiffSets.Empty.instance();
-            }
-
-            @Override
-            public int augmentDegree( Direction direction, int degree )
-            {
-                return degree;
-            }
-
-            @Override
-            public int augmentDegree( Direction direction, int degree, int typeId )
-            {
-                return degree;
-            }
-
-            @Override
-            public void accept( NodeState.Visitor visitor )
-            {
-            }
-
-            @Override
-            public PrimitiveIntSet relationshipTypes()
-            {
-                return Primitive.intSet();
-            }
-
-            @Override
-            public long getId()
-            {
-                throw new UnsupportedOperationException( "id not defined" );
-            }
-
-            @Override
-            public boolean hasChanges()
-            {
-                return false;
-            }
-
-            @Override
-            public StorageProperty getChangedProperty( int propertyKeyId )
-            {
-                return null;
-            }
-
-            @Override
-            public StorageProperty getAddedProperty( int propertyKeyId )
-            {
-                return null;
-            }
-
-            @Override
-            public boolean isPropertyRemoved( int propertyKeyId )
-            {
-                return false;
-            }
-
-            @Override
-            public PrimitiveLongIterator getAddedRelationships( Direction direction )
-            {
-                return null;
-            }
-
-            @Override
-            public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
-            {
-                return null;
-            }
-        };
     }
 }
