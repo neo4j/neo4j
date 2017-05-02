@@ -266,9 +266,14 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
+    BatchingLongProgression parallelNodeScanProgression( StorageStatement statement );
+
+    Cursor<NodeItem> nodeGetCursor( StorageStatement statement, BatchingLongProgression progression,
+            NodeTransactionStateView stateView );
+
     Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, NodeTransactionStateView stateView );
 
-    Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, NodeTransactionStateView stateView );
+    Cursor<NodeItem> nodeGetSingleCursor( StorageStatement storeStatement, long nodeId, NodeTransactionStateView stateView );
 
     Cursor<RelationshipItem> relationshipCursor( StorageStatement storeStatement, long relationshipId,
             ReadableTransactionState state );
@@ -393,5 +398,4 @@ public interface StoreReadLayer
             ReadableTransactionState state );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer, T> factory );
-
 }
