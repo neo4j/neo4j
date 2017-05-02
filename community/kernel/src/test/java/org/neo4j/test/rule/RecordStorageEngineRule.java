@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -47,7 +46,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorageStatementFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
@@ -119,7 +117,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 NullLogProvider.getInstance(),
                 mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),
-                StoreStatement::new, scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
+                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier, transactionApplierTransformer ) );
@@ -202,21 +200,19 @@ public class RecordStorageEngineRule extends ExternalResource
                 PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
                 PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
                 RelationshipTypeTokenHolder relationshipTypeTokens, Runnable schemaStateChangeCallback,
-                ConstraintSemantics constraintSemantics, StorageStatementFactory storageStatementFactory,
-                JobScheduler scheduler, TokenNameLookup tokenNameLookup, LockService lockService,
-                SchemaIndexProvider indexProvider, IndexingService.Monitor indexingServiceMonitor,
-                DatabaseHealth databaseHealth, LabelScanStoreProvider labelScanStoreProvider,
-                LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-                IdOrderingQueue legacyIndexTransactionOrdering,
+                ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
+                LockService lockService, SchemaIndexProvider indexProvider,
+                IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
+                LabelScanStoreProvider labelScanStoreProvider, LegacyIndexProviderLookup legacyIndexProviderLookup,
+                IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
                 Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
             super( storeDir, config, idGeneratorFactory, eligibleForReuse, idTypeConfigurationProvider, pageCache, fs,
                     logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStateChangeCallback,
-                    constraintSemantics, storageStatementFactory, scheduler, tokenNameLookup, lockService,
-                    indexProvider, indexingServiceMonitor, databaseHealth, labelScanStoreProvider,
-                    legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                    transactionsSnapshotSupplier, new CommunityBatchingProgressionFactory() );
+                    constraintSemantics, scheduler, tokenNameLookup, lockService, indexProvider, indexingServiceMonitor,
+                    databaseHealth, labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                    legacyIndexTransactionOrdering, transactionsSnapshotSupplier, new CommunityBatchingProgressionFactory() );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

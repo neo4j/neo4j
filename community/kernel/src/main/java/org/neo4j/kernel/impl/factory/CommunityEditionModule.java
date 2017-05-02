@@ -39,7 +39,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -129,8 +128,6 @@ public class CommunityEditionModule extends EditionModule
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
         constraintSemantics = createSchemaRuleVerifier();
-
-        storageStatementFactory = StoreStatement::new;
 
         progressionFactory = platformModule.dependencies.satisfyDependency( createProgressionFactory() );
 

@@ -51,7 +51,7 @@ public interface StorageEngine
      *
      * @param target {@link Collection} to put {@link StorageCommand commands} into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
-     * @param storageStatement {@link StorageStatement} to use for reading store state during creation of commands.
+     * @param schemaResources {@link SchemaResources} to use for reading store state during creation of commands.
      * @param locks {@link ResourceLocker} can grab additional locks.
      * This locks client still have the potential to acquire more locks at this point.
      * TODO we should try to get rid of this locking mechanism during creation of commands
@@ -70,7 +70,7 @@ public interface StorageEngine
     void createCommands(
             Collection<StorageCommand> target,
             ReadableTransactionState state,
-            StorageStatement storageStatement,
+            SchemaResources schemaResources,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;

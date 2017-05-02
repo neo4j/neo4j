@@ -74,7 +74,6 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -284,8 +283,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
-
-        storageStatementFactory = StoreStatement::new;
 
         progressionFactory = dependencies.satisfyDependency( new EnterpriseBatchingProgressionFactory() );
 
