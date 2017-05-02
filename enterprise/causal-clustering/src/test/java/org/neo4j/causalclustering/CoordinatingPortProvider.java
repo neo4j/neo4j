@@ -35,13 +35,13 @@ public class CoordinatingPortProvider implements PortProvider
     }
 
     @Override
-    public int getNextFreePort()
+    public int getNextFreePort( String trace )
     {
-        int port = portRepository.reserveNextPort();
+        int port = portRepository.reserveNextPort( trace );
 
         while ( portProbe.isOccupied( port ) )
         {
-            port = portRepository.reserveNextPort();
+            port = portRepository.reserveNextPort( trace );
         }
 
         return port;

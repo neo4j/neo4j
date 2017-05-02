@@ -36,8 +36,8 @@ public class SimplePortProviderTest
     {
         PortProvider portProvider = new SimplePortProvider( port -> false, 42 );
 
-        int port1 = portProvider.getNextFreePort();
-        int port2 = portProvider.getNextFreePort();
+        int port1 = portProvider.getNextFreePort( "foo" );
+        int port2 = portProvider.getNextFreePort( "foo" );
 
         assertThat( port1, is( not( equalTo( port2 ) ) ) );
     }
@@ -52,9 +52,9 @@ public class SimplePortProviderTest
         when( portProbe.isOccupied( 41 ) ).thenReturn( false );
         when( portProbe.isOccupied( 42 ) ).thenReturn( true );
         when( portProbe.isOccupied( 43 ) ).thenReturn( false );
-        assertThat( portProvider.getNextFreePort(), is( 40 ) );
-        assertThat( portProvider.getNextFreePort(), is( 41 ) );
-        assertThat( portProvider.getNextFreePort(), is( 43 ) );
+        assertThat( portProvider.getNextFreePort( "foo" ), is( 40 ) );
+        assertThat( portProvider.getNextFreePort( "foo" ), is( 41 ) );
+        assertThat( portProvider.getNextFreePort( "foo" ), is( 43 ) );
     }
 
     @Test
@@ -62,12 +62,12 @@ public class SimplePortProviderTest
     {
         PortProvider portProvider = new SimplePortProvider( port -> false, 65534 );
 
-        portProvider.getNextFreePort();
-        portProvider.getNextFreePort();
+        portProvider.getNextFreePort( "foo" );
+        portProvider.getNextFreePort( "foo" );
 
         try
         {
-            portProvider.getNextFreePort();
+            portProvider.getNextFreePort( "foo" );
 
             fail();
         }

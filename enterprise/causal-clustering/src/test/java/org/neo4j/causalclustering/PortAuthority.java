@@ -21,7 +21,9 @@ package org.neo4j.causalclustering;
 
 import static org.neo4j.causalclustering.PortConstants.EphemeralPortMinimum;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,6 +62,13 @@ public class PortAuthority
 
     public static int allocatePort()
     {
-        return portProvider.getNextFreePort();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        try ( PrintWriter printWriter = new PrintWriter( outputStream ) )
+        {
+            new Exception().printStackTrace( printWriter );
+        }
+
+        return portProvider.getNextFreePort( new String( outputStream.toByteArray() ) );
     }
 }

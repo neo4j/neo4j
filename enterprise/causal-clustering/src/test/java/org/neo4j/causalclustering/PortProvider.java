@@ -21,5 +21,5 @@ package org.neo4j.causalclustering;
 
 public interface PortProvider
 {
-    int getNextFreePort();
+    int getNextFreePort( String trace );
 }

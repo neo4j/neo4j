@@ -42,9 +42,9 @@ public class PortRepositoryIT
         Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
         PortRepository portRepository1 = new PortRepository( directory, EphemeralPortMinimum );
 
-        int port1 = portRepository1.reserveNextPort();
-        int port2 = portRepository1.reserveNextPort();
-        int port3 = portRepository1.reserveNextPort();
+        int port1 = portRepository1.reserveNextPort( "foo" );
+        int port2 = portRepository1.reserveNextPort( "foo" );
+        int port3 = portRepository1.reserveNextPort( "foo" );
 
         assertThat( asSet( port1, port2, port3 ).size(), is( 3 ) );
     }
@@ -56,12 +56,12 @@ public class PortRepositoryIT
         PortRepository portRepository1 = new PortRepository( directory, EphemeralPortMinimum );
         PortRepository portRepository2 = new PortRepository( directory, EphemeralPortMinimum );
 
-        int port1 = portRepository1.reserveNextPort();
-        int port2 = portRepository1.reserveNextPort();
-        int port3 = portRepository1.reserveNextPort();
-        int port4 = portRepository2.reserveNextPort();
-        int port5 = portRepository2.reserveNextPort();
-        int port6 = portRepository1.reserveNextPort();
+        int port1 = portRepository1.reserveNextPort( "foo" );
+        int port2 = portRepository1.reserveNextPort( "foo" );
+        int port3 = portRepository1.reserveNextPort( "foo" );
+        int port4 = portRepository2.reserveNextPort( "foo" );
+        int port5 = portRepository2.reserveNextPort( "foo" );
+        int port6 = portRepository1.reserveNextPort( "foo" );
 
         assertThat( asSet( port1, port2, port3, port4, port5, port6 ).size(), is( 6 ) );
     }
@@ -75,12 +75,12 @@ public class PortRepositoryIT
         PortRepository portRepository1 = new PortRepository( directory1, EphemeralPortMinimum );
         PortRepository portRepository2 = new PortRepository( directory2, EphemeralPortMinimum );
 
-        int port1 = portRepository1.reserveNextPort();
-        int port2 = portRepository1.reserveNextPort();
-        int port3 = portRepository1.reserveNextPort();
-        int port4 = portRepository2.reserveNextPort();
-        int port5 = portRepository2.reserveNextPort();
-        int port6 = portRepository1.reserveNextPort();
+        int port1 = portRepository1.reserveNextPort( "foo" );
+        int port2 = portRepository1.reserveNextPort( "foo" );
+        int port3 = portRepository1.reserveNextPort( "foo" );
+        int port4 = portRepository2.reserveNextPort( "foo" );
+        int port5 = portRepository2.reserveNextPort( "foo" );
+        int port6 = portRepository1.reserveNextPort( "foo" );
 
         assertThat( asSet( port1, port2, port3, port4, port5, port6 ).size(), is( 4 ) );
     }
@@ -91,12 +91,12 @@ public class PortRepositoryIT
         Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
         PortRepository portRepository1 = new PortRepository( directory, 65534 );
 
-        portRepository1.reserveNextPort();
-        portRepository1.reserveNextPort();
+        portRepository1.reserveNextPort( "foo" );
+        portRepository1.reserveNextPort( "foo" );
 
         try
         {
-            portRepository1.reserveNextPort();
+            portRepository1.reserveNextPort( "foo" );
 
             fail();
         }

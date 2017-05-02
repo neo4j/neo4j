@@ -39,7 +39,7 @@ public class SimplePortProvider implements PortProvider
     }
 
     @Override
-    public synchronized int getNextFreePort()
+    public synchronized int getNextFreePort( String trace )
     {
         while ( currentPort <= EphemeralPortMaximum )
         {

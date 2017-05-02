@@ -21,6 +21,7 @@ package org.neo4j.causalclustering;
 
 import static org.neo4j.causalclustering.PortConstants.EphemeralPortMaximum;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -40,7 +41,7 @@ public class PortRepository
     }
 
     // synchronize between threads in this JVM
-    public synchronized int reserveNextPort()
+    public synchronized int reserveNextPort( String trace )
     {
         while ( currentPort <= EphemeralPortMaximum )
         {
@@ -49,6 +50,12 @@ public class PortRepository
             try
             {
                 Files.createFile( portFilePath );
+
+                try ( FileOutputStream fileOutputStream = new FileOutputStream( portFilePath.toFile(), true ) )
+                {
+                    fileOutputStream.write( trace.getBytes() );
+                    fileOutputStream.flush();
+                }
 
                 return currentPort++;
             }
