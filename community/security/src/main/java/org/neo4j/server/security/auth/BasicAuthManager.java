@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
@@ -67,9 +69,9 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     public BasicAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, Clock clock,
-            UserRepository initialUserRepository )
+            UserRepository initialUserRepository, Config config )
     {
-        this( userRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), initialUserRepository );
+        this( userRepository, passwordPolicy, createAuthenticationStrategy( clock, config ), initialUserRepository );
     }
 
     @Override
@@ -244,5 +246,11 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         {
             throw invalidToken( ", scheme '" + scheme + "' is not supported." );
         }
+    }
+
+    private static AuthenticationStrategy createAuthenticationStrategy( Clock clock, Config config )
+    {
+        int maxFailedAttempts = config.get( GraphDatabaseSettings.auth_max_failed_attempts );
+        return new RateLimitedAuthenticationStrategy( clock, maxFailedAttempts );
     }
 }
