@@ -99,7 +99,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             try ( KernelStatement statement = (KernelStatement) tx.acquireStatement() )
             {
-                statement.txState().nodeDoCreate( 42 );
+                statement.writableTxState().nodeDoCreate( 42 );
             }
         };
         return Arrays.asList(
@@ -630,7 +630,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         if ( isWriteTx )
         {
             tx.upgradeToDataWrites();
-            tx.txState().nodeDoCreate( 42L );
+            tx.writableTxState().nodeDoCreate( 42L );
         }
         tx.success();
         tx.close();

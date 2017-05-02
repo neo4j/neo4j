@@ -40,10 +40,8 @@ public class TransactionStateChecker
         KernelStatement kernelStatement = (KernelStatement) topLevelTransactionBoundToThisThread.acquireStatement();
 
         return new TransactionStateChecker(
-                nodeId -> kernelStatement.hasTxStateWithChanges() &&
-                          kernelStatement.txState().nodeIsDeletedInThisTx( nodeId ),
-                relId -> kernelStatement.hasTxStateWithChanges() &&
-                         kernelStatement.txState().relationshipIsDeletedInThisTx( relId ) );
+                nodeId -> kernelStatement.readableTxState().nodeIsDeletedInThisTx( nodeId ),
+                relId -> kernelStatement.readableTxState().relationshipIsDeletedInThisTx( relId ) );
     }
 
     public boolean isNodeDeletedInCurrentTx( long id )

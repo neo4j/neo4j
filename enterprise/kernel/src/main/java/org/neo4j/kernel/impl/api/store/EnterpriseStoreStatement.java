@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 public class EnterpriseStoreStatement extends StoreStatement
 {
@@ -40,8 +39,8 @@ public class EnterpriseStoreStatement extends StoreStatement
     }
 
     @Override
-    public NodeProgression parallelNodeScanProgression( ReadableTransactionState state )
+    public BatchingLongProgression parallelNodeScanProgression()
     {
-        return new ParallelAllNodeProgression(  nodeStore, state );
+        return new ParallelAllNodeProgression(  nodeStore );
     }
 }

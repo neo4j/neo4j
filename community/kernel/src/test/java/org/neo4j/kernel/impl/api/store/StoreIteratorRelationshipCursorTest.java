@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,7 +49,7 @@ public class StoreIteratorRelationshipCursorTest
     {
         try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( true ) )
         {
-            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), null );
+            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), ReadableTransactionState.EMPTY );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }
@@ -59,7 +60,7 @@ public class StoreIteratorRelationshipCursorTest
     {
         try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( false ) )
         {
-            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), null );
+            cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), ReadableTransactionState.EMPTY );
             assertFalse( cursor.next() );
         }
     }

@@ -67,7 +67,9 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -114,7 +116,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private StatementOperationParts currentTransactionOperations;
-    private final KernelStatement currentStatement;
+    private final KernelStatementImplementation currentStatement;
     private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
@@ -178,7 +180,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement =
-                new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer );
+                new KernelStatementImplementation( this, this, storageStatement, procedures, accessCapability, lockTracer );
         this.userMetaData = Collections.emptyMap();
     }
 
@@ -315,12 +317,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return securityContext;
     }
 
-    public void setMetaData( Map<String, Object> data )
+    @Override
+    public void setUserMetaData( Map<String, Object> data )
     {
         this.userMetaData = data;
     }
 
-    public Map<String, Object> getMetaData()
+    @Override
+    public Map<String, Object> getUserMetaData()
     {
         return userMetaData;
     }
@@ -353,7 +357,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor createdConstraintIndex : readableTxState().constraintIndexesCreatedInTx() )
             {
                 try
                 {
@@ -370,7 +374,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public TransactionState txState()
+    public ReadableTransactionState readableTxState()
+    {
+        return txState == null ? ReadableTransactionState.EMPTY : txState;
+    }
+
+    @Override
+    public WritableTransactionState writableTxState()
     {
         if ( txState == null )
         {
@@ -387,8 +397,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             (legacyIndexTransactionState = legacyIndexTxStateSupplier.get());
     }
 
-    @Override
-    public boolean hasTxStateWithChanges()
+    private boolean hasTxStateWithChanges()
     {
         return txState != null && txState.hasChanges();
     }

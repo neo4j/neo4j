@@ -24,30 +24,25 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordPageLocationCalculator;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Collections.disjoint;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.Iterables.single;
 
 public class ParallelAllNodeProgressionTest
 {
@@ -63,11 +58,22 @@ public class ParallelAllNodeProgressionTest
     @Before
     public void setup()
     {
+        int recordSize = random.nextInt( 2, 25 );
+        int pageSize = random.nextInt( recordSize * 10, recordSize * 33);
         start = random.nextInt( 0, 20 );
-        end = random.nextInt( start + 40, start + 100 );
+        end = random.nextInt( start + 40, start + 1000 );
         threads = random.nextInt( 2, 6 );
         when( nodeStore.getNumberOfReservedLowIds() ).thenReturn( start );
-        when( nodeStore.getRecordsPerPage() ).thenReturn( end / random.nextInt( 2, 5 ) );
+        when( nodeStore.pageIdForRecord( anyLong() ) ).thenAnswer( invocation ->
+        {
+            long recordId = (long) invocation.getArguments()[0];
+            return RecordPageLocationCalculator.pageIdForRecord( recordId, pageSize, recordSize );
+        } );
+        when( nodeStore.firstRecordOnPage( anyLong() )).thenAnswer( invocation ->
+        {
+            long pageId = (long) invocation.getArguments()[0];
+            return RecordPageLocationCalculator.firstRecordOnPage( pageId, pageSize, recordSize, start );
+        });
     }
 
     @Test
@@ -75,7 +81,7 @@ public class ParallelAllNodeProgressionTest
     {
         // given
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( (long) end );
-        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore, null );
+        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore );
         ExecutorService service = Executors.newFixedThreadPool( threads );
         try
         {
@@ -95,7 +101,7 @@ public class ParallelAllNodeProgressionTest
     {
         // given
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( (long) end, end + 1L, end + 2L );
-        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore, null );
+        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore );
         ExecutorService service = Executors.newFixedThreadPool( threads );
         try
         {
@@ -113,32 +119,24 @@ public class ParallelAllNodeProgressionTest
     @Test
     public void onlyOneShouldRetrieveTheAddedNodes() throws Throwable
     {
-        TxState txState = new TxState();
-        Set<Long> expected = new HashSet<>();
-        for ( long i = 0; i < 10; i++ )
-        {
-            expected.add( end + i );
-            txState.nodeDoCreate( end + i );
-        }
-        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( nodeStore, txState );
+        ParallelAllNodeProgression progression = new ParallelAllNodeProgression( null );
         ExecutorService service = Executors.newFixedThreadPool( threads );
         try
         {
             @SuppressWarnings( "unchecked" )
-            Future<Iterator<Long>>[] futures = new Future[threads];
+            Future<Boolean>[] futures = new Future[threads];
             for ( int i = 0; i < threads; i++ )
             {
-                futures[i] = service.submit( progression::addedNodes );
+                futures[i] = service.submit( progression::appendAdded );
             }
-            ArrayList<Iterator<Long>> results = new ArrayList<>();
+            List<Boolean> results = new ArrayList<>();
             for ( int i = 0; i < threads; i++ )
             {
                 results.add( futures[i].get() );
             }
 
-            List<Iterator<Long>> nonNullResults = results.stream().filter( Objects::nonNull ).collect( toList() );
-            assertEquals( 1, nonNullResults.size() );
-            assertEquals( expected, Iterators.asSet( single( nonNullResults ) ) );
+            List<Boolean> trueValues = results.stream().filter( x -> x ).collect( toList() );
+            assertEquals( 1, trueValues.size() );
         }
         finally
         {
@@ -169,7 +167,7 @@ public class ParallelAllNodeProgressionTest
             futures[i] = service.submit( () ->
             {
                 Set<Long> result = new HashSet<>();
-                NodeProgression.Batch batch = new NodeProgression.Batch();
+                Batch batch = new Batch();
                 while ( progression.nextBatch( batch ) )
                 {
                     while ( batch.hasNext() )

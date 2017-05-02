@@ -55,6 +55,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class SchemaTransactionStateTest
 {
@@ -250,7 +251,7 @@ public class SchemaTransactionStateTest
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
         storeStatement = mock( StoreStatement.class );
-        when( state.getStoreStatement() ).thenReturn( storeStatement );
+        when( state.storageStatement() ).thenReturn( storeStatement );
     }
 
     private static class Labels
@@ -275,7 +276,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId, null ) ) )
+            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId ), EMPTY ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
@@ -288,7 +289,7 @@ public class SchemaTransactionStateTest
 
         for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
+            when( store.nodesGetForLabel( state.storageStatement(), entry.getKey() ) )
                     .then( invocation -> entry.getValue().iterator() );
         }
     }

@@ -19,21 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
-
-import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
-public class SingleNodeProgression implements NodeProgression
+public class SingleNodeProgression implements BatchingLongProgression
 {
-    private final ReadableTransactionState state;
     private long nodeId;
 
-    public SingleNodeProgression( long nodeId, ReadableTransactionState state )
+    public SingleNodeProgression( long nodeId )
     {
-        this.state = state;
         this.nodeId = nodeId;
     }
 
@@ -54,26 +47,14 @@ public class SingleNodeProgression implements NodeProgression
     }
 
     @Override
-    public Iterator<Long> addedNodes()
+    public boolean appendAdded()
     {
-        return null;
+        return false;
     }
 
     @Override
-    public boolean fetchFromTxState( long id )
+    public boolean fetchAdded()
     {
-        return state != null && state.nodeIsAddedInThisTx( id );
-    }
-
-    @Override
-    public boolean fetchFromDisk( long id )
-    {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
-    }
-
-    @Override
-    public NodeState nodeState( long id )
-    {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
+        return true;
     }
 }

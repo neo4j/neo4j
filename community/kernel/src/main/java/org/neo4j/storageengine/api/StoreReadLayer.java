@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -38,13 +37,12 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -268,9 +266,9 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
-    Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, TransactionState state );
+    Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, NodeTransactionStateView stateView );
 
-    Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, ReadableTransactionState state );
+    Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, NodeTransactionStateView stateView );
 
     Cursor<RelationshipItem> relationshipCursor( StorageStatement storeStatement, long relationshipId,
             ReadableTransactionState state );

@@ -153,7 +153,7 @@ public class IndexQueryTransactionStateTest
         // Given
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
-        state.txState().nodeDoAddProperty( 1L, intProperty( propertyKeyId, 10 ) );
+        state.writableTxState().nodeDoAddProperty( 1L, intProperty( propertyKeyId, 10 ) );
 
         // When
         PrimitiveLongIterator result = txContext.indexQuery( state, indexDescriptor, withValue );
@@ -167,7 +167,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
-        state.txState().nodeDoAddProperty( 1L, intProperty( propertyKeyId, 10 ) );
+        state.writableTxState().nodeDoAddProperty( 1L, intProperty( propertyKeyId, 10 ) );
 
         // When
         long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, withValue );
@@ -183,7 +183,7 @@ public class IndexQueryTransactionStateTest
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
-        state.txState().nodeDoAddProperty( nodeId, stringProperty( propertyKeyId, value ) );
+        state.writableTxState().nodeDoAddProperty( nodeId, stringProperty( propertyKeyId, value ) );
 
         when( store.nodeCursor( any( StorageStatement.class ), eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, 40L ) );
@@ -206,7 +206,7 @@ public class IndexQueryTransactionStateTest
         when( indexReader.query( withValue ) ).thenReturn( asPrimitiveResourceIterator() );
 
         long nodeId = 1L;
-        state.txState().nodeDoAddProperty( nodeId, stringProperty( propertyKeyId, value ) );
+        state.writableTxState().nodeDoAddProperty( nodeId, stringProperty( propertyKeyId, value ) );
 
         when( store.nodeCursor( any( StorageStatement.class ),  eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, 40L ) );
@@ -313,7 +313,7 @@ public class IndexQueryTransactionStateTest
         when( indexReader.query( withValue ) ).then( answerAsPrimitiveLongIteratorFrom( asList( 2L, 3L ) ) );
 
         long nodeId = 1L;
-        state.txState().nodeDoAddProperty( nodeId, intProperty( propertyKeyId, 10 ) );
+        state.writableTxState().nodeDoAddProperty( nodeId, intProperty( propertyKeyId, 10 ) );
 
         when( store.nodeCursor( any( StorageStatement.class ), eq( nodeId ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( nodeId, labels( labelId ) ) );
