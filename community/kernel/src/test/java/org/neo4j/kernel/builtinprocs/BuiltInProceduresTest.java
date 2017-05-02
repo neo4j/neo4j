@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers;
@@ -65,6 +66,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
@@ -305,6 +307,7 @@ public class BuiltInProceduresTest
         procs.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ), false );
         procs.registerComponent( DependencyResolver.class, ( ctx ) -> ctx.get( DEPENDENCY_RESOLVER ), false );
         procs.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> ctx.get( GRAPHDATABASEAPI ), false );
+        procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
         procs.registerType( Node.class, new TypeMappers.SimpleConverter( NTNode, Node.class ) );
         procs.registerType( Relationship.class, new TypeMappers.SimpleConverter( NTRelationship, Relationship.class ) );
@@ -356,6 +359,7 @@ public class BuiltInProceduresTest
         ctx.put( KERNEL_TRANSACTION, tx );
         ctx.put( DEPENDENCY_RESOLVER, resolver );
         ctx.put( GRAPHDATABASEAPI, graphDatabaseAPI );
+        ctx.put( SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
         return Iterators
