@@ -35,7 +35,10 @@ with CollectionSupport {
       case IsMap(m) =>
         val item = index(ctx)
         if (item == null) null
-        else m(state.query).getOrElse(CastSupport.castOrFail[String](item), null)
+        else {
+          val key = CastSupport.castOrFail[String](item)
+          m(state.query).getOrElse(key, null)
+        }
 
       case IsCollection(collection) =>
         val item = index(ctx)
