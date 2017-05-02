@@ -35,11 +35,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.APPEND;
-import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -47,6 +44,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
 {
+    private final NodeProgression.Batch batch = new NodeProgression.Batch();
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
     private final NodeStore nodeStore;
@@ -54,7 +52,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private final PageCursor pageCursor;
 
     private NodeProgression progression;
-    private ReadableTransactionState state;
     private boolean fetched;
     private long[] labels;
     private Iterator<Long> added;
@@ -68,13 +65,10 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         this.lockService = lockService;
     }
 
-    public Cursor<NodeItem> init( NodeProgression progression, ReadableTransactionState state )
+    public Cursor<NodeItem> init( NodeProgression progression )
     {
         this.progression = progression;
-        this.state = state;
-        this.added = state != null && progression.mode() == APPEND
-                     ? state.addedAndRemovedNodes().getAdded().iterator()
-                     : null;
+        this.added = progression.addedNodes();
         return this;
     }
 
@@ -87,18 +81,16 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     private boolean fetchNext()
     {
         labels = null;
-        long id;
-        while ( progression != null && (id = progression.nextId()) >= 0 )
+        while ( progression != null && (batch.hasNext() || progression.nextBatch( batch ) ) )
         {
-
-            if ( state != null && progression.mode() == FETCH && state.nodeIsAddedInThisTx( id ) )
+            long id = batch.next();
+            if ( progression.fetchFromTxState( id ) )
             {
                 recordFromTxState( id );
                 return true;
             }
 
-            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) &&
-                    nodeStore.readRecord( id, nodeRecord, CHECK, pageCursor ).inUse() )
+            if ( progression.fetchFromDisk( id ) && nodeStore.readRecord( id, nodeRecord, CHECK, pageCursor ).inUse() )
             {
                 return true;
             }
@@ -125,8 +117,8 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         fetched = false;
         labels = null;
         added = null;
-        state = null;
         progression = null;
+        batch.nothing();
         instanceCache.accept( this );
     }
 
@@ -151,19 +143,19 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     public PrimitiveIntSet labels()
     {
         PrimitiveIntSet labels = asSet( loadedLabels(), IoPrimitiveUtils::safeCastLongToInt );
-        return state != null ? state.augmentLabels( labels, state.getNodeState( id() ) ) : labels;
+        return progression.nodeState( id() ).augmentLabels( labels );
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        NodeState nodeState = state == null ? null : state.getNodeState( id() );
-        if ( state != null && nodeState.labelDiffSets().getRemoved().contains( labelId ) )
+        NodeState nodeState = progression.nodeState( id() );
+        if ( nodeState.labelDiffSets().getRemoved().contains( labelId ) )
         {
             return false;
         }
 
-        if ( state != null && nodeState.labelDiffSets().getAdded().contains( labelId ) )
+        if ( nodeState.labelDiffSets().getAdded().contains( labelId ) )
         {
             return true;
         }
@@ -221,7 +213,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     @Override
     public Lock lock()
     {
-        return state != null && state.nodeIsAddedInThisTx( id() ) ? NO_LOCK : acquireLock();
+        return progression.fetchFromTxState( id() ) ? NO_LOCK : acquireLock();
     }
 
     private Lock acquireLock()

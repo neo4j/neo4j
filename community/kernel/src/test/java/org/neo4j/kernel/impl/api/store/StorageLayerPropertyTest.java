@@ -96,7 +96,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId, null ) )
+            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeProgression( nodeId, null ) ) )
             {
                 node.next();
 
