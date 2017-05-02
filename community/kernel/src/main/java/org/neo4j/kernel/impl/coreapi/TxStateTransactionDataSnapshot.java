@@ -45,7 +45,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
@@ -61,7 +60,6 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 {
     private final ReadableTransactionState state;
     private final NodeProxy.NodeActions nodeActions;
-    private final StorageStatement storeStatement;
     private final RelationshipActions relationshipActions;
     private final StoreReadLayer store;
     private KernelTransaction transaction;
@@ -75,15 +73,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
     private final PrimitiveLongObjectMap<RelationshipProxy> relationshipsReadFromStore = Primitive.longObjectMap( 16 );
 
-    public TxStateTransactionDataSnapshot(
-            ReadableTransactionState state,
-            NodeProxy.NodeActions nodeActions, RelationshipActions relationshipActions,
-            StoreReadLayer storeReadLayer, StorageStatement storageStatement, KernelTransaction transaction )
+    public TxStateTransactionDataSnapshot( ReadableTransactionState state, NodeProxy.NodeActions nodeActions,
+            RelationshipActions relationshipActions, StoreReadLayer storeReadLayer, KernelTransaction transaction )
     {
         this.state = state;
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
-        this.storeStatement = storageStatement;
         this.store = storeReadLayer;
         this.transaction = transaction;
 
@@ -194,12 +189,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = store.nodeGetSingleCursor( storeStatement, nodeId, EMPTY ) )
+                try ( Cursor<NodeItem> node = store.nodeGetSingleCursor( nodeId, EMPTY ) )
                 {
                     if ( node.next() )
                     {
-                        try ( Cursor<PropertyItem> properties = store
-                                .nodeGetProperties( storeStatement, node.get(), NodeState.EMPTY ) )
+                        try ( Cursor<PropertyItem> properties = store.nodeGetProperties( node.get(), NodeState.EMPTY ) )
                         {
                             while ( properties.next() )
                             {
@@ -220,13 +214,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = store.relationshipCursor( storeStatement, relId, EMPTY ) )
+                try ( Cursor<RelationshipItem> relationship = store.relationshipGetSingleCursor( relId, EMPTY ) )
                 {
                     if ( relationship.next() )
                     {
                         try ( Cursor<PropertyItem> properties = store
-                                .relationshipGetProperties( storeStatement, relationship.get(),
-                                        RelationshipState.EMPTY ) )
+                                .relationshipGetProperties( relationship.get(), RelationshipState.EMPTY ) )
                         {
                             while ( properties.next() )
                             {
@@ -309,7 +302,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         // Get this relationship data from the store
-        try ( Cursor<RelationshipItem> cursor = store.relationshipCursor( storeStatement, relId, EMPTY ) )
+        try ( Cursor<RelationshipItem> cursor = store.relationshipGetSingleCursor( relId, EMPTY ) )
         {
             if ( !cursor.next() )
             {
@@ -355,15 +348,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = store.nodeGetSingleCursor( storeStatement, nodeState.getId(), EMPTY ) )
+        try ( Cursor<NodeItem> node = store.nodeGetSingleCursor( nodeState.getId(), EMPTY ) )
         {
             if ( !node.next() )
             {
                 return null;
             }
 
-            try ( Cursor<PropertyItem> properties = store
-                    .nodeGetProperty( storeStatement, node.get(), property, NodeState.EMPTY ) )
+            try ( Cursor<PropertyItem> properties = store.nodeGetProperty( node.get(), property, NodeState.EMPTY ) )
             {
                 if ( properties.next() )
                 {
@@ -382,8 +374,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<RelationshipItem> relationship = store
-                .relationshipCursor( storeStatement, relState.getId(), EMPTY ) )
+        try ( Cursor<RelationshipItem> relationship = store.relationshipGetSingleCursor( relState.getId(), EMPTY ) )
         {
             if ( !relationship.next() )
             {
@@ -391,8 +382,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
 
             try ( Cursor<PropertyItem> properties = store
-                    .relationshipGetProperty( storeStatement, relationship.get(), property,
-                            RelationshipState.EMPTY ) )
+                    .relationshipGetProperty( relationship.get(), property, RelationshipState.EMPTY ) )
             {
                 if ( properties.next() )
                 {

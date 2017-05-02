@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.SchemaResources;
 
 public interface KernelStatement extends TxStateHolder, Statement
 {
@@ -38,7 +38,7 @@ public interface KernelStatement extends TxStateHolder, Statement
 
     PageCursorTracer pageCursorTracer();
 
-    StorageStatement storageStatement();
+    SchemaResources schemaResources();
 
     KernelTransaction transaction();
 

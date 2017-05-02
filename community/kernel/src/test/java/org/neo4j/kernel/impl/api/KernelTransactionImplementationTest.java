@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
@@ -394,7 +394,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),
                 any( TransactionState.class ),
-                any( StorageStatement.class ),
+                any( SchemaResources.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 

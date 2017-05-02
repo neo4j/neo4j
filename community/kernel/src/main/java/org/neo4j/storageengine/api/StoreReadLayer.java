@@ -51,10 +51,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public interface StoreReadLayer
 {
-    /**
-     * @return new {@link StorageStatement}, which can be used after a call to {@link StorageStatement#acquire()}.
-     */
-    StorageStatement newStatement();
+    SchemaResources schemaResources();
 
     /**
      * @param labelId label to list indexes for.
@@ -130,7 +127,7 @@ public interface StoreReadLayer
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
 
-    PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId );
+    PrimitiveLongIterator nodesGetForLabel( SchemaResources statement, int labelId );
 
     /**
      * Looks for a stored index by given {@code descriptor}
@@ -166,10 +163,9 @@ public interface StoreReadLayer
      */
     String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
-            throws IndexNotFoundKernelException;
+    IndexReader indexGetReader( SchemaResources schemaResources, IndexDescriptor index ) throws IndexNotFoundKernelException;
 
-    IndexReader indexGetFreshReader( StorageStatement storeStatement, IndexDescriptor index )
+    IndexReader indexGetFreshReader( SchemaResources schemaResources, IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     /**
@@ -266,36 +262,32 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
-    BatchingLongProgression parallelNodeScanProgression( StorageStatement statement );
+    BatchingLongProgression parallelNodeScanProgression();
 
-    Cursor<NodeItem> nodeGetCursor( StorageStatement statement, BatchingLongProgression progression,
-            NodeTransactionStateView stateView );
+    Cursor<NodeItem> nodeGetCursor( BatchingLongProgression progression, NodeTransactionStateView stateView );
 
-    Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, NodeTransactionStateView stateView );
+    Cursor<NodeItem> nodeGetAllCursor( NodeTransactionStateView stateView );
 
-    Cursor<NodeItem> nodeGetSingleCursor( StorageStatement storeStatement, long nodeId, NodeTransactionStateView stateView );
+    Cursor<NodeItem> nodeGetSingleCursor( long nodeId, NodeTransactionStateView stateView );
 
-    Cursor<RelationshipItem> relationshipCursor( StorageStatement storeStatement, long relationshipId,
+    Cursor<RelationshipItem> relationshipGetSingleCursor( long relationshipId, ReadableTransactionState state );
+
+    Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state );
+
+    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction,
             ReadableTransactionState state );
 
-    Cursor<RelationshipItem> relationshipsGetAllCursor( StorageStatement storeStatement, ReadableTransactionState state );
-
-    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
+    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction, int[] relTypes,
             ReadableTransactionState state );
 
-    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
-            int[] relTypes, ReadableTransactionState state );
+    Cursor<PropertyItem> nodeGetProperties( NodeItem node, PropertyContainerState state );
 
-    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, PropertyContainerState state );
+    Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId, PropertyContainerState state );
 
-    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship, PropertyContainerState state );
+
+    Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationshipItem, int propertyKeyId,
             PropertyContainerState state );
-
-    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
-            PropertyContainerState state );
-
-    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem,
-            int propertyKeyId, PropertyContainerState state );
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -388,14 +380,13 @@ public interface StoreReadLayer
 
     boolean nodeExists( long id );
 
-    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
+    PrimitiveIntSet relationshipTypes( NodeItem node );
 
-    void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
+    void degrees( NodeItem nodeItem, DegreeVisitor visitor );
 
-    int countDegrees( StorageStatement statement, NodeItem node, Direction direction, ReadableTransactionState state );
+    int countDegrees( NodeItem node, Direction direction, ReadableTransactionState state );
 
-    int countDegrees( StorageStatement statement, NodeItem node, Direction direction, int relType,
-            ReadableTransactionState state );
+    int countDegrees( NodeItem node, Direction direction, int relType, ReadableTransactionState state );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer, T> factory );
 }

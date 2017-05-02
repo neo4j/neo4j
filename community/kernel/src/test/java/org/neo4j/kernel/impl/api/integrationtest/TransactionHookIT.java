@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -53,7 +52,7 @@ public class TransactionHookIT extends KernelIntegrationTest
 
         // Then
         verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ), any( StorageStatement.class ) );
+                any( StoreReadLayer.class ) );
         verify( hook ).afterCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );
@@ -66,7 +65,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         TransactionHook hook = mock( TransactionHook.class );
         final String message = "Original";
         when( hook.beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ), any( StorageStatement.class ) ) ).thenReturn( new TransactionHook.Outcome()
+                any( StoreReadLayer.class ) ) ).thenReturn( new TransactionHook.Outcome()
         {
             @Override
             public boolean isSuccessful()
@@ -98,7 +97,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         }
         // Then
         verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( StoreReadLayer.class ), any( StorageStatement.class ) );
+                any( StoreReadLayer.class ) );
         verify( hook ).afterRollback( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
                 any( TransactionHook.Outcome.class ) );
         verifyNoMoreInteractions( hook );

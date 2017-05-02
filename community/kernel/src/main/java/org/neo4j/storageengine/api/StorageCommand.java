@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * A command representing one unit of change to a {@link StorageEngine}. Commands are created by
- * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, StorageStatement, ResourceLocker, long)}
+ * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, SchemaResources, ResourceLocker, long)}
  * and once created can be serialized onto a {@link WritableChannel} and/or passed back to
  * {@link StorageEngine#apply(CommandsToApply, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.

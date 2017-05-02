@@ -25,12 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -39,7 +37,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class StoreSingleRelationshipCursorTest
@@ -114,9 +112,10 @@ public class StoreSingleRelationshipCursorTest
 
     private StoreSingleRelationshipCursor createRelationshipCursor()
     {
-        @SuppressWarnings( "unchecked" )
-        InstanceCache<StoreSingleRelationshipCursor> instanceCache = mock(InstanceCache.class);
-        return new StoreSingleRelationshipCursor( neoStores.getRelationshipStore(), instanceCache,
-                LockService.NO_LOCK_SERVICE );
+        return new StoreSingleRelationshipCursor( neoStores.getRelationshipStore(), this::noCache, NO_LOCK_SERVICE );
+    }
+
+    private void noCache( StoreSingleRelationshipCursor c )
+    {
     }
 }
