@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.ext.udc.UdcConstants;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
@@ -60,6 +61,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.udc.UsageDataKeys.Features.bolt;
 
 public class DefaultUdcInformationCollectorTest
@@ -183,6 +185,24 @@ public class DefaultUdcInformationCollectorTest
         Map<String, String> udcParams = collector.getUdcParams();
 
         assertThat( udcParams.get( "storesize" ), is( "152" ) );
+    }
+
+    @Test
+    public void shouldIncludeMultiDCFlag() throws Throwable
+    {
+        assertThat( udcCollector( Config.empty() ).getUdcParams().get( "multi.dc" ), is( "false" ) );
+        assertThat( udcCollector( Config.empty().augment( stringMap( "causal_clustering.multi_dc_license", "true" ) ) ).getUdcParams().get( "multi.dc" ), is( "true" ) );
+    }
+
+    private DefaultUdcInformationCollector udcCollector( Config empty )
+    {
+        return new DefaultUdcInformationCollector(
+                empty,
+                new DataSourceManager(),
+                new StubIdGeneratorFactory(),
+                mock(StartupStatistics.class),
+                usageData
+        );
     }
 
     private Set<StoreFileMetadata> testFiles() throws Exception
