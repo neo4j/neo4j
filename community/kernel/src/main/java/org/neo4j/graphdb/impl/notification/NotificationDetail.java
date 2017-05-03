@@ -46,12 +46,12 @@ public interface NotificationDetail
 
         public static NotificationDetail label( final String labelName )
         {
-            return createNotificationDetail( "the missing label name is", labelName, true );
+            return createNotificationDetail( "the missing label name", labelName, true );
         }
 
         public static NotificationDetail relationshipType( final String relType )
         {
-            return createNotificationDetail( "the missing relationship type is", relType, true );
+            return createNotificationDetail( "the missing relationship type", relType, true );
         }
 
         public static NotificationDetail procedureWarning( final String procedure, final String warning )
@@ -61,7 +61,7 @@ public interface NotificationDetail
 
         public static NotificationDetail propertyName( final String name )
         {
-            return createNotificationDetail( "the missing property name is", name, true );
+            return createNotificationDetail( "the missing property name", name, true );
         }
 
         public static NotificationDetail joinKey( List<String> identifiers )
