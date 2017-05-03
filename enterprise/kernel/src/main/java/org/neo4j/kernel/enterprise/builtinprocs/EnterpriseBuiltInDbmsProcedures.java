@@ -262,7 +262,7 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             long id = fromExternalString( queryId ).kernelQueryId();
             return getActiveTransactions( tx -> executingQueriesWithId( id, tx ) )
-                    .flatMap( pair -> pair.first().activeLocks().map( ActiveLocksQueryResult::new ) );
+                    .flatMap( this::getActiveLocksForQuery );
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -329,7 +329,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
     {
-        return txHandle.executingQueries().filter( q -> q.internalQueryId() == id );
+        return txHandle.executingQueries().filter( q -> q.internalQueryId() == id  && isAdminOrSelf( q.username() ));
     }
 
     private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )
@@ -340,6 +340,19 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             pair.first().markForTermination( Status.Transaction.Terminated );
             return new QueryTerminationResult( ofInternalId( query.internalQueryId() ), query.username() );
+        }
+        else
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+    }
+
+    private Stream<ActiveLocksQueryResult> getActiveLocksForQuery( Pair<KernelTransactionHandle, ExecutingQuery> pair )
+    {
+        ExecutingQuery query = pair.other();
+        if ( isAdminOrSelf( query.username() ) )
+        {
+            return pair.first().activeLocks().map( ActiveLocksQueryResult::new );
         }
         else
         {
