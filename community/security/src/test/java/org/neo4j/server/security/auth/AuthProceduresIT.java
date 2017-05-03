@@ -97,6 +97,17 @@ public class AuthProceduresIT
         assertEmpty( login("andres", "banana"), "CALL dbms.changePassword('abc')" );
     }
 
+    @Test
+    public void newUserShouldNotBeAbleToCallOtherProcedures() throws Throwable
+    {
+        // Given
+        authManager.newUser( "andres", "banana", true );
+        BasicSecurityContext user = login("andres", "banana");
+
+        // Then
+        assertFail( user, "CALL dbms.procedures", "The credentials you provided were valid, but must be changed before you can use this instance." );
+    }
+
     //---------- create user -----------
 
     @Test
