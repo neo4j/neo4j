@@ -224,12 +224,61 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
                   "so an index is already created that matches this.")
   }
 
+  test("Should give a nice error message when trying to remove property with node key constraint") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY")
+    val id = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood"), "Person").getId
+
+    // Expect
+    expectError("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.surname",
+                s"Node($id) with label `Person` must have the properties `firstname, surname`")
+
+  }
+
+  test("Should be able to remove non constrained property") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY")
+    val node = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
+
+    // When
+    exec("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo")
+
+    // Then
+    graph.inTx {
+      node.hasProperty("foo") shouldBe false
+    }
+  }
+
+  test("Should be able to delete node constrained with node key constraint") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY")
+    createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
+
+    // When
+    exec("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p")
+
+    // Then
+    exec("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p") shouldBe empty
+  }
+
+  test("Should be able to remove label when node key constraint") {
+    // Given
+    exec("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY")
+    createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
+
+    // When
+    exec("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person")
+
+    // Then
+    exec("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p") shouldBe empty
+  }
+
   private def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](exec(query))
     assertThat(error.getMessage, containsString(expectedError))
   }
 
-  private def exec(query: String) {
+  private def exec(query: String) = {
     executeWithCostPlannerAndInterpretedRuntimeOnly(query.fixNewLines).toList
   }
 }

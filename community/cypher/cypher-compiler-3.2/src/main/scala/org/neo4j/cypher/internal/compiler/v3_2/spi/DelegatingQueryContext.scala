@@ -138,8 +138,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] =
-    singleDbHit(inner.lockingUniqueIndexSeek(index, value))
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node] =
+    singleDbHit(inner.lockingUniqueIndexSeek(index, values))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 
