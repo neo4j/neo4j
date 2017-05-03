@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -37,10 +38,14 @@ public class BuiltInDbmsProcedures
     @Context
     public GraphDatabaseAPI graph;
 
+    @Context
+    public SecurityContext securityContext;
+
     @Description( "List all procedures in the DBMS." )
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
+        securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
                 .map( ProcedureResult::new );
@@ -50,6 +55,7 @@ public class BuiltInDbmsProcedures
     @Procedure(name = "dbms.functions", mode = DBMS)
     public Stream<FunctionResult> listFunctions()
     {
+        securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
                 .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
                 .map( FunctionResult::new );

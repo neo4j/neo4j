@@ -54,6 +54,7 @@ public class AuthProcedures
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.newUser( username, password, requirePasswordChange );
     }
 
@@ -61,6 +62,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         if ( securityContext.subject().hasUsername( username ) )
         {
             throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
@@ -99,6 +101,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         Set<String> usernames = userManager.getAllUsernames();
 
         if ( usernames.isEmpty() )
