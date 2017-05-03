@@ -262,6 +262,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<ActiveLocksQueryResult> listActiveLocks( @Name( "queryId" ) String queryId )
             throws InvalidArgumentsException
     {
+        securityContext.assertCredentialsNotExpired();
         try
         {
             long id = fromExternalString( queryId ).kernelQueryId();
@@ -335,7 +336,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     private Stream<ExecutingQuery> executingQueriesWithId( long id, KernelTransactionHandle txHandle )
     {
-        return txHandle.executingQueries().filter( q -> q.internalQueryId() == id  && isAdminOrSelf( q.username() ));
+        return txHandle.executingQueries().filter( q -> q.internalQueryId() == id );
     }
 
     private QueryTerminationResult killQueryTransaction( Pair<KernelTransactionHandle, ExecutingQuery> pair )

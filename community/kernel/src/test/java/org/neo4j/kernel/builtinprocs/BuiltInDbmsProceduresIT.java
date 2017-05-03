@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
@@ -49,7 +48,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<Object[],ProcedureException> stream =
                 dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
                         Arrays.asList( "" ).toArray(),
-                        AnonymousContext.none() );
+                        SecurityContext.AUTH_DISABLED );
 
         // Then
         List<Object[]> config = asList( stream );
