@@ -104,6 +104,16 @@ public class AuthProceduresIT
         assertFail( admin, "CALL dbms.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
     }
 
+    @Test
+    public void newUserShouldBeAbleToChangePassword() throws Throwable
+    {
+        // Given
+        authManager.newUser( "andres", "banana", true );
+
+        // Then
+        assertEmpty( login("andres", "banana"), "CALL dbms.changePassword('abc')" );
+    }
+
     //---------- create user -----------
 
     @Test
