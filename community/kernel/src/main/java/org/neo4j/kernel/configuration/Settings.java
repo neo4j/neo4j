@@ -137,6 +137,20 @@ public class Settings
     {
         BiFunction<String,Function<String, String>, String> valueLookup = named();
 
+        BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
+
+        if ( inheritedSetting != null )
+        {
+            valueLookup = inheritedValue( valueLookup, inheritedSetting );
+            defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
+        }
+
+        return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConverters );
+    }
+
+    public static BiFunction<String, Function<String, String>, String> determineDefaultLookup( String defaultValue,
+                                                                                                BiFunction<String, Function<String, String>, String> valueLookup )
+    {
         BiFunction<String,Function<String, String>, String> defaultLookup;
         if ( defaultValue != null )
         {
@@ -157,14 +171,7 @@ public class Settings
         {
             defaultLookup = (n, from) -> null;
         }
-
-        if ( inheritedSetting != null )
-        {
-            valueLookup = inheritedValue( valueLookup, inheritedSetting );
-            defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
-        }
-
-        return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConverters );
+        return defaultLookup;
     }
 
     public static <OUT, IN1, IN2> Setting<OUT> derivedSetting( String name,
@@ -1194,7 +1201,7 @@ public class Settings
     {
     }
 
-    private static class DefaultSetting<T> extends ScopeAwareSetting<T> implements SettingHelper<T>
+    public static class DefaultSetting<T> extends ScopeAwareSetting<T> implements SettingHelper<T>
     {
         private final String name;
         private final Function<String, T> parser;
@@ -1202,7 +1209,7 @@ public class Settings
         private final BiFunction<String,Function<String, String>, String> defaultLookup;
         private final BiFunction<T, Function<String, String>, T>[] valueConverters;
 
-        DefaultSetting( String name, Function<String,T> parser,
+        public DefaultSetting( String name, Function<String,T> parser,
                 BiFunction<String,Function<String,String>,String> valueLookup,
                 BiFunction<String,Function<String,String>,String> defaultLookup,
                 BiFunction<T,Function<String,String>,T>... valueConverters )
