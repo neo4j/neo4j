@@ -50,7 +50,7 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.listConfig", mode = DBMS )
     public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
     {
-        if( !securityContext.isAdmin() )
+        if ( !securityContext.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
