@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.security;
 
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-
 /** Controls the capabilities of a KernelTransaction. */
 public interface SecurityContext
 {
@@ -30,14 +28,6 @@ public interface SecurityContext
 
     SecurityContext freeze();
     SecurityContext withMode( AccessMode mode );
-
-    default void assertCredentialsNotExpired()
-    {
-        if ( subject().getAuthenticationResult().equals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) )
-        {
-            throw mode().onViolation( PERMISSION_DENIED );
-        }
-    }
 
     default String description()
     {

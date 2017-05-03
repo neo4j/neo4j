@@ -50,7 +50,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.listConfig", mode = DBMS )
     public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
     {
-        securityContext.assertCredentialsNotExpired();
         if ( !securityContext.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
@@ -67,7 +66,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
-        securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
@@ -77,7 +75,6 @@ public class BuiltInDbmsProcedures
     @Procedure(name = "dbms.functions", mode = DBMS)
     public Stream<FunctionResult> listFunctions()
     {
-        securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
