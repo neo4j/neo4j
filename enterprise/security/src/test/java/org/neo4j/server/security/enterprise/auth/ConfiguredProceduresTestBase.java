@@ -225,6 +225,41 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     }
 
     @Test
+    public void shoulListCorrectRolesForDBMSProcedures() throws Throwable
+    {
+        configuredSetup( defaultConfiguration() );
+
+        Map<String,Set<String>> expected = genericMap(
+                "dbms.changePassword", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.functions", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.killQueries", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.killQuery", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listActiveLocks", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listConfig", newSet( ADMIN ),
+                "dbms.listQueries", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.procedures", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.activateUser", newSet( ADMIN ),
+                "dbms.security.addRoleToUser", newSet( ADMIN ),
+                "dbms.security.changePassword", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.changeUserPassword", newSet( ADMIN ),
+                "dbms.security.clearAuthCache", newSet( ADMIN ),
+                "dbms.security.createRole", newSet( ADMIN ),
+                "dbms.security.createUser", newSet( ADMIN ),
+                "dbms.security.deleteRole", newSet( ADMIN ),
+                "dbms.security.deleteUser", newSet( ADMIN ),
+                "dbms.security.listRoles", newSet( ADMIN ),
+                "dbms.security.listRolesForUser", newSet( ADMIN ),
+                "dbms.security.listUsers", newSet( ADMIN ),
+                "dbms.security.listUsersForRole", newSet( ADMIN ),
+                "dbms.security.removeRoleFromUser", newSet( ADMIN ),
+                "dbms.security.showCurrentUser", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.suspendUser", newSet( ADMIN ),
+                "dbms.setTXMetaData", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ));
+
+        assertListProceduresHasRoles( readSubject, expected, "CALL dbms.procedures" );
+    }
+
+    @Test
     public void shouldShowAllowedRolesWhenListingProcedures() throws Throwable
     {
         configuredSetup( stringMap(
@@ -238,9 +273,9 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "test.annotatedProcedure", newSet( "annotated", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "test.numNodes", newSet( "counter", "user", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "db.labels", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.security.changePassword", newSet( ADMIN ),
-                "dbms.procedures", newSet( ADMIN ),
-                "dbms.listQueries", newSet( ADMIN ),
+                "dbms.security.changePassword", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.procedures", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listQueries", newSet( "default", READER, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.createUser", newSet( ADMIN ),
                 "db.createLabel", newSet( "default", PUBLISHER, ARCHITECT, ADMIN ));
 
