@@ -75,6 +75,7 @@ public class AuthProceduresIT
         db = (GraphDatabaseAPI) createGraphDatabase( fs );
         authManager = db.getDependencyResolver().resolveDependency( BasicAuthManager.class );
         admin = login( "neo4j", "neo4j" );
+        admin.subject().setPasswordChangeNoLongerRequired();
     }
 
     @After
