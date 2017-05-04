@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 
+import scala.reflect.ClassTag
+
 class NodeHashJoinPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
@@ -207,6 +209,79 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     // then
     result shouldBe empty
     lhsIterator.fetched should equal(0)
+  }
+
+  test("role reversal should not allow a probe table to get too large") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+
+    val innerL = ((0 to 1000) map { i => row("b" -> newMockedNode(i)) }).iterator
+    val lhsIterator = new TestableIterator(innerL)
+    when(left.createResults(queryState)).thenReturn(lhsIterator)
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val innerR = ((0 to 10) map { i => row("b" -> newMockedNode(i)) }).iterator
+    val rhsIterator = new TestableIterator(innerR)
+    when(right.createResults(queryState)).thenReturn(rhsIterator)
+
+    val creator = new FailingProbeTableCreator(failAt = 20)
+    // when
+    val result = NodeHashJoinPipe(Set("b"), left, right, reversalSize = 10, probeTableCreator = creator)().createResults(queryState)
+
+    // then
+    result should have size 11
+  }
+
+  ignore("measure reversal impact") {
+
+    def testWithSizes(leftSize: Int, rightSize: Int, reverse: Boolean): Unit = {
+      val queryState = QueryStateHelper.empty
+
+      val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+
+      val innerL = (0 to leftSize map { i => row("b" -> newMockedNode(i)) }).iterator
+      when(left.createResults(queryState)).thenReturn(innerL)
+
+      val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+      val innerR = (0 to rightSize map { i => row("b" -> newMockedNode(i)) }).iterator
+      when(right.createResults(queryState)).thenReturn(innerR)
+
+      // when
+      val result = NodeHashJoinPipe(Set("b"), left, right, dynamicReverse = reverse)().createResults(queryState)
+
+      // then
+      result.size
+    }
+
+    def time(f: => Unit) = {
+      val now = System.nanoTime()
+      f
+      System.nanoTime() - now
+    }
+
+    // warmup stuff
+    testWithSizes(1000, 1000, true)
+
+    for (l <- 0 to 5; r <- 0 to 5) {
+      val leftSize = Math.pow(10, l).toInt
+      val rightSize = Math.pow(10, r).toInt
+      val timeTaken1 = time(testWithSizes(leftSize,  rightSize, true))
+      val timeTaken2 = time(testWithSizes(leftSize,  rightSize, false))
+      println(s"$l $r reversed: ${timeTaken1 / 1000000} standard: ${timeTaken2 / 1000000}")
+    }
+
+  }
+
+  class FailingProbeTableCreator(failAt: Long = 100) extends ProbeTableCreator {
+    override def create[K: ClassTag, V: ClassTag] = new HashMapProbeTable[K, V]() {
+      override def add(k: K, v: V) = {
+        if (size > failAt)
+          fail("Added too many elements to probe table")
+        super.add(k, v)
+      }
+    }
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)

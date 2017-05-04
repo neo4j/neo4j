@@ -110,25 +110,25 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
     }
     Some(key.toVector)
   }
-}
 
-class ProbeTable() {
-  private val table: mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] =
-    new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]
+  class ProbeTable() {
+    private val table: mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] =
+      new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]
 
-  private val rowsWithNullInKey: ListBuffer[ExecutionContext] = new ListBuffer[ExecutionContext]()
+    private val rowsWithNullInKey: ListBuffer[ExecutionContext] = new ListBuffer[ExecutionContext]()
 
-  def addValue(key: Vector[Long], newValue: ExecutionContext) {
-    val values = table.getOrElseUpdate(key, mutable.MutableList.empty)
-    values += newValue
+    def addValue(key: Vector[Long], newValue: ExecutionContext) {
+      val values = table.getOrElseUpdate(key, mutable.MutableList.empty)
+      values += newValue
+    }
+
+    def addNull(context: ExecutionContext) = rowsWithNullInKey += context
+
+    val EMPTY = mutable.MutableList.empty
+    def apply(key: Vector[Long]) = table.getOrElse(key, EMPTY)
+
+    def keySet: collection.Set[Vector[Long]] = table.keySet
+
+    def nullRows = rowsWithNullInKey.iterator
   }
-
-  def addNull(context: ExecutionContext) = rowsWithNullInKey += context
-
-  val EMPTY = mutable.MutableList.empty
-  def apply(key: Vector[Long]) = table.getOrElse(key, EMPTY)
-
-  def keySet: collection.Set[Vector[Long]] = table.keySet
-
-  def nullRows = rowsWithNullInKey.iterator
 }

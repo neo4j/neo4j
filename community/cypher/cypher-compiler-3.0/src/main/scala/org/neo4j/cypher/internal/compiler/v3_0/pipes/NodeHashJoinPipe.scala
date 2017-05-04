@@ -27,8 +27,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
-case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
+case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe,
+                            probeTableCreator: ProbeTableCreator = HashMapProbeTableCreator, reversalSize: Long = 8192L, dynamicReverse: Boolean = true)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
@@ -41,17 +43,36 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     if (rhsIterator.isEmpty)
       return Iterator.empty
 
-    val table = buildProbeTable(input)
+    val table = buildProbeTable(input, continueAfterMaxSize = !dynamicReverse)
 
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey <- computeKey(context)}
-    yield {
-      val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-      seq.map(context ++ _)
+    if (input.nonEmpty) {
+      // If the LHS input is not empty, it means we bailed out from probe table building from hitting the size limit
+      // We will opportunistically try and build the probe table on the RHS, hoping that it is smaller
+      val tableR = buildProbeTable(rhsIterator, continueAfterMaxSize = true)
+      mergeProbeTables(table, tableR) ++ returnResults(input, tableR)
+    } else {
+      // If we have emptied the LHS, just use the probe table on the RHS
+      returnResults(rhsIterator, table)
     }
+  }
+
+  private def mergeProbeTables(tableL: ProbeTable[Vector[Long], ExecutionContext],
+                            tableR: ProbeTable[Vector[Long], ExecutionContext]): Iterator[ExecutionContext] = {
+    tableL.elements.flatMap {
+      case (k, values) => tableR.probe(k)
+    }
+  }
+
+  private def returnResults(input: Iterator[ExecutionContext], table: ProbeTable[Vector[Long], ExecutionContext]): Iterator[ExecutionContext] = {
+    val result = for {context: ExecutionContext <- input
+                      joinKey <- computeKey(context)}
+      yield {
+        val seq = table.probe(joinKey)
+        seq.map(context ++ _)
+      }
 
     result.flatten
   }
@@ -78,13 +99,12 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] = {
-    val table = new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]
+  private def buildProbeTable(input: Iterator[ExecutionContext], continueAfterMaxSize: Boolean): (ProbeTable[Vector[Long], ExecutionContext]) = {
+    val table = probeTableCreator.create[Vector[Long], ExecutionContext]
 
-    for {context <- input
-         joinKey <- computeKey(context)} {
-      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      seq += context
+    while (input.hasNext && (table.size < reversalSize || continueAfterMaxSize)) {
+      val context = input.next()
+      computeKey(context).foreach(joinKey => table.add(joinKey, context))
     }
 
     table
@@ -104,4 +124,45 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     }
     Some(key.toVector)
   }
+}
+
+trait ProbeTable[Key, Value] {
+  def add(k: Key, v: Value)
+
+  def isEmpty: Boolean
+
+  def probe(k: Key): Iterator[Value]
+
+  def size: Long // Defined as how many K/V pairs have been added
+
+  def elements: Iterator[(Key, Seq[Value])]
+}
+
+class HashMapProbeTable[Key, Value] extends ProbeTable[Key, Value] {
+  private val inner = new mutable.HashMap[Key, mutable.MutableList[Value]]
+  private var _size = 0L
+
+  override def add(k: Key, v: Value) = {
+    _size += 1
+    val seq = inner.getOrElseUpdate(k, mutable.MutableList.empty)
+    seq += v
+  }
+
+  override def isEmpty = inner.isEmpty
+
+  override def probe(k: Key) = inner.get(k).map(_.toIterator).getOrElse(Iterator.empty)
+
+  override def size = _size
+
+  override def elements = {
+    inner.toIterator.map { case (k, values) => k -> values.toSeq }
+  }
+}
+
+trait ProbeTableCreator {
+  def create[K: ClassTag, V: ClassTag]: ProbeTable[K, V]
+}
+
+object HashMapProbeTableCreator extends ProbeTableCreator {
+  override def create[K: ClassTag, V: ClassTag] = new HashMapProbeTable[K, V]()
 }
