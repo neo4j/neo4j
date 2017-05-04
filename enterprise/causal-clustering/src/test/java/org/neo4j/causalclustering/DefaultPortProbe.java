@@ -29,15 +29,26 @@ public class DefaultPortProbe implements PortProbe
     @Override
     public boolean isOccupied( int port )
     {
-        try ( ServerSocket ignored = new ServerSocket() )
+        // test binding on wildcard
+        try ( ServerSocket serverSocket = new ServerSocket() )
         {
-            ignored.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
-
-            return false;
+            serverSocket.bind( new InetSocketAddress( port ) );
         }
         catch ( IOException e )
         {
             return true;
         }
+
+        // test binding on loopback
+        try ( ServerSocket serverSocket = new ServerSocket() )
+        {
+            serverSocket.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
+        }
+        catch ( IOException e )
+        {
+            return true;
+        }
+
+        return false;
     }
 }
