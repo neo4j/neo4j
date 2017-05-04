@@ -35,6 +35,10 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.value;
 
 public class CountsSnapshotDeserializer
 {
+    private CountsSnapshotDeserializer()
+    {
+    }
+
     public static CountsSnapshot deserialize( ReadableClosableChannel channel ) throws IOException
     {
         long txid = channel.getLong();

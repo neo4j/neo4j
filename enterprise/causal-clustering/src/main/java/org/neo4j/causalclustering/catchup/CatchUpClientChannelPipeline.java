@@ -52,6 +52,10 @@ import org.neo4j.logging.LogProvider;
 
 class CatchUpClientChannelPipeline
 {
+    private CatchUpClientChannelPipeline()
+    {
+    }
+
     static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider, Monitors monitors )
             throws Exception
     {

@@ -163,6 +163,10 @@ public final class UnsafeUtil
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
 
+    private UnsafeUtil()
+    {
+    }
+
     private static Unsafe getUnsafe()
     {
         try

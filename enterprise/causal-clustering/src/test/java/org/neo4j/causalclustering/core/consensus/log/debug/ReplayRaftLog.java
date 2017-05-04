@@ -45,6 +45,10 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class ReplayRaftLog
 {
+    private ReplayRaftLog()
+    {
+    }
+
     public static void main( String[] args ) throws IOException
     {
         Args arg = Args.parse( args );

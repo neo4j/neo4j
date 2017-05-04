@@ -35,6 +35,10 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class PropertyDeduplicatorTestUtil
 {
+    private PropertyDeduplicatorTestUtil()
+    {
+    }
+
     public static Map<String, Integer> indexPropertyKeys( PropertyKeyTokenStore propertyKeyTokenStore )
     {
         Map<String, Integer> propertyKeyIndex = new HashMap<>();

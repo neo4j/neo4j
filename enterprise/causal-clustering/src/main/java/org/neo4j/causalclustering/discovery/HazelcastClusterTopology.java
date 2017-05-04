@@ -19,6 +19,13 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
+import com.hazelcast.core.MultiMap;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -26,13 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.core.IMap;
-import com.hazelcast.core.Member;
-import com.hazelcast.core.MultiMap;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.RefuseToBeLeaderStrategy;
@@ -63,6 +63,10 @@ public class HazelcastClusterTopology
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME = "read-replica-transaction-servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas"; // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_MEMBER_ID_MAP_NAME = "read-replica-member-ids";
+
+    private HazelcastClusterTopology()
+    {
+    }
 
     static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log )
     {

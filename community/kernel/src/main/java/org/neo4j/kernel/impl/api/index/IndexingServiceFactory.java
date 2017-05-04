@@ -34,6 +34,10 @@ import org.neo4j.logging.LogProvider;
  */
 public class IndexingServiceFactory
 {
+    private IndexingServiceFactory()
+    {
+    }
+
     public static IndexingService createIndexingService( Config config,
                                           JobScheduler scheduler,
                                           SchemaIndexProviderMap providerMap,

@@ -41,6 +41,10 @@ import org.neo4j.storageengine.api.NodeItem;
  */
 public class LookupFilter
 {
+    private LookupFilter()
+    {
+    }
+
     /**
      * used by the consistency checker
      */

@@ -61,6 +61,9 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_
 
 public class MessageMatchers
 {
+    private MessageMatchers()
+    {
+    }
 
     public static Matcher<List<ResponseMessage>> equalsMessages( final Matcher<ResponseMessage>... messageMatchers )
     {

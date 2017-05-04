@@ -177,4 +177,8 @@ public class RelationshipFacadeMethods
         GET_TYPE,
         IS_TYPE
     ) );
+
+    private RelationshipFacadeMethods()
+    {
+    }
 }

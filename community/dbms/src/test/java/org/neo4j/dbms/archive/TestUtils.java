@@ -28,6 +28,11 @@ import java.util.Set;
 
 public class TestUtils
 {
+
+    private TestUtils()
+    {
+    }
+
     public static Closeable withPermissions( Path file, Set<PosixFilePermission> permissions ) throws IOException
     {
         Set<PosixFilePermission> originalPermissions = Files.getPosixFilePermissions( file );

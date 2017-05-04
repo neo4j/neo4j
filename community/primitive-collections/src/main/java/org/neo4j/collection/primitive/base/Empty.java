@@ -40,6 +40,10 @@ public class Empty
     public static final PrimitiveIntSet EMPTY_PRIMITIVE_INT_SET = new EmptyPrimitiveIntSet();
     public static final PrimitiveLongCollection EMPTY_PRIMITIVE_LONG_COLLECTION = new EmptyPrimitiveLongCollection();
 
+    private Empty()
+    {
+    }
+
     public static class EmptyPrimitiveCollection implements PrimitiveCollection
     {
         @Override

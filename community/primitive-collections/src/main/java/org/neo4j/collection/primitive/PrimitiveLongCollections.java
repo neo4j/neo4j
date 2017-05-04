@@ -47,6 +47,10 @@ public class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
+    private PrimitiveLongCollections()
+    {
+    }
+
     /**
      * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
      */

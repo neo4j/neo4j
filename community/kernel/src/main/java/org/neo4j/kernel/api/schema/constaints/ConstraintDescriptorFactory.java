@@ -30,6 +30,10 @@ import static java.lang.String.format;
 
 public class ConstraintDescriptorFactory
 {
+    private ConstraintDescriptorFactory()
+    {
+    }
+
     public static NodeExistenceConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
         return new NodeExistenceConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );

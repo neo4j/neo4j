@@ -23,6 +23,10 @@ public class CommunityEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
+    private CommunityEntryPoint()
+    {
+    }
+
     public static void main( String[] args )
     {
         int status = ServerBootstrapper.start( new CommunityBootstrapper(), args );

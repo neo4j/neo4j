@@ -45,6 +45,10 @@ import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
  */
 public class PrimitiveIntCollections
 {
+    private PrimitiveIntCollections()
+    {
+    }
+
     /**
      * Base iterator for simpler implementations of {@link PrimitiveIntIterator}s.
      */

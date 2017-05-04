@@ -126,4 +126,8 @@ public class NodeIndexFacadeMethods
                     DELETE,
                     PUT_IF_ABSENT
             ) );
+
+    private NodeIndexFacadeMethods()
+    {
+    }
 }

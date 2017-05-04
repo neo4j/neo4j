@@ -30,6 +30,10 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
  */
 public class DeserializerFactories
 {
+    private DeserializerFactories()
+    {
+    }
+
     public static DeserializerFactory<InputNode> defaultNodeDeserializer(
             Groups groups, Configuration config, IdType idType, Collector badCollector )
     {

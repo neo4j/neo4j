@@ -23,6 +23,10 @@ import org.neo4j.kernel.api.ReadOperations;
 
 public class IdPrettyPrinter
 {
+    private IdPrettyPrinter()
+    {
+    }
+
     public static String label( int id )
     {
         return id == ReadOperations.ANY_LABEL ? "" : (":label=" + id);

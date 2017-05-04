@@ -31,6 +31,10 @@ public class SocketAddressFormat
     private static final Pattern hostnamePortPattern = Pattern.compile( "(?<hostname>[^\\s]+):(?<port>\\d+)" );
     private static final Pattern portPattern = Pattern.compile( ":(?<port>\\d+)" );
 
+    private SocketAddressFormat()
+    {
+    }
+
     public static <T extends SocketAddress> T socketAddress(
             String name, String value, String defaultHostname, int defaultPort,
             BiFunction<String, Integer, T> constructor )

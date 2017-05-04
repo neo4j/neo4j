@@ -33,6 +33,10 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
  */
 public class RecordDistributor
 {
+    private RecordDistributor()
+    {
+    }
+
     public static <RECORD> void distributeRecords(
             int numberOfThreads,
             String workerNames,

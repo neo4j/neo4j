@@ -28,6 +28,10 @@ import org.neo4j.logging.Log;
 
 class Heart
 {
+    private Heart()
+    {
+    }
+
     static void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request, Log log )
             throws IOException
     {

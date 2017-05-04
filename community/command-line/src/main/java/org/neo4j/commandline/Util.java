@@ -36,6 +36,10 @@ import static java.lang.String.format;
 
 public class Util
 {
+    private Util()
+    {
+    }
+
     public static Path canonicalPath( Path path ) throws IllegalArgumentException
     {
         return canonicalPath( path.toFile() );

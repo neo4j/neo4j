@@ -39,6 +39,10 @@ public class TestRunConditions
      */
     private static final int MAX_CLUSTER_SIZE = 5;
 
+    private TestRunConditions()
+    {
+    }
+
     public static boolean shouldRunAtClusterSize( int clusterSize )
     {
         if ( clusterSize <= MAX_WINDOWS_CLUSTER_SIZE )

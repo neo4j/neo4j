@@ -61,6 +61,10 @@ public class HTTP
         CLIENT = Client.create( defaultClientConfig );
     }
 
+    private HTTP()
+    {
+    }
+
     public static Builder withHeaders( String... kvPairs )
     {
         return BUILDER.withHeaders( kvPairs );

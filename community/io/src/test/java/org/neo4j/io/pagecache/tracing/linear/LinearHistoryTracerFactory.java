@@ -21,6 +21,10 @@ package org.neo4j.io.pagecache.tracing.linear;
 
 public class LinearHistoryTracerFactory
 {
+    private LinearHistoryTracerFactory()
+    {
+    }
+
     public static LinearTracers pageCacheTracer()
     {
         LinearHistoryTracer tracer = new LinearHistoryTracer();

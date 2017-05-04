@@ -33,6 +33,10 @@ public class StringMarshal
     public static final String DEFAULT_CHARSET = "UTF-8";
     public static final int NULL_STRING_LENGTH = -1;
 
+    private StringMarshal()
+    {
+    }
+
     public static void marshal( ByteBuf buffer, String string )
     {
         try

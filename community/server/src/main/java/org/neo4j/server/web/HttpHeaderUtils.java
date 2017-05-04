@@ -37,6 +37,10 @@ public class HttpHeaderUtils
     public static final Map<String,String> CHARSET =
             Collections.singletonMap( "charset", StandardCharsets.UTF_8.name() );
 
+    private HttpHeaderUtils()
+    {
+    }
+
     public static MediaType mediaTypeWithCharsetUtf8( String mediaType )
     {
         return new MediaType( mediaType, null, CHARSET );

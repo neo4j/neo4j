@@ -36,6 +36,10 @@ public class MetricsTestHelper
     public static final int TIME_STAMP = 0;
     public static final int METRICS_VALUE = 1;
 
+    private MetricsTestHelper()
+    {
+    }
+
     public static long readLongValue( File metricFile ) throws IOException, InterruptedException
     {
         return readLongValueAndAssert( metricFile, ( one, two ) -> true );

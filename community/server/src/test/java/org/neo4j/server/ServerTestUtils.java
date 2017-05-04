@@ -40,6 +40,10 @@ import org.neo4j.server.configuration.ServerSettings;
 
 public class ServerTestUtils
 {
+    private ServerTestUtils()
+    {
+    }
+
     public static File createTempDir() throws IOException
     {
         return Files.createTempDirectory( "neo4j-test" ).toFile();

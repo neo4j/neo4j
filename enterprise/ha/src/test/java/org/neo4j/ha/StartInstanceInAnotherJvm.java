@@ -31,6 +31,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class StartInstanceInAnotherJvm
 {
+    private StartInstanceInAnotherJvm()
+    {
+    }
+
     public static void main( String[] args )
     {
         File dir = new File( args[0] );

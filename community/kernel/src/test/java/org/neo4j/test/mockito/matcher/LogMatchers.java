@@ -57,6 +57,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
  */
 public class LogMatchers
 {
+
+    private LogMatchers()
+    {
+    }
+
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
         File logFile = new File( logPath );

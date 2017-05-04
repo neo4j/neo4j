@@ -27,6 +27,10 @@ public class ArbiterBootstrapperTestProxy
 {
     public static final String START_SIGNAL = "starting";
 
+    private ArbiterBootstrapperTestProxy()
+    {
+    }
+
     public static void main( String[] argv ) throws IOException
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );

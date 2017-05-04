@@ -36,6 +36,10 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATIS
 
 public class CountsSnapshotSerializer
 {
+    private CountsSnapshotSerializer()
+    {
+    }
+
     public static void serialize( FlushableChannel channel, CountsSnapshot countsSnapshot )
             throws IOException
     {

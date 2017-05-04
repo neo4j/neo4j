@@ -123,4 +123,8 @@ public class IndexManagerFacadeMethods
                     FOR_RELATIONSHIPS_WITH_CONFIG,
                     RELATIONSHIP_INDEX_NAMES
             ) );
+
+    private IndexManagerFacadeMethods()
+    {
+    }
 }

@@ -27,6 +27,10 @@ import java.io.IOException;
 
 public class RaftLogHelper
 {
+    private RaftLogHelper()
+    {
+    }
+
     public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws IOException
     {
         try ( RaftLogCursor cursor = raftLog.getEntryCursor( index ) )

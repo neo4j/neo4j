@@ -27,6 +27,10 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 public class EnterpriseServerHelper
 {
+    private EnterpriseServerHelper()
+    {
+    }
+
     public static EnterpriseNeoServer createNonPersistentServer( File databaseDir ) throws IOException
     {
         return createServer( databaseDir, false );

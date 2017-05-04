@@ -32,6 +32,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 
 public class LogHeaderWriter
 {
+    private LogHeaderWriter()
+    {
+    }
+
     public static void writeLogHeader( FlushableChannel channel, long logVersion, long previousCommittedTxId )
             throws IOException
     {

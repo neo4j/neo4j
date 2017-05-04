@@ -42,6 +42,10 @@ import static org.mockito.Mockito.when;
 
 public class SchemaIndexTestHelper
 {
+    private SchemaIndexTestHelper()
+    {
+    }
+
     public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
             String key, final SchemaIndexProvider provider )
     {

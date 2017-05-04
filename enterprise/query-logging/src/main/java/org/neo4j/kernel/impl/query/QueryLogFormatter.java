@@ -28,6 +28,10 @@ import org.neo4j.kernel.api.query.QuerySnapshot;
 
 class QueryLogFormatter
 {
+    private QueryLogFormatter()
+    {
+    }
+
     static void formatPageDetails( StringBuilder result, QuerySnapshot query )
     {
         result.append( query.pageHits() ).append( " page hits, " );

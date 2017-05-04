@@ -27,6 +27,10 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 
 public class SchemaRuleUtil
 {
+    private SchemaRuleUtil()
+    {
+    }
+
     public static ConstraintRule uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
     {
         return ConstraintRule.constraintRule( ruleId,

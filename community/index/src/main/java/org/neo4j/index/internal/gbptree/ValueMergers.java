@@ -28,6 +28,10 @@ public class ValueMergers
 
     private static final ValueMerger KEEP_EXISTING = ( existingValue, newValue ) -> null;
 
+    private ValueMergers()
+    {
+    }
+
     /**
      * @return {@link ValueMerger} which overwrites value for existing key when inserting.
      * This merger guarantees unique keys in index.

@@ -33,6 +33,10 @@ import static java.lang.String.format;
  */
 public class ServerStartupErrors
 {
+    private ServerStartupErrors()
+    {
+    }
+
     /**
      * Each function in this array handles translating one case. If it doesn't know how to translate a given
      * throwable, it simply returns null.

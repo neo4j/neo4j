@@ -46,6 +46,11 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public final class Iterables
 {
+
+    private Iterables()
+    {
+    }
+
     @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> empty()
     {

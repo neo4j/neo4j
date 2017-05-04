@@ -26,6 +26,10 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class PointerChecking
 {
+    private PointerChecking()
+    {
+    }
+
     /**
      * Checks a read pointer for success/failure and throws appropriate exception with failure information
      * if failure. Must be called after a consistent read from page cache (after {@link PageCursor#shouldRetry()}.

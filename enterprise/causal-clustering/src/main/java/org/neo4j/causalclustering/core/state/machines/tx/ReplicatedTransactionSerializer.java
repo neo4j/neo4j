@@ -19,14 +19,19 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedTransactionSerializer
 {
+    private ReplicatedTransactionSerializer()
+    {
+    }
+
     public static void marshal( ReplicatedTransaction transaction, WritableChannel channel ) throws IOException
     {
         byte[] txBytes = transaction.getTxBytes();

@@ -22,6 +22,10 @@ package org.neo4j.bolt.testing;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -31,12 +35,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import java.util.Arrays;
-import java.util.regex.Pattern;
-
 import static java.lang.String.format;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -47,6 +46,10 @@ import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
 
 public class BoltMatchers
 {
+    private BoltMatchers()
+    {
+    }
+
     public static Matcher<RecordedBoltResponse> succeeded()
     {
         return new BaseMatcher<RecordedBoltResponse>()

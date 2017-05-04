@@ -38,6 +38,10 @@ import org.neo4j.server.NeoServer;
 
 public class ServerHelper
 {
+    private ServerHelper()
+    {
+    }
+
     public static void cleanTheDatabase( final NeoServer server )
     {
         if ( server == null )

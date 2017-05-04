@@ -34,6 +34,10 @@ class LogEntrySanity
     private static final long UNREASONABLY_LONG_TIME = TimeUnit.DAYS.toMillis( 30 * 365 /*years*/ );
     private static final int UNREASONABLY_HIGH_SERVER_ID = 10_000_000;
 
+    private LogEntrySanity()
+    {
+    }
+
     static boolean logEntryMakesSense( LogEntry entry )
     {
         if ( entry == null )

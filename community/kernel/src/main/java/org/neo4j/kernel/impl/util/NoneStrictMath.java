@@ -28,6 +28,10 @@ public class NoneStrictMath
 {
     public static double EPSILON = 1.0E-8;
 
+    private NoneStrictMath()
+    {
+    }
+
     /**
      * Compares two numbers given some amount of allowed error.
      */

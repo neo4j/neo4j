@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.AbstractTracker.DEFAULT_VALUE;
 
 /**
@@ -28,20 +26,17 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.AbstractT
  */
 public class TrackerFactories
 {
+    private TrackerFactories()
+    {
+    }
+
     /**
      * @return {@link TrackerFactory} creating different {@link Tracker} instances depending on size.
      */
     public static TrackerFactory dynamic()
     {
-        return new TrackerFactory()
-        {
-            @Override
-            public Tracker create( NumberArrayFactory arrayFactory, long size )
-            {
-                return size > Integer.MAX_VALUE
-                        ? new LongTracker( arrayFactory.newLongArray( size, DEFAULT_VALUE ) )
-                        : new IntTracker( arrayFactory.newIntArray( size, DEFAULT_VALUE ) );
-            }
-        };
+        return ( arrayFactory, size ) -> size > Integer.MAX_VALUE
+                ? new LongTracker( arrayFactory.newLongArray( size, DEFAULT_VALUE ) )
+                : new IntTracker( arrayFactory.newIntArray( size, DEFAULT_VALUE ) );
     }
 }

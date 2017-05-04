@@ -27,6 +27,10 @@ import java.util.Scanner;
 
 public class LastLocation
 {
+    private LastLocation()
+    {
+    }
+
     public static String getLastLocation( String defaultLocation )
     {
         File file = new File( ".dblocation" );

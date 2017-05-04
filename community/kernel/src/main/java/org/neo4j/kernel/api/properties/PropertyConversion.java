@@ -23,6 +23,10 @@ import java.lang.reflect.Array;
 
 class PropertyConversion
 {
+    private PropertyConversion()
+    {
+    }
+
     static DefinedProperty convertProperty( int propertyKeyId, Object value )
     {
         if ( value instanceof String )

@@ -51,6 +51,10 @@ import static org.neo4j.csv.reader.Readables.files;
  */
 public class DataFactories
 {
+    private DataFactories()
+    {
+    }
+
     /**
      * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
      * {@link #defaultFormatNodeFileHeader()} can be used to extract that.

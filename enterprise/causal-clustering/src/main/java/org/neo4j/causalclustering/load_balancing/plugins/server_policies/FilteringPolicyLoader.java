@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_balancing_config;
@@ -36,6 +35,10 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_bala
  */
 class FilteringPolicyLoader
 {
+    private FilteringPolicyLoader()
+    {
+    }
+
     static Policies load( Config config, String pluginName, Log log ) throws InvalidFilterSpecification
     {
         Policies policies = new Policies( log );

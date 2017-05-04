@@ -29,6 +29,13 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
  */
 public class InputEntityDecorators
 {
+    public static final Decorator<InputNode> NO_NODE_DECORATOR = value -> value;
+    public static final Decorator<InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
+
+    private InputEntityDecorators()
+    {
+    }
+
     /**
      * Ensures that all {@link InputNode input nodes} will at least have the given set of labels.
      */
@@ -99,9 +106,6 @@ public class InputEntityDecorators
             }
         };
     }
-
-    public static final Decorator<InputNode> NO_NODE_DECORATOR = value -> value;
-    public static final Decorator<InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
 
     public static <ENTITY extends InputEntity> Decorator<ENTITY> noDecorator()
     {

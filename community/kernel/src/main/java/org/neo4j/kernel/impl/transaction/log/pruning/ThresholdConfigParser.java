@@ -61,6 +61,10 @@ public class ThresholdConfigParser
         }
     }
 
+    private ThresholdConfigParser()
+    {
+    }
+
     public static ThresholdConfigValue parse( String configValue )
     {
         String[] tokens = configValue.split( " " );

@@ -50,6 +50,10 @@ public class ObjectToRepresentationConverter
         return getSingleRepresentation( data );
     }
 
+    private ObjectToRepresentationConverter()
+    {
+    }
+
     public static MappingRepresentation getMapRepresentation( Map data )
     {
 

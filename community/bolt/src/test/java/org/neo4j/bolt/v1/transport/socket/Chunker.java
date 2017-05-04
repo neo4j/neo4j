@@ -38,6 +38,10 @@ import static org.mockito.Mockito.when;
 /** Helper to chunk up serialized data for testing */
 public class Chunker
 {
+    private Chunker()
+    {
+    }
+
     public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
     {
         final ByteBuffer outputBuffer = ByteBuffer.allocate( 1024 * 8 );

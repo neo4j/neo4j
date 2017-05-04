@@ -19,12 +19,9 @@
  */
 package org.neo4j.bolt.v1.messaging.example;
 
-import org.neo4j.graphdb.Path;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValuePath;
+import org.neo4j.graphdb.Path;
 
-import static org.neo4j.bolt.v1.messaging.example.Support.nodes;
-import static org.neo4j.bolt.v1.messaging.example.Support.relationships;
-import static org.neo4j.bolt.v1.messaging.example.Support.sequence;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.CAROL;
@@ -34,6 +31,9 @@ import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_LIKES_CARO
 import static org.neo4j.bolt.v1.messaging.example.Relationships.CAROL_DISLIKES_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.CAROL_MARRIED_TO_DAVE;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.DAVE_WORKS_FOR_DAVE;
+import static org.neo4j.bolt.v1.messaging.example.Support.nodes;
+import static org.neo4j.bolt.v1.messaging.example.Support.relationships;
+import static org.neo4j.bolt.v1.messaging.example.Support.sequence;
 
 /*
  * This class contains a number of paths used for testing, all based on
@@ -105,4 +105,7 @@ public class Paths
             PATH_WITH_LOOP,
     };
 
+    private Paths()
+    {
+    }
 }

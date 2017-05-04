@@ -50,6 +50,10 @@ public class GlobalJavascriptInitializer
         UNSAFE
     }
 
+    private GlobalJavascriptInitializer()
+    {
+    }
+
     public static synchronized void initialize( Mode requestedMode )
     {
         if ( initializationMode != null )

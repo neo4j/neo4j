@@ -37,6 +37,10 @@ import static java.lang.String.format;
 
 class Appending
 {
+    private Appending()
+    {
+    }
+
     static void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
             RaftMessages.AppendEntries.Request request, Log log ) throws IOException
     {

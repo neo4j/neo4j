@@ -25,6 +25,10 @@ import static java.lang.System.arraycopy;
 
 public class LabelIdArray
 {
+    private LabelIdArray()
+    {
+    }
+
     static long[] concatAndSort( long[] existing, long additional )
     {
         assertNotContains( existing, additional );

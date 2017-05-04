@@ -32,6 +32,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class RestoreClusterUtils
 {
+    private RestoreClusterUtils()
+    {
+    }
+
     public static File createClassicNeo4jStore( File base, FileSystemAbstraction fileSystem, int nodesToCreate, String recordFormat )
     {
         File existingDbDir = new File( base, "existing" );

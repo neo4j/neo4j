@@ -59,6 +59,10 @@ import static java.util.Collections.singletonList;
 
 public class Commands
 {
+    private Commands()
+    {
+    }
+
     public static NodeCommand createNode( long id, long... dynamicLabelRecordIds )
     {
         NodeRecord record = new NodeRecord( id );

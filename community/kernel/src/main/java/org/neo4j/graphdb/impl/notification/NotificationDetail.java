@@ -32,6 +32,10 @@ public interface NotificationDetail
 
     final class Factory
     {
+        private Factory()
+        {
+        }
+
         public static NotificationDetail deprecatedName( final String oldName, final String newName )
         {
             return createDeprecationNotificationDetail( oldName, newName );
