@@ -1,3 +1,22 @@
++++
+<b>2.3:</b>
+<a href="https://build.neohq.net/viewType.html?buildTypeId=Neo4j23_Linux&guest=1">
+<img src="https://build.neohq.net/app/rest/builds/buildType:Neo4j23_Linux/statusIcon"/>
+</a>
++++
++++
+<b>3.0:</b>
+<a href="https://build.neohq.net/viewType.html?buildTypeId=Neo4j30_Linux&guest=1">
+<img src="https://build.neohq.net/app/rest/builds/buildType:Neo4j30_Linux/statusIcon"/>
+</a>
++++
++++
+<b>3.1:</b>
+<a href="https://build.neohq.net/viewType.html?buildTypeId=Neo4j31_Linux&guest=1">
+<img src="https://build.neohq.net/app/rest/builds/buildType:Neo4j31_Linux/statusIcon"/>
+</a>
++++
+
 = Neo4j: Graphs for Everyone =
 
 https://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
