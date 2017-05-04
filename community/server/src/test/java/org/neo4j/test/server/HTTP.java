@@ -270,7 +270,17 @@ public class HTTP
         public Response( ClientResponse response )
         {
             this.response = sanityCheck( response );
-            this.entity = response.getEntity( String.class );
+            this.entity = getEntity( response );
+        }
+        
+        private static final int NO_CONTENT = 204;
+        
+        private static String getEntity(ClientResponse response) {
+            return (NO_CONTENT == response.getStatus()) ? null : response.getEntity( String.class );
+        }
+        
+        private boolean hasEntity() {
+            return (entity != null);
         }
 
         public int status()
@@ -293,7 +303,7 @@ public class HTTP
         {
             try
             {
-                return (T) JsonHelper.readJson( entity );
+                return hasEntity() ? (T) JsonHelper.readJson( entity ) : null;
             }
             catch ( JsonParseException e )
             {
@@ -312,8 +322,8 @@ public class HTTP
         }
 
         public JsonNode get(String fieldName) throws JsonParseException
-        {
-            return JsonHelper.jsonNode( entity ).get( fieldName );
+        {;
+            return hasEntity() ? JsonHelper.jsonNode( entity ).get( fieldName ) : null;
         }
 
         public String header( String name )
@@ -334,7 +344,9 @@ public class HTTP
                 }
             }
             sb.append( "\n" );
-            sb.append( entity ).append( "\n" );
+            if( hasEntity() ) {
+                sb.append( entity ).append( "\n" );
+            }
 
             return sb.toString();
         }
