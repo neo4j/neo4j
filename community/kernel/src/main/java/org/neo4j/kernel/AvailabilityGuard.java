@@ -292,6 +292,7 @@ public class AvailabilityGuard
             return availability;
         }
 
+        log.info( "Database is unavailable awaiting for it to be available again for " + millis + "ms" );
         long timeout = clock.currentTimeMillis() + millis;
         do
         {
