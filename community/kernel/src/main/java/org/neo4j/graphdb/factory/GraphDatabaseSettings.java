@@ -416,7 +416,13 @@ public abstract class GraphDatabaseSettings
                 {
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
                     long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
-                    long max = ByteUnit.tebiBytes( 1 ); // Don't heuristically take more than 1 TiB.
+                    
+                    // Don't heuristically take more than 1 TiB
+                    // Also don't take more than 70x the heap size. There's a check when creating the
+                    // page cache which warns about page cache memory to max heap ratio being > 100
+                    // and that it would cause problems with the heap footprint by the page cache.
+                    // this added guard puts this limit some measure below that to play nice.
+                    long max = Math.min( maxHeapMemory * 70, ByteUnit.tebiBytes( 1 ) );
                     long memory = Math.min( max, Math.max( min, heuristic ) );
                     return String.valueOf( memory );
                 }
