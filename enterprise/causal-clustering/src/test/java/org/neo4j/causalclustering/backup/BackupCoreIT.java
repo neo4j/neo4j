@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.causalclustering.PortAuthority;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -54,8 +53,7 @@ public class BackupCoreIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
-            .withNumberOfReadReplicas( 0 )
-            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, ignored -> ":" + PortAuthority.allocatePort() );
+            .withNumberOfReadReplicas( 0 );
 
     private Cluster cluster;
     private File backupsDir;

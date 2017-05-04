@@ -27,7 +27,6 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.causalclustering.PortAuthority;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
@@ -49,12 +48,11 @@ import static org.neo4j.function.Predicates.awaitEx;
 public class BackupReadReplicaIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( BackupReadReplicaIT.class )
+    public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withNumberOfReadReplicas( 1 )
-            .withSharedReadReplicaParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceReadReplicaParam( OnlineBackupSettings.online_backup_server, ignored -> ":" + PortAuthority.allocatePort() );
+            .withSharedReadReplicaParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
 
     private Cluster cluster;
     private File backupPath;
