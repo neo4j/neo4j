@@ -3961,7 +3961,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.setFileSystemAbstraction( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         File file = file( "a" );
@@ -3978,7 +3978,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.setFileSystemAbstraction( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         File file = file( "a" );
