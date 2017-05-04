@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
 import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.graphdb.config.Setting

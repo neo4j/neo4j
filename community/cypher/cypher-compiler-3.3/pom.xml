@@ -118,7 +118,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+      <artifactId>neo4j-cypher-frontend-3.3</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -138,7 +138,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+      <artifactId>neo4j-cypher-frontend-3.3</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

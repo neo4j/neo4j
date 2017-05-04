@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, StrictnessMode}
 
 case class LogicalPlanningContext(planContext: PlanContext,

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionContext, _}
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 

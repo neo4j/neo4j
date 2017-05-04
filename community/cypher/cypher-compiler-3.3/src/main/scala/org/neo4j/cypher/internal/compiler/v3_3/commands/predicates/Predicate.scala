@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.graphdb._
 
 import scala.util.{Failure, Success, Try}

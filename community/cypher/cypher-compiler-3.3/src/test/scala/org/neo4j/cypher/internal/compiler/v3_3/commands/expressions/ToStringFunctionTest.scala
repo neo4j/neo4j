@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_2.ParameterWrongTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ToStringFunctionTest extends CypherFunSuite {
 

@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_2.exceptionHandler
-import org.neo4j.cypher.internal.frontend.v3_2
-import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK}

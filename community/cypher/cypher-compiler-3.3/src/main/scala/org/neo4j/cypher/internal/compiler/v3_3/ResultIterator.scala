@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.JavaListWrapper
-import org.neo4j.cypher.internal.frontend.v3_2.CypherException
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 
 import scala.collection.immutable
 

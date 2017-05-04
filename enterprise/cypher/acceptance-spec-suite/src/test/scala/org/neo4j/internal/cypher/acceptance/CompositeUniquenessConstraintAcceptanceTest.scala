@@ -21,12 +21,11 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.hamcrest.CoreMatchers.containsString
 import org.junit.Assert.assertThat
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher._
-import org.neo4j.graphdb.ConstraintViolationException
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

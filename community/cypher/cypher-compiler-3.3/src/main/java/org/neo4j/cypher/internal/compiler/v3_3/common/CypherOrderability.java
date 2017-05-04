@@ -30,8 +30,8 @@ import java.util.stream.LongStream;
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
-import org.neo4j.cypher.internal.frontend.v3_2.IncomparableValuesException;
-import org.neo4j.cypher.internal.frontend.v3_2.UnorderableValueException;
+import org.neo4j.cypher.internal.frontend.v3_3.IncomparableValuesException;
+import org.neo4j.cypher.internal.frontend.v3_3.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.NameId
+import org.neo4j.cypher.internal.frontend.v3_3.NameId
 
 case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
                                       (val id: Id = new Id)

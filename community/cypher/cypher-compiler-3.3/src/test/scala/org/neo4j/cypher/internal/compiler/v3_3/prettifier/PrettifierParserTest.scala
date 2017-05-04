@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.prettifier
 
-import org.neo4j.cypher.internal.frontend.v3_2.parser.ParserTest
+import org.neo4j.cypher.internal.frontend.v3_3.parser.ParserTest
 
 class PrettifierParserTest extends ParserTest[Seq[SyntaxToken], Seq[SyntaxToken]] {
 

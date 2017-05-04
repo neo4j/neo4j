@@ -41,7 +41,7 @@
         </property>
       </activation>
       <modules>
-        <module>frontend-3.2</module>
+        <module>frontend-3.3</module>
         <module>ir-3.2</module>
         <module>cypher-compiler-3.3</module>
         <module>cypher</module>

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, ParserTest}
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, ParserTest}
 import org.parboiled.scala._
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {

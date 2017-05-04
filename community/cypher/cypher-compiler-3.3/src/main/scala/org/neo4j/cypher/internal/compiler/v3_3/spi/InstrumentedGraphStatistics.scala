@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.spi
 import java.lang.Math.{abs, max}
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 
 import scala.collection.mutable

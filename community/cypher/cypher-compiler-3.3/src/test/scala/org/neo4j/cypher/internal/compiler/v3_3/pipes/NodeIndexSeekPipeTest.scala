@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, ast}
 
 /**
  * Abstract description of an execution plan

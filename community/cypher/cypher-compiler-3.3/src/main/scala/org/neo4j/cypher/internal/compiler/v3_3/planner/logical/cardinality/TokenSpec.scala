@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.SymbolicNameWithId
+import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SymbolicNameWithId
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 sealed trait TokenSpec[+ID <: NameId] {

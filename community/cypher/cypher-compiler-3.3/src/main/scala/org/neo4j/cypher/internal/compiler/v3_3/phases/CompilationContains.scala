@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.phases
 
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticState
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.phases.Condition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Condition
 import org.neo4j.cypher.internal.ir.v3_2.UnionQuery
 
 import scala.reflect.ClassTag

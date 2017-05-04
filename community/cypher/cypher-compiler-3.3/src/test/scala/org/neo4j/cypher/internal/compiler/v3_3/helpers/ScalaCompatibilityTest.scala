@@ -24,7 +24,7 @@ import java.util.Arrays.asList
 import java.util.Collections.{emptyList, emptyMap, singletonMap, singleton => singletonSet}
 
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ScalaCompatibility.asScalaCompatible
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ScalaCompatibilityTest extends CypherFunSuite {
 

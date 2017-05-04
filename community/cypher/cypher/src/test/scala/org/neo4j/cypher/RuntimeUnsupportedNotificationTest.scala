@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.ExecutionEngineHelper._
 import org.neo4j.cypher.internal.frontend
-import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.language.reflectiveCalls

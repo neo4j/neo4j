@@ -24,7 +24,7 @@ import java.io.PrintWriter
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, InternalQueryStatistics}
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.graphdb.ResourceIterator
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {

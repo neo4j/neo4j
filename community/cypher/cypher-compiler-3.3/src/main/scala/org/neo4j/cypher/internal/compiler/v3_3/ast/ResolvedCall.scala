@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticCheckResult._
-import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {

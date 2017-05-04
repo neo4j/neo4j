@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.common.CypherOrderability
-import org.neo4j.cypher.internal.frontend.v3_2.helpers._
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_3.helpers._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 import scala.collection.mutable
 

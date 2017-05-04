@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_2.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.normalizeComparisons
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Equals, Expression, InvalidNotEquals, NotEquals, Variable, _}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeComparisons
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Expression, InvalidNotEquals, NotEquals, Variable, _}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class NormalizeComparisonsTest extends CypherFunSuite {
   val pos = DummyPosition(0)

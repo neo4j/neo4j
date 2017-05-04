@@ -25,7 +25,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 
 class LabelsFunctionTest extends CypherFunSuite {

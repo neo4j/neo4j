@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.{CompositeQueryExpressio
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.notification.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.notification.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, QueryGraph}
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {

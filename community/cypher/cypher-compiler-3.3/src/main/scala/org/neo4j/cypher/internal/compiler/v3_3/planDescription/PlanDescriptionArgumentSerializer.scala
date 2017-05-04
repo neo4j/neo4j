@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator._
 
 
 object PlanDescriptionArgumentSerializer {

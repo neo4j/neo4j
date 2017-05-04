@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, TokenContext}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.LabelName
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
 
 case class LazyLabel(name: String) {
   private var id: Option[LabelId] = None

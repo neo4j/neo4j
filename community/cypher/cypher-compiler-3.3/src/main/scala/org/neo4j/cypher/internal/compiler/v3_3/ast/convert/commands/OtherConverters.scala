@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_3.commands
-import org.neo4j.cypher.internal.frontend.v3_2.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 object OtherConverters {
 

@@ -23,7 +23,7 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {

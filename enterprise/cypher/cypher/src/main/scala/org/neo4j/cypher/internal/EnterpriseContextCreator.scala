@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
-import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 
 class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery]) extends ContextCreator[CompiledRuntimeContext] {
   override def create(tracer: CompilationPhaseTracer,

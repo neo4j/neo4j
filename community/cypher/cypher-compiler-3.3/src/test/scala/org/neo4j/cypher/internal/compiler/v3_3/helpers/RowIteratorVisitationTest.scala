@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 import scala.collection.mutable.ArrayBuffer
 

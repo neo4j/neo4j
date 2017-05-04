@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable

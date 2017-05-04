@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class IfElseIteratorTest extends CypherFunSuite {
   val a1 = ExecutionContext.from("a" -> 1)

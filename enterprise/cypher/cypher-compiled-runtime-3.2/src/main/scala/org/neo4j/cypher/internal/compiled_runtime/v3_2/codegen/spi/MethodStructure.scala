@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.Variable
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 /**
   * Describes the SPI for generating a method.

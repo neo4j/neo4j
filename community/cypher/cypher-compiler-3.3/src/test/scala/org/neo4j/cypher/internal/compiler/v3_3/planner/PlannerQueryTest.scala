@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, SortItem, UnsignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, SortItem, UnsignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2._
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexLeafPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
 
 trait JoinDisconnectedQueryGraphComponents {

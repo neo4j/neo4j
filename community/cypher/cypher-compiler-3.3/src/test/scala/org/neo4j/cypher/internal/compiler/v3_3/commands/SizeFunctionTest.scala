@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{PathImpl, SizeFunction, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 class SizeFunctionTest extends CypherFunSuite {

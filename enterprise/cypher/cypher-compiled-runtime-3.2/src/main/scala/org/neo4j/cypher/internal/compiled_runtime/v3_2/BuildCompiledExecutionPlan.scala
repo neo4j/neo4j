@@ -22,17 +22,10 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
-import org.neo4j.cypher.internal.frontend.v3_2.phases.Phase
+import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 
 object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, CompilationState, CompilationState] {
 

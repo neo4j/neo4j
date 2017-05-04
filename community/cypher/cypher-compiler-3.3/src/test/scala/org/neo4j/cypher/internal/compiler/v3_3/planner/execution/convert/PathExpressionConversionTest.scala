@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.execution.convert
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Variable, _}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, InputPosition, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Variable, _}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, SemanticDirection}
 
 class PathExpressionConversionTest extends CypherFunSuite {
 

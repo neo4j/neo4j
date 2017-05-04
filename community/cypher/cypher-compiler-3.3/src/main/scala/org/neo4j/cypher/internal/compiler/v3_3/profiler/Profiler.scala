@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.pipes.{Pipe, PipeDecorator, Query
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.frontend.v3_2.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 

@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationState, CompilerContext}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{ASTRewriter, IfNoParameter}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{Monitors, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{ASTRewriter, IfNoParameter}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, CompilationState, CompilationState]] {
   val monitorTag = "cypher3.3"

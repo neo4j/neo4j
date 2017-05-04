@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.{ListSupport, RuntimeJava
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 
 import scala.collection.JavaConverters._

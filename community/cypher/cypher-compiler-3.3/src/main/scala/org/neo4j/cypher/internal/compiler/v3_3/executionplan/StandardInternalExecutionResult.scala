@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_3.{TaskCloser, _}
-import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 
 import scala.collection.{Map, mutable}

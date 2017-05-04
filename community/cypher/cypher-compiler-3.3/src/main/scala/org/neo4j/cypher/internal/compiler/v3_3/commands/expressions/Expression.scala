@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{CoercedPredi
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_3.symbols.TypeSafe
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression

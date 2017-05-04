@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTBoolean
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTBoolean
 
 case class Not(inner: CodeGenExpression) extends CodeGenExpression {
 

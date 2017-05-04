@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 
 case class Predicate(dependencies: Set[IdName], expr: Expression) {
 

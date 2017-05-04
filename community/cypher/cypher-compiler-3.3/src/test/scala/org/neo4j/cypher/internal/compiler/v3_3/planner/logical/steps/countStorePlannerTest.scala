@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName, Variable}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{AggregatingQueryProjection, IdName}
 import org.scalatest.matchers.{MatchResult, Matcher}
 

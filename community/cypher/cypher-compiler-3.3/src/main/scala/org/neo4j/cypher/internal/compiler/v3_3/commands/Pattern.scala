@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v3_3.symbols.TypeSafe
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 import scala.collection.{Map, Seq}
 trait Pattern extends TypeSafe with AstNode[Pattern] {

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.PathValueBui
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IdentityTypeConverter, RuntimeTypeConverter}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.ParameterNotFoundException
+import org.neo4j.cypher.internal.frontend.v3_3.ParameterNotFoundException
 
 import scala.collection.mutable
 

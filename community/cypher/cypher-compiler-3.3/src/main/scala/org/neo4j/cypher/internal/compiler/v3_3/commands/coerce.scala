@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_3.{Geometry, Point}
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 object coerce {

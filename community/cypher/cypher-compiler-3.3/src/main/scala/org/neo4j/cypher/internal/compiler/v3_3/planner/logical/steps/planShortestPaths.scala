@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.{Length, Nodes}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_2.notification.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.frontend.v3_2.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Length, Nodes}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_3.notification.ExhaustiveShortestPathForbiddenNotification
+import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate, ShortestPathPattern, _}
 
 case object planShortestPaths {

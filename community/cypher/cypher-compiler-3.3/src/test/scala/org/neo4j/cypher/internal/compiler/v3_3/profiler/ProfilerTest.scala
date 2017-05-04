@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, PageCacheMisses, Rows}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 class ProfilerTest extends CypherFunSuite {

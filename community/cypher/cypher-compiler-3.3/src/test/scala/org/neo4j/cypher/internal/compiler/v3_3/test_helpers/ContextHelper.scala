@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, InputPosition, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {

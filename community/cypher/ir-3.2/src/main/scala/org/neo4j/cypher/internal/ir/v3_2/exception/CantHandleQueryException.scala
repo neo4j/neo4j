@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2.exception
 
-import org.neo4j.cypher.internal.frontend.v3_2.CypherException
-import org.neo4j.cypher.internal.frontend.v3_2.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
 
 class CantHandleQueryException(message: String = "Internal error - should have used fall back to execute query, but something went horribly wrong")
   extends CypherException(message, null) {

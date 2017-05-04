@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_2.ArithmeticException
+import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException
 
 trait TypeSafeMathSupport {
   def plus(left: Any, right: Any): Any = {

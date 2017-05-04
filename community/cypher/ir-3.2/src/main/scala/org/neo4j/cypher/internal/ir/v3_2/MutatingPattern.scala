@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
 
 sealed trait MutatingPattern {
   def coveredIds: Set[IdName]

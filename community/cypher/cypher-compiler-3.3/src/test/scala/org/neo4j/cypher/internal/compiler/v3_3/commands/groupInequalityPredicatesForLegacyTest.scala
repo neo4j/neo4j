@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Expression, Literal, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, MapExpression, PropertyKeyName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, MapExpression, PropertyKeyName}
 
 /*
  * Used to simplify finding overlap between writing and reading properties

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan.Completable
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, NormalMode, ResultRowImpl, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.helpers.collection.Iterators
 

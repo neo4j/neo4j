@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.spi
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{FunctionInvocation, UnresolvedCall}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{FunctionInvocation, UnresolvedCall}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],

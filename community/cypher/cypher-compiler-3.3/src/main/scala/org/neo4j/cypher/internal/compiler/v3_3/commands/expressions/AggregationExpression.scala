@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.aggregation._
-import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 abstract class AggregationExpression extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) =

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, 
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers._
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.{ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, InclusiveBound}
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QualifiedName, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 
 /**
   * Execution result of a Procedure

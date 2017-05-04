@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
-import org.neo4j.cypher.internal.frontend.v3_2.InvalidArgumentException
-import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{Do, If, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
+import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, If, Transformer}
 
 class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeContext, CompilationState, CompilationState]] {
 

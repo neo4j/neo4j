@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.assu
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, RelTypeName}
 import org.neo4j.cypher.internal.ir.v3_2.{Selections, _}
 
 trait Pattern2Selectivity {

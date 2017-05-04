@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.helpers
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, IsMap}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 object LiteralTypeSupport {
   def deriveCypherType(obj: Any): CypherType = obj match {

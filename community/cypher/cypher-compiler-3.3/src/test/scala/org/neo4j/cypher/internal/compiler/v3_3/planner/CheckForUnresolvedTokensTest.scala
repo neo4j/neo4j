@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_2.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_3.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3._
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport {
 

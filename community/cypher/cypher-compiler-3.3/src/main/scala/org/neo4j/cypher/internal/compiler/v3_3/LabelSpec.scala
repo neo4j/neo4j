@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 /**
  * LabelSpec represent parsed label sets before they are turned into either expressions or predicates

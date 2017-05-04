@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{CoalesceFunction, Expression, Literal, Null}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{QueryState, QueryStateHelper}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CoalesceTest extends CypherFunSuite {
 

@@ -24,10 +24,9 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.functions.functionConverter
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.helpers.LiteralTypeSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 object ExpressionConverter {
 

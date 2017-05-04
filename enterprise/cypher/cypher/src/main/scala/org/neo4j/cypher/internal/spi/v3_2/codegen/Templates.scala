@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, ResultRowImpl, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_2.CypherExecutionException
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.using
+import org.neo4j.cypher.internal.frontend.v3_3.CypherExecutionException
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}

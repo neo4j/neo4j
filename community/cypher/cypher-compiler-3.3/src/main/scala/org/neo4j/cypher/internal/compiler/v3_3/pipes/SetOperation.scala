@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{CastSupport, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_3.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

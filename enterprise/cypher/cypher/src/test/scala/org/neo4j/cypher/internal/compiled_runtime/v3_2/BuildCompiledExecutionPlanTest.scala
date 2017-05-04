@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, HardcodedGraphStatistics, NotImplementedPlanContext}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, HardcodedGraphStatistics}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.kernel.monitoring.Monitors

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {

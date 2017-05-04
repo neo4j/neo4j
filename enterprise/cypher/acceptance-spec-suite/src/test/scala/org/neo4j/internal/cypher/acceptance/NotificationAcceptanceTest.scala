@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_2.notification._
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.notification._
 import org.neo4j.cypher.{ChangedResults, ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.frontend.v3_2.{ArithmeticException, CypherTypeException}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{ArithmeticException, CypherTypeException}
 import org.scalatest._
 
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {

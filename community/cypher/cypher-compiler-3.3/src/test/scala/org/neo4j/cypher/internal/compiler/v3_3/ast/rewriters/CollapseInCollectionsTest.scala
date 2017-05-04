@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{CNFNormalizer, collapseMultipleInPredicates}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, collapseMultipleInPredicates}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 

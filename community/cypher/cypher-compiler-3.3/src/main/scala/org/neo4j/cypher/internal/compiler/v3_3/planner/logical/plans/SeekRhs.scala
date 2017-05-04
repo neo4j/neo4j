@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{ManySeekArgs, SeekArgs}
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 
 object Seek {
   def unapply(v: Any) = v match {

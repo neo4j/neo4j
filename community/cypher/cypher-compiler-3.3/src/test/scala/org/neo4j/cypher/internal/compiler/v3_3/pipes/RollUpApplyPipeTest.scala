@@ -24,8 +24,8 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("when rhs returns nothing, an empty collection should be produced") {

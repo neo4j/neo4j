@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.functions
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.frontend.v3_2.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
 sealed trait CodeGenFunction1 {
   def apply(arg: CodeGenExpression): CodeGenExpression

@@ -23,9 +23,9 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, PropertyKeyId, SemanticTable}
 import org.neo4j.graphdb.{Node, Relationship}
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {

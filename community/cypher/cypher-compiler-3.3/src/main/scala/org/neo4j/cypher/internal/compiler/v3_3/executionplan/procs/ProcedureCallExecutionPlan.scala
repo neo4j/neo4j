@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 /**
   * Execution plan for calling procedures

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
 with ListSupport {

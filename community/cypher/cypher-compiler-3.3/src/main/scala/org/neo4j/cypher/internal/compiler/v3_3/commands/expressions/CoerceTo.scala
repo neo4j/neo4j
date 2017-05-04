@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.coerce
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {

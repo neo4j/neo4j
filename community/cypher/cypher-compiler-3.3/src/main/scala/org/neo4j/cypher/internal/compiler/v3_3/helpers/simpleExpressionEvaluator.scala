@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.helpers
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{NullPipeDecorator, QueryState}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.{Rand, Timestamp}
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, FunctionInvocation, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Rand, Timestamp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation, Parameter}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherException}
 
 import scala.collection.mutable
 

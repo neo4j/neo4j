@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.helpers
 import java.util.{List => JavaList, Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._

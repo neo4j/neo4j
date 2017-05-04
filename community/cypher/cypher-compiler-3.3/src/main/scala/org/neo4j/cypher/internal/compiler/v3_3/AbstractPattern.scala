@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_3.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SyntaxException}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SyntaxException}
 
 import scala.collection.Map
 

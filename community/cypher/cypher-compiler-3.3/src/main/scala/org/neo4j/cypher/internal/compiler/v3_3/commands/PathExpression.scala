@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan.builders.PatternGra
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compiler.v3_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 /*
 This class does pattern matching inside an Expression. It's used as a fallback when the

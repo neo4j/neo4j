@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.CastSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.MergeConstraintConflictException
+import org.neo4j.cypher.internal.frontend.v3_3.MergeConstraintConflictException
 import org.neo4j.graphdb.Node
 
 case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)

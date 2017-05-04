@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.NameId._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, LabelName, RelTypeName}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.NameId._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, LabelName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId, SemanticTable}
 
 class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 

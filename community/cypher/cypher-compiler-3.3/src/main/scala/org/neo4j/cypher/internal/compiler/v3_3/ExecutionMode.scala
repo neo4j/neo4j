@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_2.InvalidSemanticsException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidSemanticsException
 
 object ExecutionMode {
   def cantMixProfileAndExplain: Nothing =

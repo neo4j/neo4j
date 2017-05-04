@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.helpers
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_2.EntityNotFoundException
+import org.neo4j.cypher.internal.frontend.v3_3.EntityNotFoundException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.JavaConverters._

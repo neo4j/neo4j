@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AstConstructionTestSupport, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, NameId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, NameId, SemanticTable}
 
 class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 

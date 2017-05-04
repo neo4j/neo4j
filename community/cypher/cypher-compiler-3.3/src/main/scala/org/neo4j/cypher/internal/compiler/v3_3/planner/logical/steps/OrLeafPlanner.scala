@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Ors}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.SeqCombiner.combine
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Ors}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {

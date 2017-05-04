@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, PlannerQuery, QueryProjection}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {

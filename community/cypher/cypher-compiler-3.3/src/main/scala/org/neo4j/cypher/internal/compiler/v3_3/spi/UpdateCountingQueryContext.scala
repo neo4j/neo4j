@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.spi
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, InternalQueryStatistics}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {

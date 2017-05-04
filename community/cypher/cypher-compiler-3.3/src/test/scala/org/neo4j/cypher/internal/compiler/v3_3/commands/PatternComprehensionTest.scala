@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class PatternComprehensionTest extends CypherFunSuite {
 

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{Equals, Not, True}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CTNumber
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 

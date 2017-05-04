@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 
 final case class IdName(name: String)
 

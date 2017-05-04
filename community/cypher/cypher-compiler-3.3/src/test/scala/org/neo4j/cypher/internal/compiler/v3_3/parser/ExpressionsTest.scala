@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{predicates, expressions => legacy}
-import org.neo4j.cypher.internal.frontend.v3_2.ast
-import org.neo4j.cypher.internal.frontend.v3_2.parser.{Expressions, ParserTest}
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, ParserTest}
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
 class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {

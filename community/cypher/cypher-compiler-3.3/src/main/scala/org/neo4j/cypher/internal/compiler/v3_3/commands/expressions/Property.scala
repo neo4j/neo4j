@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, EntityNotFoundException}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, EntityNotFoundException}
 import org.neo4j.graphdb.{Node, NotFoundException, Relationship}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)

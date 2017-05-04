@@ -31,9 +31,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{Completable, Provi
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable, symbols}
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_2.codegen._
 import org.neo4j.kernel.api.ReadOperations

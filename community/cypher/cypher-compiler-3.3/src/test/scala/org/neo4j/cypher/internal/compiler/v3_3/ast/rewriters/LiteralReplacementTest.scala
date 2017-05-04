@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Parameter
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Parameter
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 
 class LiteralReplacementTest extends CypherFunSuite  {
 

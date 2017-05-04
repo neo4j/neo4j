@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery}
 
 // Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS

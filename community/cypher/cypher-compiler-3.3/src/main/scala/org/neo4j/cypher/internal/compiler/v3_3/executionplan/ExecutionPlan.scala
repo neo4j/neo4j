@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, RuntimeName}
-import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 
 abstract class ExecutionPlan {
   def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult

@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, ResultRowImpl, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.using
-import org.neo4j.cypher.internal.frontend.v3_2.symbols
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 

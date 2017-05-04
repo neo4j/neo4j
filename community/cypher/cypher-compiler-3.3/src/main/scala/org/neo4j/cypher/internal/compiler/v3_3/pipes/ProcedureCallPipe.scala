@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{ListSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{ProcedureSignature, QualifiedName}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 object ProcedureCallRowProcessing {
   def apply(signature: ProcedureSignature) =

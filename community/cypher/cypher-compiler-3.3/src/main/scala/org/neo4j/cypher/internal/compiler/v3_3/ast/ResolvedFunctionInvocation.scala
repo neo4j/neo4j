@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticCheckResult._
-import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.UserDefinedFunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.UserDefinedFunctionInvocation
 
 object ResolvedFunctionInvocation {
 

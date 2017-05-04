@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.LateAstRewriting
-import org.neo4j.cypher.internal.frontend.v3_2.{SemanticChecker, SemanticTable, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.LateAstRewriting
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticChecker, SemanticTable, inSequence}
 import org.neo4j.cypher.internal.ir.v3_2.{PlannerQuery, QueryGraph}
 import org.scalatest.mock.MockitoSugar
 

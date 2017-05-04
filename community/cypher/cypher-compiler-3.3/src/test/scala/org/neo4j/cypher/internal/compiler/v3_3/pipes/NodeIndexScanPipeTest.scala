@@ -23,9 +23,9 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyToken, _}
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken, _}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Node
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {

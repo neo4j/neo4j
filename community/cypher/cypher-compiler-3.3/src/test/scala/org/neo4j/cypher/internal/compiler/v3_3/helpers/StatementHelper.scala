@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_2.{Scope, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.{Scope, SemanticCheckResult, SemanticState}
 import org.scalatest.Assertions
 
 object StatementHelper extends Assertions {

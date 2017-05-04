@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Literal, Ne
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Argument => LPArgument}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, PlannerQuery}
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {

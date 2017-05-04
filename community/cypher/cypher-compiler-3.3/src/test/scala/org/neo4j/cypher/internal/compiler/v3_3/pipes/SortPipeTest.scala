@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.junit.Assert._
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.mutable.{Map => MutableMap}

@@ -26,7 +26,7 @@ import java.util.Collections
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
-import org.neo4j.cypher.internal.frontend.v3_2.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.graphdb.ResourceIterator
 
 case class ExplainExecutionResult(columns: List[String],

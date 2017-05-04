@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, AstConstructionTestSupport, Expression, Variable}
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{ExpressionTypeInfo, InputPosition, InternalException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, AstConstructionTestSupport, Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{ExpressionTypeInfo, InputPosition, InternalException, SemanticTable}
 
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 

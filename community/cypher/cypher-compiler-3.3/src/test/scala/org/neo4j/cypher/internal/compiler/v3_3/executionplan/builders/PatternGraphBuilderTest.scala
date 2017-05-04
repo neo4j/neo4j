@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_3.commands.RelatedTo
 import org.neo4j.cypher.internal.compiler.v3_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
 

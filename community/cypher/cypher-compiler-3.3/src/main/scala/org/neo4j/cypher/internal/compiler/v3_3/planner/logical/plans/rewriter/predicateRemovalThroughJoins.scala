@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, QueryGraph}
 
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_2.InternalException
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{AliasedReturnItem, Expression, StringLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AliasedReturnItem, Expression, StringLiteral, Variable}
 
 trait QueryHorizon {
 

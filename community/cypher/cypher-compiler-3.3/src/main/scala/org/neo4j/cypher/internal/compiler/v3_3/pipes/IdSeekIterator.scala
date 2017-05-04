@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.compiler.v3_3.spi.Operations
-import org.neo4j.cypher.internal.frontend.v3_2.EntityNotFoundException
+import org.neo4j.cypher.internal.frontend.v3_3.EntityNotFoundException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 abstract class IdSeekIterator[T <: PropertyContainer]

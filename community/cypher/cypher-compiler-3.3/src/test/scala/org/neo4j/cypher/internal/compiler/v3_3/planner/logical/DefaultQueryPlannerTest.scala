@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{ASTAnnotationMap, Expression, Hint}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_2.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, Expression, Hint}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_2._
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

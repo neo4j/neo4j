@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.mockito.Matchers.anyBoolean
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_2.CypherException
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ClosingIteratorTest extends CypherFunSuite {
   var taskCloser: TaskCloser = _

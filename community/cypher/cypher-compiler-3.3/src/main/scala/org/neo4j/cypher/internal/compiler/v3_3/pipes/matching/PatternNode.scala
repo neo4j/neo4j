@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.commands.values.{KeyToken, Unreso
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{RelatedTo, SingleNode}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.Node
 
 import scala.collection.Map

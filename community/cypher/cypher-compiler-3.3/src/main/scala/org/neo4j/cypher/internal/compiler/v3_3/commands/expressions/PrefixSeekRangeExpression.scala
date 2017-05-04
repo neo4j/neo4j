@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionContext, PrefixRange}
-import org.neo4j.cypher.internal.frontend.v3_2.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
 case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Expression {
 

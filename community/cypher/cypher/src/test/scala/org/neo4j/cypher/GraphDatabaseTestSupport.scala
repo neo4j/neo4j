@@ -20,8 +20,8 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.frontend.v3_2.phases.devNullLogger
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundPlanContext, TransactionalContextWrapper}

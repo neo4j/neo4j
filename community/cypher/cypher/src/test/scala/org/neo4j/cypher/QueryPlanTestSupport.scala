@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait QueryPlanTestSupport {

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {

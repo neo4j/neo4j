@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 
 import scala.collection.mutable
 

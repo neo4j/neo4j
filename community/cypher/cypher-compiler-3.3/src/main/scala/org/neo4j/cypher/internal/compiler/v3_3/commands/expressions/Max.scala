@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.aggregation.MaxFunction
-import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case class Max(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new MaxFunction(anInner)

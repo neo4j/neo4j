@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =

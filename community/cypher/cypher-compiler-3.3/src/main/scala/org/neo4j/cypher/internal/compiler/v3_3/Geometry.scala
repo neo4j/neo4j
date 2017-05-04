@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_2.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 
 trait Geometry {
   def geometryType: String
