@@ -62,7 +62,7 @@ public abstract class Environment
         else throw new UnsupportedOperationException( "Cannot browse " + link + ". Unsupported operation." );
     }
 
-    public abstract void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws
+    public abstract void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory, File configurationDirectory ) throws
     IOException;
 
     protected boolean desktopSupports( Desktop.Action action )

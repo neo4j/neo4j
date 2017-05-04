@@ -26,6 +26,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -173,6 +176,17 @@ public class DesktopModel
     {
         InputStream defaults = installation.getDefaultDatabaseConfiguration();
         writeInto( file, defaults );
+
+        try
+        {
+            String line = "dbms.directories.lib=" + installation.getInstallationBinDirectory().getAbsolutePath() + System.lineSeparator();
+            Files.write( file.toPath(), line.getBytes(), StandardOpenOption.APPEND );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
+
     }
 
     private void writeInto( File file, InputStream data ) throws IOException
@@ -207,6 +221,7 @@ public class DesktopModel
         installation.getEnvironment().openCommandPrompt(
                 installation.getInstallationBinDirectory(),
                 installation.getInstallationJreBinDirectory(),
-                installation.getDatabaseDirectory().getParentFile() );
+                installation.getDatabaseDirectory().getParentFile(),
+                installation.getConfigurationDirectory() );
     }
 }

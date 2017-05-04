@@ -40,7 +40,7 @@ class DarwinEnvironment extends Environment
     }
 
     @Override
-    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
+    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory, File configurationDirectory ) throws IOException
     {
         Runtime.getRuntime().exec( new String[] { "open", "-na", "Terminal", "openNeoTerminal.sh" } );
     }
