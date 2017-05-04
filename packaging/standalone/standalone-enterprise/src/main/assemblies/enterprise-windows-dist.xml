@@ -111,6 +111,8 @@
         <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j</exclude>
+        <!-- Temporary move bolt to system/lib - to be removed entirely as a dependency in 2.3.1 -->
+        <exclude>org.neo4j:neo4j-bolt*</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
@@ -136,6 +138,17 @@
         <exclude>org.acplt:oncrpc</exclude>
         <exclude>org.slf4j:slf4j-api</exclude>
       </excludes>
+    </dependencySet>
+    <dependencySet><!-- Temporary move bolt to system/lib - to be removed entirely as a dependency in 2.3.1 -->
+      <outputDirectory>system/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.neo4j:neo4j-bolt*</include>
+      </includes>
     </dependencySet>
   </dependencySets>
 
