@@ -347,6 +347,7 @@ public class StoreCopyClient
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.boltConnector( "bolt" ).enabled, "false" )
                 .newGraphDatabase();
     }
 
