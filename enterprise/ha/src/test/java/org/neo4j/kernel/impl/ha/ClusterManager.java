@@ -1357,6 +1357,8 @@ public class ClusterManager
                 builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
                 builder.setConfig( HaSettings.ha_server, clusterUri.getHost() + ":" + haPort );
                 builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+                builder.setConfig( GraphDatabaseSettings.neo4j_home,
+                        new File( parent, "miscForServer" + serverId ).getAbsolutePath() );
                 for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
                 {
                     builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
