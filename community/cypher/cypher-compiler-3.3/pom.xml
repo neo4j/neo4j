@@ -123,7 +123,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-ir-3.2</artifactId>
+      <artifactId>neo4j-cypher-ir-3.3</artifactId>
       <version>${project.version}</version>
     </dependency>
 
