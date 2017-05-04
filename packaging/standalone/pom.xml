@@ -165,7 +165,7 @@ terms of the relevant Commercial Agreement.
           <failIfMissing>true</failIfMissing>
           <plainTextReport>true</plainTextReport>
           <prependText>notice-agpl-prefix.txt</prependText>
-          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.ndp){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
         </configuration>
         <executions>
           <execution>

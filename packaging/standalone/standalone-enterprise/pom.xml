@@ -169,4 +169,22 @@ terms of the relevant Commercial Agreement.
     </dependency>
   </dependencies>
 
+  <profiles>
+    <!-- Temporary build-level feature toggle for Neo4j Data Protocol -->
+    <profile>
+      <id>feature-ndp</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property><name>feature-ndp</name></property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.neo4j.ndp</groupId>
+          <artifactId>neo4j-ndp-kernelextension</artifactId>
+          <version>${neo4j.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
 </project>
