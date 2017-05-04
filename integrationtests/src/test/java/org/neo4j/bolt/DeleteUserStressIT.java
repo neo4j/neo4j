@@ -57,6 +57,14 @@ public class DeleteUserStressIT
         File knownHosts = new File( System.getProperty( "user.home" ) + "/.neo4j/known_hosts" );
         FileUtils.deleteFile( knownHosts );
         adminDriver = GraphDatabase.driver( db.boltURI(), basic( "neo4j", "neo4j" ) );
+        try ( Session session = adminDriver.session();
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CALL dbms.changePassword('abc')" ).consume();
+            tx.success();
+        }
+        adminDriver.close();
+        adminDriver = GraphDatabase.driver( db.boltURI(), basic( "neo4j", "abc" ) );
     }
 
     @Test

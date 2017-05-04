@@ -40,6 +40,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.newUser( username, password, requirePasswordChange );
     }
 
@@ -58,7 +59,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "false" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        changeUserPassword( securityContext.subject().username(), password, requirePasswordChange );
+        setUserPassword( securityContext.subject().username(), password, requirePasswordChange );
     }
 
     @Description( "Change the given user's password." )
@@ -67,11 +68,8 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws InvalidArgumentsException, IOException
     {
-        userManager.setUserPassword( username, newPassword, requirePasswordChange );
-        if ( securityContext.subject().hasUsername( username ) )
-        {
-            securityContext.subject().setPasswordChangeNoLongerRequired();
-        }
+        securityContext.assertCredentialsNotExpired();
+        setUserPassword( username, newPassword, requirePasswordChange );
     }
 
     @Description( "Assign a role to the user." )
@@ -79,6 +77,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     public void addRoleToUser( @Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws IOException, InvalidArgumentsException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.addRoleToUser( roleName, username );
     }
 
@@ -87,6 +86,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     public void removeRoleFromUser( @Name( "roleName" ) String roleName, @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.removeRoleFromUser( roleName, username );
     }
 
@@ -94,6 +94,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         if ( userManager.deleteUser( username ) )
         {
             kickoutUser( username, "deletion" );
@@ -104,6 +105,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.suspendUser", mode = DBMS )
     public void suspendUser( @Name( "username" ) String username ) throws IOException, InvalidArgumentsException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.suspendUser( username );
         kickoutUser( username, "suspension" );
     }
@@ -114,6 +116,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             @Name( value = "requirePasswordChange", defaultValue = "true" ) boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.activateUser( username, requirePasswordChange );
     }
 
@@ -121,6 +124,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         Set<String> users = userManager.getAllUsernames();
         if ( users.isEmpty() )
         {
@@ -136,6 +140,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.listRoles", mode = DBMS )
     public Stream<RoleResult> listRoles() throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         Set<String> roles = userManager.getAllRoleNames();
         return roles.stream().map( this::roleResultForName );
     }
@@ -145,6 +150,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         return userManager.getRoleNamesForUser( username ).stream().map( StringResult::new );
     }
 
@@ -153,6 +159,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         return userManager.getUsernamesForRole( roleName ).stream().map( StringResult::new );
     }
 
@@ -160,6 +167,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.createRole", mode = DBMS )
     public void createRole( @Name( "roleName" ) String roleName ) throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.newRole( roleName );
     }
 
@@ -167,6 +175,17 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.deleteRole", mode = DBMS )
     public void deleteRole( @Name( "roleName" ) String roleName ) throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         userManager.deleteRole( roleName );
+    }
+
+    private void setUserPassword( String username, String newPassword, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
+    {
+        userManager.setUserPassword( username, newPassword, requirePasswordChange );
+        if ( securityContext.subject().hasUsername( username ) )
+        {
+            securityContext.subject().setPasswordChangeNoLongerRequired();
+        }
     }
 }
