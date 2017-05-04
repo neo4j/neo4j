@@ -43,6 +43,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -90,7 +91,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
 import static org.neo4j.server.configuration.ClientConnectorSettings.httpConnector;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
@@ -296,7 +296,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void stopModules()
     {
-        new RunCarefully( map( module -> module::stop, serverModules ) ).run();
+        new RunCarefully( Iterables.<ServerModule,Runnable>map( module -> module::stop, serverModules ) ).run();
     }
 
     @Override

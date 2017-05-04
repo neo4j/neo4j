@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
@@ -158,7 +157,7 @@ public class ResetFuzzTest
         for ( RequestMessage message : sequence )
         {
             sent.add( message );
-            message.dispatch( messageHandler );
+            message.<RuntimeException>dispatch( messageHandler );
         }
     }
 
