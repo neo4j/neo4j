@@ -70,7 +70,9 @@ public class TransactionHooks
         }
         for ( Pair<TransactionHook, Outcome> hookAndOutcome : hooksState.hooksWithOutcome() )
         {
-            hookAndOutcome.first().afterCommit( state, tx, hookAndOutcome.other() );
+            TransactionHook transactionHook = hookAndOutcome.first();
+            Outcome outcome = hookAndOutcome.other();
+            transactionHook.afterCommit( state, tx, outcome );
         }
     }
 
