@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.ArrayBackedMap
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_3.LoadExternalResourceException
-import org.neo4j.cypher.internal.ir.v3_2.{CSVFormat, HasHeaders, NoHeaders}
+import org.neo4j.cypher.internal.ir.v3_3.{CSVFormat, HasHeaders, NoHeaders}
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,

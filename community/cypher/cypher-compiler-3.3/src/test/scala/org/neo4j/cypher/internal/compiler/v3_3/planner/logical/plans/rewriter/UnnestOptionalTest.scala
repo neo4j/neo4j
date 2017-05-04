@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {

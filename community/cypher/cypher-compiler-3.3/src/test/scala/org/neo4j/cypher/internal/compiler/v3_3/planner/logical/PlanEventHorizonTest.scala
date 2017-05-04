@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
 
 class PlanEventHorizonTest extends CypherFunSuite {
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SyntaxException}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClauses
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite

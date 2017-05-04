@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_2.phases.Monitors
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.reflect.ClassTag

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection, ast, _}
-import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.ir.v3_3._
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, SemanticTable, ast}
-import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
-import org.neo4j.cypher.internal.ir.v3_2.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.ir.v3_3.{PeriodicCommit, UnionQuery}
 
 object StatementConverters {
   import Foldable._

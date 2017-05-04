@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.ir.v3_2.UnionQuery
+import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 
 case class CypherCompiler[Context <: CompilerContext](createExecutionPlan: Transformer[Context, CompilationState, CompilationState],
                           astRewriter: ASTRewriter,

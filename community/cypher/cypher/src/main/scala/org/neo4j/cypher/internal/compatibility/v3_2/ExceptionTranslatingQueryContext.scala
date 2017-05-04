@@ -21,7 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_2.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 

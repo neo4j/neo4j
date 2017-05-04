@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normal
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticState, inSequence}
-import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 

@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_2
 
-import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v3_3
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{ExecutionPlan => ExecutionPlan_v3_2}
-import org.neo4j.cypher.internal.compiler.v3_3.{ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.compiler.v3_2
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
+import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_2._
+import org.neo4j.cypher.internal.spi.v3_2.{ExceptionTranslatingPlanContext, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper => TransactionalContextWrapperV3_2}
+import org.neo4j.cypher.internal.spi.v3_3.{TransactionalContextWrapper => TransactionalContextWrapperV3_3}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.kernel.api.query.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -49,7 +51,7 @@ trait Compatibility[C <: CompilerContext] {
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_3.CypherCompiler[C]
+  protected val compiler: v3_2.CypherCompiler[C]
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
@@ -62,13 +64,17 @@ trait Compatibility[C <: CompilerContext] {
         notificationLogger,
         preParsedQuery.planner.name,
         preParsedQuery.debugOptions,
-        Some(preParsedQuery.offset), tracer))
+        Some(helpers.as3_2(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContextWrapperV3_3, tracer: frontend.v3_3.phases.CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
-        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
+        val tc = TransactionalContextWrapperV3_2(transactionalContext.tc)
+        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext, preParsedQuery.debugOptions, Some(preParsedQuery.offset), tracer)
+        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext,
+                                                                         preParsedQuery.debugOptions,
+                                                                         Some(helpers.as3_2(preParsedQuery.offset)),
+                                                                         helpers.as3_2(tracer))
 
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)
@@ -85,12 +91,12 @@ trait Compatibility[C <: CompilerContext] {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-    private def queryContext(transactionalContext: TransactionalContextWrapper) = {
-      val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
+    private def queryContext(transactionalContext: TransactionalContextWrapperV3_3) = {
+      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperV3_2(transactionalContext.tc))(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
+    def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_2
         case CypherExecutionMode.profile => ProfileModev3_2
@@ -109,10 +115,11 @@ trait Compatibility[C <: CompilerContext] {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean =
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_3): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
 
     override def plannerInfo = {
+      import scala.collection.JavaConverters._
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
         case SchemaIndexSeekUsage(identifier, label, propertyKeys) => schemaIndexUsage(identifier, label, propertyKeys: _*)
         case SchemaIndexScanUsage(identifier, label, propertyKey) => schemaIndexUsage(identifier, label, propertyKey)

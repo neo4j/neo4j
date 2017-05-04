@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.IntegerLiteral
-import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.ir.v3_3._
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) extends CardinalityModel {
 

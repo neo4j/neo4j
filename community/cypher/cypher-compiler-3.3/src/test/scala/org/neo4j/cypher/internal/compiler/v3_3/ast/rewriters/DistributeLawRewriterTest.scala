@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_3.AstRewritingMonitor
+import org.neo4j.cypher.internal.frontend.v3_3.{AstRewritingMonitor, Rewriter}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Or
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.distributeLawsRewriter
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite

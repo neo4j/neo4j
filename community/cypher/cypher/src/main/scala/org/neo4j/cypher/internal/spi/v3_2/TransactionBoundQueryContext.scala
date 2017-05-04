@@ -25,8 +25,16 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
-import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions
+import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_2.MinMaxOrdering._
+import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_2.spi.{IdempotentResult, Operations, QualifiedName, QueryContext}
+import org.neo4j.cypher.internal.frontend.v3_2._
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

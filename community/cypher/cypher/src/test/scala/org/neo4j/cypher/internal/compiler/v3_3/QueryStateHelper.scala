@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_2.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.compiler.v3_3.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_3.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory

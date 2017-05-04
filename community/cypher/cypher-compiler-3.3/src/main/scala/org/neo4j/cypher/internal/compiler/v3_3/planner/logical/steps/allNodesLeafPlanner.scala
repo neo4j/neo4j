@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object allNodesLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =

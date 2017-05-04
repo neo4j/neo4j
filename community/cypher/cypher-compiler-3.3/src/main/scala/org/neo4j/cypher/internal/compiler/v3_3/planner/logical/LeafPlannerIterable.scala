@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 trait LeafPlannerIterable {
   def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )

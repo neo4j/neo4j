@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{QueryExecutionEvent, QueryExecutionTracer}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{QueryExecutionEvent, QueryExecutionTracer}
 import org.neo4j.cypher.internal.compiler.v3_3.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor, NodeIdWrapper, RelationshipIdWrapper}

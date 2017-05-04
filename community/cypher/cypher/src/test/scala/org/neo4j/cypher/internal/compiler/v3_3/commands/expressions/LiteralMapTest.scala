@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 
+import org.neo4j.cypher.internal.compiler.v3_3.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class LiteralMapTest extends CypherFunSuite {

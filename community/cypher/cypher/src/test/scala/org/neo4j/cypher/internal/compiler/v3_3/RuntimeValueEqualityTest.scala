@@ -24,6 +24,7 @@ import java.util.Arrays.asList
 import java.util.Collections.singletonMap
 
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
+import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.spatial.{CRS => JavaCRS, Coordinate => JavaCoordinate, Point => JavaPoint}
 

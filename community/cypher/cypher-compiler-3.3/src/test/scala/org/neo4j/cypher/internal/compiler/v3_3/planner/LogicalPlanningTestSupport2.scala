@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, PropertyKeyId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}

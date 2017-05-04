@@ -24,9 +24,9 @@ import java.util
 import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionTracer}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi._
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, QueryExecutionTracer}
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext

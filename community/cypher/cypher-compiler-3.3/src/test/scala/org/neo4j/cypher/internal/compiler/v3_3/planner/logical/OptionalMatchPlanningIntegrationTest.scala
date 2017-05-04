@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit, _}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, SimplePatternLength}
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

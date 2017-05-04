@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationState, CompilerContext}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase

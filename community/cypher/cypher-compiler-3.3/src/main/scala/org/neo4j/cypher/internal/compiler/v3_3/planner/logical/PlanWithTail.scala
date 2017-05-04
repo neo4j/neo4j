@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.ir.v3_2.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,

@@ -37,6 +37,6 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
     graph = createGraphDatabase(Map(GraphDatabaseSettings.cypher_hints_error -> "true"))
     eengine = createEngine(graph)
 
-    intercept[frontend.v3_2.InvalidArgumentException](execute("cypher runtime=compiled return 42"))
+    intercept[frontend.v3_3.InvalidArgumentException](execute("cypher runtime=compiled return 42"))
   }
 }

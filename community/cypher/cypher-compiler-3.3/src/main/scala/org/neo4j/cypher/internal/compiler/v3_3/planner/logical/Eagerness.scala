@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, PlannerQuery, QueryGraph}
 
 import scala.annotation.tailrec
 

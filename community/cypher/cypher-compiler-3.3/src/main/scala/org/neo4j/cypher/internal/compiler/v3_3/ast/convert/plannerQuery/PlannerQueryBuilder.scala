@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2._
+import org.neo4j.cypher.internal.ir.v3_3._
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends ListSupport {
@@ -123,7 +123,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
         .amendQueryGraph(_.mapSelections {
           case Selections(predicates) =>
             val optPredicates = predicates.toNonEmptyListOption
-            val newPredicates = optPredicates.map { predicates =>
+            val newPredicates: Set[Predicate] = optPredicates.map { predicates =>
               groupInequalityPredicates(predicates).toSet
             }.getOrElse(predicates)
             Selections(newPredicates)

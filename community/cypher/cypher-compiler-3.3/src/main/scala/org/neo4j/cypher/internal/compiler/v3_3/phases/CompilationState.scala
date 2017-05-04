@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, PlannerName, SemanticState, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_2.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{PeriodicCommit, UnionQuery}
 
 /*
 This is the state that is used during query compilation. It accumulates more and more values as it passes through

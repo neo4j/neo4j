@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.spi.v3_2
 
-import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_2.spi._
+import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 

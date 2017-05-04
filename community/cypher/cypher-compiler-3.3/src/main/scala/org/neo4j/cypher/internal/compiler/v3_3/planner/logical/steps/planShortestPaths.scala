@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException, InternalException}
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, ShortestPathPattern, _}
 
 case object planShortestPaths {
 

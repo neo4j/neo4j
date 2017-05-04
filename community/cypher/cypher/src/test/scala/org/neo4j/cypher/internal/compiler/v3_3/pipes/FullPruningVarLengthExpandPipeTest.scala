@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
+import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Literal, Property, Variable}
+import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{Equals, Predicate, True}
+import org.neo4j.cypher.internal.compiler.v3_3.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.api.KernelTransaction.Type

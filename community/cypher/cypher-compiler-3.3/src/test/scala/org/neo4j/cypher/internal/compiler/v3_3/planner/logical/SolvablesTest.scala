@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
 
 class SolvablesTest extends CypherFunSuite {
 

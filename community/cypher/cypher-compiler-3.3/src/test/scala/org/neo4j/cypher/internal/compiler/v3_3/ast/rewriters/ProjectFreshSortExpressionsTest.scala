@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses, projectFreshSortExpressions}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, inSequence}
 
 class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest: Rewriter = projectFreshSortExpressions

@@ -40,8 +40,8 @@ import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
-import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PeriodicCommit, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, PeriodicCommit, VarPatternLength}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable

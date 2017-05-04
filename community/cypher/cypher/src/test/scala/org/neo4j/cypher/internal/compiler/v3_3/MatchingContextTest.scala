@@ -20,6 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Literal, Property, Variable}
+import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{Equals, Predicate}
+import org.neo4j.cypher.internal.compiler.v3_3.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v3_3.commands.{Pattern, RelatedTo, SingleNode, VarLengthRelatedTo}
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.builders.PatternGraphBuilder
+import org.neo4j.cypher.internal.compiler.v3_3.pipes.matching.MatchingContext
+import org.neo4j.cypher.internal.compiler.v3_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.SortDescription
-import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
 case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])
                (val solved: PlannerQuery with CardinalityEstimation)

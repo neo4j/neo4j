@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.notification.{IndexHintUnfulfilla
 import org.neo4j.cypher.internal.frontend.v3_3.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, PatternRelationship, VarPatternLength, _}
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, VarPatternLength, _}
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

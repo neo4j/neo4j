@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LegacyNodeIndexSeek, LogicalPlan}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{Cost, IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.{Cost, IdName, QueryGraph}
 
 class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 

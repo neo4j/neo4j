@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.projection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{inlineNamedPathsInPatternComprehensions, projectNamedPaths}

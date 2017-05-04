@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.solveOption
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{applyOptional, leafPlanOptions, outerHashJoin}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipStartItem
-import org.neo4j.cypher.internal.ir.v3_2.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.{PatternRelationship, QueryGraph}
 
 /**
   * This class contains the main IDP loop in the cost planner.

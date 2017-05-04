@@ -31,10 +31,10 @@ import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen._
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions._
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QueryContext}

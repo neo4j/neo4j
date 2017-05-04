@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.helpers
 import java.util
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.isGraphKernelResultValue
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
