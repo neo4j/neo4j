@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class ValueUnboundRelationship
         extends ValuePropertyContainer
@@ -58,8 +60,18 @@ public class ValueUnboundRelationship
     public static ValueUnboundRelationship unpack( Neo4jPack.Unpacker unpacker )
             throws IOException
     {
-        assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.UNBOUND_RELATIONSHIP;
+        long fieldCount = unpacker.unpackStructHeader();
+        if( fieldCount != STRUCT_FIELD_COUNT )
+        {
+            throw new BoltIOException( Status.Request.InvalidFormat,
+                    "Wrong field count, expecting " + STRUCT_FIELD_COUNT + " however got " + fieldCount );
+        }
+        char type = unpacker.unpackStructSignature();
+        if( type != Neo4jPack.UNBOUND_RELATIONSHIP )
+        {
+            throw new BoltIOException( Status.Request.InvalidFormat,
+                    "Wrong type, expecting " + Neo4jPack.UNBOUND_RELATIONSHIP + " however got " + type );
+        }
         return unpackFields( unpacker );
     }
 
