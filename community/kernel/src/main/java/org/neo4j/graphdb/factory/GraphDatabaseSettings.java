@@ -466,6 +466,8 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
+    @Deprecated
+    @Obsoleted( "Subsumed by transaction termination feature" )
     @Internal
     public static final Setting<Boolean> execution_guard_enabled = setting("execution_guard_enabled", BOOLEAN, FALSE );
 

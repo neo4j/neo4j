@@ -23,6 +23,10 @@ import org.neo4j.logging.Log;
 
 import static java.lang.System.currentTimeMillis;
 
+/**
+ * Please use transaction termination feature instead.
+ */
+@Deprecated
 public class Guard
 {
     private final ThreadLocal<GuardInternal> threadLocal = new ThreadLocal<>();
