@@ -55,6 +55,11 @@ public class StoreLocker implements Closeable
      */
     public void checkLock( File storeDir ) throws StoreLockException
     {
+        if ( haveLockAlready() )
+        {
+            return;
+        }
+
         File storeLockFile = new File( storeDir, STORE_LOCK_FILENAME );
 
         try
@@ -72,7 +77,10 @@ public class StoreLocker implements Closeable
 
         try
         {
-            storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
+            if ( storeLockFileChannel == null )
+            {
+                storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
+            }
             storeLockFileLock = storeLockFileChannel.tryLock();
             if ( storeLockFileLock == null )
             {
@@ -85,6 +93,11 @@ public class StoreLocker implements Closeable
             String message = "Unable to obtain lock on store lock file: " + storeLockFile;
             throw storeLockException( message, e );
         }
+    }
+
+    private boolean haveLockAlready()
+    {
+        return storeLockFileLock != null && storeLockFileChannel != null;
     }
 
     private StoreLockException storeLockException( String message, Exception e )
