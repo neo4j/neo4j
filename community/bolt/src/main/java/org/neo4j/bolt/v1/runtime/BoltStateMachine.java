@@ -367,13 +367,23 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                         catch ( AuthenticationException | AuthProviderTimeoutException e )
                         {
                             fail( machine, Neo4jError.fatalFrom( e.status(), e.getMessage() ) );
-                            throw new BoltConnectionAuthFatality( e.getMessage() );
+                            return CONNECTED;
                         }
                         catch ( Throwable t )
                         {
                             fail( machine, Neo4jError.fatalFrom( Status.General.UnknownError, t.getMessage() ) );
                             throw new BoltConnectionFatality( t.getMessage() );
                         }
+                    }
+
+                    @Override
+                    public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
+                    {
+                        // While ACK_FAILURE should only be sent after a failure, allowing it anytime
+                        // in the CONNECTED state simplifies the state machine by avoiding the need for
+                        // an INIT_FAILED state. This makes it easier to observe that it is impossible
+                        // to move to the READY state without successful authentication.
+                        return CONNECTED;
                     }
                 },
 
