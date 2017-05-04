@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -35,8 +36,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.InputIdIterable;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.InputIds;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -45,11 +44,11 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.format;
+
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.SourceInformation.encodeSourceInformation;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
@@ -265,7 +264,7 @@ public class EncodingIdMapper implements IdMapper
      * </ol>
      */
     @Override
-    public void prepare( InputIdIterable ids, Collector collector, ProgressListener progress )
+    public void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
         trackerCache = trackerFactory.create( cacheFactory, highestSetIndex + 1 );
@@ -275,13 +274,15 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
                     processorsForSorting, progress, comparator ).run();
 
-            int numberOfCollisions = detectAndMarkCollisions( progress );
+            int numberOfCollisions = detectAndMarkCollisions( progress, inputIdLookup );
             if ( numberOfCollisions > 0 )
             {
-                try ( InputIds idIterator = ids.iterator() )
-                {
-                    buildCollisionInfo( idIterator, numberOfCollisions, collector, progress );
-                }
+                // Detect input id duplicates within the same group, with source information, line number and the works
+                detectDuplicateInputIds( radix, numberOfCollisions, collector, progress );
+
+                // We won't be needing these anymore
+                collisionSourceDataCache = null;
+                collisionTrackerCache = null;
             }
         }
         catch ( InterruptedException e )
@@ -357,7 +358,7 @@ public class EncodingIdMapper implements IdMapper
      *   in the same id space
      *     ==> original input values needs to be kept
      */
-    private int detectAndMarkCollisions( ProgressListener progress )
+    private int detectAndMarkCollisions( ProgressListener progress, LongFunction<Object> inputIdLookup )
     {
         progress.started( "DETECT" );
         long max = highestSetIndex; // excluding the last one because we compare i w/ i+1
@@ -403,11 +404,11 @@ public class EncodingIdMapper implements IdMapper
 
                     if ( collision != ID_NOT_FOUND )
                     {
-                        if ( markAsCollision( collision ) )
+                        if ( markAsCollision( collision, inputIdLookup ) )
                         {
                             numberOfCollisions++;
                         }
-                        if ( markAsCollision( dataIndexB ) )
+                        if ( markAsCollision( dataIndexB, inputIdLookup ) )
                         {
                             numberOfCollisions++;
                         }
@@ -433,75 +434,35 @@ public class EncodingIdMapper implements IdMapper
     /**
      * @return {@code true} if marked as collision in this call, {@code false} if it was already marked as collision.
      */
-    private boolean markAsCollision( long dataIndex )
+    private boolean markAsCollision( long nodeId, LongFunction<Object> inputIdLookup )
     {
-        long eId = dataCache.get( dataIndex );
+        long eId = dataCache.get( nodeId );
         boolean isAlreadyMarked = isCollision( eId );
         if ( isAlreadyMarked )
         {
             return false;
         }
 
-        dataCache.set( dataIndex, setCollision( eId ) );
+        dataCache.set( nodeId, setCollision( eId ) );
+
+        Object id = inputIdLookup.apply( nodeId );
+        long eIdFromInputId = encode( id );
+        long eIdWithoutCollisionBit = clearCollision( eId );
+        assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
+                "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
+                "%d when put, but was now encoded into %d",
+                id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
+        int collisionIndex = collisionValues.size();
+        collisionValues.add( id );
+        collisionNodeIdCache.set( collisionIndex, nodeId );
+        // The base of our sorting this time is going to be node id, so register that in the radix
+        radix.registerRadixOf( eIdWithoutCollisionBit );
+
         return true;
     }
 
-    private void buildCollisionInfo( InputIds ids, int numberOfCollisions,
-            Collector collector, ProgressListener progress )
-            throws InterruptedException
-    {
-        progress.started( "RESOLVE (" + numberOfCollisions + " collisions)" );
-        Radix radix = radixFactory.newInstance();
-        List<String> sourceDescriptions = new ArrayList<>();
-        String lastSourceDescription = null;
-        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
-        collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
-        for ( long i = 0; ids.hasNext(); )
-        {
-            long j = 0;
-            for ( ; j < COUNTING_BATCH_SIZE && ids.hasNext(); j++, i++ )
-            {
-                Object id = ids.next();
-                long eId = dataCache.get( i );
-                if ( isCollision( eId ) )
-                {
-                    // Store this collision input id for matching later in get()
-                    long eIdFromInputId = encode( id );
-                    long eIdWithoutCollisionBit = clearCollision( eId );
-                    assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
-                            "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
-                            "%d when put, but was now encoded into %d",
-                            id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
-                    int collisionIndex = collisionValues.size();
-                    collisionValues.add( id );
-                    collisionNodeIdCache.set( collisionIndex, i );
-                    // The base of our sorting this time is going to be node id, so register that in the radix
-                    radix.registerRadixOf( eIdWithoutCollisionBit );
-                    String currentSourceDescription = ids.sourceDescription();
-                    if ( lastSourceDescription == null || !currentSourceDescription.equals( lastSourceDescription ) )
-                    {
-                        sourceDescriptions.add( currentSourceDescription );
-                        lastSourceDescription = currentSourceDescription;
-                    }
-                    collisionSourceDataCache.set( collisionIndex,
-                            encodeSourceInformation( sourceDescriptions.size() - 1, ids.lineNumber() ) );
-                }
-            }
-            progress.add( j );
-        }
-        progress.done();
-
-        // Detect input id duplicates within the same group, with source information, line number and the works
-        detectDuplicateInputIds( radix, numberOfCollisions, sourceDescriptions, collector, progress );
-
-        // We won't be needing these anymore
-        collisionSourceDataCache = null;
-        collisionTrackerCache = null;
-    }
-
     private void detectDuplicateInputIds( Radix radix, int numberOfCollisions,
-            List<String> sourceDescriptions, Collector collector, ProgressListener progress )
-                    throws InterruptedException
+            Collector collector, ProgressListener progress ) throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
         // the tracker cache gets sorted, data cache stays intact. In the collision data case we actually
@@ -586,9 +547,9 @@ public class EncodingIdMapper implements IdMapper
                 int detectorIndex = detector.add( inputId, sourceInformation );
                 if ( detectorIndex != -1 )
                 {   // Duplicate
-                    String firstDataPoint = detector.sourceInformation( detectorIndex ).describe( sourceDescriptions );
-                    String otherDataPoint = source.describe( sourceDescriptions );
-                    collector.collectDuplicateNode( inputId, dataIndex, group.name(), firstDataPoint, otherDataPoint );
+//                    String firstDataPoint = detector.sourceInformation( detectorIndex ).describe( sourceDescriptions );
+//                    String otherDataPoint = source.describe( sourceDescriptions );
+                    collector.collectDuplicateNode( inputId, dataIndex, group.name(), "first", "other" );
                 }
 
                 previousEid = eid;

@@ -19,11 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.NoSuchElementException;
-
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
-
 /**
  * Common and cross-concern utilities.
  */
@@ -102,54 +97,6 @@ public class Utils
             return CompareType.EQ;
         }
         return ((dataA < dataB) ^ ((dataA < 0) != (dataB < 0))) ? CompareType.LT : CompareType.GT;
-    }
-
-    public static InputIterable<Object> idsOf( final InputIterable<InputNode> nodes )
-    {
-        return new InputIterable<Object>()
-        {
-            @Override
-            public InputIterator<Object> iterator()
-            {
-                final InputIterator<InputNode> iterator = nodes.iterator();
-                return new SourceInputIterator<Object,InputNode>( iterator )
-                {
-                    @Override
-                    public void close()
-                    {
-                        iterator.close();
-                    }
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return iterator.hasNext();
-                    }
-
-                    @Override
-                    public Object next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException();
-                        }
-                        return iterator.next().id();
-                    }
-
-                    @Override
-                    public void receivePanic( Throwable cause )
-                    {
-                        iterator.receivePanic( cause );
-                    }
-                };
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return false;
-            }
-        };
     }
 
     // Values in the arrays are assumed to be sorted
