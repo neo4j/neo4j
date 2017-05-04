@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -43,6 +44,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -77,6 +79,8 @@ public class TransactionThroughMasterSwitchStressIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withSharedConfig( stringMap(
+                    ClusterSettings.heartbeat_timeout.name(), "10s" ) )
             .withInstanceSetting( HaSettings.slave_only,
                     value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
 
@@ -185,6 +189,7 @@ public class TransactionThroughMasterSwitchStressIT
         // Wait for this instance to go to master again, since the other instances are slave only
         cluster.await( memberThinksItIsRole( master, MASTER ) );
         cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
         assertEquals( master, cluster.getMaster() );
     }
 
