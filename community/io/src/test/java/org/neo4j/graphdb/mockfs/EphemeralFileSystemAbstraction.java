@@ -345,7 +345,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public File[] listFiles( File directory )
     {
-        if ( files.containsKey( directory ) )
+        if ( files.containsKey( directory ) || !directories.contains( directory ) )
         {
             // This means that you're trying to list files on a file, not a directory.
             return null;
