@@ -126,7 +126,7 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public void freeId( long id )
     {
-        if (freeList != null)
+        if ( freeList != null )
         {
             freeList.add( id );
         }

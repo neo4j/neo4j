@@ -450,7 +450,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( @SuppressWarnings("UnusedParameters") File storeDir )
+    protected void start( @SuppressWarnings( "UnusedParameters" ) File storeDir )
     {
         // allow for override
     }

@@ -168,7 +168,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     {
         int[] labelIds = labelIds();
         int[] propertyKeyIds = propertyKeyIds();
-        IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
+        IntPredicate propertyKeyIdFilter = ( propertyKeyId ) -> contains( propertyKeyIds, propertyKeyId );
 
         storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
         storeScan.configure( populations );

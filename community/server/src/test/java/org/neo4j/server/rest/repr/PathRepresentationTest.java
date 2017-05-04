@@ -125,8 +125,7 @@ public class PathRepresentationTest
         Relationship cb = relationship( 18, c, "HATES", b );
         Relationship cd = relationship( 19, c, "KNOWS", d );
 
-        return new PathRepresentation<Path>(
-                path( a, link( ab, b ), link( cb, c ), link( cd, d ) ));
+        return new PathRepresentation<Path>( path( a, link( ab, b ), link( cb, c ), link( cd, d ) ) );
     }
 
     public static void verifySerialisation( Map<String, Object> pathrep )

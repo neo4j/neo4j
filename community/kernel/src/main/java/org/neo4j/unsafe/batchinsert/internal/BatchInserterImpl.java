@@ -1263,7 +1263,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         public void flush()
         {
             attempts++;
-            if ( attempts >= batchSize)
+            if ( attempts >= batchSize )
             {
                 forceFlush();
             }

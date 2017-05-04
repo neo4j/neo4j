@@ -50,7 +50,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class ConvertNonCausalClusteringStoreIT
 {
     @Rule
@@ -61,7 +61,7 @@ public class ConvertNonCausalClusteringStoreIT
     @Parameterized.Parameter()
     public String recordFormat;
 
-    @Parameterized.Parameters(name = "Record format {0}")
+    @Parameterized.Parameters( name = "Record format {0}" )
     public static Collection<Object> data()
     {
         return Arrays.asList( new Object[]{Standard.LATEST_NAME, HighLimit.NAME} );
@@ -88,7 +88,7 @@ public class ConvertNonCausalClusteringStoreIT
         cluster.start();
 
         // when
-        cluster.coreTx( (coreDB, tx) ->
+        cluster.coreTx( ( coreDB, tx ) ->
         {
             Node node = coreDB.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
@@ -104,7 +104,7 @@ public class ConvertNonCausalClusteringStoreIT
 
             try ( Transaction tx = db.beginTx() )
             {
-                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
+                ThrowingSupplier<Long,Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
@@ -120,7 +120,7 @@ public class ConvertNonCausalClusteringStoreIT
 
     private File createNeoStore( File dbDir, int classicNodeCount ) throws IOException
     {
-        try (DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction())
+        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
             return createClassicNeo4jStore( dbDir, fileSystem, classicNodeCount, recordFormat );
         }

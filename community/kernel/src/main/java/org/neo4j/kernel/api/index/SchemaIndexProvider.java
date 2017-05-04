@@ -239,15 +239,15 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
         public Descriptor( String key, String version )
         {
-            if (key == null)
+            if ( key == null )
             {
                 throw new IllegalArgumentException( "null provider key prohibited" );
             }
-            if (key.length() == 0)
+            if ( key.length() == 0 )
             {
                 throw new IllegalArgumentException( "empty provider key prohibited" );
             }
-            if (version == null)
+            if ( version == null )
             {
                 throw new IllegalArgumentException( "null provider version prohibited" );
             }

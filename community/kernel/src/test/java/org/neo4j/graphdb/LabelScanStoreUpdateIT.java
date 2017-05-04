@@ -19,8 +19,8 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Before;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -276,9 +277,9 @@ public abstract class LabelScanStoreUpdateIT
         }
     }
 
-    private Node getNodeById(long id)
+    private Node getNodeById( long id )
     {
-        try (Transaction ignored = db().beginTx())
+        try ( Transaction ignored = db().beginTx() )
         {
             return db().getNodeById( id );
         }

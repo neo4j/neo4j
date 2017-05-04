@@ -31,7 +31,7 @@ public class GraphImpl implements Graph
 
     private final String[] value;
 
-    public GraphImpl(String[] value)
+    public GraphImpl( String[] value )
     {
         this.value = value;
 

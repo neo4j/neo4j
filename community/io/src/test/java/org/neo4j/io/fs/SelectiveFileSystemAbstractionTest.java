@@ -40,7 +40,7 @@ public class SelectiveFileSystemAbstractionTest
     public void shouldUseCorrectFileSystemForChosenFile() throws Exception
     {
         // given
-        File specialFile = new File("special");
+        File specialFile = new File( "special" );
         FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
 
@@ -61,8 +61,8 @@ public class SelectiveFileSystemAbstractionTest
     public void shouldUseDefaultFileSystemForOtherFiles() throws Exception
     {
         // given
-        File specialFile = new File("special");
-        File otherFile = new File("other");
+        File specialFile = new File( "special" );
+        File otherFile = new File( "other" );
 
         FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );
@@ -84,8 +84,8 @@ public class SelectiveFileSystemAbstractionTest
     @Test
     public void provideSelectiveWatcher() throws IOException
     {
-        File specialFile = new File("special");
-        File otherFile = new File("other");
+        File specialFile = new File( "special" );
+        File otherFile = new File( "other" );
 
         FileSystemAbstraction normal = mock( FileSystemAbstraction.class );
         FileSystemAbstraction special = mock( FileSystemAbstraction.class );

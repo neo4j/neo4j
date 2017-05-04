@@ -37,18 +37,18 @@ public class TestArrayMap
 
         assertTrue( map.get( "key1" ) == null );
         map.put( "key1", 0 );
-        assertEquals( new Integer(0), map.get( "key1" ) );
-        assertEquals( new Integer(0), map.get( "key1" ) );
+        assertEquals( new Integer( 0 ), map.get( "key1" ) );
+        assertEquals( new Integer( 0 ), map.get( "key1" ) );
         map.put( "key1", 1 );
-        assertEquals( new Integer(1), map.get( "key1" ) );
+        assertEquals( new Integer( 1 ), map.get( "key1" ) );
         map.put( "key2", 0 );
-        assertEquals( new Integer(0), map.get( "key2" ) );
+        assertEquals( new Integer( 0 ), map.get( "key2" ) );
         map.put( "key2", 2 );
-        assertEquals( new Integer(2), map.get( "key2" ) );
-        assertEquals( new Integer(2), map.remove( "key2" ) );
+        assertEquals( new Integer( 2 ), map.get( "key2" ) );
+        assertEquals( new Integer( 2 ), map.remove( "key2" ) );
         assertTrue( map.get( "key2" ) == null );
-        assertEquals( new Integer(1), map.get( "key1" ) );
-        assertEquals( new Integer(1), map.remove( "key1" ) );
+        assertEquals( new Integer( 1 ), map.get( "key1" ) );
+        assertEquals( new Integer( 1 ), map.remove( "key1" ) );
         assertTrue( map.get( "key1" ) == null );
 
         map.put( "key1", 1 );
@@ -56,19 +56,19 @@ public class TestArrayMap
         map.put( "key3", 3 );
         map.put( "key4", 4 );
         map.put( "key5", 5 );
-        assertEquals( new Integer(5), map.get( "key5" ) );
-        assertEquals( new Integer(4), map.get( "key4" ) );
-        assertEquals( new Integer(3), map.get( "key3" ) );
-        assertEquals( new Integer(2), map.get( "key2" ) );
-        assertEquals( new Integer(1), map.get( "key1" ) );
-        assertEquals( new Integer(5), map.remove( "key5" ) );
-        assertEquals( new Integer(1), map.get( "key1" ) );
-        assertEquals( new Integer(4), map.get( "key4" ) );
-        assertEquals( new Integer(3), map.get( "key3" ) );
-        assertEquals( new Integer(2), map.get( "key2" ) );
-        assertEquals( new Integer(3), map.remove( "key3" ) );
-        assertEquals( new Integer(1), map.remove( "key1" ) );
-        assertEquals( new Integer(2), map.remove( "key2" ) );
+        assertEquals( new Integer( 5 ), map.get( "key5" ) );
+        assertEquals( new Integer( 4 ), map.get( "key4" ) );
+        assertEquals( new Integer( 3 ), map.get( "key3" ) );
+        assertEquals( new Integer( 2 ), map.get( "key2" ) );
+        assertEquals( new Integer( 1 ), map.get( "key1" ) );
+        assertEquals( new Integer( 5 ), map.remove( "key5" ) );
+        assertEquals( new Integer( 1 ), map.get( "key1" ) );
+        assertEquals( new Integer( 4 ), map.get( "key4" ) );
+        assertEquals( new Integer( 3 ), map.get( "key3" ) );
+        assertEquals( new Integer( 2 ), map.get( "key2" ) );
+        assertEquals( new Integer( 3 ), map.remove( "key3" ) );
+        assertEquals( new Integer( 1 ), map.remove( "key1" ) );
+        assertEquals( new Integer( 2 ), map.remove( "key2" ) );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -76,11 +76,11 @@ public class TestArrayMap
         }
         for ( int i = 0; i < 100; i++ )
         {
-            assertEquals( new Integer(i), map.get( "key" + i) );
+            assertEquals( new Integer( i ), map.get( "key" + i ) );
         }
         for ( int i = 0; i < 100; i++ )
         {
-            assertEquals( new Integer(i), map.remove( "key" + i) );
+            assertEquals( new Integer( i ), map.remove( "key" + i ) );
         }
         for ( int i = 0; i < 100; i++ )
         {

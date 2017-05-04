@@ -19,25 +19,23 @@
  */
 package org.neo4j.metrics.source.causalclustering;
 
-import java.io.IOException;
-import java.util.function.Supplier;
-
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.causalclustering.core.consensus.CoreMetaData;
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented(".CatchUp Metrics")
+@Documented( ".CatchUp Metrics" )
 public class CatchUpMetrics extends LifecycleAdapter
 {
     private static final String CAUSAL_CLUSTERING_PREFIX = "neo4j.causal_clustering.catchup";
 
-    @Documented("TX pull requests received from read replicas")
+    @Documented( "TX pull requests received from read replicas" )
     public static final String TX_PULL_REQUESTS_RECEIVED = name( CAUSAL_CLUSTERING_PREFIX, "tx_pull_requests_received" );
 
     private Monitors monitors;

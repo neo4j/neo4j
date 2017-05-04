@@ -100,7 +100,7 @@ public class GraphPropertiesProxy implements GraphProperties
 
                 Object value = statement.readOperations().graphGetProperty( propertyKeyId );
 
-                if (value == null)
+                if ( value == null )
                 {
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.GRAPH, -1 );
                 }

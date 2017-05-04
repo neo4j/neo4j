@@ -27,7 +27,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.Objects.requireNonNull;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "in-memory-index";

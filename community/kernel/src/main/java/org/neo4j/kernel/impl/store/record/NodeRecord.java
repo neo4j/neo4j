@@ -70,7 +70,7 @@ public class NodeRecord extends PrimitiveRecord
     @Deprecated
     public NodeRecord( long id, boolean dense, long nextRel, long nextProp, boolean inUse )
     {
-        this(id, dense, nextRel, nextProp);
+        this( id, dense, nextRel, nextProp );
         setInUse( inUse );
     }
 
@@ -175,7 +175,7 @@ public class NodeRecord extends PrimitiveRecord
 
         if ( dynamicLabelRecords.size() > 0 )
         {
-            List<DynamicRecord> clonedLabelRecords = new ArrayList<>(dynamicLabelRecords.size());
+            List<DynamicRecord> clonedLabelRecords = new ArrayList<>( dynamicLabelRecords.size() );
             for ( DynamicRecord labelRecord : dynamicLabelRecords )
             {
                 clonedLabelRecords.add( labelRecord.clone() );

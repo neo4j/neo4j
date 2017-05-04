@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.modules;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
@@ -56,7 +56,7 @@ public class ManagementApiModuleTest
 
         when( neoServer.getConfig() ).thenReturn( config );
 
-        ManagementApiModule module = new ManagementApiModule(webServer, config );
+        ManagementApiModule module = new ManagementApiModule( webServer, config );
         module.start();
 
         verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );

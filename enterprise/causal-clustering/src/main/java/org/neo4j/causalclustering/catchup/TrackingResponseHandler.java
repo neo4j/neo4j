@@ -32,7 +32,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullResponse;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponse;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings( "unchecked" )
 class TrackingResponseHandler implements CatchUpResponseHandler
 {
     private CatchUpResponseCallback delegate;

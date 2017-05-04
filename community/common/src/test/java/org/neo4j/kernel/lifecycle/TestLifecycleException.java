@@ -34,33 +34,29 @@ public class TestLifecycleException
     @Test
     public void shouldMakeNoneToStoppedIntoHumanReadableInitMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( NONE, STOPPED ).getMessage(),
-                is("Component 'SomeComponent' failed to initialize. Please see attached cause exception."));
+        assertThat( exceptionFor( NONE, STOPPED ).getMessage(),
+                is( "Component 'SomeComponent' failed to initialize. Please see attached cause exception." ) );
     }
 
     @Test
     public void shouldMakeStoppedToStartedIntoHumanReadableStartingMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( STOPPED, STARTED ).getMessage(),
-                is("Component 'SomeComponent' was successfully initialized, but failed to start. Please see attached cause exception."));
+        assertThat( exceptionFor( STOPPED, STARTED ).getMessage(),
+                is( "Component 'SomeComponent' was successfully initialized, but failed to start. Please see attached cause exception." ) );
     }
 
     @Test
     public void shouldMakeStartedToStoppedIntoHumanReadableStoppingMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( STARTED, STOPPED ).getMessage(),
-                is("Component 'SomeComponent' failed to stop. Please see attached cause exception."));
+        assertThat( exceptionFor( STARTED, STOPPED ).getMessage(),
+                is( "Component 'SomeComponent' failed to stop. Please see attached cause exception." ) );
     }
 
     @Test
     public void shouldMakeShutdownIntoHumanReadableShutdownMessage() throws Exception
     {
-        assertThat(
-                exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
-                is("Component 'SomeComponent' failed to shut down. Please see attached cause exception."));
+        assertThat( exceptionFor( STOPPED, SHUTDOWN ).getMessage(),
+                is( "Component 'SomeComponent' failed to shut down. Please see attached cause exception." ) );
     }
 
     private LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to )

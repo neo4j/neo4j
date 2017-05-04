@@ -135,12 +135,12 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
-                new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                mock( Executor.class ), NullLogProvider.getInstance(),
-                mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
-                mock( ElectionCredentialsProvider.class), config );
+        MultiPaxosContext context =
+                new MultiPaxosContext( new InstanceId( 1 ), Iterables.iterable( new ElectionRole( "coordinator" ) ),
+                        clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
+                        mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                        mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                        mock( ElectionCredentialsProvider.class ), config );
 
         context.getHeartbeatContext().getFailed().addAll( failed );
 
@@ -173,12 +173,12 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
-                new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                mock( Executor.class ), NullLogProvider.getInstance(),
-                mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
-                mock( ElectionCredentialsProvider.class), config );
+        MultiPaxosContext context =
+                new MultiPaxosContext( new InstanceId( 1 ), Iterables.iterable( new ElectionRole( "coordinator" ) ),
+                        clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
+                        mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                        mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                        mock( ElectionCredentialsProvider.class ), config );
 
         context.getHeartbeatContext().getFailed().addAll( failed );
 
@@ -209,12 +209,12 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
-                        new ElectionRole( coordinatorRole ) ), clusterConfiguration,
-                        mock( Executor.class ), NullLogProvider.getInstance(),
+        MultiPaxosContext context =
+                new MultiPaxosContext( new InstanceId( 1 ), Iterables.iterable( new ElectionRole( coordinatorRole ) ),
+                        clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
-                mock( ElectionCredentialsProvider.class), config );
+                        mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                        mock( ElectionCredentialsProvider.class ), config );
 
         ElectionContext toTest = context.getElectionContext();
 
@@ -240,12 +240,12 @@ public class ElectionContextTest
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
-                mock( Executor.class ),  NullLogProvider.getInstance(),
-                mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
-                mock( ElectionCredentialsProvider.class ), config ).getElectionContext();
+        ElectionContext context =
+                new MultiPaxosContext( new InstanceId( 1 ), Iterables.iterable( new ElectionRole( coordinatorRole ) ),
+                        mock( ClusterConfiguration.class ), mock( Executor.class ), NullLogProvider.getInstance(),
+                        mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                        mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                        mock( ElectionCredentialsProvider.class ), config ).getElectionContext();
 
         ElectionContext.VoteRequest voteRequestBefore = context.voteRequestForRole( new ElectionRole( coordinatorRole ) );
         context.forgetElection( coordinatorRole );
@@ -264,13 +264,12 @@ public class ElectionContextTest
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
-        ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
-                mock( Executor.class ), NullLogProvider.getInstance(),
-                mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
-                config
-        ).getElectionContext();
+        ElectionContext context =
+                new MultiPaxosContext( new InstanceId( 1 ), Iterables.iterable( new ElectionRole( coordinatorRole ) ),
+                        mock( ClusterConfiguration.class ), mock( Executor.class ), NullLogProvider.getInstance(),
+                        mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                        mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                        mock( ElectionCredentialsProvider.class ), config ).getElectionContext();
 
         // When
         ElectionContext.VoteRequest voteRequestBefore = context.voteRequestForRole( new ElectionRole( coordinatorRole ) );
@@ -462,12 +461,12 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
-                        new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                        mock( Executor.class ), NullLogProvider.getInstance(),
+        MultiPaxosContext context =
+                new MultiPaxosContext( new InstanceId( 1 ), Iterables.iterable( new ElectionRole( "coordinator" ) ),
+                        clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
-                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
-                mock( ElectionCredentialsProvider.class), config );
+                        mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                        mock( ElectionCredentialsProvider.class ), config );
 
         context.getHeartbeatContext().getFailed().addAll( failed );
 

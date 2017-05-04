@@ -113,7 +113,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAl
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class StoreUpgraderTest
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
@@ -185,7 +185,7 @@ public class StoreUpgraderTest
         // and a state of the migration saying that it has done the actual migration
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         // remove metadata store record to force tx info lookup in tx logs
-        MetaDataStore.setRecord( pageCache, new File( storeDirectory, MetaDataStore.DEFAULT_NAME),
+        MetaDataStore.setRecord( pageCache, new File( storeDirectory, MetaDataStore.DEFAULT_NAME ),
                 MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, MetaDataRecordFormat.FIELD_NOT_PRESENT );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
@@ -540,7 +540,7 @@ public class StoreUpgraderTest
     {
         Set<String> truncateVersions = versionSet( StandardV2_0.STORE_VERSION, StandardV2_1.STORE_VERSION,
                 StandardV2_2.STORE_VERSION );
-        if (truncateVersions.contains( version ))
+        if ( truncateVersions.contains( version ) )
         {
             if ( truncateAll )
             {
@@ -574,7 +574,7 @@ public class StoreUpgraderTest
         return Standard.LATEST_NAME;
     }
 
-    private Set<String> versionSet(String... versions)
+    private Set<String> versionSet( String... versions )
     {
         return Stream.of( versions ).collect( Collectors.toSet() );
     }

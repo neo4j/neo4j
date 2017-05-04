@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -28,6 +27,7 @@ import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
 import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
+import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -173,7 +173,8 @@ public class StatementOperationParts
         return object;
     }
 
-    private <T> T eitherOr( T first, T other, @SuppressWarnings("UnusedParameters"/*used as type flag*/) Class<T> cls )
+    private <T> T eitherOr( T first, T other,
+            @SuppressWarnings( "UnusedParameters"/*used as type flag*/ ) Class<T> cls )
     {
         return first != null ? first : other;
     }

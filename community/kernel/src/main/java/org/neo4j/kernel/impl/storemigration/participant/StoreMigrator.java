@@ -682,7 +682,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         if ( !requiresPropertyMigration )
         {
-            return (a, b) -> {};
+            return ( a, b ) ->
+            {
+            };
         }
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );

@@ -83,8 +83,8 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
         create( storeDir, config, dependencies );
     }
 
-    protected void create( File storeDir, Map<String, String> params,
-                                      GraphDatabaseFacadeFactory.Dependencies dependencies)
+    protected void create( File storeDir, Map<String,String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
@@ -92,8 +92,7 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
                 .initFacade( storeDir, params, newDependencies, this );
     }
 
-    protected void create( File storeDir, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies)
+    protected void create( File storeDir, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );

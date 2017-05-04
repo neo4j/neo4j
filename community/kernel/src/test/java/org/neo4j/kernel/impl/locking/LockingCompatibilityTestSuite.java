@@ -50,9 +50,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
-@RunWith(ParameterizedSuiteRunner.class)
-@Suite.SuiteClasses({
-        AcquireAndReleaseLocksCompatibility.class,
+@RunWith( ParameterizedSuiteRunner.class )
+@Suite.SuiteClasses( {AcquireAndReleaseLocksCompatibility.class,
         DeadlockCompatibility.class,
         LockReentrancyCompatibility.class,
         RWLockCompatibility.class,
@@ -61,10 +60,10 @@ import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
         AcquisitionTimeoutCompatibility.class,
         TracerCompatibility.class,
         ActiveLocksListingCompatibility.class,
-})
+} )
 public abstract class LockingCompatibilityTestSuite
 {
-    protected abstract Locks createLockManager(Config config, Clock clock);
+    protected abstract Locks createLockManager( Config config, Clock clock );
 
     /**
      * Implementing this requires intricate knowledge of implementation of the particular locks client.
@@ -137,7 +136,7 @@ public abstract class LockingCompatibilityTestSuite
             private final OtherThreadRule<Void> thread;
             private final Locks.Client client;
 
-            protected LockCommand(OtherThreadRule<Void> thread, Locks.Client client)
+            protected LockCommand( OtherThreadRule<Void> thread, Locks.Client client )
             {
                 this.thread = thread;
                 this.client = client;
@@ -184,7 +183,7 @@ public abstract class LockingCompatibilityTestSuite
                 final ResourceType resourceType,
                 final long key )
         {
-            return new LockCommand(clientToThreadMap.get( client ), client)
+            return new LockCommand( clientToThreadMap.get( client ), client )
             {
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
@@ -200,7 +199,7 @@ public abstract class LockingCompatibilityTestSuite
                 final ResourceType resourceType,
                 final long key )
         {
-            return new LockCommand(clientToThreadMap.get( client ), client)
+            return new LockCommand( clientToThreadMap.get( client ), client )
             {
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
@@ -215,7 +214,7 @@ public abstract class LockingCompatibilityTestSuite
                 final ResourceType resourceType,
                 final long key )
         {
-            return new LockCommand(clientToThreadMap.get( client ), client)
+            return new LockCommand( clientToThreadMap.get( client ), client )
             {
                 @Override
                 public void doWork( Locks.Client client )

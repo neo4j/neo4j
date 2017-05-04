@@ -132,7 +132,7 @@ class BackupService
                 new Monitors() );
     }
 
-    BackupService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, Monitors monitors)
+    BackupService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, Monitors monitors )
     {
         this.fileSystemSupplier = fileSystemSupplier;
         this.logProvider = logProvider;

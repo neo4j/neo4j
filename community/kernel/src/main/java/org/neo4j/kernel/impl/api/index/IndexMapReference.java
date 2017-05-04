@@ -72,7 +72,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
             return indexMap.getIndexId( descriptor );
 
         default:
-            throw new IndexNotFoundKernelException( "Expected index on " + descriptor + " to be online.");
+            throw new IndexNotFoundKernelException( "Expected index on " + descriptor + " to be online." );
         }
     }
 

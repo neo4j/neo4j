@@ -60,7 +60,7 @@ public abstract class NodeStoreScan<FAILURE extends Exception> implements StoreS
     @Override
     public void run() throws FAILURE
     {
-        try (PrimitiveLongResourceIterator nodeIds = getNodeIdIterator())
+        try ( PrimitiveLongResourceIterator nodeIds = getNodeIdIterator() )
         {
             continueScanning = true;
             while ( continueScanning && nodeIds.hasNext() )

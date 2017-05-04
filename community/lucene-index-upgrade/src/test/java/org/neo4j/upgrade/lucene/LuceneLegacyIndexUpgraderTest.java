@@ -82,12 +82,12 @@ public class LuceneLegacyIndexUpgraderTest
         TrackingLuceneLegacyIndexUpgrader indexUpgrader = new TrackingLuceneLegacyIndexUpgrader( indexFolder, true );
 
         expectedException.expect( LegacyIndexMigrationException.class );
-        expectedException.expect( new LegacyIndexMigrationExceptionBaseMatcher("index1", "index2") );
+        expectedException.expect( new LegacyIndexMigrationExceptionBaseMatcher( "index1", "index2" ) );
 
         indexUpgrader.upgradeIndexes();
     }
 
-    private Path createPathForResource(String resourceName) throws URISyntaxException
+    private Path createPathForResource( String resourceName ) throws URISyntaxException
     {
         return Paths.get( getClass().getClassLoader().getResource( resourceName ).toURI() );
     }
@@ -114,7 +114,7 @@ public class LuceneLegacyIndexUpgraderTest
         {
             String brokendIndexName = item.getFailedIndexName();
             boolean matched = Arrays.asList(failedIndexNames).contains( brokendIndexName );
-            if (!matched)
+            if ( !matched )
             {
                 mismatchDescription.appendText( "Failed index is: " ).appendText( brokendIndexName );
             }
@@ -167,7 +167,7 @@ public class LuceneLegacyIndexUpgraderTest
         @Override
         public void upgradeIndex( Path indexPath ) throws Throwable
         {
-            if (failIndexUpgrade)
+            if ( failIndexUpgrade )
             {
                 throw new RuntimeException( "Fail index migration: " + indexPath );
             }

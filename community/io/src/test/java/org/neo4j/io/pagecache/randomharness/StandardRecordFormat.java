@@ -123,17 +123,18 @@ public class StandardRecordFormat extends RecordFormat
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
 
             StandardRecord record = (StandardRecord) o;
 
-            return type == record.type
-                   && recordId == record.recordId
-                   && fill1 == record.fill1
-                   && fill2 == record.fill2
-                   && filesEqual( record );
+            return type == record.type && recordId == record.recordId && fill1 == record.fill1 &&
+                    fill2 == record.fill2 && filesEqual( record );
 
         }
 

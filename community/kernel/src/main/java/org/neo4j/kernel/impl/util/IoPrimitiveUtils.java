@@ -111,7 +111,7 @@ public abstract class IoPrimitiveUtils
     {
         buffer.clear();
         buffer.limit( bytes );
-        while ( buffer.hasRemaining())
+        while ( buffer.hasRemaining() )
         {
             int read = channel.read( buffer );
 

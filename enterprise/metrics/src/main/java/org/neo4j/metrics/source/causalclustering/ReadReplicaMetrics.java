@@ -30,7 +30,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented(".Read Replica Metrics")
+@Documented( ".Read Replica Metrics" )
 public class ReadReplicaMetrics extends LifecycleAdapter
 {
     private static final String CAUSAL_CLUSTERING_PREFIX = "neo4j.causal_clustering.read_replica";

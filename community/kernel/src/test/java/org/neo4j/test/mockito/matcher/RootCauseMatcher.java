@@ -47,7 +47,7 @@ public class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
     {
         description.appendText( "Expected root cause of " ).appendValue( rootCause ).appendText( " with message: " )
                 .appendValue( message ).appendText( ", but " );
-        if (cause != null)
+        if ( cause != null )
         {
             description.appendText( "was: " ).appendValue( cause.getClass() )
                     .appendText( " with message: " ).appendValue( cause.getMessage() );

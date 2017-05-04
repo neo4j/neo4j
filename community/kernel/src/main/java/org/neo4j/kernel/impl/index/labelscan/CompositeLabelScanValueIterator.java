@@ -116,9 +116,13 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
             IdAndSource that = (IdAndSource) o;
             return compareTo( that ) == 0;
         }

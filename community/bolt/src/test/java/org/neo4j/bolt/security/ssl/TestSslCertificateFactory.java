@@ -50,8 +50,8 @@ public class TestSslCertificateFactory
     {
         // Given
         Certificates sslFactory = new Certificates();
-        File cPath = new File(tmpDir.getRoot(), "certificate" );
-        File pkPath = new File(tmpDir.getRoot(), "key" );
+        File cPath = new File( tmpDir.getRoot(), "certificate" );
+        File pkPath = new File( tmpDir.getRoot(), "key" );
 
         // When
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );

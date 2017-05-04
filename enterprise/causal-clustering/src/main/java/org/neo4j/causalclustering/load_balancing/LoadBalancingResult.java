@@ -70,9 +70,13 @@ public class LoadBalancingResult implements LoadBalancingProcessor.Result
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         LoadBalancingResult that = (LoadBalancingResult) o;
         return timeToLiveMillis == that.timeToLiveMillis &&
                Objects.equals( routeEndpoints, that.routeEndpoints ) &&

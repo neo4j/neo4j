@@ -27,8 +27,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Inherited
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Target( ElementType.TYPE )
+@Retention( RetentionPolicy.RUNTIME )
 public @interface State
 {
     Strategy value();

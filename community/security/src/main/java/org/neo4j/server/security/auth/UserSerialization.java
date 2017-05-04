@@ -60,7 +60,7 @@ public class UserSerialization extends FileRepositorySerializer<User>
                 .withName( parts[0] )
                 .withCredentials( deserializeCredentials( parts[1], lineNumber ) );
 
-        for ( String flag : parts[2].split( ",", -1 ))
+        for ( String flag : parts[2].split( ",", -1 ) )
         {
             String trimmed = flag.trim();
             if ( !trimmed.isEmpty() )

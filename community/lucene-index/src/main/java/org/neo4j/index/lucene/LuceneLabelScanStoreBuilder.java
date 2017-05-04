@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.getStoreDirectory;
@@ -57,7 +57,7 @@ public class LuceneLabelScanStoreBuilder
     public LuceneLabelScanStoreBuilder( File storeDir, IndexStoreView storeView,
             FileSystemAbstraction fileSystem, Config config, OperationalMode operationalMode, LogProvider logProvider )
     {
-        this (storeDir, () -> storeView, fileSystem, config, operationalMode, logProvider);
+        this( storeDir, () -> storeView, fileSystem, config, operationalMode, logProvider );
     }
 
     public LuceneLabelScanStoreBuilder( File storeDir, Supplier<IndexStoreView> storeViewSupplier,

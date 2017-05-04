@@ -311,7 +311,7 @@ class TreeNode<KEY,VALUE>
         writeChild( cursor, child, stableGeneration, unstableGeneration );
     }
 
-    static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration)
+    static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
     {
         GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
     }

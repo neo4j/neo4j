@@ -42,7 +42,7 @@ public class GroupConfigTest
         return new ConnectorExample( Integer.toString(key) );
     }
 
-    @Group("dbms.connector")
+    @Group( "dbms.connector" )
     static class ConnectorExample
     {
         public final Setting<Boolean> enabled;

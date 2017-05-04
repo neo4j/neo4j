@@ -118,7 +118,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
     public static RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> dummyDynamicCheck(
             RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
-        return new DynamicRecordCheck(store, dereference )
+        return new DynamicRecordCheck( store, dereference )
         {
             @Override
             public void check( DynamicRecord record,
@@ -207,7 +207,7 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         return records.addPropertyKeyName( name );
     }
 
-    DynamicRecord addRelationshipTypeName(DynamicRecord name )
+    DynamicRecord addRelationshipTypeName( DynamicRecord name )
     {
         return records.addRelationshipTypeName( name );
     }

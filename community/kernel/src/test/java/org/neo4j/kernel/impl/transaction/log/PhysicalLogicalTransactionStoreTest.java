@@ -217,7 +217,7 @@ public class PhysicalLogicalTransactionStoreTest
                     LogPosition positionAfterLastRecoveredTransaction ) throws Exception
             {
             }
-        }, mock(Recovery.Monitor.class)));
+        }, mock( Recovery.Monitor.class ) ) );
 
         // WHEN
         try

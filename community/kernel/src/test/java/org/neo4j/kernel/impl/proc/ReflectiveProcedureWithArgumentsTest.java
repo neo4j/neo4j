@@ -188,8 +188,8 @@ public class ReflectiveProcedureWithArgumentsTest
     public static class ClassWithProcedureWithDefaults
     {
         @Procedure
-        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a") String a , @Name( value = "b", defaultValue = "42") long b, @Name( value = "c",
-                defaultValue = "3.14") double c)
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a" ) String a,
+                @Name( value = "b", defaultValue = "42" ) long b, @Name( value = "c", defaultValue = "3.14" ) double c )
         {
             return Stream.empty();
         }
@@ -198,7 +198,8 @@ public class ReflectiveProcedureWithArgumentsTest
     public static class ClassWithProcedureWithMisplacedDefault
     {
         @Procedure
-        public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a , @Name( value = "b", defaultValue = "42") long b, @Name( "c" ) Object c)
+        public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a,
+                @Name( value = "b", defaultValue = "42" ) long b, @Name( "c" ) Object c )
         {
             return Stream.empty();
         }
@@ -207,7 +208,7 @@ public class ReflectiveProcedureWithArgumentsTest
     public static class ClassWithProcedureWithBadlyTypedDefault
     {
         @Procedure
-        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two") long b)
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two" ) long b )
         {
             return Stream.empty();
         }

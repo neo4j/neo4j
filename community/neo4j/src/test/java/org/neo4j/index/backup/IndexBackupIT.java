@@ -187,7 +187,7 @@ public class IndexBackupIT
         }
     }
 
-    private String describeFileSets(Set<String> firstFileSet, Set<String> secondFileSet)
+    private String describeFileSets( Set<String> firstFileSet, Set<String> secondFileSet )
     {
         return "First snapshot files are: " + firstFileSet + System.lineSeparator() +
                 "second snapshot files are: " + secondFileSet;
@@ -240,7 +240,7 @@ public class IndexBackupIT
         }
     }
 
-    private <T> T resolveDependency(Class<T> clazz)
+    private <T> T resolveDependency( Class<T> clazz )
     {
         return getDatabaseResolver().resolveDependency( clazz );
     }

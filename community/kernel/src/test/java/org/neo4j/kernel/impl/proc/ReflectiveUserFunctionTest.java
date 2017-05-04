@@ -77,7 +77,7 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, (ctx) -> log );
+        components.register( Log.class, ( ctx ) -> log );
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When
@@ -448,7 +448,7 @@ public class ReflectiveUserFunctionTest
 
     public static class FunctionWithOverriddenName
     {
-        @UserFunction("org.mystuff.thisisActuallyTheName")
+        @UserFunction( "org.mystuff.thisisActuallyTheName" )
         public Object somethingThatShouldntMatter()
         {
             return null;
@@ -458,7 +458,7 @@ public class ReflectiveUserFunctionTest
 
     public static class FunctionWithSingleName
     {
-        @UserFunction("singleName")
+        @UserFunction( "singleName" )
         public String blahDoesntMatterEither()
         {
             return null;
@@ -474,13 +474,13 @@ public class ReflectiveUserFunctionTest
         }
 
         @Deprecated
-        @UserFunction(deprecatedBy = "newFunc")
+        @UserFunction( deprecatedBy = "newFunc" )
         public String oldFunc()
         {
             return null;
         }
 
-        @UserFunction(deprecatedBy = "newFunc")
+        @UserFunction( deprecatedBy = "newFunc" )
         public Object badFunc()
         {
             return null;

@@ -47,7 +47,7 @@ public class ClassGenerator implements AutoCloseable
     @Override
     public void close()
     {
-        if (!hasConstructor)
+        if ( !hasConstructor )
         {
             generate( MethodTemplate.constructor().invokeSuper().build() );
         }
@@ -148,7 +148,7 @@ public class ClassGenerator implements AutoCloseable
 
     private CodeBlock generate( MethodDeclaration declaration )
     {
-        if (declaration.isConstructor())
+        if ( declaration.isConstructor() )
         {
             hasConstructor = true;
         }

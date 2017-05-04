@@ -53,13 +53,13 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     {
         List<?> options = typeDependencies.get( type );
 
-        if (options != null)
+        if ( options != null )
         {
             return selector.select( type, (Iterable<T>) options);
         }
 
         // Try parent
-        if (parent != null)
+        if ( parent != null )
         {
             DependencyResolver dependencyResolver = parent.get();
 
@@ -73,7 +73,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         throw new UnsatisfiedDependencyException( type );
     }
 
-    public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
+    public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector )
     {
         return () -> resolveDependency( type, selector );
     }
@@ -91,7 +91,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         do
         {
             List<Object> deps = (List<Object>) typeDependencies.get( type );
-            if (deps == null)
+            if ( deps == null )
             {
                 deps = new ArrayList<>(  );
                 typeDependencies.put(type, deps);
@@ -103,12 +103,13 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
             addInterfaces(interfaces, dependency);
 
             type = type.getSuperclass();
-        } while (type != null);
+        }
+        while ( type != null );
 
         return dependency;
     }
 
-    public void satisfyDependencies(Object... dependencies)
+    public void satisfyDependencies( Object... dependencies )
     {
         for ( Object dependency : dependencies )
         {
@@ -121,7 +122,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         for ( Class type : interfaces )
         {
             List<Object> deps = (List<Object>) typeDependencies.get( type );
-            if (deps == null)
+            if ( deps == null )
             {
                 deps = new ArrayList<>(  );
                 typeDependencies.put(type, deps);

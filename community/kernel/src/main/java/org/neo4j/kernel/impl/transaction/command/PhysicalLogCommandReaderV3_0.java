@@ -542,7 +542,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         {
             record.setRelId( primitiveId );
         }
-        if (hasSecondaryUnit)
+        if ( hasSecondaryUnit )
         {
             record.setSecondaryUnitId( channel.getLong() );
         }

@@ -70,6 +70,6 @@ public class IndexPopulationProgress
     @Override
     public String toString()
     {
-        return String.format( "%1.1f%%", getCompletedPercentage());
+        return String.format( "%1.1f%%", getCompletedPercentage() );
     }
 }

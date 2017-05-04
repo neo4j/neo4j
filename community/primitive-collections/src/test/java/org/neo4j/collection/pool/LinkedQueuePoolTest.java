@@ -341,7 +341,7 @@ public class LinkedQueuePoolTest
 
     private class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
     {
-        public AtomicInteger currentPeakSize = new AtomicInteger(-1);
+        public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
         public AtomicInteger targetSize = new AtomicInteger( -1 );
         public AtomicInteger created = new AtomicInteger( 0 );
         public AtomicInteger acquired = new AtomicInteger( 0 );
@@ -388,7 +388,7 @@ public class LinkedQueuePoolTest
 
         private long time = 0;
 
-        public void forward( long amount, TimeUnit timeUnit)
+        public void forward( long amount, TimeUnit timeUnit )
         {
             time = time + timeUnit.toMillis( amount );
         }

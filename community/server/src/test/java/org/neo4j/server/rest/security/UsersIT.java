@@ -142,7 +142,7 @@ public class UsersIT extends ExclusiveServerTestBase
         }
     }
 
-    public void startServer(boolean authEnabled) throws IOException
+    public void startServer( boolean authEnabled ) throws IOException
     {
         server = CommunityServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
@@ -181,7 +181,7 @@ public class UsersIT extends ExclusiveServerTestBase
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    private String base64(String value)
+    private String base64( String value )
     {
         return UTF8.decode( Base64.encode( value ) );
     }

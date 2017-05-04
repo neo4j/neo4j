@@ -208,7 +208,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     log.debug( "Got slaveIsAvailable(" + instanceId + "), " +
                             "moved to " + state + " from " + oldState );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
-                            state, instanceId, roleUri);
+                            state, instanceId, roleUri );
                     memberListeners.notify( listener -> listener.slaveIsAvailable( event ) );
 
                     if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&

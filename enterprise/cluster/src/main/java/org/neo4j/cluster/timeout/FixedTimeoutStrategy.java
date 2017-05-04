@@ -30,7 +30,7 @@ public class FixedTimeoutStrategy
 
     protected final long timeout;
 
-    public FixedTimeoutStrategy(long timeout)
+    public FixedTimeoutStrategy( long timeout )
     {
         this.timeout = timeout;
     }
@@ -42,15 +42,13 @@ public class FixedTimeoutStrategy
     }
 
     @Override
-    public void timeoutTriggered(Message timeoutMessage)
+    public void timeoutTriggered( Message timeoutMessage )
     {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
-    public void timeoutCancelled(Message timeoutMessage)
+    public void timeoutCancelled( Message timeoutMessage )
     {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override

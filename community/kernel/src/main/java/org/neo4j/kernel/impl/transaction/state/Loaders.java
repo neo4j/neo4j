@@ -148,7 +148,7 @@ public class Loaders
             }
 
             @Override
-            public NodeRecord clone(NodeRecord nodeRecord)
+            public NodeRecord clone( NodeRecord nodeRecord )
             {
                 return nodeRecord.clone();
             }
@@ -193,7 +193,7 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord clone(PropertyRecord propertyRecord)
+            public PropertyRecord clone( PropertyRecord propertyRecord )
             {
                 return propertyRecord.clone();
             }
@@ -223,7 +223,7 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord clone(RelationshipRecord relationshipRecord)
+            public RelationshipRecord clone( RelationshipRecord relationshipRecord )
             {
                 return relationshipRecord.clone();
             }
@@ -282,7 +282,7 @@ public class Loaders
             @Override
             public void ensureHeavy( SchemaRecord records )
             {
-                for ( DynamicRecord record : records)
+                for ( DynamicRecord record : records )
                 {
                     store.ensureHeavy(record);
                 }

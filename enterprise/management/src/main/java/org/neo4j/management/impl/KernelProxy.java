@@ -202,7 +202,7 @@ public abstract class KernelProxy
 
     private static ObjectName createObjectName( ObjectName query, String beanName, boolean isQuery )
     {
-        Hashtable<String, String> properties = new Hashtable<String, String>(query.getKeyPropertyList());
+        Hashtable<String,String> properties = new Hashtable<String,String>( query.getKeyPropertyList() );
         return createObjectName( query.getDomain(), properties, beanName, isQuery );
     }
 

@@ -21,8 +21,8 @@ package org.neo4j.graphdb;
 
 public class InvalidTransactionTypeException extends RuntimeException
 {
-    public InvalidTransactionTypeException(String message, Throwable cause)
+    public InvalidTransactionTypeException( String message, Throwable cause )
     {
-        super(message, cause);
+        super( message, cause );
     }
 }

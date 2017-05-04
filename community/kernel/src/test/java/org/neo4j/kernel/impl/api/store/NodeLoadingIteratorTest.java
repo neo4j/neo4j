@@ -67,7 +67,7 @@ public class NodeLoadingIteratorTest
         NodeLoadingIterator iterator = new NodeLoadingIterator( inner, createMapping( map ) );
 
         // when - then
-        for ( long i = 1; i <= 3; i++)
+        for ( long i = 1; i <= 3; i++ )
         {
             assertTrue( iterator.hasNext() );
             assertEquals( map.get( i ), iterator.next() );
@@ -88,7 +88,7 @@ public class NodeLoadingIteratorTest
         NodeLoadingIterator iterator = new NodeLoadingIterator( inner, createMapping( map ) );
 
         // when - then
-        for ( long i = 1; i <= 2; i++)
+        for ( long i = 1; i <= 2; i++ )
         {
             assertTrue( iterator.hasNext() );
 

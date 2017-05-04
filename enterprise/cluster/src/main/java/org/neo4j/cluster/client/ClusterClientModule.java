@@ -188,7 +188,7 @@ public class ClusterClientModule
         life.add( receiver );
 
         // Timeout timer - triggers every 10 ms
-        life.add( new TimeoutTrigger(server, monitors) );
+        life.add( new TimeoutTrigger( server, monitors ) );
 
         life.add( new ClusterJoin( new ClusterJoin.Configuration()
         {

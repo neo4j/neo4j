@@ -72,7 +72,7 @@ public class KernelTest
         db.shutdown();
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override

@@ -83,7 +83,7 @@ public class InProcessBuilderTest
     public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
     {
         // Given
-        File workDir = new File(testDir.directory(), "specific");
+        File workDir = new File( testDir.directory(), "specific" );
         workDir.mkdir();
 
         // When

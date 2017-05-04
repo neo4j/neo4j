@@ -47,7 +47,7 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public abstract class KernelIntegrationTest
 {
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
     protected KernelAPI kernel;

@@ -153,7 +153,7 @@ public class IndexingServiceIntegrationTest
         return getDependencyResolver(database).resolveDependency( IndexingService.class );
     }
 
-    private LabelTokenHolder getLabelTokenHolder(GraphDatabaseService database)
+    private LabelTokenHolder getLabelTokenHolder( GraphDatabaseService database )
     {
         return getDependencyResolver( database ).resolveDependency( LabelTokenHolder.class );
     }
@@ -166,7 +166,7 @@ public class IndexingServiceIntegrationTest
     private void createData( GraphDatabaseService database, int numberOfNodes )
     {
         int index = 0;
-        while (index < numberOfNodes)
+        while ( index < numberOfNodes )
         {
             try ( Transaction transaction = database.beginTx() )
             {

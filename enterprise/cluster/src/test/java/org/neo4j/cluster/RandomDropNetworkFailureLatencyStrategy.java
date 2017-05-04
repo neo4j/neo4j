@@ -38,7 +38,7 @@ public class RandomDropNetworkFailureLatencyStrategy
      * @param seed Provide a seed for the Random, in order to produce repeatable tests.
      * @param rate 1.0=no dropped messages, 0.0=all messages are lost
      */
-    public RandomDropNetworkFailureLatencyStrategy(long seed, double rate)
+    public RandomDropNetworkFailureLatencyStrategy( long seed, double rate )
     {
         setRate( rate );
         this.random = new Random( seed );
@@ -50,7 +50,7 @@ public class RandomDropNetworkFailureLatencyStrategy
     }
 
     @Override
-    public long messageDelay(Message<? extends MessageType> message, String serverIdTo)
+    public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
         return random.nextDouble() > rate ? 0 : LOST;
     }

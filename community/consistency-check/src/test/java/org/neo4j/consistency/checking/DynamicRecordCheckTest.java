@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
 
-@RunWith(Suite.class)
+@RunWith( Suite.class )
 @Suite.SuiteClasses( {
         DynamicRecordCheckTest.StringDynamicRecordCheckTest.class,
         DynamicRecordCheckTest.ArrayDynamicRecordCheckTest.class,
@@ -220,7 +220,7 @@ public abstract class DynamicRecordCheckTest
 
     abstract DynamicRecord record( long id );
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class StringDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
         public StringDynamicRecordCheckTest()
@@ -242,7 +242,7 @@ public abstract class DynamicRecordCheckTest
         }
     }
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class ArrayDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
         public ArrayDynamicRecordCheckTest()
@@ -264,7 +264,7 @@ public abstract class DynamicRecordCheckTest
         }
     }
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class SchemaDynamicRecordCheckTest extends DynamicRecordCheckTest
     {
         public SchemaDynamicRecordCheckTest()

@@ -57,7 +57,7 @@ public interface NeoInteractionLevel<S>
 
     void tearDown() throws Throwable;
 
-    static String tempPath(String prefix, String suffix ) throws IOException
+    static String tempPath( String prefix, String suffix ) throws IOException
     {
         Path path = Files.createTempFile( prefix, suffix );
         Files.delete( path );

@@ -75,9 +75,9 @@ public class StreamConsumer implements Runnable
         this.quiet = quiet;
         this.prefix = prefix;
         this.failureHandler = failureHandler;
-        this.in = new BufferedReader(new InputStreamReader( in ));
+        this.in = new BufferedReader( new InputStreamReader( in ) );
         this.out = new OutputStreamWriter( out );
-        this.stackTraceOfOrigin = new Exception("Stack trace of thread that created this StreamConsumer");
+        this.stackTraceOfOrigin = new Exception( "Stack trace of thread that created this StreamConsumer" );
     }
 
     @Override
@@ -86,7 +86,7 @@ public class StreamConsumer implements Runnable
         try
         {
             String line;
-            while ( ( line = in.readLine()) != null)
+            while ( (line = in.readLine()) != null )
             {
                 if ( !quiet )
                 {

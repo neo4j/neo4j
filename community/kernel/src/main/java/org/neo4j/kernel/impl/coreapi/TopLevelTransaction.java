@@ -87,7 +87,7 @@ public class TopLevelTransaction implements InternalTransaction
             // can be retried and might be successful the next time.
             throw e;
         }
-        catch ( ConstraintViolationTransactionFailureException e)
+        catch ( ConstraintViolationTransactionFailureException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }

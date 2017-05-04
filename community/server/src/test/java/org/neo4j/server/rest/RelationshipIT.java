@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import javax.ws.rs.core.Response.Status;
-
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -47,7 +47,6 @@ import org.neo4j.test.TestData.Title;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
@@ -62,11 +61,11 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Title("Remove properties from a relationship")
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
+    @Title( "Remove properties from a relationship" )
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
@@ -75,7 +74,7 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph("I know you")
+    @Graph( "I know you" )
     public void get_Relationship_by_ID() throws JsonParseException
     {
         Node node = data.get().get( "I" );
@@ -93,12 +92,12 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Title("Remove property from a relationship")
+    @Title( "Remove property from a relationship" )
     @Documented( "See the example request below." )
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
     public void shouldReturn204WhenPropertyIsRemovedFromRelationship()
     {
         data.get();
@@ -109,12 +108,12 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Title("Remove non-existent property from a relationship")
+    @Title( "Remove non-existent property from a relationship" )
     @Documented( "Attempting to remove a property that doesn't exist results in an error." )
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
     public void shouldReturn404WhenPropertyWhichDoesNotExistRemovedFromRelationship()
     {
         data.get();
@@ -124,10 +123,10 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
     public void shouldReturn404WhenPropertyWhichDoesNotExistRemovedFromRelationshipStreaming()
     {
         data.get();
@@ -166,11 +165,11 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
-    @Title("Delete relationship")
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
+    @Title( "Delete relationship" )
     public void removeRelationship()
     {
         data.get();
@@ -181,10 +180,10 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
     public void get_single_property_on_a_relationship() throws Exception
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
@@ -199,10 +198,10 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING )} )} )
     public void set_single_property_on_a_relationship() throws Exception
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
@@ -213,10 +212,11 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING), @PROP(key = "since", value = "1day", type = GraphDescription.PropType.STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ),
+                    @PROP( key = "since", value = "1day", type = GraphDescription.PropType.STRING )} )} )
     public void set_all_properties_on_a_relationship() throws Exception
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
@@ -228,10 +228,11 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
-            @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
-            type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
-            .STRING), @PROP(key = "since", value = "1day", type = GraphDescription.PropType.STRING)})})
+    @Graph( nodes = {@NODE( name = "Romeo", setNameProperty = true ),
+            @NODE( name = "Juliet", setNameProperty = true )}, relationships = {
+            @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = {
+                    @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ),
+                    @PROP( key = "since", value = "1day", type = GraphDescription.PropType.STRING )} )} )
     public void get_all_properties_on_a_relationship() throws Exception
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();

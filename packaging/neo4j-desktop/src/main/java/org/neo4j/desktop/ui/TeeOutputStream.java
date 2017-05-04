@@ -27,7 +27,7 @@ public class TeeOutputStream extends OutputStream
     private final OutputStream a;
     private final OutputStream b;
 
-    public TeeOutputStream(OutputStream a, OutputStream b)
+    public TeeOutputStream( OutputStream a, OutputStream b )
     {
         this.a = a;
         this.b = b;

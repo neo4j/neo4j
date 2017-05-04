@@ -19,15 +19,14 @@
  */
 package org.neo4j.desktop.ui;
 
-import static javax.swing.JOptionPane.showConfirmDialog;
-import static javax.swing.JOptionPane.showMessageDialog;
-
 import java.awt.Component;
-
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-@SuppressWarnings("MagicConstant")
+import static javax.swing.JOptionPane.showConfirmDialog;
+import static javax.swing.JOptionPane.showMessageDialog;
+
+@SuppressWarnings( "MagicConstant" )
 public class ScrollableOptionPane
 {
     public static void showWrappedMessageDialog( Component parentComponent, String message, String title,

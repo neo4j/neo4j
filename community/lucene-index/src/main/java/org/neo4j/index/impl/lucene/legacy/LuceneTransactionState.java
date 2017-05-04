@@ -120,11 +120,11 @@ class LuceneTransactionState implements Closeable
         }
         else if ( c1 != null && c2 != null )
         {
-            if (c1.isEmpty())
+            if ( c1.isEmpty() )
             {
                 return c2;
             }
-            if (c2.isEmpty())
+            if ( c2.isEmpty() )
             {
                 return c1;
             }

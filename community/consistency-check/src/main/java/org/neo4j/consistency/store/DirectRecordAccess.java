@@ -171,7 +171,7 @@ public class DirectRecordAccess implements RecordAccess
 
     <RECORD extends AbstractBaseRecord> DirectRecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
     {
-        return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE ), this);
+        return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE ), this );
     }
 
     @Override

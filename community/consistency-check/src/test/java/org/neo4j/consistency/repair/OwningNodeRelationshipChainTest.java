@@ -35,7 +35,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 public class OwningNodeRelationshipChainTest
@@ -58,7 +57,7 @@ public class OwningNodeRelationshipChainTest
                 new RelationshipRecord( sharedRel, node1, node2, relType ),
                 new RelationshipRecord( node2Rel + 1, node2, node2 + 1, relType ) );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
         when( recordStore.getRecord( eq( node1 ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
                 .thenAnswer( new ReadNodeAnswer( false, node1Rel, NO_NEXT_PROPERTY.intValue() ) );

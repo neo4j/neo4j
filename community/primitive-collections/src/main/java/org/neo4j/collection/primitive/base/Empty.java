@@ -35,6 +35,11 @@ import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
 public class Empty
 {
+    @SuppressWarnings( "unchecked" )
+    public static final PrimitiveLongObjectMap EMPTY_PRIMITIVE_LONG_OBJECT_MAP = new EmptyPrimitiveLongObjectMap<>();
+    public static final PrimitiveIntSet EMPTY_PRIMITIVE_INT_SET = new EmptyPrimitiveIntSet();
+    public static final PrimitiveLongCollection EMPTY_PRIMITIVE_LONG_COLLECTION = new EmptyPrimitiveLongCollection();
+
     public static class EmptyPrimitiveCollection implements PrimitiveCollection
     {
         @Override
@@ -74,8 +79,6 @@ public class Empty
         {   // No keys to visit
         }
     }
-
-    public static final PrimitiveLongCollection EMPTY_PRIMITIVE_LONG_COLLECTION = new EmptyPrimitiveLongCollection();
 
     public static class EmptyPrimitiveLongSet extends EmptyPrimitiveLongCollection implements PrimitiveLongSet
     {
@@ -160,8 +163,6 @@ public class Empty
         }
     }
 
-    public static final PrimitiveIntSet EMPTY_PRIMITIVE_INT_SET = new EmptyPrimitiveIntSet();
-
     public static class EmptyPrimitiveLongObjectMap<T> extends EmptyPrimitiveCollection implements PrimitiveLongObjectMap<T>
     {
         @Override
@@ -204,7 +205,4 @@ public class Empty
             return PrimitiveLongCollections.emptyIterator();
         }
     }
-
-    @SuppressWarnings("unchecked")
-    public static final PrimitiveLongObjectMap EMPTY_PRIMITIVE_LONG_OBJECT_MAP = new EmptyPrimitiveLongObjectMap<>();
 }

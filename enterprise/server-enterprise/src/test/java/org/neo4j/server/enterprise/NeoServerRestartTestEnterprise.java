@@ -29,10 +29,10 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 
 public class NeoServerRestartTestEnterprise extends NeoServerRestartTest
 {
-    protected NeoServer getNeoServer( String customPageSwapperName) throws IOException
+    protected NeoServer getNeoServer( String customPageSwapperName ) throws IOException
     {
-        CommunityServerBuilder builder = EnterpriseServerBuilder.server().withProperty( GraphDatabaseSettings
-                .pagecache_swapper.name(), customPageSwapperName );
+        CommunityServerBuilder builder = EnterpriseServerBuilder.server()
+                .withProperty( GraphDatabaseSettings.pagecache_swapper.name(), customPageSwapperName );
         return builder.build();
     }
 }

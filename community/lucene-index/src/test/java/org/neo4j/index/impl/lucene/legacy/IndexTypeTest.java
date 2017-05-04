@@ -47,7 +47,7 @@ public class IndexTypeTest
     @Parameterized.Parameter( 1 )
     public int documentFieldsPerUserField;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object> indexTypes()
     {
         Map<String,String> customIndexTypeConfig = MapUtil.stringMap( LuceneIndexImplementation.KEY_TYPE, "exact",

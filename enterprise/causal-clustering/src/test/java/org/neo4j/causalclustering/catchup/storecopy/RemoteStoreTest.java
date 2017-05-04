@@ -57,7 +57,8 @@ public class RemoteStoreTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) ).thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13) );
+        when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) )
+                .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13 ) );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
@@ -86,7 +87,7 @@ public class RemoteStoreTest
 
         TxPullClient txPullClient = mock( TxPullClient.class );
         when( txPullClient.pullTransactions( eq( localhost ), eq( wantedStoreId ), anyLong(), any( TxPullResponseListener.class ) ) )
-                .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13) );
+                .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13 ) );
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 

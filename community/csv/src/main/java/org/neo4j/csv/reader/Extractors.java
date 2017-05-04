@@ -326,7 +326,7 @@ public class Extractors
         protected boolean extract0( char[] data, int offset, int length )
         {
             value = new String( data, offset, length );
-            if (trimStrings)
+            if ( trimStrings )
             {
                 value = value.trim();
             }
@@ -947,7 +947,7 @@ public class Extractors
 
         try
         {
-            for (int i = 0; i < length; i++ )
+            for ( int i = 0; i < length; i++ )
             {
                 result = result * 10 + digit( data[offset + i] );
             }

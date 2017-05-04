@@ -150,7 +150,7 @@ public class HostnamePortTest
         {
             InetAddress.getByName( unknownHost1 );
         }
-        catch ( UnknownHostException e)
+        catch ( UnknownHostException e )
         {
             unknownHost1Unknown = true;
         }
@@ -160,7 +160,7 @@ public class HostnamePortTest
         {
             InetAddress.getByName( unknownHost2 );
         }
-        catch ( UnknownHostException e)
+        catch ( UnknownHostException e )
         {
             unknownHost2Unknown = true;
         }
@@ -265,7 +265,7 @@ public class HostnamePortTest
         {
             InetAddress.getByName( hostname2 );
         }
-        catch ( UnknownHostException e)
+        catch ( UnknownHostException e )
         {
             host2Known = false;
         }
@@ -347,7 +347,7 @@ public class HostnamePortTest
         {
             InetAddress.getByName( host2 );
         }
-        catch ( UnknownHostException e)
+        catch ( UnknownHostException e )
         {
             host2Known = false;
         }
@@ -462,7 +462,7 @@ public class HostnamePortTest
         {
             InetAddress.getByName( unknownHost );
         }
-        catch ( UnknownHostException e)
+        catch ( UnknownHostException e )
         {
             unknownHostUnknown = true;
         }

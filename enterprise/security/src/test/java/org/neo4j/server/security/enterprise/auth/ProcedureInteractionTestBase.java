@@ -360,7 +360,7 @@ public abstract class ProcedureInteractionTestBase<S>
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
     {
-        StringBuilder builder = new StringBuilder(128);
+        StringBuilder builder = new StringBuilder( 128 );
         S subjectToUse;
 
         // remove if-else ASAP
@@ -573,7 +573,7 @@ public abstract class ProcedureInteractionTestBase<S>
         @Context
         public TerminationGuard guard;
 
-        @Procedure(name = "test.loop")
+        @Procedure( name = "test.loop" )
         public void loop()
         {
             DoubleLatch latch = volatileLatch;

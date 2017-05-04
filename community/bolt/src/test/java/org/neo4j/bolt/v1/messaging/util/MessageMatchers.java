@@ -92,7 +92,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<ResponseMessage> hasNotification( Notification notification)
+    public static Matcher<ResponseMessage> hasNotification( Notification notification )
     {
         return new TypeSafeMatcher<ResponseMessage>()
         {
@@ -247,7 +247,7 @@ public class MessageMatchers
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final BoltRequestMessageWriter packer = new BoltRequestMessageWriter( new Neo4jPack.Packer( new
-                BufferedChannelOutput( rawData )), NO_BOUNDARY_HOOK );
+                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK );
 
         for ( RequestMessage message : messages )
         {
@@ -262,7 +262,7 @@ public class MessageMatchers
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final BoltResponseMessageWriter packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( new
-                BufferedChannelOutput( rawData )), NO_BOUNDARY_HOOK );
+                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK );
 
         for ( ResponseMessage message : messages )
         {

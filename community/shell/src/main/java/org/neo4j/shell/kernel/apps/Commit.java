@@ -31,7 +31,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.Variables;
 
-@Service.Implementation(App.class)
+@Service.Implementation( App.class )
 public class Commit extends NonTransactionProvidingApp
 {
     @Override

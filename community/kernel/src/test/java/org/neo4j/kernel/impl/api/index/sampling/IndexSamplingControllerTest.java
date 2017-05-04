@@ -107,7 +107,7 @@ public class IndexSamplingControllerTest
         final DoubleLatch testLatch = new DoubleLatch();
         final ThreadLocal<Boolean> hasRun = ThreadLocal.withInitial( () -> false );
 
-        IndexSamplingJobFactory jobFactory = (indexId, proxy) ->
+        IndexSamplingJobFactory jobFactory = ( indexId, proxy ) ->
         {
             // make sure we execute this once per thread
             if ( hasRun.get() )
@@ -213,7 +213,7 @@ public class IndexSamplingControllerTest
         final DoubleLatch jobLatch = new DoubleLatch();
         final DoubleLatch testLatch = new DoubleLatch();
 
-        IndexSamplingJobFactory jobFactory = (indexId, proxy) ->
+        IndexSamplingJobFactory jobFactory = ( indexId, proxy ) ->
         {
             if ( ! concurrentCount.compareAndSet( 0, 1 ) )
             {
@@ -381,9 +381,9 @@ public class IndexSamplingControllerTest
         indexMap.putIndexProxy( indexId, indexProxy );
     }
 
-    private IndexSamplingController.RecoveryCondition always(boolean ans)
+    private IndexSamplingController.RecoveryCondition always( boolean ans )
     {
-        return new Always(ans);
+        return new Always( ans );
     }
 
     private IndexSamplingController newSamplingController( IndexSamplingController.RecoveryCondition recoveryPredicate )

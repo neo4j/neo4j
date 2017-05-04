@@ -41,7 +41,7 @@ public interface ExpressionVisitor
 
     void ternary( Expression test, Expression onTrue, Expression onFalse );
 
-    void equal( Expression lhs, Expression rhs);
+    void equal( Expression lhs, Expression rhs );
 
     void notEqual( Expression lhs, Expression rhs );
 

@@ -97,7 +97,7 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldNotAllowPropertyWritesInSchemaTransaction() throws Exception
     {
         // given
@@ -115,7 +115,7 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldAllowPropertyReadsInSchemaTransaction() throws Exception
     {
         // given

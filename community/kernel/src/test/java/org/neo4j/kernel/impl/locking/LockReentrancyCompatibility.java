@@ -29,7 +29,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
-@Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
+@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public LockReentrancyCompatibility( LockingCompatibilityTestSuite suite )

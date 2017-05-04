@@ -176,7 +176,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             }
 
             PrimitiveIntSet keys = Primitive.intSet();
-            for (PropertyRecord property : props)
+            for ( PropertyRecord property : props )
             {
                 if ( !property.inUse() )
                 {

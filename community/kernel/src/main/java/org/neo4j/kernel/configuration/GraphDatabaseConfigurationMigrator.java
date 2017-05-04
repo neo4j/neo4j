@@ -54,8 +54,8 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
 
-        add( new SpecificPropertyMigration("dbms.transaction_timeout",
-                "dbms.transaction_timeout has been replaced with dbms.rest.transaction.idle_timeout.")
+        add( new SpecificPropertyMigration( "dbms.transaction_timeout",
+                "dbms.transaction_timeout has been replaced with dbms.rest.transaction.idle_timeout." )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
@@ -75,8 +75,8 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
 
-        add( new SpecificPropertyMigration("unsupported.dbms.executiontime_limit.time",
-                "unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout.")
+        add( new SpecificPropertyMigration( "unsupported.dbms.executiontime_limit.time",
+                "unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout." )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )

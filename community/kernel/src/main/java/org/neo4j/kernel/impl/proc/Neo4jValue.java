@@ -45,32 +45,32 @@ public class Neo4jValue
         return type;
     }
 
-    public static  Neo4jValue ntString(String value)
+    public static Neo4jValue ntString( String value )
     {
         return new Neo4jValue( value, Neo4jTypes.NTString );
     }
 
-    public static  Neo4jValue ntInteger(long value)
+    public static Neo4jValue ntInteger( long value )
     {
         return new Neo4jValue( value, Neo4jTypes.NTInteger );
     }
 
-    public static  Neo4jValue ntFloat(double value)
+    public static Neo4jValue ntFloat( double value )
     {
         return new Neo4jValue( value, Neo4jTypes.NTFloat );
     }
 
-    public static  Neo4jValue ntBoolean(boolean value)
+    public static Neo4jValue ntBoolean( boolean value )
     {
         return new Neo4jValue( value, Neo4jTypes.NTBoolean );
     }
 
-    public static  Neo4jValue ntMap(Map<String, Object> value)
+    public static Neo4jValue ntMap( Map<String,Object> value )
     {
         return new Neo4jValue( value, Neo4jTypes.NTMap );
     }
 
-    public static Neo4jValue ntList(List<?> value, Neo4jTypes.AnyType inner)
+    public static Neo4jValue ntList( List<?> value, Neo4jTypes.AnyType inner )
     {
         return new Neo4jValue( value, Neo4jTypes.NTList( inner ) );
     }
@@ -88,14 +88,20 @@ public class Neo4jValue
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         Neo4jValue that = (Neo4jValue) o;
 
         if ( value != null ? !value.equals( that.value ) : that.value != null )
-        { return false; }
+        {
+            return false;
+        }
         return type.equals( that.type );
 
     }

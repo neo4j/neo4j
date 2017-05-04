@@ -460,7 +460,7 @@ public class NodeRecordCheckTest
 
     private void assertDynamicRecordChain( DynamicRecord... records )
     {
-        if ( records.length > 0)
+        if ( records.length > 0 )
         {
             for ( int i = 1; i < records.length; i++ )
             {

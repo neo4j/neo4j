@@ -100,7 +100,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     private void initializeData()
     {
         // it enough to check only start node, since it's absence will indicate that data was not yet loaded
-        if (startNode == AbstractBaseRecord.NO_ID)
+        if ( startNode == AbstractBaseRecord.NO_ID )
         {
             try ( Statement statement = actions.statement() )
             {
@@ -338,7 +338,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
                 Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
 
-                if (value == null)
+                if ( value == null )
                 {
                     throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
                 }

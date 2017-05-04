@@ -46,7 +46,7 @@ public class InconsistencyReportReader
 
     public void read( File file ) throws IOException
     {
-        try ( BufferedReader reader = new BufferedReader( new FileReader( file )) )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
         {
             read( reader );
         }
@@ -138,7 +138,7 @@ public class InconsistencyReportReader
         return -1;
     }
 
-    private static int min(int... values)
+    private static int min( int... values )
     {
         int min = Integer.MAX_VALUE;
         for ( int value : values )

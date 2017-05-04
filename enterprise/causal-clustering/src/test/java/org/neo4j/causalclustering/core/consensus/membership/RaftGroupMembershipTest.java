@@ -27,12 +27,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.core.consensus.DirectNetworking;
 import org.neo4j.causalclustering.core.consensus.RaftTestFixture;
-import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Inbound;
+import org.neo4j.causalclustering.messaging.Message;
+import org.neo4j.causalclustering.messaging.Outbound;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,7 +44,7 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.FOLLOWER;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class RaftGroupMembershipTest
 {
     @Mock

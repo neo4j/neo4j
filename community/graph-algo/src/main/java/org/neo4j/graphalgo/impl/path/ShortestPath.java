@@ -251,7 +251,9 @@ public class ShortestPath implements PathFinder<Path>
                         // to see if it finds a shorter path. (i.e. stop this side and freeze the depth).
                         // but only if the other side has not stopped, otherwise we might miss shorter paths
                         if ( otherSide.stop )
-                        { return; }
+                        {
+                            return;
+                        }
                         directionData.stop = true;
                     }
                 }

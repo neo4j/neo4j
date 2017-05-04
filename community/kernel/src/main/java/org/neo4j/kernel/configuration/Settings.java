@@ -81,7 +81,7 @@ public class Settings
     }
 
     // Set default value to this if user HAS to set a value
-    @SuppressWarnings("RedundantStringConstructorCall")
+    @SuppressWarnings( "RedundantStringConstructorCall" )
     // It's an explicitly allocated string so identity equality checks work
     public static final String MANDATORY = new String( "mandatory" );
     public static final String NO_DEFAULT = null;
@@ -109,7 +109,7 @@ public class Settings
 
     public static final String ANY = ".+";
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue )
     {
@@ -123,7 +123,7 @@ public class Settings
         return setting( name, parser, defaultValue, null, valueConverters );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final Setting<T> inheritedSetting )
     {
@@ -169,7 +169,7 @@ public class Settings
         }
         else
         {
-            defaultLookup = (n, from) -> null;
+            defaultLookup = ( n, from ) -> null;
         }
         return defaultLookup;
     }
@@ -177,7 +177,7 @@ public class Settings
     public static <OUT, IN1, IN2> Setting<OUT> derivedSetting( String name,
                                                                Setting<IN1> in1, Setting<IN2> in2,
                                                                BiFunction<IN1, IN2, OUT> derivation,
-                                                               Function<String, OUT> overrideConverter)
+                                                               Function<String, OUT> overrideConverter )
     {
         // NOTE:
         // we do not scope the input settings here (indeed they might be shared...)
@@ -228,7 +228,7 @@ public class Settings
     public static <OUT, IN1> Setting<OUT> derivedSetting( String name,
                                                           Setting<IN1> in1,
                                                           Function<IN1, OUT> derivation,
-                                                          Function<String, OUT> overrideConverter)
+                                                          Function<String,OUT> overrideConverter )
     {
         return new ScopeAwareSetting<OUT>()
         {
@@ -299,7 +299,7 @@ public class Settings
                 {
                     value = defaultValue;
                 }
-                if (value == null)
+                if ( value == null )
                 {
                     return null;
                 }
@@ -1093,7 +1093,7 @@ public class Settings
     // Setting helpers
     private static BiFunction<String,Function<String, String>, String> named()
     {
-        return (name, settings) -> settings.apply( name );
+        return ( name, settings ) -> settings.apply( name );
     }
 
     private static BiFunction<String,Function<String,String>,String> withDefault( final String defaultValue,
@@ -1307,7 +1307,7 @@ public class Settings
             StringBuilder builder = new StringBuilder(  );
             builder.append( name() ).append( " is " ).append( parser.toString() );
 
-            if (valueConverters.length > 0)
+            if ( valueConverters.length > 0 )
             {
                 builder.append( " which " );
                 for ( int i = 0; i < valueConverters.length; i++ )

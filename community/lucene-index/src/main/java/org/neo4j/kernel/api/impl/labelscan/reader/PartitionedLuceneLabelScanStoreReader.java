@@ -51,7 +51,7 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers )
+    PartitionedLuceneLabelScanStoreReader( List<LabelScanReader> readers )
     {
         this.storeReaders = readers;
     }

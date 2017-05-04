@@ -28,7 +28,7 @@ public interface Database extends Lifecycle
 {
     interface Factory
     {
-        Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies);
+        Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
     }
 
     String getLocation();

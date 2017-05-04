@@ -245,7 +245,7 @@ public class Args
         return value != null ? Double.parseDouble( value ) : defaultValue;
     }
 
-    public long getDuration( String key, long defaultValueInMillis)
+    public long getDuration( String key, long defaultValueInMillis )
     {
         String value = getSingleOptionOrNull( key );
         return value != null ? TimeUtil.parseTimeMillis.apply(value) : defaultValueInMillis;

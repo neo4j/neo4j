@@ -51,7 +51,7 @@ public class CypherResultRepresentationTest
     public DatabaseRule database = new ImpermanentDatabaseRule();
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldSerializeProfilingResult() throws Exception
     {
         // Given
@@ -91,7 +91,7 @@ public class CypherResultRepresentationTest
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given

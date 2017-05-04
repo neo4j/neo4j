@@ -103,12 +103,12 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
         response.close();
     }
 
-    private JaxRsResponse updatePropertiesOnServer(final Map<String, Object> map) throws JsonParseException
+    private JaxRsResponse updatePropertiesOnServer( final Map<String,Object> map ) throws JsonParseException
     {
         return RestRequest.req().put(propertiesUri.toString(), JsonHelper.createJsonFrom(map));
     }
 
-    private String getPropertyUri(final String key) throws Exception
+    private String getPropertyUri( final String key ) throws Exception
     {
         return propertiesUri.toString() + "/" + key ;
     }
@@ -145,7 +145,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
         response.close();
     }
 
-    private JaxRsResponse setPropertyOnServer(final String key, final Object value) throws Exception
+    private JaxRsResponse setPropertyOnServer( final String key, final Object value ) throws Exception
     {
         return RestRequest.req().put(getPropertyUri(key), JsonHelper.createJsonFrom(value));
     }

@@ -1216,11 +1216,7 @@ public class TestTransactionEvents
 
         private void put( Map<Node, Set<String>> changes, Node node, String label )
         {
-            Set<String> labels = changes.get(node);
-            if (labels == null)
-            {
-                changes.put( node, labels = new HashSet<>() );
-            }
+            Set<String> labels = changes.computeIfAbsent( node, k -> new HashSet<>() );
             labels.add( label );
         }
 

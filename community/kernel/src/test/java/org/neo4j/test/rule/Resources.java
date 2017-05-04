@@ -44,8 +44,8 @@ import static org.neo4j.test.rule.ResourceRule.fileInExistingDirectory;
 
 public final class Resources implements TestRule
 {
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
+    @Retention( RetentionPolicy.RUNTIME )
+    @Target( ElementType.METHOD )
     public @interface Life
     {
         InitialLifecycle value();

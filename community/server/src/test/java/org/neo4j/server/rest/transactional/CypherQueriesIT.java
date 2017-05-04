@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.junit.Test;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.server.rest.RESTRequestGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
@@ -52,7 +51,7 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
 
     private void assertNoErrors( Map<String, Object> response )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
         assertFalse( errors.hasNext() );
     }

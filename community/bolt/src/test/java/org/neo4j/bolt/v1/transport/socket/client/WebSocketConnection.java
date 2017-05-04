@@ -150,7 +150,7 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
     @Override
     public void disconnect() throws IOException
     {
-        if (client != null)
+        if ( client != null )
         {
             try
             {

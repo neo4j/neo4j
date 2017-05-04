@@ -43,7 +43,6 @@ import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteRequest;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteResponse;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.CANDIDATE;
@@ -52,7 +51,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class ElectionTest
 {
     private MemberId myself = member( 0 );

@@ -67,8 +67,8 @@ public abstract class MapUtil
      * @param <V> type of values
      * @return a Map with the entries supplied by {@code objects}.
      */
-    @SuppressWarnings("unchecked")
-    public static <K, V> Map<K, V> genericMap( Map<K, V> targetMap, Object... objects )
+    @SuppressWarnings( "unchecked" )
+    public static <K, V> Map<K,V> genericMap( Map<K,V> targetMap, Object... objects )
     {
         int i = 0;
         while ( i < objects.length )
@@ -375,16 +375,16 @@ public abstract class MapUtil
         return reversedMap;
     }
 
-    public static <K, V> Map<K, V> copyAndPut(Map<K, V> map, K key, V value)
+    public static <K, V> Map<K,V> copyAndPut( Map<K,V> map, K key, V value )
     {
-        Map<K, V> copy = new HashMap<>( map );
-        copy.put( key,  value);
+        Map<K,V> copy = new HashMap<>( map );
+        copy.put( key, value );
         return copy;
     }
 
-    public static <K, V> Map<K, V> copyAndRemove(Map<K, V> map, K key)
+    public static <K, V> Map<K,V> copyAndRemove( Map<K,V> map, K key )
     {
-        Map<K, V> copy = new HashMap<>( map );
+        Map<K,V> copy = new HashMap<>( map );
         copy.remove( key );
         return copy;
     }
@@ -403,30 +403,6 @@ public abstract class MapUtil
             result.put( pair.first(), pair.other() );
         }
         return result;
-    }
-
-    public static <K> boolean approximatelyEqual( Map<K, Double> that, Map<K, Double> other, double tolerance)
-    {
-        if ( that.size() != other.size() )
-        {
-            return false;
-        }
-
-        for ( Map.Entry<K, Double> entry : that.entrySet() )
-        {
-            if ( !other.containsKey( entry.getKey() ) )
-            {
-                return false;
-            }
-
-            double otherValue = other.get( entry.getKey() );
-            if ( Math.abs( otherValue - entry.getValue() ) > tolerance)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     public static <K, V> MapBuilder<K, V> entry( K key, V value )

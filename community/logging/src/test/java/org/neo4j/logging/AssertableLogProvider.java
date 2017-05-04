@@ -515,7 +515,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     {
         Iterator<LogMatcher> expectedIterator = asList( expected ).iterator();
 
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             Iterator<LogCall> callsIterator = logCalls.iterator();
 
@@ -591,7 +591,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
     public void assertAtLeastOnce( LogMatcher... expected )
     {
         Set<LogMatcher> expectedMatchers = new HashSet<>( Arrays.asList( expected ) );
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
@@ -618,7 +618,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertNone( LogMatcher notExpected )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
@@ -634,7 +634,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertContainsLogCallContaining( String partOfMessage )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
@@ -651,7 +651,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertContainsMessageContaining( String partOfMessage )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             if ( containsMessage( partOfMessage ) )
             {
@@ -689,7 +689,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertContainsMessageMatching( Matcher<String> messageMatcher )
     {
-        synchronized (logCalls)
+        synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {

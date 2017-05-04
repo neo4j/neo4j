@@ -187,7 +187,7 @@ public class PropertyValueComparison
 
     private static class NumberPropertyValueComparator extends PropertyValueComparator<Number>
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public int compare( Number left, Number right )
         {

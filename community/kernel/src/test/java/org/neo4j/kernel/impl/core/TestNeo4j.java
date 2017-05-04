@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.id.IdType;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -144,13 +145,13 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             tx.success();
         }
 
-        try (Transaction ignored = getGraphDb().beginTx() )
+        try ( Transaction ignored = getGraphDb().beginTx() )
         {
             node.setProperty( "test", new String[] { "value1", "value2" } );
             // no success, we wanna test rollback on this operation
         }
 
-        try (Transaction tx = getGraphDb().beginTx() )
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             String[] value = (String[]) node.getProperty( "test" );
             assertEquals( 1, value.length );

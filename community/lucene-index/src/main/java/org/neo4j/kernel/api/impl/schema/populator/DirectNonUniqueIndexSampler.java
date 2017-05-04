@@ -75,7 +75,7 @@ public class DirectNonUniqueIndexSampler implements NonUniqueIndexSampler
             luceneIndex.flush();
             luceneIndex.maybeRefreshBlocking();
 
-            try (IndexReader indexReader = luceneIndex.getIndexReader())
+            try ( IndexReader indexReader = luceneIndex.getIndexReader() )
             {
                 IndexSampler sampler = indexReader.createSampler();
                 return sampler.sampleIndex();

@@ -19,42 +19,42 @@
  */
 package org.neo4j.helpers.collection;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class LruCacheTest
 {
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
     {
         new LruCache<>( "TestCache", 0 );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenPuttingEntryWithNullKey()
     {
         new LruCache<>( "TestCache", 70 ).put( null, new Object() );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenPuttingEntryWithNullValue()
     {
         new LruCache<>( "TestCache", 70 ).put( new Object(), null );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenGettingWithANullKey()
     {
         new LruCache<>( "TestCache", 70 ).get( null );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenRemovingWithANullKey()
     {
         new LruCache<>( "TestCache", 70 ).remove( null );

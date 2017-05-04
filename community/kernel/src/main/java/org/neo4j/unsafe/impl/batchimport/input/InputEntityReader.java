@@ -109,7 +109,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends InputIterat
         /** The processor is the guy converting the byte[] to ENTITY[]
          *  we will have a lot of those guys
          */
-        BiFunction<byte[],Void,Object[]> processor = (batchData,ignore) ->
+        BiFunction<byte[],Void,Object[]> processor = ( batchData, ignore ) ->
         {
             ProcessorState state = new ProcessorState( batchData );
             try

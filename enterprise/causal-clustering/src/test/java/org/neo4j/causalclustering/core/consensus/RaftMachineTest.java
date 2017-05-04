@@ -390,12 +390,11 @@ public class RaftMachineTest
                 .raftLog( raftLog )
                 .build();
 
-        raftLog.append( new RaftLogEntry(0, new MemberIdSet(asSet( myself, member1, member2 ))) );
+        raftLog.append( new RaftLogEntry( 0, new MemberIdSet( asSet( myself, member1, member2 ) ) ) );
 
         // when
-        raft.handle(
-                appendEntriesRequest().from( member1 ).prevLogIndex( 0 ).prevLogTerm( 0 ).leaderTerm( 0 )
-                        .logEntry( new RaftLogEntry( 0, data1 ) ).build());
+        raft.handle( appendEntriesRequest().from( member1 ).prevLogIndex( 0 ).prevLogTerm( 0 ).leaderTerm( 0 )
+                .logEntry( new RaftLogEntry( 0, data1 ) ).build());
         // then
         assertEquals( 1, raftLog.appendIndex() );
         assertEquals( data1, readLogEntry( raftLog, 1 ).content() );
@@ -483,14 +482,11 @@ public class RaftMachineTest
         FakeClock fakeClock = Clocks.fakeClock();
         InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
-        RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts )
-                .clock( fakeClock )
-                .raftLog( raftLog )
-                .inFlightMap( inFlightMap )
-                .build();
+        RaftMachine raft =
+                new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts )
+                        .clock( fakeClock ).raftLog( raftLog ).inFlightMap( inFlightMap ).build();
 
-        raftLog.append( new RaftLogEntry(0, new MemberIdSet(asSet( myself, member1, member2 ))) );
+        raftLog.append( new RaftLogEntry( 0, new MemberIdSet( asSet( myself, member1, member2 ) ) ) );
 
         // when
         raft.handle( appendEntriesRequest().from( member1 ).prevLogIndex( 0 ).prevLogTerm( 0 ).leaderTerm( 0 )

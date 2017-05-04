@@ -39,9 +39,8 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.Iterables.limit;
-
 import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.limit;
 
 
 class ProposerContextImpl
@@ -72,7 +71,7 @@ class ProposerContextImpl
     private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
                                  Timeouts timeouts, Deque<Message> pendingValues,
                                  Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances,
-                                 HeartbeatContext heartbeatContext)
+                                 HeartbeatContext heartbeatContext )
     {
         super( me, commonState, logging, timeouts );
         this.pendingValues = pendingValues;
@@ -235,7 +234,7 @@ class ProposerContextImpl
                                          PaxosInstanceStore paxosInstancesSnapshot, HeartbeatContext heartbeatContext )
     {
         return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),
-                new HashMap<>(bookedInstances), paxosInstancesSnapshot, heartbeatContext );
+                new HashMap<>( bookedInstances ), paxosInstancesSnapshot, heartbeatContext );
     }
 
     @Override

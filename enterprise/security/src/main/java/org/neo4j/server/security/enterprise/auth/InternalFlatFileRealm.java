@@ -91,7 +91,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
             JobScheduler jobScheduler, UserRepository initialUserRepository,
-            UserRepository defaultAdminRepository)
+            UserRepository defaultAdminRepository )
     {
         this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true,
                 jobScheduler, initialUserRepository, defaultAdminRepository );
@@ -222,7 +222,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
                 if ( initialUserRepository.numberOfUsers() > 0 )
                 {
                     User initUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
-                    if (initUser != null)
+                    if ( initUser != null )
                     {
                         userRepository.update( neo4j, initUser );
                     }

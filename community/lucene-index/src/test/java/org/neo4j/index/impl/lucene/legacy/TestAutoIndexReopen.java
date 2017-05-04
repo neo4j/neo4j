@@ -19,21 +19,21 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import java.util.HashMap;
-
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import org.neo4j.graphdb.index.ReadableRelationshipIndex;
+import static org.junit.Assert.assertEquals;
 
 public class TestAutoIndexReopen
 {
@@ -50,7 +50,7 @@ public class TestAutoIndexReopen
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().setConfig(new HashMap<>()).newGraphDatabase();
 
-        try (Transaction tx = graphDb.beginTx())
+        try ( Transaction tx = graphDb.beginTx() )
         {
             // Create the node and relationship auto-indexes
             graphDb.index().getNodeAutoIndexer().setEnabled(true);
@@ -63,7 +63,7 @@ public class TestAutoIndexReopen
             tx.success();
         }
 
-        try (Transaction tx = graphDb.beginTx())
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Node node1 = graphDb.createNode();
             Node node2 = graphDb.createNode();
@@ -83,7 +83,7 @@ public class TestAutoIndexReopen
     @After
     public void stopDb()
     {
-        if (graphDb != null)
+        if ( graphDb != null )
         {
             graphDb.shutdown();
         }
@@ -99,18 +99,15 @@ public class TestAutoIndexReopen
     public void testForceOpenIfChanged()
     {
         // do some actions to force the indexreader to be reopened
-        try (Transaction tx = graphDb.beginTx())
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            Node node1 = graphDb.getNodeById(id1);
-            Node node2 = graphDb.getNodeById(id2);
-            Node node3 = graphDb.getNodeById(id3);
+            Node node1 = graphDb.getNodeById( id1 );
+            Node node2 = graphDb.getNodeById( id2 );
+            Node node3 = graphDb.getNodeById( id3 );
 
             node1.setProperty("np2", "test property");
 
-            node1.getRelationships(RelationshipType.withName("FOO")).forEach(r ->
-            {
-                r.delete();
-            });
+            node1.getRelationships( RelationshipType.withName( "FOO" ) ).forEach( Relationship::delete );
 
             // check first node
             assertEquals(0, relationShipAutoIndex().get("type", "FOO", node1, node3).size());

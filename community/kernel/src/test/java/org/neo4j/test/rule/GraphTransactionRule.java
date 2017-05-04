@@ -66,7 +66,7 @@ public class GraphTransactionRule extends ExternalResource
     {
         try
         {
-            if (tx != null)
+            if ( tx != null )
             {
                 tx.success();
                 tx.close();
@@ -82,7 +82,7 @@ public class GraphTransactionRule extends ExternalResource
     {
         try
         {
-            if (tx != null)
+            if ( tx != null )
             {
                 tx.failure();
                 tx.close();

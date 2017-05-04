@@ -260,7 +260,7 @@ public class TestPullUpdates
         }
         finally
         {
-            if ( slave != null)
+            if ( slave != null )
             {
                 slave.shutdown();
             }

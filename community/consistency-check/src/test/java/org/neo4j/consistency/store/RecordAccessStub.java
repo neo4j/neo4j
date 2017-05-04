@@ -71,7 +71,7 @@ public class RecordAccessStub implements RecordAccess
         return new Engine<RECORD, REPORT>( report )
         {
             @Override
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
                                  AbstractBaseRecord newReference )
             {
@@ -86,7 +86,7 @@ public class RecordAccessStub implements RecordAccess
         return new Engine<RECORD, REPORT>( report )
         {
             @Override
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             void checkReference( ComparativeRecordChecker checker, AbstractBaseRecord oldReference,
                                  AbstractBaseRecord newReference )
             {
@@ -113,7 +113,7 @@ public class RecordAccessStub implements RecordAccess
             deferredTasks.add( new Runnable()
             {
                 @Override
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 public void run()
                 {
                     PendingReferenceCheck mock = mock( PendingReferenceCheck.class );

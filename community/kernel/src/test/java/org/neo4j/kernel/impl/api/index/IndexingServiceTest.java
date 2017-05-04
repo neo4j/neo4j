@@ -180,7 +180,7 @@ public class IndexingServiceTest
         waitForIndexesToComeOnline( indexingService, 0 );
         verify( populator, timeout( 1000 ) ).close( true );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -234,7 +234,7 @@ public class IndexingServiceTest
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
         IndexEntryUpdate value2 = add( 2, "value2" );
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( value2 );
         }
@@ -282,7 +282,7 @@ public class IndexingServiceTest
         // don't wait for index to come ONLINE here since we're testing that it doesn't
         verify( populator, timeout( 2000 ) ).close( true );
 
-        try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -467,7 +467,7 @@ public class IndexingServiceTest
     public void shouldNotSnapshotPopulatingIndexes() throws Exception
     {
         // GIVEN
-        CountDownLatch populatorLatch = new CountDownLatch(1);
+        CountDownLatch populatorLatch = new CountDownLatch( 1 );
         IndexAccessor indexAccessor = mock(IndexAccessor.class);
         int indexId = 1;
         int indexId2 = 2;
@@ -1233,7 +1233,7 @@ public class IndexingServiceTest
             };
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @SuppressWarnings( {"unchecked", "rawtypes"} )
         private static Visitor<NodeUpdates, IndexPopulationFailedKernelException> visitor( Object v )
         {
             return (Visitor) v;

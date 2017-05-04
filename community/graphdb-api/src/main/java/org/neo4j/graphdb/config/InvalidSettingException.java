@@ -27,12 +27,12 @@ public class InvalidSettingException extends RuntimeException
 
     public InvalidSettingException( String name, String value, String message )
     {
-        super(String.format( "Bad value '%s' for setting '%s': %s", value, name, message ));
+        super( String.format( "Bad value '%s' for setting '%s': %s", value, name, message ) );
     }
 
     public InvalidSettingException( String message )
     {
-        super(message);
+        super( message );
     }
 
     public InvalidSettingException( String message, Throwable cause )

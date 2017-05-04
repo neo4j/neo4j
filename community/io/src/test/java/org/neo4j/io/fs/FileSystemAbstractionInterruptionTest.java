@@ -48,13 +48,10 @@ public class FileSystemAbstractionInterruptionTest
     private static final Factory<FileSystemAbstraction> ephemeral = EphemeralFileSystemAbstraction::new;
     private static final Factory<FileSystemAbstraction> real = DefaultFileSystemAbstraction::new;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> dataPoints()
     {
-        return Arrays.asList(new Object[][]{
-                { "ephemeral", ephemeral },
-                { "real", real }
-        });
+        return Arrays.asList( new Object[][]{{"ephemeral", ephemeral}, {"real", real}} );
     }
 
     @Rule
@@ -125,61 +122,61 @@ public class FileSystemAbstractionInterruptionTest
         chan( false ).tryLock().release();
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_setPosition() throws IOException
     {
         chan( true ).position( 0 );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_getPosition() throws IOException
     {
         chan( true ).position();
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_truncate() throws IOException
     {
         chan( true ).truncate( 0 );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_force() throws IOException
     {
         chan( true ).force( true );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_writeAll_ByteBuffer() throws IOException
     {
         chan( true ).writeAll( ByteBuffer.allocate( 1 ) );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_writeAll_ByteBuffer_position() throws IOException
     {
         chan( true ).writeAll( ByteBuffer.allocate( 1 ), 1 );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_write_ByteBuffer_position() throws IOException
     {
         chan( true ).write( ByteBuffer.allocate( 1 ), 1 );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_read_ByteBuffer() throws IOException
     {
         chan( true ).read( ByteBuffer.allocate( 1 ) );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_write_ByteBuffer() throws IOException
     {
         chan( true ).write( ByteBuffer.allocate( 1 ) );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_size() throws IOException
     {
         chan( true ).size();
@@ -191,25 +188,25 @@ public class FileSystemAbstractionInterruptionTest
         chan( false ).isOpen();
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_write_ByteBuffers_offset_length() throws IOException
     {
         chan( true ).write( new ByteBuffer[]{ByteBuffer.allocate( 1 )}, 0, 1 );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_write_ByteBuffers() throws IOException
     {
         chan( true ).write( new ByteBuffer[]{ByteBuffer.allocate( 1 )} );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_read_ByteBuffers_offset_length() throws IOException
     {
         chan( true ).read( new ByteBuffer[]{ByteBuffer.allocate( 1 )}, 0, 1 );
     }
 
-    @Test(expected = ClosedByInterruptException.class)
+    @Test( expected = ClosedByInterruptException.class )
     public void ch_read_ByteBuffers() throws IOException
     {
         chan( true ).read( new ByteBuffer[]{ByteBuffer.allocate( 1 )} );

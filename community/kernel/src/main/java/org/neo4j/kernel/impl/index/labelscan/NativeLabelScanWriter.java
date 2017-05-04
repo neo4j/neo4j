@@ -57,7 +57,7 @@ class NativeLabelScanWriter implements LabelScanWriter
      * {@link Comparator} for sorting the node id ranges, used in batches to apply updates in sorted order.
      */
     private static final Comparator<NodeLabelUpdate> UPDATE_SORTER =
-            (o1, o2) -> Long.compare( o1.getNodeId(), o2.getNodeId() );
+            Comparator.comparingLong( NodeLabelUpdate::getNodeId );
 
     /**
      * {@link ValueMerger} used for adding label->node mappings, see {@link LabelScanValue#add(LabelScanValue)}.

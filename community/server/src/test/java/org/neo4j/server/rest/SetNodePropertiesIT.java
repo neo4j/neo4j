@@ -116,7 +116,7 @@ public class SetNodePropertiesIT extends
                  "Note that a single value are submitted not as a map but just as a value\n" +
                  "(which is valid JSON) like in the example\n" +
                  "below." )
-    @Graph( nodes = {@NODE(name = "jim", properties = {@PROP(key = "foo2", value = "bar2")})} )
+    @Graph( nodes = {@NODE( name = "jim", properties = {@PROP( key = "foo2", value = "bar2" )} )} )
     @Test
     public void shouldReturn204WhenPropertyIsSet() throws Exception
     {

@@ -85,7 +85,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldBeAbleToWriteDataToCountsTracker() throws Exception
     {
         // given
@@ -264,7 +264,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldNotRotateIfNoDataChanges() throws Exception
     {
         // given
@@ -279,7 +279,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldRotateOnDataChangesEvenIfTransactionIsUnchanged() throws Exception
     {
         // given
@@ -298,7 +298,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
     {
         // given
@@ -352,7 +352,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    @Resources.Life(STARTED)
+    @Resources.Life( STARTED )
     public void shouldNotEndUpInBrokenStateAfterRotationFailure() throws Exception
     {
         // GIVEN

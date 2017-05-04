@@ -66,7 +66,7 @@ public class FullCheck
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads )
     {
-        this(progressFactory, statistics, threads, new CheckConsistencyConfig(tuningConfiguration) );
+        this( progressFactory, statistics, threads, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
@@ -167,7 +167,7 @@ public class FullCheck
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         T[] records = (T[]) Array.newInstance( type, (int) store.getHighId() );
         for ( int i = 0; i < records.length; i++ )
         {

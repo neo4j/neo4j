@@ -26,10 +26,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.management.repr.ServerRootRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
 
-@Path("/")
+@Path( "/" )
 public class RootService
 {
     private final NeoServer neoServer;

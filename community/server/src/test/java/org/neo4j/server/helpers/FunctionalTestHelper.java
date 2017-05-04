@@ -53,7 +53,7 @@ public final class FunctionalTestHelper
         }
         this.helper = new GraphDbHelper( server.getDatabase() );
         this.server = server;
-        this.request = new RestRequest(server.baseUri().resolve("db/data/"));
+        this.request = new RestRequest( server.baseUri().resolve( "db/data/" ) );
     }
 
     public static Matcher<String[]> arrayContains( final String element )
@@ -197,9 +197,9 @@ public final class FunctionalTestHelper
         return dataUri() + "ext";
     }
 
-    public JaxRsResponse get(String path)
+    public JaxRsResponse get( String path )
     {
-        return request.get(path);
+        return request.get( path );
     }
 
     public long getNodeIdFromUri( String nodeUri )

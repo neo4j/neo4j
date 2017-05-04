@@ -1703,7 +1703,7 @@ public class CodeGenerationTest
         assertThat( unboxTest( Character.class, char.class, 'a' ), equalTo( 'a' ) );
     }
 
-    private <T> Object unboxTest(Class<T> boxedType, Class<?> unboxedType, T value)
+    private <T> Object unboxTest( Class<T> boxedType, Class<?> unboxedType, T value )
             throws Throwable
     {
         createGenerator();
@@ -1724,7 +1724,7 @@ public class CodeGenerationTest
         return instanceMethod( handle.newInstance(), "unbox", boxedType ).invoke( value );
     }
 
-    private <T> Object boxTest(Class<T> unboxedType, T value)
+    private <T> Object boxTest( Class<T> unboxedType, T value )
             throws Throwable
     {
         createGenerator();
@@ -1745,7 +1745,7 @@ public class CodeGenerationTest
         return instanceMethod( handle.newInstance(), "box", unboxedType ).invoke( value );
     }
 
-    private MethodHandle conditional(Function<CodeBlock,Expression> test, Parameter... params)
+    private MethodHandle conditional( Function<CodeBlock,Expression> test, Parameter... params )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

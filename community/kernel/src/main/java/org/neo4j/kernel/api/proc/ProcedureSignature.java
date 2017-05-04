@@ -55,7 +55,7 @@ public class ProcedureSignature
             Optional<String> deprecated,
             String[] allowed,
             Optional<String> description,
-            Optional<String> warning)
+            Optional<String> warning )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -172,13 +172,13 @@ public class ProcedureSignature
             return this;
         }
 
-        public Builder description(String description)
+        public Builder description( String description )
         {
             this.description = Optional.of( description );
             return this;
         }
 
-        public Builder deprecatedBy(String deprecated)
+        public Builder deprecatedBy( String deprecated )
         {
             this.deprecated = Optional.of( deprecated );
             return this;
@@ -218,13 +218,15 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature, mode, deprecated, allowed, description, warning );
+            return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed,
+                    description, warning );
         }
     }
 
-    public static Builder procedureSignature(String ... namespaceAndName)
+    public static Builder procedureSignature( String... namespaceAndName )
     {
-        String[] namespace = namespaceAndName.length > 1 ? Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) : new String[0];
+        String[] namespace = namespaceAndName.length > 1 ?
+                             Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) : new String[0];
         String name = namespaceAndName[namespaceAndName.length - 1];
         return procedureSignature( namespace, name );
     }
@@ -234,12 +236,12 @@ public class ProcedureSignature
         return new Builder( name.namespace(), name.name() );
     }
 
-    public static Builder procedureSignature(String[] namespace, String name)
+    public static Builder procedureSignature( String[] namespace, String name )
     {
-        return new Builder(namespace, name);
+        return new Builder( namespace, name );
     }
 
-    public static QualifiedName procedureName( String ... namespaceAndName)
+    public static QualifiedName procedureName( String... namespaceAndName )
     {
         return procedureSignature( namespaceAndName ).build().name();
     }

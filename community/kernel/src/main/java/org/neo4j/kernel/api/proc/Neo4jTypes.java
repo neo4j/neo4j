@@ -100,7 +100,7 @@ public class Neo4jTypes
     {
         public FloatType()
         {
-            super( "FLOAT?");
+            super( "FLOAT?" );
         }
     }
 

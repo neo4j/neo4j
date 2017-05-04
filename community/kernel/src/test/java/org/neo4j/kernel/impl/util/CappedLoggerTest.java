@@ -50,7 +50,7 @@ public class CappedLoggerTest
         void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause );
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> parameters()
     {
         LogMethod debug = new LogMethod()

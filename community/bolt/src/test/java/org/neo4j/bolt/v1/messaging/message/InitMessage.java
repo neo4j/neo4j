@@ -19,9 +19,9 @@
  */
 package org.neo4j.bolt.v1.messaging.message;
 
-import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
-
 import java.util.Map;
+
+import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 
 public class InitMessage implements RequestMessage
 {
@@ -57,9 +57,13 @@ public class InitMessage implements RequestMessage
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         InitMessage that = (InitMessage) o;
 

@@ -28,7 +28,7 @@ public class RelationshipAutoIndexRepresentation extends IndexRepresentation
 
     public RelationshipAutoIndexRepresentation()
     {
-        super("", Collections.EMPTY_MAP);
+        super( "", Collections.EMPTY_MAP );
     }
 
     @Override

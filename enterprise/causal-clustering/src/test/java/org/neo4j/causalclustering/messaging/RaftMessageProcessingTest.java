@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class RaftMessageProcessingTest
 {
     private static ChannelMarshal<ReplicatedContent> serializer = new SafeChannelMarshal<ReplicatedContent>()

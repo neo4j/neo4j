@@ -69,7 +69,7 @@ public class ProcessFailureException extends Exception
         return result.toString();
     }
 
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
     private static Throwable cause( List<Entry> causes )
     {
         return causes.size() >= 1 ? causes.get( 0 ).failure : null;

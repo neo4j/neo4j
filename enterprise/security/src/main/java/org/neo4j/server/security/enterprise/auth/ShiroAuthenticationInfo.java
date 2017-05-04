@@ -61,7 +61,7 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
     @Override
     public void merge( AuthenticationInfo info )
     {
-        if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty())
+        if ( info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty() )
         {
             return;
         }

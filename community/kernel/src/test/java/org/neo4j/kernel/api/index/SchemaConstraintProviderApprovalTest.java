@@ -53,7 +53,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createConstraint;
  * Indexes should always produce the same result as scanning all nodes and checking properties. By extending this
  * class in the index provider module, all value types will be checked against the index provider.
  */
-@RunWith(value = Parameterized.class)
+@RunWith( value = Parameterized.class )
 public abstract class SchemaConstraintProviderApprovalTest
 {
     // These are the values that will be checked.
@@ -111,7 +111,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         currentValue = value;
     }
 
-    @Parameters(name = "{0}")
+    @Parameters( name = "{0}" )
     public static Collection<TestValue> data()
     {
         return Arrays.asList( TestValue.values() );

@@ -117,7 +117,7 @@ public class InFlightLogEntryReaderTest
             // then
             assertEquals( entries[offset], raftLogEntry );
 
-            if ( offset <= 1)
+            if ( offset <= 1 )
             {
                 verify( inFlightMap ).get( offset + logIndex );
             }

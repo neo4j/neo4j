@@ -54,7 +54,7 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @Graph( nodes = {@NODE(name = "I")} )
+    @Graph( nodes = {@NODE( name = "I" )} )
     public void shouldGet200WhenNoHitsFromTraversing()
     {
         assertSize( 0,gen().expectedStatus( 200 ).payload( "" ).post(

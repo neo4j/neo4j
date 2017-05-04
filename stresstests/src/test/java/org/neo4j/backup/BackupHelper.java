@@ -50,7 +50,7 @@ public class BackupHelper
         boolean failure = false;
         try
         {
-            BackupService backupService = new BackupService(outputStream);
+            BackupService backupService = new BackupService( outputStream );
             BackupService.BackupOutcome backupOutcome = backupService.doIncrementalBackupOrFallbackToFull( host, port,
                     targetDirectory, ConsistencyCheck.FULL, Config.embeddedDefaults(), BackupClient.BIG_READ_TIMEOUT,
                     false );

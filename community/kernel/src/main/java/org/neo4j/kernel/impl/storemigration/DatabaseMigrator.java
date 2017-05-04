@@ -78,7 +78,7 @@ public class DatabaseMigrator
      * migration if that is required.
      * @param storeDir store to migrate
      */
-    public void migrate(File storeDir)
+    public void migrate( File storeDir )
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase =

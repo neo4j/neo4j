@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings( "unchecked" )
 public class LeaderOnlyLockManagerTest
 {
     @Test

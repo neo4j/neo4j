@@ -62,7 +62,7 @@ public class TxPullClient
                     public void onTxStreamFinishedResponse( CompletableFuture<TxPullRequestResult> signal,
                             TxStreamFinishedResponse response )
                     {
-                        signal.complete( new TxPullRequestResult(response.status(), lastTxIdReceived ));
+                        signal.complete( new TxPullRequestResult( response.status(), lastTxIdReceived ) );
                     }
                 } );
     }

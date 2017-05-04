@@ -57,7 +57,7 @@ import static org.neo4j.udc.UsageDataKeys.features;
  * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not
  * do anything more complicated than that.
  */
-@Path("/transaction")
+@Path( "/transaction" )
 public class TransactionalService
 {
     private final TransactionFacade facade;
@@ -75,8 +75,8 @@ public class TransactionalService
     }
 
     @POST
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
+    @Consumes( {MediaType.APPLICATION_JSON} )
+    @Produces( {MediaType.APPLICATION_JSON} )
     public Response executeStatementsInNewTransaction( final InputStream input, @Context final UriInfo uriInfo,
                                                        @Context final HttpServletRequest request )
     {
@@ -99,10 +99,10 @@ public class TransactionalService
     }
 
     @POST
-    @Path("/{id}")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    public Response executeStatements( @PathParam("id") final long id, final InputStream input,
+    @Path( "/{id}" )
+    @Consumes( {MediaType.APPLICATION_JSON} )
+    @Produces( {MediaType.APPLICATION_JSON} )
+    public Response executeStatements( @PathParam( "id" ) final long id, final InputStream input,
                                        @Context final UriInfo uriInfo, @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
@@ -118,10 +118,11 @@ public class TransactionalService
     }
 
     @POST
-    @Path("/{id}/commit")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    public Response commitTransaction( @PathParam("id") final long id, final InputStream input, @Context final UriInfo uriInfo,
+    @Path( "/{id}/commit" )
+    @Consumes( {MediaType.APPLICATION_JSON} )
+    @Produces( {MediaType.APPLICATION_JSON} )
+    public Response commitTransaction( @PathParam( "id" ) final long id, final InputStream input, @Context final
+    UriInfo uriInfo,
                                        @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
@@ -137,9 +138,9 @@ public class TransactionalService
     }
 
     @POST
-    @Path("/commit")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
+    @Path( "/commit" )
+    @Consumes( {MediaType.APPLICATION_JSON} )
+    @Produces( {MediaType.APPLICATION_JSON} )
     public Response commitNewTransaction( final InputStream input, @Context final UriInfo uriInfo,
                                           @Context final HttpServletRequest request )
     {
@@ -160,9 +161,9 @@ public class TransactionalService
     }
 
     @DELETE
-    @Path("/{id}")
-    @Consumes({MediaType.APPLICATION_JSON})
-    public Response rollbackTransaction( @PathParam("id") final long id, @Context UriInfo uriInfo )
+    @Path( "/{id}" )
+    @Consumes( {MediaType.APPLICATION_JSON} )
+    public Response rollbackTransaction( @PathParam( "id" ) final long id, @Context UriInfo uriInfo )
     {
         final TransactionHandle transactionHandle;
         try

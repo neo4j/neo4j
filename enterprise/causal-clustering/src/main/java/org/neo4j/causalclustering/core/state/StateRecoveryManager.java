@@ -74,7 +74,7 @@ public class StateRecoveryManager<STATE>
         STATE a = readLastEntryFrom( fileA );
         STATE b = readLastEntryFrom( fileB );
 
-        if ( a == null && b == null)
+        if ( a == null && b == null )
         {
             throw new IllegalStateException( "no recoverable state" );
         }

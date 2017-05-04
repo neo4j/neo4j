@@ -40,7 +40,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-@RunWith(Theories.class)
+@RunWith( Theories.class )
 public class LegacyIndexIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
@@ -67,19 +67,19 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     }
 
     @Theory
-    public void shouldRejectIndexValueLargerThanConfiguredSize(String uniqueness) throws Exception
+    public void shouldRejectIndexValueLargerThanConfiguredSize( String uniqueness ) throws Exception
     {
         //Given
         server.start();
 
         // When
-        String nodeURI = HTTP.POST( server.baseUri().toString() + "db/data/node").header( "Location" );
+        String nodeURI = HTTP.POST( server.baseUri().toString() + "db/data/node" ).header( "Location" );
 
         Random r = new Random();
         String value = "";
         for ( int i = 0; i < 6_000; i++ )
         {
-            value += (char)(r.nextInt(26) + 'a');
+            value += (char) (r.nextInt( 26 ) + 'a');
         }
         HTTP.Response response =
                 HTTP.POST( server.baseUri().toString() + "db/data/index/node/favorites?uniqueness=" + uniqueness,
@@ -90,19 +90,19 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     }
 
     @Theory
-    public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize(String uniqueness) throws Exception
+    public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize( String uniqueness ) throws Exception
     {
         //Given
         server.start();
 
         // When
-        String nodeURI = HTTP.POST( server.baseUri().toString() + "db/data/node").header( "Location" );
+        String nodeURI = HTTP.POST( server.baseUri().toString() + "db/data/node" ).header( "Location" );
 
         Random r = new Random();
         String value = "";
         for ( int i = 0; i < 4_000; i++ )
         {
-            value += (char)(r.nextInt(26) + 'a');
+            value += (char) (r.nextInt( 26 ) + 'a');
         }
         HTTP.Response response =
                 HTTP.POST( server.baseUri().toString() + "db/data/index/node/favorites?uniqueness=" + uniqueness,

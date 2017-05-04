@@ -82,7 +82,7 @@ public class LdapCachingTest
 
         fakeTicker = new FakeTicker();
         authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms,
-                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10), securityLog, false );
+                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10 ), securityLog, false );
         authManager.init();
         authManager.start();
 

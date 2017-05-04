@@ -46,7 +46,7 @@ public class Header
         void write( PageCursor from, int length, PageCursor to );
     }
 
-    static final Writer CARRY_OVER_PREVIOUS_HEADER = (from,length,to) ->
+    static final Writer CARRY_OVER_PREVIOUS_HEADER = ( from, length, to ) ->
     {
         int toOffset = to.getOffset();
         from.copyTo( from.getOffset(), to, toOffset, length );
@@ -56,7 +56,7 @@ public class Header
     static Writer replace( Consumer<PageCursor> writer )
     {
         // Discard the previous state, just write the new
-        return (from,length,to) -> writer.accept( to );
+        return ( from, length, to ) -> writer.accept( to );
     }
 
     /**

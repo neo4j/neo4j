@@ -83,7 +83,7 @@ public class Fixture
                             .commitListener( waiter )
                             .build();
 
-            rafts.add( new RaftFixture(raftMachine, raftLog) );
+            rafts.add( new RaftFixture( raftMachine, raftLog ) );
         }
     }
 
@@ -104,8 +104,8 @@ public class Fixture
     {
         for ( RaftFixture raft : rafts )
         {
-            raft.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
-            raft.raftMachine().installCoreState( new RaftCoreState( new MembershipEntry( 0, members  ) ) );
+            raft.raftLog().append( new RaftLogEntry( 0, new MemberIdSet( asSet( members ) ) ) );
+            raft.raftMachine().installCoreState( new RaftCoreState( new MembershipEntry( 0, members ) ) );
             raft.raftMachine.postRecoveryActions();
         }
         net.start();

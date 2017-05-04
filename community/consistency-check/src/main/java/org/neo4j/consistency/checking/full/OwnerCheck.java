@@ -380,7 +380,7 @@ class OwnerCheck implements CheckDecorator
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
         {
             if ( record.inUse() )
@@ -420,7 +420,7 @@ class OwnerCheck implements CheckDecorator
             this.owners = owners;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public void check( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records )
         {

@@ -235,14 +235,14 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
                 DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
         {
-            super(databaseInfo, editionFactory);
+            super( databaseInfo, editionFactory );
             this.state = state;
             this.impermanent = impermanent;
         }
 
         TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
         {
-            this(state, false);
+            this( state, false );
         }
 
         @Override

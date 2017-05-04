@@ -69,9 +69,13 @@ class OpenEndRangeMap<K extends Comparable<K>, V>
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
+            {
+                return false;
+            }
             ValueRange<?,?> that = (ValueRange<?,?>) o;
             return Objects.equals( limit, that.limit ) &&
                    Objects.equals( value, that.value );

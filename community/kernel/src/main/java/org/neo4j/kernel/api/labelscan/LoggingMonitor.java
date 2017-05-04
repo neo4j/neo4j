@@ -72,7 +72,7 @@ public class LoggingMonitor implements Monitor
     public void recoveryCompleted( Map<String,Object> data )
     {
         StringBuilder builder = new StringBuilder( "Scan store recovery completed:" );
-        data.forEach( (key,value) -> builder.append( format( " %s: %s", key, value ) ) );
+        data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
         log.info( builder.toString() );
     }
 }

@@ -37,7 +37,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 
-@Path(CoreDatabaseAvailabilityService.BASE_PATH)
+@Path( CoreDatabaseAvailabilityService.BASE_PATH )
 public class CoreDatabaseAvailabilityService implements AdvertisableService
 {
     public static final String BASE_PATH = "server/core";
@@ -73,7 +73,7 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
     }
 
     @GET
-    @Path(IS_WRITABLE_PATH)
+    @Path( IS_WRITABLE_PATH )
     public Response isWritable() throws BadInputException
     {
         if ( coreDatabase == null )
@@ -90,7 +90,7 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
     }
 
     @GET
-    @Path(IS_READ_ONLY_PATH)
+    @Path( IS_READ_ONLY_PATH )
     public Response isReadOnly() throws BadInputException
     {
         if ( coreDatabase == null )

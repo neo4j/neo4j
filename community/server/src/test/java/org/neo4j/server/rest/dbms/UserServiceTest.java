@@ -31,19 +31,19 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicSecurityContext;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.server.security.auth.BasicSecurityContext;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.api.security.UserManager;
-import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.test.server.EntityOutputFormat;
 
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 
 public class UserServiceTest
 {
-    protected static final User NEO4J_USER = new User.Builder( "neo4j", Credential.forPassword( "neo4j" ))
+    protected static final User NEO4J_USER = new User.Builder( "neo4j", Credential.forPassword( "neo4j" ) )
             .withRequiredPasswordChange( true ).build();
 
     protected final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();

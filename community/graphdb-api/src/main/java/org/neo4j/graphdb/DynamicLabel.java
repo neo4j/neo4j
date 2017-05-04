@@ -65,7 +65,7 @@ public class DynamicLabel implements Label
     }
 
     @Override
-    public boolean equals(Object other)
+    public boolean equals( Object other )
     {
         return other instanceof Label && ((Label) other).name().equals( name );
     }

@@ -85,7 +85,7 @@ public class GroupSettingSupport
      */
     public <T> Setting<T> scope( Setting<T> setting )
     {
-        setting.withScope( (key) -> String.format( "%s.%s", groupName, key ) );
+        setting.withScope( ( key ) -> String.format( "%s.%s", groupName, key ) );
         return setting;
     }
 }

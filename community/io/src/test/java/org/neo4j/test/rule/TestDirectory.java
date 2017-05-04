@@ -250,9 +250,9 @@ public class TestDirectory implements TestRule
 
     private void evaluateClassBaseTestFolder( )
     {
-        if (owningTest == null)
+        if ( owningTest == null )
         {
-            throw new IllegalStateException(" Test owning class is not defined" );
+            throw new IllegalStateException( " Test owning class is not defined" );
         }
         try
         {

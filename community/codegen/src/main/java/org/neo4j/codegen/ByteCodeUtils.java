@@ -45,7 +45,7 @@ public final class ByteCodeUtils
 
     public static String outerName( TypeReference reference )
     {
-        if (!reference.isInnerClass())
+        if ( !reference.isInnerClass() )
         {
             return null;
         }
@@ -73,7 +73,7 @@ public final class ByteCodeUtils
         return internalDesc( declaration.erased(), false );
     }
 
-    public static String desc( MethodReference reference)
+    public static String desc( MethodReference reference )
     {
         StringBuilder builder = new StringBuilder(  );
         builder.append( "(" );
@@ -110,7 +110,7 @@ public final class ByteCodeUtils
     {
 
         List<TypeReference> throwsList = declaration.erased().throwsList();
-        if (throwsList.isEmpty())
+        if ( throwsList.isEmpty() )
         {
             return null;
         }

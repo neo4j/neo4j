@@ -554,7 +554,7 @@ public class StartClient
 
         ShellExecutionFailureException( Throwable cause, Args args )
         {
-            super(cause);
+            super( cause );
             this.cause = cause;
             this.args = args;
         }

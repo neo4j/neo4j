@@ -51,10 +51,10 @@ public class TransportErrorIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass() );
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter( 1 )
     public HostnamePort address;
 
     private TransportConnection client;

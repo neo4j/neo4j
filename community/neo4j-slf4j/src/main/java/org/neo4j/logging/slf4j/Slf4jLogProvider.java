@@ -34,7 +34,7 @@ public class Slf4jLogProvider implements LogProvider
 
     public Slf4jLogProvider()
     {
-        this( LoggerFactory.getILoggerFactory());
+        this( LoggerFactory.getILoggerFactory() );
     }
 
     public Slf4jLogProvider( ILoggerFactory loggerFactory )

@@ -435,7 +435,7 @@ public class MultipleIndexPopulatorTest
                 flippableIndexProxy, failedIndexProxyFactory );
     }
 
-    private IndexPopulation addPopulator(MultipleIndexPopulator multipleIndexPopulator, long indexId,
+    private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, long indexId,
             IndexDescriptor descriptor, IndexPopulator indexPopulator,
             FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {

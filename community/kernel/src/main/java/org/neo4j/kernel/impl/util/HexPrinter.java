@@ -105,7 +105,7 @@ public class HexPrinter
         return this;
     }
 
-    public HexPrinter withByteSeparator( String byteSeparator)
+    public HexPrinter withByteSeparator( String byteSeparator )
     {
         this.byteSeparator = byteSeparator;
         return this;

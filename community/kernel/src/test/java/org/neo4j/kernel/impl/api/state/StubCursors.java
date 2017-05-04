@@ -44,7 +44,7 @@ public class StubCursors
     public static Cursor<NodeItem> asNodeCursor( long... nodeIds )
     {
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];
-        for (int i = 0; i < nodeIds.length; i++)
+        for ( int i = 0; i < nodeIds.length; i++ )
         {
             nodeItems[i] = new StubNodeItem( nodeIds[i], -1, emptySet() );
         }

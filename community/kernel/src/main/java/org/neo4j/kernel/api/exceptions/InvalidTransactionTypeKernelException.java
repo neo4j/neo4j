@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.exceptions;
 
 public class InvalidTransactionTypeKernelException extends KernelException
 {
-    public InvalidTransactionTypeKernelException(String message)
+    public InvalidTransactionTypeKernelException( String message )
     {
         super( Status.Transaction.ForbiddenDueToTransactionType, (Throwable) null, message );
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 
 /**
  * Consistent leader state at a point in time.
@@ -39,16 +39,21 @@ public class LeaderContext
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         LeaderContext that = (LeaderContext) o;
 
         if ( term != that.term )
-        { return false; }
+        {
+            return false;
+        }
         return commitIndex == that.commitIndex;
-
     }
 
     @Override

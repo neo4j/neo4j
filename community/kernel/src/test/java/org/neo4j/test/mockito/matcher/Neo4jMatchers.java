@@ -334,9 +334,9 @@ public class Neo4jMatchers
             return expected.equals( readValue );
         }
 
-        private String formatValue(Object v)
+        private String formatValue( Object v )
         {
-            if (v instanceof String)
+            if ( v instanceof String )
             {
                 return String.format("'%s'", v.toString());
             }
@@ -388,7 +388,7 @@ public class Neo4jMatchers
                                                               final Object propertyValue,
                                                               final GraphDatabaseService db )
     {
-        return new Deferred<Node>(db)
+        return new Deferred<Node>( db )
         {
             @Override
             protected Iterable<Node> manifest()

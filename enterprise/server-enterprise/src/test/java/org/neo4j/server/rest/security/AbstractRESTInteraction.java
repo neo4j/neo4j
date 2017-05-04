@@ -105,7 +105,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         {
             return ((EnterpriseAuthAndUserManager) authManager).getUserManager();
         }
-        throw new Exception("The used configuration does not have a user manager");
+        throw new Exception( "The used configuration does not have a user manager" );
     }
 
     @Override

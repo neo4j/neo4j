@@ -164,7 +164,7 @@ public class IndexCRUDIT
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     @Before
     public void before() throws Exception
     {

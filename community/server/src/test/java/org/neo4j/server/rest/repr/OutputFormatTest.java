@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.rest.repr;
 
-import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-
-import javax.ws.rs.core.Response;
-
 import org.junit.Test;
 
+import java.net.URI;
+import javax.ws.rs.core.Response;
+
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+
+import static org.junit.Assert.assertEquals;
 
 public class OutputFormatTest
 {
@@ -41,6 +40,6 @@ public class OutputFormatTest
         Response response = outputFormat.seeOther( relativeURI );
 
         assertEquals( 303, response.getStatus() );
-        assertEquals( new URI("http://base.local:8765/test/path"), response.getMetadata().getFirst( "Location" ) );
+        assertEquals( new URI( "http://base.local:8765/test/path" ), response.getMetadata().getFirst( "Location" ) );
     }
 }

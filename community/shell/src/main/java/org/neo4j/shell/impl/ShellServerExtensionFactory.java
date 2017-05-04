@@ -20,14 +20,14 @@
 package org.neo4j.shell.impl;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.shell.ShellSettings;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public final class ShellServerExtensionFactory extends KernelExtensionFactory<ShellServerExtensionFactory.Dependencies>
 {
     static final String KEY = "shell";

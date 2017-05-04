@@ -245,8 +245,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     if ( pageCursor.checkAndClearBoundsFlag() )
                     {
                         throw new UnderlyingStorageException(
-                                "Out of page bounds when writing header; page size too small: " +
-                                pageCache.pageSize() + " bytes.");
+                                "Out of page bounds when writing header; page size too small: " + pageCache.pageSize() +
+                                        " bytes." );
                     }
                 }
             }

@@ -149,7 +149,7 @@ public interface CheckDecorator
         public OwningRecordCheck<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
                 OwningRecordCheck<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateNeoStoreChecker( checker );
             }
@@ -160,7 +160,7 @@ public interface CheckDecorator
         public OwningRecordCheck<NodeRecord,ConsistencyReport.NodeConsistencyReport> decorateNodeChecker(
                 OwningRecordCheck<NodeRecord,ConsistencyReport.NodeConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateNodeChecker( checker );
             }
@@ -171,7 +171,7 @@ public interface CheckDecorator
         public OwningRecordCheck<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
                 OwningRecordCheck<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateRelationshipChecker( checker );
             }
@@ -182,7 +182,7 @@ public interface CheckDecorator
         public RecordCheck<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> decoratePropertyChecker(
                 RecordCheck<PropertyRecord,ConsistencyReport.PropertyConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decoratePropertyChecker( checker );
             }
@@ -193,7 +193,7 @@ public interface CheckDecorator
         public RecordCheck<PropertyKeyTokenRecord,ConsistencyReport.PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
                 RecordCheck<PropertyKeyTokenRecord,ConsistencyReport.PropertyKeyTokenConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decoratePropertyKeyTokenChecker( checker );
             }
@@ -205,7 +205,7 @@ public interface CheckDecorator
         public RecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
                 RecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateRelationshipTypeTokenChecker( checker );
             }
@@ -216,7 +216,7 @@ public interface CheckDecorator
         public RecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport> decorateLabelTokenChecker(
                 RecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateLabelTokenChecker( checker );
             }
@@ -227,7 +227,7 @@ public interface CheckDecorator
         public RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
                 RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker )
         {
-            for ( CheckDecorator decorator: decorators)
+            for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateRelationshipGroupChecker( checker );
             }

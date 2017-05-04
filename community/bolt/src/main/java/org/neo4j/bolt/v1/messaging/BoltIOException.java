@@ -29,13 +29,13 @@ public class BoltIOException extends IOException implements Status.HasStatus
 
     public BoltIOException( Status status, String message, Throwable cause )
     {
-        super(message, cause);
+        super( message, cause );
         this.status = status;
     }
 
     public BoltIOException( Status status, String message )
     {
-        this(status, message, null);
+        this( status, message, null );
     }
 
     @Override

@@ -30,7 +30,7 @@ import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 public class ForsetiLocksTest extends LockingCompatibilityTestSuite
 {
     @Override
-    protected Locks createLockManager(Config config, Clock clock)
+    protected Locks createLockManager( Config config, Clock clock )
     {
         return new ForsetiLockManager( config, clock, ResourceTypes.values() );
     }

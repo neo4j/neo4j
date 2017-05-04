@@ -63,23 +63,21 @@ public abstract class BatchOperations
     protected void addHeaders( final InternalJettyServletRequest res,
                                final HttpHeaders httpHeaders )
     {
-        for (Map.Entry<String, List<String>> header : httpHeaders
-                .getRequestHeaders().entrySet())
+        for ( Map.Entry<String,List<String>> header : httpHeaders.getRequestHeaders().entrySet() )
         {
             final String key = header.getKey();
             final List<String> value = header.getValue();
-            if (value == null)
+            if ( value == null )
             {
                 continue;
             }
-            if (value.size() != 1)
+            if ( value.size() != 1 )
             {
-                throw new IllegalArgumentException(
-                        "expecting one value per header");
+                throw new IllegalArgumentException( "expecting one value per header" );
             }
             if ( !key.equals( "Accept" ) && !key.equals( "Content-Type" ) )
             {
-                res.addHeader(key, value.get(0));
+                res.addHeader( key, value.get( 0 ) );
             }
         }
         // Make sure they are there and always json
@@ -92,18 +90,17 @@ public abstract class BatchOperations
     {
         URI baseUri = serverUriInfo.getBaseUri();
 
-        if (requestedPath.startsWith(baseUri.toString()))
+        if ( requestedPath.startsWith( baseUri.toString() ) )
         {
-            requestedPath = requestedPath
-                    .substring( baseUri.toString().length() );
+            requestedPath = requestedPath.substring( baseUri.toString().length() );
         }
 
-        if (!requestedPath.startsWith("/"))
+        if ( !requestedPath.startsWith( "/" ) )
         {
             requestedPath = "/" + requestedPath;
         }
 
-        return baseUri.resolve("." + requestedPath);
+        return baseUri.resolve( "." + requestedPath );
     }
 
     private static final Pattern PLACHOLDER_PATTERN = Pattern.compile( "\\{(\\d{1,10})\\}" );
@@ -156,9 +153,9 @@ public abstract class BatchOperations
         JsonToken token;
         RequestData requestData = RequestData.from( req );
 
-        while ((token = jp.nextToken()) != null)
+        while ( (token = jp.nextToken()) != null )
         {
-            if (token == JsonToken.START_OBJECT)
+            if ( token == JsonToken.START_OBJECT )
             {
                 String jobMethod = "", jobPath = "", jobBody = "";
                 Integer jobId = null;

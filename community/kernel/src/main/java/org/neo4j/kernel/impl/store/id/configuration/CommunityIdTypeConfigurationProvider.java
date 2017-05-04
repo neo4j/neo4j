@@ -40,7 +40,7 @@ public class CommunityIdTypeConfigurationProvider implements IdTypeConfiguration
             Collections.unmodifiableSet( EnumSet.of( IdType.PROPERTY, IdType.STRING_BLOCK,
                     IdType.ARRAY_BLOCK, IdType.NODE_LABELS ) );
 
-    private final Map<IdType,IdTypeConfiguration> typeConfigurations = new EnumMap<>(IdType.class);
+    private final Map<IdType,IdTypeConfiguration> typeConfigurations = new EnumMap<>( IdType.class );
 
     @Override
     public IdTypeConfiguration getIdTypeConfiguration( IdType idType )
@@ -48,7 +48,7 @@ public class CommunityIdTypeConfigurationProvider implements IdTypeConfiguration
         return typeConfigurations.computeIfAbsent( idType, this::createIdTypeConfiguration );
     }
 
-    private IdTypeConfiguration createIdTypeConfiguration(IdType idType)
+    private IdTypeConfiguration createIdTypeConfiguration( IdType idType )
     {
         return new IdTypeConfiguration( getTypesToReuse().contains( idType ) );
     }

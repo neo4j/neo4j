@@ -283,7 +283,7 @@ public enum LearnerState
                     }
                     else
                     {
-                        return new URI(message.getHeader( Message.FROM ));
+                        return new URI( message.getHeader( Message.FROM ) );
                     }
                 }
             }

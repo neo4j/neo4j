@@ -40,7 +40,7 @@ import java.lang.annotation.Target;
 public class RepeatRule implements TestRule
 {
     @Retention( RetentionPolicy.RUNTIME )
-    @Target(ElementType.METHOD)
+    @Target( ElementType.METHOD )
     public @interface Repeat
     {
         int times();
@@ -72,7 +72,7 @@ public class RepeatRule implements TestRule
     @Override
     public Statement apply( Statement base, Description description )
     {
-        Repeat repeat = description.getAnnotation(Repeat.class);
+        Repeat repeat = description.getAnnotation( Repeat.class );
         if ( repeat != null )
         {
             return new RepeatStatement( repeat.times(), base );

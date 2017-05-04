@@ -261,7 +261,7 @@ public class StateMachineProxyFactory
                 return getResult();
             }
 
-            while (response == null)
+            while ( response == null )
             {
                 this.wait( 50 );
             }

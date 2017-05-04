@@ -162,7 +162,7 @@ public abstract class ExpressionTemplate
         };
     }
 
-    Expression materialize( final CodeBlock method)
+    Expression materialize( final CodeBlock method )
     {
         return new Expression( type )
         {

@@ -216,7 +216,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public Transaction beginTx( long timeout, TimeUnit timeUnit)
+    public Transaction beginTx( long timeout, TimeUnit timeUnit )
     {
         return getGraphDatabaseAPI().beginTx( timeout, timeUnit );
     }

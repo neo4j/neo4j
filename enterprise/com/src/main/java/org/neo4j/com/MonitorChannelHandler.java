@@ -41,9 +41,9 @@ public class MonitorChannelHandler extends SimpleChannelHandler
     @Override
     public void messageReceived( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
     {
-        if (e.getMessage() instanceof ChannelBuffer )
+        if ( e.getMessage() instanceof ChannelBuffer )
         {
-            byteCounterMonitor.bytesRead( ((ChannelBuffer)e.getMessage()).readableBytes() );
+            byteCounterMonitor.bytesRead( ((ChannelBuffer) e.getMessage()).readableBytes() );
         }
 
         super.messageReceived( ctx, e );
@@ -52,9 +52,9 @@ public class MonitorChannelHandler extends SimpleChannelHandler
     @Override
     public void writeRequested( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
     {
-        if (e.getMessage() instanceof ChannelBuffer )
+        if ( e.getMessage() instanceof ChannelBuffer )
         {
-            byteCounterMonitor.bytesWritten( ((ChannelBuffer)e.getMessage()).readableBytes() );
+            byteCounterMonitor.bytesWritten( ((ChannelBuffer) e.getMessage()).readableBytes() );
         }
 
         super.writeRequested( ctx, e );

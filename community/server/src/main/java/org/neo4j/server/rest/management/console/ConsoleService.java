@@ -136,11 +136,12 @@ public class ConsoleService implements AdvertisableService
 
             return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
         }
-        catch (Exception e)
+        catch ( Exception e )
         {
             List<Representation> list = new ArrayList<Representation>(
-                    asList( ValueRepresentation.string( e.getClass() + " : " + e.getMessage() + "\n"), ValueRepresentation.string( null ) ));
-            return output.ok(new ListRepresentation( RepresentationType.STRING, list ));
+                    asList( ValueRepresentation.string( e.getClass() + " : " + e.getMessage() + "\n" ),
+                            ValueRepresentation.string( null ) ) );
+            return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
         }
     }
 

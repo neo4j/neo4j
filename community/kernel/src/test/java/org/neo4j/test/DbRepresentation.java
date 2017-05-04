@@ -133,7 +133,9 @@ public class DbRepresentation
         for ( Long id : other.nodes.keySet() )
         {
             if ( !nodes.containsKey( id ) )
-            { diff.add( "Other has node " + id + " which I don't" ); }
+            {
+                diff.add( "Other has node " + id + " which I don't" );
+            }
         }
         return diffList;
     }
@@ -208,7 +210,9 @@ public class DbRepresentation
         private void compareIndex( NodeRep other, DiffReport diff )
         {
             if ( other.index == index )
-            { return; }
+            {
+                return;
+            }
             Collection<String> allIndexes = new HashSet<>();
             allIndexes.addAll( index.keySet() );
             allIndexes.addAll( other.index.keySet() );
@@ -251,10 +255,14 @@ public class DbRepresentation
         protected void compareWith( NodeRep other, DiffReport diff )
         {
             if ( other.id != id )
-            { diff.add( "Id differs mine:" + id + ", other:" + other.id ); }
+            {
+                diff.add( "Id differs mine:" + id + ", other:" + other.id );
+            }
             properties.compareWith( other.properties, diff );
             if ( index != null && other.index != null )
-            { compareIndex( other, diff ); }
+            {
+                compareIndex( other, diff );
+            }
             compareRelationships( other, diff );
         }
 
@@ -288,7 +296,9 @@ public class DbRepresentation
             result += outRelationships.hashCode() * 13;
             result += id * 17;
             if ( index != null )
-            { result += index.hashCode() * 19; }
+            {
+                result += index.hashCode() * 19;
+            }
             return result;
         }
 

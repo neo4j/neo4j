@@ -62,12 +62,15 @@ public class Endpoint
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         Endpoint endPoint = (Endpoint) o;
-        return Objects.equals( address, endPoint.address ) &&
-               role == endPoint.role;
+        return Objects.equals( address, endPoint.address ) && role == endPoint.role;
     }
 
     @Override

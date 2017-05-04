@@ -77,9 +77,9 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     private FileSystemAbstraction fileSystem;
     private EnterpriseAuthManager authManager;
 
-    BoltInteraction( Map<String, String> config ) throws IOException
+    BoltInteraction( Map<String,String> config ) throws IOException
     {
-        this(config, EphemeralFileSystemAbstraction::new);
+        this( config, EphemeralFileSystemAbstraction::new );
     }
 
     BoltInteraction( Map<String, String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws IOException
@@ -143,7 +143,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
             resultConsumer.accept( collectResults( subject.client ) );
             return "";
         }
-        catch (Exception e)
+        catch ( Exception e )
         {
             return e.getMessage();
         }

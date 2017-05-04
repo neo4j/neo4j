@@ -243,7 +243,7 @@ public class NodeCommandTest
     {
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
-        @SuppressWarnings("deprecation")
+        @SuppressWarnings( "deprecation" )
         StoreFactory storeFactory = new StoreFactory( dir, Config.empty(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );

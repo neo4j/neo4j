@@ -476,7 +476,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         @Override
         public String toString()
         {
-            switch (type)
+            switch ( type )
             {
             case NoValue:   return "NoValue";
             case Before:    return format( "Before(%s)", before );
@@ -505,7 +505,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
                 return false;
             }
 
-            switch (type)
+            switch ( type )
             {
             case NoValue:   return true;
             case Before:    return propertyValueEqual( before, that.before );

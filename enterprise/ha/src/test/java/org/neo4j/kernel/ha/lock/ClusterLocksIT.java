@@ -64,7 +64,7 @@ public class ClusterLocksIT
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.tx_push_factor, "2" )
-                .withInstanceSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, (i) -> "community" )
+                .withInstanceSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, ( i ) -> "community" )
                 .startCluster();
     }
 
@@ -118,7 +118,7 @@ public class ClusterLocksIT
                 {
                     deadlockCount.incrementAndGet();
                 }
-            });
+            } );
             masterTx.start();
             latch.await();
 

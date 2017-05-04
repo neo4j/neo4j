@@ -102,7 +102,7 @@ class BidirectionalTraversalBranchPath implements Path
             branch = branch.parent();
         }
         // We can might as well cache start node since we're right now there anyway
-        if ( cachedStartNode == null && first == start && branch.length() >= 0)
+        if ( cachedStartNode == null && first == start && branch.length() >= 0 )
         {
             cachedStartNode = branch.endNode();
         }
@@ -141,7 +141,7 @@ class BidirectionalTraversalBranchPath implements Path
             nodes.addFirst( branch.endNode() );
             branch = branch.parent();
         }
-        if ( cachedStartNode == null && first == start && branch.length() >= 0)
+        if ( cachedStartNode == null && first == start && branch.length() >= 0 )
         {
             cachedStartNode = branch.endNode();
         }
@@ -159,7 +159,7 @@ class BidirectionalTraversalBranchPath implements Path
                 nodes.add( branch.endNode() );
             }
         }
-        if ( cachedStartNode == null && then == start && branch.length() >= 0)
+        if ( cachedStartNode == null && then == start && branch.length() >= 0 )
         {
             cachedStartNode = branch.endNode();
         }

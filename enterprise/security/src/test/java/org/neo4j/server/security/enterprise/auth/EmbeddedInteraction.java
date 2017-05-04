@@ -52,7 +52,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
     EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
-        this (config, EphemeralFileSystemAbstraction::new);
+        this( config, EphemeralFileSystemAbstraction::new );
     }
 
     EmbeddedInteraction( Map<String, String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws Throwable

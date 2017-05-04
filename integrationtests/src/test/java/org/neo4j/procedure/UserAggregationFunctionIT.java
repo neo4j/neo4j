@@ -557,7 +557,7 @@ public class UserAggregationFunctionIT
             }
 
             @UserAggregationUpdate
-            public void update( @Name("id") long id )
+            public void update( @Name( "id" ) long id )
             {
                 ids.add( id );
             }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.net.URI;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -47,7 +47,7 @@ public class RemoveRelationshipIT extends AbstractRestFunctionalTestBase
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        JaxRsResponse response = sendDeleteRequest(new URI(functionalTestHelper.relationshipUri(relationshipId)));
+        JaxRsResponse response = sendDeleteRequest( new URI( functionalTestHelper.relationshipUri( relationshipId ) ) );
 
         assertEquals( 204, response.getStatus() );
         response.close();
@@ -59,13 +59,13 @@ public class RemoveRelationshipIT extends AbstractRestFunctionalTestBase
         long relationshipId = helper.createRelationship( "KNOWS" );
 
         JaxRsResponse response = sendDeleteRequest(new URI(
-                functionalTestHelper.relationshipUri((relationshipId + 1) * 9999)));
+                functionalTestHelper.relationshipUri( (relationshipId + 1) * 9999 ) ) );
 
         assertEquals( 404, response.getStatus() );
         response.close();
     }
 
-    private JaxRsResponse sendDeleteRequest(URI requestUri)
+    private JaxRsResponse sendDeleteRequest( URI requestUri )
     {
        return RestRequest.req().delete(requestUri);
     }

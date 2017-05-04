@@ -62,14 +62,14 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class FileUserRepositoryTest
 {
     private File authFile = new File( "dbms", "auth" );
     private LogProvider logProvider = NullLogProvider.getInstance();
     private FileSystemAbstraction fs;
 
-    @Parameters(name = "{1} filesystem")
+    @Parameters( name = "{1} filesystem" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]{

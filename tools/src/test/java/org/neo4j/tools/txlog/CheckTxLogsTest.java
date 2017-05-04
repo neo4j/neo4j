@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
@@ -941,13 +940,13 @@ public class CheckTxLogsTest
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
-        writeContent( log, (txWriter) -> txWriter.append( tx, txId ) );
+        writeContent( log, ( txWriter ) -> txWriter.append( tx, txId ) );
     }
 
     private void writeCheckPoint( File log, long logVersion, long byteOffset ) throws IOException
     {
         LogPosition logPosition = new LogPosition( logVersion, byteOffset );
-        writeContent( log, (txWriter) -> txWriter.checkPoint( logPosition ) );
+        writeContent( log, ( txWriter ) -> txWriter.checkPoint( logPosition ) );
     }
 
     private void writeContent( File log, ThrowingConsumer<TransactionLogWriter,IOException> consumer )

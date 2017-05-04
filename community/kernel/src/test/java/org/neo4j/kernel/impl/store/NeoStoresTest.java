@@ -172,7 +172,7 @@ public class NeoStoresTest
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Block size of dynamic array store should be positive integer." );
 
-        try (NeoStores neoStores = sf.openNeoStores( true ))
+        try ( NeoStores neoStores = sf.openNeoStores( true ) )
         {
             neoStores.createDynamicArrayStore( "someStore", IdType.ARRAY_BLOCK, -2 );
         }

@@ -168,7 +168,7 @@ public interface Status
         DeadlockDetected( TransientError,
                 "This transaction, and at least one more transaction, has acquired locks in a way that it will wait " +
                 "indefinitely, and the database has aborted it. Retrying this transaction will most likely be " +
-                "successful."),
+                "successful." ),
         InstanceStateChanged( TransientError,
                 "Transactions rely on assumptions around the state of the Neo4j instance they " +
                 "execute on. For instance, transactions in a cluster may expect that " +
@@ -176,7 +176,7 @@ public interface Status
                 "instances may change state while the transaction is running. This causes " +
                 "assumptions the instance has made about how to execute the transaction " +
                 "to be violated - meaning the transaction must be rolled " +
-                "back. If you see this error, you should retry your operation in a new transaction."),
+                "back. If you see this error, you should retry your operation in a new transaction." ),
         ConstraintsChanged( TransientError,
                 "Database constraints changed since the start of this transaction" ),
         Outdated( TransientError,
@@ -221,12 +221,12 @@ public interface Status
         PropertyNotFound( ClientError,
                 "The statement refers to a non-existent property." ),
         LabelNotFound( ClientError,
-                "The statement is referring to a label that does not exist."),
+                "The statement is referring to a label that does not exist." ),
         TypeError( ClientError,
                 "The statement is attempting to perform operations on values with types that are not supported by " +
                 "the operation." ),
         ArgumentError( ClientError,
-                "The statement is attempting to perform operations using invalid arguments"),
+                "The statement is attempting to perform operations using invalid arguments" ),
         ArithmeticError( ClientError,
                 "Invalid use of arithmetic, such as dividing by zero." ),
 
@@ -236,16 +236,16 @@ public interface Status
 
         // transient errors
         ExternalResourceFailed( ClientError,
-                "Access to an external resource failed"),
+                "Access to an external resource failed" ),
 
         // client notifications (performance)
         CartesianProductWarning( ClientNotification,
                 "This query builds a cartesian product between disconnected patterns." ),
         DynamicPropertyWarning( ClientNotification,
                 "Queries using dynamic properties will use neither index seeks nor index scans for those properties" ),
-        EagerOperatorWarning(ClientNotification,
+        EagerOperatorWarning( ClientNotification,
                 "The execution plan for this query contains the Eager operator, which forces all dependent data to " +
-                "be materialized in main memory before proceeding"),
+                 "be materialized in main memory before proceeding" ),
         JoinHintUnfulfillableWarning( ClientNotification,
                 "The database was unable to plan a hinted join." ),
         NoApplicableIndexWarning( ClientNotification,
@@ -327,7 +327,7 @@ public interface Status
         ConstraintDropFailed( DatabaseError,
                 "The database failed to drop a requested constraint." ),
         IndexCreationFailed( DatabaseError,
-                "Failed to create an index."),
+                "Failed to create an index." ),
         IndexDropFailed( DatabaseError,
                 "The database failed to drop a requested index." ),
         LabelAccessFailed( DatabaseError,
@@ -529,7 +529,7 @@ public interface Status
             {
                 if ( child.isEnum() && Status.class.isAssignableFrom( child ) )
                 {
-                    @SuppressWarnings("unchecked")
+                    @SuppressWarnings( "unchecked" )
                     Class<? extends Status> statusType = (Class<? extends Status>) child;
                     Collections.addAll( result, statusType.getEnumConstants() );
                 }
@@ -611,14 +611,14 @@ public interface Status
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
         ClientError( TransactionEffect.ROLLBACK,
-                "The Client sent a bad request - changing the request might yield a successful outcome."),
+                "The Client sent a bad request - changing the request might yield a successful outcome." ),
         /** There are notifications about the request sent by the client.*/
         ClientNotification( TransactionEffect.NONE,
                 "There are notifications about the request sent by the client." ),
 
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
         TransientError( TransactionEffect.ROLLBACK,
-                "The database cannot service the request right now, retrying later might yield a successful outcome. "),
+                "The database cannot service the request right now, retrying later might yield a successful outcome. " ),
 
         // Implementation note: These are a sharp tool, database error signals
         // that something is *seriously* wrong, and will prompt the user to send

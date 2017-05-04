@@ -84,9 +84,9 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses({ConsistencyReporterTest.TestAllReportMessages.class,
-                     ConsistencyReporterTest.TestReportLifecycle.class})
+@RunWith( Suite.class )
+@Suite.SuiteClasses( {ConsistencyReporterTest.TestAllReportMessages.class,
+                      ConsistencyReporterTest.TestReportLifecycle.class} )
 public class ConsistencyReporterTest
 {
     public static class TestReportLifecycle
@@ -99,7 +99,7 @@ public class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             RecordAccess records = mock( RecordAccess.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
@@ -115,7 +115,7 @@ public class ConsistencyReporterTest
         }
 
         @Test
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public void shouldOnlySummarizeStatisticsWhenAllReferencesAreChecked()
         {
             // given
@@ -202,11 +202,11 @@ public class ConsistencyReporterTest
         }
     }
 
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class TestAllReportMessages implements Answer
     {
         @Test
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public void shouldLogInconsistency() throws Exception
         {
             // given
@@ -413,7 +413,7 @@ public class ConsistencyReporterTest
             throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         private RecordCheck mockChecker()
         {
             RecordCheck checker = mock( RecordCheck.class );

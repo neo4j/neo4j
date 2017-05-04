@@ -63,7 +63,7 @@ public class TestReadOnlyNeo4j
                 .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
-        try (Transaction tx = readGraphDb.beginTx())
+        try ( Transaction tx = readGraphDb.beginTx() )
         {
             readGraphDb.createNode();
 

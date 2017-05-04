@@ -193,7 +193,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
     }
 
-    private void ensureNoOpenCalls(String name)
+    private void ensureNoOpenCalls( String name )
     {
         if ( openCalls.get() > 0 )
         {

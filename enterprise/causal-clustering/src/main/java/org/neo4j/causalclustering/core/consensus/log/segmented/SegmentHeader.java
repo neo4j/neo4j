@@ -22,8 +22,8 @@ package org.neo4j.causalclustering.core.consensus.log.segmented;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -71,9 +71,13 @@ class SegmentHeader
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         SegmentHeader that = (SegmentHeader) o;
         return prevFileLastIndex == that.prevFileLastIndex &&
                version == that.version &&

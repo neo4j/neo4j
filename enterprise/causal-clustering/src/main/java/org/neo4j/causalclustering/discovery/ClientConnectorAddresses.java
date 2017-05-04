@@ -52,7 +52,7 @@ public class ClientConnectorAddresses implements Iterable<ClientConnectorAddress
 
         List<BoltConnector> boltConnectors = config.enabledBoltConnectors();
 
-        if (boltConnectors.isEmpty())
+        if ( boltConnectors.isEmpty() )
         {
             throw new IllegalArgumentException( "A Bolt connector must be configured to run a cluster" );
         }

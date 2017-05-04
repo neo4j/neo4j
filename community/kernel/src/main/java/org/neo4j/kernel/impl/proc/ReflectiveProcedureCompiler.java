@@ -287,7 +287,7 @@ class ReflectiveProcedureCompiler
             throws ProcedureException, IllegalAccessException
     {
 
-        if (procName.namespace() == null || procName.namespace().length == 0)
+        if ( procName.namespace() == null || procName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
@@ -329,11 +329,10 @@ class ReflectiveProcedureCompiler
         return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
     }
 
-    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle
-            constructor, Method method, QualifiedName funcName)
-            throws ProcedureException, IllegalAccessException
+    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
+            Method method, QualifiedName funcName ) throws ProcedureException, IllegalAccessException
     {
-        if (funcName.namespace() == null || funcName.namespace().length == 0)
+        if ( funcName.namespace() == null || funcName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
@@ -551,7 +550,7 @@ class ReflectiveProcedureCompiler
                 MethodHandle procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super(fieldSetters );
+            super( fieldSetters );
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.signature = signature;
@@ -756,7 +755,7 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public Aggregator create( Context ctx) throws ProcedureException
+        public Aggregator create( Context ctx ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to

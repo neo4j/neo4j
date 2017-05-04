@@ -34,7 +34,7 @@ final class CharProperty extends DefinedProperty implements DefinedProperty.With
     }
 
     @Override
-    @SuppressWarnings("UnnecessaryUnboxing")
+    @SuppressWarnings( "UnnecessaryUnboxing" )
     public boolean valueEquals( Object other )
     {
         if ( other instanceof Character )

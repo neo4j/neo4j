@@ -62,7 +62,7 @@ public class NetworkedServerFactory
                                    ObjectOutputStreamFactory objectOutputStreamFactory,
                                    NetworkReceiver.Monitor networkReceiverMonitor,
                                    NetworkSender.Monitor networkSenderMonitor,
-                                   NamedThreadFactory.Monitor namedThreadFactoryMonitor)
+                                   NamedThreadFactory.Monitor namedThreadFactoryMonitor )
     {
         this.life = life;
         this.protocolServerFactory = protocolServerFactory;
@@ -100,8 +100,7 @@ public class NetworkedServerFactory
             }
         }, logProvider );
 
-        final NetworkSender sender = new NetworkSender(networkSenderMonitor,
-                new NetworkSender.Configuration()
+        final NetworkSender sender = new NetworkSender( networkSenderMonitor, new NetworkSender.Configuration()
         {
             @Override
             public int defaultPort()
@@ -134,8 +133,8 @@ public class NetworkedServerFactory
                 protocolServer.listeningAt( me );
                 if ( logger == null )
                 {
-                    logger = new StateTransitionLogger(  logProvider,
-                            new AtomicBroadcastSerializer(objectInputStreamFactory, objectOutputStreamFactory));
+                    logger = new StateTransitionLogger( logProvider,
+                            new AtomicBroadcastSerializer( objectInputStreamFactory, objectOutputStreamFactory ) );
                     protocolServer.addStateTransitionListener( logger );
                 }
             }

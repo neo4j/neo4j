@@ -140,7 +140,7 @@ public class DatabaseActionsTest
     {
         NodeRepresentation noderep = actions.createNode( Collections.emptyMap() );
 
-        try (Transaction tx = database.getGraph().beginTx())
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             assertNotNull( database.getGraph().getNodeById( noderep.getId() ) );
         }
@@ -170,7 +170,7 @@ public class DatabaseActionsTest
         }
     }
 
-    @Test(expected = PropertyValueException.class)
+    @Test( expected = PropertyValueException.class )
     public void shouldFailOnTryingToStoreMixedArraysAsAProperty() throws Exception
     {
         long nodeId = graphdbHelper.createNode();
@@ -202,7 +202,7 @@ public class DatabaseActionsTest
         properties.put( "foo", "bar" );
         properties.put( "baz", 17 );
         actions.setAllNodeProperties( nodeId, properties );
-        try (Transaction tx = database.getGraph().beginTx())
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node node = database.getGraph().getNodeById( nodeId );
             assertHasProperties( node, properties );
@@ -407,7 +407,7 @@ public class DatabaseActionsTest
         actions.removeNodeProperty( nodeId, "foo" );
     }
 
-    @Test(expected = NoSuchPropertyException.class)
+    @Test( expected = NoSuchPropertyException.class )
     public void shouldReturnFalseIfNodePropertyNotRemoved() throws Exception
     {
         Map<String, Object> properties = new HashMap<>();
@@ -603,7 +603,7 @@ public class DatabaseActionsTest
                 .size() );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private void verifyRelReps( int expectedSize, ListRepresentation repr )
     {
         List<Object> relreps = serialize( repr );
@@ -686,7 +686,7 @@ public class DatabaseActionsTest
 
         for ( Object indexedNode : indexedNodes )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> serialized = (Map<String, Object>) indexedNode;
             NodeRepresentationTest.verifySerialisation( serialized );
             assertNotNull( serialized.get( "indexed" ) );
@@ -950,7 +950,7 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
             RelationshipRepresentationTest.verifySerialisation( map );
         }
@@ -970,7 +970,7 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
@@ -992,21 +992,21 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> map = (Map<String, Object>) hit;
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
             for ( Object rel : relationships )
             {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 Map<String, Object> relationship = (Map<String, Object>) rel;
                 RelationshipRepresentationTest.verifySerialisation( relationship );
             }
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
             for ( Object n : nodes )
             {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 Map<String, Object> node = (Map<String, Object>) n;
                 NodeRepresentationTest.verifySerialisation( node );
             }
@@ -1099,7 +1099,7 @@ public class DatabaseActionsTest
         }
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test( expected = NotFoundException.class )
     public void shouldHandleNoFoundPathsCorrectly()
     {
         long[] nodes = createMoreComplexGraph();
@@ -1191,7 +1191,7 @@ public class DatabaseActionsTest
         }, representation ) ) );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
     {
         // WHEN
@@ -1203,7 +1203,7 @@ public class DatabaseActionsTest
         assertEquals( numPaths, result.size() );
         for ( Object path : result )
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             Map<String, Object> serialized = (Map<String, Object>) path;
             assertTrue( serialized.get( "start" )
                     .toString()

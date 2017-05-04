@@ -179,7 +179,8 @@ public class SwitchToSlaveCopyThenBranchTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1"), me, CancellationRequest.NEVER_CANCELLED );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId,
+                    new URI( "cluster://localhost?serverId=1" ), me, CancellationRequest.NEVER_CANCELLED );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -188,7 +189,8 @@ public class SwitchToSlaveCopyThenBranchTest
         }
 
         // Then
-        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any(URI.class), any(URI.class), any(CancellationRequest.class) );
+        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any( URI.class ),
+                any( URI.class ), any( CancellationRequest.class ) );
     }
 
     @Test
@@ -264,7 +266,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
         inOrder.verify( storeCopyClient ).copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ), any( MoveAfterCopy.class ) ) ;
-        inOrder.verify( branchPolicy ).handle( new File(""), pageCacheMock, NullLogService.getInstance() );
+        inOrder.verify( branchPolicy ).handle( new File( "" ), pageCacheMock, NullLogService.getInstance() );
     }
 
     @Test

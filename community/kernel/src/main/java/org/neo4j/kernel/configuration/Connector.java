@@ -27,7 +27,7 @@ import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-@Group("dbms.connector")
+@Group( "dbms.connector" )
 public class Connector
 {
     @Description( "Enable this connector" )

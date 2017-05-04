@@ -32,9 +32,9 @@ import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-@Description("Configuration options for HTTP connectors. " +
+@Description( "Configuration options for HTTP connectors. " +
         "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
-        "\"http-public\" or some other name that describes what the connector is for.")
+        "\"http-public\" or some other name that describes what the connector is for." )
 public class HttpConnector extends Connector
 {
     @Description( "Enable TLS for this connector" )

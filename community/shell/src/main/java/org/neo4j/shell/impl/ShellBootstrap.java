@@ -25,8 +25,8 @@ import java.io.ObjectOutputStream;
 import java.rmi.RemoteException;
 import java.util.Base64;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -71,7 +71,7 @@ public class ShellBootstrap
         return Base64.getEncoder().encodeToString( os.toByteArray() );
     }
 
-    @SuppressWarnings("boxing")
+    @SuppressWarnings( "boxing" )
     GraphDatabaseShellServer load( GraphDatabaseAPI graphDb ) throws RemoteException
     {
         if ( !enable )

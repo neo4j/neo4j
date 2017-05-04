@@ -90,7 +90,7 @@ public final class SuppressOutput implements TestRule
         {
             final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             final PrintStream old = replace( new PrintStream( buffer ) );
-            return new Voice(this, buffer)
+            return new Voice( this, buffer )
             {
                 @Override
                 void restore( boolean failure ) throws IOException
@@ -131,7 +131,7 @@ public final class SuppressOutput implements TestRule
                     logger.addHandler( replacement );
                     logger.setLevel( Level.ALL );
                 }
-                return new Voice(this, redirectTo)
+                return new Voice( this, redirectTo )
                 {
                     @Override
                     void restore( boolean failure ) throws IOException
@@ -235,7 +235,7 @@ public final class SuppressOutput implements TestRule
         private Suppressible suppressible;
         private ByteArrayOutputStream voiceStream;
 
-        public Voice(Suppressible suppressible, ByteArrayOutputStream originalStream)
+        public Voice( Suppressible suppressible, ByteArrayOutputStream originalStream )
         {
             this.suppressible = suppressible;
             this.voiceStream = originalStream;

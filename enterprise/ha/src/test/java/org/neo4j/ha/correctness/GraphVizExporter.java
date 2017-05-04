@@ -43,7 +43,7 @@ public class GraphVizExporter
         this.target = target;
     }
 
-    public void export(GraphDatabaseService db) throws IOException
+    public void export( GraphDatabaseService db ) throws IOException
     {
         FileOutputStream stream = new FileOutputStream( target );
         PrintWriter out = new PrintWriter( stream );

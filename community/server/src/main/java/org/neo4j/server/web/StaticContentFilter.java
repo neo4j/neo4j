@@ -42,7 +42,7 @@ public class StaticContentFilter implements Filter
     {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        if ( request.getServletPath() != null && request.getServletPath().endsWith( ".html" ))
+        if ( request.getServletPath() != null && request.getServletPath().endsWith( ".html" ) )
         {
             response.addHeader( "Cache-Control", "private, no-cache, no-store, proxy-revalidate, no-transform" );
             response.addHeader( "Pragma", "no-cache" );

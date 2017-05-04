@@ -40,7 +40,7 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelStatementTest
 {
-    @Test(expected = TransactionTerminatedException.class)
+    @Test( expected = TransactionTerminatedException.class )
     public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -70,7 +70,7 @@ public class KernelStatementTest
         verify( storeStatement ).release();
     }
 
-    @Test(expected = NotInTransactionException.class)
+    @Test( expected = NotInTransactionException.class )
     public void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );

@@ -22,9 +22,9 @@ package org.neo4j.causalclustering.core.state.machines.token;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
+import org.neo4j.causalclustering.core.state.machines.tx.CoreReplicatedContent;
 
 public class ReplicatedTokenRequest implements CoreReplicatedContent
 {
@@ -58,16 +58,24 @@ public class ReplicatedTokenRequest implements CoreReplicatedContent
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         ReplicatedTokenRequest that = (ReplicatedTokenRequest) o;
 
         if ( type != that.type )
-        { return false; }
+        {
+            return false;
+        }
         if ( !tokenName.equals( that.tokenName ) )
-        { return false; }
+        {
+            return false;
+        }
         return Arrays.equals( commandBytes, that.commandBytes );
 
     }

@@ -38,7 +38,7 @@ public class MetricsTestHelper
 
     public static long readLongValue( File metricFile ) throws IOException, InterruptedException
     {
-        return readLongValueAndAssert( metricFile, (one, two) -> true );
+        return readLongValueAndAssert( metricFile, ( one, two ) -> true );
     }
 
     public static long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption )

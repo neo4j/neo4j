@@ -106,7 +106,7 @@ public class StoreIteratorRelationshipCursorTest
         return relationshipStore;
     }
 
-    private static RecordCursors newRecordCursorsWithMockedNeoStores(RelationshipStore relationshipStore)
+    private static RecordCursors newRecordCursorsWithMockedNeoStores( RelationshipStore relationshipStore )
     {
         NeoStores neoStores = mock( NeoStores.class );
         NodeStore nodeStore = newStoreMockWithRecordCursor( NodeStore.class );

@@ -42,7 +42,7 @@ public class PropertyConversionTest
     }
 
     @Test
-    @SuppressWarnings("UnnecessaryBoxing")
+    @SuppressWarnings( "UnnecessaryBoxing" )
     public void shouldConvertSmallLongProperty() throws Exception
     {
         assertConverts( Long.valueOf( 1 + random.nextInt( 1024 ) ) );

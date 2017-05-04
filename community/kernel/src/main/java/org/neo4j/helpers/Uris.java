@@ -44,7 +44,7 @@ public final class Uris
             }
 
             String query = uri.getQuery();
-            if (query != null)
+            if ( query != null )
             {
                 for ( String param : query.split( "&" ) )
                 {

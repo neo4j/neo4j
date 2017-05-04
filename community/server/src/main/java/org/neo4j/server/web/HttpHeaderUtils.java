@@ -34,27 +34,28 @@ public class HttpHeaderUtils
 
     public static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
 
-    public static final Map<String, String> CHARSET = Collections.singletonMap("charset", StandardCharsets.UTF_8.name());
+    public static final Map<String,String> CHARSET =
+            Collections.singletonMap( "charset", StandardCharsets.UTF_8.name() );
 
-    public static MediaType mediaTypeWithCharsetUtf8(String mediaType)
+    public static MediaType mediaTypeWithCharsetUtf8( String mediaType )
     {
-        return new MediaType(mediaType, null, CHARSET);
+        return new MediaType( mediaType, null, CHARSET );
     }
 
-    public static MediaType mediaTypeWithCharsetUtf8(MediaType mediaType)
+    public static MediaType mediaTypeWithCharsetUtf8( MediaType mediaType )
     {
-        Map<String, String> parameters = mediaType.getParameters();
-        if (parameters.isEmpty())
+        Map<String,String> parameters = mediaType.getParameters();
+        if ( parameters.isEmpty() )
         {
-            return new MediaType(mediaType.getType(), mediaType.getSubtype(), CHARSET);
+            return new MediaType( mediaType.getType(), mediaType.getSubtype(), CHARSET );
         }
-        if (parameters.containsKey("charset"))
+        if ( parameters.containsKey( "charset" ) )
         {
             return mediaType;
         }
-        Map<String, String> paramsWithCharset = new HashMap<String, String>(parameters);
-        paramsWithCharset.putAll(CHARSET);
-        return new MediaType(mediaType.getType(), mediaType.getSubtype(), paramsWithCharset);
+        Map<String,String> paramsWithCharset = new HashMap<String,String>( parameters );
+        paramsWithCharset.putAll( CHARSET );
+        return new MediaType( mediaType.getType(), mediaType.getSubtype(), paramsWithCharset );
     }
 
     /**
