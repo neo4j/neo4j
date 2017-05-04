@@ -25,13 +25,13 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.Variable
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_2.ProfileMode
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Provider
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{KernelStatisticProvider, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_3.ProfileMode
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.Provider
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{KernelStatisticProvider, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}

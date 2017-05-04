@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_2.Foldable.FoldableAny
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, RegularPlannerQuery}

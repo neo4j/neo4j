@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenConfiguration, CodeGenContext}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 /**
  * This constitutes the SPI for code generation.

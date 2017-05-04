@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, LongType, ReferenceType, Parameter => _, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{NodeIdWrapper, RelationshipIdWrapper}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers._
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_2.{ParameterNotFoundException, SemanticDirection, symbols}

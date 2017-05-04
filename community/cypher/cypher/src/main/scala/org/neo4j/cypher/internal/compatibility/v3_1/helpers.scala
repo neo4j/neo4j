@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1
-import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhaseEvent, CompilationPhase => v3_1Phase}
+import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhase => v3_1Phase}
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration => CypherCompilerConfiguration3_1}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.{CompilationPhase => v3_2Phase}
-import org.neo4j.cypher.internal.compiler.v3_2.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.{CompilationPhase => v3_2Phase}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, ExecutionResult, RewindableExecutionResult}

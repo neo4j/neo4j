@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen;
 
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id;
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id;
 
 public interface QueryExecutionTracer
 {

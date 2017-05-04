@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.aggregation
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.ExpressionConverter._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, Variable}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_2.ast
 
 /*

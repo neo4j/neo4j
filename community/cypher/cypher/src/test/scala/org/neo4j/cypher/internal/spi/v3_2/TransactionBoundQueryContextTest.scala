@@ -23,7 +23,6 @@ import java.net.URL
 import java.util.Collections
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor

@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v3_2
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
-import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
+import org.neo4j.cypher.internal.compiler.v3_3
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{ExecutionPlan => ExecutionPlan_v3_2}
+import org.neo4j.cypher.internal.compiler.v3_3.{ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
@@ -50,7 +49,7 @@ trait Compatibility[C <: CompilerContext] {
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_2.CypherCompiler[C]
+  protected val compiler: v3_3.CypherCompiler[C]
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
@@ -114,7 +113,6 @@ trait Compatibility[C <: CompilerContext] {
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
 
     override def plannerInfo = {
-      import scala.collection.JavaConverters._
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
         case SchemaIndexSeekUsage(identifier, label, propertyKeys) => schemaIndexUsage(identifier, label, propertyKeys: _*)
         case SchemaIndexScanUsage(identifier, label, propertyKey) => schemaIndexUsage(identifier, label, propertyKey)

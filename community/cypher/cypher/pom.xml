@@ -211,8 +211,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.1</artifactId>
-      <version>3.1.4</version>
+      <artifactId>neo4j-cypher-compiler-3.2</artifactId>
+      <version>3.2.0-rc1</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -250,7 +250,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.2</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.3</artifactId>
       <version>${project.version}</version>
       <exclusions>
         <exclusion>
@@ -288,7 +288,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.2</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.3</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

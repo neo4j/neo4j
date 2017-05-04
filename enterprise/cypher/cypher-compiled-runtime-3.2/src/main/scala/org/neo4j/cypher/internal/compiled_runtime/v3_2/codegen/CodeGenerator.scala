@@ -27,13 +27,13 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{PlanFingerprint, _}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{InstrumentedGraphStatistics, PlanContext, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{PlanFingerprint, _}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_2.{PlannerName, SemanticTable}
 

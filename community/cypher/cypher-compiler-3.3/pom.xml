@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>cypher-parent</artifactId>
+    <version>3.3.0-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>neo4j-cypher-compiler-3.3</artifactId>
+  <packaging>jar</packaging>
+  <version>3.3.0-SNAPSHOT</version>
+  <name>Neo4j - Cypher Compiler 3.3</name>
+  <description>Compiler for Cypher 3.3</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
+  </scm>
+
+  <properties>
+    <version-package>cypher.internal.compiler.v3_1</version-package>
+    <scala.version>2.11.8</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+  </properties>
+
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+        parties and that license is included below.
+
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+        Version 3 and you may use the Software solely pursuant to the terms of
+        the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-Xlint</arg>
+          </args>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.scalastyle</groupId>
+        <artifactId>scalastyle-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <!-- shared versions are defined in the parent pom -->
+
+    <!-- scala -->
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>scala-reflect</artifactId>
+      <groupId>org.scala-lang</groupId>
+      <version>${scala.version}</version>
+    </dependency>
+
+    <!-- scala test dependencies -->
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.11</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.11</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- neo4j -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-algo</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-ir-3.2</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- neo4j testing -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.2</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- other -->
+
+    <dependency>
+      <groupId>org.parboiled</groupId>
+      <artifactId>parboiled-scala_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>2.3.3</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+</project>

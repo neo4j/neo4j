@@ -24,9 +24,6 @@ import java.time.Clock
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.notification.CartesianProductNotification

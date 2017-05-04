@@ -26,11 +26,6 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}
 import org.neo4j.cypher.internal.compatibility.v3_2.{ExecutionResultWrapper, exceptionHandler}
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{InternalExecutionResult, READ_WRITE, _}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription._
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultVisitor, QualifiedName}
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1}
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}

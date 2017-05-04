@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.{CRS, Coordinate, Geometry, Point}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
 import org.neo4j.graphdb.spatial
 

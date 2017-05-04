@@ -27,10 +27,10 @@ import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, Met
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, QueryExecutionTracer}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{Completable, Provider}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection, SemanticTable, symbols}

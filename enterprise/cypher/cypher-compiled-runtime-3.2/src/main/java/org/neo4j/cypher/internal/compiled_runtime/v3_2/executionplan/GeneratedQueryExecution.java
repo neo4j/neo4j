@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan;
 
 import java.util.List;
 
-import org.neo4j.cypher.internal.compiler.v3_2.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Completable;
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.compiler.v3_2.spi.InternalResultVisitor;
+import org.neo4j.cypher.internal.compiler.v3_3.ExecutionMode;
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.Completable;
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription;
+import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor;
 
 public interface GeneratedQueryExecution
 {

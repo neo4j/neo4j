@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan;
 
 import java.util.Map;
 
-import org.neo4j.cypher.internal.compiler.v3_2.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v3_2.TaskCloser;
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.QueryExecutionTracer;
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.Provider;
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.compiler.v3_2.spi.QueryContext;
+import org.neo4j.cypher.internal.compiler.v3_3.ExecutionMode;
+import org.neo4j.cypher.internal.compiler.v3_3.TaskCloser;
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.Provider;
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription;
+import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext;
 
 public interface GeneratedQuery
 {

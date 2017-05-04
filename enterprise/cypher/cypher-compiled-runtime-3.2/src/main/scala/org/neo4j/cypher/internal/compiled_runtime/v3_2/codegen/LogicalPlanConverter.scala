@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.aggregation.Di
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.ExpressionConverter._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.SortItem
-import org.neo4j.cypher.internal.compiler.v3_2.commands._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.{One, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.{SortDescription, plans}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.{CantCompileQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_3.commands._
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.{One, ZeroOneOrMany}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{SortDescription, plans}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, ast, symbols}

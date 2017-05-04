@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.RuntimeName
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, PageCacheMisses, Rows}
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.{CypherVersion, InternalException}

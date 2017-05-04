@@ -22,4 +22,4 @@ package org.neo4j.cypher.internal.spi.v3_2
 //This class should live here, but until we have to touch
 //disk, let's have it in the compiler. Convenient.
 case object HardcodedGraphStatistics
-  extends org.neo4j.cypher.internal.compiler.v3_2.HardcodedGraphStatisticsValues
+  extends org.neo4j.cypher.internal.compiler.v3_3.HardcodedGraphStatisticsValues

@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, _}
-import org.neo4j.cypher.internal.compiler.v3_2._
+import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
 import org.neo4j.kernel.GraphDatabaseQueryService

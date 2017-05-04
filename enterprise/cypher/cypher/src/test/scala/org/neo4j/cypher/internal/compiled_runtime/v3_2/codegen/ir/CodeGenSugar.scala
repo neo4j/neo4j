@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_2.ExecutionPlanBuilder.trac
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.{CompiledExecutionResult, CompiledPlan}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_2.spi._
-import org.neo4j.cypher.internal.compiler.v3_2.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.spi._
+import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure

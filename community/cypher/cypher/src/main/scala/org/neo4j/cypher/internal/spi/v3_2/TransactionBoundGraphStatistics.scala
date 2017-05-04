@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v3_2
 
-import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_2.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_2.{LabelId, NameId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, Selectivity}
 import org.neo4j.kernel.api.ReadOperations

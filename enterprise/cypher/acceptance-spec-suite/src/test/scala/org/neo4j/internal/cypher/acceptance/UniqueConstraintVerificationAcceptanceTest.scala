@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.ListSupport
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory

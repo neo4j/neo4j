@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper._
 import org.scalatest.matchers.{MatchResult, Matcher}
 

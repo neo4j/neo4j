@@ -21,8 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.compiler.v3_2.IDPPlannerName
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

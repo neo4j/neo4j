@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen
 
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.JoinTableType
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 
 trait CodeGenPlan {
 

@@ -22,11 +22,11 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.internal.compatibility.v3_2.CompatibilityPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.idp.IDPSolverMonitor
-import org.neo4j.cypher.internal.compiler.v3_2.{IDPPlannerName, InterpretedRuntimeName}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.IDPSolverMonitor
+import org.neo4j.cypher.internal.compiler.v3_3.{IDPPlannerName, InterpretedRuntimeName}
+import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

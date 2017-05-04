@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_2.exceptionHandler
-import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
