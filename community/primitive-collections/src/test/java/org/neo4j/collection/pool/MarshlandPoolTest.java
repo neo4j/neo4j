@@ -21,6 +21,8 @@ package org.neo4j.collection.pool;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -96,12 +98,9 @@ public class MarshlandPoolTest
 
     private void assertPoolEventuallyReturns( Pool<Object> pool, int expected ) throws InterruptedException
     {
-        long maxTime = System.currentTimeMillis() + 1000 * 10;
+        long maxTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 10 );
         while ( System.currentTimeMillis() < maxTime )
         {
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
             if ( pool.acquire().equals( expected ) )
             {
                 return;
