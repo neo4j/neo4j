@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
+import org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -739,6 +740,22 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.statement.schemaWriteOperations()
 
+  override def grabMergeLocks(labelId: Int, propValues: Seq[(Int, Any)], exclusive: Boolean): Unit = {
+    val predicates = propValues map { case (propId, value) =>
+      org.neo4j.kernel.api.schema_new.IndexQuery.exact(propId, value)
+    }
+
+    val indexEntryId = indexEntryResourceId(labelId, predicates: _*)
+
+    if (exclusive) {
+      // By releasing the shared lock before grabbing an exclusive lock, two threads racing to create the same node
+      // will not lead to an escalation dead lock
+      transactionalContext.statement.readOperations().releaseShared(ResourceTypes.INDEX_ENTRY, indexEntryId)
+      transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.INDEX_ENTRY, indexEntryId)
+    } else {
+      transactionalContext.statement.readOperations().acquireShared(ResourceTypes.INDEX_ENTRY, indexEntryId)
+    }
+  }
 }
 
 object TransactionBoundQueryContext {

@@ -183,6 +183,7 @@ trait QueryContext extends TokenContext {
 
   def assertSchemaWritesAllowed(): Unit
 
+  def grabMergeLocks(labelId: Int, propValues: Seq[(Int, Any)], exclusive: Boolean ): Unit
 }
 
 trait Operations[T <: PropertyContainer] {

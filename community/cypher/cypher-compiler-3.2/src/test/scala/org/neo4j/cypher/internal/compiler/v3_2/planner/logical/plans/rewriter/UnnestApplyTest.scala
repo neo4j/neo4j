@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.frontend.v3_2.ast
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, VarPatternLength}
@@ -231,7 +233,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )(solved))
   }
 
-  test("AntiConditionalApply on apply on optional should be OK") {
+  test("ConditionalApply on apply on optional should be OK") {
     /*
                             ACA                  ACA
                          LHS   Apply       =>  LHS Optional
@@ -247,17 +249,18 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val optional = Optional(expand)(solved)
     val apply2 = Apply(arg1, optional)(solved)
-    val aca = AntiConditionalApply(lhs, apply2, Seq(IdName("a")))(solved)
+    val predicate = ast.True()(pos)
+    val aca = ConditionalApply(lhs, apply2, predicate)(solved)
 
     // When
     val result = rewrite(aca)
 
     // Then
-    result should equal(AntiConditionalApply(
+    result should equal(ConditionalApply(
       lhs,
       Optional(
         Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved),
-      Seq(IdName("a"))
+      predicate
     )(solved))
   }
 

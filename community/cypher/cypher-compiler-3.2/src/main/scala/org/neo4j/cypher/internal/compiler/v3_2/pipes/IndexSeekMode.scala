@@ -29,7 +29,6 @@ case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]) = qexpr match {
     case _: RangeQueryExpression[_] if unique => UniqueIndexSeekByRange
     case _: RangeQueryExpression[_] => IndexSeekByRange
-    case _ if unique && !readOnly => LockingUniqueIndexSeek
     case _ if unique => UniqueIndexSeek
     case _ => IndexSeek
   }
@@ -63,16 +62,6 @@ case object IndexSeek extends IndexSeekMode with ExactSeek {
 
 case object UniqueIndexSeek extends IndexSeekMode with ExactSeek {
   override def name: String = "NodeUniqueIndexSeek"
-}
-
-case object LockingUniqueIndexSeek extends IndexSeekMode {
-
-  override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => {
-      state.query.lockingUniqueIndexSeek(descriptor, assertSingleValue(x)).toIterator
-    }
-
-  override def name: String = "NodeUniqueIndexSeek(Locking)"
 }
 
 sealed trait SeekByRange {

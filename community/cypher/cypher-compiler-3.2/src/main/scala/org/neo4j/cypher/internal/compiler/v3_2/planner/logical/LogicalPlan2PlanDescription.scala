@@ -272,6 +272,17 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
 
+      case MergeLock(_, descriptions, lockMode) =>
+        val arguments = descriptions flatMap { descr =>
+          val values = descr.propertyValues map {
+            case (prop, exp) => prop.name -> exp
+          }
+
+          Seq(LabelName(descr.label.name), Expressions(values.toMap))
+        }
+
+        PlanDescriptionImpl(id, s"MergeLock($lockMode)", children, arguments, variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
@@ -287,20 +298,14 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
-      case _: AntiConditionalApply =>
-        PlanDescriptionImpl(id, "AntiConditionalApply", children, Seq.empty, variables)
+      case ConditionalApply(_, _, predicate) =>
+        PlanDescriptionImpl(id, "ConditionalApply", children, Seq(Expression(predicate)), variables)
 
       case _: AntiSemiApply =>
         PlanDescriptionImpl(id, "AntiSemiApply", children, Seq.empty, variables)
 
-      case _: ConditionalApply =>
-        PlanDescriptionImpl(id, "ConditionalApply", children, Seq.empty, variables)
-
       case _: Apply =>
         PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
-
-      case _: AssertSameNode =>
-        PlanDescriptionImpl(id, "AssertSameNode", children, Seq.empty, variables)
 
       case CartesianProduct(_, _) =>
         PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables)
@@ -394,7 +399,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
           case _ =>
             throw new InternalException("This should never happen. Missing a case?")
         }
-      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKeys.map(_.name))
+      case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKeys.map(_.name))
       case _ => throw new InternalException("This should never happen. Missing a case?")
     }
     (indexMode, indexDesc)

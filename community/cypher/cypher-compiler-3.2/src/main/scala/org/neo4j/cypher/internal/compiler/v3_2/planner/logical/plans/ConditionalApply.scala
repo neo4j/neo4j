@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_2.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, predicate: Expression)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+  override def availableSymbols: Set[IdName] = left.availableSymbols ++ right.availableSymbols
 }

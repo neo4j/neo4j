@@ -286,12 +286,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     NodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)(solved)
   }
 
-  def planAssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)
-                        (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved: PlannerQuery = left.solved ++ right.solved
-    AssertSameNode(node, left, right)(solved)
-  }
-
   def planOptionalExpand(left: LogicalPlan,
                          from: IdName,
                          dir: SemanticDirection,
@@ -559,18 +553,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       pattern.endNode, pattern.properties)(solved)
   }
 
-  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[IdName])
+  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, predicate: Expression)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = lhs.solved ++ rhs.solved
 
-    ConditionalApply(lhs, rhs, idNames)(solved)
-  }
-
-  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[IdName])
-                              (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = inner.solved ++ outer.solved
-
-    AntiConditionalApply(inner, outer, idNames)(solved)
+    ConditionalApply(lhs, rhs, predicate)(solved)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
@@ -676,6 +663,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
   def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException): LogicalPlan =
     ErrorPlan(inner, exception)(inner.solved)
+
+  def planMergeLock(inner: LogicalPlan, lockDescriptions: Seq[LockDescription], lockMode: LockMode) =
+     MergeLock(inner, lockDescriptions, lockMode)(inner.solved)
 
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)
                                    (implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {

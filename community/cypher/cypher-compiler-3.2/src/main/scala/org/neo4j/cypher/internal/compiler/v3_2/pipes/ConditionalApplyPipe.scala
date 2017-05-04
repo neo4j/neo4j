@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
-case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)
+case class ConditionalApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate)
                                (val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
       (outerContext) =>
-        if (condition(outerContext)) {
+        if (predicate.isTrue(outerContext)(state)) {
           val original = outerContext.clone()
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
@@ -37,10 +38,5 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
         } else Iterator.single(outerContext)
     }
 
-  private def condition(context: ExecutionContext) = {
-    val cond = items.exists { context.get(_).get != null}
-      if (negated) !cond else cond
-  }
-
-  private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
+  private def name = "ConditionalApply"
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking.community;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
@@ -277,6 +278,11 @@ public class CommunityLockClient implements Locks.Client
         {
             PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
             LockResource resource = localLocks.get( resourceId );
+            if ( resource == null )
+            {
+                throw new NoSuchElementException( "No such lock exists: " + resourceType + "@" + resourceId );
+            }
+
             if ( resource.releaseReference() != 0 )
             {
                 return;

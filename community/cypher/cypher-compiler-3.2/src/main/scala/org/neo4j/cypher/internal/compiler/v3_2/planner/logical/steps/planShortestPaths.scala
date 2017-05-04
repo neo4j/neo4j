@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.{Length, Nodes}
 import org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.notification.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.frontend.v3_2.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_2.{ExhaustiveShortestPathForbiddenException, InputPosition, InternalException}
 import org.neo4j.cypher.internal.ir.v3_2.{IdName, Predicate, ShortestPathPattern, _}
 
 case object planShortestPaths {
@@ -100,7 +100,9 @@ case object planShortestPaths {
     val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)
       .addPredicates(predicates: _*)))
 
-    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get)).updateSolved(solved)
+    val predicate = IsNull(Variable(shortestPath.name.get.name)(InputPosition.NONE))(InputPosition.NONE)
+
+    lpp.planConditionalApply(lhs, rhs, predicate).updateSolved(solved)
   }
 
   private def buildPlanShortestPathsFallbackPlans(shortestPath: ShortestPathPattern, rhsArgument: LogicalPlan,

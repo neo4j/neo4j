@@ -37,7 +37,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
       """.stripMargin)
     val results = result.columnAs("ids").toList
     results should be(List(List(0, 4, 3, 2)))
-    result should use("VarLengthExpand(Into)", "AntiConditionalApply")
+    result should use("VarLengthExpand(Into)", "ConditionalApply")
   }
 
   test("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
@@ -54,7 +54,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
       """.stripMargin)
     val results = result.columnAs("ids").toList
     results should be(List(List(0, 4, 3, 2)))
-    result should use("VarLengthExpand(Into)", "AntiConditionalApply")
+    result should use("VarLengthExpand(Into)", "ConditionalApply")
   }
 
   private def setupModel(): Unit = {

@@ -159,7 +159,6 @@ object CardinalityCostModel extends CostModel {
       case Apply(l, r) => Some(l -> r)
       case RollUpApply(l, r, _, _, _) => Some(l -> r)
       case ConditionalApply(l, r, _) => Some(l -> r)
-      case AntiConditionalApply(l, r, _) => Some(l -> r)
       case ForeachApply(l, r, _, _) => Some(l -> r)
       case p: AbstractLetSelectOrSemiApply => Some(p.lhs.get -> p.rhs.get)
       case p: AbstractSelectOrSemiApply => Some(p.lhs.get -> p.rhs.get)

@@ -40,9 +40,6 @@ case object unnestOptional extends Rewriter {
   }
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-
-    case apply:AntiConditionalApply => apply
-
     case apply@Apply(lhs,
       Optional(
       e@Expand(_: Argument, _, _, _, _, _, _), _)) =>

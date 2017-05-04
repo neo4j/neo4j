@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v3_2.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{True, _}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
@@ -417,6 +418,16 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case ErrorPlan(_, ex) =>
         ErrorPipe(source, ex)(id = id)
 
+      case MergeLock(_, descriptions, lockMode) =>
+        val locksToGrab: Seq[MergeLockDescription] = descriptions map {
+          case LockDescription(label: LabelName, propertyValues: Seq[(PropertyKeyName, Expression)]) =>
+            val props = propertyValues map {
+              case (prop, exp) => (PropertyKey(prop.name), toCommandExpression(exp))
+            }
+            MergeLockDescription(LazyLabel(label), props)
+        }
+        MergeLockPipe(source, locksToGrab, lockMode)()
+
       case x =>
         throw new CantHandleQueryException(x.toString)
     }
@@ -463,9 +474,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 
-      case AssertSameNode(node, _, _) =>
-        AssertSameNodePipe(lhs, rhs, node.name)(id = id)
-
       case SemiApply(_, _) =>
         SemiApplyPipe(lhs, rhs, negated = false)(id = id)
 
@@ -490,11 +498,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
         LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)(id = id)
 
-      case ConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = false)(id = id)
-
-      case AntiConditionalApply(_, _, ids) =>
-        ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = true)(id = id)
+      case ConditionalApply(_, _, predicate) =>
+        ConditionalApplyPipe(lhs, rhs, buildPredicate(predicate))(id = id)
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)

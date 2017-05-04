@@ -98,7 +98,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     }
   }
 
-  ignore("should handle ten simultaneous threads with only nodes - without constraint") {
+  test("should handle ten simultaneous threads with only nodes - without constraint") {
     var exceptionsThrown = List.empty[Throwable]
 
     val runner = new Runnable {
