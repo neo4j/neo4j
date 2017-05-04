@@ -32,6 +32,7 @@ public class DefaultPortProbe implements PortProbe
         // test binding on wildcard
         try ( ServerSocket serverSocket = new ServerSocket() )
         {
+            serverSocket.setReuseAddress( false );
             serverSocket.bind( new InetSocketAddress( port ) );
         }
         catch ( IOException e )
@@ -42,6 +43,7 @@ public class DefaultPortProbe implements PortProbe
         // test binding on loopback
         try ( ServerSocket serverSocket = new ServerSocket() )
         {
+            serverSocket.setReuseAddress( false );
             serverSocket.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
         }
         catch ( IOException e )
