@@ -29,7 +29,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class SimpleStorageTest
 {

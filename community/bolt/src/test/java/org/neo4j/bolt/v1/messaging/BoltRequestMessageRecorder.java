@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.messaging.message.*;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-
 import java.util.Map;
+
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;

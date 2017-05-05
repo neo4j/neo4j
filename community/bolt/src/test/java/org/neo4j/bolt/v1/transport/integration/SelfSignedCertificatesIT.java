@@ -31,7 +31,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class SelfSignedCertificatesIT

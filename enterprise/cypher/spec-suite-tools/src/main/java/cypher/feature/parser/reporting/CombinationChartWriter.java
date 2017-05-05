@@ -19,19 +19,19 @@
  */
 package cypher.feature.parser.reporting;
 
-import java.awt.*;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
-import javax.imageio.ImageIO;
-
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.renderer.LookupPaintScale;
 import org.jfree.data.general.DefaultHeatMapDataset;
 import org.jfree.data.general.HeatMapDataset;
 import org.jfree.data.general.HeatMapUtilities;
 import org.opencypher.tools.io.HtmlTag;
+
+import java.awt.Color;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+import javax.imageio.ImageIO;
 
 import static org.opencypher.tools.io.HtmlTag.attr;
 
