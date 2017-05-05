@@ -27,6 +27,7 @@ import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.unsafe.impl.batchimport.HighestId;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -121,7 +122,8 @@ public class EncodingIdMapper implements IdMapper
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
     // values are the encoded versions of the input ids.
     private final LongArray dataCache;
-    private long highestSetIndex = -1;
+    private final HighestId candidateHighestSetIndex = new HighestId( -1 );
+    private long highestSetIndex;
 
     // Ordering information about values in dataCache; the ordering of values in dataCache remains unchanged.
     // in prepare() this array is populated and changed along with how dataCache items "move around" so that
@@ -147,7 +149,6 @@ public class EncodingIdMapper implements IdMapper
     private IdGroup[] idGroups = new IdGroup[10];
     private IdGroup currentIdGroup;
     private final Monitor monitor;
-    private final Factory<Radix> radixFactory;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
             Monitor monitor, TrackerFactory trackerFactory )
@@ -167,7 +168,6 @@ public class EncodingIdMapper implements IdMapper
         this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
         this.encoder = encoder;
-        this.radixFactory = radixFactory;
         this.radix = radixFactory.newInstance();
         this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, ID_NOT_FOUND );
     }
@@ -183,14 +183,8 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public void put( Object inputId, long id, Group group )
+    public synchronized void group( Group group )
     {
-        // Fill any gap to the previously highest set id
-        for ( long gapId = highestSetIndex + 1; gapId < id; gapId++ )
-        {
-            radix.registerRadixOf( GAP_VALUE );
-        }
-
         // Check if we're now venturing into a new group. If so then end the previous group.
         int groupId = group.id();
         boolean newGroup = false;
@@ -212,12 +206,6 @@ public class EncodingIdMapper implements IdMapper
             endPreviousGroup();
         }
 
-        // Encode and add the input id
-        long eId = encode( inputId );
-        dataCache.set( id, eId );
-        highestSetIndex = id;
-        radix.registerRadixOf( eId );
-
         // Create the new group
         if ( newGroup )
         {
@@ -225,8 +213,17 @@ public class EncodingIdMapper implements IdMapper
             {
                 idGroups = Arrays.copyOf( idGroups, max( groupId + 1, idGroups.length * 2 ) );
             }
-            idGroups[groupId] = currentIdGroup = new IdGroup( group, id );
+            idGroups[groupId] = currentIdGroup = new IdGroup( group, candidateHighestSetIndex.get() + 1 );
         }
+    }
+
+    @Override
+    public void put( Object inputId, long id, Group group )
+    {
+        // Encode and add the input id
+        long eId = encode( inputId );
+        dataCache.set( id, eId );
+        candidateHighestSetIndex.offer( id );
     }
 
     private long encode( Object inputId )
@@ -243,7 +240,7 @@ public class EncodingIdMapper implements IdMapper
     {
         if ( currentIdGroup != null )
         {
-            idGroups[currentIdGroup.id()].setHighDataIndex( highestSetIndex );
+            idGroups[currentIdGroup.id()].setHighDataIndex( candidateHighestSetIndex.get() );
         }
     }
 
@@ -267,6 +264,9 @@ public class EncodingIdMapper implements IdMapper
     public void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
+        highestSetIndex = candidateHighestSetIndex.get();
+        updateRadix();
+
         trackerCache = trackerFactory.create( cacheFactory, highestSetIndex + 1 );
 
         try
@@ -296,6 +296,14 @@ public class EncodingIdMapper implements IdMapper
                     + "so mission accomplished" );
         }
         readyForUse = true;
+    }
+
+    private void updateRadix()
+    {
+        for ( long dataIndex = 0; dataIndex <= highestSetIndex; dataIndex++ )
+        {
+            radix.registerRadixOf( dataCache.get( dataIndex ) );
+        }
     }
 
     private int radixOf( long value )

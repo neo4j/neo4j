@@ -55,7 +55,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
     private final Monitor monitor;
-    private final HighestId highestId = new HighestId();
+    private final HighestId highestId = new HighestId( 0 );
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             CommonAbstractStore<RECORD,? extends StoreHeader> entityStore,

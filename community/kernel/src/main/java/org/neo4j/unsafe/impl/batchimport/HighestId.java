@@ -26,7 +26,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class HighestId
 {
-    private final AtomicLong highestId = new AtomicLong();
+    private final AtomicLong highestId;
+
+    public HighestId( long initialId )
+    {
+        this.highestId = new AtomicLong( initialId );
+    }
 
     public void offer( long candidate )
     {

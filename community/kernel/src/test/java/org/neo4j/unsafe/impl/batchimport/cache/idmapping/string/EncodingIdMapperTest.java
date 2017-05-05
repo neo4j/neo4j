@@ -32,12 +32,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -60,7 +62,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static java.lang.Math.toIntExact;
-
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
@@ -542,6 +543,55 @@ public class EncodingIdMapperTest
 
         // THEN
         assertEquals( count, collector.count );
+    }
+
+    @Test
+    public void shouldPutFromMultipleThreads() throws Throwable
+    {
+        // GIVEN
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
+        AtomicLong highNodeId = new AtomicLong();
+        int batchSize = 1234;
+        Race race = new Race();
+        LongFunction<Object> inputIdLookup = String::valueOf;
+        int countPerThread = 30_000;
+        race.addContestants( processors, () ->
+        {
+            idMapper.group( GLOBAL );
+            int cursor = batchSize;
+            long nextNodeId = 0;
+            for ( int j = 0; j < countPerThread; j++ )
+            {
+                if ( cursor == batchSize )
+                {
+                    nextNodeId = highNodeId.getAndAdd( batchSize );
+                    cursor = 0;
+                }
+                long nodeId = nextNodeId++;
+                cursor++;
+
+                idMapper.put( inputIdLookup.apply( nodeId ), nodeId, null );
+            }
+        } );
+
+        // WHEN
+        race.go();
+        idMapper.prepare( inputIdLookup, mock( Collector.class ), ProgressListener.NONE );
+
+        // THEN
+        int count = processors * countPerThread;
+        int countWithGapsWorstCase = count + batchSize * processors;
+        int correctHits = 0;
+        for ( long nodeId = 0; nodeId < countWithGapsWorstCase; nodeId++ )
+        {
+            long result = idMapper.get( inputIdLookup.apply( nodeId ), GLOBAL );
+            if ( result != -1 )
+            {
+                assertEquals( nodeId, result );
+                correctHits++;
+            }
+        }
+        assertEquals( count, correctHits );
     }
 
     private LongFunction<Object> values( Object... values )
