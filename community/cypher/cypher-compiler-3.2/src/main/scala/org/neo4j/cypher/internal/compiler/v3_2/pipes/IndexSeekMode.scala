@@ -69,7 +69,7 @@ case object LockingUniqueIndexSeek extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
     (state: QueryState) => (x: Seq[Any]) => {
-      state.query.lockingUniqueIndexSeek(descriptor, assertSingleValue(x)).toIterator
+      state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
     }
 
   override def name: String = "NodeUniqueIndexSeek(Locking)"

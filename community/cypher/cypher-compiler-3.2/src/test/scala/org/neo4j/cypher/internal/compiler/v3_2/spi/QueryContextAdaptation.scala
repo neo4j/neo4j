@@ -123,7 +123,7 @@ trait QueryContextAdaptation {
 
   override def getNodesByLabel(id: Int): scala.Iterator[Node] = ???
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node] = ???
 
   override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
