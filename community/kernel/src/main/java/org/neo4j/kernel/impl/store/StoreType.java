@@ -176,7 +176,7 @@ public enum StoreType
                 }
 
                 @Override
-                protected boolean isStoreFile( String fileName)
+                protected boolean isStoreFile( String fileName )
                 {
                     return matchStoreName( fileName, getStoreName() + CountsTracker.RIGHT ) ||
                            matchStoreName( fileName, getStoreName() + CountsTracker.LEFT );
