@@ -137,27 +137,23 @@ public class NodeVisitor extends InputEntityVisitor.Adapter
             if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
             {
                 // This record is full or couldn't fit this block, write it to property store
-                long nextPropertyId = Record.NO_NEXT_PROPERTY.longValue();
+                long nextPropertyId = nextPropertyId();
                 long prevId = currentRecord.getId();
-                boolean thereIsMore = i < propertyBlocksCursor - 1;
-                if ( thereIsMore )
-                {
-                    nextPropertyId = nextPropertyId();
-                }
                 currentRecord.setNextProp( nextPropertyId );
-
                 propertyStore.updateRecord( currentRecord );
-
-                if ( thereIsMore )
-                {
-                    currentRecord = propertyRecord( nextPropertyId );
-                    currentRecord.setPrevProp( prevId );
-                }
+                currentRecord = propertyRecord( nextPropertyId );
+                currentRecord.setPrevProp( prevId );
             }
 
             // Add this block, there's room for it
             currentRecord.addPropertyBlock( block );
         }
+
+        if ( currentRecord.size() > 0 )
+        {
+            propertyStore.updateRecord( currentRecord );
+        }
+
         return firstRecordId;
     }
 
