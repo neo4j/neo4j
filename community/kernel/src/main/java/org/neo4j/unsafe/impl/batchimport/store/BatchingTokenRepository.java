@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +45,7 @@ import static java.lang.Math.max;
  * to call {@link #getOrCreateId(String)} methods on.
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN extends Token>
-        implements ToIntFunction<Object>
+        implements ToIntFunction<Object>, Closeable
 {
     private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<RECORD, TOKEN> store;
@@ -160,6 +161,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     /**
      * Closes this repository and writes all created tokens to the underlying store.
      */
+    @Override
     public void close()
     {
         // Batch-friendly record access
