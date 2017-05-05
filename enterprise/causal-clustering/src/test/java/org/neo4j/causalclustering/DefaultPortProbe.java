@@ -51,36 +51,6 @@ public class DefaultPortProbe implements PortProbe
             return true;
         }
 
-//        // poke at the port and as a side-effect, waste some time
-//        try ( Socket ignored = new Socket( "0.0.0.0", port ) )
-//        {
-//
-//        }
-//        catch ( IOException e )
-//        {
-//            return true;
-//        }
-//
-//        // poke at the port and as a side-effect, waste some time
-//        try ( Socket ignored = new Socket( InetAddress.getLoopbackAddress(), port ) )
-//        {
-//
-//        }
-//        catch ( IOException e )
-//        {
-//            return true;
-//        }
-        // or not because that ate all ports very quickly...
-
-        try
-        {
-            Thread.sleep( 2000 );
-        }
-        catch ( InterruptedException e )
-        {
-            // best effort
-        }
-
         return false;
     }
 }

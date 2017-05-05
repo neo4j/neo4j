@@ -26,26 +26,30 @@ import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 
 public class PortRepository
 {
+    private static final Random RANDOM = new Random();
+
     private final Path directory;
+    private final int lowestPort;
 
-    private int currentPort;
-
-    public PortRepository( Path directory, int initialPort )
+    public PortRepository( Path directory, int lowestPort )
     {
         this.directory = directory;
-
-        this.currentPort = initialPort;
+        this.lowestPort = lowestPort;
     }
 
     // synchronize between threads in this JVM
     public synchronized int reserveNextPort( String trace )
     {
-        while ( currentPort <= EphemeralPortMaximum )
+        // if we do not find one after trying 100 times, bail out
+        for ( int i = 0; i < 100; i++ )
         {
-            Path portFilePath = directory.resolve( "port" + currentPort );
+            int port = lowestPort + RANDOM.nextInt( PortConstants.EphemeralPortMaximum - lowestPort );
+
+            Path portFilePath = directory.resolve( "port" + port );
 
             try
             {
@@ -57,11 +61,11 @@ public class PortRepository
                     fileOutputStream.flush();
                 }
 
-                return currentPort++;
+                return port;
             }
             catch ( FileAlreadyExistsException e )
             {
-                currentPort++;
+                // try again
             }
             catch ( IOException e )
             {
