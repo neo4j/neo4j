@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.util;
 public class SynchronizedArrayIdOrderingQueue implements IdOrderingQueue
 {
     private long[] queue;
-    private int offerIndex, headIndex; // absolute indexes, mod:ed on access
+    private int offerIndex;
+    private int headIndex;
 
     public SynchronizedArrayIdOrderingQueue( int initialMaxSize )
     {

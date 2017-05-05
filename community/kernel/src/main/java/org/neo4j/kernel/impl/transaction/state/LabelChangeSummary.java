@@ -35,7 +35,9 @@ public class LabelChangeSummary
         long[] addedLabels = new long[labelsAfter.length];
         long[] removedLabels = new long[labelsBefore.length];
         long[] unchangedLabels = new long[Math.min( addedLabels.length, removedLabels.length )];
-        int addedLabelsCursor = 0, removedLabelsCursor = 0, unchangedLabelsCursor = 0;
+        int addedLabelsCursor = 0;
+        int removedLabelsCursor = 0;
+        int unchangedLabelsCursor = 0;
         for ( long labelAfter : labelsAfter )
         {
             if ( binarySearch( labelsBefore, labelAfter ) < 0 )

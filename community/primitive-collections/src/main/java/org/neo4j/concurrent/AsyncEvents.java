@@ -57,7 +57,8 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
 
     private final Consumer<T> eventConsumer;
     private final Monitor monitor;
-    private final BinaryLatch startupLatch, shutdownLatch;
+    private final BinaryLatch startupLatch;
+    private final BinaryLatch shutdownLatch;
 
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
     private volatile AsyncEvent stack; // Accessed via AtomicReferenceFieldUpdater

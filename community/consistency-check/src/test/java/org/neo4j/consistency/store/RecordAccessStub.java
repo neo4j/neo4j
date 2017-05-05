@@ -152,7 +152,8 @@ public class RecordAccessStub implements RecordAccess
         public Void answer( InvocationOnMock invocation ) throws Throwable
         {
             Object[] arguments = invocation.getArguments();
-            AbstractBaseRecord oldReference = null, newReference;
+            AbstractBaseRecord oldReference = null;
+            AbstractBaseRecord newReference;
             if ( arguments.length == 3 )
             {
                 oldReference = (AbstractBaseRecord) arguments[0];
@@ -225,7 +226,8 @@ public class RecordAccessStub implements RecordAccess
 
     private static class Delta<R extends AbstractBaseRecord>
     {
-        final R oldRecord, newRecord;
+        final R oldRecord;
+        final R newRecord;
 
         Delta( R record )
         {

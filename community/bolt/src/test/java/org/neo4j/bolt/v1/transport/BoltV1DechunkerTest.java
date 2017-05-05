@@ -49,7 +49,8 @@ public class BoltV1DechunkerTest
             }
             RunMessage run = run( content.toString() );
             byte[] message = MessageMatchers.serialize( run );
-            byte head1 = (byte) (message.length >> 8), head2 = (byte) (message.length & 0xFF);
+            byte head1 = (byte) (message.length >> 8);
+            byte head2 = (byte) (message.length & 0xFF);
             byte[] chunk2 = new byte[message.length + 3];
             chunk2[0] = head2;
             System.arraycopy( message, 0, chunk2, 1, message.length );

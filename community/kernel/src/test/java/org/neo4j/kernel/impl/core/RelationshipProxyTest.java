@@ -100,7 +100,8 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     public void shouldPrintCypherEsqueRelationshipToString() throws Exception
     {
         // GIVEN
-        Node start, end;
+        Node start;
+        Node end;
         RelationshipType type = RelationshipType.withName( "NICE" );
         Relationship relationship;
         try ( Transaction tx = db.beginTx() )

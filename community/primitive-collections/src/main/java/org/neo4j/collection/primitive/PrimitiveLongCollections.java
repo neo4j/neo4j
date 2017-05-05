@@ -592,7 +592,8 @@ public class PrimitiveLongCollections
      */
     public static boolean equals( PrimitiveLongIterator first, PrimitiveLongIterator other )
     {
-        boolean firstHasNext, otherHasNext;
+        boolean firstHasNext;
+        boolean otherHasNext;
         // single | so that both iterator's hasNext() gets evaluated.
         while ( (firstHasNext = first.hasNext()) | (otherHasNext = other.hasNext()) )
         {

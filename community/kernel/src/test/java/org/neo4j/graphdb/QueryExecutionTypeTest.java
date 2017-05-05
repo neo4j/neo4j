@@ -160,7 +160,12 @@ public class QueryExecutionTypeTest
     {
         final QueryExecutionType type;
         final boolean convertToQuery;
-        boolean isProfiled, requestedExecutionPlanDescription, isExplained, canContainResults, canUpdateData, canUpdateSchema;
+        boolean isProfiled;
+        boolean requestedExecutionPlanDescription;
+        boolean isExplained;
+        boolean canContainResults;
+        boolean canUpdateData;
+        boolean canUpdateSchema;
 
         Assumptions( QueryExecutionType type, boolean convertToQuery )
         {

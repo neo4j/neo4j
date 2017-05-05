@@ -181,7 +181,8 @@ public class PriorityMap<E, K, P>
                 }
                 else
                 {   // we couldn't add it first in chain, go look for the appropriate place
-                    Link<E,P> link = node.head, prev = link;
+                    Link<E,P> link = node.head;
+                    Link<E,P> prev = link;
                     // skip the first one since we already compared head
                     link = link.next;
                     while ( link != null )

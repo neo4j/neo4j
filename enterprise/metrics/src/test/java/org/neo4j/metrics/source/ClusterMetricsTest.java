@@ -113,7 +113,8 @@ public class ClusterMetricsTest
 
     private class TestReporter extends ScheduledReporter
     {
-        private int isMasterValue, isAvailableValue;
+        private int isMasterValue;
+        private int isAvailableValue;
 
         protected TestReporter( MetricRegistry registry )
         {

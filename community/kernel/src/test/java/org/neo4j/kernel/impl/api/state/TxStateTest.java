@@ -1054,7 +1054,9 @@ public class TxStateTest
     public void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships() throws Exception
     {
         // Given
-        int startNode = 1, endNode = 2, relType = 0;
+        int startNode = 1;
+        int endNode = 2;
+        int relType = 0;
 
         // When
         state.relationshipDoCreate( 10, relType, startNode, endNode );
@@ -1075,10 +1077,14 @@ public class TxStateTest
     public void shouldGiveCorrectRelationshipTypesForNode() throws Exception
     {
         // Given
-        int startNode = 1, endNode = 2, relType = 0;
+        int startNode = 1;
+        int endNode = 2;
+        int relType = 0;
 
         // When
-        long relA = 10, relB = 11, relC = 12;
+        long relA = 10;
+        long relB = 11;
+        long relC = 12;
         state.relationshipDoCreate( relA, relType, startNode, endNode );
         state.relationshipDoCreate( relB, relType, startNode, endNode );
         state.relationshipDoCreate( relC, relType + 1, startNode, endNode );
@@ -1590,7 +1596,8 @@ public class TxStateTest
         {
             if ( late )
             {
-                String early = "the early visit*-method", late = "the late visit*-method";
+                String early = "the early visit*-method";
+                String late = "the late visit*-method";
                 for ( StackTraceElement trace : Thread.currentThread().getStackTrace() )
                 {
                     if ( visitMethods.contains( trace.getMethodName() ) )

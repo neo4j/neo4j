@@ -379,13 +379,16 @@ public class ImportTool
         }
 
         File storeDir;
-        Collection<Option<File[]>> nodesFiles, relationshipsFiles;
+        Collection<Option<File[]>> nodesFiles;
+        Collection<Option<File[]>> relationshipsFiles;
         boolean enableStacktrace;
         Number processors = null;
         Input input = null;
         int badTolerance;
         Charset inputEncoding;
-        boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
+        boolean skipBadRelationships;
+        boolean skipDuplicateNodes;
+        boolean ignoreExtraColumns;
         boolean skipBadEntriesLogging;
         Config dbConfig;
         OutputStream badOutput = null;

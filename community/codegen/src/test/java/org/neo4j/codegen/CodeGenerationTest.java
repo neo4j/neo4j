@@ -135,7 +135,8 @@ public class CodeGenerationTest
     public void shouldGenerateTwoClassesInTheSamePackage() throws Exception
     {
         // given
-        ClassHandle one, two;
+        ClassHandle one;
+        ClassHandle two;
         try ( ClassGenerator simple = generateClass( "One" ) )
         {
             one = simple.handle();
@@ -668,7 +669,8 @@ public class CodeGenerationTest
 
         Runnable runner1 = mock( Runnable.class );
         Runnable runner2 = mock( Runnable.class );
-        Object a = "a", b = "b";
+        Object a = "a";
+        Object b = "b";
 
         // when
         MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", Object.class, Object.class, Runnable.class );
@@ -702,7 +704,8 @@ public class CodeGenerationTest
 
         Runnable runner1 = mock( Runnable.class );
         Runnable runner2 = mock( Runnable.class );
-        Object a = "a", b = "b";
+        Object a = "a";
+        Object b = "b";
 
         // when
         MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", Object.class, Object.class, Runnable.class );
@@ -1479,22 +1482,6 @@ public class CodeGenerationTest
         }
     }
 
-    public static class ResourceFactory
-    {
-        int open, close, inside;
-
-        public AutoCloseable resource()
-        {
-            open++;
-            return () -> close++;
-        }
-
-        public void inside()
-        {
-            inside++;
-        }
-    }
-
     @Test
     public void shouldGenerateTryCatch() throws Throwable
     {
@@ -1515,9 +1502,10 @@ public class CodeGenerationTest
         }
 
         // when
-        Runnable successBody = mock( Runnable.class ),
-                failBody = mock( Runnable.class ),
-                successCatch = mock( Runnable.class ), failCatch = mock( Runnable.class );
+        Runnable successBody = mock( Runnable.class );
+        Runnable failBody = mock( Runnable.class );
+        Runnable successCatch = mock( Runnable.class );
+        Runnable failCatch = mock( Runnable.class );
         RuntimeException theFailure = new RuntimeException();
         doThrow( theFailure ).when( failBody ).run();
         MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class );
@@ -1600,9 +1588,12 @@ public class CodeGenerationTest
         }
 
         // when
-        Runnable body1 = mock( Runnable.class ), body2 = mock( Runnable.class ),
-                catcher11 = mock( Runnable.class ), catcher12 = mock( Runnable.class ),
-                catcher21 = mock( Runnable.class ), catcher22 = mock( Runnable.class );
+        Runnable body1 = mock( Runnable.class );
+        Runnable body2 = mock( Runnable.class );
+        Runnable catcher11 = mock( Runnable.class );
+        Runnable catcher12 = mock( Runnable.class );
+        Runnable catcher21 = mock( Runnable.class );
+        Runnable catcher22 = mock( Runnable.class );
         doThrow( MyFirstException.class ).when( body1 ).run();
         doThrow( MySecondException.class ).when( body2 ).run();
 

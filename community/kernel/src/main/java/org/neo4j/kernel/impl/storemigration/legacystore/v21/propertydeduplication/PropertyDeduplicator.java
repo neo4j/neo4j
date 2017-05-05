@@ -86,7 +86,8 @@ public class PropertyDeduplicator
         final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = Primitive.longObjectMap();
 
         long highId = store.getHighId();
-        PropertyRecord head = store.newRecord(), tail = store.newRecord();
+        PropertyRecord head = store.newRecord();
+        PropertyRecord tail = store.newRecord();
         for ( long headRecordId = 0; headRecordId < highId; ++headRecordId )
         {
             store.getRecord( headRecordId, head, FORCE );

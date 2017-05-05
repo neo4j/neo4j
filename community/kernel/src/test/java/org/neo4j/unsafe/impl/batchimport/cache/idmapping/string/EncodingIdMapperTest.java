@@ -371,7 +371,8 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Groups groups = new Groups();
-        Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
+        Group firstGroup = groups.getOrCreate( "first" );
+        Group secondGroup = groups.getOrCreate( "second" );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             int id = 0;
@@ -399,7 +400,9 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "8", "9", "10" ) );
         Groups groups = new Groups();
-        Group firstGroup, secondGroup, thirdGroup;
+        Group firstGroup;
+        Group secondGroup;
+        Group thirdGroup;
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             int id = 0;
@@ -451,7 +454,8 @@ public class EncodingIdMapperTest
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
         IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR );
-        final int idsPerGroup = 20, groups = 5;
+        final int idsPerGroup = 20;
+        int groups = 5;
         final AtomicReference<Group> group = new AtomicReference<>();
         InputIterable<Object> ids = SimpleInputIteratorWrapper.wrap( "source", new Iterable<Object>()
         {

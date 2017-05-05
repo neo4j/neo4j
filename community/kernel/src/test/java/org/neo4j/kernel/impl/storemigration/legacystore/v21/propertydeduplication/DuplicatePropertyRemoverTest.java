@@ -165,15 +165,17 @@ public class DuplicatePropertyRemoverTest
 
     private boolean hasLoop( long firstId )
     {
-        PropertyRecord slow = propertyStore.newRecord(), fast = propertyStore.newRecord(),
-                first = propertyStore.newRecord();
+        PropertyRecord slow;
+        PropertyRecord fast;
+        PropertyRecord first = propertyStore.newRecord();
         if ( firstId == Record.NO_NEXT_PROPERTY.intValue() )
         {
             return false;
         }
         propertyStore.getRecord( firstId, first, NORMAL );
 
-        slow = fast = first;
+        fast = first;
+        slow = first;
 
         while ( true )
         {

@@ -84,7 +84,8 @@ public class KeyValueStoreFileTest
             return new CataloguePage( (byte) first, (byte) last );
         }
 
-        final byte first, last;
+        final byte first;
+        byte last;
 
         CataloguePage( byte first, byte last )
         {
@@ -107,7 +108,8 @@ public class KeyValueStoreFileTest
     public void shouldFindRecordInPage() throws Exception
     {
         // given
-        byte[] key = new byte[1], value = new byte[3];
+        byte[] key = new byte[1];
+        byte[] value = new byte[3];
         DataPage page = new DataPage( 4096, 5, 256, key, value )
         {
             @Override
@@ -130,7 +132,8 @@ public class KeyValueStoreFileTest
     {
         // given
         final byte[] keys = new byte[]{1, 2, 2, 3, 4};
-        byte[] key = new byte[1], value = new byte[3];
+        byte[] key = new byte[1];
+        byte[] value = new byte[3];
         DataPage page = new DataPage( 4096, 0, 5, key, value )
         {
             @Override
@@ -159,7 +162,8 @@ public class KeyValueStoreFileTest
     {
         // given
         AtomicBoolean goOutOfBounds = new AtomicBoolean();
-        byte[] key = new byte[1], value = new byte[3];
+        byte[] key = new byte[1];
+        byte[] value = new byte[3];
         DataPage page = new DataPage( 4096, 3, 128, key, value )
         {
             @Override
@@ -184,7 +188,8 @@ public class KeyValueStoreFileTest
     public void shouldFindFirstRecordGreaterThanIfNoExactMatch() throws Exception
     {
         // given
-        byte[] key = new byte[1], value = new byte[3];
+        byte[] key = new byte[1];
+        byte[] value = new byte[3];
         final AtomicInteger delta = new AtomicInteger( 1 );
         DataPage page = new DataPage( 4096, 3, 128, key, value )
         {

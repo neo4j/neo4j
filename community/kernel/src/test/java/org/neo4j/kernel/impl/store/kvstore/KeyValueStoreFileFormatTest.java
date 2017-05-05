@@ -657,7 +657,8 @@ public class KeyValueStoreFileFormatTest
             return new DataEntry( key, value );
         }
 
-        final byte[] key, value;
+        final byte[] key;
+        byte[] value;
 
         DataEntry( byte[] key, byte[] value )
         {

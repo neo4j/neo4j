@@ -44,7 +44,8 @@ public class ForeignStoreIdIT
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private GraphDatabaseService firstInstance, foreignInstance;
+    private GraphDatabaseService firstInstance;
+    private GraphDatabaseService foreignInstance;
 
     @After
     public void after() throws Exception

@@ -33,8 +33,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.lang.Math.max;
@@ -72,7 +72,9 @@ public class MeasureUpdatePullingRecordAndIndexGap
         startCatchingUp( slave, halter, endLatch );
 
         // WHEN measuring...
-        final AtomicInteger good = new AtomicInteger(), bad = new AtomicInteger(), ugly = new AtomicInteger();
+        final AtomicInteger good = new AtomicInteger();
+        AtomicInteger bad = new AtomicInteger();
+        AtomicInteger ugly = new AtomicInteger();
         startMeasuringTheGap( good, bad, ugly, halter, highIdNodes, slave );
         for ( long endTime = currentTimeMillis() + SECONDS.toMillis( 30 ); currentTimeMillis() < endTime; )
         {

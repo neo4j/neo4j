@@ -82,7 +82,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnRelationshipCreate() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -138,7 +139,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelAdd() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode();
@@ -167,7 +169,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelRemove() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -196,7 +199,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelAddAndRelationshipCreate() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -226,7 +230,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
@@ -258,7 +263,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelAddAndRelationshipDelete() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         Relationship rel;
         try ( Transaction tx = db.beginTx() )
         {
@@ -290,7 +296,8 @@ public class CompositeCountsTest
     public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ), label( "Bar" ) );
@@ -320,7 +327,8 @@ public class CompositeCountsTest
     public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction() throws Exception
     {
         // given
-        Node foo, bar;
+        Node foo;
+        Node bar;
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -385,7 +393,9 @@ public class CompositeCountsTest
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
         ReadOperations read = statementSupplier.get().readOperations();
-        int startId, typeId, endId;
+        int startId;
+        int typeId;
+        int endId;
         // start
         if ( start == null )
         {

@@ -37,7 +37,8 @@ public class SchemaIndexRepresentationTest
     public void shouldIncludeLabel() throws Exception
     {
         // GIVEN
-        String labelName = "person", propertyKey = "name";
+        String labelName = "person";
+        String propertyKey = "name";
         IndexDefinition definition = mock( IndexDefinition.class );
         when( definition.getLabel() ).thenReturn( label( labelName ) );
         when( definition.getPropertyKeys() ).thenReturn( asList( propertyKey ) );

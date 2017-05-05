@@ -46,7 +46,8 @@ public interface Barrier
 
     class Control implements Barrier
     {
-        private final CountDownLatch reached = new CountDownLatch( 1 ), released = new CountDownLatch( 1 );
+        private final CountDownLatch reached = new CountDownLatch( 1 );
+        private final CountDownLatch released = new CountDownLatch( 1 );
 
         @Override
         public void reached()

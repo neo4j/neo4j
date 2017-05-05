@@ -58,7 +58,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
@@ -82,7 +83,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         String result = gen.get().expectedStatus( 200 ).get(
@@ -106,7 +108,9 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
+        String propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
@@ -135,7 +139,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
 
         String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintLabelUri( labelName ) ).entity();
@@ -158,7 +163,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
+        String labelName1 = labels.newInstance();
+        String propertyKey1 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
 
         String result = gen.get().expectedStatus( 200 ).get( getSchemaConstraintUri() ).entity();
@@ -181,7 +187,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         ConstraintDefinition constraintDefinition = createLabelUniquenessPropertyConstraint( labelName, propertyKey );
         assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
 
@@ -196,7 +203,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_constraint()
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
@@ -207,7 +215,8 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     @Test
     public void drop_non_existent_constraint() throws Exception
     {
-        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        String labelName = labels.newInstance();
+        String propertyKey = properties.newInstance();
 
         gen.get().expectedStatus( 404 )
                 .delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );

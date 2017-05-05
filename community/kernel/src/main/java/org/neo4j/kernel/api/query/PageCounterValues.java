@@ -23,7 +23,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 
 class PageCounterValues
 {
-    final long hits, faults;
+    final long hits;
+    final long faults;
 
     PageCounterValues( PageCursorCounters page )
     {

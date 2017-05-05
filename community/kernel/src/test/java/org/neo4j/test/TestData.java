@@ -218,7 +218,8 @@ public class TestData<T> implements TestRule
             }
             String[] lines = doc.split( "\n" );
             int indent = Integer.MAX_VALUE;
-            int start = 0, end = 0;
+            int start = 0;
+            int end = 0;
             for ( int i = 0; i < lines.length; i++ )
             {
                 if ( EMPTY.equals( lines[i].trim() ) )

@@ -34,7 +34,8 @@ public class TransactionQueue
 
     private final int maxSize;
     private final Applier applier;
-    private TransactionToApply first, last;
+    private TransactionToApply first;
+    private TransactionToApply last;
     private int size;
 
     public TransactionQueue( int maxSize, Applier applier )

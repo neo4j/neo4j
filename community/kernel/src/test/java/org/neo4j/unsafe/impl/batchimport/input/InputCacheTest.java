@@ -49,7 +49,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 public class InputCacheTest
 {
-    private static final int BATCH_SIZE = 100, BATCHES = 100;
+    private static final int BATCH_SIZE = 100;
+    private static final int BATCHES = 100;
 
     private static final String[] TOKENS = new String[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
 

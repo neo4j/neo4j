@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
+import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -34,7 +34,8 @@ public class LoggingLogFileMonitor implements
         Recovery.Monitor,
         PositionToRecoverFrom.Monitor
 {
-    private long firstTransactionRecovered = -1, lastTransactionRecovered;
+    private long firstTransactionRecovered = -1;
+    private long lastTransactionRecovered;
     private final Log log;
 
     public LoggingLogFileMonitor( Log log )

@@ -721,7 +721,8 @@ public class IdGeneratorTest
         try
         {
             IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
-            final int grabSize = 10, rounds = 10;
+            final int grabSize = 10;
+            int rounds = 10;
             idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, true, 0 );
 
             for ( int i = 0; i < rounds; i++ )

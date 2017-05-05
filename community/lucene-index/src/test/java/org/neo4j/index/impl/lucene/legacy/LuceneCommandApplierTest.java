@@ -55,7 +55,8 @@ public class LuceneCommandApplierTest
     {
         // GIVEN
         fs.get().mkdirs( dir );
-        String indexName = "name", key = "key";
+        String indexName = "name";
+        String key = "key";
         IndexConfigStore configStore = new IndexConfigStore( dir, fs.get() );
         configStore.set( Node.class, indexName, EXACT_CONFIG );
         LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, Config.embeddedDefaults( stringMap(

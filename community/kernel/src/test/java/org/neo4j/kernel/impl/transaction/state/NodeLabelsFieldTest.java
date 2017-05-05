@@ -102,7 +102,8 @@ public class NodeLabelsFieldTest
     public void shouldInlineTwoSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30;
+        long labelId1 = 10;
+        long labelId2 = 30;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -117,7 +118,9 @@ public class NodeLabelsFieldTest
     public void shouldInlineThreeSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30, labelId3 = 4095;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 4095;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -132,7 +135,10 @@ public class NodeLabelsFieldTest
     public void shouldInlineFourSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30, labelId3 = 45, labelId4 = 60;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 45;
+        long labelId4 = 60;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2, labelId3 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -147,7 +153,11 @@ public class NodeLabelsFieldTest
     public void shouldInlineFiveSmallLabels() throws Exception
     {
         // GIVEN
-        long labelId1 = 10, labelId2 = 30, labelId3 = 45, labelId4 = 60, labelId5 = 61;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 45;
+        long labelId4 = 60;
+        long labelId5 = 61;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2, labelId3, labelId4 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -163,7 +173,9 @@ public class NodeLabelsFieldTest
     public void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace() throws Exception
     {
         // GIVEN -- the upper limit for a label ID for 3 labels would be 36b/3 - 1 = 12b - 1 = 4095
-        long labelId1 = 10, labelId2 = 30, labelId3 = 4096;
+        long labelId1 = 10;
+        long labelId2 = 30;
+        long labelId3 = 4096;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1, labelId2 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -357,7 +369,8 @@ public class NodeLabelsFieldTest
     public void removingNonExistentInlinedLabelShouldFail() throws Exception
     {
         // GIVEN
-        int labelId1 = 1, labelId2 = 2;
+        int labelId1 = 1;
+        int labelId2 = 2;
         NodeRecord node = nodeRecordWithInlinedLabels( labelId1 );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 

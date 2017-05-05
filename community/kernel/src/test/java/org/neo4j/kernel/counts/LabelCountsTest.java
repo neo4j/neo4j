@@ -128,7 +128,9 @@ public class LabelCountsTest
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
-        Node n1, n2, n3;
+        Node n1;
+        Node n2;
+        Node n3;
         try ( Transaction tx = graphDb.beginTx() )
         {
             n1 = graphDb.createNode( label( "Foo" ) );
@@ -160,7 +162,9 @@ public class LabelCountsTest
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
-        Node n1, n2, n3;
+        Node n1;
+        Node n2;
+        Node n3;
         try ( Transaction tx = graphDb.beginTx() )
         {
             n1 = graphDb.createNode( label( "Foo" ), label( "Bar" ) );

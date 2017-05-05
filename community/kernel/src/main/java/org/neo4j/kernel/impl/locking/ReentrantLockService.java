@@ -137,7 +137,8 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
          * In the first element, head will point to the next waiting element, and tail is where we enqueue new elements.
          * In the waiting elements, head will point to the first element, and tail to the next element.
          */
-        private OwnerQueueElement<OWNER> head = this, tail = this;
+        private OwnerQueueElement<OWNER> head = this;
+        private OwnerQueueElement<OWNER> tail = this;
 
         /**
          * Return true if the item was enqueued, or false if this LockOwner is dead.

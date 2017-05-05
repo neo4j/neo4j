@@ -287,7 +287,8 @@ public class LogTestUtils
 
     private static class FileBackup
     {
-        private final File file, backup;
+        private final File file;
+        private final File backup;
         private final FileSystemAbstraction fileSystem;
 
         FileBackup( File file, File backup, FileSystemAbstraction fileSystem )

@@ -77,7 +77,8 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        long smallValue = 10L, bigValue = 1L << 62;
+        long smallValue = 10L;
+        long bigValue = 1L << 62;
         Node myNode;
         {
             try ( Transaction tx = beansAPI.beginTx() )
@@ -379,7 +380,8 @@ public class IndexingAcceptanceTest
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( graph, LABEL1, "name" );
 
-        Node node1, node2;
+        Node node1;
+        Node node2;
         try ( Transaction tx = graph.beginTx() )
         {
             node1 = graph.createNode( LABEL1 );
@@ -406,7 +408,8 @@ public class IndexingAcceptanceTest
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( graph, LABEL1, "name" );
 
-        Node node1, node2;
+        Node node1;
+        Node node2;
         try ( Transaction tx = graph.beginTx() )
         {
             node1 = graph.createNode( LABEL1 );

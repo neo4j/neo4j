@@ -271,7 +271,8 @@ public class StoreUpgradeIntegrationTest
             clusterManager.start();
 
             ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
-            HighlyAvailableGraphDatabase master, slave;
+            HighlyAvailableGraphDatabase master;
+            HighlyAvailableGraphDatabase slave;
             try
             {
                 cluster.await( allSeesAllAsAvailable() );

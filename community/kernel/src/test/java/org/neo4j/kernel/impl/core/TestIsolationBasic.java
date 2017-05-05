@@ -45,7 +45,8 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         commit();
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
-        Node n1, n2;
+        Node n1;
+        Node n2;
         Relationship r1;
         try ( Transaction tx = getGraphDb().beginTx() )
         {

@@ -152,8 +152,11 @@ public class TestTransactionEvents
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler( expectedData );
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         db.registerTransactionEventHandler( handler );
-        Node node1, node2, node3;
-        Relationship rel1, rel2;
+        Node node1;
+        Node node2;
+        Node node3;
+        Relationship rel1;
+        Relationship rel2;
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -555,7 +558,9 @@ public class TestTransactionEvents
         private TransactionData receivedTransactionData;
         private T receivedState;
         private int counter;
-        private Integer beforeCommit, afterCommit, afterRollback;
+        private Integer beforeCommit;
+        private Integer afterCommit;
+        private Integer afterRollback;
 
         DummyTransactionEventHandler( T object )
         {
@@ -771,7 +776,9 @@ public class TestTransactionEvents
             // when
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = db.createNode(), node2 = db.createNode(), node3 = db.createNode();
+                Node node1 = db.createNode();
+                Node node2 = db.createNode();
+                Node node3 = db.createNode();
 
                 labels.add( node1, "Foo" );
                 labels.add( node2, "Bar" );
@@ -799,7 +806,9 @@ public class TestTransactionEvents
         ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
         try
         {
-            Node node1, node2, node3;
+            Node node1;
+            Node node2;
+            Node node3;
             try ( Transaction tx = db.beginTx() )
             {
                 node1 = db.createNode();
@@ -1088,7 +1097,8 @@ public class TestTransactionEvents
     {
         // GIVEN
         Relationship relationship;
-        Node startNode, endNode;
+        Node startNode;
+        Node endNode;
         RelationshipType type = MyRelTypes.TEST;
         try ( Transaction tx = dbRule.beginTx() )
         {
@@ -1165,7 +1175,8 @@ public class TestTransactionEvents
 
     private static final class ChangedLabels extends TransactionEventHandler.Adapter<Void>
     {
-        private final Map<Node,Set<String>> added = new HashMap<>(), removed = new HashMap<>();
+        private final Map<Node,Set<String>> added = new HashMap<>();
+        private final Map<Node,Set<String>> removed = new HashMap<>();
         private boolean active = false;
 
         @Override

@@ -106,7 +106,8 @@ public class DumpProcessInformation
         Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
         BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
         String line = null;
-        Collection<Pair<Long, String>> jPids = new ArrayList<>(), excludedJPids = new ArrayList<>();
+        Collection<Pair<Long, String>> jPids = new ArrayList<>();
+        Collection<Pair<Long, String>> excludedJPids = new ArrayList<>();
         while ( (line = reader.readLine()) != null )
         {
             int spaceIndex = line.indexOf( ' ' );

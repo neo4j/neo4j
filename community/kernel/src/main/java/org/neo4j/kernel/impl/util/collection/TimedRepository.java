@@ -50,7 +50,9 @@ public class TimedRepository<KEY, VALUE> implements Runnable
 
     private class Entry
     {
-        static final int IDLE = 0, IN_USE = 1, MARKED_FOR_END = 2;
+        static final int IDLE = 0;
+        static final int IN_USE = 1;
+        static final int MARKED_FOR_END = 2;
 
         private final AtomicInteger state = new AtomicInteger( IDLE );
         private final VALUE value;

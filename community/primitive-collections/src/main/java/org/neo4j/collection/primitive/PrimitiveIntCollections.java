@@ -584,7 +584,8 @@ public class PrimitiveIntCollections
      */
     public static boolean equals( PrimitiveIntIterator first, PrimitiveIntIterator other )
     {
-        boolean firstHasNext, otherHasNext;
+        boolean firstHasNext;
+        boolean otherHasNext;
         // single | so that both iterator's hasNext() gets evaluated.
         while ( (firstHasNext = first.hasNext()) | (otherHasNext = other.hasNext()) )
         {

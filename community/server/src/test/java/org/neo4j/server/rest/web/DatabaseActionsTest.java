@@ -1149,7 +1149,8 @@ public class DatabaseActionsTest
     {
         // GIVEN
         long node = graphdbHelper.createNode();
-        String labelName1 = "LabelOne", labelName2 = "labelTwo";
+        String labelName1 = "LabelOne";
+        String labelName2 = "labelTwo";
         graphdbHelper.addLabelToNode( node, labelName1 );
         graphdbHelper.addLabelToNode( node, labelName2 );
 
@@ -1171,7 +1172,8 @@ public class DatabaseActionsTest
     public void getNodesWithLabel() throws Exception
     {
         // GIVEN
-        String label1 = "first", label2 = "second";
+        String label1 = "first";
+        String label2 = "second";
         long node1 = graphdbHelper.createNode( label( label1 ) );
         long node2 = graphdbHelper.createNode( label( label1 ), label( label2 ) );
         graphdbHelper.createNode( label( label2 ) );
@@ -1219,7 +1221,8 @@ public class DatabaseActionsTest
     public void shouldCreateSchemaIndex() throws Exception
     {
         // GIVEN
-        String labelName = "person", propertyKey = "name";
+        String labelName = "person";
+        String propertyKey = "name";
 
         // WHEN
         actions.createSchemaIndex( labelName, Arrays.asList( propertyKey ) );
@@ -1237,7 +1240,8 @@ public class DatabaseActionsTest
     public void shouldDropSchemaIndex() throws Exception
     {
         // GIVEN
-        String labelName = "user", propertyKey = "login";
+        String labelName = "user";
+        String propertyKey = "login";
         IndexDefinition index = graphdbHelper.createSchemaIndex( labelName, propertyKey );
 
         // WHEN
@@ -1255,7 +1259,8 @@ public class DatabaseActionsTest
     public void shouldGetSchemaIndexes() throws Exception
     {
         // GIVEN
-        String labelName = "mylabel", propertyKey = "name";
+        String labelName = "mylabel";
+        String propertyKey = "name";
         graphdbHelper.createSchemaIndex( labelName, propertyKey );
 
         // WHEN
@@ -1276,7 +1281,8 @@ public class DatabaseActionsTest
     public void shouldCreatePropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "person", propertyKey = "name";
+        String labelName = "person";
+        String propertyKey = "name";
 
         // WHEN
         actions.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
@@ -1294,7 +1300,8 @@ public class DatabaseActionsTest
     public void shouldDropPropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "user", propertyKey = "login";
+        String labelName = "user";
+        String propertyKey = "login";
         ConstraintDefinition index = graphdbHelper.createPropertyUniquenessConstraint( labelName,
                 asList( propertyKey ) );
 
@@ -1310,7 +1317,8 @@ public class DatabaseActionsTest
     public void dropNonExistentConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "user", propertyKey = "login";
+        String labelName = "user";
+        String propertyKey = "login";
         ConstraintDefinition constraint = graphdbHelper.createPropertyUniquenessConstraint( labelName,
                 asList( propertyKey ) );
 
@@ -1329,7 +1337,8 @@ public class DatabaseActionsTest
     public void shouldGetPropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
-        String labelName = "mylabel", propertyKey = "name";
+        String labelName = "mylabel";
+        String propertyKey = "name";
         graphdbHelper.createPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
 
         // WHEN

@@ -230,11 +230,13 @@ public class StartClient
         }
     }
 
-    private static final Method attachMethod, loadMethod;
+    private static final Method attachMethod;
+    private static final Method loadMethod;
 
     static
     {
-        Method attach, load;
+        Method attach;
+        Method load;
         try
         {
             Class<?> vmClass = Class.forName( "com.sun.tools.attach.VirtualMachine" );

@@ -113,7 +113,8 @@ public class GraphExtractionWriterTest
     public void shouldExtractGraphFromMapInTheRow() throws Exception
     {
         // given
-        Map<String, Object> row = new HashMap<>(), map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         row.put( "map", map );
         map.put( "r1", r1 );
         map.put( "r2", r2 );
@@ -148,7 +149,8 @@ public class GraphExtractionWriterTest
     public void shouldExtractGraphFromListInMapInTheRow() throws Exception
     {
         // given
-        Map<String, Object> row = new HashMap<>(), map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Object> list = new ArrayList<>();
         map.put( "list", list );
         row.put( "map", map );
@@ -167,7 +169,8 @@ public class GraphExtractionWriterTest
     public void shouldExtractGraphFromMapInListInTheRow() throws Exception
     {
         // given
-        Map<String, Object> row = new HashMap<>(), map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Object> list = new ArrayList<>();
         list.add( map );
         row.put( "list", list );

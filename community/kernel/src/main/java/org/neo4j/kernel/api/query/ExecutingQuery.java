@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -52,7 +52,8 @@ public class ExecutingQuery
     private final ClientConnectionInfo clientConnection;
     private final String queryText;
     private final Map<String,Object> queryParameters;
-    private final long startTimeNanos, startTimestampMillis;
+    private final long startTimeNanos;
+    private final long startTimestampMillis;
     /** Uses write barrier of {@link #status}. */
     private long planningDoneNanos;
     private final Thread threadExecutingTheQuery;
@@ -137,7 +138,9 @@ public class ExecutingQuery
     {
         // capture a consistent snapshot of the "live" state
         ExecutingQueryStatus status;
-        long waitTimeNanos, currentTimeNanos, cpuTimeNanos;
+        long waitTimeNanos;
+        long currentTimeNanos;
+        long cpuTimeNanos;
         do
         {
             status = this.status; // read barrier, must be first

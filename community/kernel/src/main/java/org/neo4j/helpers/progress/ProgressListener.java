@@ -175,7 +175,8 @@ public interface ProgressListener
         private final Aggregator aggregator;
         final String part;
         boolean started = false;
-        private long value = 0, lastReported = 0;
+        private long value = 0;
+        private long lastReported = 0;
         final long totalCount;
 
         MultiPartProgressListener( Aggregator aggregator, String part, long totalCount )

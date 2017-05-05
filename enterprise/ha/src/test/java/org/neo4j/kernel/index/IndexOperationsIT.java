@@ -86,7 +86,8 @@ public class IndexOperationsIT
     {
         // GIVEN
         // -- an existing index
-        String key = "key", value = "value";
+        String key = "key";
+        String value = "value";
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         long nodeId = createNode( master, key, value, true );
         cluster.sync();
@@ -142,8 +143,10 @@ public class IndexOperationsIT
     {
         // GIVEN
         // -- two instances, each begin a transaction
-        String key = "key2", value = "value2";
-        HighlyAvailableGraphDatabase db1 = cluster.getMaster(), db2 = cluster.getAnySlave();
+        String key = "key2";
+        String value = "value2";
+        HighlyAvailableGraphDatabase db1 = cluster.getMaster();
+        HighlyAvailableGraphDatabase db2 = cluster.getAnySlave();
         long node = createNode( db1, key, value, false );
         cluster.sync();
         OtherThreadExecutor<HighlyAvailableGraphDatabase> w1 = new OtherThreadExecutor<>( "w1", db1 );

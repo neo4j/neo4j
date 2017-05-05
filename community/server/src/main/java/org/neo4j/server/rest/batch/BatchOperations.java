@@ -157,7 +157,9 @@ public abstract class BatchOperations
         {
             if ( token == JsonToken.START_OBJECT )
             {
-                String jobMethod = "", jobPath = "", jobBody = "";
+                String jobMethod = "";
+                String jobPath = "";
+                String jobBody = "";
                 Integer jobId = null;
                 while ( (token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
                 {

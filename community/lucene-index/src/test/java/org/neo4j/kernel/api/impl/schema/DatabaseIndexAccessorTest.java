@@ -79,8 +79,10 @@ public class DatabaseIndexAccessorTest
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
     private LuceneIndexAccessor accessor;
-    private final long nodeId = 1, nodeId2 = 2;
-    private final Object value = "value", value2 = 40;
+    private final long nodeId = 1;
+    private final long nodeId2 = 2;
+    private final Object value = "value";
+    private final Object value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     private static final IndexDescriptor GENERAL_INDEX = IndexDescriptorFactory.forLabel( 0, PROP_ID );
     private static final IndexDescriptor UNIQUE_INDEX = IndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );

@@ -53,7 +53,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     public void canCreateRelationshipBetweenTwoNodesWithLoopsThenDeleteOneOfTheNodesAndItsRelationships()
             throws Exception
     {
-        Node source = getGraphDb().createNode(), target = getGraphDb().createNode();
+        Node source = getGraphDb().createNode();
+        Node target = getGraphDb().createNode();
         source.createRelationshipTo( source, TEST );
         target.createRelationshipTo( target, TEST );
         source.createRelationshipTo( target, TEST );

@@ -383,8 +383,9 @@ public class LabelsAcceptanceTest
         Node node2 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
 
         // WHEN
-        Node node3 = null;
-        Set<Node> nodesWithMyLabel = null, nodesWithMyOtherLabel = null;
+        Node node3;
+        Set<Node> nodesWithMyLabel;
+        Set<Node> nodesWithMyOtherLabel;
         try ( Transaction tx = beansAPI.beginTx() )
         {
             node3 = beansAPI.createNode( Labels.MY_LABEL );
@@ -522,7 +523,8 @@ public class LabelsAcceptanceTest
     public void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem() throws Exception
     {
         // given
-        final int TOTAL_NUMBER_OF_LABELS = 200, NUMBER_OF_PRESERVED_LABELS = 20;
+        final int TOTAL_NUMBER_OF_LABELS = 200;
+        final int NUMBER_OF_PRESERVED_LABELS = 20;
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )

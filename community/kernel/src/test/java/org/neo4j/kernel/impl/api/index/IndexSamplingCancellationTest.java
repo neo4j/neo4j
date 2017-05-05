@@ -53,7 +53,8 @@ import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER
 
 public class IndexSamplingCancellationTest
 {
-    private final Barrier.Control samplingStarted = new Barrier.Control(), samplingDone = new Barrier.Control();
+    private final Barrier.Control samplingStarted = new Barrier.Control();
+    private final Barrier.Control samplingDone = new Barrier.Control();
     private volatile Throwable samplingException;
     private final InMemoryIndexProvider index = new TestInMemoryIndexProvider();
     @Rule

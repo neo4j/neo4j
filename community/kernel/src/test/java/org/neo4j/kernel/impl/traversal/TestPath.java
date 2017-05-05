@@ -39,7 +39,11 @@ import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 
 public class TestPath extends TraversalTestBase
 {
-    private static Node a,b,c,d,e;
+    private static Node a;
+    private static Node b;
+    private static Node c;
+    private static Node d;
+    private static Node e;
     private Transaction tx;
 
     @Before

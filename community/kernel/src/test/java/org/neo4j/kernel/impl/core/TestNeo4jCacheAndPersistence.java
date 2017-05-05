@@ -356,7 +356,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
 
-        Node node1, node2;
+        Node node1;
+        Node node2;
         try ( Transaction tx = graphDb.beginTx() )
         {
             node1 = graphDb.createNode();

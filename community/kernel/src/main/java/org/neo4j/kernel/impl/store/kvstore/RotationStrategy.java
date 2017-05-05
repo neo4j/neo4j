@@ -190,7 +190,8 @@ abstract class RotationStrategy
         protected File nextFile( File previous )
         {
             String name = previous.getName();
-            int pos = name.lastIndexOf( '.' ), next;
+            int pos = name.lastIndexOf( '.' );
+            int next;
             try
             {
                 int number = Integer.parseInt( name.substring( pos + 1 ) );

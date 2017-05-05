@@ -523,7 +523,8 @@ public class DatabaseActions
             PropertyValueException
     {
 
-        Node start, end;
+        Node start;
+        Node end;
         try
         {
             start = node( startNodeId );
@@ -948,7 +949,8 @@ public class DatabaseActions
 
     private class UniqueRelationshipFactory extends UniqueFactory.UniqueRelationshipFactory
     {
-        private final Node start, end;
+        private final Node start;
+        private final Node end;
         private final RelationshipType type;
         private final Map<String,Object> properties;
 

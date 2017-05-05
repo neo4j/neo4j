@@ -72,7 +72,8 @@ public class SocketConnection implements TransportConnection
     public byte[] recv( int length ) throws IOException
     {
         byte[] bytes = new byte[length];
-        int left = length, read;
+        int left = length;
+        int read;
 
         try
         {

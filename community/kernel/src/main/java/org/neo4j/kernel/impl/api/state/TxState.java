@@ -168,7 +168,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private InstanceCache<TxAllPropertyCursor> propertyCursor;
     private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
 
-    private boolean hasChanges, hasDataChanges;
+    private boolean hasChanges;
+    private boolean hasDataChanges;
 
     public TxState()
     {

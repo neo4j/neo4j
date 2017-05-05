@@ -104,7 +104,8 @@ public class RelationshipChainPointerChasingTest
     {
         // GIVEN
         Node node;
-        Relationship relationshipInTheMiddle, relationshipInTheEnd;
+        Relationship relationshipInTheMiddle;
+        Relationship relationshipInTheEnd;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();

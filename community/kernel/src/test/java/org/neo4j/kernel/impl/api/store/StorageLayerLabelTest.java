@@ -46,11 +46,13 @@ public class StorageLayerLabelTest extends StorageLayerTest
     {
         // GIVEN
         long nodeId;
-        int labelId1, labelId2;
+        int labelId1;
+        int labelId2;
         try ( Transaction tx = db.beginTx() )
         {
             nodeId = db.createNode( label1, label2 ).getId();
-            String labelName1 = label1.name(), labelName2 = label2.name();
+            String labelName1 = label1.name();
+            String labelName2 = label2.name();
             labelId1 = disk.labelGetForName( labelName1 );
             labelId2 = disk.labelGetOrCreateForName( labelName2 );
             tx.success();

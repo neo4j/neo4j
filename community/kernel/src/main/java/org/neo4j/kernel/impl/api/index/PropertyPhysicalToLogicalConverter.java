@@ -44,7 +44,8 @@ public class PropertyPhysicalToLogicalConverter
     public void convertPropertyRecord( long nodeId, Iterable<PropertyRecordChange> changes,
             NodeUpdates.Builder properties )
     {
-        Map<Integer, PropertyBlock> beforeMap = new HashMap<>(), afterMap = new HashMap<>();
+        Map<Integer, PropertyBlock> beforeMap = new HashMap<>();
+        Map<Integer, PropertyBlock> afterMap = new HashMap<>();
         mapBlocks( nodeId, changes, beforeMap, afterMap );
 
         for ( int key : union( beforeMap.keySet(), afterMap.keySet() ) )

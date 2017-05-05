@@ -49,14 +49,12 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 
 public class HardKillIT
 {
@@ -69,7 +67,9 @@ public class HardKillIT
     public void testMasterSwitchHappensOnKillMinus9() throws Exception
     {
         Process proc = null;
-        HighlyAvailableGraphDatabase dbWithId2 = null, dbWithId3 = null, oldMaster = null;
+        HighlyAvailableGraphDatabase dbWithId2 = null;
+        HighlyAvailableGraphDatabase dbWithId3 = null;
+        HighlyAvailableGraphDatabase oldMaster = null;
         try
         {
             proc = run( 1 );

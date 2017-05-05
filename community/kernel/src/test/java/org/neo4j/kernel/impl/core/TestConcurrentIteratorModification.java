@@ -47,7 +47,9 @@ public class TestConcurrentIteratorModification
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Label label = Label.label( "Bird" );
 
-        Node node1, node2, node3;
+        Node node1;
+        Node node2;
+        Node node3;
         try ( Transaction tx = graph.beginTx() )
         {
             node1 = graph.createNode( label );

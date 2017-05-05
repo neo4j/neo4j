@@ -384,8 +384,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
     private void createConstraint( String label, String propertyKey ) throws KernelException
     {
-        //TODO: Consider testing composite indexes
-        int labelId, propertyKeyId;
+        int labelId;
+        int propertyKeyId;
         TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
         labelId = tokenWriteOperations.labelGetOrCreateForName( label );
         propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( propertyKey );

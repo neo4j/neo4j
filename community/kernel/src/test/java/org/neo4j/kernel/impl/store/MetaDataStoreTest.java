@@ -420,7 +420,8 @@ public class MetaDataStoreTest
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
-                    long id, checksum;
+                    long id;
+                    long checksum;
                     do
                     {
                         id = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_ID );
@@ -457,7 +458,8 @@ public class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             long initialVersion = store.incrementAndGetVersion();
-            int threads = Runtime.getRuntime().availableProcessors(), iterations = 500;
+            int threads = Runtime.getRuntime().availableProcessors();
+            int iterations = 500;
             Race race = new Race();
             race.addContestants( threads, () ->
             {
@@ -502,7 +504,8 @@ public class MetaDataStoreTest
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
-                    long id, checksum;
+                    long id;
+                    long checksum;
                     do
                     {
                         id = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_ID );
@@ -557,7 +560,8 @@ public class MetaDataStoreTest
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
-                    long logVersion, byteOffset;
+                    long logVersion;
+                    long byteOffset;
                     do
                     {
                         logVersion = store.getRecordValue( cursor,

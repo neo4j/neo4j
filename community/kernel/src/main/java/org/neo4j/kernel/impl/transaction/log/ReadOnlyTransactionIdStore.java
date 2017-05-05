@@ -39,7 +39,10 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
 
     public ReadOnlyTransactionIdStore( PageCache pageCache, File storeDir ) throws IOException
     {
-        long id = 0, checksum = 0, logVersion = 0, byteOffset = 0;
+        long id = 0;
+        long checksum = 0;
+        long logVersion = 0;
+        long byteOffset = 0;
         if ( NeoStores.isStorePresent( pageCache, storeDir ) )
         {
             File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );

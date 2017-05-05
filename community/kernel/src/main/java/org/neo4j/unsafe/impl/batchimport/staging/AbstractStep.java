@@ -71,7 +71,8 @@ public abstract class AbstractStep<T> implements Step<T>
     protected final AtomicLong doneBatches = new AtomicLong();
     // Milliseconds spent processing all received batches.
     protected final MovingAverage totalProcessingTime;
-    protected long startTime, endTime;
+    protected long startTime;
+    protected long endTime;
     private final List<StatsProvider> additionalStatsProvider;
     protected final Runnable healthChecker = () -> assertHealthy();
 

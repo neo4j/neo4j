@@ -361,7 +361,8 @@ public class ConstraintHaIT
             String type = type( 2 );
             String key = key( 2 );
 
-            long constraintCountBefore, indexCountBefore;
+            long constraintCountBefore;
+            long indexCountBefore;
             try ( Transaction tx = master.beginTx() )
             {
                 constraintCountBefore = count( master.schema().getConstraints() );

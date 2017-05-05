@@ -659,7 +659,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_a_node_in_an_unique_index() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createNodeIndex( index );
         ResponseEntity response = gen()
                 .expectedStatus( 201 /* created */ )
@@ -680,7 +682,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_node_with_array_properties() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createNodeIndex( index );
         ResponseEntity response = gen()
                 .expectedStatus( 201 /* created */ )
@@ -715,7 +719,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void get_or_create_unique_node_if_already_existing() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
 
         GraphDatabaseService graphdb = graphdb();
         try ( Transaction tx = graphdb().beginTx() )
@@ -751,7 +757,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_a_unique_node_or_fail_create() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Tobias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Tobias";
         helper.createNodeIndex( index );
         ResponseEntity response = gen.get()
                 .expectedStatus( 201 /* created */ )
@@ -779,7 +787,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_a_unique_node_or_return_fail___fail() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
 
         GraphDatabaseService graphdb = graphdb();
         helper.createNodeIndex( index );
@@ -874,7 +884,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     @Test
     public void put_node_if_absent___create() throws Exception
     {
-        final String index = indexes.newInstance(), key = "name", value = "Mattias";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Mattias";
         helper.createNodeIndex( index );
         String uri = functionalTestHelper.nodeIndexUri() + index + "?unique";
         gen().expectedStatus( 201 /* created */ )
@@ -887,7 +899,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     public void already_indexed_node_should_not_fail_on_create_or_fail() throws Exception
     {
         // Given
-        final String index = indexes.newInstance(), key = "name", value = "Peter";
+        final String index = indexes.newInstance();
+        String key = "name";
+        String value = "Peter";
         GraphDatabaseService graphdb = graphdb();
         helper.createNodeIndex( index );
         Node node;

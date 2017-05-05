@@ -223,7 +223,10 @@ public class SchemaTransactionStateTest
 
     // exists
 
-    private final int labelId1 = 10, labelId2 = 12, key1 = 45, key2 = 46;
+    private final int labelId1 = 10;
+    private final int labelId2 = 12;
+    private final int key1 = 45;
+    private final int key2 = 46;
     private final long nodeId = 20;
 
     private StoreReadLayer store;

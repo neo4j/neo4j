@@ -106,7 +106,8 @@ class RebuildFromLogs
             System.exit( -1 );
             return;
         }
-        File source = new File( args[0] ), target = new File( args[1] );
+        File source = new File( args[0] );
+        File target = new File( args[1] );
         if ( !source.isDirectory() )
         {
             printUsage( source + " is not a directory" );

@@ -39,7 +39,8 @@ public class RelationshipGroupGetter
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        RecordProxy<Long, RelationshipGroupRecord, Integer> previous = null, current = null;
+        RecordProxy<Long, RelationshipGroupRecord, Integer> previous = null;
+        RecordProxy<Long, RelationshipGroupRecord, Integer> current;
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             current = relGroupRecords.getOrLoad( groupId, null );
@@ -103,7 +104,8 @@ public class RelationshipGroupGetter
 
     public static class RelationshipGroupPosition
     {
-        private final RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious, group;
+        private final RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious;
+        private final RecordProxy<Long, RelationshipGroupRecord, Integer> group;
 
         public RelationshipGroupPosition( RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious,
                 RecordProxy<Long, RelationshipGroupRecord, Integer> group )

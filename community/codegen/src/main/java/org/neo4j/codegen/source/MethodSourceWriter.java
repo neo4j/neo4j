@@ -38,7 +38,8 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     private static final Runnable BOTTOM = () ->
     {
         throw new IllegalStateException( "Popped too many levels!" );
-    }, LEVEL = () ->
+    };
+    private static final Runnable LEVEL = () ->
     {
     };
     private static final String INDENTATION = "    ";

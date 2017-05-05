@@ -54,7 +54,8 @@ public class DataProducer implements ReadableByteChannel
     @Override
     public int read( ByteBuffer dst ) throws IOException
     {
-        int toFill = min( dst.remaining(), bytesLeftToProduce ), leftToFill = toFill;
+        int toFill = min( dst.remaining(), bytesLeftToProduce );
+        int leftToFill = toFill;
         if ( toFill <= 0 )
         {
             return -1;

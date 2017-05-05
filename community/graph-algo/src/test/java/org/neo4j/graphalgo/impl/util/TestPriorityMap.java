@@ -43,7 +43,15 @@ public class TestPriorityMap
         assertEntry( map.pop(), 0, 5d );
         assertNull( map.pop() );
 
-        int start = 0, a = 1, b = 2, c = 3, d = 4, e = 6, f = 7, y = 8, x = 9;
+        int start = 0;
+        int a = 1;
+        int b = 2;
+        int c = 3;
+        int d = 4;
+        int e = 6;
+        int f = 7;
+        int y = 8;
+        int x = 9;
         map.put( start, 0d );
         map.put( a, 1d );
         // get start

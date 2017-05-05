@@ -41,7 +41,9 @@ public class ConflictingServerIdIT
     @Test
     public void testConflictingIdDoesNotSilentlyFail() throws Exception
     {
-        HighlyAvailableGraphDatabase master = null, dbWithId21 = null, dbWithId22 = null;
+        HighlyAvailableGraphDatabase master = null;
+        HighlyAvailableGraphDatabase dbWithId21 = null;
+        HighlyAvailableGraphDatabase dbWithId22 = null;
         try
         {
 

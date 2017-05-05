@@ -145,7 +145,8 @@ public class TestKernelEvents
     private abstract static class DummyKernelEventHandler implements KernelEventHandler
     {
         private static int counter;
-        private Integer beforeShutdown, kernelPanic;
+        private Integer beforeShutdown;
+        private Integer kernelPanic;
         private final Object resource;
 
         DummyKernelEventHandler( Object resource )

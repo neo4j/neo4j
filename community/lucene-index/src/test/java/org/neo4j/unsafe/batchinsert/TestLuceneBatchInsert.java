@@ -473,7 +473,9 @@ public class TestLuceneBatchInsert
     public void shouldKeepAroundUnusedIndexesAfterConsecutiveInsertion() throws Exception
     {
         // GIVEN -- a batch insertion creating two indexes
-        String indexName1 = "first", indexName2 = "second", key = "name";
+        String indexName1 = "first";
+        String indexName2 = "second";
+        String key = "name";
         {
             BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
             BatchInserterIndex index1 = provider.nodeIndex( indexName1, LuceneIndexImplementation.EXACT_CONFIG );

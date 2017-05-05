@@ -19,18 +19,6 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.function.IntFunction;
-import javax.tools.Diagnostic;
-
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -47,6 +35,18 @@ import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.function.IntFunction;
+import javax.tools.Diagnostic;
 
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.CodeGeneratorOption;
@@ -215,7 +215,8 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
         StringWriter message = new StringWriter();
         try ( PrintWriter out = new PrintWriter( message ) )
         {
-            List<Integer> localLengths = new ArrayList<>(), stackLengths = new ArrayList<>();
+            List<Integer> localLengths = new ArrayList<>();
+            List<Integer> stackLengths = new ArrayList<>();
             for ( Frame frame : frames )
             {
                 if ( frame != null )
@@ -412,7 +413,8 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
             {
                 return true;
             }
-            ClassNode targetNode = classes.get( target ), valueNode = classes.get( value );
+            ClassNode targetNode = classes.get( target );
+            ClassNode valueNode = classes.get( value );
             if ( targetNode != null && valueNode == null )
             {
                 // if the target is among the types we have generated and the value isn't, then

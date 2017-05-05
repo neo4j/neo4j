@@ -951,7 +951,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
             tx.success();
         }
         // WHEN
-        long one, two;
+        long one;
+        long two;
         try ( Transaction tx = db.beginTx() )
         {
             one = Iterables.count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );

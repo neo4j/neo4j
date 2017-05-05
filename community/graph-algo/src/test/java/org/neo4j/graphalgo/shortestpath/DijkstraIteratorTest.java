@@ -19,13 +19,12 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import common.Neo4jAlgoTestCase;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
@@ -34,7 +33,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
@@ -79,11 +79,10 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             graph.makeEdge( "d", "x", "cost", (short) 3 );
             graph.makeEdge( "d", "e", "cost", (double) 1 );
             graph.makeEdge( "e", "x", "cost", (double) 1 );
-            HashMap<Node,Double> seen1, seen2, dists1, dists2;
-            seen1 = new HashMap<Node,Double>();
-            seen2 = new HashMap<Node,Double>();
-            dists1 = new HashMap<Node,Double>();
-            dists2 = new HashMap<Node,Double>();
+            HashMap<Node,Double> seen1 = new HashMap<>();
+            HashMap<Node,Double> seen2 = new HashMap<>();
+            HashMap<Node,Double> dists1 = new HashMap<>();
+            HashMap<Node,Double> dists2 = new HashMap<>();
             DijstraIterator iter1 = new TestIterator( graph.getNode( "start" ),
                 predecessors1, seen1, seen2, dists1, dists2, false );
             // while ( iter1.hasNext() && !limitReached() && !iter1.isDone() )
@@ -111,10 +110,10 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             // assertTrue( count == 4 );
             // assertTrue( seen1.get( graph.getNode( "x" ) ) == 6.0 );
             // Now test node limit
-            seen1 = new HashMap<Node,Double>();
-            seen2 = new HashMap<Node,Double>();
-            dists1 = new HashMap<Node,Double>();
-            dists2 = new HashMap<Node,Double>();
+            seen1 = new HashMap<>();
+            seen2 = new HashMap<>();
+            dists1 = new HashMap<>();
+            dists2 = new HashMap<>();
             iter1 = new TestIterator( graph.getNode( "start" ), predecessors1,
                 seen1, seen2, dists1, dists2, false );
             this.numberOfNodesTraversed = 0;

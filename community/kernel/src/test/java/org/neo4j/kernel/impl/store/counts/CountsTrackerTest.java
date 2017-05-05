@@ -155,7 +155,8 @@ public class CountsTrackerTest
     {
         // given
         CountsOracle oracle = someData();
-        int firstTx = 2, secondTx = 3;
+        int firstTx = 2;
+        int secondTx = 3;
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );
@@ -194,7 +195,8 @@ public class CountsTrackerTest
     {
         // given
         CountsOracle oracle = someData();
-        final int firstTransaction = 2, secondTransaction = 3;
+        final int firstTransaction = 2;
+        int secondTransaction = 3;
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );

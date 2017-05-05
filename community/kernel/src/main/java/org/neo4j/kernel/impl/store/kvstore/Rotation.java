@@ -52,8 +52,10 @@ public @interface Rotation
                     throw new IllegalArgumentException( "Expected exactly 2 format parameters." );
                 }
                 String parent = base.getParent();
-                String l = base.getName() + parameters[0], r = base.getName() + parameters[1];
-                final File left = new File( parent, l ), right = new File( parent, r );
+                String l = base.getName() + parameters[0];
+                String r = base.getName() + parameters[1];
+                final File left = new File( parent, l );
+                final File right = new File( parent, r );
                 return new RotationStrategy.LeftRight( fs, pages, format, monitor, left, right );
             }
         },

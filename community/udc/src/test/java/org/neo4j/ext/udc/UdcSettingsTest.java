@@ -53,7 +53,9 @@ public class UdcSettingsTest
         );
     }
 
-    private final String trueVariation, falseVariation, unknown;
+    private final String trueVariation;
+    private final String falseVariation;
+    private final String unknown;
 
     public UdcSettingsTest( Variations variations )
     {
@@ -529,7 +531,9 @@ public class UdcSettingsTest
 
     static final class Variations
     {
-        String trueVariation, falseVariation, unknown;
+        String trueVariation;
+        String falseVariation;
+        String unknown;
 
         Variations trueAs( String trueVariation )
         {

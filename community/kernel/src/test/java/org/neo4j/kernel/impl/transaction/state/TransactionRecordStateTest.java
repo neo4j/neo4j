@@ -205,7 +205,8 @@ public class TransactionRecordStateTest
         // GIVEN
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
-        int labelId = 5, propertyKeyId = 7;
+        int labelId = 5;
+        int propertyKeyId = 7;
 
         // -- an index
         long ruleId = 0;
@@ -300,7 +301,8 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
+        Object value1 = LONG_STRING;
+        Object value2 = LONG_STRING.getBytes();
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
@@ -430,7 +432,8 @@ public class TransactionRecordStateTest
         apply( neoStores, transactionRepresentationOf( recordState ) );
 
         // WHEN
-        String newValue1 = "new", newValue2 = "new 2";
+        String newValue1 = "new";
+        String newValue2 = "new 2";
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeChangeProperty( nodeId, property1.propertyKeyId(), newValue1 );
         recordState.nodeChangeProperty( nodeId, property2.propertyKeyId(), newValue2 );
@@ -522,7 +525,8 @@ public class TransactionRecordStateTest
         // GIVEN
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        long nodeId = 0, relId = 1;
+        long nodeId = 0;
+        long relId = 1;
         recordState.nodeCreate( nodeId );
         recordState.relCreate( relId++, 0, nodeId, nodeId );
         recordState.relCreate( relId, 0, nodeId, nodeId );
@@ -549,7 +553,10 @@ public class TransactionRecordStateTest
         // GIVEN
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        long nodeId = 0, relId1 = 1, relId2 = 2, relId3 = 3;
+        long nodeId = 0;
+        long relId1 = 1;
+        long relId2 = 2;
+        long relId3 = 3;
         recordState.nodeCreate( nodeId );
         recordState.relCreate( relId1, 0, nodeId, nodeId );
         recordState.relCreate( relId2, 0, nodeId, nodeId );
@@ -600,7 +607,8 @@ public class TransactionRecordStateTest
         // - dense node threshold of 5
         // - node with 4 rels of type A and 1 rel of type B
         NeoStores neoStore = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "5" );
-        int A = 0, B = 1;
+        int A = 0;
+        int B = 1;
         TransactionRecordState state = newTransactionRecordState( neoStore );
         state.nodeCreate( 0 );
         state.relCreate( 0, A, 0, 0 );
@@ -628,7 +636,11 @@ public class TransactionRecordStateTest
         // GIVEN
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        long nodeId1 = 0, nodeId2 = 1, relId1 = 1, relId2 = 2, relId4 = 10;
+        long nodeId1 = 0;
+        long nodeId2 = 1;
+        long relId1 = 1;
+        long relId2 = 2;
+        long relId4 = 10;
         recordState.nodeCreate( nodeId1 );
         recordState.nodeCreate( nodeId2 );
         recordState.relCreate( relId1, 0, nodeId1, nodeId1 );
@@ -874,7 +886,9 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "50" );
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
-        int typeA = 0, typeB = 1, typeC = 2;
+        int typeA = 0;
+        int typeB = 1;
+        int typeC = 2;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA );
         createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 6 );
@@ -955,7 +969,8 @@ public class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "13" );
         TransactionRecordState tx = newTransactionRecordState( neoStores );
-        int nodeId = (int) neoStores.getNodeStore().nextId(), typeA = 0;
+        int nodeId = (int) neoStores.getNodeStore().nextId();
+        int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA );
         long[] relationshipsCreated = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 15 );
@@ -974,7 +989,9 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
-        int typeA = 0, typeB = 12, typeC = 600;
+        int typeA = 0;
+        int typeB = 12;
+        int typeC = 600;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA );
         long[] relationshipsCreatedAIncoming = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 1 );
@@ -1050,7 +1067,9 @@ public class TransactionRecordStateTest
     public void shouldSortRelationshipGroups() throws Throwable
     {
         // GIVEN
-        int type5 = 5, type10 = 10, type15 = 15;
+        int type5 = 5;
+        int type10 = 10;
+        int type15 = 15;
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
         {
             TransactionRecordState recordState = newTransactionRecordState( neoStores );
@@ -1131,7 +1150,9 @@ public class TransactionRecordStateTest
         state.extractCommands( commands );
 
         // THEN
-        int nodes = 0, rels = 0, groups = 0;
+        int nodes = 0;
+        int rels = 0;
+        int groups = 0;
         for ( StorageCommand command : commands )
         {
             if ( command instanceof NodeCommand )
