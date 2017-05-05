@@ -557,7 +557,6 @@ public class EncodingIdMapperTest
         int countPerThread = 30_000;
         race.addContestants( processors, () ->
         {
-            idMapper.group( GLOBAL );
             int cursor = batchSize;
             long nextNodeId = 0;
             for ( int j = 0; j < countPerThread; j++ )
@@ -570,7 +569,7 @@ public class EncodingIdMapperTest
                 long nodeId = nextNodeId++;
                 cursor++;
 
-                idMapper.put( inputIdLookup.apply( nodeId ), nodeId, null );
+                idMapper.put( inputIdLookup.apply( nodeId ), nodeId, GLOBAL );
             }
         } );
 

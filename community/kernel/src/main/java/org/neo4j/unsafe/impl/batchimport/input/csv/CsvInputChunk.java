@@ -184,6 +184,7 @@ public class CsvInputChunk implements InputChunk
                             seeker.sourceDescription(), lineNumber, stringExtractor.value() );
                 }
             }
+            visitor.endOfEntity();
             lineNumber++;
         }
         catch ( final RuntimeException e )

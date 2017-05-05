@@ -31,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.HighestId;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
+import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
@@ -47,6 +48,7 @@ import static java.lang.Math.min;
 import static java.lang.String.format;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
@@ -122,6 +124,7 @@ public class EncodingIdMapper implements IdMapper
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
     // values are the encoded versions of the input ids.
     private final LongArray dataCache;
+    private final ByteArray groupCache;
     private final HighestId candidateHighestSetIndex = new HighestId( -1 );
     private long highestSetIndex;
 
@@ -146,8 +149,6 @@ public class EncodingIdMapper implements IdMapper
     private boolean readyForUse;
     private long[][] sortBuckets;
 
-    private IdGroup[] idGroups = new IdGroup[10];
-    private IdGroup currentIdGroup;
     private final Monitor monitor;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
@@ -167,6 +168,8 @@ public class EncodingIdMapper implements IdMapper
         this.comparator = comparator;
         this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
+        this.groupCache = cacheFactory.newDynamicByteArray( chunkSize,
+                new byte[] {(byte) GAP_VALUE, (byte) GAP_VALUE} );
         this.encoder = encoder;
         this.radix = radixFactory.newInstance();
         this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, ID_NOT_FOUND );
@@ -183,46 +186,12 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public synchronized void group( Group group )
-    {
-        // Check if we're now venturing into a new group. If so then end the previous group.
-        int groupId = group.id();
-        boolean newGroup = false;
-        if ( currentIdGroup == null )
-        {
-            newGroup = true;
-        }
-        else
-        {
-            if ( groupId < currentIdGroup.id() )
-            {
-                throw new IllegalStateException( "Nodes for any specific group must be added in sequence " +
-                        "before adding nodes for any other group" );
-            }
-            newGroup = groupId != currentIdGroup.id();
-        }
-        if ( newGroup )
-        {
-            endPreviousGroup();
-        }
-
-        // Create the new group
-        if ( newGroup )
-        {
-            if ( groupId >= idGroups.length )
-            {
-                idGroups = Arrays.copyOf( idGroups, max( groupId + 1, idGroups.length * 2 ) );
-            }
-            idGroups[groupId] = currentIdGroup = new IdGroup( group, candidateHighestSetIndex.get() + 1 );
-        }
-    }
-
-    @Override
     public void put( Object inputId, long id, Group group )
     {
         // Encode and add the input id
         long eId = encode( inputId );
         dataCache.set( id, eId );
+        groupCache.setShort( id, 0, safeCastLongToShort( group.id() ) );
         candidateHighestSetIndex.offer( id );
     }
 
@@ -234,14 +203,6 @@ public class EncodingIdMapper implements IdMapper
             throw new IllegalStateException( "Encoder " + encoder + " returned an illegal encoded value " + GAP_VALUE );
         }
         return eId;
-    }
-
-    private void endPreviousGroup()
-    {
-        if ( currentIdGroup != null )
-        {
-            idGroups[currentIdGroup.id()].setHighDataIndex( candidateHighestSetIndex.get() );
-        }
     }
 
     @Override
@@ -263,7 +224,6 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress )
     {
-        endPreviousGroup();
         highestSetIndex = candidateHighestSetIndex.get();
         updateRadix();
 
@@ -404,8 +364,8 @@ public class EncodingIdMapper implements IdMapper
                 case EQ:
                     // Here we have two equal encoded values. First let's check if they are in the same id space.
                     long collision = sameGroupDetector.collisionWithinSameGroup(
-                            dataIndexA, groupOf( dataIndexA ).id(),
-                            dataIndexB, groupOf( dataIndexB ).id() );
+                            dataIndexA, groupOf( dataIndexA ),
+                            dataIndexB, groupOf( dataIndexB ) );
 
                     if ( dataIndexA > dataIndexB )
                     {
@@ -541,8 +501,7 @@ public class EncodingIdMapper implements IdMapper
                 long eid = dataCache.get( dataIndex );
                 long sourceInformation = collisionSourceDataCache.get( collisionIndex );
                 source.decode( sourceInformation );
-                IdGroup group = groupOf( dataIndex );
-                int groupId = group.id();
+                int groupId = groupOf( dataIndex );
                 // collisions of same eId AND groupId are always together
                 boolean same = eid == previousEid && previousGroupId == groupId;
                 if ( !same )
@@ -560,7 +519,9 @@ public class EncodingIdMapper implements IdMapper
                 {   // Duplicate
 //                    String firstDataPoint = detector.sourceInformation( detectorIndex ).describe( sourceDescriptions );
 //                    String otherDataPoint = source.describe( sourceDescriptions );
-                    collector.collectDuplicateNode( inputId, dataIndex, group.name(), "first", "other" );
+                    // TODO: group name
+                    collector.collectDuplicateNode( inputId, dataIndex,
+                            String.valueOf( "TODO group name of " + groupId ), "first", "other" );
                 }
 
                 previousEid = eid;
@@ -610,16 +571,9 @@ public class EncodingIdMapper implements IdMapper
         }
     }
 
-    private IdGroup groupOf( long dataIndex )
+    private int groupOf( long dataIndex )
     {
-        for ( IdGroup idGroup : idGroups )
-        {
-            if ( idGroup != null && idGroup.covers( dataIndex ) )
-            {
-                return idGroup;
-            }
-        }
-        throw new IllegalArgumentException( "Strange, index " + dataIndex + " isn't included in a group" );
+        return groupCache.getShort( dataIndex, 0 );
     }
 
     private long binarySearch( long x, Object inputId, long low, long high, int groupId )
@@ -647,7 +601,7 @@ public class EncodingIdMapper implements IdMapper
                     return findFromEIdRange( mid, midValue, inputId, x, groupId );
                 }
                 // This is the only value here, let's do a simple comparison with correct group id and return
-                return groupOf( dataIndex ).id() == groupId ? dataIndex : ID_NOT_FOUND;
+                return groupOf( dataIndex ) == groupId ? dataIndex : ID_NOT_FOUND;
             case LT:
                 low = mid + 1;
                 break;
@@ -712,8 +666,8 @@ public class EncodingIdMapper implements IdMapper
         for ( long index = fromIndex; index <= toIndex; index++ )
         {
             long dataIndex = trackerCache.get( index );
-            IdGroup group = groupOf( dataIndex );
-            if ( groupId == group.id() )
+            int group = groupOf( dataIndex );
+            if ( groupId == group )
             {
                 long eId = dataCache.get( dataIndex );
                 if ( isCollision( eId ) )

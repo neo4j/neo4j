@@ -44,11 +44,6 @@ public class IdMappers
     private static class ActualIdMapper implements IdMapper
     {
         @Override
-        public void group( Group group )
-        {   // No need to remember anything
-        }
-
-        @Override
         public void put( Object inputId, long actualId, Group group )
         {   // No need to remember anything
         }

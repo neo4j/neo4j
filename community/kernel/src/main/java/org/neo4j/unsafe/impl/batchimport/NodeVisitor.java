@@ -91,7 +91,7 @@ public class NodeVisitor extends InputEntityVisitor.Adapter
     {
         long nodeId = nextNodeId();
         nodeRecord.setId( nodeId );
-        idMapper.put( id, nodeId, null );
+        idMapper.put( id, nodeId, group );
         return true;
     }
 
