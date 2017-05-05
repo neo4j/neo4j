@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}

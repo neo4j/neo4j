@@ -49,6 +49,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
     }
 
     def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
+      import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 

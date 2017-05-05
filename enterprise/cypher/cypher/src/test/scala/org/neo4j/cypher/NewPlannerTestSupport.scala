@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper
+import org.neo4j.cypher.internal.compatibility.v3_3.ExecutionResultWrapper
 import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.{CRS, CartesianPoint, GeographicP
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.ir.v3_2.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -109,7 +109,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   private val otherReadVersion = "2.3"
   private val otherWriteVersion = "3.1" // because 2.3 cannot use cost planner for writes
-  private val currentVersion = "3.2"
+  private val currentVersion = "3.3"
 
   val newPlannerMonitor = new NewPlannerMonitor
 

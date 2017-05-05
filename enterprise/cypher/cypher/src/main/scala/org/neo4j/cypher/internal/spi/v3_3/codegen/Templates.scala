@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_2.codegen
+package org.neo4j.cypher.internal.spi.v3_3.codegen
+
 import java.util
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}

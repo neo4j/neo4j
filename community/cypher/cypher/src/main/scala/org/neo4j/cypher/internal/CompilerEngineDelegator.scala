@@ -148,7 +148,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val updateStrategy = preParsedQuery.updateStrategy
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
-    if (version == CypherVersion.v3_3 && planner == CypherPlanner.rule) {
+    if ((version == CypherVersion.v3_3 || version == CypherVersion.v3_2) && planner == CypherPlanner.rule) {
       val position = preParsedQuery.offset
       preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(position)
       version = CypherVersion.v3_1
@@ -163,7 +163,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
           produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
 
         parserQuery.onError {
-          // if there is a create unique in the cypher 3.2 query try to fallback to 3.1
+          // if there is a create unique in the cypher 3.3 query try to fallback to 3.1
           case ex: v3_3.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueUnavailableFallbackNotification(ex, preParsedQuery)
@@ -175,7 +175,14 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
         val parserQuery = compatibilityFactory.
           create(PlannerSpec_v3_2(planner, runtime, updateStrategy), config).
           produceParsedQuery(preParsedQuery, as3_2(tracer), preParsingNotifications)
-         Right(parserQuery)
+        parserQuery.onError {
+          // if there is a create unique in the cypher 3.2 query try to fallback to 3.1
+          case ex: v3_2.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+            preParsingNotifications = preParsingNotifications +
+              createUniqueUnavailableFallbackNotification(ex, preParsedQuery)
+            Left(CypherVersion.v3_1)
+          case _ => Right(parserQuery)
+        }.getOrElse(Right(parserQuery))
 
       case Left(CypherVersion.v3_1) =>
         val parsedQuery = compatibilityFactory.
@@ -199,10 +206,19 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
+  private def createUniqueUnavailableFallbackNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(
+      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
+    CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
+  }
+
   private def rulePlannerUnavailableFallbackNotification(offset: InputPosition) =
     RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(convertInputPosition(offset))
 
   private def convertInputPosition(offset: InputPosition) =
+    new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
+
+  private def convertInputPosition(offset: v3_2.InputPosition) =
     new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
 
   private def getQueryCacheSize : Int = {

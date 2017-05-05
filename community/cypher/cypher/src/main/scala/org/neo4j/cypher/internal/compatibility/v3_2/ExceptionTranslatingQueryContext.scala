@@ -173,8 +173,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelTypeName(id: Int) =
     translateException(inner.getRelTypeName(id))
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]) =
-    translateException(inner.lockingUniqueIndexSeek(index, values))
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any) =
+    translateException(inner.lockingUniqueIndexSeek(index, value))
 
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))

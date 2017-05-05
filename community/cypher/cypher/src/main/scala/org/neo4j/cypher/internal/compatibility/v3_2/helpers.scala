@@ -58,6 +58,7 @@ object helpers {
           case v3_2Phase.PARSING => v3_3Phase.PARSING
           case v3_2Phase.PIPE_BUILDING => v3_3Phase.PIPE_BUILDING
           case v3_2Phase.SEMANTIC_CHECK => v3_3Phase.SEMANTIC_CHECK
+          case v3_2Phase.DEPRECATION_WARNINGS => v3_3Phase.DEPRECATION_WARNINGS
           case _ => throw new InternalException(s"Cannot handle $phase in 3.2")
         }
 

@@ -67,6 +67,21 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_3() throws Exception
+    {
+        // when
+        Result result = db().execute( "CYPHER 3.3 planner=rule RETURN 1" );
+        InputPosition position = new InputPosition( 24, 1, 25 );
+
+        // then
+        assertThat( result.getNotifications(), contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
+        result.close();
+    }
+
+    @Test
     public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_2() throws Exception
     {
         // when
@@ -113,6 +128,20 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3() throws Exception
+    {
+        // when
+        Result result = db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        InputPosition position = new InputPosition( 36, 1, 37 );
+
+        // then
+        assertThat( result.getNotifications(), contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
+        result.close();
+    }
+
+    @Test
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_2() throws Exception
     {
         // when
@@ -147,7 +176,7 @@ public class NotificationAcceptanceTest
     {
         for ( String pattern : Arrays.asList("[:A|:B|:C {foo:'bar'}]", "[:A|:B|:C*]", "[x:A|:B|:C]") )
         {
-            assertNotifications("CYPHER 3.2 explain MATCH (a)-" + pattern + "-(b) RETURN a,b",
+            assertNotifications("CYPHER 3.3 explain MATCH (a)-" + pattern + "-(b) RETURN a,b",
                     containsItem(notification(
                             "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                             containsString(
@@ -162,7 +191,7 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnBindingVariableLengthRelationship() throws Exception
     {
-        assertNotifications("CYPHER 3.2 explain MATCH ()-[rs*]-() RETURN rs", containsItem( notification(
+        assertNotifications("CYPHER 3.3 explain MATCH ()-[rs*]-() RETURN rs", containsItem( notification(
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 containsString( "Binding relationships to a list in a variable length pattern is deprecated." ),
                 any( InputPosition.class ),

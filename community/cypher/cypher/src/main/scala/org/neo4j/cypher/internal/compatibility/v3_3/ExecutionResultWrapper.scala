@@ -78,7 +78,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def executionPlanDescription(): org.neo4j.cypher.internal.PlanDescription =
     convert(
       inner.executionPlanDescription().
-        addArgument(Version("CYPHER 3.2")).
+        addArgument(Version("CYPHER 3.3")).
         addArgument(Planner(planner.toTextOutput)).
         addArgument(PlannerImpl(planner.name)).
         addArgument(Runtime(runtime.toTextOutput)).

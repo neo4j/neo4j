@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.v3_2.CompatibilityPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.CompatibilityPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.IDPSolverMonitor
 import org.neo4j.cypher.internal.compiler.v3_3.{IDPPlannerName, InterpretedRuntimeName}

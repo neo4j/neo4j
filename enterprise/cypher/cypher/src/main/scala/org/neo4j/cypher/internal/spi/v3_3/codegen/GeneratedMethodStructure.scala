@@ -17,37 +17,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_2.codegen
+package org.neo4j.cypher.internal.spi.v3_3.codegen
 
 import java.util
 import java.util.PrimitiveIterator
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
-import org.neo4j.codegen.Expression.{not, or, _}
+import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, LongType, ReferenceType, Parameter => _, _}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, QueryExecutionEvent}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.{BoolType, FloatType, CodeGenType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, symbols}
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedMethodStructure.CompletableFinalizer
-import org.neo4j.cypher.internal.spi.v3_2.codegen.Methods._
-import org.neo4j.cypher.internal.spi.v3_2.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
+import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
+import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 
 import scala.collection.mutable
 

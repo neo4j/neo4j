@@ -68,11 +68,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("by default when using cypher 3.2 some queries should default to COST") {
+  test("by default when using cypher 3.3 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.2").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -150,12 +150,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should be able to force COST as default when using cypher 3.2") {
+  test("should be able to force COST as default when using cypher 3.3") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.2").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when

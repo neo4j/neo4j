@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.spi.v3_2
+package org.neo4j.cypher.internal.compiled_runtime.spi.v3_3
 
 import java.util
 
@@ -34,8 +34,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable, symbols}
-import org.neo4j.cypher.internal.spi.v3_2.codegen.GeneratedQueryStructure.typeRef
-import org.neo4j.cypher.internal.spi.v3_2.codegen._
+import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure.typeRef
+import org.neo4j.cypher.internal.spi.v3_3.codegen._
+import org.neo4j.cypher.internal.spi.v3_3.codegen.{GeneratedMethodStructure, Methods}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
