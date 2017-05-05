@@ -19,25 +19,21 @@
  */
 package org.neo4j.kernel.internal;
 
-import java.io.File;
-
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class StoreLockerLifecycleAdapter extends LifecycleAdapter
 {
     private final StoreLocker storeLocker;
-    private final File storeDir;
 
-    public StoreLockerLifecycleAdapter( StoreLocker storeLocker, File storeDir )
+    public StoreLockerLifecycleAdapter( StoreLocker storeLocker )
     {
         this.storeLocker = storeLocker;
-        this.storeDir = storeDir;
     }
 
     @Override
     public void start() throws Throwable
     {
-        storeLocker.checkLock( storeDir );
+        storeLocker.checkLock();
     }
 
     @Override

@@ -61,12 +61,11 @@ public class StoreLockerTest
         CustomChannelFileSystemAbstraction fileSystemAbstraction =
                 new CustomChannelFileSystemAbstraction( fileSystemRule.get(), channel );
         int numberOfCallesToOpen = 0;
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            File directory = target.directory( "unused" );
             try
             {
-                storeLocker.checkLock( directory );
+                storeLocker.checkLock();
                 fail();
             }
             catch ( StoreLockException e )
@@ -74,7 +73,7 @@ public class StoreLockerTest
                 numberOfCallesToOpen = fileSystemAbstraction.getNumberOfCallsToOpen();
 
                 // Try to grab lock a second time
-                storeLocker.checkLock( directory );
+                storeLocker.checkLock();
             }
         }
         catch ( StoreLockException e )
@@ -90,12 +89,43 @@ public class StoreLockerTest
     @Test
     public void shouldAllowMultipleCallsToCheckLock() throws Exception
     {
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get() ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get(), target.directory( "unused" ) ) )
         {
-            File directory = target.directory( "unused" );
-            storeLocker.checkLock( directory );
-            storeLocker.checkLock( directory );
+            storeLocker.checkLock();
+            storeLocker.checkLock();
         }
+    }
+
+    @Test
+    public void keepLockWhenOtherTryToTakeLock() throws Exception
+    {
+        File directory = target.directory( "unused" );
+        DefaultFileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
+        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, directory );
+        storeLocker.checkLock();
+
+        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
+        {
+            storeLocker1.checkLock();
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            // Expected
+        }
+
+        // Initial locker should still have a valid lock
+        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
+        {
+            storeLocker1.checkLock();
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            // Expected
+        }
+
+        storeLocker.close();
     }
 
     @Test
@@ -110,9 +140,9 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            storeLocker.checkLock( target.directory( "unused" ) );
+            storeLocker.checkLock();
 
             // Ok
         }
@@ -134,9 +164,9 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            storeLocker.checkLock( target.directory( "unused" ) );
+            storeLocker.checkLock();
             // Ok
         }
     }
@@ -161,9 +191,9 @@ public class StoreLockerTest
 
         File storeDir = target.directory( "unused" );
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
         {
-            storeLocker.checkLock( storeDir );
+            storeLocker.checkLock();
             fail();
         }
         catch ( StoreLockException e )
@@ -195,9 +225,9 @@ public class StoreLockerTest
 
         File storeDir = target.directory( "unused" );
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
         {
-            storeLocker.checkLock( storeDir );
+            storeLocker.checkLock();
             fail();
         }
         catch ( StoreLockException e )
@@ -235,9 +265,9 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            storeLocker.checkLock( target.directory( "unused" ) );
+            storeLocker.checkLock();
             fail();
         }
         catch ( StoreLockException e )

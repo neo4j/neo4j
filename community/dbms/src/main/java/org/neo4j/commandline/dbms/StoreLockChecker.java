@@ -36,10 +36,10 @@ class StoreLockChecker implements Closeable
     private final FileSystemAbstraction fileSystem;
     private final StoreLocker storeLocker;
 
-    private StoreLockChecker( FileSystemAbstraction fileSystem )
+    private StoreLockChecker( FileSystemAbstraction fileSystem, File storeDirectory )
     {
         this.fileSystem = fileSystem;
-        this.storeLocker = new StoreLocker( fileSystem );
+        this.storeLocker = new StoreLocker( fileSystem, storeDirectory );
     }
 
     /**
@@ -58,8 +58,8 @@ class StoreLockChecker implements Closeable
         {
             if ( Files.isWritable( lockFile ) )
             {
-                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction() );
-                storeLocker.checkLock( databaseDirectory.toFile() );
+                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(), databaseDirectory.toFile());
+                storeLocker.checkLock();
                 return storeLocker;
             }
             else
@@ -72,9 +72,9 @@ class StoreLockChecker implements Closeable
         };
     }
 
-    private void checkLock( File file )
+    private void checkLock()
     {
-        storeLocker.checkLock( file );
+        storeLocker.checkLock();
     }
 
     @Override

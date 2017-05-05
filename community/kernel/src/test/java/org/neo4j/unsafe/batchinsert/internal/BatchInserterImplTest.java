@@ -87,9 +87,9 @@ public class BatchInserterImplTest
         // Given
         File parent = testDirectory.graphDbDir();
         try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-              StoreLocker lock = new StoreLocker( fileSystemAbstraction ) )
+              StoreLocker lock = new StoreLocker( fileSystemAbstraction, parent ) )
         {
-            lock.checkLock( parent );
+            lock.checkLock();
 
             // Then
             expected.expect( StoreLockException.class );

@@ -157,7 +157,8 @@ public class PlatformModule
 
         config.setLogger( logging.getInternalLog( Config.class ) );
 
-        life.add( dependencies.satisfyDependency( new StoreLockerLifecycleAdapter( new StoreLocker( fileSystem ), storeDir ) ));
+        life.add( dependencies.satisfyDependency( new StoreLockerLifecycleAdapter( new StoreLocker( fileSystem,
+                storeDir) ) ));
 
         new JvmChecker( logging.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
