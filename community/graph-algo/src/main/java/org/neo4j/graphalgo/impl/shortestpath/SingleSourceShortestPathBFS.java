@@ -44,13 +44,13 @@ public class SingleSourceShortestPathBFS implements
     protected Node startNode;
     protected Direction relationShipDirection;
     protected RelationshipType[] relationShipTypes;
-    protected HashMap<Node,Integer> distances = new HashMap<Node,Integer>();;
-    protected HashMap<Node,List<Relationship>> predecessors = new HashMap<Node,List<Relationship>>();
+    protected HashMap<Node,Integer> distances = new HashMap<>();
+    protected HashMap<Node,List<Relationship>> predecessors = new HashMap<>();
     // Limits
     protected long maxDepth = Long.MAX_VALUE;
     protected long depth = 0;
-    LinkedList<Node> currentLayer = new LinkedList<Node>();;
-    LinkedList<Node> nextLayer = new LinkedList<Node>();
+    LinkedList<Node> currentLayer = new LinkedList<>();
+    LinkedList<Node> nextLayer = new LinkedList<>();
 
     public SingleSourceShortestPathBFS( Node startNode,
         Direction relationShipDirection, RelationshipType... relationShipTypes )
@@ -84,10 +84,10 @@ public class SingleSourceShortestPathBFS implements
      */
     public void reset()
     {
-        distances = new HashMap<Node,Integer>();
-        predecessors = new HashMap<Node,List<Relationship>>();
-        currentLayer = new LinkedList<Node>();
-        nextLayer = new LinkedList<Node>();
+        distances = new HashMap<>();
+        predecessors = new HashMap<>();
+        currentLayer = new LinkedList<>();
+        nextLayer = new LinkedList<>();
         currentLayer.add( startNode );
         depth = 0;
     }
@@ -224,7 +224,7 @@ public class SingleSourceShortestPathBFS implements
                 return false;
             }
             currentLayer = nextLayer;
-            nextLayer = new LinkedList<Node>();
+            nextLayer = new LinkedList<>();
             ++depth;
         }
         Node node = currentLayer.poll();
@@ -253,7 +253,7 @@ public class SingleSourceShortestPathBFS implements
                         .get( targetNode );
                     if ( targetPreds == null )
                     {
-                        targetPreds = new LinkedList<Relationship>();
+                        targetPreds = new LinkedList<>();
                         predecessors.put( targetNode, targetPreds );
                     }
                     targetPreds.add( relationship );
@@ -294,7 +294,7 @@ public class SingleSourceShortestPathBFS implements
      */
     public List<Node> getPredecessorNodes( Node node )
     {
-        List<Node> result = new LinkedList<Node>();
+        List<Node> result = new LinkedList<>();
         List<Relationship> predecessorRelationShips = predecessors.get( node );
         if ( predecessorRelationShips == null
             || predecessorRelationShips.size() == 0 )
