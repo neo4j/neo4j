@@ -27,6 +27,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 import java.nio.file.Path;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,6 +68,7 @@ public class PortRepositoryIT
     }
 
     @Test
+    @Ignore
     public void shouldNotInterfereWithOtherRepositories() throws Exception
     {
         Path directory1 = testDirectory.cleanDirectory( "port-repository-1" ).toPath();
@@ -86,6 +88,7 @@ public class PortRepositoryIT
     }
 
     @Test
+    @Ignore
     public void shouldNotOverrun() throws Exception
     {
         Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
