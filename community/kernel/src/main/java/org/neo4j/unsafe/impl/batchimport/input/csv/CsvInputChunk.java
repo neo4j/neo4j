@@ -37,18 +37,28 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.String.format;
 
+/**
+ * Knows how to interpret raw character data into entities according to a {@link Header}.
+ */
 public class CsvInputChunk implements InputChunk
 {
-    private CharSeeker seeker;
-    private Header header;
     private final Mark mark = new Mark();
     private final IdType idType;
     private final int delimiter;
     private final Collector badCollector;
-    private Entry[] entries;
-    private long lineNumber;
     private final Extractor<String> stringExtractor;
     private final ProcessingChunk processingChunk;
+
+    // Set in #initialize
+    private CharSeeker seeker;
+    private Header header;
+    private Entry[] entries;
+    private Decorator decorator;
+
+    // Set as #next is called
+    private long lineNumber;
+    private InputEntityVisitor previousVisitor;
+    private InputEntityVisitor visitor;
 
     public CsvInputChunk( IdType idType, int delimiter, Collector badCollector, Extractors extractors,
             ProcessingChunk processingChunk )
@@ -60,16 +70,33 @@ public class CsvInputChunk implements InputChunk
         this.stringExtractor = extractors.string();
     }
 
-    void initialize( CharSeeker seeker, Header header )
+    /**
+     * Called every time this chunk is updated with new data. Potentially this data is from a different
+     * stream of data than the previous, therefore the header and decorator is also updated.
+     *
+     * @param seeker {@link CharSeeker} able to seek through the data.
+     * @param header {@link Header} spec to read data according to.
+     * @param decorator additional decoration of the {@link InputEntityVisitor} coming into
+     * {@link #next(InputEntityVisitor)}.
+     */
+    void initialize( CharSeeker seeker, Header header, Decorator decorator )
     {
         this.seeker = seeker;
         this.header = header;
         this.entries = header.entries();
+        this.decorator = decorator;
+        this.visitor = null;
     }
 
     @Override
-    public boolean next( InputEntityVisitor visitor ) throws IOException
+    public boolean next( InputEntityVisitor nakedVisitor ) throws IOException
     {
+        // TODO lazy decorator initialization here, is it a hack?
+        if ( visitor == null || nakedVisitor != previousVisitor )
+        {
+            decorateVisitor( nakedVisitor );
+        }
+
         int i = 0;
         try
         {
@@ -191,6 +218,12 @@ public class CsvInputChunk implements InputChunk
         }
 
         return true;
+    }
+
+    private void decorateVisitor( InputEntityVisitor nakedVisitor )
+    {
+        visitor = decorator.apply( nakedVisitor );
+        previousVisitor = nakedVisitor;
     }
 
     protected ProcessingChunk processingChunk()

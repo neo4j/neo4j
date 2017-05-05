@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Panicable;
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator extends Closeable, SourceTraceability, Parallelizable, Panicable
+public interface InputIterator extends Closeable, SourceTraceability, Panicable
 {
     InputChunk newChunk();
 
@@ -121,12 +121,6 @@ public interface InputIterator extends Closeable, SourceTraceability, Paralleliz
         public boolean next( InputChunk chunk ) throws IOException
         {
             return actual.next( chunk );
-        }
-
-        @Override
-        public int processors( int delta )
-        {
-            return actual.processors( delta );
         }
 
         @Override

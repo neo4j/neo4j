@@ -277,6 +277,9 @@ public class EncodingIdMapper implements IdMapper
             int numberOfCollisions = detectAndMarkCollisions( progress, inputIdLookup );
             if ( numberOfCollisions > 0 )
             {
+                collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
+                collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
+
                 // Detect input id duplicates within the same group, with source information, line number and the works
                 detectDuplicateInputIds( radix, numberOfCollisions, collector, progress );
 

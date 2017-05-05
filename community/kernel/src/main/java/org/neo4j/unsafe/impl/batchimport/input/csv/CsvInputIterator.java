@@ -140,12 +140,13 @@ public class CsvInputIterator extends InputIterator.Adapter
         private final Header header;
         private boolean firstReturned;
         private final CharSeeker firstSeeker;
+        private final Decorator decorator;
 
         public Single( DataFactory dataFactory ) throws IOException
         {
             Data data = dataFactory.create( config );
             CharReadable stream = data.stream();
-            // TODO install decorator too
+            decorator = data.decorator();
 
             chunker = new CharReadableChunker( stream, config.bufferSize() );
             ProcessingChunk firstChunk = chunker.newChunk();
@@ -156,6 +157,8 @@ public class CsvInputIterator extends InputIterator.Adapter
 
         public boolean next( InputChunk chunk ) throws IOException
         {
+            // TODO Decoration has to happen in here!
+
             if ( !firstReturned )
             {
                 firstReturned = true;
@@ -174,7 +177,7 @@ public class CsvInputIterator extends InputIterator.Adapter
         private boolean initialized( InputChunk chunk, CharSeeker seeker )
         {
             CsvInputChunk csvChunk = (CsvInputChunk) chunk;
-            csvChunk.initialize( seeker, header.clone() );
+            csvChunk.initialize( seeker, header.clone(), decorator );
             return true;
         }
 
