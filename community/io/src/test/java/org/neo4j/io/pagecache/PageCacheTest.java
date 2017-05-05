@@ -59,6 +59,7 @@ import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.pagecache.AdversarialPagedFile;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -3744,7 +3745,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 };
             }
         };
-        factory.setFileSystemAbstraction( fs );
+        factory.open( fs, Configuration.EMPTY );
         return factory;
     }
 
@@ -3960,7 +3961,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.setFileSystemAbstraction( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         File file = file( "a" );
@@ -3977,7 +3978,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
-        swapperFactory.setFileSystemAbstraction( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         File file = file( "a" );
