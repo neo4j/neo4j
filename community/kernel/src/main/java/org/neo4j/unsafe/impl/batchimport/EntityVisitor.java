@@ -1,0 +1,150 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.unsafe.impl.batchimport;
+
+import java.util.Arrays;
+
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.id.IdRangeIterator;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
+
+abstract class EntityVisitor extends InputEntityVisitor.Adapter
+{
+    private final BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
+    private final PropertyStore propertyStore;
+    private final PropertyRecord propertyRecord;
+    private PropertyBlock propertyBlocks[] = new PropertyBlock[100];
+    private int propertyBlocksCursor;
+    private IdRangeIterator propertyIds;
+
+    protected EntityVisitor( PropertyStore propertyStore,
+            BatchingPropertyKeyTokenRepository propertyKeyTokenRepository )
+    {
+        this.propertyStore = propertyStore;
+        this.propertyKeyTokenRepository = propertyKeyTokenRepository;
+        for ( int i = 0; i < propertyBlocks.length; i++ )
+        {
+            propertyBlocks[i] = new PropertyBlock();
+        }
+        this.propertyRecord = propertyStore.newRecord();
+    }
+
+    @Override
+    public boolean property( String key, Object value )
+    {
+        encodeProperty( nextPropertyBlock(), key, value );
+        return true;
+    }
+
+    @Override
+    public boolean propertyId( long nextProp )
+    {
+        return super.propertyId( nextProp );
+    }
+
+    @Override
+    public void endOfEntity()
+    {
+        propertyBlocksCursor = 0;
+    }
+
+    private PropertyBlock nextPropertyBlock()
+    {
+        if ( propertyBlocksCursor == propertyBlocks.length )
+        {
+            propertyBlocks = Arrays.copyOf( propertyBlocks, propertyBlocksCursor * 2 );
+            for ( int i = propertyBlocksCursor; i < propertyBlocks.length; i++ )
+            {
+                propertyBlocks[i] = new PropertyBlock();
+            }
+        }
+        return propertyBlocks[propertyBlocksCursor++];
+    }
+
+    private void encodeProperty( PropertyBlock block, String key, Object value )
+    {
+        // TODO: dynamic record ids, batching of those
+        propertyStore.encodeValue( block, propertyKeyTokenRepository.getOrCreateId( key ), value );
+    }
+
+    protected long createAndWritePropertyChain()
+    {
+        if ( propertyBlocksCursor == 0 )
+        {
+            return Record.NO_NEXT_PROPERTY.longValue();
+        }
+
+        PropertyRecord currentRecord = propertyRecord( nextPropertyId() );
+        long firstRecordId = currentRecord.getId();
+        for ( int i = 0; i < propertyBlocksCursor; i++ )
+        {
+            PropertyBlock block = propertyBlocks[i];
+            if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
+            {
+                // This record is full or couldn't fit this block, write it to property store
+                long nextPropertyId = nextPropertyId();
+                long prevId = currentRecord.getId();
+                currentRecord.setNextProp( nextPropertyId );
+                propertyStore.updateRecord( currentRecord );
+                currentRecord = propertyRecord( nextPropertyId );
+                currentRecord.setPrevProp( prevId );
+            }
+
+            // Add this block, there's room for it
+            currentRecord.addPropertyBlock( block );
+        }
+
+        if ( currentRecord.size() > 0 )
+        {
+            propertyStore.updateRecord( currentRecord );
+        }
+
+        return firstRecordId;
+    }
+
+    protected abstract PrimitiveRecord primitiveRecord();
+
+    private PropertyRecord propertyRecord( long nextPropertyId )
+    {
+        propertyRecord.clear();
+        propertyRecord.setInUse( true );
+        propertyRecord.setId( nextPropertyId );
+        primitiveRecord().setIdTo( propertyRecord );
+        propertyRecord.setCreated();
+        return propertyRecord;
+    }
+
+    private long nextPropertyId()
+    {
+        long id;
+        if ( propertyIds == null || (id = propertyIds.next()) == -1 )
+        {
+            propertyIds = new IdRangeIterator( propertyStore.nextIdBatch( 10_000 ) );
+            id = propertyIds.next();
+        }
+        return id;
+    }
+}
