@@ -84,7 +84,7 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
         private final int typeId;
         private final long count;
 
-        RelationshipTypeCount( int typeId, long count )
+        public RelationshipTypeCount( int typeId, long count )
         {
             this.typeId = typeId;
             this.count = count;

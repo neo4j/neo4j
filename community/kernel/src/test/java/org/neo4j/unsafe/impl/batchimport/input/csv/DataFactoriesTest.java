@@ -31,8 +31,6 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -179,7 +177,7 @@ public class DataFactoriesTest
         // GIVEN
         final Reader firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
         final Reader secondSource = new StringReader( "0\tThe node\t123456789" );
-        DataFactory<InputNode> dataFactory = data( value -> value, () ->
+        DataFactory dataFactory = data( value -> value, () ->
         {
             try
             {
