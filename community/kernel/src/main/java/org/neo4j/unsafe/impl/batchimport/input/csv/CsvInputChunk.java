@@ -189,6 +189,7 @@ public class CsvInputChunk implements InputChunk
         }
         catch ( final RuntimeException e )
         {
+            e.printStackTrace();
             String stringValue = null;
             try
             {

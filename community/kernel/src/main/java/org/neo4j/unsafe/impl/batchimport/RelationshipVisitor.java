@@ -36,6 +36,7 @@ public class RelationshipVisitor extends EntityVisitor
     private final IdMapper idMapper;
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord relationshipRecord;
+    private final BatchingIdGetter relationshipIds;
 
     protected RelationshipVisitor( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper )
@@ -45,6 +46,7 @@ public class RelationshipVisitor extends EntityVisitor
         this.idMapper = idMapper;
         this.relationshipStore = stores.getRelationshipStore();
         this.relationshipRecord = relationshipStore.newRecord();
+        this.relationshipIds = new BatchingIdGetter( relationshipStore );
         relationshipRecord.setInUse( true );
     }
 
@@ -112,6 +114,7 @@ public class RelationshipVisitor extends EntityVisitor
     {
         if ( relationshipRecord.inUse() )
         {
+            relationshipRecord.setId( relationshipIds.next() );
             relationshipRecord.setNextProp( createAndWritePropertyChain() );
             relationshipStore.updateRecord( relationshipRecord );
         }

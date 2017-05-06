@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -38,7 +37,7 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter
     private final PropertyRecord propertyRecord;
     private PropertyBlock propertyBlocks[] = new PropertyBlock[100];
     private int propertyBlocksCursor;
-    private IdRangeIterator propertyIds;
+    private final BatchingIdGetter propertyIds;
 
     protected EntityVisitor( PropertyStore propertyStore,
             BatchingPropertyKeyTokenRepository propertyKeyTokenRepository )
@@ -50,6 +49,7 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter
             propertyBlocks[i] = new PropertyBlock();
         }
         this.propertyRecord = propertyStore.newRecord();
+        this.propertyIds = new BatchingIdGetter( propertyStore );
     }
 
     @Override
@@ -97,7 +97,7 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter
             return Record.NO_NEXT_PROPERTY.longValue();
         }
 
-        PropertyRecord currentRecord = propertyRecord( nextPropertyId() );
+        PropertyRecord currentRecord = propertyRecord( propertyIds.next() );
         long firstRecordId = currentRecord.getId();
         for ( int i = 0; i < propertyBlocksCursor; i++ )
         {
@@ -105,7 +105,7 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter
             if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
             {
                 // This record is full or couldn't fit this block, write it to property store
-                long nextPropertyId = nextPropertyId();
+                long nextPropertyId = propertyIds.next();
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
                 propertyStore.updateRecord( currentRecord );
@@ -135,16 +135,5 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter
         primitiveRecord().setIdTo( propertyRecord );
         propertyRecord.setCreated();
         return propertyRecord;
-    }
-
-    private long nextPropertyId()
-    {
-        long id;
-        if ( propertyIds == null || (id = propertyIds.next()) == -1 )
-        {
-            propertyIds = new IdRangeIterator( propertyStore.nextIdBatch( 10_000 ) );
-            id = propertyIds.next();
-        }
-        return id;
     }
 }

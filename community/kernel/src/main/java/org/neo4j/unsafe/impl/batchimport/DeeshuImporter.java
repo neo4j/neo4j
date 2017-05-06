@@ -66,14 +66,15 @@ public class DeeshuImporter
               Collector collector = new BadCollector( System.out, 0, 0 ); )
         {
             fileSystemAbstraction.deleteRecursively( database );
-            DataFactory inputNodeData = data( NO_DECORATOR, defaultCharset(),
-                    new File( "K:/csv/nodes.csv" ) );
+            DataFactory nodeData = data( NO_DECORATOR, defaultCharset(), new File( "K:/csv/nodes.csv" ) );
+            DataFactory relationshipData = data( NO_DECORATOR, defaultCharset(),
+                    new File( "K:/csv/relationships2.csv" ) );
             IdType idType = IdType.STRING;
             Input input = new CsvInput(
                     // nodes
-                    datas( inputNodeData ), defaultFormatNodeFileHeader(),
+                    datas( nodeData ), defaultFormatNodeFileHeader(),
                     // relationships
-                    datas(), defaultFormatRelationshipFileHeader(),
+                    datas( relationshipData ), defaultFormatRelationshipFileHeader(),
                     idType, configuration, collector );
 
             Config config = Config.defaults();

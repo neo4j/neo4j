@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -36,7 +35,7 @@ public class NodeVisitor extends EntityVisitor
     private final NodeStore nodeStore;
     private final NodeRecord nodeRecord;
     private final IdMapper idMapper;
-    private IdRangeIterator nodeIds;
+    private final BatchingIdGetter nodeIds;
 
     public NodeVisitor( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingLabelTokenRepository labelTokenRepository, IdMapper idMapper )
@@ -46,6 +45,7 @@ public class NodeVisitor extends EntityVisitor
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
         this.nodeRecord = nodeStore.newRecord();
+        this.nodeIds = new BatchingIdGetter( nodeStore );
         nodeRecord.setInUse( true );
     }
 
@@ -58,7 +58,7 @@ public class NodeVisitor extends EntityVisitor
     @Override
     public boolean id( String id, Group group )
     {
-        long nodeId = nextNodeId();
+        long nodeId = nodeIds.next();
         nodeRecord.setId( nodeId );
         idMapper.put( id, nodeId, group );
         return true;
@@ -87,17 +87,6 @@ public class NodeVisitor extends EntityVisitor
         nodeStore.updateRecord( nodeRecord );
         nodeRecord.clear();
         super.endOfEntity();
-    }
-
-    private long nextNodeId()
-    {
-        long id;
-        if ( nodeIds == null || (id = nodeIds.next()) == -1 )
-        {
-            nodeIds = new IdRangeIterator( nodeStore.nextIdBatch( 10_000 ) );
-            id = nodeIds.next();
-        }
-        return id;
     }
 
     @Override
