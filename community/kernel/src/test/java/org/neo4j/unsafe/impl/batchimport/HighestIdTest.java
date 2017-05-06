@@ -45,7 +45,7 @@ public class HighestIdTest
     {
         // GIVEN
         Race race = new Race();
-        HighestId highestId = new HighestId();
+        HighestId highestId = new HighestId( 0 );
         int threads = Runtime.getRuntime().availableProcessors();
         CountDownLatch latch = new CountDownLatch( threads );
         AtomicLongArray highestIds = new AtomicLongArray( threads );

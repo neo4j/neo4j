@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution.Client;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -37,9 +38,11 @@ public class RelationshipVisitor extends EntityVisitor
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord relationshipRecord;
     private final BatchingIdGetter relationshipIds;
+    private final Client typeCounts;
 
     protected RelationshipVisitor( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
-            BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper )
+            BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper,
+            RelationshipTypeDistribution typeDistribution )
     {
         super( stores.getPropertyStore(), propertyKeyTokenRepository );
         this.relationshipTypeTokenRepository = relationshipTypeTokenRepository;
@@ -47,6 +50,7 @@ public class RelationshipVisitor extends EntityVisitor
         this.relationshipStore = stores.getRelationshipStore();
         this.relationshipRecord = relationshipStore.newRecord();
         this.relationshipIds = new BatchingIdGetter( relationshipStore );
+        this.typeCounts = typeDistribution.newClient();
         relationshipRecord.setInUse( true );
     }
 
@@ -65,6 +69,7 @@ public class RelationshipVisitor extends EntityVisitor
     @Override
     public boolean startId( String id, Group group )
     {
+        // TODO: increment in NodeRelationshipCache
         long nodeId = idMapper.get( id, group );
         if ( nodeId == ID_NOT_FOUND )
         {
@@ -85,6 +90,7 @@ public class RelationshipVisitor extends EntityVisitor
     @Override
     public boolean endId( String id, Group group )
     {
+        // TODO: increment in NodeRelationshipCache
         long nodeId = idMapper.get( id, group );
         if ( nodeId == ID_NOT_FOUND )
         {
@@ -97,16 +103,18 @@ public class RelationshipVisitor extends EntityVisitor
     }
 
     @Override
-    public boolean type( int type )
+    public boolean type( int typeId )
     {
-        throw new UnsupportedOperationException();
+        relationshipRecord.setType( typeId );
+        typeCounts.increment( typeId );
+        return true;
     }
 
     @Override
     public boolean type( String type )
     {
-        relationshipRecord.setType( relationshipTypeTokenRepository.getOrCreateId( type ) );
-        return true;
+        int typeId = relationshipTypeTokenRepository.getOrCreateId( type );
+        return type( typeId );
     }
 
     @Override
@@ -123,5 +131,11 @@ public class RelationshipVisitor extends EntityVisitor
         relationshipRecord.clear();
         relationshipRecord.setInUse( true );
         super.endOfEntity();
+    }
+
+    @Override
+    public void close()
+    {
+        typeCounts.close();
     }
 }

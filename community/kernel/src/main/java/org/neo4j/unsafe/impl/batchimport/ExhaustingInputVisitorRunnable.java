@@ -25,9 +25,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 class ExhaustingInputVisitorRunnable implements Runnable
 {
     private final InputIterator data;
-    private final InputEntityVisitor visitor;
+    private final EntityVisitor visitor;
 
-    public ExhaustingInputVisitorRunnable( InputIterator data, InputEntityVisitor visitor )
+    public ExhaustingInputVisitorRunnable( InputIterator data, EntityVisitor visitor )
     {
         this.data = data;
         this.visitor = visitor;
@@ -47,6 +47,10 @@ class ExhaustingInputVisitorRunnable implements Runnable
         {
             e.printStackTrace();
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            visitor.close();
         }
     }
 }

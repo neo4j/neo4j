@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
-abstract class EntityVisitor extends InputEntityVisitor.Adapter
+abstract class EntityVisitor extends InputEntityVisitor.Adapter implements AutoCloseable
 {
     private final BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
     private final PropertyStore propertyStore;
@@ -135,5 +135,10 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter
         primitiveRecord().setIdTo( propertyRecord );
         propertyRecord.setCreated();
         return propertyRecord;
+    }
+
+    @Override
+    public void close()
+    {
     }
 }
