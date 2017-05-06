@@ -101,7 +101,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
@@ -458,8 +458,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat );
-            InputIterable nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
-            InputIterable relationships =
+            InputIterator nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
+            InputIterator relationships =
                     legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
@@ -644,13 +644,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 config, progressMonitor );
     }
 
-    private InputIterable legacyRelationshipsAsInput( NeoStores legacyStore,
+    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore,
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
         final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
-        return new StoreScanAsInputIterable<RelationshipRecord>( store )
+        return new StoreScanAsInputIterator<RelationshipRecord>( store )
         {
             @Override
             protected boolean visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
@@ -665,14 +665,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private InputIterable legacyNodesAsInput( NeoStores legacyStore,
+    private InputIterator legacyNodesAsInput( NeoStores legacyStore,
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         NodeStore store = legacyStore.getNodeStore();
         final BiConsumer<InputNode,NodeRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
 
-        return new StoreScanAsInputIterable<NodeRecord>( store )
+        return new StoreScanAsInputIterator<NodeRecord>( store )
         {
             @Override
             protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )

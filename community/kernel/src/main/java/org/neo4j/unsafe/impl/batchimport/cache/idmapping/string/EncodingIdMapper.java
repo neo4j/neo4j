@@ -28,7 +28,6 @@ import java.util.function.LongFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.HighestId;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
@@ -55,12 +54,13 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelS
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
- * but {@link #needsPreparation() needs} {@link #prepare(InputIterable, Collector, ProgressListener) preparation}
+ * but {@link #needsPreparation() needs} {@link #prepare(LongFunction, Collector, ProgressListener) preparation}
  *
  * in order to {@link #get(Object, Group) get} ids back later.
  *
- * In the {@link #prepare(InputIterable, Collector, ProgressListener) preparation phase} the added entries are sorted according to a number representation
- * of each input value and {@link #get(Object, Group)} does simple binary search to find the correct one.
+ * In the {@link #prepare(LongFunction, Collector, ProgressListener) preparation phase} the added entries are
+ * sorted according to a number representation of each input value and {@link #get(Object, Group)} does simple
+ * binary search to find the correct one.
  *
  * The implementation is space-efficient, much more so than using, say, a {@link HashMap}.
  *

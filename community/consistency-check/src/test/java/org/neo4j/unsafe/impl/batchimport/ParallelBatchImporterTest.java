@@ -145,28 +145,20 @@ public class ParallelBatchImporterTest
     private final InputIdGenerator inputIdGenerator;
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;
-    private final boolean multiPassIterators;
 
     @Parameterized.Parameters(name = "{0},{1},{3}")
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
-
                 // synchronous I/O, actual node id input
                 new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), true},
                 // synchronous I/O, string id input
-                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true},
-                // synchronous I/O, string id input
-                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), false},
-                // extra slow parallel I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), false}
+                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true}
         );
     }
 
-    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator,
-            IdMapper idMapper, IdGenerator idGenerator, boolean multiPassIterators )
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator )
     {
-        this.multiPassIterators = multiPassIterators;
         this.inputIdGenerator = inputIdGenerator;
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
@@ -512,125 +504,85 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private InputIterable<InputRelationship> relationships( final long randomSeed, final long count,
+    private InputIterator relationships( final long randomSeed, final long count,
             final InputIdGenerator idGenerator, final IdGroupDistribution groups )
     {
-        return new InputIterable<InputRelationship>()
+        return new InputIterator()
         {
-            private int calls;
+            private final Random random = new Random( randomSeed );
+            private final Randoms randoms = new Randoms( random, Randoms.DEFAULT );
+            private int cursor;
+            private final MutableLong nodeIndex = new MutableLong( -1 );
 
             @Override
-            public InputIterator<InputRelationship> iterator()
+            protected InputRelationship fetchNextOrNull()
             {
-                calls++;
-                assertTrue( "Unexpected use of input iterator " + multiPassIterators + ", " + calls,
-                        multiPassIterators || (!multiPassIterators && calls == 1) );
-
-                // we still do the reset, even if tell the batch importer to not use use this iterable multiple times,
-                // since we use it to compare the imported data against after the import has been completed.
-                return new SimpleInputIterator<InputRelationship>( "test relationships" )
+                if ( cursor < count )
                 {
-                    private final Random random = new Random( randomSeed );
-                    private final Randoms randoms = new Randoms( random, Randoms.DEFAULT );
-                    private int cursor;
-                    private final MutableLong nodeIndex = new MutableLong( -1 );
-
-                    @Override
-                    protected InputRelationship fetchNextOrNull()
+                    Object[] properties = randomProperties( randoms, "Name " + cursor );
+                    try
                     {
-                        if ( cursor < count )
+                        Object startNode = idGenerator.randomExisting( random, nodeIndex );
+                        Group startNodeGroup = groups.groupOf( nodeIndex.longValue() );
+                        Object endNode = idGenerator.randomExisting( random, nodeIndex );
+                        Group endNodeGroup = groups.groupOf( nodeIndex.longValue() );
+
+                        // miss some
+                        startNode = idGenerator.miss( random, startNode, 0.001f );
+                        endNode = idGenerator.miss( random, endNode, 0.001f );
+
+                        String type = idGenerator.randomType( random );
+                        if ( random.nextFloat() < 0.00005 )
                         {
-                            Object[] properties = randomProperties( randoms, "Name " + cursor );
-                            try
-                            {
-                                Object startNode = idGenerator.randomExisting( random, nodeIndex );
-                                Group startNodeGroup = groups.groupOf( nodeIndex.longValue() );
-                                Object endNode = idGenerator.randomExisting( random, nodeIndex );
-                                Group endNodeGroup = groups.groupOf( nodeIndex.longValue() );
-
-                                // miss some
-                                startNode = idGenerator.miss( random, startNode, 0.001f );
-                                endNode = idGenerator.miss( random, endNode, 0.001f );
-
-                                String type = idGenerator.randomType( random );
-                                if ( random.nextFloat() < 0.00005 )
-                                {
-                                    // Let there be a small chance of introducing a one-off relationship
-                                    // with a type that no, or at least very few, other relationships have.
-                                    type += "_odd";
-                                }
-                                return new InputRelationship(
-                                        sourceDescription, itemNumber, itemNumber,
-                                        properties, null,
-                                        startNodeGroup, startNode, endNodeGroup, endNode,
-                                        type, null );
-                            }
-                            finally
-                            {
-                                cursor++;
-                            }
+                            // Let there be a small chance of introducing a one-off relationship
+                            // with a type that no, or at least very few, other relationships have.
+                            type += "_odd";
                         }
-                        return null;
+                        return new InputRelationship(
+                                sourceDescription, itemNumber, itemNumber,
+                                properties, null,
+                                startNodeGroup, startNode, endNodeGroup, endNode,
+                                type, null );
                     }
-                };
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return multiPassIterators;
+                    finally
+                    {
+                        cursor++;
+                    }
+                }
+                return null;
             }
         };
     }
 
-    private InputIterable<InputNode> nodes( final long randomSeed, final long count,
+    private InputIterator nodes( final long randomSeed, final long count,
             final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups )
     {
-        return new InputIterable<InputNode>()
+        return new SimpleInputIterator<InputNode>( "test nodes" )
         {
-            private int calls;
+            private final Random random = new Random( randomSeed );
+            private final Randoms randoms = new Randoms( random, Randoms.DEFAULT );
+            private int cursor;
 
             @Override
-            public InputIterator<InputNode> iterator()
+            protected InputNode fetchNextOrNull()
             {
-                calls++;
-                assertTrue( "Unexpected use of input iterator " + multiPassIterators + ", " + calls,
-                        multiPassIterators || (!multiPassIterators && calls == 1) );
-
-                return new SimpleInputIterator<InputNode>( "test nodes" )
+                if ( cursor < count )
                 {
-                    private final Random random = new Random( randomSeed );
-                    private final Randoms randoms = new Randoms( random, Randoms.DEFAULT );
-                    private int cursor;
-
-                    @Override
-                    protected InputNode fetchNextOrNull()
+                    Object nodeId = inputIdGenerator.nextNodeId( random );
+                    Object[] properties = randomProperties( randoms, nodeId );
+                    String[] labels = randoms.selection( TOKENS, 0, TOKENS.length, true );
+                    try
                     {
-                        if ( cursor < count )
-                        {
-                            Object nodeId = inputIdGenerator.nextNodeId( random );
-                            Object[] properties = randomProperties( randoms, nodeId );
-                            String[] labels = randoms.selection( TOKENS, 0, TOKENS.length, true );
-                            try
-                            {
-                                Group group = groups.groupOf( cursor );
-                                return new InputNode( sourceDescription, itemNumber, itemNumber, group,
-                                        nodeId, properties, null, labels, null );
-                            }
-                            finally
-                            {
-                                cursor++;
-                            }
-                        }
-                        return null;
+                        Group group = groups.groupOf( cursor );
+                        return new InputNode( sourceDescription, itemNumber, itemNumber, group,
+                                nodeId, properties, null, labels, null );
                     }
-                };
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return multiPassIterators;
+                    finally
+                    {
+                        cursor++;
+                    }
+                }
+                return null;
             }
         };
     }

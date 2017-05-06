@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -30,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
  * {@link EncodingIdMapper} is an index where arbitrary ids, be it {@link String} or {@code long} or whatever
  * can be added and mapped to an internal (node) {@code long} id. The order in which ids are added can be
  * any order and so in the end when all ids have been added the index goes through a
- * {@link IdMapper#prepare(InputIterable, Collector, ProgressListener) prepare phase} where these ids are sorted
+ * {@link IdMapper#prepare(java.util.function.LongFunction, Collector, ProgressListener) prepare phase} where these ids are sorted
  * so that {@link IdMapper#get(Object, Group)} can execute efficiently later on.
  * <p>
  * In that sorting the ids aren't moved, but instead a {@link Tracker} created where these moves are recorded

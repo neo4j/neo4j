@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
@@ -34,70 +33,73 @@ import static java.lang.Long.min;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
- * An {@link InputIterable} backed by a {@link RecordStore}, iterating over all used records.
+ * An {@link InputIterator} backed by a {@link RecordStore}, iterating over all used records.
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class StoreScanAsInputIterable<RECORD extends AbstractBaseRecord> implements InputIterable
+abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> implements InputIterator
 {
     private final RecordStore<RECORD> store;
     private final StoreSourceTraceability traceability;
     private final int batchSize;
+    private final long highId;
+    private long id;
 
-    StoreScanAsInputIterable( RecordStore<RECORD> store )
+    StoreScanAsInputIterator( RecordStore<RECORD> store )
     {
         this.store = store;
         this.traceability = new StoreSourceTraceability( store.toString(), store.getRecordSize() );
         this.batchSize = store.getRecordsPerPage() * 10;
+        this.highId = store.getHighId();
     }
 
     @Override
-    public InputIterator iterator()
+    public String sourceDescription()
     {
-        return new InputIterator.Adapter()
+        return traceability.sourceDescription();
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return traceability.lineNumber();
+    }
+
+    @Override
+    public long position()
+    {
+        return traceability.position();
+    }
+
+    @Override
+    public InputChunk newChunk()
+    {
+        RecordCursor<RECORD> cursor = store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
+        return new StoreScanChunk( cursor );
+    }
+
+    @Override
+    public void receivePanic( Throwable cause )
+    {
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+    }
+
+    @Override
+    public synchronized boolean next( InputChunk chunk ) throws IOException
+    {
+        if ( id >= highId )
         {
-            private final long highId = store.getHighId();
-            private long id;
-
-            @Override
-            public String sourceDescription()
-            {
-                return traceability.sourceDescription();
-            }
-
-            @Override
-            public long lineNumber()
-            {
-                return traceability.lineNumber();
-            }
-
-            @Override
-            public long position()
-            {
-                return traceability.position();
-            }
-
-            @Override
-            public InputChunk newChunk()
-            {
-                RecordCursor<RECORD> cursor = store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
-                return new StoreScanChunk( cursor );
-            }
-
-            @Override
-            public synchronized boolean next( InputChunk chunk ) throws IOException
-            {
-                if ( id >= highId )
-                {
-                    return false;
-                }
-                long startId = id;
-                id = min( highId, startId + batchSize );
-                ((StoreScanChunk)chunk).initialize( startId, id );
-                traceability.atId( startId );
-                return true;
-            }
-        };
+            return false;
+        }
+        long startId = id;
+        id = min( highId, startId + batchSize );
+        ((StoreScanChunk)chunk).initialize( startId, id );
+        traceability.atId( startId );
+        return true;
     }
 
     private class StoreScanChunk implements InputChunk
@@ -141,10 +143,4 @@ abstract class StoreScanAsInputIterable<RECORD extends AbstractBaseRecord> imple
     }
 
     protected abstract boolean visitRecord( RECORD record, InputEntityVisitor visitor );
-
-    @Override
-    public boolean supportsMultiplePasses()
-    {
-        return true;
-    }
 }

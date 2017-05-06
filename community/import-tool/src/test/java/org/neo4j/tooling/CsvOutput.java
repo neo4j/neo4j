@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -101,13 +100,13 @@ public class CsvOutput implements BatchImporter
         return null;
     }
 
-    private void consume( String name, InputIterable entities, Header header,
+    private void consume( String name, InputIterator entities, Header header,
             Function<CachingInputEntityVisitor,String> deserializer ) throws IOException
     {
         try ( PrintStream out = file( name ) )
         {
             serialize( out, header );
-            try ( InputIterator iterator = entities.iterator();
+            try ( InputIterator iterator = entities;
                     InputChunk chunk = iterator.newChunk() )
             {
                 CachingInputEntityVisitor visitor = new CachingInputEntityVisitor();

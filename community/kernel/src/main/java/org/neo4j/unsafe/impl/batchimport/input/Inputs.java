@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
@@ -38,19 +38,19 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 public class Inputs
 {
     public static Input input(
-            final InputIterable nodes, final InputIterable relationships,
+            final InputIterator nodes, final InputIterator relationships,
             final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector )
     {
         return new Input()
         {
             @Override
-            public InputIterable relationships()
+            public InputIterator relationships()
             {
                 return relationships;
             }
 
             @Override
-            public InputIterable nodes()
+            public InputIterator nodes()
             {
                 return nodes;
             }

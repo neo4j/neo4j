@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -96,34 +95,21 @@ public class CsvInput implements Input
     }
 
     @Override
-    public InputIterable nodes()
+    public InputIterator nodes()
     {
         return stream( nodeDataFactory, nodeHeaderFactory );
     }
 
     @Override
-    public InputIterable relationships()
+    public InputIterator relationships()
     {
         return stream( relationshipDataFactory, relationshipHeaderFactory );
     }
 
-    private InputIterable stream( Iterable<DataFactory> data, Header.Factory headerFactory )
+    private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory )
     {
-        return new InputIterable()
-        {
-            @Override
-            public InputIterator iterator()
-            {
-                assert !config.multilineFields() : "TODO: support multi-line fields too";
-                return new CsvInputIterator( data.iterator(), headerFactory, idType, config, badCollector );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        assert !config.multilineFields() : "TODO: support multi-line fields too";
+        return new CsvInputIterator( data.iterator(), headerFactory, idType, config, badCollector );
     }
 
     @Override

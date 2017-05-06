@@ -22,7 +22,6 @@ package org.neo4j.tooling;
 import java.util.function.Function;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -84,41 +83,15 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public InputIterable<InputNode> nodes()
+    public InputIterator nodes()
     {
-        return new InputIterable<InputNode>()
-        {
-            @Override
-            public InputIterator<InputNode> iterator()
-            {
-                return new EntityDataGenerator<>( nodeGenerator, nodes );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return new EntityDataGenerator<>( nodeGenerator, nodes );
     }
 
     @Override
-    public InputIterable<InputRelationship> relationships()
+    public InputIterator relationships()
     {
-        return new InputIterable<InputRelationship>()
-        {
-            @Override
-            public InputIterator<InputRelationship> iterator()
-            {
-                return new EntityDataGenerator<>( relGenerator, relationships );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return new EntityDataGenerator<>( relGenerator, relationships );
     }
 
     @Override

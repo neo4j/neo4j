@@ -92,7 +92,7 @@ public class DeeshuImporter
             NodeRelationshipCache nodeRelationshipCache )
             throws InterruptedException
     {
-        importData( numRunners, input.nodes().iterator(), () ->
+        importData( numRunners, input.nodes(), () ->
             new NodeVisitor( stores.getNeoStores(),
                     stores.getPropertyKeyRepository(), stores.getLabelRepository(), idMapper ) );
         nodeRelationshipCache.setHighNodeId( stores.getNodeStore().getHighId() );
@@ -102,7 +102,7 @@ public class DeeshuImporter
             BatchingNeoStores stores, IdMapper idMapper ) throws InterruptedException
     {
         RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution();
-        importData( numRunners, input.relationships().iterator(), () ->
+        importData( numRunners, input.relationships(), () ->
                 new RelationshipVisitor( stores.getNeoStores(),
                         stores.getPropertyKeyRepository(), stores.getRelationshipTypeRepository(), idMapper,
                         typeDistribution ) );
