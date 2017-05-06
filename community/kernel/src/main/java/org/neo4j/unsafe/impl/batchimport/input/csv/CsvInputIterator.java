@@ -103,7 +103,7 @@ public class CsvInputIterator extends InputIterator.Adapter
             {
                 current.close();
             }
-            current.close();
+            current = null;
         }
         catch ( IOException e )
         {
