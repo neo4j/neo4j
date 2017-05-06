@@ -31,7 +31,6 @@ import static java.lang.Math.round;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * User controlled configuration for a {@link BatchImporter}.
@@ -43,7 +42,7 @@ public interface Configuration
      * database directory of the imported database, i.e. <into>/bad.log.
      */
     String BAD_FILE_NAME = "bad.log";
-    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 960 );
+    long MAX_PAGE_CACHE_MEMORY = gibiBytes( 240 );
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**

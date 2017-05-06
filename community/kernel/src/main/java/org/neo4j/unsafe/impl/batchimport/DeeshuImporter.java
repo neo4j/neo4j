@@ -86,14 +86,11 @@ public class DeeshuImporter
                 long time = currentTimeMillis();
                 stores.startFlushingPageCache();
                 importNodes( numRunners, input, stores, idMapper );
-                System.out.println( "nodes done" );
                 stores.stopFlushingPageCache();
                 idMapper.prepare( new NodeInputIdPropertyLookup( stores.getNodeStore(), stores.getPropertyStore() ),
                         collector, ProgressListener.NONE );
-                System.out.println( "prepared" );
                 stores.startFlushingPageCache();
                 importRelationships( numRunners, input, stores, idMapper );
-                System.out.println( "rels done" );
                 stores.stopFlushingPageCache();
                 time = currentTimeMillis() - time;
                 System.out.println( "Imported in " + duration( time ) );
