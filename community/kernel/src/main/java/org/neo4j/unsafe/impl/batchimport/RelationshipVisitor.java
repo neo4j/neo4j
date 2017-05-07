@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution.Client;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -38,15 +39,17 @@ public class RelationshipVisitor extends EntityVisitor
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord relationshipRecord;
     private final BatchingIdGetter relationshipIds;
+    private final NodeRelationshipCache nodeRelationshipCache;
     private final Client typeCounts;
 
     protected RelationshipVisitor( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper,
-            RelationshipTypeDistribution typeDistribution )
+            NodeRelationshipCache nodeRelationshipCache, RelationshipTypeDistribution typeDistribution )
     {
         super( stores.getPropertyStore(), propertyKeyTokenRepository );
         this.relationshipTypeTokenRepository = relationshipTypeTokenRepository;
         this.idMapper = idMapper;
+        this.nodeRelationshipCache = nodeRelationshipCache;
         this.relationshipStore = stores.getRelationshipStore();
         this.relationshipRecord = relationshipStore.newRecord();
         this.relationshipIds = new BatchingIdGetter( relationshipStore );
@@ -61,45 +64,46 @@ public class RelationshipVisitor extends EntityVisitor
     }
 
     @Override
-    public boolean startId( long id, Group group )
+    public boolean startId( long id )
     {
-        throw new UnsupportedOperationException();
+        relationshipRecord.setFirstNode( id );
+        return true;
     }
 
     @Override
-    public boolean startId( String id, Group group )
+    public boolean startId( Object id, Group group )
     {
-        // TODO: increment in NodeRelationshipCache
-        long nodeId = idMapper.get( id, group );
-        if ( nodeId == ID_NOT_FOUND )
-        {
-            relationshipRecord.setInUse( false );
-            return false;
-        }
-
+        long nodeId = nodeId( id, group );
         relationshipRecord.setFirstNode( nodeId );
+        return nodeId != ID_NOT_FOUND;
+    }
+
+    @Override
+    public boolean endId( long id )
+    {
+        relationshipRecord.setSecondNode( id );
         return true;
     }
 
     @Override
-    public boolean endId( long id, Group group )
+    public boolean endId( Object id, Group group )
     {
-        throw new UnsupportedOperationException();
+        long nodeId = nodeId( id, group );
+        relationshipRecord.setSecondNode( nodeId );
+        return nodeId != ID_NOT_FOUND;
     }
 
-    @Override
-    public boolean endId( String id, Group group )
+    private long nodeId( Object id, Group group )
     {
-        // TODO: increment in NodeRelationshipCache
         long nodeId = idMapper.get( id, group );
         if ( nodeId == ID_NOT_FOUND )
         {
             relationshipRecord.setInUse( false );
-            return false;
+            return ID_NOT_FOUND;
         }
 
-        relationshipRecord.setSecondNode( nodeId );
-        return true;
+        nodeRelationshipCache.incrementCount( nodeId );
+        return nodeId;
     }
 
     @Override

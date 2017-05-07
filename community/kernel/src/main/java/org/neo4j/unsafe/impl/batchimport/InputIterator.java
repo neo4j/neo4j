@@ -27,12 +27,11 @@ import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-import org.neo4j.unsafe.impl.batchimport.staging.Panicable;
 
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator extends Closeable, SourceTraceability, Panicable
+public interface InputIterator extends Closeable, SourceTraceability
 {
     InputChunk newChunk();
 
@@ -65,11 +64,6 @@ public interface InputIterator extends Closeable, SourceTraceability, Panicable
         public long position()
         {
             return defaults.position();
-        }
-
-        @Override
-        public void receivePanic( Throwable cause )
-        {
         }
 
         @Override
@@ -121,12 +115,6 @@ public interface InputIterator extends Closeable, SourceTraceability, Panicable
         public boolean next( InputChunk chunk ) throws IOException
         {
             return actual.next( chunk );
-        }
-
-        @Override
-        public void receivePanic( Throwable cause )
-        {
-            actual.receivePanic( cause );
         }
     }
 

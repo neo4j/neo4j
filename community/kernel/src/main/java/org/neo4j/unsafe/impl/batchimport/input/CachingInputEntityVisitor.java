@@ -30,7 +30,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
 
     public boolean hasLongId;
     public long longId;
-    public String stringId;
+    public Object objectId;
     public Group idGroup;
 
     public final List<String> labels = new ArrayList<>();
@@ -39,12 +39,12 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
 
     public boolean hasLongStartId;
     public long longStartId;
-    public String stringStartId;
+    public Object objectStartId;
     public Group startIdGroup;
 
     public boolean hasLongEndId;
     public long longEndId;
-    public String stringEndId;
+    public Object objectEndId;
     public Group endIdGroup;
 
     public boolean hasIntType;
@@ -68,18 +68,17 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     }
 
     @Override
-    public boolean id( long id, Group group )
+    public boolean id( long id )
     {
         hasLongId = true;
         longId = id;
-        idGroup = group;
         return true;
     }
 
     @Override
-    public boolean id( String id, Group group )
+    public boolean id( Object id, Group group )
     {
-        stringId = id;
+        objectId = id;
         idGroup = group;
         return true;
     }
@@ -103,35 +102,33 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     }
 
     @Override
-    public boolean startId( long id, Group group )
+    public boolean startId( long id )
     {
         hasLongStartId = true;
         longStartId = id;
-        startIdGroup = group;
         return true;
     }
 
     @Override
-    public boolean startId( String id, Group group )
+    public boolean startId( Object id, Group group )
     {
-        stringStartId = id;
+        objectStartId = id;
         startIdGroup = group;
         return true;
     }
 
     @Override
-    public boolean endId( long id, Group group )
+    public boolean endId( long id )
     {
         hasLongEndId = true;
         longEndId = id;
-        endIdGroup = group;
         return true;
     }
 
     @Override
-    public boolean endId( String id, Group group )
+    public boolean endId( Object id, Group group )
     {
-        stringEndId = id;
+        objectEndId = id;
         endIdGroup = group;
         return true;
     }

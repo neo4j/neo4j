@@ -29,22 +29,22 @@ public interface InputEntityVisitor
     boolean property( String key, Object value );
 
     // For nodes
-    boolean id( long id, Group group );
+    boolean id( long id );
 
-    boolean id( String id, Group group );
+    boolean id( Object id, Group group );
 
     boolean labels( String[] labels );
 
     boolean labelField( long labelField );
 
     // For relationships
-    boolean startId( long id, Group group );
+    boolean startId( long id );
 
-    boolean startId( String id, Group group );
+    boolean startId( Object id, Group group );
 
-    boolean endId( long id, Group group );
+    boolean endId( long id );
 
-    boolean endId( String id, Group group );
+    boolean endId( Object id, Group group );
 
     boolean type( int type );
 
@@ -67,13 +67,13 @@ public interface InputEntityVisitor
         }
 
         @Override
-        public boolean id( long id, Group group )
+        public boolean id( long id )
         {
             return true;
         }
 
         @Override
-        public boolean id( String id, Group group )
+        public boolean id( Object id, Group group )
         {
             return true;
         }
@@ -85,25 +85,25 @@ public interface InputEntityVisitor
         }
 
         @Override
-        public boolean startId( long id, Group group )
+        public boolean startId( long id )
         {
             return true;
         }
 
         @Override
-        public boolean startId( String id, Group group )
+        public boolean startId( Object id, Group group )
         {
             return true;
         }
 
         @Override
-        public boolean endId( long id, Group group )
+        public boolean endId( long id )
         {
             return true;
         }
 
         @Override
-        public boolean endId( String id, Group group )
+        public boolean endId( Object id, Group group )
         {
             return true;
         }
@@ -154,13 +154,13 @@ public interface InputEntityVisitor
         }
 
         @Override
-        public boolean id( long id, Group group )
+        public boolean id( long id )
         {
-            return actual.id( id, group );
+            return actual.id( id );
         }
 
         @Override
-        public boolean id( String id, Group group )
+        public boolean id( Object id, Group group )
         {
             return actual.id( id, group );
         }
@@ -178,25 +178,25 @@ public interface InputEntityVisitor
         }
 
         @Override
-        public boolean startId( long id, Group group )
+        public boolean startId( long id )
+        {
+            return actual.startId( id );
+        }
+
+        @Override
+        public boolean startId( Object id, Group group )
         {
             return actual.startId( id, group );
         }
 
         @Override
-        public boolean startId( String id, Group group )
+        public boolean endId( long id )
         {
-            return actual.startId( id, group );
+            return actual.endId( id );
         }
 
         @Override
-        public boolean endId( long id, Group group )
-        {
-            return actual.endId( id, group );
-        }
-
-        @Override
-        public boolean endId( String id, Group group )
+        public boolean endId( Object id, Group group )
         {
             return actual.endId( id, group );
         }

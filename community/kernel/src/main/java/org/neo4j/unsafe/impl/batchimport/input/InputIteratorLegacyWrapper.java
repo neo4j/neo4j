@@ -62,11 +62,6 @@ public abstract class InputIteratorLegacyWrapper<ENTITY extends InputEntity> imp
     }
 
     @Override
-    public void receivePanic( Throwable cause )
-    {
-    }
-
-    @Override
     public boolean next( InputChunk chunk ) throws IOException
     {
         return false;

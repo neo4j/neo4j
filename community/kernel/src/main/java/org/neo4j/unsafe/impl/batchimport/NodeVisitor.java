@@ -50,13 +50,13 @@ public class NodeVisitor extends EntityVisitor
     }
 
     @Override
-    public boolean id( long id, Group group )
+    public boolean id( long id )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean id( String id, Group group )
+    public boolean id( Object id, Group group )
     {
         long nodeId = nodeIds.next();
         nodeRecord.setId( nodeId );

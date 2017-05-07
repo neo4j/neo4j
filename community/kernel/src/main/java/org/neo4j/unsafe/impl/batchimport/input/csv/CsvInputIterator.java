@@ -129,11 +129,6 @@ public class CsvInputIterator extends InputIterator.Adapter
         return 0;
     }
 
-    @Override
-    public void receivePanic( Throwable cause )
-    {
-    }
-
     private class Single
     {
         private final CharReadableChunker chunker;

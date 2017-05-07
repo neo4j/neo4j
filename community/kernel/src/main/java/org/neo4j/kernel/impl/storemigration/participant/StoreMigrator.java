@@ -106,7 +106,6 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
-import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
@@ -655,8 +654,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             @Override
             protected boolean visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
             {
-                visitor.startId( record.getFirstNode(), Group.GLOBAL );
-                visitor.endId( record.getSecondNode(), Group.GLOBAL );
+                visitor.startId( record.getFirstNode() );
+                visitor.endId( record.getSecondNode() );
                 visitor.type( record.getType() );
                 visitor.propertyId( record.getNextProp() );
                 // TODO visit properties too if needed
@@ -677,7 +676,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             @Override
             protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )
             {
-                visitor.id( record.getId(), Group.GLOBAL );
+                visitor.id( record.getId() );
                 visitor.propertyId( record.getNextProp() );
                 visitor.labelField( record.getLabelField() );
                 // TODO visit properties too if needed

@@ -124,7 +124,7 @@ public class CsvInputChunk implements InputChunk
                     }
                     else if ( idType == IdType.INTEGER )
                     {
-                        doContinue = visitor.id( ((LongExtractor) entry.extractor()).longValue(), entry.group() );
+                        doContinue = visitor.id( ((LongExtractor) entry.extractor()).longValue() );
                     }
                     break;
                 case START_ID:
@@ -135,7 +135,7 @@ public class CsvInputChunk implements InputChunk
                     }
                     else if ( idType == IdType.INTEGER )
                     {
-                        doContinue = visitor.startId( ((LongExtractor) entry.extractor()).longValue(), entry.group() );
+                        doContinue = visitor.startId( ((LongExtractor) entry.extractor()).longValue() );
                     }
                     break;
                 case END_ID:
@@ -146,7 +146,7 @@ public class CsvInputChunk implements InputChunk
                     }
                     else if ( idType == IdType.INTEGER )
                     {
-                        doContinue = visitor.endId( ((LongExtractor) entry.extractor()).longValue(), entry.group() );
+                        doContinue = visitor.endId( ((LongExtractor) entry.extractor()).longValue() );
                     }
                     break;
                  case TYPE:

@@ -67,9 +67,4 @@ public abstract class SimpleInputIterator extends PrefetchingResourceIterator<In
     {
         return itemNumber;
     }
-
-    @Override
-    public void receivePanic( Throwable cause )
-    {
-    }
 }

@@ -99,13 +99,14 @@ public class DeeshuImporter
     }
 
     public static RelationshipTypeDistribution importRelationships( int numRunners, Input input,
-            BatchingNeoStores stores, IdMapper idMapper ) throws InterruptedException
+            BatchingNeoStores stores, IdMapper idMapper, NodeRelationshipCache nodeRelationshipCache )
+                    throws InterruptedException
     {
         RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution();
         importData( numRunners, input.relationships(), () ->
                 new RelationshipVisitor( stores.getNeoStores(),
                         stores.getPropertyKeyRepository(), stores.getRelationshipTypeRepository(), idMapper,
-                        typeDistribution ) );
+                        nodeRelationshipCache, typeDistribution ) );
         return typeDistribution;
     }
 }

@@ -62,7 +62,7 @@ public class CsvOutput implements BatchImporter
                 switch ( entry.type() )
                 {
                 case ID:
-                    deserialization.handle( entry, entity.hasLongId ? entity.longId : entity.stringId );
+                    deserialization.handle( entry, entity.hasLongId ? entity.longId : entity.objectId );
                     break;
                 case PROPERTY:
                     deserialization.handle( entry, property( entity.properties, entry.name() ) );
@@ -74,10 +74,10 @@ public class CsvOutput implements BatchImporter
                     deserialization.handle( entry, entity.hasIntType ? entity.intType : entity.stringType );
                     break;
                 case START_ID:
-                    deserialization.handle( entry, entity.hasLongStartId ? entity.longStartId : entity.stringStartId );
+                    deserialization.handle( entry, entity.hasLongStartId ? entity.longStartId : entity.objectStartId );
                     break;
                 case END_ID:
-                    deserialization.handle( entry, entity.hasLongEndId ? entity.longEndId : entity.stringEndId );
+                    deserialization.handle( entry, entity.hasLongEndId ? entity.longEndId : entity.objectEndId );
                     break;
                 default: // ignore other types
                 }

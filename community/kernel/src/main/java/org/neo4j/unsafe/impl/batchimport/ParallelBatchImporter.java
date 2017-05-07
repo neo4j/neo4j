@@ -188,7 +188,7 @@ public class ParallelBatchImporter implements BatchImporter
             // Import relationships (unlinked), properties
             neoStore.startFlushingPageCache();
             RelationshipTypeDistribution typeDistribution = DeeshuImporter.importRelationships(
-                    config.maxNumberOfProcessors(), input, neoStore, idMapper );
+                    config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache );
             neoStore.stopFlushingPageCache();
 
             // Link relationships together with each other, their nodes and their relationship groups
