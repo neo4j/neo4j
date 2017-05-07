@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -176,7 +177,9 @@ public class ParallelBatchImporter implements BatchImporter
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
-                executeStage( new IdMapperPreparationStage( config, idMapper, null, // TODO
+                LongFunction<Object> inputIdLookup = new NodeInputIdPropertyLookup(
+                        neoStore.getNodeStore(), neoStore.getPropertyStore() );
+                executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup,
                         badCollector, memoryUsageStats ) );
                 PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
                 if ( duplicateNodeIds.hasNext() )

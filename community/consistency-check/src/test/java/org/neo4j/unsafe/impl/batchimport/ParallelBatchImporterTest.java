@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -67,16 +66,13 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
-import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -153,9 +149,9 @@ public class ParallelBatchImporterTest
     {
         return Arrays.<Object[]>asList(
                 // synchronous I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), true},
+                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput()},
                 // synchronous I/O, string id input
-                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true}
+                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning()}
         );
     }
 
@@ -182,8 +178,9 @@ public class ParallelBatchImporterTest
         {
             // WHEN
             inserter.doImport( Inputs.input(
-                    nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ),
-                    relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, inputIdGenerator, groups ),
+                    nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groups ),
+                    relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
+                            inputIdGenerator, groups ),
                     idMapper, idGenerator,
                     /*insanely high bad tolerance, but it will actually never be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ) ) );
@@ -215,16 +212,6 @@ public class ParallelBatchImporterTest
                     out.println( "Seed used in this failing run: " + random.seed() );
                     out.println( inputIdGenerator );
                     inputIdGenerator.reset();
-                    for ( InputNode node : nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ) )
-                    {
-                        out.println( node );
-                    }
-                    for ( InputRelationship relationship : relationships( relationshipRandomSeed,
-                            RELATIONSHIP_COUNT, inputIdGenerator, groups ) )
-                    {
-                        out.println( relationship );
-                    }
-
                     out.println();
                     out.println( "Processor assignments" );
                     out.println( processorAssigner.toString() );
@@ -363,28 +350,32 @@ public class ParallelBatchImporterTest
     }
 
     private void verifyData( int nodeCount, int relationshipCount, GraphDatabaseService db, IdGroupDistribution groups,
-            long nodeRandomSeed, long relationshipRandomSeed )
+            long nodeRandomSeed, long relationshipRandomSeed ) throws IOException
     {
         // Read all nodes, relationships and properties ad verify against the input data.
-        try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, inputIdGenerator, groups ).iterator();
+        try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups );
               InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
-                      inputIdGenerator, groups ).iterator() )
+                      config.batchSize(), inputIdGenerator, groups ) )
         {
             // Nodes
+            InputChunk chunk = nodes.newChunk();
             Map<String,Node> nodeByInputId = new HashMap<>( nodeCount );
             Iterator<Node> dbNodes = db.getAllNodes().iterator();
             int verifiedNodes = 0;
             long allNodesScanLabelCount = 0;
-            while ( nodes.hasNext() )
+            CachingInputEntityVisitor input = new CachingInputEntityVisitor();
+            while ( nodes.next( chunk ) )
             {
-                InputNode input = nodes.next();
-                Node node = dbNodes.next();
-                assertNodeEquals( input, node );
-                String inputId = uniqueId( input.group(), node );
-                assertNull( nodeByInputId.put( inputId, node ) );
-                verifiedNodes++;
-                assertDegrees( node );
-                allNodesScanLabelCount += Iterables.count( node.getLabels() );
+                while ( chunk.next( input ) )
+                {
+                    Node node = dbNodes.next();
+                    assertNodeEquals( input, node );
+                    String inputId = uniqueId( input.idGroup, node );
+                    assertNull( nodeByInputId.put( inputId, node ) );
+                    verifiedNodes++;
+                    assertDegrees( node );
+                    allNodesScanLabelCount += Iterables.count( node.getLabels() );
+                }
             }
             assertEquals( nodeCount, verifiedNodes );
 
@@ -399,28 +390,31 @@ public class ParallelBatchImporterTest
                     allNodesScanLabelCount, labelScanStoreEntryCount );
 
             // Relationships
+            chunk = relationships.newChunk();
             Map<String,Relationship> relationshipByName = new HashMap<>();
             for ( Relationship relationship : db.getAllRelationships() )
             {
                 relationshipByName.put( (String) relationship.getProperty( "id" ), relationship );
             }
             int verifiedRelationships = 0;
-            while ( relationships.hasNext() )
+            while ( relationships.next( chunk ) )
             {
-                InputRelationship input = relationships.next();
-                if ( !inputIdGenerator.isMiss( input.startNode() ) &&
-                     !inputIdGenerator.isMiss( input.endNode() ) )
+                while ( chunk.next( input ) )
                 {
-                    // A relationship referring to missing nodes. The InputIdGenerator is expected to generate
-                    // some (very few) of those. Skip it.
-                    String name = (String) propertyOf( input, "id" );
-                    Relationship relationship = relationshipByName.get( name );
-                    assertNotNull( "Expected there to be a relationship with name '" + name + "'", relationship );
-                    assertEquals( nodeByInputId.get( uniqueId( input.startNodeGroup(), input.startNode() ) ),
-                            relationship.getStartNode() );
-                    assertEquals( nodeByInputId.get( uniqueId( input.endNodeGroup(), input.endNode() ) ),
-                            relationship.getEndNode() );
-                    assertRelationshipEquals( input, relationship );
+                    if ( !inputIdGenerator.isMiss( input.objectStartId ) &&
+                         !inputIdGenerator.isMiss( input.objectEndId ) )
+                    {
+                        // A relationship referring to missing nodes. The InputIdGenerator is expected to generate
+                        // some (very few) of those. Skip it.
+                        String name = (String) propertyOf( input, "id" );
+                        Relationship relationship = relationshipByName.get( name );
+                        assertNotNull( "Expected there to be a relationship with name '" + name + "'", relationship );
+                        assertEquals( nodeByInputId.get( uniqueId( input.startIdGroup, input.objectStartId ) ),
+                                relationship.getStartNode() );
+                        assertEquals( nodeByInputId.get( uniqueId( input.endIdGroup, input.objectEndId ) ),
+                                relationship.getEndNode() );
+                        assertRelationshipEquals( input, relationship );
+                    }
                 }
                 verifiedRelationships++;
             }
@@ -451,7 +445,7 @@ public class ParallelBatchImporterTest
         return group.name() + "_" + id;
     }
 
-    private Object propertyOf( InputEntity input, String key )
+    private Object propertyOf( CachingInputEntityVisitor input, String key )
     {
         Object[] properties = input.properties();
         for ( int i = 0; i < properties.length; i++ )
@@ -464,16 +458,16 @@ public class ParallelBatchImporterTest
         throw new IllegalStateException( key + " not found on " + input );
     }
 
-    private void assertRelationshipEquals( InputRelationship input, Relationship relationship )
+    private void assertRelationshipEquals( CachingInputEntityVisitor input, Relationship relationship )
     {
         // properties
         assertPropertiesEquals( input, relationship );
 
         // type
-        assertEquals( input.type(), relationship.getType().name() );
+        assertEquals( input.stringType, relationship.getType().name() );
     }
 
-    private void assertNodeEquals( InputNode input, Node node )
+    private void assertNodeEquals( CachingInputEntityVisitor input, Node node )
     {
         // properties
         assertPropertiesEquals( input, node );
@@ -487,9 +481,9 @@ public class ParallelBatchImporterTest
         assertTrue( expectedLabels.isEmpty() );
     }
 
-    private void assertPropertiesEquals( InputEntity input, PropertyContainer entity )
+    private void assertPropertiesEquals( CachingInputEntityVisitor input, PropertyContainer entity )
     {
-        Object[] properties = input.properties();
+        Object[] properties = input.properties.toArray();
         for ( int i = 0; i < properties.length; i++ )
         {
             String key = (String) properties[i++];
@@ -498,7 +492,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private void assertPropertyValueEquals( InputEntity input, PropertyContainer entity, String key,
+    private void assertPropertyValueEquals( CachingInputEntityVisitor input, PropertyContainer entity, String key,
             Object expected, Object array )
     {
         if ( expected.getClass().isArray() )

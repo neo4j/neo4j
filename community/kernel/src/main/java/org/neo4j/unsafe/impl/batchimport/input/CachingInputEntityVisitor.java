@@ -160,4 +160,14 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
         hasLongEndId = false;
         hasIntType = false;
     }
+
+    public String[] labels()
+    {
+        return labels.toArray( new String[labels.size()] );
+    }
+
+    public Object[] properties()
+    {
+        return properties.toArray();
+    }
 }

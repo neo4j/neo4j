@@ -28,7 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Performs {@link IdMapper#prepare(InputIterable, Collector, ProgressListener)}
+ * Performs {@link IdMapper#prepare(LongFunction, Collector, ProgressListener)}
  * embedded in a {@link Stage} as to take advantage of statistics and monitoring provided by that framework.
  */
 public class IdMapperPreparationStage extends Stage

@@ -99,7 +99,7 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
         @Override
         public boolean next( InputEntityVisitor visitor ) throws IOException
         {
-            return generateNext( state, batch, itemInBatch, visitor );
+            return generateNext( state, batch, itemInBatch++, visitor );
         }
     }
 }
