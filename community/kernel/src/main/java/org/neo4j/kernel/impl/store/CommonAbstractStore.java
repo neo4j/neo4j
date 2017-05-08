@@ -256,8 +256,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         // use it when initializing their stores to write some records.
         recordSize = determineRecordSize();
 
-        File idFileName = new File( storageFileName.getPath() + ".id" );
-        idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), false );
+        idGeneratorFactory.create( getIdFileName(), getNumberOfReservedLowIds(), false );
     }
 
     private void createHeaderRecord( PageCursor cursor ) throws IOException
