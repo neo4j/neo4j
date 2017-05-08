@@ -115,6 +115,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
 
     /**
+     * Same as {@link RecordStore#getRecord(long, RECORD, RecordLoad)} but accept a {@link PageCursor} in input to use
+     * for the read rather then allocating a new one.
+     */
+    RECORD readRecord( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
+
+    /**
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
      * saying whether or not it's light. Light means that no records from the coupled store have been loaded yet.
      * This method can load those records and enrich the target record with those, marking it as heavy.
@@ -134,17 +140,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     Collection<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
 
     /**
-     * Instantiates a new record cursor capable of iterating over records in this store. A {@link RecordCursor}
-     * gets created with one record and will use every time it reads records.
+     * Instantiates a new page cursor capable of iterating over records in this store.
      *
-     * This method relates to {@link #placeRecordCursor(long, RecordCursor, RecordLoad)} just like
-     * {@link #newRecord()} relates to {@link #getRecord(long, AbstractBaseRecord, RecordLoad)} in that
-     * instantiation of object is separate from reading record data.
-     *
-     * @param record instance to use when reading record data.
-     * @return a new {@link RecordCursor} instance capable of reading records in this store.
+     * @return a new {@link PageCursor} instance capable of reading records in this store.
      */
-    RecordCursor<RECORD> newRecordCursor( RECORD record );
+    PageCursor newPageCursor();
 
     /**
      * Returns another record id which the given {@code record} references and which a {@link RecordCursor}
@@ -267,15 +267,21 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
+        public R readRecord( long id, R target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
+        {
+            return actual.readRecord( id, target, mode, cursor );
+        }
+
+        @Override
         public Collection<R> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException
         {
             return actual.getRecords( firstId, mode );
         }
 
         @Override
-        public RecordCursor<R> newRecordCursor( R record )
+        public PageCursor newPageCursor()
         {
-            return actual.newRecordCursor( record );
+            return actual.newPageCursor();
         }
 
         @Override

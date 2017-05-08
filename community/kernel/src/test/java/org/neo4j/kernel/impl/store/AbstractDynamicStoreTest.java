@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -44,6 +45,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -76,7 +78,7 @@ public class AbstractDynamicStoreTest
     }
 
     @Test
-    public void dynamicRecordCursorReadsInUseRecords()
+    public void dynamicCursorReadsInUseRecords()
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
@@ -89,14 +91,23 @@ public class AbstractDynamicStoreTest
             second.setNextBlock( third.getId() );
             store.updateRecord( second );
 
-            RecordCursor<DynamicRecord> recordsCursor = store.newRecordCursor( store.newRecord() ).acquire( 1, NORMAL );
-            assertTrue( recordsCursor.next() );
-            assertEquals( first, recordsCursor.get() );
-            assertTrue( recordsCursor.next() );
-            assertEquals( second, recordsCursor.get() );
-            assertTrue( recordsCursor.next() );
-            assertEquals( third, recordsCursor.get() );
-            assertFalse( recordsCursor.next() );
+            DynamicRecord dynamicRecord = store.newRecord();
+            PageCursor cursor = store.newPageCursor();
+            store.readRecord( 1, dynamicRecord, NORMAL, cursor );
+            assertTrue( dynamicRecord.inUse() );
+            assertEquals( first, dynamicRecord );
+
+            long secondId = store.getNextRecordReference( dynamicRecord );
+            store.readRecord( secondId, dynamicRecord, NORMAL, cursor );
+            assertTrue( dynamicRecord.inUse() );
+            assertEquals( second, dynamicRecord );
+
+            long thirdId = store.getNextRecordReference( dynamicRecord );
+            store.readRecord( thirdId, dynamicRecord, NORMAL, cursor );
+            assertTrue( dynamicRecord.inUse() );
+            assertEquals( third, dynamicRecord );
+
+            assertTrue( NULL_REFERENCE.is( store.getNextRecordReference( dynamicRecord ) ) );
         }
     }
 
@@ -116,15 +127,23 @@ public class AbstractDynamicStoreTest
             second.setInUse( false );
             store.updateRecord( second );
 
-            RecordCursor<DynamicRecord> recordsCursor = store.newRecordCursor( store.newRecord() ).acquire( 1, FORCE );
-            assertTrue( recordsCursor.next() );
-            assertEquals( first, recordsCursor.get() );
-            assertFalse( recordsCursor.next() );
-            assertEquals( second, recordsCursor.get() );
-            // because mode == FORCE we can still move through the chain
-            assertTrue( recordsCursor.next() );
-            assertEquals( third, recordsCursor.get() );
-            assertFalse( recordsCursor.next() );
+            DynamicRecord dynamicRecord = store.newRecord();
+            PageCursor cursor = store.newPageCursor();
+            store.readRecord( 1, dynamicRecord, FORCE, cursor );
+            assertTrue( dynamicRecord.inUse() );
+            assertEquals( first, dynamicRecord );
+
+            long secondId = store.getNextRecordReference( dynamicRecord );
+            store.readRecord( secondId, dynamicRecord, FORCE, cursor );
+            assertFalse( dynamicRecord.inUse() );
+            assertEquals( second, dynamicRecord );
+
+            long thirdId = store.getNextRecordReference( dynamicRecord );
+            store.readRecord( thirdId, dynamicRecord, NORMAL, cursor );
+            assertTrue( dynamicRecord.inUse() );
+            assertEquals( third, dynamicRecord );
+
+            assertTrue( NULL_REFERENCE.is( store.getNextRecordReference( dynamicRecord ) ) );
         }
     }
 

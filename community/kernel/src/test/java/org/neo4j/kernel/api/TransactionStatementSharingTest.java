@@ -24,8 +24,6 @@ import org.junit.Test;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
@@ -127,26 +125,5 @@ public class TransactionStatementSharingTest
 
         // then
         assertSame( stmt1, stmt2 );
-    }
-
-    @Test
-    public void shouldNotShareStateForSequentialReadStatementAndReadStatement() throws Exception
-    {
-        // given
-        KernelTransactionFactory.Instances instances =
-                KernelTransactionFactory.kernelTransactionWithInternals( AnonymousContext.read() );
-        KernelTransaction tx = instances.transaction;
-        Statement statement = tx.acquireStatement();
-        ReadOperations ops1 = statement.readOperations();
-        verify( instances.storageStatement ).acquire();
-        statement.close();
-
-        // when
-        verify( instances.storageStatement ).release();
-        reset( instances.storageStatement );
-        ReadOperations ops2 = tx.acquireStatement().readOperations();
-
-        // then
-        verify( instances.storageStatement ).acquire();
     }
 }

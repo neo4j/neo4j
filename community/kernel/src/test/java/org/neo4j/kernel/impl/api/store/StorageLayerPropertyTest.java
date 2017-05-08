@@ -26,15 +26,15 @@ import java.lang.reflect.Array;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 /**
  * Test read access to committed properties.
@@ -89,20 +89,16 @@ public class StorageLayerPropertyTest extends StorageLayerTest
 
         int propKey = disk.propertyKeyGetOrCreateForName( "prop" );
 
-        StorageStatement statement = state.getStoreStatement();
         for ( Object value : properties )
         {
             // given
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
+            try ( Cursor<NodeItem> node = disk.nodeGetSingleCursor( nodeId, EMPTY ) )
             {
                 node.next();
-
-                Lock lock = node.get().lock();
-                try ( Cursor<PropertyItem> props = statement
-                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock ) )
+                try ( Cursor<PropertyItem> props = disk.nodeGetProperty( node.get(), propKey, NodeState.EMPTY ) )
                 {
                     if ( props.next() )
                     {

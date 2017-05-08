@@ -345,8 +345,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     def indexQuery(name: String, query: Any): Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
 
-    def isDeleted(n: Node): Boolean =
-      tc.stateView.hasTxStateWithChanges && tc.stateView.txState().nodeIsDeletedInThisTx(n.getId)
+    def isDeleted(n: Node): Boolean = tc.stateView.readableTxState().nodeIsDeletedInThisTx(n.getId)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -417,7 +416,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
     override def isDeleted(r: Relationship): Boolean =
-      tc.stateView.hasTxStateWithChanges && tc.stateView.txState().relationshipIsDeletedInThisTx(r.getId)
+      tc.stateView.readableTxState().relationshipIsDeletedInThisTx(r.getId)
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =

@@ -41,8 +41,9 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -79,16 +80,17 @@ public abstract class StatementOperationsTestHelper
         {
             IndexReader indexReader = mock( IndexReader.class );
             when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
-            StorageStatement storageStatement = mock( StorageStatement.class );
-            when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
-            when( state.getStoreStatement() ).thenReturn( storageStatement );
+            SchemaResources schemaResources = mock( SchemaResources.class );
+            when( schemaResources.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
+            when( state.schemaResources() ).thenReturn( schemaResources );
         }
         catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )
         {
             throw new Error( e );
         }
-        when( state.txState() ).thenReturn( txState );
-        when( state.hasTxStateWithChanges() ).thenAnswer( invocation -> txState.hasChanges() );
+        when( state.readableTxState() )
+                .thenAnswer( invocation -> txState.hasChanges() ? txState : ReadableTransactionState.EMPTY );
+        when( state.writableTxState() ).thenReturn( txState );
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
         return state;

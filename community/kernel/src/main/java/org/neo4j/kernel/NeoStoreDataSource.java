@@ -157,6 +157,7 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -267,6 +268,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final AvailabilityGuard availabilityGuard;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
+    private final BatchingProgressionFactory progressionFactory;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -321,7 +323,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             AvailabilityGuard availabilityGuard,
             SystemNanoClock clock,
             AccessCapability accessCapability,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex )
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex,
+            BatchingProgressionFactory progressionFactory )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -357,6 +360,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.availabilityGuard = availabilityGuard;
         this.clock = clock;
         this.accessCapability = accessCapability;
+        this.progressionFactory = progressionFactory;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -431,9 +435,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
-            storageEngine = buildStorageEngine(
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
+            storageEngine = buildStorageEngine( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    legacyIndexProviderLookup, indexConfigStore, updateableSchemaState::clear,
+                    legacyIndexTransactionOrdering, progressionFactory );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
@@ -444,7 +448,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     buildTransactionLogs( storeDir, config, logProvider, scheduler, fs,
                             storageEngine, logEntryReader, legacyIndexTransactionOrdering,
                             transactionIdStore, logVersionRepository );
-            transactionLogModule.satisfyDependencies(dependencies);
+            transactionLogModule.satisfyDependencies( dependencies );
 
             buildRecovery( fs,
                     transactionIdStore,
@@ -561,23 +565,24 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 format ).migrate( storeDir );
     }
 
-    private StorageEngine buildStorageEngine(
-            PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
-            RelationshipTypeTokenHolder relationshipTypeTokens,
+    private StorageEngine buildStorageEngine( PropertyKeyTokenHolder propertyKeyTokenHolder,
+            LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering,
+            BatchingProgressionFactory progressionFactory )
     {
         // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
         // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
         // TODO API
         Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
                 () -> kernelModule.kernelTransactions().get();
-        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
-                eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                transactionSnapshotSupplier );
+        RecordStorageEngine storageEngine =
+                new RecordStorageEngine( storeDir, config, idGeneratorFactory, eligibleForReuse,
+                        idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
+                        relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics,
+                        scheduler, tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor,
+                        databaseHealth, labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                        legacyIndexTransactionOrdering, transactionSnapshotSupplier, progressionFactory );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

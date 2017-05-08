@@ -24,6 +24,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -307,11 +309,14 @@ public class LockingStatementOperations implements
     public void relationshipDelete( final KernelStatement state, long relationshipId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        entityReadDelegate.relationshipVisit( state, relationshipId,
-                ( relId, type, startNode, endNode ) -> lockRelationshipNodes( state, startNode, endNode ) );
+        try ( Cursor<RelationshipItem> cursor = entityReadDelegate.relationshipCursorById( state, relationshipId ) )
+        {
+            RelationshipItem relationship = cursor.get();
+            lockRelationshipNodes( state, relationship.startNode(), relationship.endNode() );
+        }
         acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
-        entityWriteDelegate.relationshipDelete(state, relationshipId);
+        entityWriteDelegate.relationshipDelete( state, relationshipId );
     }
 
     private void lockRelationshipNodes( KernelStatement state, long startNodeId, long endNodeId )
@@ -520,7 +525,7 @@ public class LockingStatementOperations implements
 
     private void acquireExclusiveNodeLock( KernelStatement state, long nodeId )
     {
-        if ( !state.hasTxStateWithChanges() || !state.txState().nodeIsAddedInThisTx( nodeId ) )
+        if ( !state.readableTxState().nodeIsAddedInThisTx( nodeId ) )
         {
             state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeId );
         }
@@ -528,7 +533,7 @@ public class LockingStatementOperations implements
 
     private void acquireExclusiveRelationshipLock( KernelStatement state, long relationshipId )
     {
-        if ( !state.hasTxStateWithChanges() || !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
+        if ( !state.readableTxState().relationshipIsAddedInThisTx( relationshipId ) )
         {
             state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
         }

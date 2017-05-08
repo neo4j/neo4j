@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
@@ -53,7 +52,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 import static java.lang.String.format;
 
-public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
+public class RelationshipProxy implements Relationship
 {
     public interface RelationshipActions
     {
@@ -79,7 +78,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public RelationshipProxy( RelationshipActions actions, long id, long startNode, int type, long endNode )
     {
         this.actions = actions;
-        visit( id, type, startNode, endNode );
+        setInitialData( id, type, startNode, endNode );
     }
 
     public RelationshipProxy( RelationshipActions actions, long id )
@@ -88,29 +87,30 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         this.id = id;
     }
 
-    @Override
-    public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
-    {
-        this.id = id;
-        this.type = type;
-        this.startNode = startNode;
-        this.endNode = endNode;
-    }
-
     private void initializeData()
     {
         // it enough to check only start node, since it's absence will indicate that data was not yet loaded
         if ( startNode == AbstractBaseRecord.NO_ID )
         {
-            try ( Statement statement = actions.statement() )
+            try ( Statement statement = actions.statement();
+                    Cursor<RelationshipItem> cursor = statement.readOperations().relationshipCursorById( getId() ) )
             {
-                statement.readOperations().relationshipVisit( getId(), this );
+                RelationshipItem rel = cursor.get();
+                setInitialData( rel.id(), rel.type(), rel.startNode(), rel.endNode() );
             }
             catch ( EntityNotFoundException e )
             {
                 throw new NotFoundException( e );
             }
         }
+    }
+
+    private void setInitialData( long id, int type, long startNode, long endNode )
+    {
+        this.id = id;
+        this.type = type;
+        this.startNode = startNode;
+        this.endNode = endNode;
     }
 
     @Override

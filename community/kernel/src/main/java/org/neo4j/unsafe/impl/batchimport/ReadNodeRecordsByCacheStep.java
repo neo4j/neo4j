@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
@@ -40,7 +40,9 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
     private final int nodeTypes;
     private final NodeRelationshipCache cache;
     private final int batchSize;
-    private final RecordCursor<NodeRecord> recordCursor;
+    private final NodeStore nodeStore;
+    private final PageCursor nodeCursor;
+    private final NodeRecord nodeRecord;
 
     public ReadNodeRecordsByCacheStep( StageControl control, Configuration config,
             NodeStore nodeStore, NodeRelationshipCache cache, int nodeTypes )
@@ -49,20 +51,15 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
         this.cache = cache;
         this.nodeTypes = nodeTypes;
         this.batchSize = config.batchSize();
-        this.recordCursor = nodeStore.newRecordCursor( nodeStore.newRecord() );
-    }
-
-    @Override
-    public void start( int orderingGuarantees )
-    {
-        super.start( orderingGuarantees );
-        recordCursor.acquire( 0, RecordLoad.NORMAL );
+        this.nodeStore = nodeStore;
+        this.nodeRecord = nodeStore.newRecord();
+        this.nodeCursor = nodeStore.newPageCursor();
     }
 
     @Override
     public void close() throws Exception
     {
-        recordCursor.close();
+        nodeCursor.close();
         super.close();
     }
 
@@ -94,8 +91,7 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
         @Override
         public void change( long nodeId, ByteArray array )
         {
-            recordCursor.next( nodeId );
-            batch[cursor++] = recordCursor.get().clone();
+            batch[cursor++] = nodeStore.readRecord( nodeId, nodeRecord, RecordLoad.NORMAL, nodeCursor ).clone();
             if ( cursor == batchSize )
             {
                 send();

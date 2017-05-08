@@ -19,39 +19,31 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.storageengine.api.DegreeItem;
+import java.util.Objects;
 
-public class TestDegreeItem implements DegreeItem
+public class TestDegreeItem
 {
     private final int type;
     private final long outgoing;
     private final long incoming;
 
-    public TestDegreeItem( DegreeItem item )
-    {
-        this( item.type(), item.outgoing(), item.incoming() );
-    }
-
-    public TestDegreeItem( int type, long outgoing, long incoming )
+    TestDegreeItem( int type, long outgoing, long incoming )
     {
         this.type = type;
         this.outgoing = outgoing;
         this.incoming = incoming;
     }
 
-    @Override
     public int type()
     {
         return type;
     }
 
-    @Override
     public long outgoing()
     {
         return outgoing;
     }
 
-    @Override
     public long incoming()
     {
         return incoming;
@@ -75,16 +67,12 @@ public class TestDegreeItem implements DegreeItem
     @Override
     public int hashCode()
     {
-        return 31 * (31 * type + (int) (outgoing ^ (outgoing >>> 32))) + (int) (incoming ^ (incoming >>> 32));
+        return Objects.hash( type, outgoing, incoming );
     }
 
     @Override
     public String toString()
     {
-        return "TestDegreeItem{" +
-               "type=" + type +
-               ", outgoing=" + outgoing +
-               ", incoming=" + incoming +
-               '}';
+        return "TestDegreeItem{" + "type=" + type + ", outgoing=" + outgoing + ", incoming=" + incoming + '}';
     }
 }

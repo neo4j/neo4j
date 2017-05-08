@@ -22,122 +22,37 @@ package org.neo4j.collection.pool;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongSupplier;
 
-import org.neo4j.function.Factory;
-
-public class LinkedQueuePool<R> implements Pool<R>
+public abstract class LinkedQueuePool<R> implements Pool<R>
 {
-    public interface Monitor<R>
-    {
-        void updatedCurrentPeakSize( int currentPeakSize );
-
-        void updatedTargetSize( int targetSize );
-
-        void created( R resource );
-
-        void acquired( R resource );
-
-        void disposed( R resource );
-
-        class Adapter<R> implements Monitor<R>
-        {
-            @Override
-            public void updatedCurrentPeakSize( int currentPeakSize )
-            {
-            }
-
-            @Override
-            public void updatedTargetSize( int targetSize )
-            {
-            }
-
-            @Override
-            public void created( R resource )
-            {
-            }
-
-            @Override
-            public void acquired( R resource )
-            {
-            }
-
-            @Override
-            public void disposed( R resource )
-            {
-            }
-        }
-    }
-
-    public interface CheckStrategy
-    {
-        boolean shouldCheck();
-
-        class TimeoutCheckStrategy implements CheckStrategy
-        {
-            private final long interval;
-            private long lastCheckTime;
-            private final LongSupplier clock;
-
-            public TimeoutCheckStrategy( long interval )
-            {
-                this( interval, System::currentTimeMillis );
-            }
-
-            public TimeoutCheckStrategy( long interval, LongSupplier clock )
-            {
-                this.interval = interval;
-                this.lastCheckTime = clock.getAsLong();
-                this.clock = clock;
-            }
-
-            @Override
-            public boolean shouldCheck()
-            {
-                long currentTime = clock.getAsLong();
-                if ( currentTime > lastCheckTime + interval )
-                {
-                    lastCheckTime = currentTime;
-                    return true;
-                }
-                return false;
-            }
-        }
-    }
-
-    public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
+    private static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
-    private final Monitor monitor;
+    private final LinkedQueuePoolMonitor<R> monitor;
     private final int minSize;
-    private final Factory<R> factory;
     private final CheckStrategy checkStrategy;
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
-    private final AtomicInteger allocated = new AtomicInteger( 0 );
-    private final AtomicInteger queueSize = new AtomicInteger( 0 );
+    private final AtomicInteger allocated = new AtomicInteger();
+    private final AtomicInteger queueSize = new AtomicInteger();
     private int currentPeakSize;
     private int targetSize;
 
-    public LinkedQueuePool( int minSize, Factory<R> factory )
+    public LinkedQueuePool( int minSize )
     {
-        this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-                new Monitor.Adapter() );
+        this( minSize, new TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
+            new LinkedQueuePoolMonitor.Adapter<>() );
     }
 
-    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor monitor )
+    LinkedQueuePool( int minSize, CheckStrategy strategy, LinkedQueuePoolMonitor<R> monitor )
     {
         this.minSize = minSize;
-        this.factory = factory;
         this.currentPeakSize = 0;
         this.targetSize = minSize;
         this.checkStrategy = strategy;
         this.monitor = monitor;
     }
 
-    protected R create()
-    {
-        return factory.newInstance();
-    }
+    protected abstract R create();
 
     protected void dispose( R resource )
     {

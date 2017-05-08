@@ -19,14 +19,8 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.
@@ -36,62 +30,6 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  * This naming convention helps deciding where to set {@link #hasChanges()} in the
  * {@link org.neo4j.kernel.impl.api.state.TxState main implementation class}.
  */
-public interface TransactionState extends ReadableTransactionState
+public interface TransactionState extends ReadableTransactionState, WritableTransactionState
 {
-    // ENTITY RELATED
-
-    void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId );
-
-    void nodeDoCreate( long id );
-
-    void relationshipDoDelete( long relationshipId, int type, long startNode, long endNode );
-
-    void relationshipDoDeleteAddedInThisTx( long relationshipId );
-
-    void nodeDoDelete( long nodeId );
-
-    void nodeDoAddProperty( long nodeId, DefinedProperty newProperty );
-
-    void nodeDoChangeProperty( long nodeId, DefinedProperty replacedProperty, DefinedProperty newProperty );
-
-    void relationshipDoReplaceProperty( long relationshipId,
-                                        Property replacedProperty, DefinedProperty newProperty );
-
-    void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty );
-
-    void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty );
-
-    void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty );
-
-    void graphDoRemoveProperty( DefinedProperty removedProperty );
-
-    void nodeDoAddLabel( int labelId, long nodeId );
-
-    void nodeDoRemoveLabel( int labelId, long nodeId );
-
-    // TOKEN RELATED
-
-    void labelDoCreateForName( String labelName, int id );
-
-    void propertyKeyDoCreateForName( String propertyKeyName, int id );
-
-    void relationshipTypeDoCreateForName( String relationshipTypeName, int id );
-
-    // SCHEMA RELATED
-
-    void indexRuleDoAdd( IndexDescriptor descriptor );
-
-    void indexDoDrop( IndexDescriptor descriptor );
-
-    boolean indexDoUnRemove( IndexDescriptor constraint );
-
-    void constraintDoAdd( ConstraintDescriptor constraint );
-
-    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId );
-
-    void constraintDoDrop( ConstraintDescriptor constraint );
-
-    boolean constraintDoUnRemove( ConstraintDescriptor constraint );
-
-    void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, OrderedPropertyValues before, OrderedPropertyValues after );
 }

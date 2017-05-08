@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -45,6 +46,8 @@ public interface NodeState extends PropertyContainerState
 
     ReadableDiffSets<Integer> labelDiffSets();
 
+    PrimitiveIntSet augmentLabels( PrimitiveIntSet labels );
+
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );
@@ -58,4 +61,62 @@ public interface NodeState extends PropertyContainerState
     PrimitiveLongIterator getAddedRelationships( Direction direction );
 
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
+
+    NodeState EMPTY = new EmptyNodeState();
+
+    class EmptyNodeState extends EmptyPropertyContainerState implements NodeState
+    {
+        @Override
+        public ReadableDiffSets<Integer> labelDiffSets()
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
+
+        @Override
+        public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels )
+        {
+            return labels;
+        }
+
+        @Override
+        public int augmentDegree( Direction direction, int degree )
+        {
+            return degree;
+        }
+
+        @Override
+        public int augmentDegree( Direction direction, int degree, int typeId )
+        {
+            return degree;
+        }
+
+        @Override
+        public void accept( NodeState.Visitor visitor )
+        {
+        }
+
+        @Override
+        public PrimitiveIntSet relationshipTypes()
+        {
+            return Primitive.intSet();
+        }
+
+        @Override
+        public long getId()
+        {
+            throw new UnsupportedOperationException( "id not defined" );
+        }
+
+        @Override
+        public PrimitiveLongIterator getAddedRelationships( Direction direction )
+        {
+            return null;
+        }
+
+        @Override
+        public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
+        {
+            return null;
+        }
+    }
 }
