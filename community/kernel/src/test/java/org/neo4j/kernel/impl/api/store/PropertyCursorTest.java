@@ -185,7 +185,7 @@ public class PropertyCursorTest
                     PropertyType.STRING}
     );
 
-    private StorePropertyCursorTest()
+    private PropertyCursorTest()
     {
     }
 
