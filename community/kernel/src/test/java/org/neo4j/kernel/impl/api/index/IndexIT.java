@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +51,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -124,7 +124,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( emptySet(), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
 
@@ -142,7 +142,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        assertEquals( emptySet(), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
 

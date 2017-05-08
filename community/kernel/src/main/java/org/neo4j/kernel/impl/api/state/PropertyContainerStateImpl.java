@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -32,12 +31,11 @@ import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static java.util.Collections.emptyIterator;
 
 public class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
-    private static final ResourceIterator<StorageProperty> NO_PROPERTIES = emptyIterator();
 
     private VersionedHashMap<Integer, StorageProperty> addedProperties;
     private VersionedHashMap<Integer, StorageProperty> changedProperties;
@@ -145,20 +143,20 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     @Override
     public Iterator<StorageProperty> addedProperties()
     {
-        return addedProperties != null ? addedProperties.values().iterator() : NO_PROPERTIES;
+        return addedProperties != null ? addedProperties.values().iterator() : emptyIterator();
     }
 
     @Override
     public Iterator<StorageProperty> changedProperties()
     {
-        return changedProperties != null ? changedProperties.values().iterator() : NO_PROPERTIES;
+        return changedProperties != null ? changedProperties.values().iterator() : emptyIterator();
     }
 
     @Override
     public Iterator<Integer> removedProperties()
     {
         return removedProperties != null ? removedProperties.keySet().iterator()
-                : Iterators.<Integer>emptyIterator();
+                : emptyIterator();
     }
 
     @Override
@@ -181,7 +179,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
                 out = changedProperties.values().iterator();
             }
         }
-        return out != null ? out : NO_PROPERTIES;
+        return out != null ? out : emptyIterator();
     }
 
     @Override

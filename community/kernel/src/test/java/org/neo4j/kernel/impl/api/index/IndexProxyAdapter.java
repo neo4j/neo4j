@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class IndexProxyAdapter implements IndexProxy
 {
@@ -114,7 +114,7 @@ public class IndexProxyAdapter implements IndexProxy
     @Override
     public ResourceIterator<File> snapshotFiles()
     {
-        return emptyIterator();
+        return emptyResourceIterator();
     }
 
     @Override

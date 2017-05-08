@@ -31,12 +31,12 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public abstract class LabelScanStoreUpdateIT
@@ -118,8 +118,7 @@ public abstract class LabelScanStoreUpdateIT
         assertEquals(
                 asSet( node2 ),
                 getAllNodesWithLabel( First ) );
-        assertEquals(
-                emptySetOf( Node.class ),
+        assertEquals( emptySet(),
                 getAllNodesWithLabel( Second ) );
         assertEquals(
                 asSet( node2 ),
@@ -144,8 +143,7 @@ public abstract class LabelScanStoreUpdateIT
         assertEquals(
                 asSet( node1 ),
                 getAllNodesWithLabel( Second ) );
-        assertEquals(
-                emptySetOf( Node.class ),
+        assertEquals( emptySet(),
                 getAllNodesWithLabel( Third ) );
     }
 

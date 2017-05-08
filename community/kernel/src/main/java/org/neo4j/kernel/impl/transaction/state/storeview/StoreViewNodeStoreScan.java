@@ -26,13 +26,12 @@ import java.util.Iterator;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Validators;
 
+import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -161,14 +161,14 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
     {
         private final Iterator<PropertyRecord> records;
-        private Iterator<PropertyBlock> blocks = Iterators.emptyIterator();
+        private Iterator<PropertyBlock> blocks = emptyIterator();
 
         PropertyBlockIterator( NodeRecord node )
         {
             long firstPropertyId = node.getNextProp();
             if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
             {
-                records = Iterators.emptyIterator();
+                records = emptyIterator();
             }
             else
             {

@@ -50,10 +50,10 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -63,7 +63,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public abstract class AbstractConstraintCreationIT<Constraint extends ConstraintDescriptor, DESCRIPTOR extends SchemaDescriptor>
@@ -326,7 +325,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // then
         {
             ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySetOf( IndexDescriptor.class ), asSet( statement.indexesGetAll() ) );
+            assertEquals( emptySet(), asSet( statement.indexesGetAll() ) );
             commit();
         }
     }

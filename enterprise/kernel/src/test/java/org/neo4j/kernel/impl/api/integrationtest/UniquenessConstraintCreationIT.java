@@ -54,13 +54,13 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public class UniquenessConstraintCreationIT
@@ -196,7 +196,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
+        assertEquals( emptySet(), asSet( readOperations.indexesGetAll() ) );
         commit();
     }
 
@@ -276,7 +276,7 @@ public class UniquenessConstraintCreationIT
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetAll() ) );
+        assertEquals( emptySet(), asSet( readOperations.indexesGetAll() ) );
         commit();
     }
 

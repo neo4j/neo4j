@@ -54,7 +54,7 @@ public final class Iterables
     @SuppressWarnings( "unchecked" )
     public static <T> Iterable<T> empty()
     {
-        return EMPTY;
+        return Collections.emptyList();
     }
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
@@ -186,7 +186,7 @@ public final class Iterables
                 }
                 else
                 {
-                    return Iterables.<X>empty().iterator();
+                    return Collections.emptyIterator();
                 }
             }
 
@@ -914,33 +914,4 @@ public final class Iterables
         EnumSet.allOf( cls ).forEach( item -> names.add( item.name() ) );
         return names;
     }
-
-    private static Iterable EMPTY = new Iterable()
-    {
-        Iterator iterator = new Iterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return false;
-            }
-
-            @Override
-            public Object next()
-            {
-                throw new NoSuchElementException();
-            }
-
-            @Override
-            public void remove()
-            {
-            }
-        };
-
-        @Override
-        public Iterator iterator()
-        {
-            return iterator;
-        }
-    };
 }

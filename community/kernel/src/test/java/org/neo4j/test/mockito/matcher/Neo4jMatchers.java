@@ -45,10 +45,10 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.helpers.collection.Iterators.loop;
 
 public class Neo4jMatchers
@@ -140,7 +140,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasNoLabels()
     {
-        return hasLabels( emptySetOf( String.class ) );
+        return hasLabels( emptySet() );
     }
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabels( final Set<String> expectedLabels )

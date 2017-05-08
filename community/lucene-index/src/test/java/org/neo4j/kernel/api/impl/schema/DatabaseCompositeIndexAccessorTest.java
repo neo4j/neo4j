@@ -53,11 +53,11 @@ import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -204,7 +204,7 @@ public class DatabaseCompositeIndexAccessorTest
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
                 .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
-        assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.toSet( reader
+        assertEquals( emptySet(), PrimitiveLongCollections.toSet( reader
                 .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }

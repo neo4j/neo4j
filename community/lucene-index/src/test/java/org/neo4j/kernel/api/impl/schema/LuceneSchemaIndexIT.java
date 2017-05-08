@@ -47,13 +47,13 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class LuceneSchemaIndexIT
 {
@@ -116,7 +116,7 @@ public class LuceneSchemaIndexIT
             // When & Then
             try ( ResourceIterator<File> snapshotIterator = indexAccessor.snapshotFiles() )
             {
-                assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySetOf( String.class ) ) );
+                assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySet() ) );
             }
         }
     }

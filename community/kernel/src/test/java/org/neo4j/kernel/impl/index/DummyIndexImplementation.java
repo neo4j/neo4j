@@ -234,6 +234,6 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     @Override
     public ResourceIterator<File> listStoreFiles()
     {
-        return Iterators.emptyIterator();
+        return Iterators.emptyResourceIterator();
     }
 }

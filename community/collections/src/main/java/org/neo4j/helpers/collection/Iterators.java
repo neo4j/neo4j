@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,12 +44,17 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
+import static java.util.Collections.emptyIterator;
+
 /**
  * Contains common functionality regarding {@link Iterator}s and
  * {@link Iterable}s.
  */
 public abstract class Iterators
 {
+    private static final ResourceIterator EMPTY_RESOURCE_ITERATOR =
+            resourceIterator( emptyIterator(), Resource.EMPTY );
+
     /**
      * Returns the given iterator's first element or {@code null} if no
      * element found.
@@ -421,11 +425,6 @@ public abstract class Iterators
         return new HashSet<>( Arrays.asList( items ) );
     }
 
-    public static <T> Set<T> emptySetOf( @SuppressWarnings( "unused"/*just used as a type marker*/ ) Class<T> type )
-    {
-        return Collections.emptySet();
-    }
-
     /**
      * Alias for asSet()
      *
@@ -588,9 +587,9 @@ public abstract class Iterators
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> ResourceIterator<T> emptyIterator()
+    public static <T> ResourceIterator<T> emptyResourceIterator()
     {
-        return EMPTY_ITERATOR;
+        return EMPTY_RESOURCE_ITERATOR;
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )
@@ -647,34 +646,6 @@ public abstract class Iterators
     {
         return items;
     }
-
-    @SuppressWarnings( "rawtypes" )
-    private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
-
-        @Override
-        public Object next()
-        {
-            throw new NoSuchElementException();
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void close()
-        {
-            // do nothing
-        }
-    };
 
     public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
     {

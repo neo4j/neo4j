@@ -39,11 +39,12 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.store.SingleNodeFetch;
 import org.neo4j.kernel.impl.api.store.StoreSchemaResources;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
+import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
@@ -52,8 +53,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
@@ -219,7 +218,7 @@ public class SchemaTransactionStateTest
         Iterator<IndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
-        assertEquals( emptySetOf( IndexDescriptor.class ), asSet( rulesByLabel ) );
+        assertEquals( emptySet(), asSet( rulesByLabel ) );
     }
 
     // exists

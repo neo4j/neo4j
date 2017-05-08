@@ -33,7 +33,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
@@ -95,6 +95,6 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public ResourceIterator<File> snapshotFiles()
     {
-        return emptyIterator();
+        return emptyResourceIterator();
     }
 }

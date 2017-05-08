@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
@@ -61,6 +60,7 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
+import static java.util.Collections.emptyIterator;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -141,7 +141,7 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForSchema( constraint.schema() ) )
-                .thenAnswer( invocation -> Iterators.emptyIterator() );
+                .thenAnswer( invocation -> emptyIterator() );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, descriptor );
 
@@ -163,11 +163,11 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForSchema( constraint1.schema() ) )
-                .thenAnswer( invocation -> Iterators.emptyIterator() );
+                .thenAnswer( invocation -> emptyIterator() );
         when( inner.constraintsGetForSchema( constraint2.schema() ) )
-                .thenAnswer( invocation -> Iterators.emptyIterator() );
+                .thenAnswer( invocation -> emptyIterator() );
         when( inner.constraintsGetForLabel( 1 ) )
-                .thenAnswer( invocation -> Iterators.emptyIterator() );
+                .thenAnswer( invocation -> emptyIterator() );
         when( inner.constraintsGetForLabel( 2 ) )
                 .thenAnswer( invocation -> iterator( constraint1 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
@@ -191,9 +191,9 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForSchema( constraint1.schema() ) )
-                .thenAnswer( invocation -> Iterators.emptyIterator() );
+                .thenAnswer( invocation -> emptyIterator() );
         when( inner.constraintsGetForSchema( constraint2.schema() ) )
-                .thenAnswer( invocation -> Iterators.emptyIterator() );
+                .thenAnswer( invocation -> emptyIterator() );
         when( inner.constraintsGetAll() )
                 .thenAnswer( invocation -> iterator( constraint2 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );

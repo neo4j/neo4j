@@ -34,8 +34,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class Prover
 {
@@ -86,7 +86,7 @@ public class Prover
                                 10, NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( instance3 ), new Monitors(), config,
                                 10, NullLogProvider.getInstance() ) ),
-                emptySetOf( ClusterAction.class )
+                emptySet()
         );
 
         state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.create,

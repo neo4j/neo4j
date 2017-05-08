@@ -108,7 +108,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
@@ -593,7 +593,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
         {
             statement.close();
-            return emptyIterator();
+            return emptyResourceIterator();
         }
 
         IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
@@ -652,7 +652,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
             statement.close();
-            return emptyIterator();
+            return emptyResourceIterator();
         }
 
         final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
