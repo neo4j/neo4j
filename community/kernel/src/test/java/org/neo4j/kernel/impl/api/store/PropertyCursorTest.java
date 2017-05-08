@@ -70,9 +70,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+import static org.neo4j.storageengine.api.txstate.PropertyContainerState.EMPTY;
 
 @RunWith( Enclosed.class )
-public class StorePropertyCursorTest
+public class PropertyCursorTest
 {
     private static final List<Object[]> PARAMETERS = asList(
             new Object[]{false, PropertyType.BOOL},
@@ -241,35 +242,35 @@ public class StorePropertyCursorTest
         {
             // given
             @SuppressWarnings( "unchecked" )
-            Consumer<StorePropertyCursor> cache = mock( Consumer.class );
+            Consumer<PropertyCursor> cache = mock( Consumer.class );
 
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
-            storePropertyCursor.init( 0, NO_LOCK, null );
+            PropertyCursor propertyCursor = new PropertyCursor( propertyStore, cache );
+            propertyCursor.init( 0, NO_LOCK, EMPTY );
 
             // when
-            storePropertyCursor.close();
+            propertyCursor.close();
 
             // then
-            verify( cache, times( 1 ) ).accept( storePropertyCursor );
+            verify( cache, times( 1 ) ).accept( propertyCursor );
         }
 
         @Test
         public void shouldClosePageCursorsOnDispose() throws Throwable
         {
             // given
-            PageCursor propertyCursor = mock( PageCursor.class );
-            when( propertyStore.newPageCursor() ).thenReturn( propertyCursor );
+            PageCursor cursor = mock( PageCursor.class );
+            when( propertyStore.newPageCursor() ).thenReturn( cursor );
             PageCursor stringCursor = mock( PageCursor.class );
             when( stringStore.newPageCursor() ).thenReturn( stringCursor );
             PageCursor arrayCursor = mock( PageCursor.class );
             when( arrayStore.newPageCursor() ).thenReturn( arrayCursor );
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, c -> {} );
+            PropertyCursor propertyCursor = new PropertyCursor( propertyStore, c -> {} );
 
             // when
-            storePropertyCursor.dispose();
+            propertyCursor.dispose();
 
             // then
-            verify( propertyCursor ).close();
+            verify( cursor ).close();
             verify( stringCursor ).close();
             verify( arrayCursor ).close();
         }
@@ -341,10 +342,10 @@ public class StorePropertyCursorTest
 
             long recordId = createSinglePropertyValue( propertyStore, keyId, expectedValue ).getId();
 
-            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
+            PropertyCursor propertyCursor = newPropertyCursor( propertyStore );
 
             // when
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK, null ) )
+            try ( Cursor<PropertyItem> cursor = propertyCursor.init( recordId, NO_LOCK, EMPTY ) )
             {
                 // then
                 assertTrue( cursor.next() );
@@ -404,10 +405,10 @@ public class StorePropertyCursorTest
             long recordId = createTwoPropertyValues(
                     propertyStore, keyId1, expectedValue1, keyId2, expectedValue2 ).getId();
 
-            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
+            PropertyCursor propertyCursor = newPropertyCursor( propertyStore );
 
             // when
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK, null ) )
+            try ( Cursor<PropertyItem> cursor = propertyCursor.init( recordId, NO_LOCK, EMPTY ) )
             {
                 // then
                 assertTrue( cursor.next() );
@@ -436,10 +437,10 @@ public class StorePropertyCursorTest
             long recordId = createTwoPropertyValues(
                     propertyStore, keyId1, expectedValue1, keyId2, expectedValue2 ).getId();
 
-            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
+            PropertyCursor propertyCursor = newPropertyCursor( propertyStore );
 
             // when
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK, null ) )
+            try ( Cursor<PropertyItem> cursor = propertyCursor.init( recordId, NO_LOCK, EMPTY ) )
             {
                 PropertyItem item;
 
@@ -483,9 +484,9 @@ public class StorePropertyCursorTest
 
             long recordId = createSinglePropertyValue( propertyStore, keyId, expectedValue ).getId();
 
-            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore );
+            PropertyCursor propertyCursor = newPropertyCursor( propertyStore );
 
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK, null ) )
+            try ( Cursor<PropertyItem> cursor = propertyCursor.init( recordId, NO_LOCK, EMPTY ) )
             {
                 assertTrue( cursor.next() );
                 PropertyItem item = cursor.get();
@@ -495,7 +496,7 @@ public class StorePropertyCursorTest
             }
 
             // when using it
-            try ( Cursor<PropertyItem> cursor = storePropertyCursor.init( recordId, NO_LOCK, null ) )
+            try ( Cursor<PropertyItem> cursor = propertyCursor.init( recordId, NO_LOCK, EMPTY ) )
             {
                 // then
                 assertTrue( cursor.next() );
@@ -517,9 +518,9 @@ public class StorePropertyCursorTest
 
             long firstPropertyId = firstIdOf( createPropertyChain( propertyStore, propertyKeyId, propertyValues ) );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( firstPropertyId, NO_LOCK, null );
+                cursor.init( firstPropertyId, NO_LOCK, EMPTY );
 
                 List<Object> valuesFromCursor = asPropertyValuesList( cursor );
                 assertEquals( asList( propertyValues ), valuesFromCursor );
@@ -533,9 +534,9 @@ public class StorePropertyCursorTest
 
             long firstPropertyId = firstIdOf( createPropertyChain( propertyStore, propertyKeyId, "1", "2" ) );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( firstPropertyId, NO_LOCK, null );
+                cursor.init( firstPropertyId, NO_LOCK, EMPTY );
 
                 assertTrue( cursor.next() );
                 assertEquals( "1", cursor.value() );
@@ -559,9 +560,9 @@ public class StorePropertyCursorTest
             long firstPropertyId = firstIdOf( propertyChain );
             markPropertyRecordsNoInUse( propertyStore, idsOf( propertyChain, 1, 2, 4 ) );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( firstPropertyId, NO_LOCK, null );
+                cursor.init( firstPropertyId, NO_LOCK, EMPTY );
 
                 List<Object> valuesFromCursor = asPropertyValuesList( cursor );
                 assertEquals( asList( "1", 3, 5L, '7', "9 and 10" ), valuesFromCursor );
@@ -578,9 +579,9 @@ public class StorePropertyCursorTest
             long firstPropertyId = firstIdOf( propertyChain );
             markPropertyRecordsNoInUse( propertyStore, idsOf( propertyChain, 2, 1, 3 ) );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( firstPropertyId, NO_LOCK, null );
+                cursor.init( firstPropertyId, NO_LOCK, EMPTY );
 
                 List<Object> valuesFromCursor = asPropertyValuesList( cursor );
                 assertEquals( asList( "1", "2", 6L, '7', '8', "9 and 10" ), valuesFromCursor );
@@ -598,9 +599,9 @@ public class StorePropertyCursorTest
             int[] recordIds = idsOf( propertyChain, 0, 1, propertyValues.length );
             markPropertyRecordsNoInUse( propertyStore, recordIds );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( firstPropertyId, NO_LOCK, null );
+                cursor.init( firstPropertyId, NO_LOCK, EMPTY );
 
                 List<Object> valuesFromCursor = asPropertyValuesList( cursor );
                 assertEquals( Collections.emptyList(), valuesFromCursor );
@@ -617,9 +618,9 @@ public class StorePropertyCursorTest
 
             markDynamicRecordsNotInUse( keyId, propertyChain.get( 1 ), propertyStore, 2 );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( chainStartId, NO_LOCK, null );
+                cursor.init( chainStartId, NO_LOCK, EMPTY );
 
                 List<Object> valuesFromCursor = asPropertyValuesList( cursor );
                 assertEquals( asList( values ), valuesFromCursor );
@@ -683,9 +684,9 @@ public class StorePropertyCursorTest
 
             markDynamicRecordsNotInUse( keyId, propertyChain.get( 1 ), propertyStore, 2 );
 
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( chainStartId, NO_LOCK, null );
+                cursor.init( chainStartId, NO_LOCK, EMPTY );
 
                 List<Object> valuesFromCursor = asPropertyValuesList( cursor );
                 for ( int i = 0; i < valuesFromCursor.size(); i++ )
@@ -721,9 +722,9 @@ public class StorePropertyCursorTest
 
         private void verifyPropertyValue( String expectedValue, long recordId )
         {
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( recordId, NO_LOCK, null );
+                cursor.init( recordId, NO_LOCK, EMPTY );
                 assertTrue( cursor.next() );
                 assertEquals( expectedValue, cursor.value() );
                 assertFalse( cursor.next() );
@@ -732,9 +733,9 @@ public class StorePropertyCursorTest
 
         private void verifyPropertyValue( byte[] expectedValue, long recordId )
         {
-            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            try ( PropertyCursor cursor = newPropertyCursor( propertyStore ) )
             {
-                cursor.init( recordId, NO_LOCK, null );
+                cursor.init( recordId, NO_LOCK, EMPTY );
                 assertTrue( cursor.next() );
                 assertArrayEquals( expectedValue, (byte[]) cursor.value() );
                 assertFalse( cursor.next() );
@@ -762,9 +763,9 @@ public class StorePropertyCursorTest
         return propertyChain.get( 0 ).getId();
     }
 
-    private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore )
+    private static PropertyCursor newPropertyCursor( PropertyStore propertyStore )
     {
-        return new StorePropertyCursor( propertyStore, ignored -> {} );
+        return new PropertyCursor( propertyStore, ignored -> {} );
     }
 
     private static List<PropertyRecord> createPropertyChain( PropertyStore store, int keyId,
@@ -874,7 +875,7 @@ public class StorePropertyCursorTest
         updateRecord( store, record );
     }
 
-    private static List<Object> asPropertyValuesList( StorePropertyCursor cursor )
+    private static List<Object> asPropertyValuesList( PropertyCursor cursor )
     {
         List<Object> values = new ArrayList<>();
         while ( cursor.next() )

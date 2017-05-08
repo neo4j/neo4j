@@ -17,35 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.txstate;
+package org.neo4j.collection.pool;
 
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import java.time.Clock;
 
-/**
- * Represents the transactional changes to a relationship.
- *
- * @see PropertyContainerState
- */
-public interface RelationshipState extends PropertyContainerState
+class TimeoutCheckStrategy implements CheckStrategy
 {
-    long getId();
+    private final long interval;
+    private long lastCheckTime;
+    private final Clock clock;
 
-    <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
-
-    RelationshipState EMPTY = new EmptyRelationshipState();
-
-    class EmptyRelationshipState extends EmptyPropertyContainerState implements RelationshipState
+    TimeoutCheckStrategy( long interval )
     {
-        @Override
-        public long getId()
-        {
-            throw new UnsupportedOperationException( "id" + " not defined" );
-        }
+        this( interval, Clock.systemUTC() );
+    }
 
-        @Override
-        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
+    TimeoutCheckStrategy( long interval, Clock clock )
+    {
+        this.interval = interval;
+        this.clock = clock;
+        this.lastCheckTime = clock.millis();
+    }
+
+    @Override
+    public boolean shouldCheck()
+    {
+        long currentTime = clock.millis();
+        if ( currentTime > lastCheckTime + interval )
         {
-            return false;
+            lastCheckTime = currentTime;
+            return true;
         }
+        return false;
     }
 }
