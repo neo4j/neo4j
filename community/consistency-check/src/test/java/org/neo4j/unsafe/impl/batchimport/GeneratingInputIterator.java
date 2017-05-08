@@ -94,12 +94,15 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
         {
             this.state = state;
             this.batch = batch;
+            this.itemInBatch = 0;
         }
 
         @Override
         public boolean next( InputEntityVisitor visitor ) throws IOException
         {
-            return generateNext( state, batch, itemInBatch++, visitor );
+            boolean result = generateNext( state, batch, itemInBatch++, visitor );
+            visitor.endOfEntity();
+            return result;
         }
     }
 }

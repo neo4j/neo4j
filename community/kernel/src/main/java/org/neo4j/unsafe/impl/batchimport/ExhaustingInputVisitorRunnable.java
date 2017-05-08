@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 class ExhaustingInputVisitorRunnable implements Runnable
 {

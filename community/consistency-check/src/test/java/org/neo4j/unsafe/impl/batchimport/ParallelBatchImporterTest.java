@@ -64,6 +64,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor;
@@ -73,17 +74,18 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
@@ -148,10 +150,10 @@ public class ParallelBatchImporterTest
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
-                // synchronous I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput()},
-                // synchronous I/O, string id input
-                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning()}
+                // Long input ids, actual node id input
+                new Object[]{new LongInputIdGenerator(), longs( NumberArrayFactory.HEAP ), fromInput()},
+                // String input ids, generate ids from stores
+                new Object[]{new StringInputIdGenerator(), strings( NumberArrayFactory.HEAP ), startingFromTheBeginning()}
         );
     }
 
@@ -284,7 +286,7 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        Object nextNodeId( Random random )
+        synchronized Object nextNodeId( Random random )
         {
             return (long) id++;
         }
@@ -519,7 +521,7 @@ public class ParallelBatchImporterTest
             protected boolean generateNext( Randoms randoms, long batch, int itemInBatch, InputEntityVisitor visitor )
             {
                 long item = batch * batchSize + itemInBatch;
-                if ( item >= count )
+                if ( item >= count || itemInBatch >= batchSize )
                 {
                     return false;
                 }
@@ -559,8 +561,9 @@ public class ParallelBatchImporterTest
             protected boolean generateNext( Randoms randoms, long batch, int itemInBatch, InputEntityVisitor visitor )
             {
                 long item = batch * batchSize + itemInBatch;
-                if ( item >= count )
+                if ( item >= count || itemInBatch >= batchSize )
                 {
+                    // Either this batch reached its batch size or this is the last batch and the max count was reached
                     return false;
                 }
 

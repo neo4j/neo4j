@@ -31,7 +31,7 @@ public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBase
 
     public BatchingIdGetter( IdSequence source )
     {
-        this( source, 10_000 );
+        this( source, 100 );
     }
 
     public BatchingIdGetter( IdSequence source, int batchSize )

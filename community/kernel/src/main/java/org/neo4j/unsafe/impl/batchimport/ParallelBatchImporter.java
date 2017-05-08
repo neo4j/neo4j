@@ -47,6 +47,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -165,7 +166,7 @@ public class ParallelBatchImporter implements BatchImporter
             IdMapper idMapper = input.idMapper();
             // TODO: how to do the IdGenerator thing?
 //            IdGenerator idGenerator = input.idGenerator();
-            nodeRelationshipCache = new NodeRelationshipCache( AUTO, config.denseNodeThreshold() );
+            nodeRelationshipCache = new NodeRelationshipCache( NumberArrayFactory.HEAP, config.denseNodeThreshold() );
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
@@ -174,6 +175,7 @@ public class ParallelBatchImporter implements BatchImporter
             neoStore.startFlushingPageCache();
             DeeshuImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
                     nodeRelationshipCache );
+            System.out.println( "Node import done" );
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
@@ -194,15 +196,18 @@ public class ParallelBatchImporter implements BatchImporter
                     config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache );
             neoStore.stopFlushingPageCache();
 
+            // Release this potentially really big piece of cached data
+            long peakMemoryUsage = totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
+            idMapper.close();
+            idMapper = null;
+
             // Link relationships together with each other, their nodes and their relationship groups
-            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
+            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, neoStore );
             linkData( nodeRelationshipCache, neoStore, typeDistribution, availableMemory );
 
             // Release this potentially really big piece of cached data
-            long peakMemoryUsage = totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
+            peakMemoryUsage = max( peakMemoryUsage, totalMemoryUsageOf( nodeRelationshipCache, neoStore ) );
             long highNodeId = nodeRelationshipCache.getHighNodeId();
-            idMapper.close();
-            idMapper = null;
             nodeRelationshipCache.close();
             nodeRelationshipCache = null;
 
