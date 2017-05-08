@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -37,7 +37,9 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
 {
     private final int batchSize;
     private final ByteArray cache;
-    private final RecordCursor<NodeRecord> nodeRecordCursor;
+    private final RecordStore<NodeRecord> nodeStore;
+    private final PageCursor nodeCursor;
+    private final NodeRecord nodeRecord;
 
     private NodeRecord[] current;
     private int cursor;
@@ -48,15 +50,10 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
         super( control, "FIRST", config, 1 );
         this.cache = cache;
         this.batchSize = config.batchSize();
-        this.nodeRecordCursor = nodeStore.newRecordCursor( nodeStore.newRecord() );
+        this.nodeStore = nodeStore;
+        this.nodeRecord = nodeStore.newRecord();
+        this.nodeCursor = nodeStore.newPageCursor();
         newBatch();
-    }
-
-    @Override
-    public void start( int orderingGuarantees )
-    {
-        nodeRecordCursor.acquire( 0, NORMAL );
-        super.start( orderingGuarantees );
     }
 
     private void newBatch()
@@ -75,10 +72,8 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
             if ( cache.getByte( nodeId, 0 ) == 0 )
             {
                 cache.setByte( nodeId, 0, (byte) 1 );
-                nodeRecordCursor.next( nodeId );
-                NodeRecord node = nodeRecordCursor.get().clone();
+                NodeRecord node = nodeStore.readRecord( nodeId, nodeRecord, NORMAL, nodeCursor ).clone();
                 node.setNextRel( group.getId() );
-
                 current[cursor++] = node;
                 if ( cursor == batchSize )
                 {
@@ -101,7 +96,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     @Override
     public void close() throws Exception
     {
-        nodeRecordCursor.close();
+        nodeCursor.close();
         super.close();
     }
 }

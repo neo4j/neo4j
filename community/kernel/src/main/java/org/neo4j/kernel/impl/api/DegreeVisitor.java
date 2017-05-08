@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+@FunctionalInterface
 public interface DegreeVisitor
 {
     void visitDegree( int type, long outgoing, long incoming );

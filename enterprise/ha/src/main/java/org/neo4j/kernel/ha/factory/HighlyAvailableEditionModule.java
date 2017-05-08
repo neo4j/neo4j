@@ -129,6 +129,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
@@ -523,6 +524,8 @@ public class HighlyAvailableEditionModule
         config.augment( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.FALSE ) );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
+
+        progressionFactory = dependencies.satisfyDependency( new EnterpriseBatchingProgressionFactory() );
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 

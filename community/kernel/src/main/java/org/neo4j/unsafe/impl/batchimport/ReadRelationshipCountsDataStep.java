@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
 /**
@@ -55,7 +56,7 @@ public class ReadRelationshipCountsDataStep extends ReadRecordsStep<Relationship
         int i = 0;
         for ( ; i < batchSize && ++id <= highestId; )
         {
-            if ( cursor.next( id ) )
+            if ( store.readRecord( id, record, CHECK, cursor ).inUse() )
             {
                 int index = i++ * 3;
                 batch[index++] = record.getFirstNode();

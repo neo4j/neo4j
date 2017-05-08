@@ -154,6 +154,11 @@ public class NodeProxySingleRelationshipTest
                         visitor.visit( relId, 2, 1, 10 * relId + 2 );
                         return false;
                     }
+
+                    @Override
+                    public void close()
+                    {
+                    }
                 } );
         return nodeImpl;
     }

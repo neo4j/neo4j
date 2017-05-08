@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -83,8 +83,11 @@ public interface EntityReadOperations
 
     PrimitiveLongIterator relationshipsGetAll( KernelStatement state );
 
-    <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
-            RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
+    BatchingLongProgression parallelNodeScanProgression( KernelStatement statement );
+
+    Cursor<NodeItem> nodeGetCursor( KernelStatement statement, BatchingLongProgression progression );
+
+    Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement );
 
     Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 

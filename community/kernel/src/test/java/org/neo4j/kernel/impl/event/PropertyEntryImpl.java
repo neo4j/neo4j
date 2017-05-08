@@ -64,7 +64,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
     }
 
     @Override
-    public Object previouslyCommitedValue()
+    public Object previouslyCommittedValue()
     {
         return this.valueBeforeTx;
     }
@@ -94,7 +94,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
     {
         assertEquals( entry.entity(), entity() );
         assertEquals( entry.key(), key() );
-        assertEqualsMaybeNull( entry.previouslyCommitedValue(), previouslyCommitedValue(),
+        assertEqualsMaybeNull( entry.previouslyCommittedValue(), previouslyCommittedValue(),
                 entry.entity(), entry.key() );
     }
 

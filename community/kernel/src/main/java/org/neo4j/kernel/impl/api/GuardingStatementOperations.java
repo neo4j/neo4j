@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -235,12 +236,24 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
-            RelationshipVisitor<EXCEPTION> visitor )
-            throws EntityNotFoundException, EXCEPTION
+    public BatchingLongProgression parallelNodeScanProgression( KernelStatement statement )
     {
         guard.check( statement );
-        entityReadDelegate.relationshipVisit( statement, relId, visitor );
+        return entityReadDelegate.parallelNodeScanProgression( statement );
+    }
+
+    @Override
+    public Cursor<NodeItem> nodeGetCursor( KernelStatement statement, BatchingLongProgression progression )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetCursor( statement, progression );
+    }
+
+    @Override
+    public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
+    {
+        guard.check( statement );
+        return entityReadDelegate.nodeGetAllCursor( statement );
     }
 
     @Override

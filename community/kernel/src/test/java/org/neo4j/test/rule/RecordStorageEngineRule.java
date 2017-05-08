@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -194,30 +195,24 @@ public class RecordStorageEngineRule extends ExternalResource
         private final Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
                 transactionApplierTransformer;
 
-        ExtendedRecordStorageEngine( File storeDir, Config config,
-                IdGeneratorFactory idGeneratorFactory, IdReuseEligibility eligibleForReuse,
-                IdTypeConfigurationProvider idTypeConfigurationProvider,
+        ExtendedRecordStorageEngine( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory,
+                IdReuseEligibility eligibleForReuse, IdTypeConfigurationProvider idTypeConfigurationProvider,
                 PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
                 PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
                 RelationshipTypeTokenHolder relationshipTypeTokens, Runnable schemaStateChangeCallback,
-                ConstraintSemantics constraintSemantics, JobScheduler scheduler,
-                TokenNameLookup tokenNameLookup, LockService lockService,
-                SchemaIndexProvider indexProvider,
+                ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
+                LockService lockService, SchemaIndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                LabelScanStoreProvider labelScanStoreProvider,
-                LegacyIndexProviderLookup legacyIndexProviderLookup,
+                LabelScanStoreProvider labelScanStoreProvider, LegacyIndexProviderLookup legacyIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
                 Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
-                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
-                        transactionApplierTransformer )
+                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
-            super( storeDir, config, idGeneratorFactory, eligibleForReuse, idTypeConfigurationProvider,
-                    pageCache, fs, logProvider, propertyKeyTokenHolder,
-                    labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                    tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, databaseHealth,
-                    labelScanStoreProvider,
-                    legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                    transactionsSnapshotSupplier );
+            super( storeDir, config, idGeneratorFactory, eligibleForReuse, idTypeConfigurationProvider, pageCache, fs,
+                    logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStateChangeCallback,
+                    constraintSemantics, scheduler, tokenNameLookup, lockService, indexProvider, indexingServiceMonitor,
+                    databaseHealth, labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                    legacyIndexTransactionOrdering, transactionsSnapshotSupplier, new CommunityBatchingProgressionFactory() );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

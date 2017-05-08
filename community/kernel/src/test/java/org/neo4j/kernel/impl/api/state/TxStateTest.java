@@ -27,15 +27,10 @@ import org.junit.rules.TestRule;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -47,7 +42,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
@@ -60,7 +54,6 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -70,8 +63,6 @@ import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
-import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
 public class TxStateTest
 {
@@ -94,7 +85,7 @@ public class TxStateTest
         state.nodeDoAddLabel( 2, 1 );
 
         // WHEN
-        Set<Integer> addedLabels = state.nodeStateLabelDiffSets( 1 ).getAdded();
+        Set<Integer> addedLabels = state.getNodeState( 1 ).labelDiffSets().getAdded();
 
         // THEN
         assertEquals( asSet( 1, 2 ), addedLabels );
@@ -109,7 +100,7 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 2, 1 );
 
         // WHEN
-        Set<Integer> removedLabels = state.nodeStateLabelDiffSets( 1 ).getRemoved();
+        Set<Integer> removedLabels = state.getNodeState( 1 ).labelDiffSets().getRemoved();
 
         // THEN
         assertEquals( asSet( 1, 2 ), removedLabels );
@@ -127,7 +118,7 @@ public class TxStateTest
         state.nodeDoRemoveLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getAdded() );
+        assertEquals( asSet( 2 ), state.getNodeState( 1 ).labelDiffSets().getAdded() );
     }
 
     @Test
@@ -142,7 +133,7 @@ public class TxStateTest
         state.nodeDoAddLabel( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2 ), state.nodeStateLabelDiffSets( 1 ).getRemoved() );
+        assertEquals( asSet( 2 ), state.getNodeState( 1 ).labelDiffSets().getRemoved() );
     }
 
     @Test
@@ -1068,9 +1059,9 @@ public class TxStateTest
         state.relationshipDoDelete( 1338, relType + 1, startNode, startNode );
 
         // Then
-        assertEquals( 12, state.augmentNodeDegree( startNode, 10, Direction.BOTH ) );
-        assertEquals( 10, state.augmentNodeDegree( startNode, 10, Direction.INCOMING ) );
-        assertEquals( 11, state.augmentNodeDegree( startNode, 10, Direction.BOTH, relType ) );
+        assertEquals( 12, state.getNodeState( startNode ).augmentDegree( Direction.BOTH, 10 ) );
+        assertEquals( 10, state.getNodeState( startNode ).augmentDegree( Direction.INCOMING, 10 ) );
+        assertEquals( 11, state.getNodeState( startNode ).augmentDegree( Direction.BOTH, 10, relType ) );
     }
 
     @Test
@@ -1093,7 +1084,8 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( toList( state.nodeRelationshipTypes( startNode ).iterator() ), equalTo( asList( relType ) ) );
+        assertThat( toList( state.getNodeState( startNode ).relationshipTypes().iterator() ),
+                equalTo( asList( relType ) ) );
     }
 
     @Test
@@ -1399,161 +1391,6 @@ public class TxStateTest
                 visitLate();
             }
         } );
-    }
-
-    @Test
-    public void shouldObserveCorrectAugmentedNodeRelationshipsState() throws Exception
-    {
-        // GIVEN random committed state
-        TxState state = new TxState();
-        for ( int i = 0; i < 100; i++ )
-        {
-            state.nodeDoCreate( i );
-        }
-        for ( int i = 0; i < 5; i++ )
-        {
-            state.relationshipTypeDoCreateForName( "Type-" + i, i );
-        }
-        Map<Long,RelationshipItem> committedRelationships = new HashMap<>();
-        long relationshipId = 0;
-        int nodeCount = 100;
-        int relationshipTypeCount = 5;
-        for ( int i = 0; i < 30; i++ )
-        {
-            RelationshipItem relationship = relationship( relationshipId++, random.nextInt( relationshipTypeCount ),
-                    random.nextInt( nodeCount ), random.nextInt( nodeCount ) );
-            committedRelationships.put( relationship.id(), relationship );
-        }
-        Map<Long,RelationshipItem> allRelationships = new HashMap<>( committedRelationships );
-        // and some random changes to that
-        for ( int i = 0; i < 10; i++ )
-        {
-            if ( random.nextBoolean() )
-            {
-                RelationshipItem relationship = relationship( relationshipId++, random.nextInt( relationshipTypeCount ),
-                        random.nextInt( nodeCount ), random.nextInt( nodeCount ) );
-                allRelationships.put( relationship.id(), relationship );
-                state.relationshipDoCreate( relationship.id(), relationship.type(), relationship.startNode(),
-                        relationship.endNode() );
-            }
-            else
-            {
-                RelationshipItem relationship = Iterables
-                        .fromEnd( committedRelationships.values(), random.nextInt( committedRelationships.size() ) );
-                state.relationshipDoDelete( relationship.id(), relationship.type(), relationship.startNode(),
-                        relationship.endNode() );
-                allRelationships.remove( relationship.id() );
-            }
-        }
-        // WHEN
-        for ( int i = 0; i < nodeCount; i++ )
-        {
-            Direction direction = Direction.values()[random.nextInt( Direction.values().length )];
-            int[] relationshipTypes = randomTypes( relationshipTypeCount, random.random() );
-            Cursor<RelationshipItem> committed = cursor(
-                    relationshipsForNode( i, committedRelationships, direction, relationshipTypes ).values() );
-            Cursor<RelationshipItem> augmented = relationshipTypes == null
-                    ? state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction )
-                    : state.augmentNodeRelationshipCursor( committed, state.getNodeState( i ), direction,
-                             relationshipTypes );
-
-            Map<Long,RelationshipItem> expectedRelationships =
-                    relationshipsForNode( i, allRelationships, direction, relationshipTypes );
-            // THEN
-            while ( augmented.next() )
-            {
-                RelationshipItem relationship = augmented.get();
-                RelationshipItem actual = expectedRelationships.remove( relationship.id() );
-                assertNotNull( "Augmented cursor returned relationship " + relationship + ", but shouldn't have",
-                        actual );
-                assertRelationshipEquals( actual, relationship );
-            }
-            assertTrue( "Augmented cursor didn't return some expected relationships: " + expectedRelationships,
-                    expectedRelationships.isEmpty() );
-        }
-    }
-
-    private Map<Long,RelationshipItem> relationshipsForNode( long nodeId, Map<Long,RelationshipItem> allRelationships,
-            Direction direction, int[] relationshipTypes )
-    {
-        Map<Long,RelationshipItem> result = new HashMap<>();
-        for ( RelationshipItem relationship : allRelationships.values() )
-        {
-            switch ( direction )
-            {
-            case OUTGOING:
-                if ( relationship.startNode() != nodeId )
-                {
-                    continue;
-                }
-                break;
-            case INCOMING:
-                if ( relationship.endNode() != nodeId )
-                {
-                    continue;
-                }
-                break;
-            case BOTH:
-                if ( relationship.startNode() != nodeId && relationship.endNode() != nodeId )
-                {
-                    continue;
-                }
-                break;
-            default:
-                throw new IllegalStateException( "Unknown direction: " + direction );
-            }
-
-            if ( relationshipTypes != null )
-            {
-                if ( !contains( relationshipTypes, relationship.type() ) )
-                {
-                    continue;
-                }
-            }
-
-            result.put( relationship.id(), relationship );
-        }
-        return result;
-    }
-
-    private void assertRelationshipEquals( RelationshipItem expected, RelationshipItem relationship )
-    {
-        assertEquals( expected.id(), relationship.id() );
-        assertEquals( expected.type(), relationship.type() );
-        assertEquals( expected.startNode(), relationship.startNode() );
-        assertEquals( expected.endNode(), relationship.endNode() );
-    }
-
-    private int[] randomTypes( int high, Random random )
-    {
-        int count = random.nextInt( high );
-        if ( count == 0 )
-        {
-            return null;
-        }
-        int[] types = new int[count];
-        Arrays.fill( types, -1 );
-        for ( int i = 0; i < count; )
-        {
-            int candidate = random.nextInt( high );
-            if ( !contains( types, candidate ) )
-            {
-                types[i++] = candidate;
-            }
-        }
-        return types;
-    }
-
-    private boolean contains( int[] array, int candidate )
-    {
-        for ( int i : array )
-        {
-            if ( i == candidate )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     //endregion

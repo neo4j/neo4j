@@ -65,9 +65,11 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -114,8 +116,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private StatementOperationParts currentTransactionOperations;
-    private final KernelStatement currentStatement;
-    private final StorageStatement storageStatement;
+    private final KernelStatementImplementation currentStatement;
+    private final SchemaResources schemaResources;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
@@ -176,9 +178,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
-        this.storageStatement = storeLayer.newStatement();
+        this.schemaResources = storeLayer.schemaResources();
         this.currentStatement =
-                new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer );
+                new KernelStatementImplementation( this, this, schemaResources, procedures, accessCapability, lockTracer );
         this.userMetaData = Collections.emptyMap();
     }
 
@@ -315,12 +317,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return securityContext;
     }
 
-    public void setMetaData( Map<String, Object> data )
+    @Override
+    public void setUserMetaData( Map<String, Object> data )
     {
         this.userMetaData = data;
     }
 
-    public Map<String, Object> getMetaData()
+    @Override
+    public Map<String, Object> getUserMetaData()
     {
         return userMetaData;
     }
@@ -353,7 +357,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor createdConstraintIndex : readableTxState().constraintIndexesCreatedInTx() )
             {
                 try
                 {
@@ -370,7 +374,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public TransactionState txState()
+    public ReadableTransactionState readableTxState()
+    {
+        return txState == null ? ReadableTransactionState.EMPTY : txState;
+    }
+
+    @Override
+    public WritableTransactionState writableTxState()
     {
         if ( txState == null )
         {
@@ -387,8 +397,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             (legacyIndexTransactionState = legacyIndexTxStateSupplier.get());
     }
 
-    @Override
-    public boolean hasTxStateWithChanges()
+    private boolean hasTxStateWithChanges()
     {
         return txState != null && txState.hasChanges();
     }
@@ -526,7 +535,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 try
                 {
-                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer(), storageStatement );
+                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer() );
                     if ( hooksState != null && hooksState.failed() )
                     {
                         TransactionHookException cause = hooksState.failure();
@@ -551,8 +560,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
                 storageEngine.createCommands(
                         extractedCommands,
-                        txState,
-                        storageStatement,
+                        txState, schemaResources,
                         commitLocks,
                         lastTransactionIdWhenStarted );
                 if ( hasLegacyIndexChanges() )
@@ -794,9 +802,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return "KernelTransaction[" + lockSessionId + "]";
     }
 
+    @Override
     public void dispose()
     {
-        storageStatement.close();
+        schemaResources.close();
     }
 
     /**

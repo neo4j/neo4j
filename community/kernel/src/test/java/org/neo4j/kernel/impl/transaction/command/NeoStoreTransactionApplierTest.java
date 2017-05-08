@@ -100,7 +100,7 @@ public class NeoStoreTransactionApplierTest
     private final NodeStore nodeStore = mock( NodeStore.class );
     private final RelationshipStore relationshipStore = mock( RelationshipStore.class );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
-    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore = mock( RelationshipGroupStore.class );
+    private final RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
     private final RelationshipTypeTokenStore relationshipTypeTokenStore = mock( RelationshipTypeTokenStore.class );
     private final LabelTokenStore labelTokenStore = mock( LabelTokenStore.class );
     private final PropertyKeyTokenStore propertyKeyTokenStore = mock( PropertyKeyTokenStore.class );
