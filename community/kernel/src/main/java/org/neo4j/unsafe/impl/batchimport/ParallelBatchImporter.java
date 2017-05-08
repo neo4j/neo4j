@@ -175,7 +175,6 @@ public class ParallelBatchImporter implements BatchImporter
             neoStore.startFlushingPageCache();
             DeeshuImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
                     nodeRelationshipCache );
-            System.out.println( "Node import done" );
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {

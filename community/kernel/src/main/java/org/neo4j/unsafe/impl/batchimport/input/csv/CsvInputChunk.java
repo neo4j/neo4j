@@ -25,8 +25,8 @@ import org.neo4j.csv.reader.CharReadableChunker.ProcessingChunk;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Extractors.LongExtractor;
+import org.neo4j.csv.reader.Mark;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -118,35 +118,44 @@ public class CsvInputChunk implements InputChunk
                 {
                 case ID:
                     seeker.extract( mark, entry.extractor() );
-                    if ( idType == IdType.STRING )
+                    switch ( idType )
                     {
-                        doContinue = visitor.id( (String) entry.extractor().value(), entry.group() );
-                    }
-                    else if ( idType == IdType.INTEGER )
-                    {
+                    case STRING:
+                    case INTEGER:
+                        doContinue = visitor.id( entry.extractor().value(), entry.group() );
+                        break;
+                    case ACTUAL:
                         doContinue = visitor.id( ((LongExtractor) entry.extractor()).longValue() );
+                        break;
+                    default: throw new IllegalArgumentException( idType.name() );
                     }
                     break;
                 case START_ID:
                     seeker.extract( mark, entry.extractor() );
-                    if ( idType == IdType.STRING )
+                    switch ( idType )
                     {
-                        doContinue = visitor.startId( (String) entry.extractor().value(), entry.group() );
-                    }
-                    else if ( idType == IdType.INTEGER )
-                    {
+                    case STRING:
+                    case INTEGER:
+                        doContinue = visitor.startId( entry.extractor().value(), entry.group() );
+                        break;
+                    case ACTUAL:
                         doContinue = visitor.startId( ((LongExtractor) entry.extractor()).longValue() );
+                        break;
+                    default: throw new IllegalArgumentException( idType.name() );
                     }
                     break;
                 case END_ID:
                     seeker.extract( mark, entry.extractor() );
-                    if ( idType == IdType.STRING )
+                    switch ( idType )
                     {
-                        doContinue = visitor.endId( (String) entry.extractor().value(), entry.group() );
-                    }
-                    else if ( idType == IdType.INTEGER )
-                    {
+                    case STRING:
+                    case INTEGER:
+                        doContinue = visitor.endId( entry.extractor().value(), entry.group() );
+                        break;
+                    case ACTUAL:
                         doContinue = visitor.endId( ((LongExtractor) entry.extractor()).longValue() );
+                        break;
+                    default: throw new IllegalArgumentException( idType.name() );
                     }
                     break;
                  case TYPE:
@@ -173,7 +182,6 @@ public class CsvInputChunk implements InputChunk
                 }
             }
 
-            // TODO consider caching the positions of where each entity begins
             while ( !mark.isEndOfLine() )
             {
                 seeker.seek( mark, delimiter );

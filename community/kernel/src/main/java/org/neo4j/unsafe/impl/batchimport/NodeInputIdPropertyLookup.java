@@ -54,7 +54,7 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
         long propertyId = nodeRecord.getNextProp();
         while ( propertyId != Record.NULL_REFERENCE.longValue() )
         {
-            propertyStore.getRecord( nodeId, propertyRecord, NORMAL );
+            propertyStore.getRecord( propertyId, propertyRecord, NORMAL );
             // TODO: using the iterator approach is a bit heavy on the garbage,
             // but these collisions should be rare, right?
             for ( PropertyBlock block : propertyRecord )
@@ -64,6 +64,7 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
                     return block.getType().getValue( block, propertyStore );
                 }
             }
+            propertyId = propertyRecord.getNextProp();
         }
         throw new IllegalStateException( "Input id not found for " + nodeId );
     }

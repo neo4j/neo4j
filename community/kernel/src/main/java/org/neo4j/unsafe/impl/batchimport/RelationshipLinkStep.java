@@ -72,7 +72,6 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
 
     public boolean process( RelationshipRecord record, int id, int processors )
     {
-        System.out.println( record );
         long startNode = record.getFirstNode();
         long endNode = record.getSecondNode();
         boolean processFirst = startNode % processors == id;
