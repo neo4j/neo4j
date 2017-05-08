@@ -63,7 +63,7 @@ public class NativeLabelScanStoreExtension extends
     {
         Log log = dependencies.getLogService().getInternalLog( NativeLabelScanStore.class );
         Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( log ) );
+        monitors.addMonitorListener( new LoggingMonitor( log ), NativeLabelScanStore.NATIVE_INDEX_TAG );
         NativeLabelScanStore labelScanStore = new NativeLabelScanStore(
                 dependencies.pageCache(),
                 context.storeDir(),

@@ -82,10 +82,10 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         LuceneLabelScanIndexBuilder indexBuilder = getIndexBuilder( context, directoryFactory, fileSystem, config );
         LogProvider logger = dependencies.getLogService().getInternalLogProvider();
         Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ) ) );
+        monitors.addMonitorListener( new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ) ), NAME );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ),
-                monitors.newMonitor( LabelScanStore.Monitor.class ) );
+                monitors.newMonitor( LabelScanStore.Monitor.class, NAME ) );
 
         return new LabelScanStoreProvider( NAME, scanStore );
     }
