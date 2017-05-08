@@ -37,11 +37,11 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 public class GlobalCursorPools implements CursorPools
 {
     private final CursorPool<NodeCursor> nodeCursor;
-    private final CursorPool<StoreSingleRelationshipCursor> singleRelationshipCursor;
-    private final CursorPool<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
-    private final CursorPool<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
-    private final CursorPool<StorePropertyCursor> propertyCursor;
-    private final CursorPool<StoreSinglePropertyCursor> singlePropertyCursor;
+    private final CursorPool<SingleRelationshipCursor> singleRelationshipCursor;
+    private final CursorPool<IteratorRelationshipCursor> iteratorRelationshipCursor;
+    private final CursorPool<NodeRelationshipCursor> nodeRelationshipsCursor;
+    private final CursorPool<PropertyCursor> propertyCursor;
+    private final CursorPool<SinglePropertyCursor> singlePropertyCursor;
     private final CursorPool<RelationshipGroupCursor> relationshipGroupCursorCache;
     private final CursorPool<DenseNodeDegreeCounter> degreeCounter;
     private final NeoStores neoStores;
@@ -52,16 +52,16 @@ public class GlobalCursorPools implements CursorPools
         this.nodeCursor =
                 new CursorPool<>( 10, cache -> new NodeCursor( neoStores.getNodeStore(), cache, lockService ) );
         this.singleRelationshipCursor = new CursorPool<>( 10,
-                cache -> new StoreSingleRelationshipCursor( neoStores.getRelationshipStore(), cache, lockService ) );
+                cache -> new SingleRelationshipCursor( neoStores.getRelationshipStore(), cache, lockService ) );
         this.iteratorRelationshipCursor = new CursorPool<>( 10,
-                cache -> new StoreIteratorRelationshipCursor( neoStores.getRelationshipStore(), cache, lockService ) );
+                cache -> new IteratorRelationshipCursor( neoStores.getRelationshipStore(), cache, lockService ) );
         this.nodeRelationshipsCursor = new CursorPool<>( 10,
-                cache -> new StoreNodeRelationshipCursor( neoStores.getRelationshipStore(),
+                cache -> new NodeRelationshipCursor( neoStores.getRelationshipStore(),
                         neoStores.getRelationshipGroupStore(), cache, lockService ) );
         this.propertyCursor =
-                new CursorPool<>( 10, cache -> new StorePropertyCursor( neoStores.getPropertyStore(), cache ) );
+                new CursorPool<>( 10, cache -> new PropertyCursor( neoStores.getPropertyStore(), cache ) );
         this.singlePropertyCursor =
-                new CursorPool<>( 10, cache -> new StoreSinglePropertyCursor( neoStores.getPropertyStore(), cache ) );
+                new CursorPool<>( 10, cache -> new SinglePropertyCursor( neoStores.getPropertyStore(), cache ) );
         this.degreeCounter = new CursorPool<>( 10,
                 cache -> new DenseNodeDegreeCounter( neoStores.getRelationshipStore(),
                         neoStores.getRelationshipGroupStore(), cache ) );

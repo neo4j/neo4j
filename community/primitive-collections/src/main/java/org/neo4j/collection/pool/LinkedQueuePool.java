@@ -22,91 +22,13 @@ package org.neo4j.collection.pool;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongSupplier;
 
 public abstract class LinkedQueuePool<R> implements Pool<R>
 {
-    public interface Monitor<R>
-    {
-        void updatedCurrentPeakSize( int currentPeakSize );
-
-        void updatedTargetSize( int targetSize );
-
-        void created( R resource );
-
-        void acquired( R resource );
-
-        void disposed( R resource );
-
-        class Adapter<R> implements Monitor<R>
-        {
-            @Override
-            public void updatedCurrentPeakSize( int currentPeakSize )
-            {
-            }
-
-            @Override
-            public void updatedTargetSize( int targetSize )
-            {
-            }
-
-            @Override
-            public void created( R resource )
-            {
-            }
-
-            @Override
-            public void acquired( R resource )
-            {
-            }
-
-            @Override
-            public void disposed( R resource )
-            {
-            }
-        }
-    }
-
-    public interface CheckStrategy
-    {
-        boolean shouldCheck();
-
-        class TimeoutCheckStrategy implements CheckStrategy
-        {
-            private final long interval;
-            private long lastCheckTime;
-            private final LongSupplier clock;
-
-            public TimeoutCheckStrategy( long interval )
-            {
-                this( interval, System::currentTimeMillis );
-            }
-
-            public TimeoutCheckStrategy( long interval, LongSupplier clock )
-            {
-                this.interval = interval;
-                this.lastCheckTime = clock.getAsLong();
-                this.clock = clock;
-            }
-
-            @Override
-            public boolean shouldCheck()
-            {
-                long currentTime = clock.getAsLong();
-                if ( currentTime > lastCheckTime + interval )
-                {
-                    lastCheckTime = currentTime;
-                    return true;
-                }
-                return false;
-            }
-        }
-    }
-
     private static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
-    private final Monitor<R> monitor;
+    private final LinkedQueuePoolMonitor<R> monitor;
     private final int minSize;
     private final CheckStrategy checkStrategy;
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
@@ -117,11 +39,11 @@ public abstract class LinkedQueuePool<R> implements Pool<R>
 
     public LinkedQueuePool( int minSize )
     {
-        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-            new Monitor.Adapter<>() );
+        this( minSize, new TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
+            new LinkedQueuePoolMonitor.Adapter<>() );
     }
 
-    LinkedQueuePool( int minSize, CheckStrategy strategy, Monitor<R> monitor )
+    LinkedQueuePool( int minSize, CheckStrategy strategy, LinkedQueuePoolMonitor<R> monitor )
     {
         this.minSize = minSize;
         this.currentPeakSize = 0;

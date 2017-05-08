@@ -19,16 +19,13 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.StorageProperty;
 
 /**
  * Represents the transactional changes to a node:
@@ -65,43 +62,10 @@ public interface NodeState extends PropertyContainerState
 
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
 
-    NodeState EMPTY = new NodeState()
+    NodeState EMPTY = new EmptyNodeState();
+
+    class EmptyNodeState extends EmptyPropertyContainerState implements NodeState
     {
-        @Override
-        public Iterator<StorageProperty> addedProperties()
-        {
-            return Iterators.emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> changedProperties()
-        {
-            return Iterators.emptyIterator();
-        }
-
-        @Override
-        public Iterator<Integer> removedProperties()
-        {
-            return Iterators.emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> addedAndChangedProperties()
-        {
-            return Iterators.emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
-        }
-
-        @Override
-        public void accept( PropertyContainerState.Visitor visitor ) throws ConstraintValidationException
-        {
-        }
-
         @Override
         public ReadableDiffSets<Integer> labelDiffSets()
         {
@@ -144,30 +108,6 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public boolean hasChanges()
-        {
-            return false;
-        }
-
-        @Override
-        public StorageProperty getChangedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
-        public StorageProperty getAddedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
-        public boolean isPropertyRemoved( int propertyKeyId )
-        {
-            return false;
-        }
-
-        @Override
         public PrimitiveLongIterator getAddedRelationships( Direction direction )
         {
             return null;
@@ -178,6 +118,5 @@ public interface NodeState extends PropertyContainerState
         {
             return null;
         }
-    };
-
+    }
 }

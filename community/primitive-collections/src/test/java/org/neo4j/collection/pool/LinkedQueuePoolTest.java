@@ -25,7 +25,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongSupplier;
+
+import org.neo4j.time.FakeClock;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -38,9 +39,9 @@ public class LinkedQueuePoolTest
     {
         FakeClock clock = new FakeClock();
 
-        LinkedQueuePool.CheckStrategy timeStrategy = new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock );
+        CheckStrategy timeStrategy = new TimeoutCheckStrategy( 100, clock );
 
-        while ( clock.getAsLong() <= 100 )
+        while ( clock.millis() <= 100 )
         {
             assertFalse( timeStrategy.shouldCheck() );
             clock.forward( 10, TimeUnit.MILLISECONDS );
@@ -301,7 +302,7 @@ public class LinkedQueuePoolTest
     private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
         return new LinkedQueuePool<Object>( minSize,
-                new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor )
+                new TimeoutCheckStrategy( 100, clock ), stateMonitor )
         {
             @Override
             protected Object create()
@@ -346,7 +347,7 @@ public class LinkedQueuePoolTest
         }
     }
 
-    private class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
+    private class StatefulMonitor implements LinkedQueuePoolMonitor<Object>
     {
         public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
         public AtomicInteger targetSize = new AtomicInteger( -1 );
@@ -382,22 +383,6 @@ public class LinkedQueuePoolTest
         public void disposed( Object Object )
         {
             this.disposed.incrementAndGet();
-        }
-    }
-
-    private static class FakeClock implements LongSupplier
-    {
-        @Override
-        public long getAsLong()
-        {
-            return time;
-        }
-
-        private long time = 0;
-
-        public void forward( long amount, TimeUnit timeUnit )
-        {
-            time = time + timeUnit.toMillis( amount );
         }
     }
 }

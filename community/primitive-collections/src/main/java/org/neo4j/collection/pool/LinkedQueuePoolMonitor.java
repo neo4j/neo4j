@@ -17,35 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.txstate;
+package org.neo4j.collection.pool;
 
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-
-/**
- * Represents the transactional changes to a relationship.
- *
- * @see PropertyContainerState
- */
-public interface RelationshipState extends PropertyContainerState
+interface LinkedQueuePoolMonitor<R>
 {
-    long getId();
+    void updatedCurrentPeakSize( int currentPeakSize );
 
-    <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
+    void updatedTargetSize( int targetSize );
 
-    RelationshipState EMPTY = new EmptyRelationshipState();
+    void created( R resource );
 
-    class EmptyRelationshipState extends EmptyPropertyContainerState implements RelationshipState
+    void acquired( R resource );
+
+    void disposed( R resource );
+
+    class Adapter<R> implements LinkedQueuePoolMonitor<R>
     {
         @Override
-        public long getId()
+        public void updatedCurrentPeakSize( int currentPeakSize )
         {
-            throw new UnsupportedOperationException( "id" + " not defined" );
         }
 
         @Override
-        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
+        public void updatedTargetSize( int targetSize )
         {
-            return false;
+        }
+
+        @Override
+        public void created( R resource )
+        {
+        }
+
+        @Override
+        public void acquired( R resource )
+        {
+        }
+
+        @Override
+        public void disposed( R resource )
+        {
         }
     }
 }
