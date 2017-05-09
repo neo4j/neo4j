@@ -48,8 +48,6 @@ import static java.lang.Math.toIntExact;
  * Encodes property data into {@link PropertyRecord property records}, attaching them to each
  * {@link Batch}. This step is designed to handle multiple threads doing the property encoding,
  * since property encoding is potentially the most costly step in this {@link Stage}.
- * The delivered {@link PropertyRecord property records} all have local ids and so reassignment of those
- * ids will have to be done later.
  */
 public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
         extends ProcessorStep<Batch<INPUT,RECORD>>

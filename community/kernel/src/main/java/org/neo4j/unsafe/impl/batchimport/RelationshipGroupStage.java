@@ -20,10 +20,15 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
+/**
+ * Takes information about relationship groups in the {@link NodeRelationshipCache}, which is produced
+ * as a side-effect of linking relationships together, and writes them out into {@link RelationshipGroupStore}.
+ */
 public class RelationshipGroupStage extends Stage
 {
     public RelationshipGroupStage( String topic, Configuration config,

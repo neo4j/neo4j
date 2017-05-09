@@ -115,7 +115,6 @@ public class ProcessorStepTest
         @Override
         protected void process( Void batch, BatchSender sender ) throws Throwable
         {
-            System.out.println( Thread.currentThread().getName() + " process" );
             latch.await();
         }
     }

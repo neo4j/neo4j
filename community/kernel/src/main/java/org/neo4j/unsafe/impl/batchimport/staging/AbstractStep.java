@@ -245,10 +245,4 @@ public abstract class AbstractStep<T> implements Step<T>
         return format( "%s[%s, processors:%d, batches:%d", getClass().getSimpleName(),
                 name, processors( 0 ), doneBatches.get() );
     }
-
-    @Override
-    public long doneBatches()
-    {
-        return doneBatches.get();
-    }
 }

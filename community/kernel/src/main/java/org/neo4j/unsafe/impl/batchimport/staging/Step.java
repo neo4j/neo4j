@@ -93,6 +93,4 @@ public interface Step<T> extends Parallelizable, AutoCloseable, Panicable
      */
     @Override
     void close() throws Exception;
-
-    long doneBatches();
 }

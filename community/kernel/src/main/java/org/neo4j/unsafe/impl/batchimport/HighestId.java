@@ -34,7 +34,7 @@ public class HighestId
         do
         {
             currentHighest = highestId.get();
-            if ( candidate < currentHighest )
+            if ( candidate <= currentHighest )
             {
                 return;
             }

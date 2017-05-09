@@ -45,7 +45,7 @@ public class HighIdTransactionApplierTest
     public void shouldUpdateHighIdsOnExternalTransaction() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         // WHEN
@@ -108,7 +108,7 @@ public class HighIdTransactionApplierTest
     public void shouldTrackSecondaryUnitIdsAsWell() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         NodeRecord node = new NodeRecord( 5 ).initialize( true, 123, true, 456, 0 );

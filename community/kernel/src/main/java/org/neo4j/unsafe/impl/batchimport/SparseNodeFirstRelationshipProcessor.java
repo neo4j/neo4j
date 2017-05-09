@@ -20,22 +20,18 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 
 /**
- * Sets the {@link NodeRecord#setNextRel(long) relationship field} on all {@link NodeRecord nodes}.
- * This is done after all relationships have been imported and the {@link NodeRelationshipCache node cache}
- * points to the first relationship for each node.
- *
- * This step also creates {@link RelationshipGroupRecord group records} for the dense nodes as it encounters
- * dense nodes, where it gets all relationship group information from {@link NodeRelationshipCache}.
+ * Sets the {@link NodeRecord#setNextRel(long) relationship field} on sparse nodes. 
+ * This is done after all sparse node relationship links have been done and the {@link NodeRelationshipCache node cache}
+ * points to the first relationship for sparse each node.
  */
-public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>
+public class SparseNodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>
 {
     private final NodeRelationshipCache cache;
 
-    public NodeFirstRelationshipProcessor( NodeRelationshipCache cache )
+    public SparseNodeFirstRelationshipProcessor( NodeRelationshipCache cache )
     {
         this.cache = cache;
     }

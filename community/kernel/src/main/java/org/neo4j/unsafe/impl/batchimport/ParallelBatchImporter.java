@@ -343,7 +343,7 @@ public class ParallelBatchImporter implements BatchImporter
             executeStage( new RelationshipGroupStage( topic, groupConfig,
                     neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache ) );
             // Set node nextRel fields
-            executeStage( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
+            executeStage( new SparseNodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
                     nodeRelationshipCache ) );
 
             // Link relationship chains together for dense nodes

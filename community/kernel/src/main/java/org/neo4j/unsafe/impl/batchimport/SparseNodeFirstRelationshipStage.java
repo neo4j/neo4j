@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
@@ -30,27 +29,26 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 /**
- * Updates {@link NodeRecord node records} with relationship/group chain heads after relationship import. Steps:
+ * Updates sparse {@link NodeRecord node records} with relationship heads after relationship linking. Steps:
  *
  * <ol>
  * <li>{@link ReadNodeIdsByCacheStep} looks at {@link NodeRelationshipCache} for which nodes have had
  * relationships imported and loads those {@link NodeRecord records} from store.</li>
- * <li>{@link RecordProcessorStep} / {@link NodeFirstRelationshipProcessor} uses {@link NodeRelationshipCache}
- * to update each {@link NodeRecord#setNextRel(long)}. For dense nodes {@link RelationshipGroupRecord group records}
- * are created and set as {@link NodeRecord#setNextRel(long)}.</li>
+ * <li>{@link RecordProcessorStep} / {@link SparseNodeFirstRelationshipProcessor} uses {@link NodeRelationshipCache}
+ * to update each {@link NodeRecord#setNextRel(long)}.
  * <li>{@link UpdateRecordsStep} writes the updated records back into store.</li>
  * </ol>
  */
-public class NodeFirstRelationshipStage extends Stage
+public class SparseNodeFirstRelationshipStage extends Stage
 {
-    public NodeFirstRelationshipStage( String topic, Configuration config, NodeStore nodeStore,
+    public SparseNodeFirstRelationshipStage( String topic, Configuration config, NodeStore nodeStore,
             NodeRelationshipCache cache )
     {
         super( "Node --> Relationship" + topic, config, ORDER_SEND_DOWNSTREAM );
         add( new ReadNodeIdsByCacheStep( control(), config, cache, NodeType.NODE_TYPE_SPARSE ) );
         add( new ReadRecordsStep<>( control(), config, true, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new NodeFirstRelationshipProcessor( cache ), false ) );
+                new SparseNodeFirstRelationshipProcessor( cache ), false ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }
 }
