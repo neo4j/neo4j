@@ -22,11 +22,13 @@ package org.neo4j.index;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -45,26 +47,14 @@ public class LabelScanStoreLoggingTest
     public void noLuceneLabelScanStoreMonitorMessages() throws Throwable
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        File storeDir = testDirectory.directory();
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                         .setInternalLogProvider( logProvider )
-                        .newEmbeddedDatabase( storeDir );
+                        .newEmbeddedDatabase( testDirectory.directory() );
         try
         {
 
-            DependencyResolver resolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-
-            NativeLabelScanStore labelScanStore = resolver.resolveDependency( NativeLabelScanStore.class );
-            try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )
-            {
-                labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{1} ) );
-            }
-            labelScanStore.stop();
-            labelScanStore.shutdown();
-
-            labelScanStore.init();
-            labelScanStore.start();
-
+            NativeLabelScanStore labelScanStore = resolveDependency( (GraphDatabaseAPI) database, NativeLabelScanStore.class);
+            performWriteAndRestartStore( labelScanStore );
             logProvider.assertNoLogCallContaining( LuceneLabelScanStore.class.getName() );
             logProvider.assertContainsLogCallContaining( NativeLabelScanStore.class.getName() );
             logProvider.assertContainsMessageContaining(
@@ -74,5 +64,46 @@ public class LabelScanStoreLoggingTest
         {
             database.shutdown();
         }
+    }
+
+    @Test
+    public void noNativeLabelScanStoreMonitorMessages() throws Throwable
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        GraphDatabaseService database = new TestGraphDatabaseFactory()
+                .setInternalLogProvider( logProvider )
+                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .setConfig( GraphDatabaseSettings.label_index.name(), GraphDatabaseSettings.LabelIndex.LUCENE.name() )
+                .newGraphDatabase();
+        try
+        {
+            LuceneLabelScanStore labelScanStore = resolveDependency( (GraphDatabaseAPI) database, LuceneLabelScanStore.class);
+            performWriteAndRestartStore( labelScanStore );
+            logProvider.assertNoLogCallContaining( NativeLabelScanStore.class.getName() );
+            logProvider.assertContainsLogCallContaining( LuceneLabelScanStore.class.getName() );
+        }
+        finally
+        {
+            database.shutdown();
+        }
+    }
+
+    private void performWriteAndRestartStore( LabelScanStore labelScanStore ) throws IOException
+    {
+        try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )
+        {
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{1} ) );
+        }
+        labelScanStore.stop();
+        labelScanStore.shutdown();
+
+        labelScanStore.init();
+        labelScanStore.start();
+    }
+
+    private static <T> T resolveDependency( GraphDatabaseAPI database, Class<T> clazz )
+    {
+        DependencyResolver resolver = database.getDependencyResolver();
+        return resolver.resolveDependency( clazz );
     }
 }
