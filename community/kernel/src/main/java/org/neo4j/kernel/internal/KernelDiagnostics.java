@@ -30,8 +30,8 @@ import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.store.MappedFileNameFilter;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.Logger;
@@ -152,16 +152,9 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         {
             private long size;
 
-            private MappedFileNameFilter fileFilter = new MappedFileNameFilter();
-
-            MappedFileCounter()
-            {
-
-            }
-
             public void addFile( File file )
             {
-                if ( fileFilter.accept( file.getParentFile(), file.getName() ) )
+                if ( StoreType.shouldBeManagedByPageCache( file.getName() ) )
                 {
                     size += file.length();
                 }
