@@ -58,7 +58,8 @@ class StoreLockChecker implements Closeable
         {
             if ( Files.isWritable( lockFile ) )
             {
-                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(), databaseDirectory.toFile());
+                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(),
+                        databaseDirectory.toFile() );
                 storeLocker.checkLock();
                 return storeLocker;
             }
