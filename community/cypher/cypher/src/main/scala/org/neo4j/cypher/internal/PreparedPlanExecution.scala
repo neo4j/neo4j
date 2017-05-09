@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 
 case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
   def execute(transactionalContext: TransactionalContextWrapper, params: Map[String, Any]): ExecutionResult =

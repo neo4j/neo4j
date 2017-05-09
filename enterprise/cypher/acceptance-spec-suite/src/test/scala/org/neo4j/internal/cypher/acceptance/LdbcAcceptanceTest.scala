@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.EstimatedRows
 import org.neo4j.cypher.{ExecutionEngineFunSuite, LdbcQueries, NewPlannerTestSupport}
 
 /**

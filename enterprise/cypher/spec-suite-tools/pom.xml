@@ -167,7 +167,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.2</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.3</artifactId>
       <version>${project.version}</version>
     </dependency>
 

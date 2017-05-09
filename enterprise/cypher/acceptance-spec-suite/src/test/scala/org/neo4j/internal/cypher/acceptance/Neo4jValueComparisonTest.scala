@@ -20,8 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
-import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.Equivalent
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure
 import org.neo4j.kernel.api.properties.Property

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.query.PlannerInfo

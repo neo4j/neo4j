@@ -171,7 +171,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
     }
 
     def expectMergeConstraintConflictException(query: String, messages: Seq[String]): Unit = {
-      Seq("2.3", "3.1", "3.2").foreach { version =>
+      Seq("2.3", "3.1", "3.2", "3.3").foreach { version =>
         val exception = intercept[MergeConstraintConflictException] {
           innerExecute(s"CYPHER $version $query")
         }

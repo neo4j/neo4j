@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.compiler.v3_2.spi.RelationshipIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
 
 public final class RelationshipIdWrapperImpl implements RelationshipIdWrapper
 {

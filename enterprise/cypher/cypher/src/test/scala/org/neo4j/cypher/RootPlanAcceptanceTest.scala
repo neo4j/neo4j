@@ -19,32 +19,32 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
+import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("query that does not go through the compiled runtime") {
     given("MATCH (n) RETURN n, count(*)")
-      .withCypherVersion(CypherVersion.v3_2)
-      .shouldHaveCypherVersion(CypherVersion.v3_2)
+      .withCypherVersion(CypherVersion.v3_3)
+      .shouldHaveCypherVersion(CypherVersion.v3_3)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
   test("query that lacks support from the compiled runtime") {
     given("CREATE ()")
-      .withCypherVersion(CypherVersion.v3_2)
+      .withCypherVersion(CypherVersion.v3_3)
       .withRuntime(CompiledRuntimeName)
-      .shouldHaveCypherVersion(CypherVersion.v3_2)
+      .shouldHaveCypherVersion(CypherVersion.v3_3)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
   test("query that should go through the compiled runtime") {
     given("MATCH (a)-->(b) RETURN a")
-      .withCypherVersion(CypherVersion.v3_2)
+      .withCypherVersion(CypherVersion.v3_3)
       .withRuntime(CompiledRuntimeName)
-      .shouldHaveCypherVersion(CypherVersion.v3_2)
+      .shouldHaveCypherVersion(CypherVersion.v3_3)
       .shouldHaveRuntime(CompiledRuntimeName)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
@@ -72,7 +72,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       given("match (n) return n")
         .withPlanner(planner)
         .withRuntime(runtime)
-        .shouldHaveCypherVersion(CypherVersion.v3_2)
+        .shouldHaveCypherVersion(CypherVersion.v3_3)
         .shouldHavePlanner(planner)
         .shouldHaveRuntime(runtime)
     }

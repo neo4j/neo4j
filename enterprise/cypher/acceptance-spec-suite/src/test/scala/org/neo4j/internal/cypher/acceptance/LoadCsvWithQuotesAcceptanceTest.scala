@@ -24,7 +24,7 @@ import java.io.PrintWriter
 import org.neo4j.csv.reader.MissingEndQuoteException
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineHelper, NewPlannerTestSupport, RunWithConfigTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

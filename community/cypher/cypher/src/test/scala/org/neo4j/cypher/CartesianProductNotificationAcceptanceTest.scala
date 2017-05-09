@@ -23,15 +23,15 @@ import java.time.Clock
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.compatibility.v3_2.{StringInfoLogger, WrappedMonitors}
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
-import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.{StringInfoLogger, WrappedMonitors}
+import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {

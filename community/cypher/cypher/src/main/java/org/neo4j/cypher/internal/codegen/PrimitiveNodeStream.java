@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_2.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
 import org.neo4j.graphdb.Node;
 
 import static java.lang.String.format;

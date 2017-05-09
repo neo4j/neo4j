@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.ExecutionEngineHelper._
 import org.neo4j.cypher.internal.frontend
-import org.neo4j.cypher.internal.frontend.v3_2.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 import scala.language.reflectiveCalls
@@ -37,6 +37,6 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
     graph = createGraphDatabase(Map(GraphDatabaseSettings.cypher_hints_error -> "true"))
     eengine = createEngine(graph)
 
-    intercept[frontend.v3_2.InvalidArgumentException](execute("cypher runtime=compiled return 42"))
+    intercept[frontend.v3_3.InvalidArgumentException](execute("cypher runtime=compiled return 42"))
   }
 }

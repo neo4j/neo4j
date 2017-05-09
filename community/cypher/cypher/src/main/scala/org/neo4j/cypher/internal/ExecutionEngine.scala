@@ -22,21 +22,21 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_2._
-import org.neo4j.cypher.internal.compiler.v3_2.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compiler.v3_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v3_3.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.api.{KernelAPI, ReadOperations}
 import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.{KernelAPI, ReadOperations}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
-import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
-import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.kernel.{GraphDatabaseQueryService, api}
+import org.neo4j.logging.{LogProvider, NullLogProvider}
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
 /**
@@ -233,7 +233,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
     )
 
-    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2)) &&
+    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2) || (version != CypherVersion.v3_3)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
