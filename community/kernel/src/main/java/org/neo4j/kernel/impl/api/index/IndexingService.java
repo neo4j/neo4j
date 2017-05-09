@@ -439,11 +439,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         {
             for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
             {
-                IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
-                if ( updater != null )
-                {
-                    updater.process( indexUpdate );
-                }
+                processUpdate( updaterMap, indexUpdate );
             }
         }
     }
@@ -543,16 +539,22 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 {
                     IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate = indexEntryUpdates.next();
                     monitor.applyingRecoveredUpdate( indexUpdate );
-                    IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
-                    if ( updater != null )
-                    {
-                        updater.process( indexUpdate );
-                    }
+                    processUpdate( updaterMap, indexUpdate );
                 }
                 monitor.recoveredUpdatesApplied();
             }
         }
         recoveredNodeIds.clear();
+    }
+
+    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
+            throws IOException, IndexEntryConflictException
+    {
+        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
+        if ( updater != null )
+        {
+            updater.process( indexUpdate );
+        }
     }
 
     private Iterator<NodeUpdates> recoveredNodeUpdatesIterator()

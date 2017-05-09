@@ -56,7 +56,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
 
     /**
      * Produces {@link NodeUpdates} objects from reading node {@code nodeId}, its labels and properties
-     * and puts those updates into {@code target}.
+     * and puts those updates into node updates container.
      *
      * @param nodeId id of node to load.
      * @return node updates container
