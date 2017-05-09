@@ -23,12 +23,6 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  test("apa") {
-    val r = graph.execute("cypher debug=generate_java_source debug=show_java_source match (n) return n")
-    while(r.hasNext) r.next()
-    println(r.getExecutionPlanDescription)
-  }
-
   // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
     val userId = createLabeledNode(Map("userId" -> 11), "User")
