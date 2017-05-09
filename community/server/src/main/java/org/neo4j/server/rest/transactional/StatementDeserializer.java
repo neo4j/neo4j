@@ -39,20 +39,19 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static org.codehaus.jackson.JsonToken.END_ARRAY;
 import static org.codehaus.jackson.JsonToken.END_OBJECT;
 import static org.codehaus.jackson.JsonToken.FIELD_NAME;
 import static org.codehaus.jackson.JsonToken.START_ARRAY;
 import static org.codehaus.jackson.JsonToken.START_OBJECT;
-import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StatementDeserializer extends PrefetchingIterator<Statement>
 {
     private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private static final Map<String, Object> NO_PARAMETERS = unmodifiableMap( map() );
-    private static final Iterator<Neo4jError> NO_ERRORS = emptyIterator();
 
     private final JsonParser input;
     private State state;
@@ -80,7 +79,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
     public Iterator<Neo4jError> errors()
     {
-        return errors == null ? NO_ERRORS : errors.iterator();
+        return errors == null ? emptyIterator() : errors.iterator();
     }
 
     @Override

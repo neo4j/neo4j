@@ -229,7 +229,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      */
     public ResourceIterator<File> snapshotMetaFiles()
     {
-        return Iterators.emptyIterator();
+        return Iterators.emptyResourceIterator();
     }
 
     public static class Descriptor

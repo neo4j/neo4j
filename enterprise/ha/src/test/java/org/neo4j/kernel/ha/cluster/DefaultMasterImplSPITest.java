@@ -57,7 +57,7 @@ public class DefaultMasterImplSPITest
         CheckPointer checkPointer = mock( CheckPointer.class );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyIterator() );
+        when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyResourceIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
                 mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ),

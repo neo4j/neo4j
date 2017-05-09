@@ -47,7 +47,6 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -163,6 +162,7 @@ import org.neo4j.unsafe.batchinsert.BatchRelationship;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 import static java.lang.Boolean.parseBoolean;
+import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -729,7 +729,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         if ( properties == null || properties.isEmpty() )
         {
-            return Iterators.emptyIterator();
+            return emptyIterator();
         }
         return new IteratorWrapper<PropertyBlock, Map.Entry<String,Object>>( properties.entrySet().iterator() )
         {

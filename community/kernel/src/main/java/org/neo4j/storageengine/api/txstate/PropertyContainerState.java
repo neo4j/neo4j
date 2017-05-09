@@ -21,9 +21,10 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
+
+import static java.util.Collections.emptyIterator;
 
 /**
  * Represents the property changes to a {@link NodeState node} or {@link RelationshipState relationship}:
@@ -69,25 +70,25 @@ public interface PropertyContainerState
         @Override
         public Iterator<StorageProperty> addedProperties()
         {
-            return Iterators.emptyIterator();
+            return emptyIterator();
         }
 
         @Override
         public Iterator<StorageProperty> changedProperties()
         {
-            return Iterators.emptyIterator();
+            return emptyIterator();
         }
 
         @Override
         public Iterator<Integer> removedProperties()
         {
-            return Iterators.emptyIterator();
+            return emptyIterator();
         }
 
         @Override
         public Iterator<StorageProperty> addedAndChangedProperties()
         {
-            return Iterators.emptyIterator();
+            return emptyIterator();
         }
 
         @Override

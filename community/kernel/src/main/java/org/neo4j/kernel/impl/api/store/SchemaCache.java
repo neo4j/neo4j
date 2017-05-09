@@ -42,6 +42,8 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static java.util.Collections.emptyIterator;
+
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
  * Will always reflect the committed state of the schema store.
@@ -237,12 +239,12 @@ public class SchemaCache
     public Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
     {
         Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
-        return forLabel == null ? Iterators.emptyIterator() : forLabel.iterator();
+        return forLabel == null ? emptyIterator() : forLabel.iterator();
     }
 
     public Iterator<IndexDescriptor> indexesByProperty( int propertyId )
     {
         List<IndexDescriptor> indexes = indexByProperty.get( propertyId );
-        return (indexes == null) ? Iterators.emptyIterator() : indexes.iterator();
+        return (indexes == null) ? emptyIterator() : indexes.iterator();
     }
 }

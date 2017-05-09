@@ -1142,7 +1142,7 @@ public class IndexingServiceTest
         when( indexProvider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyIterator() );
+        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyResourceIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
                 any( LabelScanStoreProvider.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );

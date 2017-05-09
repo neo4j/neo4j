@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
 
+import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -63,7 +64,6 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelIT extends KernelIntegrationTest
@@ -433,7 +433,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.close();
 
-        assertEquals( emptySetOf( Long.class ), nodes );
+        assertEquals( emptySet(), nodes );
     }
 
     @Test

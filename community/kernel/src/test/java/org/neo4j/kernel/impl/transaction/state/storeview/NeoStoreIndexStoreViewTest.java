@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -65,7 +66,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class NeoStoreIndexStoreViewTest
 {
@@ -141,7 +141,7 @@ public class NeoStoreIndexStoreViewTest
         storeScan.run();
 
         // then
-        assertEquals( emptySetOf( NodeUpdates.class ), visitor.getUpdates() );
+        assertEquals( emptySet(), visitor.getUpdates() );
     }
 
     @Test
