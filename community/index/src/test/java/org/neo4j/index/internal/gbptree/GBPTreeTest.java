@@ -720,6 +720,33 @@ public class GBPTreeTest
         }
     }
 
+    @Test
+    public void shouldSeeSimpleInsertionsWithExactMatch() throws Exception
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            int count = 1000;
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                for ( int i = 0; i < count; i++ )
+                {
+                    writer.put( new MutableLong( i ), new MutableLong( i ) );
+                }
+            }
+
+            for ( int i = 0; i < count; i++ )
+            {
+                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> cursor =
+                              index.seek( new MutableLong( i ), new MutableLong( i ) ) )
+                {
+                    assertTrue( cursor.next() );
+                    assertEquals( i, cursor.get().key().longValue() );
+                    assertFalse( cursor.next() );
+                }
+            }
+        }
+    }
+
     /* Randomized tests */
 
     @Test

@@ -42,7 +42,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 
@@ -513,6 +512,50 @@ public class SeekCursorTest
 
         // then
         assertEquals( -1, expectedNext );
+    }
+
+    @Test
+    public void exactMatchInStableRoot() throws Exception
+    {
+        // given
+        for ( int i = 0; i < maxKeyCount; i++ )
+        {
+            insert( i );
+        }
+
+        // when
+        for ( long i = 0; i < maxKeyCount; i++ )
+        {
+            assertExactMatch( i );
+        }
+    }
+
+    @Test
+    public void exactMatchInLeaves() throws Exception
+    {
+        // given
+        for ( int i = 0; i < maxKeyCount + 1; i++ )
+        {
+            insert( i );
+        }
+
+        // when
+        for ( long i = 0; i < maxKeyCount + 1; i++ )
+        {
+            assertExactMatch( i );
+        }
+    }
+
+    private void assertExactMatch( long i ) throws IOException
+    {
+        try ( SeekCursor<MutableLong, MutableLong> seeker = seekCursor( i, i ) )
+        {
+            // then
+            assertTrue( seeker.next() );
+            assertEquals( i, seeker.get().key().longValue() );
+            assertEquals( valueForKey( i ), seeker.get().value().longValue() );
+            assertFalse( seeker.next() );
+        }
     }
 
     /* INSERT */
