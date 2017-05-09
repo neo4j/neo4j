@@ -221,7 +221,7 @@ public class DataSourceModule
                 platformModule.clock, editionModule.accessCapability,
                 platformModule.storeCopyCheckPointMutex,
                 editionModule.progressionFactory,
-                platformModule.recoveryCleanupWorkCollector) );
+                platformModule.recoveryCleanupWorkCollector ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
