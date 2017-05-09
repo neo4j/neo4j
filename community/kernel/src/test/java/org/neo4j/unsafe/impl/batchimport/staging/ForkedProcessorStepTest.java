@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -30,6 +31,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
@@ -125,6 +128,103 @@ public class ForkedProcessorStepTest
         step.close();
     }
 
+    @Test
+    public void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception
+    {
+        int length = 100;
+        AtomicIntegerArray reference = new AtomicIntegerArray( length );
+
+        // GIVEN
+        StageControl control = mock( StageControl.class );
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<int[]>( control, "Processor",
+                config( availableProcessors ) )
+        {
+            @Override
+            protected void forkedProcess( int id, int processors, int[] batch ) throws InterruptedException
+            {
+                int ticket = batch[0];
+                Thread.sleep( ThreadLocalRandom.current().nextInt( 10 ) );
+                for ( int i = 1; i < batch.length; i++ )
+                {
+                    if ( batch[i] % processors == id )
+                    {
+                        assertTrue( "Was expecting " + ticket + " for " + batch[i],
+                                reference.compareAndSet( batch[i], ticket, ticket + 1 ) );
+                    }
+                }
+            }
+        };
+        DeadEndStep downstream = new DeadEndStep( control );
+        step.setDownstream( downstream );
+
+        // WHEN
+        step.start( 0 );
+        downstream.start( 0 );
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for ( int ticket = 0; ticket < 200; ticket++ )
+        {
+            // The processor count is changed here in this block simply because otherwise
+            // it's very hard to know how many processors we expect to see have processed
+            // a particular batch.
+            if ( random.nextFloat() < 0.1 )
+            {
+                int p = step.processors( random.nextInt( -2, 4 ) );
+            }
+
+            int[] batch = new int[length];
+            batch[0] = ticket;
+            for ( int j = 1; j < batch.length; j++ )
+            {
+                batch[j] = j - 1;
+            }
+            step.receive( ticket, batch );
+        }
+        step.endOfUpstream();
+        while ( !step.isCompleted() )
+        {
+            Thread.sleep( 10 );
+        }
+        step.close();
+    }
+
+    @Test
+    public void shouldPanicOnFailure() throws Exception
+    {
+        // GIVEN
+        SimpleStageControl control = new SimpleStageControl();
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        Exception testPanic = new RuntimeException();
+        ForkedProcessorStep<Void> step = new ForkedProcessorStep<Void>( control, "Processor",
+                config( availableProcessors ) )
+        {
+            @Override
+            protected void forkedProcess( int id, int processors, Void batch ) throws Throwable
+            {
+                throw testPanic;
+            }
+        };
+
+        // WHEN
+        step.start( 0 );
+        step.receive( 1, null );
+        control.steps( step );
+
+        // THEN
+        while ( !step.isCompleted() )
+        {
+            Thread.sleep( 10 );
+        }
+        try
+        {
+            control.assertHealthy();
+        }
+        catch ( Exception e )
+        {
+            assertSame( testPanic, e );
+        }
+    }
+
     private static class BatchProcessor extends ForkedProcessorStep<Batch>
     {
         protected BatchProcessor( StageControl control, int processors )
@@ -164,6 +264,19 @@ public class ForkedProcessorStepTest
         {
             assertFalse( processed[id] );
             processed[id] = true;
+        }
+    }
+
+    private static class DeadEndStep extends ProcessorStep<Object>
+    {
+        DeadEndStep( StageControl control )
+        {
+            super( control, "END", Configuration.DEFAULT, 1 );
+        }
+
+        @Override
+        protected void process( Object batch, BatchSender sender ) throws Throwable
+        {
         }
     }
 
@@ -231,12 +344,6 @@ public class ForkedProcessorStepTest
         @Override
         public void close() throws Exception
         {
-        }
-
-        @Override
-        public long doneBatches()
-        {
-            return 0;
         }
     }
 }

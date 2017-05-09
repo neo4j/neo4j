@@ -88,7 +88,16 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
                     // It will notice itself later, the most important thing here is that further Units
                     // will have a lower number of processor as expected max
                 }
+                awaitEmpty();
             }
+        }
+    }
+
+    private void awaitEmpty()
+    {
+        while ( head.get().ticket - tail.get().ticket > 0 )
+        {
+            PARK.park( receiverThread = Thread.currentThread() );
         }
     }
 
@@ -137,7 +146,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         return queueTime;
     }
 
-    protected abstract void forkedProcess( int id, int processors, T batch );
+    protected abstract void forkedProcess( int id, int processors, T batch ) throws Throwable;
 
     @SuppressWarnings( "unchecked" )
     void sendDownstream( Unit unit )
@@ -251,34 +260,41 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         @Override
         public void run()
         {
-            while ( !isCompleted() )
+            try
             {
-                Unit candidate = current.next;
-                if ( candidate != null )
+                while ( !isCompleted() )
                 {
-                    if ( id < candidate.processors )
+                    Unit candidate = current.next;
+                    if ( candidate != null )
                     {
-                        // There's work to do
-                        long time = nanoTime();
-                        forkedProcess( id, candidate.processors, candidate.batch );
-                        candidate.processorDone( nanoTime() - time );
+                        if ( id < candidate.processors )
+                        {
+                            // There's work to do
+                            long time = nanoTime();
+                            forkedProcess( id, candidate.processors, candidate.batch );
+                            candidate.processorDone( nanoTime() - time );
+                        }
+                        else
+                        {
+                            // The id of this processor is less than that of the next unit's expected max.
+                            // This means that the number of assigned processors to this step has decreased
+                            // and that this processor have reached the end of its life.
+                            break;
+                        }
+
+                        current = candidate;
                     }
                     else
                     {
-                        // The id of this processor is less than that of the next unit's expected max.
-                        // This means that the number of assigned processors to this step has decreased
-                        // and that this processor have reached the end of its life.
-                        break;
+                        // There's no work to be done right now, park a while. When we wake up and work have accumulated
+                        // we'll plow throw them w/o park in between anyway.
+                        PARK.park( this );
                     }
-
-                    current = candidate;
                 }
-                else
-                {
-                    // There's no work to be done right now, park a while. When we wake up and work have accumulated
-                    // we'll plow throw them w/o park in between anyway.
-                    PARK.park( this );
-                }
+            }
+            catch ( Throwable e )
+            {
+                issuePanic( e, false );
             }
         }
     }
