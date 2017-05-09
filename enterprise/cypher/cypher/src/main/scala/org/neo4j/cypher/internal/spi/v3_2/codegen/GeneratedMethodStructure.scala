@@ -426,6 +426,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    generator.assign(local, constant(null))
+    //Make sure cursor is always closed
+    _finalizers.append((_: Boolean) => (block) =>
+      using(block.ifStatement(Expression.notNull(block.load(local.name())))) {inner =>
+        inner.expression(invoke(inner.load(local.name()), method[RelationshipIterator, Unit]("close")))
+      })
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
                                 dir(direction)))
@@ -436,6 +442,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                                          direction: SemanticDirection,
                                                          typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    generator.assign(local, constant(null))
+    //Make sure cursor is always closed
+    _finalizers.append((_: Boolean) => (block) =>
+      using(block.ifStatement(Expression.notNull(block.load(local.name())))) {inner =>
+        inner.expression(invoke(inner.load(local.name()), method[RelationshipIterator, Unit]("close")))
+      })
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
                                 forceLong(nodeVar, nodeVarType), dir(direction),
