@@ -271,13 +271,38 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     graph should haveIndexes(":L(foo,bar,baz)")
     val result = executeWithAllPlanners("MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result should evaluateTo(Seq(Map("count(n)" -> 1)))
-    result should useIndex(":L(foo,bar,baz")
+    result should useIndex(":L(foo,bar,baz)")
   }
 
   test("should not fail on multiple attempts to create a composite index") {
     // Given
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
     executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
+  }
+
+  test("should not use range queries against a composite index") {
+    // given
+    graph.createIndex("X", "p1", "p2")
+    val n = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
+    val result = executeWithAllPlanners("match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
+
+    result should evaluateTo(Seq(Map("n" -> n)))
+    result shouldNot useIndex(":X(p1,p2)")
+  }
+
+  test("nested index join with composite indexes") {
+    // given
+    graph.createIndex("X", "p1", "p2")
+    (1 to 1000) foreach { _ => // Get the planner to do what we expect it to!
+      createLabeledNode("X")
+    }
+    val a = createNode("p1" -> 1, "p2" -> 1)
+    val b = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
+    val result = executeWithAllPlanners("match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
+      "id" -> a.getId)
+
+    result should evaluateTo(Seq(Map("b" -> b)))
+    result should useIndex(":X(p1,p2)")
   }
 
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {

@@ -107,7 +107,7 @@ object indexQuery extends GraphElementPropertyFunctions {
         throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
 
       case RangeQueryExpression(rangeWrapper) =>
-        throw new InternalException("Range queries on composite indexea not yet supported")
+        throw new InternalException("Range queries on composite indexes not yet supported")
     }
   }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.commands.{CompositeQueryExpression, QueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_3.commands.{CompositeQueryExpression, ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
@@ -177,10 +177,20 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
 
     // Currently we only support using the composite index if ALL properties are specified, but this could be generalized
-    if (foundPredicates.length == indexDescriptor.properties.length)
+    if (foundPredicates.length == indexDescriptor.properties.length && isSupportedByCurrentIndexes(foundPredicates))
       Some(foundPredicates)
     else
       None
+  }
+
+  private def isSupportedByCurrentIndexes(foundPredicates: Seq[IndexPlannableExpression]) = {
+    // We currently only support range queries against single prop indexes
+    foundPredicates.length == 1 ||
+      foundPredicates.forall(_.queryExpression match {
+        case _: SingleQueryExpression[_] => true
+        case _: ManyQueryExpression[_] => true
+        case _ => false
+      })
   }
 
   case class IndexPlannableExpression(name: String, propertyKeyName: PropertyKeyName,
