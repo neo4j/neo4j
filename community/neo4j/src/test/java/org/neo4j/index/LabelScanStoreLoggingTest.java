@@ -26,6 +26,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -34,7 +35,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-public class LabelScanStoreLogging
+public class LabelScanStoreLoggingTest
 {
 
     @Rule
@@ -64,9 +65,10 @@ public class LabelScanStoreLogging
             labelScanStore.init();
             labelScanStore.start();
 
-            logProvider.assertNoLogCallContaining( "LuceneLabelScanStore" );
-            logProvider.assertContainsLogCallContaining( "NativeLabelScanStore" );
-            logProvider.assertContainsMessageContaining( "Scan store recovery completed: Number of cleaned crashed pointers" );
+            logProvider.assertNoLogCallContaining( LuceneLabelScanStore.class.getName() );
+            logProvider.assertContainsLogCallContaining( NativeLabelScanStore.class.getName() );
+            logProvider.assertContainsMessageContaining(
+                    "Scan store recovery completed: Number of cleaned crashed pointers" );
         }
         finally
         {
