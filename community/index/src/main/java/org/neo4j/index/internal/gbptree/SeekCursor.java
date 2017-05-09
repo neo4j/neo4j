@@ -585,7 +585,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return whether or not the read key ({@link #mutableKey}) is "before" the end of the key range
      * ({@link #toExclusive}) of this seek.
      */
-    private boolean insideEndRange( boolean exactMatch)
+    private boolean insideEndRange( boolean exactMatch )
     {
         if ( exactMatch )
         {
