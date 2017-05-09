@@ -21,35 +21,25 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Random;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.test.Randoms;
 
-import static java.lang.Long.min;
-
-class RandomsStates extends PrefetchingIterator<Randoms>
+/**
+ * Utility for generating deterministically randomized data, even though chunks may be reordered
+ * during actual import.
+ */
+public class RandomsStates extends CountBasedStates<Randoms>
 {
-    private final long count;
-    private final int batchSize;
-
-    private long cursor;
     private long currentSeed;
 
-    RandomsStates( long initialSeed, long count, int batchSize )
+    public RandomsStates( long initialSeed, long count, int batchSize )
     {
-        this.count = count;
-        this.batchSize = batchSize;
+        super( count, batchSize );
         this.currentSeed = initialSeed;
     }
 
     @Override
-    protected Randoms fetchNextOrNull()
+    protected Randoms nextState()
     {
-        if ( cursor >= count )
-        {
-            return null;
-        }
-        Randoms result = new Randoms( new Random( currentSeed++ ), Randoms.DEFAULT );
-        cursor = min( cursor + batchSize, count );
-        return result;
+        return new Randoms( new Random( currentSeed++ ), Randoms.DEFAULT );
     }
 }

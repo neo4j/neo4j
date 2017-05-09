@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -101,8 +102,20 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
         public boolean next( InputEntityVisitor visitor ) throws IOException
         {
             boolean result = generateNext( state, batch, itemInBatch++, visitor );
-            visitor.endOfEntity();
+            if ( result )
+            {
+                visitor.endOfEntity();
+            }
             return result;
         }
     }
+
+    public static final InputIterator EMPTY = new GeneratingInputIterator<Void>( Collections.emptyIterator() )
+    {
+        @Override
+        protected boolean generateNext( Void state, long batch, int itemInBatch, InputEntityVisitor visitor )
+        {
+            return false;
+        }
+    };
 }

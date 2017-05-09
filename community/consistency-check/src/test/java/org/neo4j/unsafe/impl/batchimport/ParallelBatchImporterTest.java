@@ -360,20 +360,25 @@ public class ParallelBatchImporterTest
                       config.batchSize(), inputIdGenerator, groups ) )
         {
             // Nodes
-            InputChunk chunk = nodes.newChunk();
             Map<String,Node> nodeByInputId = new HashMap<>( nodeCount );
             Iterator<Node> dbNodes = db.getAllNodes().iterator();
+            while ( dbNodes.hasNext() )
+            {
+                Node node = dbNodes.next();
+                String id = (String) node.getProperty( "id" );
+                assertNull( nodeByInputId.put( id, node ) );
+            }
+
             int verifiedNodes = 0;
             long allNodesScanLabelCount = 0;
+            InputChunk chunk = nodes.newChunk();
             CachingInputEntityVisitor input = new CachingInputEntityVisitor();
             while ( nodes.next( chunk ) )
             {
                 while ( chunk.next( input ) )
                 {
-                    Node node = dbNodes.next();
+                    Node node = nodeByInputId.get( uniqueId( input.idGroup, input.objectId ) );
                     assertNodeEquals( input, node );
-                    String inputId = uniqueId( input.idGroup, node );
-                    assertNull( nodeByInputId.put( inputId, node ) );
                     verifiedNodes++;
                     assertDegrees( node );
                     allNodesScanLabelCount += Iterables.count( node.getLabels() );
@@ -511,7 +516,6 @@ public class ParallelBatchImporterTest
             assertEquals( input + ", " + entity + " for key:" + key, expected, array );
         }
     }
-
     private InputIterator relationships( final long randomSeed, final long count, int batchSize,
             final InputIdGenerator idGenerator, final IdGroupDistribution groups )
     {
@@ -570,7 +574,7 @@ public class ParallelBatchImporterTest
                 Object nodeId = inputIdGenerator.nextNodeId( random.random() );
                 Group group = groups.groupOf( item );
                 visitor.id( nodeId, group );
-                randomProperties( randoms, nodeId, visitor );
+                randomProperties( randoms, uniqueId( group, nodeId ), visitor );
                 visitor.labels( randoms.selection( TOKENS, 0, TOKENS.length, true ) );
                 return true;
             }

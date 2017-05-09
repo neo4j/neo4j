@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.CountBasedStates;
+import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
@@ -27,9 +28,10 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
+import static java.lang.Math.toIntExact;
 
 public class NodeCountInputs implements Input
 {
@@ -48,58 +50,41 @@ public class NodeCountInputs implements Input
     }
 
     @Override
-    public InputIterable<InputNode> nodes()
+    public InputIterator nodes()
     {
-        return new InputIterable<InputNode>()
+        return new GeneratingInputIterator<Void>( new CountBasedStates<Void>( nodeCount, 1_000 )
         {
             @Override
-            public InputIterator<InputNode> iterator()
+            protected Void nextState()
             {
-                return new InputIterator.Adapter<InputNode>()
-                {
-                    private int lineNumber;
-
-                    @Override
-                    protected InputNode fetchNextOrNull()
-                    {
-                        return lineNumber < nodeCount
-                                ? new InputNode( "", ++lineNumber, 0, lineNumber, properties, null, labels, null )
-                                : null;
-                    }
-
-                    @Override
-                    public long lineNumber()
-                    {
-                        return lineNumber;
-                    }
-                };
+                return null;
             }
-
+        } )
+        {
             @Override
-            public boolean supportsMultiplePasses()
+            protected boolean generateNext( Void state, long batch, int itemInBatch, InputEntityVisitor visitor )
             {
+                int item = toIntExact( batch * 1_000 + itemInBatch );
+                if ( item > nodeCount )
+                {
+                    return false;
+                }
+
+                visitor.id( item, Group.GLOBAL );
+                visitor.labels( labels );
+                for ( int i = 0; i < properties.length; i++ )
+                {
+                    visitor.property( (String) properties[i++], properties[i] );
+                }
                 return true;
             }
         };
     }
 
     @Override
-    public InputIterable<InputRelationship> relationships()
+    public InputIterator relationships()
     {
-        return new InputIterable<InputRelationship>()
-        {
-            @Override
-            public InputIterator<InputRelationship> iterator()
-            {
-                return new InputIterator.Empty<>();
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return GeneratingInputIterator.EMPTY;
     }
 
     @Override

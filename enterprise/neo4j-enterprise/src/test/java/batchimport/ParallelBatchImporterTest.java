@@ -30,10 +30,9 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
  */
 public class ParallelBatchImporterTest extends org.neo4j.unsafe.impl.batchimport.ParallelBatchImporterTest
 {
-    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator,
-            boolean multiPassIterators )
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator )
     {
-        super( inputIdGenerator, idMapper, idGenerator, multiPassIterators );
+        super( inputIdGenerator, idMapper, idGenerator );
     }
 
     @Override

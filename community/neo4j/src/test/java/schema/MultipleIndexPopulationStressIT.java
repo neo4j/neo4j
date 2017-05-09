@@ -25,7 +25,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +42,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
@@ -60,8 +58,10 @@ import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.RandomsStates;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -69,8 +69,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
@@ -303,61 +302,37 @@ public class MultipleIndexPopulationStressIT
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    protected Iterable<InputNode> randomNodes( int count )
-    {
-        return () -> new InputNodePrefetchingIterator( count );
-    }
-
     private int randomPropertyValue( Random random )
     {
         return random.nextInt( 100 );
     }
 
-    private class InputNodePrefetchingIterator extends PrefetchingIterator<InputNode>
+    private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
     {
         private final int count;
         private int i;
 
-        InputNodePrefetchingIterator( int count )
+        RandomNodeGenerator( int count )
         {
+            super( new RandomsStates( random.seed(), count, 1_000 ) );
             this.count = count;
         }
 
         @Override
-        protected InputNode fetchNextOrNull()
+        protected boolean generateNext( Randoms state, long batch, int itemInBatch, InputEntityVisitor visitor )
         {
-            if ( i >= count )
+            if ( batch * 1_000 + itemInBatch >= count )
             {
-                return null;
+                return false;
             }
 
-            try
-            {
-                return new InputNode( "Nodes", i, i, (long) i, randomProperties(), null, randomLabels(),
-                        null );
-            }
-            finally
-            {
-                i++;
-            }
-        }
-
-        private String[] randomLabels()
-        {
-            return random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-        }
-
-        private Object[] randomProperties()
-        {
             String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-            Object[] result = new Object[keys.length * 2];
-            int i = 0;
             for ( String key : keys )
             {
-                result[i++] = key;
-                result[i++] = randomPropertyValue( random.random() );
+                visitor.property( key, randomPropertyValue( state.random() ) );
             }
-            return result;
+            visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+            return true;
         }
     }
 
@@ -371,15 +346,15 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public InputIterable relationships()
+        public InputIterator relationships()
         {
-            return SimpleInputIteratorWrapper.wrap( "Empty", Collections.emptyList() );
+            return GeneratingInputIterator.EMPTY;
         }
 
         @Override
-        public InputIterable nodes()
+        public InputIterator nodes()
         {
-            return SimpleInputIteratorWrapper.wrap( "Nodes", randomNodes( count ) );
+            return new RandomNodeGenerator( count );
         }
 
         @Override
