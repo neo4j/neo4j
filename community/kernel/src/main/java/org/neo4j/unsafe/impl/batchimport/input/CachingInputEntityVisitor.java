@@ -170,4 +170,9 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         return properties.toArray();
     }
+
+    public Object id()
+    {
+        return hasLongId ? longId : objectId;
+    }
 }
