@@ -25,6 +25,9 @@ import java.nio.file.OpenOption;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 public class DelegatingPageCache implements PageCache
 {
     private final PageCache delegate;
@@ -61,9 +64,9 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    public FileSystemAbstraction getCachedFileSystem()
     {
-        return delegate.streamFilesRecursive( directory );
+        return delegate.getCachedFileSystem();
     }
 
     public void flushAndForce( IOLimiter limiter ) throws IOException

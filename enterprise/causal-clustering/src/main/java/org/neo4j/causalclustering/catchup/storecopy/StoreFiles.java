@@ -29,8 +29,8 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 
@@ -83,7 +83,7 @@ public class StoreFiles
     {
         try
         {
-            Stream<FileHandle> stream = pageCache.streamFilesRecursive( storeDir );
+            Stream<FileHandle> stream = pageCache.getCachedFileSystem().streamFilesRecursive( storeDir );
             Predicate<FileHandle> acceptableFiles = fh -> fileFilter.accept( storeDir, fh.getRelativeFile().getPath() );
             return stream.filter( acceptableFiles );
         }

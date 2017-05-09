@@ -59,6 +59,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 import java.util.zip.ZipEntry;
@@ -66,9 +67,11 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.StreamFilesRecursive;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
@@ -679,6 +682,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             throw new IOException( "Could not delete file: " + file );
         }
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
 
     @SuppressWarnings( "serial" )

@@ -23,10 +23,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.io.IOException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -41,6 +41,7 @@ import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
@@ -77,7 +78,10 @@ public class ReadReplicaStartupProcessTest
         Map<MemberId,CoreServerInfo> members = new HashMap<>();
         members.put( memberId, mock( CoreServerInfo.class ) );
 
-        when( pageCache.streamFilesRecursive( any(File.class) ) ).thenAnswer( ( f ) -> Stream.empty() );
+        FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
+        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
+                .thenAnswer( ( f ) -> Stream.empty());
+        when( pageCache.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
         when( topologyService.coreServers() ).thenReturn( clusterTopology );

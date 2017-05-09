@@ -298,6 +298,12 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
+    }
+
+    @Override
     public void close() throws IOException
     {
         ArrayList<Closeable> fsToClose = new ArrayList<>( thirdPartyFs.size() + 1 );

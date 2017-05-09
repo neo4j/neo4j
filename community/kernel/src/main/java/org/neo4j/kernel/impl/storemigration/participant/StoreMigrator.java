@@ -43,8 +43,8 @@ import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -413,13 +413,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
                     true, null, StoreFileType.values() );
-            // When migrating on a block device there might be some files only accessible via the page cache.
+            // When migrating on a block device there might be some files only accessible via the file system
+            // provided by the page cache.
             try
             {
                 Predicate<FileHandle> fileHandlePredicate = fileHandle -> storesToDeleteFromMigratedDirectory.stream()
                         .anyMatch( storeFile -> storeFile.fileName( StoreFileType.STORE )
                                 .equals( fileHandle.getFile().getName() ) );
-                pageCache.streamFilesRecursive( migrationDir ).filter( fileHandlePredicate )
+                pageCache.getCachedFileSystem().streamFilesRecursive( migrationDir ).filter( fileHandlePredicate )
                         .forEach( FileHandle.HANDLE_DELETE );
             }
             catch ( NoSuchFileException e )
@@ -640,11 +641,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
-        // Since some of the files might only be accessible through the page cache (i.e. block devices), we also try to
-        // move the files with the page cache.
+        // Since some of the files might only be accessible through the file system provided by the page cache (i.e.
+        // block devices), we also try to move the files with the page cache.
         try
         {
-            Iterable<FileHandle> fileHandles = pageCache.streamFilesRecursive( migrationDir )::iterator;
+            Iterable<FileHandle> fileHandles = pageCache.getCachedFileSystem()
+                    .streamFilesRecursive( migrationDir )::iterator;
             for ( FileHandle fh : fileHandles )
             {
                 Predicate<StoreFile> predicate =

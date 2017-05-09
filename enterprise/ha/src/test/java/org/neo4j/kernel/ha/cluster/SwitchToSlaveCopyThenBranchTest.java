@@ -335,8 +335,10 @@ public class SwitchToSlaveCopyThenBranchTest
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         Stream mockStream = mock( Stream.class );
         when( mockStream.filter( any( Predicate.class ) ) ).thenReturn( mock( Stream.class ) );
-        when( pageCacheMock.streamFilesRecursive( any( File.class) ) ).thenReturn( mockStream );
-
+        FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
+        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
+                .thenReturn( mockStream );
+        when( pageCacheMock.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         return newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
     }
 
