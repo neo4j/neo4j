@@ -69,9 +69,9 @@ public class RestoreDatabaseCommandTest
         createDbAt( toPath, toNodeCount );
 
         FileSystemAbstraction fs = fileSystemRule.get();
-        try ( StoreLocker storeLocker = new StoreLocker( fs ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fs, toPath ) )
         {
-            storeLocker.checkLock( toPath );
+            storeLocker.checkLock();
 
             new RestoreDatabaseCommand( fs, fromPath, config, databaseName, true ).execute();
             fail( "expected exception" );

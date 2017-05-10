@@ -29,18 +29,24 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
 
+/**
+ * The class takes a lock on the {@link #STORE_LOCK_FILENAME} file. The lock is valid after a successful call to
+ * {@link #checkLock()} until a call to {@link #close()}.
+ */
 public class StoreLocker implements Closeable
 {
     public static final String STORE_LOCK_FILENAME = "store_lock";
 
     private final FileSystemAbstraction fileSystemAbstraction;
+    private final File storeLockFile;
 
     private FileLock storeLockFileLock;
     private StoreChannel storeLockFileChannel;
 
-    public StoreLocker( FileSystemAbstraction fileSystemAbstraction )
+    public StoreLocker( FileSystemAbstraction fileSystemAbstraction, File storeDirectory )
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
+        storeLockFile = new File( storeDirectory, STORE_LOCK_FILENAME );
     }
 
     /**
@@ -53,9 +59,12 @@ public class StoreLocker implements Closeable
      *
      * @throws StoreLockException if lock could not be acquired
      */
-    public void checkLock( File storeDir ) throws StoreLockException
+    public void checkLock() throws StoreLockException
     {
-        File storeLockFile = new File( storeDir, STORE_LOCK_FILENAME );
+        if ( haveLockAlready() )
+        {
+            return;
+        }
 
         try
         {
@@ -66,13 +75,16 @@ public class StoreLocker implements Closeable
         }
         catch ( IOException e )
         {
-            String message = "Unable to create path for store dir: " + storeDir;
+            String message = "Unable to create path for store dir: " + storeLockFile.getParent();
             throw storeLockException( message, e );
         }
 
         try
         {
-            storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
+            if ( storeLockFileChannel == null )
+            {
+                storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
+            }
             storeLockFileLock = storeLockFileChannel.tryLock();
             if ( storeLockFileLock == null )
             {
@@ -85,6 +97,11 @@ public class StoreLocker implements Closeable
             String message = "Unable to obtain lock on store lock file: " + storeLockFile;
             throw storeLockException( message, e );
         }
+    }
+
+    private boolean haveLockAlready()
+    {
+        return storeLockFileLock != null && storeLockFileChannel != null;
     }
 
     private StoreLockException storeLockException( String message, Exception e )

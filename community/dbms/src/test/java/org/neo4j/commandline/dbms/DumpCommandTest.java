@@ -166,9 +166,9 @@ public class DumpCommandTest
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
+              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
 
             execute( "foo.db" );
             fail( "expected exception" );
@@ -223,9 +223,9 @@ public class DumpCommandTest
         assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
+              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
 
             try ( Closeable ignored = withPermissions( databaseDirectory.resolve( StoreLocker.STORE_LOCK_FILENAME ),
                     emptySet() ) )
@@ -378,9 +378,9 @@ public class DumpCommandTest
     private void assertCanLockStore( Path databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem ) )
+              StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            storeLocker.checkLock( databaseDirectory.toFile() );
+            storeLocker.checkLock();
         }
     }
 

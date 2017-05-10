@@ -180,9 +180,9 @@ public class LoadCommandTest
         Files.createDirectories( databaseDirectory );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker locker = new StoreLocker( fileSystem ) )
+              StoreLocker locker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
-            locker.checkLock( databaseDirectory.toFile() );
+            locker.checkLock();
             execute( "foo.db", "--force" );
             fail( "expected exception" );
         }

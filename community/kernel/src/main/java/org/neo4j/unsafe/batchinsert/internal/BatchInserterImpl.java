@@ -235,8 +235,8 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         StoreLogService logService = life.add( StoreLogService.inLogsDirectory( fileSystem, this.storeDir ) );
         msgLog = logService.getInternalLog( getClass() );
-        storeLocker = new StoreLocker( fileSystem );
-        storeLocker.checkLock( this.storeDir );
+        storeLocker = new StoreLocker( fileSystem, this.storeDir );
+        storeLocker.checkLock();
 
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );

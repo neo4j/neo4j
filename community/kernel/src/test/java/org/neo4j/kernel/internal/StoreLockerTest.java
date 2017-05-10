@@ -21,6 +21,7 @@ package org.neo4j.kernel.internal;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
@@ -40,6 +42,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
@@ -50,6 +53,80 @@ public class StoreLockerTest
     public final TestDirectory target = TestDirectory.testDirectory();
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    @Test
+    public void shouldUseAlreadyOpenedFileChannel() throws Exception
+    {
+        StoreChannel channel = Mockito.mock( StoreChannel.class );
+        CustomChannelFileSystemAbstraction fileSystemAbstraction =
+                new CustomChannelFileSystemAbstraction( fileSystemRule.get(), channel );
+        int numberOfCallesToOpen = 0;
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
+        {
+            try
+            {
+                storeLocker.checkLock();
+                fail();
+            }
+            catch ( StoreLockException e )
+            {
+                numberOfCallesToOpen = fileSystemAbstraction.getNumberOfCallsToOpen();
+
+                // Try to grab lock a second time
+                storeLocker.checkLock();
+            }
+        }
+        catch ( StoreLockException e )
+        {
+            // expected
+        }
+
+        assertEquals( "Expect that number of open channels will remain the same for ",
+                numberOfCallesToOpen, fileSystemAbstraction
+                .getNumberOfCallsToOpen() );
+    }
+
+    @Test
+    public void shouldAllowMultipleCallsToCheckLock() throws Exception
+    {
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemRule.get(), target.directory( "unused" ) ) )
+        {
+            storeLocker.checkLock();
+            storeLocker.checkLock();
+        }
+    }
+
+    @Test
+    public void keepLockWhenOtherTryToTakeLock() throws Exception
+    {
+        File directory = target.directory( "unused" );
+        DefaultFileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
+        StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, directory );
+        storeLocker.checkLock();
+
+        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
+        {
+            storeLocker1.checkLock();
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            // Expected
+        }
+
+        // Initial locker should still have a valid lock
+        try ( StoreLocker storeLocker1 = new StoreLocker( fileSystemAbstraction, directory ) )
+        {
+            storeLocker1.checkLock();
+            fail();
+        }
+        catch ( StoreLockException e )
+        {
+            // Expected
+        }
+
+        storeLocker.close();
+    }
 
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
@@ -63,9 +140,9 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            storeLocker.checkLock( target.directory( "unused" ) );
+            storeLocker.checkLock();
 
             // Ok
         }
@@ -87,9 +164,9 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            storeLocker.checkLock( target.directory( "unused" ) );
+            storeLocker.checkLock();
             // Ok
         }
     }
@@ -114,9 +191,9 @@ public class StoreLockerTest
 
         File storeDir = target.directory( "unused" );
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
         {
-            storeLocker.checkLock( storeDir );
+            storeLocker.checkLock();
             fail();
         }
         catch ( StoreLockException e )
@@ -148,9 +225,9 @@ public class StoreLockerTest
 
         File storeDir = target.directory( "unused" );
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, storeDir ) )
         {
-            storeLocker.checkLock( storeDir );
+            storeLocker.checkLock();
             fail();
         }
         catch ( StoreLockException e )
@@ -188,9 +265,9 @@ public class StoreLockerTest
             }
         };
 
-        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction ) )
+        try ( StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction, target.directory( "unused" ) ) )
         {
-            storeLocker.checkLock( target.directory( "unused" ) );
+            storeLocker.checkLock();
             fail();
         }
         catch ( StoreLockException e )
@@ -223,6 +300,30 @@ public class StoreLockerTest
         finally
         {
             db.shutdown();
+        }
+    }
+
+    private class CustomChannelFileSystemAbstraction extends DelegatingFileSystemAbstraction
+    {
+        private final StoreChannel channel;
+        private int numberOfCallsToOpen;
+
+        CustomChannelFileSystemAbstraction( DefaultFileSystemAbstraction delegate, StoreChannel channel )
+        {
+            super( delegate );
+            this.channel = channel;
+        }
+
+        @Override
+        public StoreChannel open( File fileName, String mode ) throws IOException
+        {
+            numberOfCallsToOpen++;
+            return channel;
+        }
+
+        public int getNumberOfCallsToOpen()
+        {
+            return numberOfCallsToOpen;
         }
     }
 }
