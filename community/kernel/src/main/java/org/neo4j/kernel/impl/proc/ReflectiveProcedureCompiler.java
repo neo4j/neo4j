@@ -55,6 +55,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.Singleton;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -322,11 +323,12 @@ class ReflectiveProcedureCompiler
             }
         }
 
+        boolean singleton = procDefinition.isAnnotationPresent( Singleton.class );
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
-        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
+        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters, singleton );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -661,22 +663,38 @@ class ReflectiveProcedureCompiler
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final MethodHandle udfMethod;
+        private final boolean singleton;
+        private Object[] args;
+        private Object cls;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldInjections.FieldSetter> fieldSetters, boolean singleton )
         {
             super( fieldSetters );
             this.constructor = constructor;
             this.udfMethod = procedureMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
+            this.singleton = singleton;
         }
 
         @Override
         public UserFunctionSignature signature()
         {
             return signature;
+        }
+
+        private void loadLazily(Context ctx, int numberOfDeclaredArguments) throws Throwable
+        {
+            if (!singleton || cls == null)
+            {
+                cls = constructor.invoke();
+                //API injection
+                inject( ctx, cls );
+                args = new Object[numberOfDeclaredArguments + 1];
+                args[0] = cls;
+            }
         }
 
         @Override
@@ -696,13 +714,11 @@ class ReflectiveProcedureCompiler
                             numberOfDeclaredArguments, input.length );
                 }
 
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
+                // Set up class, inject API etc
+                loadLazily( ctx, numberOfDeclaredArguments);
+                System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
 
                 // Call the method
-                Object[] args = args( numberOfDeclaredArguments, cls, input );
-
                 Object rs = udfMethod.invokeWithArguments( args );
 
                 return valueConverter.toNeoValue( rs );
