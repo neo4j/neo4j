@@ -524,13 +524,11 @@ class ReflectiveProcedureCompiler
 
     private abstract static class ReflectiveBase
     {
-
         final List<FieldInjections.FieldSetter> fieldSetters;
         private final boolean singleton;
         protected Object[] args;
         protected Object cls;
         protected final MethodHandle constructor;
-
 
         ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters, MethodHandle constructor,
                 boolean singleton )
@@ -548,6 +546,11 @@ class ReflectiveProcedureCompiler
             }
         }
 
+        protected void self( Object self )
+        {
+            args[0] = self;
+        }
+
         protected void args( Object[] input )
         {
             System.arraycopy( input, 0, args, 1, input.length );
@@ -561,9 +564,7 @@ class ReflectiveProcedureCompiler
                 //API injection
                 inject( ctx, cls );
                 args = new Object[numberOfDeclaredArguments + 1];
-                args[0] = cls;
             }
-
         }
     }
 
@@ -613,6 +614,7 @@ class ReflectiveProcedureCompiler
                 //Load class, inject API
                 loadLazily( ctx, numberOfDeclaredArguments );
                 //Set up argument
+                self( cls );
                 args( input );
 
                 Object rs = procedureMethod.invokeWithArguments( args );
@@ -725,6 +727,7 @@ class ReflectiveProcedureCompiler
                 // Set up class, inject API etc
                 loadLazily( ctx, numberOfDeclaredArguments );
                 // Set up arguments
+                self( cls );
                 args( input );
 
                 // Call the method
@@ -786,11 +789,11 @@ class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-
                 int numberOfDeclaredArguments = signature.inputSignature().size();
 
                 loadLazily( ctx, numberOfDeclaredArguments );
                 Object aggregator = creator.invoke( cls );
+                self( aggregator );
 
                 return new Aggregator()
                 {
@@ -832,7 +835,7 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            return valueConverter.toNeoValue( resultMethod.invoke( aggregator) );
+                            return valueConverter.toNeoValue( resultMethod.invoke( aggregator ) );
                         }
                         catch ( Throwable throwable )
                         {

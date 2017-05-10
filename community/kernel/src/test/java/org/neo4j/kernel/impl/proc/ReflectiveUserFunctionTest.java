@@ -504,7 +504,7 @@ public class ReflectiveUserFunctionTest
     @Singleton
     public static class SingletonFunction
     {
-        private static long value;
+        private long value;
         public SingletonFunction()
         {
             value = System.nanoTime();

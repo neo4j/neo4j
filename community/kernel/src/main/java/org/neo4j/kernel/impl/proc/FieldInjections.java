@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Singleton;
 
 /**
  * Injects annotated fields with appropriate values.
@@ -76,6 +77,7 @@ class FieldInjections
 
     /**
      * For each annotated field in the provided class, creates a `FieldSetter`.
+     *
      * @param cls The class where injection should happen.
      * @return A list of `FieldSetters`
      * @throws ProcedureException if the type of the injected field does not match what has been registered.
@@ -99,7 +101,7 @@ class FieldInjections
                     if ( field.isAnnotationPresent( Context.class ) )
                     {
                         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                                 "The field `%s` in the class named `%s` is annotated as a @Context field,%n" +
+                                "The field `%s` in the class named `%s` is annotated as a @Context field,%n" +
                                 "but it is static. @Context fields must be public, non-final and non-static,%n" +
                                 "because they are reset each time a procedure is invoked.",
                                 field.getName(), cls.getSimpleName() );
@@ -107,8 +109,10 @@ class FieldInjections
                     continue;
                 }
 
-                assertValidForInjection( cls, field );
-                setters.add( createInjector( cls, field ) );
+                if ( isValidForInjection( cls, field ) )
+                {
+                    setters.add( createInjector( cls, field ) );
+                }
             }
         }
         while ( (currentClass = currentClass.getSuperclass()) != null );
@@ -126,7 +130,7 @@ class FieldInjections
                 throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
                         "has type `%s` which is not a known injectable component.",
-                            cls.getSimpleName(), field.getName(), field.getType() );
+                        cls.getSimpleName(), field.getName(), field.getType() );
             }
 
             MethodHandle setter = MethodHandles.lookup().unreflectSetter( field );
@@ -140,22 +144,39 @@ class FieldInjections
         }
     }
 
-    private void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
+    //public, non-final, + annotated => value
+    //else if non-singleton error else None
+    private boolean isValidForInjection( Class<?> cls, Field field ) throws ProcedureException
     {
-        if ( !field.isAnnotationPresent( Context.class ) )
+        if ( field.isAnnotationPresent( Context.class ) && Modifier.isPublic( field.getModifiers() ) &&
+             !Modifier.isFinal( field.getModifiers() ) )
         {
-            throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
-                    "Field `%s` on `%s` is not annotated as a @" + Context.class.getSimpleName() +
-                            " and is not static. If you want to store state along with your procedure," +
-                            " please use a static field.",
-                    field.getName(), cls.getSimpleName() );
+            return true;
         }
-
-        if ( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
+        else if ( cls.isAnnotationPresent( Singleton.class ) )
         {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Field `%s` on `%s` must be non-final and public.", field.getName(), cls.getSimpleName() );
+            return false;
+        }
+        else
+        {
+            if ( !field.isAnnotationPresent( Context.class ) )
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Field `%s` on `%s` is not annotated as a @" + Context.class.getSimpleName() +
+                        " nor is the class `%s` annotated with @" + Singleton.class.getSimpleName() +
+                        ". If you want to store state along with your procedure or function please either mark the " +
+                        "class with @" + Singleton.class.getSimpleName() + " or use a static field.",
+                        field.getName(), cls.getSimpleName(), cls.getSimpleName() );
+            }
 
+            if ( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Field `%s` on `%s` must be non-final and public.", field.getName(), cls.getSimpleName() );
+            }
+
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Failed with field `%s` on `%s`", field.getName(), cls.getSimpleName() );
         }
     }
 }
