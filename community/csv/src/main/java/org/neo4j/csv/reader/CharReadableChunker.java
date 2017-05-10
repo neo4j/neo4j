@@ -19,96 +19,26 @@
  */
 package org.neo4j.csv.reader;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
-/**
- * In a scenario where there's one reader reading chunks of data, handing those chunks to one or
- * more processors (parsers) of that data, this class comes in handy. This pattern allows for
- * multiple {@link BufferedCharSeeker seeker instances}, each operating over one chunk, not transitioning itself
- * into the next.
- */
-public class CharReadableChunker implements Closeable
+public abstract class CharReadableChunker implements Chunker
 {
-    private final CharReadable reader;
-    private final int chunkSize;
-    private char[] backBuffer; // grows on demand
-    private int backBufferCursor;
-    private volatile long position;
+    protected final CharReadable reader;
+    protected final int chunkSize;
+    protected volatile long position;
 
     public CharReadableChunker( CharReadable reader, int chunkSize )
     {
         this.reader = reader;
         this.chunkSize = chunkSize;
-        this.backBuffer = new char[chunkSize >> 4];
     }
 
-    public ProcessingChunk newChunk()
+    @Override
+    public ChunkImpl newChunk()
     {
-        return new ProcessingChunk( new char[chunkSize] );
-    }
-
-    /**
-     * Fills the given chunk with data from the underlying {@link CharReadable}, up to a good cut-off point
-     * in the vicinity of the buffer size.
-     *
-     * @param into {@link ProcessingChunk} to read data into.
-     * @return the next {@link Chunk} of data, ending with a new-line or not for the last chunk.
-     * @throws IOException on reading error.
-     */
-    public synchronized boolean nextChunk( ProcessingChunk into ) throws IOException
-    {
-        int offset = 0;
-
-        if ( backBufferCursor > 0 )
-        {   // Read from and reset back buffer
-            assert backBufferCursor < chunkSize;
-            System.arraycopy( backBuffer, 0, into.buffer, 0, backBufferCursor );
-            offset += backBufferCursor;
-            backBufferCursor = 0;
-        }
-
-        int leftToRead = chunkSize - offset;
-        int read = reader.read( into.buffer, offset, leftToRead );
-        if ( read == leftToRead )
-        {   // Read from reader. We read data into the whole buffer and there seems to be more data left in reader.
-            // This means we're most likely not at the end so seek backwards to the last newline character and
-            // put the characters after the newline character(s) into the back buffer.
-            int newlineOffset = offsetOfLastNewline( into.buffer );
-            if ( newlineOffset > -1 )
-            {   // We found a newline character some characters back
-                backBufferCursor = chunkSize - (newlineOffset + 1);
-                System.arraycopy( into.buffer, newlineOffset + 1, backBuffer( backBufferCursor ), 0, backBufferCursor );
-                read -= backBufferCursor;
-            }
-            else
-            {   // There was no newline character, isn't that weird?
-                throw new IllegalStateException( "Weird input data, no newline character in the whole buffer " +
-                        chunkSize + ", not supported a.t.m." );
-            }
-        }
-        // else we couldn't completely fill the buffer, this means that we're at the end of a data source, we're good.
-
-        if ( read > 0 )
-        {
-            offset += read;
-            position += read;
-            into.initialize( offset, reader.sourceDescription() );
-            return true;
-        }
-        return false;
-    }
-
-    private char[] backBuffer( int length )
-    {
-        if ( length > backBuffer.length )
-        {
-            backBuffer = Arrays.copyOf( backBuffer, length );
-        }
-        return backBuffer;
+        return new ChunkImpl( new char[chunkSize] );
     }
 
     @Override
@@ -122,25 +52,13 @@ public class CharReadableChunker implements Closeable
         return position;
     }
 
-    private static int offsetOfLastNewline( char[] buffer )
+    public static class ChunkImpl implements Chunk
     {
-        for ( int i = buffer.length - 1; i >= 0; i-- )
-        {
-            if ( buffer[i] == '\n' )
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    public static class ProcessingChunk implements Chunk
-    {
-        private final char[] buffer;
+        final char[] buffer;
         private int length;
         private String sourceDescription;
 
-        public ProcessingChunk( char[] buffer )
+        public ChunkImpl( char[] buffer )
         {
             this.buffer = buffer;
         }

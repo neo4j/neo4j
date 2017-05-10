@@ -20,91 +20,79 @@
 package org.neo4j.tooling;
 
 import java.util.Random;
+
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Randoms;
+import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.RandomsStates;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.Math.abs;
 
-class SimpleDataGeneratorBatch<T>
+/**
+ * Data generator as {@link InputIterator}, parallelizable
+ */
+public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
 {
     private final Header header;
-    private final Random random;
-    private final Randoms randoms;
+    private final int batchSize;
     private final long nodeCount;
-    private final long start;
     private final Distribution<String> labels;
     private final Distribution<String> relationshipTypes;
-    private final Deserialization<T> deserialization;
-    private final T[] target;
+    private final long count;
 
-    private long cursor;
-    private long position;
-
-    SimpleDataGeneratorBatch(
-            Header header, long start, long randomSeed, long nodeCount,
-            Distribution<String> labels, Distribution<String> relationshipTypes,
-            Deserialization<T> deserialization, T[] target )
+    public RandomEntityDataGenerator( long nodeCount, long count, int batchSize, long seed, Header header,
+           Distribution<String> labels, Distribution<String> relationshipTypes )
     {
-        this.header = header;
-        this.start = start;
+        super( new RandomsStates( seed, count, batchSize ) );
         this.nodeCount = nodeCount;
+        this.count = count;
+        this.batchSize = batchSize;
+        this.header = header;
         this.labels = labels;
         this.relationshipTypes = relationshipTypes;
-        this.target = target;
-        this.random = new Random( randomSeed );
-        this.randoms = new Randoms( random, Randoms.DEFAULT );
-        this.deserialization = deserialization;
-
-        deserialization.initialize();
     }
 
-    T[] get()
+    @Override
+    protected boolean generateNext( Randoms randoms, long batch, int itemInBatch, InputEntityVisitor visitor )
     {
-        for ( int i = 0; i < target.length; i++ )
+        long id = batch * batchSize + itemInBatch;
+        if ( id >= count )
         {
-            target[i] = next();
+            return false;
         }
-        return target;
-    }
 
-    private T next()
-    {
         for ( Entry entry : header.entries() )
         {
             switch ( entry.type() )
             {
             case ID:
-                deserialization.handle( entry, idValue( entry, start + cursor ) );
+                visitor.id( idValue( entry, id ), entry.group() );
                 break;
             case PROPERTY:
-                deserialization.handle( entry, randomProperty( entry, random ) );
+                visitor.property( entry.name(), randomProperty( entry, randoms ) );
                 break;
             case LABEL:
-                deserialization.handle( entry, randomLabels( random ) );
+                visitor.labels( randomLabels( randoms.random() ) );
                 break;
-            case START_ID: case END_ID:
-                deserialization.handle( entry, idValue( entry, abs( random.nextLong() ) % nodeCount ) );
+            case START_ID:
+                visitor.startId( idValue( entry, abs( randoms.random().nextLong() ) % nodeCount ), entry.group() );
+                break;
+            case END_ID:
+                visitor.endId( idValue( entry, abs( randoms.random().nextLong() ) % nodeCount ), entry.group() );
                 break;
             case TYPE:
-                deserialization.handle( entry, randomRelationshipType( random ) );
+                visitor.type( randomRelationshipType( randoms.random() ) );
                 break;
             default:
                 throw new IllegalArgumentException( entry.toString() );
             }
         }
-        try
-        {
-            return deserialization.materialize();
-        }
-        finally
-        {
-            deserialization.clear();
-            cursor++;
-        }
+        return true;
     }
 
     private Object idValue( Entry entry, long id )
@@ -119,26 +107,23 @@ class SimpleDataGeneratorBatch<T>
 
     private String randomRelationshipType( Random random )
     {
-        position += 6;
         return relationshipTypes.random( random );
     }
 
-    private Object randomProperty( Entry entry, Random random )
+    private Object randomProperty( Entry entry, Randoms random )
     {
         // TODO crude way of determining value type
         String type = entry.extractor().toString();
         if ( type.equals( "String" ) )
         {
-            return randoms.string( 5, 20, Randoms.CSA_LETTERS_AND_DIGITS );
+            return random.string( 5, 20, Randoms.CSA_LETTERS_AND_DIGITS );
         }
         else if ( type.equals( "long" ) )
         {
-            position += 8; // sort of
             return random.nextInt( Integer.MAX_VALUE );
         }
         else if ( type.equals( "int" ) )
         {
-            position += 4; // sort of
             return random.nextInt( 20 );
         }
         else
@@ -146,6 +131,7 @@ class SimpleDataGeneratorBatch<T>
             throw new IllegalArgumentException( "" + entry );
         }
     }
+
 
     private String[] randomLabels( Random random )
     {
@@ -164,7 +150,6 @@ class SimpleDataGeneratorBatch<T>
                 result[i++] = candidate;
             }
         }
-        position += length * 6;
         return result;
     }
 }

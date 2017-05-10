@@ -21,12 +21,13 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
 
-import org.neo4j.csv.reader.CharReadableChunker.ProcessingChunk;
+import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Extractors.LongExtractor;
 import org.neo4j.csv.reader.Mark;
+import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -47,7 +48,7 @@ public class CsvInputChunk implements InputChunk
     private final int delimiter;
     private final Collector badCollector;
     private final Extractor<String> stringExtractor;
-    private final ProcessingChunk processingChunk;
+    private final Chunk processingChunk;
 
     // Set in #initialize
     private CharSeeker seeker;
@@ -61,7 +62,7 @@ public class CsvInputChunk implements InputChunk
     private InputEntityVisitor visitor;
 
     public CsvInputChunk( IdType idType, int delimiter, Collector badCollector, Extractors extractors,
-            ProcessingChunk processingChunk )
+            ChunkImpl processingChunk )
     {
         this.idType = idType;
         this.delimiter = delimiter;
@@ -236,7 +237,7 @@ public class CsvInputChunk implements InputChunk
         previousVisitor = nakedVisitor;
     }
 
-    protected ProcessingChunk processingChunk()
+    protected Chunk processingChunk()
     {
         return processingChunk;
     }

@@ -26,8 +26,9 @@ import java.util.Iterator;
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharReadableChunker;
-import org.neo4j.csv.reader.CharReadableChunker.ProcessingChunk;
+import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.ClosestNewLineChunker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
@@ -58,7 +59,7 @@ public class CsvInputIterator extends InputIterator.Adapter
     public CsvInputChunk newChunk()
     {
         return new CsvInputChunk( idType, config.delimiter(), badCollector, extractors(),
-                new ProcessingChunk( new char[config.bufferSize()] ) );
+                new ChunkImpl( new char[config.bufferSize()] ) );
     }
 
     private Extractors extractors()
@@ -143,8 +144,8 @@ public class CsvInputIterator extends InputIterator.Adapter
             CharReadable stream = data.stream();
             decorator = data.decorator();
 
-            chunker = new CharReadableChunker( stream, config.bufferSize() );
-            ProcessingChunk firstChunk = chunker.newChunk();
+            chunker = new ClosestNewLineChunker( stream, config.bufferSize() );
+            Chunk firstChunk = chunker.newChunk();
             chunker.nextChunk( firstChunk );
             firstSeeker = seeker( firstChunk );
             header = headerFactory.create( firstSeeker, config, idType );
@@ -161,7 +162,7 @@ public class CsvInputIterator extends InputIterator.Adapter
             }
 
             CsvInputChunk csvChunk = (CsvInputChunk) chunk;
-            ProcessingChunk processingChunk = csvChunk.processingChunk();
+            Chunk processingChunk = csvChunk.processingChunk();
             if ( chunker.nextChunk( processingChunk ) )
             {
                 return initialized( chunk, seeker( processingChunk ) );

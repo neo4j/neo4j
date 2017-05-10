@@ -175,4 +175,14 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         return hasLongId ? longId : objectId;
     }
+
+    public Object endId()
+    {
+        return hasLongEndId ? longEndId : objectEndId;
+    }
+
+    public Object startId()
+    {
+        return hasLongStartId ? longStartId : objectStartId;
+    }
 }

@@ -23,16 +23,17 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringReader;
-import org.neo4j.csv.reader.CharReadableChunker.ProcessingChunk;
+
 import org.neo4j.csv.reader.Source.Chunk;
 
-import static java.util.Arrays.copyOfRange;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class CharReadableChunkerTest
+import static java.util.Arrays.copyOfRange;
+
+public class ClosestNewLineChunkerTest
 {
     @Test
     public void shouldBackUpChunkToClosestNewline() throws Exception
@@ -41,10 +42,10 @@ public class CharReadableChunkerTest
         CharReadable reader = Readables.wrap( new StringReader( "1234567\n8901234\n5678901234" ) );
         // (next chunks):                                                     ^            ^
         // (actual chunks):                                               ^        ^
-        try ( CharReadableChunker source = new CharReadableChunker( reader, 12 ) )
+        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12 ) )
         {
             // WHEN
-            ProcessingChunk chunk = source.newChunk();
+            Chunk chunk = source.newChunk();
             assertTrue( source.nextChunk( chunk ) );
             assertArrayEquals( "1234567\n".toCharArray(), charactersOf( chunk ) );
             assertTrue( source.nextChunk( chunk ) );
@@ -64,10 +65,10 @@ public class CharReadableChunkerTest
         CharReadable reader = Readables.wrap( new StringReader( "1234567\n89012345678901234" ) );
         // (next chunks):                                                     ^
         // (actual chunks):                                               ^
-        try ( CharReadableChunker source = new CharReadableChunker( reader, 12 ) )
+        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12 ) )
         {
             // WHEN
-            ProcessingChunk chunk = source.newChunk();
+            Chunk chunk = source.newChunk();
             assertTrue( source.nextChunk( chunk ) );
             assertArrayEquals( "1234567\n".toCharArray(), charactersOf( chunk ) );
             try
