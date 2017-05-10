@@ -277,10 +277,11 @@ class ReflectiveProcedureCompiler
             }
         }
 
+        boolean singleton = procDefinition.isAnnotationPresent( Singleton.class );
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
                         config.rolesFor( procName.toString() ), description, warning );
-        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
+        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters, singleton );
     }
 
     private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method,
@@ -518,10 +519,18 @@ class ReflectiveProcedureCompiler
     {
 
         final List<FieldInjections.FieldSetter> fieldSetters;
+        private final boolean singleton;
+        protected Object[] args;
+        private Object cls;
+        private final MethodHandle constructor;
 
-        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
+
+        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters, MethodHandle constructor,
+                boolean singleton )
         {
             this.fieldSetters = fieldSetters;
+            this.constructor = constructor;
+            this.singleton = singleton;
         }
 
         protected void inject( Context ctx, Object object ) throws ProcedureException
@@ -539,6 +548,19 @@ class ReflectiveProcedureCompiler
             System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
             return args;
         }
+
+        protected void loadLazily(Context ctx, Object[] input) throws Throwable
+        {
+            if (!singleton || cls == null)
+            {
+                cls = constructor.invoke();
+                //API injection
+                inject( ctx, cls );
+                args = new Object[input.length + 1];
+                args[0] = cls;
+            }
+            System.arraycopy( input, 0, args, 1, input.length );
+        }
     }
 
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
@@ -547,16 +569,18 @@ class ReflectiveProcedureCompiler
         private final OutputMapper outputMapper;
         private final MethodHandle constructor;
         private final MethodHandle procedureMethod;
+        private final boolean singleton;
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, OutputMapper outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldInjections.FieldSetter> fieldSetters, boolean singleton )
         {
-            super( fieldSetters );
+            super( fieldSetters, constructor, singleton );
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.signature = signature;
             this.outputMapper = outputMapper;
+            this.singleton = singleton;
         }
 
         @Override
@@ -582,12 +606,8 @@ class ReflectiveProcedureCompiler
                             numberOfDeclaredArguments, input.length );
                 }
 
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
-
-                // Call the method
-                Object[] args = args( numberOfDeclaredArguments, cls, input );
+                //Load class, inject API and set up args
+                loadLazily( ctx, input);
 
                 Object rs = procedureMethod.invokeWithArguments( args );
 
@@ -661,40 +681,22 @@ class ReflectiveProcedureCompiler
 
         private final TypeMappers.NeoValueConverter valueConverter;
         private final UserFunctionSignature signature;
-        private final MethodHandle constructor;
         private final MethodHandle udfMethod;
-        private final boolean singleton;
-        private Object[] args;
-        private Object cls;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters, boolean singleton )
         {
-            super( fieldSetters );
-            this.constructor = constructor;
+            super( fieldSetters, constructor, singleton );
             this.udfMethod = procedureMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
-            this.singleton = singleton;
         }
 
         @Override
         public UserFunctionSignature signature()
         {
             return signature;
-        }
-
-        private void loadLazily(Context ctx, int numberOfDeclaredArguments) throws Throwable
-        {
-            if (!singleton || cls == null)
-            {
-                cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
-                args = new Object[numberOfDeclaredArguments + 1];
-                args[0] = cls;
-            }
         }
 
         @Override
@@ -715,8 +717,7 @@ class ReflectiveProcedureCompiler
                 }
 
                 // Set up class, inject API etc
-                loadLazily( ctx, numberOfDeclaredArguments);
-                System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
+                loadLazily( ctx, input);
 
                 // Call the method
                 Object rs = udfMethod.invokeWithArguments( args );
@@ -755,7 +756,7 @@ class ReflectiveProcedureCompiler
                 TypeMappers.NeoValueConverter outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( fieldSetters, constructor, false );
             this.constructor = constructor;
             this.creator = creator;
             this.updateMethod = updateMethod;
