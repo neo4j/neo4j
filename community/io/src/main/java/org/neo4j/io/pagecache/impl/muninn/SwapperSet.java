@@ -20,7 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.Arrays;
-import java.util.function.IntConsumer;
+import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -31,9 +32,14 @@ final class SwapperSet
 {
     // The sentinel is used to reserve swapper id 0 as a special value.
     private static final Allocation SENTINEL = new Allocation( 0, null );
+    // The tombstone is used as a marker to reserve allocation entries that have been freed, but not yet vacuumed.
+    // An allocation cannot be reused until it has been vacuumed.
+    private static final Allocation TOMBSTONE = new Allocation( 0, null );
+    private static final int MAX_SWAPPER_ID = Short.MAX_VALUE;
     private volatile Allocation[] allocations = new Allocation[] { SENTINEL };
     private final PrimitiveIntSet free = Primitive.intSet();
     private final Object vacuumLock = new Object();
+    private int freeCounter; // Used in `free`; Guarded by `this`
 
     public static final class Allocation
     {
@@ -51,9 +57,9 @@ final class SwapperSet
     {
         checkId( id );
         Allocation allocation = allocations[id];
-        if ( allocation == null )
+        if ( allocation == null || allocation == TOMBSTONE )
         {
-            throw noSuchId( id );
+            return null;
         }
         return allocation;
     }
@@ -66,60 +72,57 @@ final class SwapperSet
         }
     }
 
-    private NullPointerException noSuchId( int id )
-    {
-        return new NullPointerException( "Swapper allocation by id " + id + " does not exist; it might have been freed" );
-    }
-
     public synchronized int allocate( PageSwapper swapper )
     {
         Allocation[] allocations = this.allocations;
 
-        // First look for an available slot.
+        // First look for an available freed slot.
         synchronized ( free )
         {
-            for ( int i = 0; i < allocations.length; i++ )
+            if ( !free.isEmpty() )
             {
-                if ( allocations[i] == null && !free.contains( i ) )
-                {
-                    // Found an available slot; there's no current allocation, and it is also not in the free set.
-                    // We cannot reuse freed ids before they have been vacuumed. Vacuuming means that we ensure that
-                    // there are no pages in the PageList that refers to these ids. The point is, that unmapping a file
-                    // only ensures that all of its pages are flushed; not that they are evicted. Vacuuming is the
-                    // eviction of the pages that are bound to the now unmapped file.
-                    allocations[i] = new Allocation( i, swapper );
-                    this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
-                    return i;
-                }
+                int id = free.iterator().next();
+                free.remove( id );
+                allocations[id] = new Allocation( id, swapper );
+                this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
+                return id;
             }
         }
 
         // No free slot was found above, so we extend the array to make room for a new slot.
-        int idx = allocations.length;
-        allocations = Arrays.copyOf( allocations, idx + 1 );
-        allocations[idx] = new Allocation( idx, swapper );
+        int id = allocations.length;
+        if ( id + 1 > MAX_SWAPPER_ID )
+        {
+            throw new IllegalStateException( "All swapper ids are allocated: " + MAX_SWAPPER_ID );
+        }
+        allocations = Arrays.copyOf( allocations, id + 1 );
+        allocations[id] = new Allocation( id, swapper );
         this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
-        return idx;
+        return id;
     }
 
-    public synchronized void free( int id )
+    public synchronized boolean free( int id )
     {
         checkId( id );
         Allocation[] allocations = this.allocations;
-        if ( allocations[id] == null )
+        Allocation current = allocations[id];
+        if ( current == null || current == TOMBSTONE )
         {
             throw new IllegalStateException(
                     "PageSwapper allocation id " + id + " is currently not allocated. Likely a double free bug." );
         }
-        allocations[id] = null;
-        synchronized ( free )
-        {
-            free.add( id );
-        }
+        allocations[id] = TOMBSTONE;
         this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
+        freeCounter++;
+        if ( freeCounter == 20 )
+        {
+            freeCounter = 0;
+            return true;
+        }
+        return false;
     }
 
-    public void vacuum( IntConsumer evictAllLoadedPagesCallback )
+    public void vacuum( Consumer<IntPredicate> evictAllLoadedPagesCallback )
     {
         // We do this complicated locking to avoid blocking allocate() and free() as much as possible, while still only
         // allow a single thread to do vacuum at a time, and at the same time have consistent locking around the
@@ -127,16 +130,14 @@ final class SwapperSet
         synchronized ( vacuumLock )
         {
             // Collect currently free ids.
-            int[] freeIds;
-            synchronized ( free )
+            PrimitiveIntSet freeIds = Primitive.intSet();
+            Allocation[] allocations = this.allocations;
+            for ( int id = 0; id < allocations.length; id++ )
             {
-                freeIds = new int[free.size()];
-                PrimitiveIntIterator iterator = free.iterator();
-                int index = 0;
-                while ( iterator.hasNext() )
+                Allocation allocation = allocations[id];
+                if ( allocation == TOMBSTONE )
                 {
-                    freeIds[index] = iterator.next();
-                    index++;
+                    freeIds.add( id );
                 }
             }
 
@@ -144,21 +145,25 @@ final class SwapperSet
             // proceed concurrently with our eviction. This is safe because we know that the ids we are evicting cannot
             // possibly be reused until we remove them from the free id set, which we won't do until after we've evicted
             // all of their loaded pages.
-            for ( int freeId : freeIds )
-            {
-                evictAllLoadedPagesCallback.accept( freeId );
-            }
+            evictAllLoadedPagesCallback.accept( freeIds );
 
             // Finally, all of the pages that remained in memory with an unmapped swapper id have been evicted. We can
             // now safely allow those ids to be reused. Note, however, that free() might have been called while we were
             // doing this, so we can't just free.clear() the set; no, we have to explicitly remove only those specific
             // ids whose pages we evicted.
+            synchronized ( this )
+            {
+                PrimitiveIntIterator itr = freeIds.iterator();
+                while ( itr.hasNext() )
+                {
+                    int freeId = itr.next();
+                    allocations[freeId] = null;
+                }
+                this.allocations = allocations; // Volatile store synchronizes-with loads in getters.
+            }
             synchronized ( free )
             {
-                for ( int freeId : freeIds )
-                {
-                    free.remove( freeId );
-                }
+                free.addAll( freeIds.iterator() );
             }
         }
     }

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -854,15 +855,7 @@ public class MuninnPageCache implements PageCache
                     {
                         clearEvictorException();
                         pageCountToEvict--;
-
-                        Object current;
-                        FreePage freePage = new FreePage( pageRef );
-                        do
-                        {
-                            current = getFreelistHead();
-                            freePage.setNext( current instanceof FreePage ? (FreePage) current : null );
-                        }
-                        while ( !compareAndSetFreelistHead( current, freePage ) );
+                        addFreePageToFreelist( pageRef );
                     }
                 }
                 catch ( IOException e )
@@ -886,6 +879,18 @@ public class MuninnPageCache implements PageCache
         return clockArm;
     }
 
+    private void addFreePageToFreelist( long pageRef )
+    {
+        Object current;
+        FreePage freePage = new FreePage( pageRef );
+        do
+        {
+            current = getFreelistHead();
+            freePage.setNext( current instanceof FreePage ? (FreePage) current : null );
+        }
+        while ( !compareAndSetFreelistHead( current, freePage ) );
+    }
+
     void clearEvictorException()
     {
         if ( evictorException != null )
@@ -907,5 +912,32 @@ public class MuninnPageCache implements PageCache
         }
         sb.append( ']' ).append( '\n' );
         return sb.toString();
+    }
+
+    void vacuum( SwapperSet swappers )
+    {
+        swappers.vacuum( swapperIds ->
+        {
+            int pageCount = pages.getPageCount();
+            try ( EvictionRunEvent evictions = pageCacheTracer.beginPageEvictions( 0 ) )
+            {
+                for ( int i = 0; i < pageCount; i++ )
+                {
+                    long pageRef = pages.deref( i );
+                    while ( swapperIds.test( pages.getSwapperId( pageRef ) ) )
+                    {
+                        if ( pages.tryEvict( pageRef, evictions ) )
+                        {
+                            addFreePageToFreelist( pageRef );
+                            break;
+                        }
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        });
     }
 }

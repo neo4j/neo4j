@@ -62,7 +62,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     final MuninnPageCache pageCache;
     final int filePageSize;
     final PageCacheTracer pageCacheTracer;
-    final int swapperId;
     final LatchMap pageFaultLatches;
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
@@ -70,6 +69,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     volatile int[][] translationTable;
 
     final PageSwapper swapper;
+    final int swapperId;
     private final CursorPool cursorPool;
 
     // Guarded by the monitor lock on MuninnPageCache (map and unmap)
@@ -247,6 +247,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         else
         {
             swapper.closeAndDelete();
+        }
+        if ( getSwappers().free( swapperId ) )
+        {
+            // We need to do a vacuum of the cache, fully evicting all pages that have freed swapper ids.
+            // We cannot reuse those swapper ids until there are no more pages using them.
+            pageCache.vacuum( getSwappers() );
         }
     }
 

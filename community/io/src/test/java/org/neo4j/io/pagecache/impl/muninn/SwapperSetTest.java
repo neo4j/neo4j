@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -63,12 +64,11 @@ public class SwapperSetTest
     }
 
     @Test
-    public void accessingFreedAllocationMustThrow() throws Exception
+    public void accessingFreedAllocationMustReturnNull() throws Exception
     {
         int id = set.allocate( new DummyPageSwapper( "a", 42 ) );
         set.free( id );
-        exception.expect( NullPointerException.class );
-        set.getAllocation( id );
+        assertNull( set.getAllocation( id ) );
     }
 
     @Test
@@ -120,7 +120,7 @@ public class SwapperSetTest
             freed.add( id );
             return false;
         } );
-        set.vacuum( vacuumed::add );
+        set.vacuum( swapperIds -> vacuumed.addAll( ((PrimitiveIntSet) swapperIds).iterator() ) );
 
         allocateAndAddTenThousand( reused, swapper );
 
@@ -151,10 +151,15 @@ public class SwapperSetTest
         {
             set.allocate( swapper );
         }
-        set.vacuum( id ->
+        PrimitiveIntSet vacuumedIds = Primitive.intSet();
+        set.vacuum( swapperIds ->
         {
-            throw new AssertionError( "Vacuum found id " + id + " when it should have found nothing" );
+            vacuumedIds.addAll( ((PrimitiveIntSet) swapperIds).iterator() );
         } );
+        if ( !vacuumedIds.isEmpty() )
+        {
+            throw new AssertionError( "Vacuum found id " + vacuumedIds + " when it should have found nothing" );
+        }
     }
 
     @Test

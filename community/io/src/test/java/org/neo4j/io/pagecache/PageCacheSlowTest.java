@@ -622,4 +622,22 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             }
         }
     }
+
+    @Test
+    public void mustNotRunOutOfSwapperAllocationSpace() throws Exception
+    {
+        configureStandardPageCache();
+
+        File file = file( "a" );
+        int iterations = Short.MAX_VALUE * 20; // Integer.MAX_VALUE;
+        for ( int i = 0; i < iterations; i++ )
+        {
+            PagedFile pagedFile = pageCache.map( file, filePageSize );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            pagedFile.close();
+        }
+    }
 }

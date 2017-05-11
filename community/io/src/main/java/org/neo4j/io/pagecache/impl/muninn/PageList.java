@@ -416,35 +416,47 @@ class PageList
         if ( swapperId != 0 )
         {
             // If the swapper id is non-zero, then the page was not only loaded, but also bound, and possibly modified.
-            PageSwapper swapper = swappers.getAllocation( swapperId ).swapper;
-            evictionEvent.setSwapper( swapper );
-
-            if ( isModified( pageRef ) )
+            SwapperSet.Allocation allocation = swappers.getAllocation( swapperId );
+            if ( allocation != null )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper );
-                try
+                // The allocation can be null if the file has been unmapped, but there are still pages
+                // lingering in the cache that were bound to file page in that file.
+                PageSwapper swapper = allocation.swapper;
+                evictionEvent.setSwapper( swapper );
+
+                if ( isModified( pageRef ) )
                 {
-                    long address = getAddress( pageRef );
-                    long bytesWritten = swapper.write( filePageId, address );
-                    explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
-                    flushEvent.addBytesWritten( bytesWritten );
-                    flushEvent.addPagesFlushed( 1 );
-                    flushEvent.done();
+                    flushModifiedPage( pageRef, evictionEvent, filePageId, swapper );
                 }
-                catch ( IOException e )
-                {
-                    unlockExclusive( pageRef );
-                    flushEvent.done( e );
-                    evictionEvent.threwException( e );
-                    throw e;
-                }
+                swapper.evicted( filePageId );
             }
-            swapper.evicted( filePageId );
         }
         clearBinding( pageRef );
     }
 
-    private void clearBinding( long pageRef )
+    private void flushModifiedPage( long pageRef, EvictionEvent evictionEvent, long filePageId, PageSwapper swapper )
+            throws IOException
+    {
+        FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper );
+        try
+        {
+            long address = getAddress( pageRef );
+            long bytesWritten = swapper.write( filePageId, address );
+            explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+            flushEvent.addBytesWritten( bytesWritten );
+            flushEvent.addPagesFlushed( 1 );
+            flushEvent.done();
+        }
+        catch ( IOException e )
+        {
+            unlockExclusive( pageRef );
+            flushEvent.done( e );
+            evictionEvent.threwException( e );
+            throw e;
+        }
+    }
+
+    protected void clearBinding( long pageRef )
     {
         setFilePageId( pageRef, PageCursor.UNBOUND_PAGE_ID );
         setSwapperId( pageRef, 0 );
