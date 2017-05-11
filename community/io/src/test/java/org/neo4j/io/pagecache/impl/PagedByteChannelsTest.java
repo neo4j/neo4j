@@ -61,7 +61,7 @@ public class PagedByteChannelsTest
                 return new DelegatingPageCursor( super.io( pageId, pf_flags ) )
                 {
                     @Override
-                    public void close() throws IOException
+                    public void close()
                     {
                         super.close();
                         closeCounter.getAndIncrement();

@@ -418,7 +418,7 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         first.close();
         second.close();

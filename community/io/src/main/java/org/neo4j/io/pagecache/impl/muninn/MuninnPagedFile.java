@@ -480,8 +480,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    void flushLockedPage( long pageRef, long filePageId ) throws IOException
+    boolean flushLockedPage( long pageRef, long filePageId )
     {
+        boolean success = false;
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             FlushEvent flush = flushEvent.flushEventOpportunity().beginFlush( filePageId, toId( pageRef ), swapper );
@@ -492,13 +493,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                 flush.addBytesWritten( bytesWritten );
                 flush.addPagesFlushed( 1 );
                 flush.done();
+                success = true;
             }
             catch ( IOException e )
             {
                 flush.done( e );
-                throw e;
             }
         }
+        return success;
     }
 
     private void syncDevice() throws IOException

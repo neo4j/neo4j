@@ -172,7 +172,8 @@ public final class OffHeapPageLock
      */
     public static boolean tryWriteLock( long address )
     {
-        long s, n;
+        long s;
+        long n;
         for ( ; ; )
         {
             s = getState( address );
@@ -214,7 +215,8 @@ public final class OffHeapPageLock
      */
     public static void unlockWrite( long address )
     {
-        long s, n;
+        long s;
+        long n;
         do
         {
             s = getState( address );
@@ -239,7 +241,9 @@ public final class OffHeapPageLock
 
     public static long unlockWriteAndTryTakeFlushLock( long address )
     {
-        long s, n, r;
+        long s;
+        long n;
+        long r;
         do
         {
             r = 0;
@@ -367,7 +371,8 @@ public final class OffHeapPageLock
      */
     public static void unlockFlush( long address, long stamp, boolean success )
     {
-        long s, n;
+        long s;
+        long n;
         do
         {
             s = getState( address );

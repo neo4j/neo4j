@@ -123,7 +123,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public final void close() throws IOException
+    public final void close()
     {
         if ( pagedFile == null )
         {
@@ -372,7 +372,7 @@ abstract class MuninnPageCursor extends PageCursor
         return pagedFile.getLastPageId();
     }
 
-    protected abstract void unpinCurrentPage() throws IOException;
+    protected abstract void unpinCurrentPage();
 
     protected abstract void convertPageFaultLock( long pageRef );
 

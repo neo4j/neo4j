@@ -245,7 +245,7 @@ class AdversarialWritePageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         delegate.close();
         linkedCursor = null;

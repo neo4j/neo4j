@@ -74,7 +74,7 @@ public class PageListTest
     private static final int[] pageIds = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     private static final DummyPageSwapper DUMMY_SWAPPER = new DummyPageSwapper( "", UnsafeUtil.pageSize() );
 
-    @Parameterized.Parameters( name = "pageRef = {0}")
+    @Parameterized.Parameters( name = "pageRef = {0}" )
     public static Iterable<Object[]> parameters()
     {
         IntFunction<Object[]> toArray = x -> new Object[]{x};
@@ -727,7 +727,9 @@ public class PageListTest
         pageList.unlockExclusive( prevPageRef );
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusive( nextPageRef );
-        long ps, ns, s;
+        long ps;
+        long ns;
+        long s;
         assertTrue( (ps = pageList.tryFlushLock( prevPageRef )) != 0 );
         assertTrue( (ns = pageList.tryFlushLock( nextPageRef )) != 0 );
         assertTrue( (s = pageList.tryFlushLock( pageRef )) != 0 );
@@ -795,7 +797,8 @@ public class PageListTest
         pageList.unlockExclusive( prevPageRef );
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusive( nextPageRef );
-        long ps, ns;
+        long ps;
+        long ns;
         assertTrue( (ps = pageList.tryFlushLock( prevPageRef )) != 0 );
         assertTrue( (ns = pageList.tryFlushLock( nextPageRef )) != 0);
         assertTrue( pageList.tryExclusiveLock( pageRef ) );

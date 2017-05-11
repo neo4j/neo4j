@@ -302,7 +302,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         if ( linkedCursor != null )
         {

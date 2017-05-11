@@ -37,7 +37,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void unpinCurrentPage() throws IOException
+    protected void unpinCurrentPage()
     {
         if ( pinnedPageRef != 0 )
         {
@@ -56,7 +56,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         clearPageState();
     }
 
-    private void eagerlyFlushAndUnlockPage() throws IOException
+    private void eagerlyFlushAndUnlockPage()
     {
         long flushStamp = pagedFile.unlockWriteAndTryTakeFlushLock( pinnedPageRef );
         if ( flushStamp != 0 )
@@ -64,8 +64,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             boolean success = false;
             try
             {
-                pagedFile.flushLockedPage( pinnedPageRef, currentPageId );
-                success = true;
+                success = pagedFile.flushLockedPage( pinnedPageRef, currentPageId );
             }
             finally
             {

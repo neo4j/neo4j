@@ -262,7 +262,7 @@ public abstract class PageCursor implements AutoCloseable
      * @see AutoCloseable#close()
      */
     @Override
-    public abstract void close() throws IOException;
+    public abstract void close();
 
     /**
      * Returns true if the page has entered an inconsistent state since the last call to next() or shouldRetry().
