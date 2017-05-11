@@ -41,6 +41,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))()
 
     val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     result should equal(
       List(
@@ -59,6 +60,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))()
 
     val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     result shouldBe empty
   }

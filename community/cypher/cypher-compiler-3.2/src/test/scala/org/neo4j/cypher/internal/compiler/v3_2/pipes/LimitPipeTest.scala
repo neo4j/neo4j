@@ -38,6 +38,7 @@ class LimitPipeTest extends CypherFunSuite {
 
     // When
     limitPipe.createResults(QueryStateHelper.empty)
+    limitPipe.close(true)
 
     // Then
     verify(inputIterator, never()).next()

@@ -145,5 +145,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
   private def createSymbolTableFor(name: String): (String, CypherType) = name -> CTNode
 
-  private def getResults(p: Pipe) = p.createResults(QueryStateHelper.empty).map(_.m.toMap).toList
+  private def getResults(p: Pipe) =
+    try p.createResults(QueryStateHelper.empty).map(_.m.toMap).toList
+    finally p.close(true)
 }

@@ -45,10 +45,11 @@ class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // when
     val pipe = NodeIndexScanPipe("n", label, propertyKey)()
-    val result = pipe.createResults(queryState)
+    val result = pipe.createResults(queryState).map(_("n")).toList
+    pipe.close(true)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result should equal(List(node))
   }
 
   private def scanFor(nodes: Iterator[Node]): QueryContext = {

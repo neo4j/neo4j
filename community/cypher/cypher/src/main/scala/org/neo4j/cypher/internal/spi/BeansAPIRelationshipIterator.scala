@@ -28,8 +28,8 @@ import org.neo4j.kernel.impl.core.NodeManager
   * Converts a RelationshipIterator coming from the Kernel API into an Iterator[Relationship] while
   * still sticking to the fact that each relationship record is only loaded once.
   */
-class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
-                                   nodeManager: NodeManager) extends Iterator[Relationship] {
+class BeansAPIRelationshipIterator(relationships: RelationshipIterator.Resource,
+                                   nodeManager: NodeManager) extends Iterator[Relationship] with AutoCloseable {
 
   private var nextRelationship: Relationship = null
   private val visitor = new RelationshipVisitor[RuntimeException] {
@@ -49,4 +49,6 @@ class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
       throw new NoSuchElementException
     }
   }
+
+  override def close(): Unit = relationships.close()
 }

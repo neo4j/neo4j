@@ -250,6 +250,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
           filteringStep.filterRelationship(row, queryState)(r) &&
             filteringStep.filterNode(row, queryState)(r.getOtherNode(node))
         }).toArray
+        allRels.close()
         depths = new Array[Byte](rels.length)
       }
     }

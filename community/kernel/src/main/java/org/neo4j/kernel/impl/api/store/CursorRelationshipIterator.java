@@ -21,15 +21,15 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.NoSuchElementException;
 
+import org.neo4j.csv.reader.Source;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 /**
  * Convert a {@link RelationshipItem} cursor into a {@link RelationshipIterator} that implements {@link Resource}.
  */
-public class CursorRelationshipIterator implements RelationshipIterator, Resource
+public class CursorRelationshipIterator implements RelationshipIterator.Resource
 {
     private Cursor<RelationshipItem> cursor;
     private boolean hasDeterminedNext;
@@ -47,16 +47,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
 
     private boolean nextCursor()
     {
-        if ( cursor != null )
-        {
-            boolean hasNext = cursor.next();
-            if ( !hasNext )
-            {
-                close();
-            }
-            return hasNext;
-        }
-        return false;
+        return cursor != null && cursor.next();
     }
 
     @Override
@@ -83,8 +74,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
                 type = item.type();
                 startNode = item.startNode();
                 endNode = item.endNode();
-
-                return item.id();
+                return id;
             }
             finally
             {

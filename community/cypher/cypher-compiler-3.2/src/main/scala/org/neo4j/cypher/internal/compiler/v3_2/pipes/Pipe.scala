@@ -45,6 +45,8 @@ trait Pipe {
 
   def monitor: PipeMonitor
 
+  def close(success: Boolean): Unit = ()
+
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
     monitor.startSetup(state.queryId, self)
@@ -75,6 +77,11 @@ case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonito
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
+
+  override def close(success: Boolean): Unit = {
+    source.close(success)
+  }
+
   override def createResults(state: QueryState): Iterator[ExecutionContext] = {
     val sourceResult = source.createResults(state)
 

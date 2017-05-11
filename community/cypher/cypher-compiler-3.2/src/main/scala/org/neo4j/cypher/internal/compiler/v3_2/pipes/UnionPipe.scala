@@ -27,4 +27,11 @@ case class UnionPipe(l: Pipe, r: Pipe)
                     (implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     l.createResults(state) ++ r.createResults(state)
+
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    l.close(success)
+    r.close(success)
+  }
 }

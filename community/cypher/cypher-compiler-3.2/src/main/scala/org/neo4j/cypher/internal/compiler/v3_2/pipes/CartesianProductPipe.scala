@@ -32,4 +32,9 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
   }
 
   def monitor: PipeMonitor = pipeMonitor
+
+  override def close(success: Boolean): Unit = {
+    lhs.close(success)
+    rhs.close(success)
+  }
 }

@@ -44,7 +44,8 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState) shouldBe empty
+      try pipeUnderTest.createResults(queryState) shouldBe empty
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -57,7 +58,8 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList shouldBe List(Map("from" -> n1, "to" -> n2))
+      try pipeUnderTest.createResults(queryState).toList shouldBe List(Map("from" -> n1, "to" -> n2))
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -70,10 +72,11 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList shouldBe List(
+      try pipeUnderTest.createResults(queryState).toList shouldBe List(
         Map("from" -> n1, "to" -> n2),
         Map("from" -> n1, "to" -> n1)
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -94,9 +97,10 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).map(_.apply("to")).toSet should equal(
+      try pipeUnderTest.createResults(queryState).map(_.apply("to")).toSet should equal(
         nodes.slice(min, max + 1).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -115,11 +119,12 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList should equal(
+      try pipeUnderTest.createResults(queryState).toList should equal(
         List(
           Map("from" -> n1, "to" -> n2)
         )
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -148,11 +153,12 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(
+      try pipeUnderTest.createResults(queryState).toSet should equal(
         Set(
           Map("from" -> n1, "to" -> n4)
         )
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -183,11 +189,12 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(
+      try pipeUnderTest.createResults(queryState).toSet should equal(
         Set(
           Map("from" -> n1, "to" -> n4)
         )
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -209,11 +216,12 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList should equal(
+      try pipeUnderTest.createResults(queryState).toList should equal(
         List(
           Map("from" -> n1, "to" -> n2)
         )
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -235,11 +243,12 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList should equal(
+      try pipeUnderTest.createResults(queryState).toList should equal(
         List(
           Map("from" -> n1, "to" -> n2)
         )
       )
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -268,7 +277,9 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(nodes.tail.map(n => Map("from" -> n1, "to" -> n)).toSet)
+      val expected = nodes.tail.map(n => Map("from" -> n1, "to" -> n)).toSet
+      try pipeUnderTest.createResults(queryState).toSet should equal(expected)
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -286,7 +297,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(Set(
+      try pipeUnderTest.createResults(queryState).toSet should equal(Set(
         Map("from" -> nodes(1), "to" -> nodes(2)),
         Map("from" -> nodes(1), "to" -> nodes(3)),
         Map("from" -> nodes(1), "to" -> nodes(4)),
@@ -296,6 +307,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         Map("from" -> nodes(5), "to" -> nodes(8)),
         Map("from" -> nodes(5), "to" -> nodes(9))
       ))
+      finally pipeUnderTest.close(true)
     }
   }
 
@@ -347,12 +359,14 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     val distinctExpand = graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList
+      try pipeUnderTest.createResults(queryState).toList
+      finally pipeUnderTest.close(true)
     }
 
     val distinctAfterVarLengthExpand = graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      comparison.createResults(queryState).toList
+      try comparison.createResults(queryState).toList
+      finally pipeUnderTest.close(true)
     }
 
     val oldThing = distinctAfterVarLengthExpand.toSet

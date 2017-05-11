@@ -57,7 +57,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
    field that is followed once the loaded iterator has been emptied.
  */
 
-  sealed trait State {
+  sealed trait State extends AutoCloseable{
     // Note that the ExecutionContext part here can be null.
     // This code is used in a hot spot, and avoiding object creation is important.
     def next(): (State, ExecutionContext)
@@ -65,6 +65,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
   case object Empty extends State {
     override def next() = (this, null)
+    override def close(): Unit = ()
   }
 
   /**
@@ -87,7 +88,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                       expandMap: PrimitiveLongObjectMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
-    private var rels: Iterator[Relationship] = _
+    private var rels: Iterator[Relationship] with AutoCloseable = _
 
     /*
     Loads the relationship iterator of the nodes before min length has been reached.
@@ -108,11 +109,15 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         }
       }
 
+      rels.close()
+
       if (pathLength >= self.min)
         (whenEmptied, row.newWith(self.toName -> node))
       else
         whenEmptied.next()
     }
+
+    override def close(): Unit = if (rels!= null) rels.close()
 
     /**
       * Creates the appropriate state for following a relationship to the next node.
@@ -249,12 +254,14 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       if (fullExpandDepths == null) {
         val relIter = expand(row, node)
         fullExpandDepths = FullExpandDepths(relIter.toArray)
+        relIter.close()
       }
     }
+
+    override def close(): Unit = ()
   }
 
   class LoadNext(private val input: Iterator[ExecutionContext], val state: QueryState) extends State with Expandable {
-
     override def next(): (State, ExecutionContext) =
       if (input.isEmpty) {
         (Empty, null)
@@ -269,6 +276,8 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                                           expandMap = Primitive.longObjectMap[FullExpandDepths]())
         nextState.next()
       }
+
+    override def close(): Unit = ()
 
     private def getNodeFromRow(row: ExecutionContext): Node =
       row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[Node]
@@ -296,12 +305,19 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     /**
       * List all relationships of a node, given the predicates of this pipe.
       */
-    def expand(row: ExecutionContext, node: Node) = {
+    def expand(row: ExecutionContext, node: Node): Iterator[Relationship] with AutoCloseable = {
       val relationships = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
-      relationships.filter(r => {
+      val filtering = relationships.filter(r => {
         filteringStep.filterRelationship(row, state)(r) &&
           filteringStep.filterNode(row, state)(r.getOtherNode(node))
       })
+      new Iterator[Relationship] with AutoCloseable {
+        override def hasNext: Boolean = filtering.hasNext
+
+        override def next(): Relationship = filtering.next()
+
+        override def close(): Unit = relationships.close()
+      }
     }
   }
 
@@ -334,10 +350,13 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
+  private val currentStateMachine: ThreadLocal[State] = new ThreadLocal[State]
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     new Iterator[ExecutionContext] {
 
-      var (stateMachine, current) = new LoadNext(input, state).next()
+      private var (stateMachine, current) = new LoadNext(input, state).next()
+      currentStateMachine.set(stateMachine)
 
       override def hasNext = current != null
 
@@ -349,8 +368,16 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         val temp = current
         val (nextState, nextCurrent) = stateMachine.next()
         stateMachine = nextState
+        currentStateMachine.set(nextState)
         current = nextCurrent
         temp
       }
     }
+
+  override def close(success: Boolean) = {
+    super.close(success)
+    val closeable = currentStateMachine.get()
+    if (closeable!=null) closeable.close()
+    currentStateMachine.remove()
+  }
 }

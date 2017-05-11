@@ -62,6 +62,11 @@ extends PipeWithSource(left, pipeMonitor) {
       }
     }
   }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    right.close(success)
+  }
 }
 
 abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[ROW]) extends AbstractIterator[ROW] {

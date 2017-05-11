@@ -49,4 +49,9 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
       leftRow
     }
   }
+
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }

@@ -58,6 +58,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
         if (resultIterator.hasNext)
           resultIterator.next()
+        pipe.close(true)
 
         assert(iter.nonEmpty, pipe.getClass.getSimpleName)
       }

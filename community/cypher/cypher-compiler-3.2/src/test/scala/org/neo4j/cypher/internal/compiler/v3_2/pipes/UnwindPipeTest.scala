@@ -30,7 +30,8 @@ class UnwindPipeTest extends CypherFunSuite {
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
     val source = new FakePipe(data, "x" -> CTList(CTInteger))
     val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()
-    unwindPipe.createResults(QueryStateHelper.empty).toList
+    try unwindPipe.createResults(QueryStateHelper.empty).toList
+    finally unwindPipe.close(true)
   }
 
   test("should unwind collection of numbers") {

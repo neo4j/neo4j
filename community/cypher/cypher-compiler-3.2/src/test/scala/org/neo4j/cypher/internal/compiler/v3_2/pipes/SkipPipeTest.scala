@@ -36,9 +36,10 @@ class SkipPipeTest extends CypherFunSuite {
     val limitPipe = SkipPipe(src, Literal(0))()(mock[PipeMonitor])
 
     // When
-    val result = limitPipe.createResults(QueryStateHelper.empty)
+    limitPipe.createResults(QueryStateHelper.empty)
 
     // Then
     verify(inputIterator, never()).next()
+    limitPipe.close(true)
   }
 }

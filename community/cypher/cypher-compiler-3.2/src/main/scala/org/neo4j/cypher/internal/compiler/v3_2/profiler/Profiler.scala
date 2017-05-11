@@ -136,6 +136,20 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     }
   }
 
+  override protected def manyDbHitsC[A](value: Iterator[A] with AutoCloseable): Iterator[A] with AutoCloseable = {
+    increment()
+    new Iterator[A] with AutoCloseable {
+      override def hasNext: Boolean = value.hasNext
+
+      override def next(): A = {
+        increment()
+        value.next()
+      }
+
+      override def close(): Unit = value.close()
+    }
+  }
+
   class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)

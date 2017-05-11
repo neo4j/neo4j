@@ -424,7 +424,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def toFloat(expression: Expression) = toDouble(expression)
 
   override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    val local = generator.declare(typeRef[RelationshipIterator.Resource], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, body.load(nodeVar), dir(direction)))
     }
@@ -432,7 +432,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection,
                                                          typeVars: Seq[String]) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    val local = generator.declare(typeRef[RelationshipIterator.Resource], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
                                 body.load(nodeVar), dir(direction),
@@ -442,7 +442,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection,
                                        toNode: String) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    val local = generator.declare(typeRef[RelationshipIterator.Resource], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(Methods.allConnectingRelationships,
                                 readOperations, body.load(fromNode), dir(direction),
@@ -452,7 +452,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection,
                                        typeVars: Seq[String], toNode: String) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    val local = generator.declare(typeRef[RelationshipIterator.Resource], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(Methods.connectingRelationships, readOperations, body.load(fromNode), dir(direction),
                                 body.load(toNode),

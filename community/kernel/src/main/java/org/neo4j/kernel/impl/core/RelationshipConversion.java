@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 public class RelationshipConversion implements RelationshipVisitor<RuntimeException>, ResourceIterator<Relationship>
 {
     private final NodeProxy.NodeActions actions;
-    RelationshipIterator iterator;
+    RelationshipIterator.Resource iterator;
     Statement statement;
     private Relationship next;
 
@@ -73,6 +73,7 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
     @Override
     public void close()
     {
+        iterator.close();
         statement.close();
     }
 }

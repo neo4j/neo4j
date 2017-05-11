@@ -51,7 +51,10 @@ class ProcedureCallPipeTest
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+    val result = pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList
+    pipe.close(true)
+
+    result should equal(List(
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
       ExecutionContext.from("a" ->2, "r" -> "take 1/2"),
       ExecutionContext.from("a" ->2, "r" -> "take 2/2")
@@ -73,7 +76,10 @@ class ProcedureCallPipeTest
     )()(newMonitor)
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+    val result = pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList
+    pipe.close(true)
+
+    result should equal(List(
       ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
       ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
       ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
@@ -95,7 +101,10 @@ class ProcedureCallPipeTest
     )()(newMonitor)
 
     val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+    val result = pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList
+    pipe.close(true)
+
+    result should equal(List(
       ExecutionContext.from("a" -> 1),
       ExecutionContext.from("a" -> 2)
     ))

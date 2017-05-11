@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.CompiledPlan
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 import org.neo4j.time.Clocks
 
+import scala.collection.JavaConverters._
 import scala.collection.{JavaConverters, mutable}
 
 class ByteCodeGeneratorTest extends CodeGeneratorTest {
@@ -1789,15 +1791,15 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       primitiveIterator(nodeIds)
     }
   })
-  when(ro.nodeGetRelationships(anyLong(), any[Direction])).thenAnswer(new Answer[PrimitiveLongIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = {
+  when(ro.nodeGetRelationships(anyLong(), any[Direction])).thenAnswer(new Answer[RelationshipIterator.Resource] {
+    override def answer(invocationOnMock: InvocationOnMock): RelationshipIterator.Resource = {
       val node = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
       val dir = invocationOnMock.getArguments.apply(1).asInstanceOf[Direction]
       getRelsForNode(allNodes(node), dir, Set.empty)
     }
   })
-  when(ro.nodeGetRelationships(anyLong(), any[Direction], any[Array[Int]]())).thenAnswer(new Answer[PrimitiveLongIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = {
+  when(ro.nodeGetRelationships(anyLong(), any[Direction], any[Array[Int]]())).thenAnswer(new Answer[RelationshipIterator.Resource] {
+    override def answer(invocationOnMock: InvocationOnMock): RelationshipIterator.Resource = {
       val arguments = invocationOnMock.getArguments
       val node = arguments(0).asInstanceOf[Long].toInt
       val dir = arguments(1).asInstanceOf[Direction]
@@ -1873,7 +1875,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def hasNext: Boolean = inner.hasNext
   }
 
-  private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator {
+  private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator.Resource {
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
       val rel = relMap(relationshipId)
@@ -1886,6 +1888,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     override def next(): Long = inner.next()
 
     override def hasNext: Boolean = inner.hasNext
+
+    override def close(): Unit = ()
   }
 
   private def getNodesFromResult(plan: InternalExecutionResult, columns: String*) = {

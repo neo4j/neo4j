@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
@@ -42,13 +41,13 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       query = when(mock[QueryContext].relationshipOps).thenReturn(relOps).getMock[QueryContext]
     )
 
+    val pipe = UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)()
     // when
-    val result: Iterator[ExecutionContext] =
-      UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)()
-      .createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should equal(List(
+    result should equal(List(
       Map("a" -> rel, "to" -> endNode, "from" -> startNode),
       Map("a" -> rel, "to" -> startNode, "from" -> endNode)))
   }
@@ -68,13 +67,13 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     )
 
     val relName = "a"
+    val pipe = UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)()
     // whens
-    val result =
-      UndirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().
-      createResults(queryState)
+    val result = pipe.createResults(queryState).toSet
+    pipe.close(true)
 
     // then
-    result.toSet should equal(Set(
+    result should equal(Set(
       Map(relName -> r1, to -> e1, from -> s1),
       Map(relName -> r2, to -> e2, from -> s2),
       Map(relName -> r1, to -> s1, from -> e1),
@@ -91,11 +90,13 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )
 
+    val pipe = UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)()
     // when
-    val result: Iterator[ExecutionContext] = UndirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should be(empty)
+    result should be(empty)
   }
 
   private def getRelWithNodes:(Node,Relationship,Node) = {

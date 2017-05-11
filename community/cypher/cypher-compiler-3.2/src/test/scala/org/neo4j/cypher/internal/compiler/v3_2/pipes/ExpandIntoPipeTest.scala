@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.pipes
 
+import org.mockito.Matchers
 import org.mockito.Matchers.{eq => mockEq, _}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -47,8 +48,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1))
 
+    val pipe = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // when
-    val result = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -57,14 +60,28 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), mockEq(Some(Seq.empty)))).thenAnswer(
-      new Answer[Iterator[Relationship]] {
-        override def answer(invocationOnMock: InvocationOnMock) = Iterator.empty
-      })
-    when(query.getRelationshipsForIds(any(), any(), mockEq(Some(Seq(1, 2))))).thenAnswer(
-      new Answer[Iterator[Relationship]] {
-        override def answer(invocationOnMock: InvocationOnMock) = Iterator(relationship1, relationship2)
-      })
+    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq.empty)))).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] with AutoCloseable =
+        new Iterator[Relationship] with AutoCloseable {
+          override def hasNext: Boolean = Iterator.empty.hasNext
+
+          override def next(): Relationship = Iterator.empty.next()
+
+          override def close(): Unit = ()
+        }
+    })
+    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq(1,2))))).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] with AutoCloseable =
+        new Iterator[Relationship] with AutoCloseable {
+          private val inner = Iterator(relationship1, relationship2)
+          override def hasNext: Boolean = inner.hasNext
+
+          override def next(): Relationship = inner.next()
+
+          override def close(): Unit = ()
+        }
+    })
+
     when(query.nodeGetDegree(any(), any(), any())).thenReturn(1)
 
     val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
@@ -73,11 +90,13 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     when(query.getOptRelTypeId("FOO")).thenReturn(None)
     when(query.getOptRelTypeId("BAR")).thenReturn(None)
     val result1 = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // when
     when(query.getOptRelTypeId("FOO")).thenReturn(Some(1))
     when(query.getOptRelTypeId("BAR")).thenReturn(Some(2))
     val result2 = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result1 should be(empty)
@@ -92,8 +111,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       row("a" -> startNode, "b" -> endNode2)
     )
 
+    val pipe = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // when
-    val result = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -109,8 +130,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       row("a" -> startNode, "b" -> startNode)
     )
 
+    val pipe = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // when
-    val result = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -123,8 +146,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     setUpRelMockingInQueryContext()
     val left = newMockedPipe("a", row("a" -> null, "b" -> null))
 
+    val pipe = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // when
-    val result = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should be (empty)
@@ -136,8 +161,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     val left = newMockedPipe("a",
       row("a" -> null, "b" -> endNode1))
 
+    val pipe = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // when
-    val result = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result shouldBe empty
@@ -149,8 +176,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> null))
 
+    val pipe = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // when
-    val result = ExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result shouldBe empty
@@ -170,8 +199,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       row("n" -> node1, "r2" -> rel1, "k" -> node0),
       row("n" -> node0, "r2" -> rel0, "k" -> node1))
 
+    val pipe = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.OUTGOING, LazyTypes.empty)()
     // When
-    val results = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+    val results = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // Then
     results should contain theSameElementsAs List(
@@ -193,8 +224,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       row("n" -> node1, "r2" -> rel1, "k" -> node0),
       row("n" -> node0, "r2" -> rel0, "k" -> node1))
 
+    val pipe = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.BOTH, LazyTypes.empty)()
     // When
-    val results = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.BOTH, LazyTypes.empty)().createResults(queryState).toList
+    val results = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // Then
     results should contain theSameElementsAs List(

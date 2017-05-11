@@ -308,7 +308,7 @@ public class OperationsFacade
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+    public RelationshipIterator.Resource nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
             throws EntityNotFoundException
     {
         statement.assertOpen();
@@ -331,7 +331,7 @@ public class OperationsFacade
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction )
+    public RelationshipIterator.Resource nodeGetRelationships( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
         statement.assertOpen();

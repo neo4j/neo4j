@@ -43,11 +43,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
     when(right.createResults(queryState)).thenReturn(rows("b", 2, 3))
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should equal(List(Map("a" -> 2, "b" -> 2)))
+    result should equal(List(Map("a" -> 2, "b" -> 2)))
   }
 
   test("should handle nulls") {
@@ -60,11 +62,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
     when(right.createResults(queryState)).thenReturn(rows("b", 2, 3, null))
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should equal(List(Map("a" -> 2, "b" -> 2)))
+    result should equal(List(Map("a" -> 2, "b" -> 2)))
   }
 
   test("should handle multiples on both sides") {
@@ -90,11 +94,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(rightSide)
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState).toSet
+    pipe.close(true)
 
     // then
-    result.toSet should equal(Set(
+    result should equal(Set(
       Map("a" -> 1, "b" -> 1, "a2" -> 1, "b2" -> 1),
       Map("a" -> 1, "b" -> 1, "a2" -> 2, "b2" -> 1),
       Map("a" -> 2, "b" -> 2, "a2" -> 3, "b2" -> 2),
@@ -111,11 +117,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
 
     // then
     result shouldBe empty
+    pipe.close(true)
     verify(right, times(0)).createResults(any())
   }
 
@@ -130,11 +138,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val rhsIter = new TestableIterator(rows("b", 1, 2, 3))
     when(right.createResults(queryState)).thenReturn(rhsIter)
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
 
     // then
     result shouldBe empty
+    pipe.close(true)
     rhsIter.fetched should equal(0)
   }
 
@@ -151,11 +161,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(right.createResults(queryState)).thenReturn(Iterator.empty)
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState)
 
     // then
     result shouldBe empty
+    pipe.close(true)
     lhsIterator.fetched should equal(0)
   }
 
@@ -172,11 +184,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
     when(right.createResults(queryState)).thenReturn(rows("b",  doubles, Array(0, 1, 2)))
 
+    val pipe = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)()
     // when
-    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
-    result.toList should equal(List(Map("a" -> ints, "b" ->  doubles)))
+    result should equal(List(Map("a" -> ints, "b" ->  doubles)))
   }
 
 

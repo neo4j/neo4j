@@ -43,7 +43,8 @@ class ProfilerTest extends CypherFunSuite {
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe)
 
     //WHEN
-    materialize(pipe.createResults(queryState))
+    try materialize(pipe.createResults(queryState))
+    finally pipe.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     //THEN
@@ -61,7 +62,8 @@ class ProfilerTest extends CypherFunSuite {
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe)
 
     //WHEN
-    materialize(pipe.createResults(queryState))
+    try materialize(pipe.createResults(queryState))
+    finally pipe.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     //THEN
@@ -88,7 +90,8 @@ class ProfilerTest extends CypherFunSuite {
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe1, "bar" -> pipe2, "baz" -> pipe3)
 
     //WHEN
-    materialize(pipe3.createResults(queryState))
+    try materialize(pipe3.createResults(queryState))
+    finally pipe3.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     //THEN
@@ -110,7 +113,8 @@ class ProfilerTest extends CypherFunSuite {
     val planDescription = createPlanDescription("single row" -> start, "foo" -> pipe1, "bar" -> pipe2, "baz" -> pipe3)
 
     //WHEN
-    materialize(pipe3.createResults(queryState))
+    try materialize(pipe3.createResults(queryState))
+    finally pipe3.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     //THEN
@@ -137,7 +141,8 @@ class ProfilerTest extends CypherFunSuite {
       "apply" -> apply)
 
     // WHEN we create the results,
-    materialize(apply.createResults(queryState))
+    try materialize(apply.createResults(queryState))
+    finally apply.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     // THEN
@@ -165,7 +170,8 @@ class ProfilerTest extends CypherFunSuite {
       "Projection" -> pipeUnderInspection)
 
     // WHEN we create the results,
-    materialize(pipeUnderInspection.createResults(queryState))
+    try materialize(pipeUnderInspection.createResults(queryState))
+    finally pipeUnderInspection.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     // THEN the ProjectionNewPipe has correctly recorded the dbhits
@@ -192,7 +198,8 @@ class ProfilerTest extends CypherFunSuite {
       "Projection" -> pipeUnderInspection)
 
     // WHEN we create the results,
-    materialize(pipeUnderInspection.createResults(queryState))
+    try materialize(pipeUnderInspection.createResults(queryState))
+    finally pipeUnderInspection.close(true)
     val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
 
     // THEN the ProjectionNewPipe has correctly recorded the page cache hits
@@ -218,7 +225,8 @@ class ProfilerTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,
-    materialize(pipeUnderInspection.createResults(queryState))
+    try materialize(pipeUnderInspection.createResults(queryState))
+    finally pipeUnderInspection.close(true)
     val description = createPlanDescription(
       "start1" -> start1,
       "start2" -> start2,

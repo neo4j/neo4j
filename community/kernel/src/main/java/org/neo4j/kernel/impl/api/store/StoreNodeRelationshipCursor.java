@@ -154,13 +154,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                 }
                 else
                 {
-                    throw new InvalidRecordException( "While loading relationships for Node[" + fromNodeId +
-                                                      "] a Relationship[" + relationshipRecord.getId() +
-                                                      "] was encountered that had startNode:" +
-                                                      " " +
-                                                      relationshipRecord.getFirstNode() + " and endNode: " +
-                                                      relationshipRecord.getSecondNode() +
-                                                      ", i.e. which had neither start nor end node as the node we're loading relationships for" );
+                    throw new InvalidRecordException(
+                            "While loading relationships for Node[" + fromNodeId + "] a Relationship[" +
+                                    relationshipRecord.getId() + "] was encountered that had startNode:" + " " +
+                                    relationshipRecord.getFirstNode() + " and endNode: " +
+                                    relationshipRecord.getSecondNode() +
+                                    ", i.e. which had neither start nor end node as the node we're loading relationships for" );
                 }
 
                 // If there are no more relationships, and this is from a dense node, then
@@ -175,9 +174,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         return false;
     }
 
+    private Throwable t = null;
+
     @Override
     public void close()
     {
+        t = null;
         instanceCache.accept( this );
     }
 

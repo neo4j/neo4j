@@ -50,8 +50,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1))
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -64,8 +66,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1))
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -78,8 +82,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode2))
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -93,8 +99,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode2))
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -108,8 +116,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode1))
 
     val falsePredicate: Predicate = Not(True())
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, falsePredicate)()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, falsePredicate)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (single :: Nil) = result
@@ -123,8 +133,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> endNode1),
       row("a" -> startNode, "b" -> endNode2))
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -140,8 +152,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
       row("a" -> startNode, "b" -> startNode)
     )
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     val (first :: second :: Nil) = result
@@ -154,8 +168,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     mockRelationships()
     val left = newMockedPipe("a")
 
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result shouldBe 'empty
@@ -166,8 +182,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val node: Node = mock[Node]
     val input = new FakePipe(Iterator(Map("a" -> node, "b" -> null)))
 
+    val pipe = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
     // when
-    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result: List[ExecutionContext] = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result should equal(List(Map("a" -> node, "r" -> null, "b" -> null)))
@@ -209,8 +227,10 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     when(predicate.isTrue(any[ExecutionContext])(any[QueryState]))
       .thenReturn(true)
       .thenReturn(false)
+    val pipe = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, predicate)()
     // when
-    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, predicate)().createResults(queryState).toList
+    val result = pipe.createResults(queryState).toList
+    pipe.close(true)
 
     // then
     result.toList should equal(List(
@@ -218,8 +238,16 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
   }
 
   private def mockRelationships(rels: Relationship*) {
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship] with AutoCloseable] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] with AutoCloseable =
+        new Iterator[Relationship] with AutoCloseable {
+          private val inner = rels.iterator
+          override def hasNext: Boolean = inner.hasNext
+
+          override def next(): Relationship = inner.next()
+
+          override def close(): Unit = ()
+        }
     })
   }
 

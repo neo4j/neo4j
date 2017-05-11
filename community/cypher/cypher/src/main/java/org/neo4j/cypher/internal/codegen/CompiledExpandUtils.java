@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 public abstract class CompiledExpandUtils
 {
-    public static RelationshipIterator connectingRelationships( ReadOperations readOperations,
+    public static RelationshipIterator.Resource connectingRelationships( ReadOperations readOperations,
             long fromNode, Direction direction, long toNode ) throws EntityNotFoundException
     {
         int fromDegree = readOperations.nodeGetDegree( fromNode, direction );
@@ -59,12 +59,12 @@ public abstract class CompiledExpandUtils
             relDirection = direction.reverse();
         }
 
-        RelationshipIterator allRelationships =  readOperations.nodeGetRelationships( startNode, relDirection );
+        RelationshipIterator.Resource allRelationships = readOperations.nodeGetRelationships( startNode, relDirection );
 
         return connectingRelationshipsIterator( allRelationships, startNode, endNode );
     }
 
-    public static RelationshipIterator connectingRelationships( ReadOperations readOperations,
+    public static RelationshipIterator.Resource connectingRelationships( ReadOperations readOperations,
             long fromNode, Direction direction, long toNode, int[] relTypes ) throws EntityNotFoundException
     {
         int fromDegree = calculateTotalDegree( readOperations, fromNode, direction, relTypes);
@@ -95,7 +95,8 @@ public abstract class CompiledExpandUtils
             relDirection = direction.reverse();
         }
 
-        RelationshipIterator allRelationships = readOperations.nodeGetRelationships( startNode, relDirection, relTypes );
+        RelationshipIterator.Resource allRelationships =
+                readOperations.nodeGetRelationships( startNode, relDirection, relTypes );
 
         return connectingRelationshipsIterator( allRelationships, startNode, endNode );
     }
@@ -112,8 +113,8 @@ public abstract class CompiledExpandUtils
         return degree;
     }
 
-    private static RelationshipIterator connectingRelationshipsIterator( final RelationshipIterator allRelationships,
-            final long fromNode, final long toNode )
+    private static RelationshipIterator.Resource connectingRelationshipsIterator(
+            final RelationshipIterator.Resource allRelationships, final long fromNode, final long toNode )
     {
         return new RelationshipIterator.BaseIterator()
         {
@@ -141,6 +142,12 @@ public abstract class CompiledExpandUtils
                 }
 
                 return false;
+            }
+
+            @Override
+            public void close()
+            {
+                allRelationships.close();
             }
         };
     }

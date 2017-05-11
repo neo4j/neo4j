@@ -42,5 +42,8 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
       if (negated) !cond else cond
   }
 
-  private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
+  override def close(success: Boolean): Unit = {
+    super.close(success)
+    inner.close(success)
+  }
 }

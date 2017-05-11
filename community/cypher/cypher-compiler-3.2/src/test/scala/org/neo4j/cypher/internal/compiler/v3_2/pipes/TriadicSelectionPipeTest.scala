@@ -42,6 +42,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => ctx("c")).map { case y: Node =>
       y.getId
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set(11, 12, 21, 22))
   }
 
@@ -56,6 +58,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => ctx("c")).map { case y: Node =>
       y.getId
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set(11, 12, 21, 22))
   }
 
@@ -70,6 +74,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => ctx("c")).map { case y: Node =>
       y.getId
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set(2))
   }
 
@@ -87,6 +93,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       case (a: Node, c: Node) =>
         (a.getId, c.getId)
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
 
@@ -103,6 +111,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       case (a: Node, c: Node) =>
         (a.getId, c.getId)
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 1), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
 
@@ -119,6 +129,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       case (a: Node, c: Node) =>
         (a.getId, c.getId)
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set((0, 2)))
   }
 
@@ -135,6 +147,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       case (a: Node, c: Node) =>
         (a.getId, c.getId)
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
 
@@ -151,6 +165,8 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       case (a: Node, c: Node) =>
         (a.getId, c.getId)
     }.toSet
+    pipe.close(true)
+
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
 

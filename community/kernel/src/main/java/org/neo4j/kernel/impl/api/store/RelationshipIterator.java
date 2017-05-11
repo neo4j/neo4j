@@ -22,10 +22,14 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 public interface RelationshipIterator extends PrimitiveLongIterator, RelationshipVisitor.Home
 {
+    interface Resource extends  RelationshipIterator, org.neo4j.graphdb.Resource
+    {
+    }
     /**
      * Can be called to visit the data about the most recent id returned from {@link #next()}.
      */
@@ -33,7 +37,7 @@ public interface RelationshipIterator extends PrimitiveLongIterator, Relationshi
     <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
 
-    class Empty extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements RelationshipIterator
+    class Empty extends PrimitiveLongCollections.PrimitiveLongBaseIterator implements RelationshipIterator.Resource
     {
         @Override
         public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
@@ -47,11 +51,17 @@ public interface RelationshipIterator extends PrimitiveLongIterator, Relationshi
         {
             return false;
         }
+
+        @Override
+        public void close()
+        {
+
+        }
     }
 
-    RelationshipIterator EMPTY = new Empty();
+    RelationshipIterator.Resource EMPTY = new Empty();
 
-    abstract class BaseIterator extends PrimitiveLongBaseIterator implements RelationshipIterator
+    abstract class BaseIterator extends PrimitiveLongBaseIterator implements RelationshipIterator.Resource
     {
     }
 }

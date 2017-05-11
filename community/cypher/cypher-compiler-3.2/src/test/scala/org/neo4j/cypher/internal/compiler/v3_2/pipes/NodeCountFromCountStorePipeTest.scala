@@ -39,6 +39,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
       query = when(mock[QueryContext].nodeCountByCountStore(12)).thenReturn(42L).getMock[QueryContext]
     )
     pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(42L))
+    pipe.close(true)
   }
 
   test("should return zero if label is missing") {
@@ -52,6 +53,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
     val queryState = QueryStateHelper.emptyWith(query = mockedContext)
 
     pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(0L))
+    pipe.close(true)
   }
 
   test("should return a count for nodes without a label") {
@@ -61,6 +63,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
       query = when(mock[QueryContext].nodeCountByCountStore(NameId.WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
     pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(42L))
+    pipe.close(true)
   }
 
 }

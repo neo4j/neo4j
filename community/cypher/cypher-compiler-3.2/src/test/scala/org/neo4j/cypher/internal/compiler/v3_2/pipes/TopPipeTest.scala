@@ -33,6 +33,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(5)
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(10))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(0, 1, 2, 3, 4))
   }
@@ -41,6 +42,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(3)
     val pipe = new TopNPipe(input, List(Descending("a")), Literal(10))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(2, 1, 0))
   }
@@ -49,6 +51,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(20)
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(0, 1, 2, 3, 4))
   }
@@ -57,6 +60,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(10)
     val pipe = new TopNPipe(input, List(Descending("a")), Literal(3))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(9, 8, 7))
   }
@@ -67,6 +71,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(0, 1, 2, 3, 4))
   }
@@ -77,6 +82,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new TopNPipe(input, List(Descending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(4, 4, 3, 3, 2))
   }
@@ -87,6 +93,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new TopNPipe(input, List(Descending("a")), Literal(2))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(1,1))
   }
@@ -96,6 +103,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List.empty)
   }
@@ -105,6 +113,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(10,null))
   }
@@ -113,6 +122,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(5)
     val pipe = new Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(0))
   }
@@ -121,6 +131,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(3)
     val pipe = new Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(2))
   }
@@ -129,6 +140,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(20)
     val pipe = new Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(0))
   }
@@ -137,6 +149,7 @@ class TopPipeTest extends CypherFunSuite {
     val input = createFakePipeWith(10)
     val pipe = new Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(9))
   }
@@ -147,6 +160,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(0))
   }
@@ -157,6 +171,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(4))
   }
@@ -167,6 +182,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(1))
   }
@@ -176,6 +192,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List.empty)
   }
@@ -185,6 +202,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+    pipe.close(true)
 
     result should equal(List(10,null))
   }

@@ -38,8 +38,10 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
 
+    val pipe = NodeByIdSeekPipe("a", SingleSeekArg(Literal(17)))()
     // when
-    val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(17)))().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("a")).toList should equal(List(node))
@@ -59,8 +61,10 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
 
+    val pipe = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))()
     // whens
-    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
+    val result = pipe.createResults(queryState)
+    pipe.close(true)
 
     // then
     result.map(_("a")).toList should equal(List(node1, node2, node3))
