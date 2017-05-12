@@ -20,6 +20,7 @@
 package org.neo4j.csv.reader;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
@@ -28,11 +29,14 @@ public abstract class CharReadableChunker implements Chunker
     protected final CharReadable reader;
     protected final int chunkSize;
     protected volatile long position;
+    private char[] backBuffer; // grows on demand
+    private int backBufferCursor;
 
     public CharReadableChunker( CharReadable reader, int chunkSize )
     {
         this.reader = reader;
         this.chunkSize = chunkSize;
+        this.backBuffer = new char[chunkSize >> 4];
     }
 
     @Override
@@ -50,6 +54,34 @@ public abstract class CharReadableChunker implements Chunker
     public long position()
     {
         return position;
+    }
+
+    protected int fillFromBackBuffer( char[] into )
+    {
+        if ( backBufferCursor > 0 )
+        {   // Read from and reset back buffer
+            assert backBufferCursor < chunkSize;
+            System.arraycopy( backBuffer, 0, into, 0, backBufferCursor );
+            int result = backBufferCursor;
+            backBufferCursor = 0;
+            return result;
+        }
+        return 0;
+    }
+
+    protected int storeInBackBuffer( char[] data, int offset, int length )
+    {
+        System.arraycopy( data, offset, backBuffer( length ), 0, length );
+        return length;
+    }
+
+    private char[] backBuffer( int length )
+    {
+        if ( length > backBuffer.length )
+        {
+            backBuffer = Arrays.copyOf( backBuffer, length );
+        }
+        return backBuffer;
     }
 
     public static class ChunkImpl implements Chunk

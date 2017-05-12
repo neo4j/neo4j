@@ -25,14 +25,62 @@ import org.neo4j.csv.reader.Source.Chunk;
 
 public class MultiLineAwareChunker extends CharReadableChunker
 {
-    public MultiLineAwareChunker( CharReadable reader, int chunkSize )
+    private final int fieldsPerEntry;
+    private final SectionedCharBuffer charBuffer;
+    private final BufferedCharSeeker seeker;
+    private final Mark mark = new Mark();
+    private final char delimiter;
+
+    public MultiLineAwareChunker( CharReadable reader, Configuration config, int fieldsPerEntry, char delimiter )
     {
-        super( reader, chunkSize );
+        super( reader, config.bufferSize() );
+        this.fieldsPerEntry = fieldsPerEntry;
+        this.delimiter = delimiter;
+        this.charBuffer = new SectionedCharBuffer( config.bufferSize() );
+        this.seeker = new BufferedCharSeeker( new AutoReadingSource( reader, charBuffer ), config );
     }
 
     @Override
-    public boolean nextChunk( Chunk chunk ) throws IOException
+    public synchronized boolean nextChunk( Chunk chunk ) throws IOException
     {
-        return false;
+        // Parse the stream, entry per entry. Entry == "one logical line of data" which may span
+        // multiple physical lines, which makes it hard to predict if just jumping into a position
+        // in the file. Wouldn't it be nice with a specific character for delimiter between entries,
+        // instead of using NEWLINE?
+
+        ChunkImpl into = (ChunkImpl) chunk;
+        char[] array = into.data();
+        int prevPosition = charBuffer.back();
+        boolean doContinue = true;
+        int cursor = fillFromBackBuffer( array );
+        while ( doContinue )
+        {
+            // Read one entry worth of data
+            for ( int i = 0; i < fieldsPerEntry; i++ )
+            {
+                if ( !seeker.seek( mark, delimiter ) )
+                {
+                    // this seems to be the end of the stream
+                    doContinue = false;
+                    break;
+                }
+
+                // And copy into the chunk array.
+                // TODO would be nice to not require copy here though.
+                int position = mark.position();
+                int length = position - prevPosition;
+                if ( cursor + length >= array.length )
+                {
+                    storeInBackBuffer( charBuffer.array(), mark.startPosition(), mark.length() );
+                    doContinue = false;
+                    break;
+                }
+
+                System.arraycopy( charBuffer.array(), prevPosition, array, cursor, length );
+                cursor += length;
+                prevPosition = position;
+            }
+        }
+        return cursor > 0;
     }
 }

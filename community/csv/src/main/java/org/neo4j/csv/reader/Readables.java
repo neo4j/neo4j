@@ -329,4 +329,29 @@ public class Readables
             }
         };
     }
+
+    public static char[] extractFirstLineFrom( CharReadable source ) throws IOException
+    {
+        char[] result = new char[100];
+        int cursor = 0;
+        int read;
+        boolean foundEol = false;
+        do
+        {
+            // Grow on demand
+            if ( cursor >= result.length )
+            {
+                result = Arrays.copyOf( result, cursor * 2 );
+            }
+
+            // Read one character
+            read = source.read( result, cursor, 1 );
+        }
+        while ( read > 0 && !(foundEol = BufferedCharSeeker.isEolChar( result[cursor++] )) );
+        if ( foundEol )
+        {
+            cursor--; // to not include it
+        }
+        return Arrays.copyOf( result, cursor );
+    }
 }

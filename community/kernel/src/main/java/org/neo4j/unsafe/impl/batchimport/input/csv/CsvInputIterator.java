@@ -30,6 +30,8 @@ import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.ClosestNewLineChunker;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.MultiLineAwareChunker;
+import org.neo4j.csv.reader.Readables;
 import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -142,19 +144,23 @@ public class CsvInputIterator extends InputIterator.Adapter
         {
             Data data = dataFactory.create( config );
             CharReadable stream = data.stream();
-            decorator = data.decorator();
-
-            chunker = new ClosestNewLineChunker( stream, config.bufferSize() );
-            Chunk firstChunk = chunker.newChunk();
-            chunker.nextChunk( firstChunk );
+            char[] firstLineBuffer = Readables.extractFirstLineFrom( stream );
+            Chunk firstChunk = new ChunkImpl( firstLineBuffer );
             firstSeeker = seeker( firstChunk );
             header = headerFactory.create( firstSeeker, config, idType );
+
+            // Since we don't know whether or not the header is supplied or extracted
+            // (it's abstracted in HeaderFactory) we have to treat this first line as the first chunk anyway
+            // and potentially it will contain no data except the header, but that's fine.
+
+            decorator = data.decorator();
+            chunker = config.multilineFields()
+                    ? new MultiLineAwareChunker( stream, config.bufferSize(), header.entries().length )
+                    : new ClosestNewLineChunker( stream, config.bufferSize() );
         }
 
         public boolean next( InputChunk chunk ) throws IOException
         {
-            // TODO Decoration has to happen in here!
-
             if ( !firstReturned )
             {
                 firstReturned = true;

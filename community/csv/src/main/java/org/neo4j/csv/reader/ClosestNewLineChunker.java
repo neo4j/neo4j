@@ -20,7 +20,6 @@
 package org.neo4j.csv.reader;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
@@ -32,13 +31,9 @@ import org.neo4j.csv.reader.Source.Chunk;
  */
 public class ClosestNewLineChunker extends CharReadableChunker
 {
-    private char[] backBuffer; // grows on demand
-    private int backBufferCursor;
-
     public ClosestNewLineChunker( CharReadable reader, int chunkSize )
     {
         super( reader, chunkSize );
-        this.backBuffer = new char[chunkSize >> 4];
     }
 
     /**
@@ -53,15 +48,7 @@ public class ClosestNewLineChunker extends CharReadableChunker
     public synchronized boolean nextChunk( Chunk chunk ) throws IOException
     {
         ChunkImpl into = (ChunkImpl) chunk;
-        int offset = 0;
-        if ( backBufferCursor > 0 )
-        {   // Read from and reset back buffer
-            assert backBufferCursor < chunkSize;
-            System.arraycopy( backBuffer, 0, into.buffer, 0, backBufferCursor );
-            offset += backBufferCursor;
-            backBufferCursor = 0;
-        }
-
+        int offset = fillFromBackBuffer( into.buffer );
         int leftToRead = chunkSize - offset;
         int read = reader.read( into.buffer, offset, leftToRead );
         if ( read == leftToRead )
@@ -71,9 +58,7 @@ public class ClosestNewLineChunker extends CharReadableChunker
             int newlineOffset = offsetOfLastNewline( into.buffer );
             if ( newlineOffset > -1 )
             {   // We found a newline character some characters back
-                backBufferCursor = chunkSize - (newlineOffset + 1);
-                System.arraycopy( into.buffer, newlineOffset + 1, backBuffer( backBufferCursor ), 0, backBufferCursor );
-                read -= backBufferCursor;
+                read -= storeInBackBuffer( into.data(), newlineOffset + 1, chunkSize - (newlineOffset + 1) );
             }
             else
             {   // There was no newline character, isn't that weird?
@@ -91,15 +76,6 @@ public class ClosestNewLineChunker extends CharReadableChunker
             return true;
         }
         return false;
-    }
-
-    private char[] backBuffer( int length )
-    {
-        if ( length > backBuffer.length )
-        {
-            backBuffer = Arrays.copyOf( backBuffer, length );
-        }
-        return backBuffer;
     }
 
     private static int offsetOfLastNewline( char[] buffer )

@@ -45,12 +45,13 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.copyOfRange;
 
 @RunWith( Parameterized.class )
 public class ReadablesTest
@@ -234,6 +235,36 @@ public class ReadablesTest
         shouldReadTextFromInputStreamWithBom( Magic.BOM_UTF_8, text );
     }
 
+    @Test
+    public void shouldExtractFirstLine() throws Exception
+    {
+        // GIVEN
+        String firstLine = "first line containing some data";
+        CharReadable readable = Readables.wrap( new StringReader(
+                firstLine + "\n" +
+                "the second line" ) );
+
+        // WHEN
+        String extractedFirstLine = new String( Readables.extractFirstLineFrom( readable ) );
+
+        // THEN
+        assertEquals( firstLine, extractedFirstLine );
+    }
+
+    @Test
+    public void shouldExtractOnlyLine() throws Exception
+    {
+        // GIVEN
+        String line = "first line containing some data";
+        CharReadable readable = Readables.wrap( new StringReader( line ) );
+
+        // WHEN
+        String extractedFirstLine = new String( Readables.extractFirstLineFrom( readable ) );
+
+        // THEN
+        assertEquals( line, extractedFirstLine );
+    }
+
     private void shouldReadTextFromFileWithBom( Magic bom, String text ) throws IOException
     {
         assertReadText( writeToFile( bom.bytes(), text, bom.encoding() ), text );
@@ -343,5 +374,4 @@ public class ReadablesTest
         char[] readText = readMethod.read( readable, text.toCharArray().length );
         assertArrayEquals( readText, text.toCharArray() );
     }
-
 }

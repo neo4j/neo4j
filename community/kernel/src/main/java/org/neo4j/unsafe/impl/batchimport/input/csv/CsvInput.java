@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -108,7 +107,6 @@ public class CsvInput implements Input
 
     private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory )
     {
-        assert !config.multilineFields() : "TODO: support multi-line fields too";
         return new CsvInputIterator( data.iterator(), headerFactory, idType, config, badCollector );
     }
 

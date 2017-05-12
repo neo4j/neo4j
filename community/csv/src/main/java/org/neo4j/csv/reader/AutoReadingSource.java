@@ -34,8 +34,13 @@ public class AutoReadingSource implements Source
 
     public AutoReadingSource( CharReadable reader, int bufferSize )
     {
+        this( reader, new SectionedCharBuffer( bufferSize ) );
+    }
+
+    public AutoReadingSource( CharReadable reader, SectionedCharBuffer charBuffer )
+    {
         this.reader = reader;
-        this.charBuffer = new SectionedCharBuffer( bufferSize );
+        this.charBuffer = charBuffer;
     }
 
     @Override
