@@ -102,6 +102,7 @@ trait MethodStructure[E] {
   def loadVariable(varName: String): E
 
   // arithmetic
+  def multiplyPrimitive(lhs: E, rhs: E): E
   def addExpression(lhs: E, rhs: E): E
   def subtractExpression(lhs: E, rhs: E): E
   def multiplyExpression(lhs: E, rhs: E): E

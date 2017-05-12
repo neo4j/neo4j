@@ -33,7 +33,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
     implicit val table = new SemanticTable()
     table.resolvedLabelIds.put("A", LabelId(12))
 
-    val pipe = NodeCountFromCountStorePipe("count(n)", Some(LazyLabel(LabelName("A") _)))()
+    val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A") _))))()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeCountByCountStore(12)).thenReturn(42L).getMock[QueryContext]
@@ -44,7 +44,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
   test("should return zero if label is missing") {
     implicit val table = new SemanticTable()
 
-    val pipe = NodeCountFromCountStorePipe("count(n)", Some(LazyLabel(LabelName("A") _)))()
+    val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A") _))))()
 
     val mockedContext: QueryContext = mock[QueryContext]
     when(mockedContext.nodeCountByCountStore(12)).thenReturn(42L)
@@ -55,7 +55,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
   }
 
   test("should return a count for nodes without a label") {
-    val pipe = NodeCountFromCountStorePipe("count(n)", None)()
+    val pipe = NodeCountFromCountStorePipe("count(n)", List(None))()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeCountByCountStore(NameId.WILDCARD)).thenReturn(42L).getMock[QueryContext]

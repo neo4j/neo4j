@@ -44,6 +44,12 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery) should beCountPlanFor("n")
   }
 
+  test("should plan a count for cartesian node count no labels") {
+    val plannerQuery = producePlannerQuery("MATCH (n), (m)", "n")
+
+    countStorePlanner(plannerQuery) should beCountPlanFor("n")
+  }
+
   test("should not plan a count for node count when there is a predicate on the node") {
     // When
     val plannerQuery = producePlannerQuery("MATCH (n) WHERE n.prop", "n")
@@ -172,7 +178,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     }
   }
 
-  private def beCountPlanFor(variable: String) = new IsCountPlan(variable, false)
+  private def beCountPlanFor(variable: String) = IsCountPlan(variable, false)
   private def notBeCountPlan = new IsCountPlan("", true)
 
 }

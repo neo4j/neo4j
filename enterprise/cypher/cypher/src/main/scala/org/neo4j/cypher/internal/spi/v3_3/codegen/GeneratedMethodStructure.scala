@@ -30,9 +30,9 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.{BoolType, FloatType, CodeGenType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi._
+import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
@@ -41,13 +41,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTNode, CTRelationship, 
 import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
+import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
 
 import scala.collection.mutable
 
@@ -465,6 +465,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def loadVariable(varName: String) = generator.load(varName)
+
+  override def multiplyPrimitive(lhs: Expression, rhs: Expression) = multiply(lhs, rhs)
 
   override def addExpression(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
 

@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compatibility.v3_2.{ExecutionResultWrapper => E
 import org.neo4j.cypher.internal.compatibility.v3_3.{ExecutionResultWrapper, exceptionHandler}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QualifiedName}
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_1, v3_2}
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDirection2_3, notification => notification_2_3}
@@ -323,7 +323,7 @@ object RewindableExecutionResult {
           Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
         case Arguments3_1.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
-        case Arguments3_1.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, label.map(_.name))
+        case Arguments3_1.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, List(label.map(_.name)))
         case Arguments3_1.CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) => Arguments
           .CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
         case Arguments3_1.LegacyExpressions(expressions) => Arguments.LegacyExpressions(
@@ -471,7 +471,7 @@ object RewindableExecutionResult {
           Arguments.ExpandExpression(from, relName, relTypes, to, dir, min, max)
         case Arguments3_2.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
-        case Arguments3_2.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, label)
+        case Arguments3_2.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, List(label))
         case Arguments3_2.CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) => Arguments
           .CountRelationshipsExpression(ident, startLabel, typeNames, endLabel)
         case Arguments3_2.LegacyExpressions(expressions) => Arguments.LegacyExpressions(

@@ -79,14 +79,15 @@ case object countStorePlanner {
                                       // for constraint checking
                                       labelCheck: Option[LabelName] => (Option[LogicalPlan] => Option[LogicalPlan]) = _ => identity)
                                      (implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
-    if (patternNodes.size == 1 &&
-      patternRelationships.isEmpty &&
-      variableName.forall(_ == patternNodes.head.name) &&
-      noWrongPredicates(Set(patternNodes.head), selections)) { // MATCH (n), MATCH (n:A)
-      val label = findLabel(patternNodes.head, selections)
+    if (patternRelationships.isEmpty &&
+      variableName.forall(patternNodes.map(_.name).contains) &&
+      noWrongPredicates(patternNodes, selections)) { // MATCH (n), MATCH (n:A)
       val lpp = context.logicalPlanProducer
-      val aggregation1 = lpp.planCountStoreNodeAggregation(query, IdName(columnName), label, argumentIds)(context)
-      labelCheck(label)(Some(aggregation1))
+      val labels = patternNodes.toList.map(n => findLabel(n, selections))
+      val aggregation1 = lpp.planCountStoreNodeAggregation(query, IdName(columnName), labels, argumentIds)(context)
+      labels.collectFirst {
+        case l if labelCheck(l)(Some(aggregation1)).nonEmpty => aggregation1
+      }
     } else if (patternRelationships.size == 1 && notLoop(patternRelationships.head)) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
       labelCheck(None)(
         trySolveRelationshipAggregation(query, columnName, variableName, patternRelationships, argumentIds, selections)
@@ -127,7 +128,7 @@ case object countStorePlanner {
       case Predicate(nIds, h: HasLabels) if nIds.forall(nodeIds.contains) && h.labels.size == 1 => true
       case _ => false
     }
-    labelPredicates.size <= 1 && other.isEmpty
+    labelPredicates.size <= nodeIds.size && other.isEmpty
   }
 
   def findLabel(nodeId: IdName, selections: Selections): Option[LabelName] = selections.predicates.collectFirst {

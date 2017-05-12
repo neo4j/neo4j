@@ -657,6 +657,97 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     result2.toList should equal(List(Map("count(r)" -> 1)))
   }
 
+  test("count store on two unlabeled nodes") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n), (m) RETURN count(n)", f = { result =>
+
+        // Then
+        result.columnAs("count(n)").toSet[Int] should equal(Set(9))
+
+      }, allRuntimes = true)
+  }
+
+  test("count store on two unlabeled nodes and count(*)") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n), (m) RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(9))
+
+      }, allRuntimes = true)
+  }
+
+  test("count store on one labeled node and one unlabeled") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n:User),(m) RETURN count(n)", f = { result =>
+
+        // Then
+        result.columnAs("count(n)").toSet[Int] should equal(Set(6))
+
+      }, allRuntimes = true)
+  }
+
+  test("count store on one labeled node and one unlabeled and count(*)") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n:User),(m) RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(6))
+
+      }, allRuntimes = true)
+  }
+
+  test("count store on two labeled nodes") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n:User),(m:User) RETURN count(n)", f = { result =>
+
+        // Then
+        result.columnAs("count(n)").toSet[Int] should equal(Set(4))
+
+      }, allRuntimes = true)
+  }
+
+  test("count store with many nodes") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n:User),(m),(o:User),(p) RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(36))
+
+      }, allRuntimes = true)
+  }
+
+  test("count store with many but odd number of nodes") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n:User),(m),(o:User),(p), (q) RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(108))
+
+      }, allRuntimes = true)
+  }
+
   def withModel(label1: String = "User",
                 label2: String = "User",
                 type1: String = "KNOWS",

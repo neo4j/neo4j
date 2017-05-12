@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
 
 
-case class NodeCountFromCountStore(idName: IdName, labelName: Option[LabelName], argumentIds: Set[IdName])
+case class NodeCountFromCountStore(idName: IdName, labelName: List[Option[LabelName]], argumentIds: Set[IdName])
                                     (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
