@@ -62,8 +62,8 @@ public class CommunityServerBuilder
     protected final LogProvider logProvider;
     private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );
     private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", 7473 );
-    private String maxThreads = null;
-    private String dataDir = null;
+    private String maxThreads;
+    private String dataDir;
     private String managementUri = "/db/manage/";
     private String restUri = "/db/data/";
     private PreFlightTasks preflightTasks;
@@ -83,12 +83,12 @@ public class CommunityServerBuilder
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
     };
 
-    private Clock clock = null;
-    private String[] autoIndexedNodeKeys = null;
+    private Clock clock;
+    private String[] autoIndexedNodeKeys;
     private final String[] autoIndexedRelationshipKeys = null;
     private String[] securityRuleClassNames;
     private boolean persistent;
-    private boolean httpsEnabled = false;
+    private boolean httpsEnabled;
 
     public static CommunityServerBuilder server( LogProvider logProvider )
     {

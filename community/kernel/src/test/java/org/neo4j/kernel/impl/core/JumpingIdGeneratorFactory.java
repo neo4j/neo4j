@@ -81,7 +81,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     {
         private final AtomicLong nextId = new AtomicLong();
         private int leftToNextJump = sizePerJump / 2;
-        private long highBits = 0;
+        private long highBits;
 
         @Override
         public long nextId()

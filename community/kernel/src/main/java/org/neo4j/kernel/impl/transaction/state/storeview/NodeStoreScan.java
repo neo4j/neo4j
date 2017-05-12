@@ -45,7 +45,7 @@ public abstract class NodeStoreScan<FAILURE extends Exception> implements StoreS
     protected final LockService locks;
     private final long totalCount;
 
-    private long count = 0;
+    private long count;
 
     public abstract void process( NodeRecord loaded ) throws FAILURE;
 

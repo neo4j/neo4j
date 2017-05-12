@@ -95,7 +95,7 @@ public abstract class ProgressMonitorFactory
     {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<>();
-        private Completion completion = null;
+        private Completion completion;
 
         private MultiPartBuilder( ProgressMonitorFactory factory, String process )
         {

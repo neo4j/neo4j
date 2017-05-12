@@ -310,7 +310,7 @@ public abstract class SubProcess<T, P> implements Serializable
         PID = pid;
     }
 
-    private int lastPid = 0;
+    private int lastPid;
 
     private String getPid( Process process )
     {

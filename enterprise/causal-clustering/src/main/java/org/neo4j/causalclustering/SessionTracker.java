@@ -29,7 +29,7 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 public class SessionTracker
 {
     private final StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
-    private GlobalSessionTrackerState sessionState = null;
+    private GlobalSessionTrackerState sessionState;
 
     public SessionTracker( StateStorage<GlobalSessionTrackerState> sessionTrackerStorage )
     {

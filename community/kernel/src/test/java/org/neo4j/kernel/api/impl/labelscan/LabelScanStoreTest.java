@@ -611,7 +611,7 @@ public abstract class LabelScanStoreTest
         boolean rebuildingCalled;
         boolean rebuiltCalled;
         boolean noIndexCalled;
-        boolean corruptedIndex = false;
+        boolean corruptedIndex;
 
         @Override
         public void noIndex()

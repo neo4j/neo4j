@@ -64,7 +64,7 @@ public class TestDirectory implements TestRule
     private File testClassBaseFolder;
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
-    private File testDirectory = null;
+    private File testDirectory;
 
     private TestDirectory( FileSystemAbstraction fileSystem )
     {

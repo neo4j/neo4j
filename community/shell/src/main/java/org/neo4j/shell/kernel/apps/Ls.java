@@ -318,7 +318,7 @@ public class Ls extends TransactionProvidingApp
     {
         private final int maxRelsPerType;
         private final Map<String, AtomicInteger> encounteredRelationships = new HashMap<String, AtomicInteger>();
-        private int typesMaxedOut = 0;
+        private int typesMaxedOut;
         private final AtomicBoolean iterationHalted;
 
         LimitPerTypeFilter( int maxRelsPerType, Map<String,Direction> types, AtomicBoolean handBreak )

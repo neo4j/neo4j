@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 public class BatchingIdSequence implements IdSequence
 {
     private final long startId;
-    private long nextId = 0;
+    private long nextId;
 
     public BatchingIdSequence()
     {

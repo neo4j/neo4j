@@ -48,7 +48,7 @@ class FilterIterable<T> implements Iterable<T>
         private final Predicate<? super T> specification;
 
         private T currentValue;
-        boolean finished = false;
+        boolean finished;
         boolean nextConsumed = true;
 
         FilterIterator( Iterator<T> iterator, Predicate<? super T> specification )

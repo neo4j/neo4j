@@ -335,7 +335,7 @@ public class CheckPointSchedulerTest
 
     private static class CheckableIOLimiter implements IOLimiter
     {
-        private volatile boolean limitEnabled = false;
+        private volatile boolean limitEnabled;
 
         @Override
         public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException

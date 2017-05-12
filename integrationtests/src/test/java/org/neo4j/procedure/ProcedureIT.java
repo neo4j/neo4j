@@ -1261,7 +1261,7 @@ public class ProcedureIT
 
     public static class DoubleOutput
     {
-        public double result = 0.0d;
+        public double result;
 
         public DoubleOutput()
         {

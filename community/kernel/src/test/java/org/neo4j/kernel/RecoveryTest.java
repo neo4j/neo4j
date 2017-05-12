@@ -152,7 +152,7 @@ public class RecoveryTest
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
                     logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
             {
-                private int nr = 0;
+                private int nr;
 
                 @Override
                 public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()

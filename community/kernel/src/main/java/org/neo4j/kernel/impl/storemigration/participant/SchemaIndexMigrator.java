@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
-    private boolean deleteObsoleteIndexes = false;
+    private boolean deleteObsoleteIndexes;
     private File labelIndexDirectory;
     private File schemaIndexDirectory;
     private final SchemaIndexProvider schemaIndexProvider;

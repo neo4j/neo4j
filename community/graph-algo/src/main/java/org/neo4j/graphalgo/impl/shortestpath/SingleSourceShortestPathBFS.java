@@ -48,7 +48,7 @@ public class SingleSourceShortestPathBFS implements
     protected HashMap<Node,List<Relationship>> predecessors = new HashMap<>();
     // Limits
     protected long maxDepth = Long.MAX_VALUE;
-    protected long depth = 0;
+    protected long depth;
     LinkedList<Node> currentLayer = new LinkedList<>();
     LinkedList<Node> nextLayer = new LinkedList<>();
 

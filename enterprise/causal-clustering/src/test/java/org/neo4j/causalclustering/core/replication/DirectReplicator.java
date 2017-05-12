@@ -28,7 +28,7 @@ import org.neo4j.causalclustering.core.state.machines.StateMachine;
 public class DirectReplicator<Command extends ReplicatedContent> implements Replicator
 {
     private final StateMachine<Command> stateMachine;
-    private long commandIndex = 0;
+    private long commandIndex;
 
     public DirectReplicator( StateMachine<Command> stateMachine )
     {

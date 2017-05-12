@@ -83,7 +83,7 @@ public class ColumnPrinter
 
     private static class Column
     {
-        private int widest = 0;
+        private int widest;
         protected final List<String> cells = new ArrayList<String>();
         protected final String prefix;
 

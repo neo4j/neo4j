@@ -62,16 +62,16 @@ public class Dijkstra<CostType> implements
     protected Node endNode;
     protected RelationshipType[] costRelationTypes;
     protected Direction relationDirection;
-    protected CostEvaluator<CostType> costEvaluator = null;
-    protected CostAccumulator<CostType> costAccumulator = null;
-    protected Comparator<CostType> costComparator = null;
-    protected boolean calculateAllShortestPaths = false;
+    protected CostEvaluator<CostType> costEvaluator;
+    protected CostAccumulator<CostType> costAccumulator;
+    protected Comparator<CostType> costComparator;
+    protected boolean calculateAllShortestPaths;
     // Limits
     protected long maxRelationShipsToTraverse = -1;
-    protected long numberOfTraversedRelationShips = 0;
+    protected long numberOfTraversedRelationShips;
     protected long maxNodesToTraverse = -1;
-    protected long numberOfNodesTraversed = 0;
-    protected CostType maxCost = null;
+    protected long numberOfNodesTraversed;
+    protected CostType maxCost;
 
     /**
      * @return True if the set limits for the calculation has been reached (but
@@ -109,8 +109,8 @@ public class Dijkstra<CostType> implements
     }
 
     // Result data
-    protected boolean doneCalculation = false;
-    protected Set<Node> foundPathsMiddleNodes = null;
+    protected boolean doneCalculation;
+    protected Set<Node> foundPathsMiddleNodes;
     protected CostType foundPathsCost;
     protected HashMap<Node, List<Relationship>> predecessors1 = new HashMap<Node, List<Relationship>>();
     protected HashMap<Node, List<Relationship>> predecessors2 = new HashMap<Node, List<Relationship>>();
@@ -177,14 +177,14 @@ public class Dijkstra<CostType> implements
         protected HashMap<Node, CostType> otherDistances;
         // Flag that indicates if we should follow egdes in the opposite
         // direction instead
-        protected boolean backwards = false;
+        protected boolean backwards;
         // The priority queue
         protected DijkstraPriorityQueue<CostType> queue;
         // "Done" flags. The first is set to true when a node is found that is
         // contained in both myDistances and otherDistances. This means the
         // calculation has found one of the shortest paths.
-        protected boolean oneShortestPathHasBeenFound = false;
-        protected boolean allShortestPathsHasBeenFound = false;
+        protected boolean oneShortestPathHasBeenFound;
+        protected boolean allShortestPathsHasBeenFound;
 
         public DijstraIterator( Node startNode,
                 HashMap<Node, List<Relationship>> predecessors,

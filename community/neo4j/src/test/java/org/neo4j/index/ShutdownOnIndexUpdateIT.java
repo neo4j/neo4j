@@ -92,7 +92,7 @@ public class ShutdownOnIndexUpdateIT
     private static class TransactionCloseListener implements LifecycleListener
     {
         private final Transaction transaction;
-        private boolean transactionClosed = false;
+        private boolean transactionClosed;
 
         TransactionCloseListener( Transaction transaction )
         {

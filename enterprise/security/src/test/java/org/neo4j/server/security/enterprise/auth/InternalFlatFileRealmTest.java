@@ -353,8 +353,8 @@ public class InternalFlatFileRealmTest
 
     private class TestRealm extends InternalFlatFileRealm
     {
-        private boolean authenticationFlag = false;
-        private boolean authorizationFlag = false;
+        private boolean authenticationFlag;
+        private boolean authorizationFlag;
 
         TestRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
                 AuthenticationStrategy authenticationStrategy, JobScheduler jobScheduler,

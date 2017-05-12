@@ -159,10 +159,10 @@ public class MonitoredBoltWorkerFactoryTest
 
     private static class CountingSessionMonitor implements MonitoredWorkerFactory.SessionMonitor
     {
-       long sessionsStarted = 0;
-       long messagesReceived = 0;
-       long queueTime = 0;
-       long processingTime = 0;
+       long sessionsStarted;
+       long messagesReceived;
+       long queueTime;
+       long processingTime;
 
         @Override
         public void sessionStarted()

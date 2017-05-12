@@ -52,10 +52,10 @@ public class WebSocketConnection implements TransportConnection, WebSocketListen
     private final LinkedBlockingQueue<byte[]> received = new LinkedBlockingQueue<>();
 
     // Current input data being handled, popped off of 'received' queue
-    private byte[] currentReceiveBuffer = null;
+    private byte[] currentReceiveBuffer;
 
     // Index into the current receive buffer
-    private int currentReceiveIndex = 0;
+    private int currentReceiveIndex;
 
     public WebSocketConnection()
     {

@@ -776,7 +776,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 return new DelegatingStoreChannel( super.open( fileName, mode ) )
                 {
-                    private int writeCount = 0;
+                    private int writeCount;
 
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException

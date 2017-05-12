@@ -30,20 +30,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
-import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.Log;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
 /**
  * This mocks message delivery, message loss, and time for timeouts and message latency
@@ -55,7 +54,7 @@ public class NetworkMock
 
     private List<MessageDelivery> messageDeliveries = new ArrayList<MessageDelivery>();
 
-    private long now = 0;
+    private long now;
     private Monitors monitors;
     private long tickDuration;
     private final MultipleFailureLatencyStrategy strategy;

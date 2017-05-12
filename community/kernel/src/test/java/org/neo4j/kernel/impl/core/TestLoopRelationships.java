@@ -288,7 +288,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         final int max = 1 << size;
         return () -> new PrefetchingIterator<boolean[]>()
         {
-            int pos = 0;
+            int pos;
 
             @Override
             protected boolean[] fetchNextOrNull()

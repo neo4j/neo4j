@@ -100,7 +100,7 @@ public class CoverageChartWriter
         }
     }
 
-    private JFreeChart cached = null;
+    private JFreeChart cached;
 
     private JFreeChart createBarChart( Map<String,Integer> data )
     {

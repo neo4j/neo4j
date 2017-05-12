@@ -66,7 +66,7 @@ public class DumpProcessInformationRule extends ExternalResource
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool( 2 );
     private final long duration;
     private final TimeUnit timeUnit;
-    private volatile ScheduledFuture<?> thunk = null;
+    private volatile ScheduledFuture<?> thunk;
     private final Dump[] dumps;
 
     /**

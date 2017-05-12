@@ -229,10 +229,10 @@ public class Neo4jMatchers
     {
         return new TypeSafeDiagnosingMatcher<Iterator<Long>>()
         {
-            int len = 0;
+            int len;
 
-            String actualText = null;
-            String expectedText = null;
+            String actualText;
+            String expectedText;
 
             @Override
             protected boolean matchesSafely( Iterator<Long> expected, Description actualDescription )

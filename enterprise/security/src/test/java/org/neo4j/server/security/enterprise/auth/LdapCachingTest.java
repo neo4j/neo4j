@@ -202,8 +202,8 @@ public class LdapCachingTest
 
     private class TestRealm extends LdapRealm
     {
-        private boolean authenticationFlag = false;
-        private boolean authorizationFlag = false;
+        private boolean authenticationFlag;
+        private boolean authorizationFlag;
 
         boolean takeAuthenticationFlag()
         {

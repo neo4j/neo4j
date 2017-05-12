@@ -112,7 +112,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
 
     private class ProgressExecutionMonitor extends CoarseBoundedProgressExecutionMonitor
     {
-        private long progress = 0;
+        private long progress;
 
         ProgressExecutionMonitor( int batchSize, Configuration configuration )
         {

@@ -91,8 +91,8 @@ class OpenEndRangeMap<K extends Comparable<K>, V>
     private final TreeMap<K,V> tree = new TreeMap<>();
 
     /* We optimize by keeping the open end range directly accessible. */
-    private K endKey = null;
-    private V endValue = null;
+    private K endKey;
+    private V endValue;
 
     Collection<V> replaceFrom( K from, V value )
     {

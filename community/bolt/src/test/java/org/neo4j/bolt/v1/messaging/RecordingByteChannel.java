@@ -27,8 +27,8 @@ import java.nio.channels.WritableByteChannel;
 public class RecordingByteChannel implements WritableByteChannel, ReadableByteChannel
 {
     private final ByteBuffer buffer = ByteBuffer.allocate( 64 * 1024 );
-    private int writePosition = 0;
-    private int readPosition = 0;
+    private int writePosition;
+    private int readPosition;
     private boolean eof;
 
     @Override

@@ -128,7 +128,7 @@ public class ReadAheadLogChannelTest
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
         {
-            private boolean returned = false;
+            private boolean returned;
 
             @Override
             public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException

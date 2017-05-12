@@ -87,6 +87,7 @@
     <module name="AvoidStarImport"/>
     <module name="MultipleVariableDeclarations"/>
     <module name="GenericWhitespace"/>
+    <module name="ExplicitInitialization"/>
   </module>
 
 </module>

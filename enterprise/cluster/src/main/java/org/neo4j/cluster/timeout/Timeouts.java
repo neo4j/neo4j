@@ -36,7 +36,7 @@ import org.neo4j.cluster.com.message.MessageType;
  */
 public class Timeouts implements MessageSource
 {
-    private long now = 0;
+    private long now;
 
     private MessageProcessor receiver;
     private TimeoutStrategy timeoutStrategy;

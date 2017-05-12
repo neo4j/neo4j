@@ -34,7 +34,7 @@ public class Pinger
 {
     private final HostnamePort address;
     private final UdcInformationCollector collector;
-    private int pingCount = 0;
+    private int pingCount;
 
     public Pinger( HostnamePort address, UdcInformationCollector collector )
     {

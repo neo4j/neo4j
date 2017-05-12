@@ -186,7 +186,7 @@ public final class PathImpl implements Path
                 return new Iterator<Node>()
                 {
                     Node current = start;
-                    int index = 0;
+                    int index;
                     Iterator<Relationship> relationshipIterator = relationships.iterator();
 
                     public boolean hasNext()

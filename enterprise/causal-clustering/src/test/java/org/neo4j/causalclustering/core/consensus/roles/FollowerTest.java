@@ -310,7 +310,7 @@ public class FollowerTest
 
     private static class ContentGenerator
     {
-        private static int count = 0;
+        private static int count;
 
         public static ReplicatedString content()
         {

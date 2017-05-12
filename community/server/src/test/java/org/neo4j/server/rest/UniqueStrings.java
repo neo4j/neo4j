@@ -31,7 +31,7 @@ public class UniqueStrings
     {
         return new Factory<String>()
         {
-            private int next = 0;
+            private int next;
 
             @Override
             public String newInstance()

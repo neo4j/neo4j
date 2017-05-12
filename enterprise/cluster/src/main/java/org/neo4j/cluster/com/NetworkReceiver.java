@@ -107,7 +107,7 @@ public class NetworkReceiver
     private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
     private final Listeners<NetworkChannelsListener> listeners = new Listeners<>();
 
-    volatile boolean bindingDetected = false;
+    volatile boolean bindingDetected;
 
     private volatile boolean paused;
     private int port;

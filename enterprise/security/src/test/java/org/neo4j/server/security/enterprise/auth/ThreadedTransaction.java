@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.instanceOf;
 
 class ThreadedTransaction<S>
 {
-    private volatile Future<Throwable> done = null;
+    private volatile Future<Throwable> done;
     private final NeoInteractionLevel<S> neo;
     private final DoubleLatch latch;
 

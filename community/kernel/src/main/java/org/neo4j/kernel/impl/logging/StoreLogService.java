@@ -47,9 +47,9 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     {
         private LogProvider userLogProvider = NullLogProvider.getInstance();
         private Executor rotationExecutor;
-        private long internalLogRotationThreshold = 0L;
-        private long internalLogRotationDelay = 0L;
-        private int maxInternalLogArchives = 0;
+        private long internalLogRotationThreshold;
+        private long internalLogRotationDelay;
+        private int maxInternalLogArchives;
         private Consumer<LogProvider> rotationListener = ( logProvider ) ->
         {
         };

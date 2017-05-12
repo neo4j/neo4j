@@ -66,7 +66,7 @@ public class Recovery extends LifecycleAdapter
     private final Monitor monitor;
     private int numberOfRecoveredTransactions;
 
-    private boolean recoveredLog = false;
+    private boolean recoveredLog;
 
     public Recovery( SPI spi, Monitor monitor )
     {

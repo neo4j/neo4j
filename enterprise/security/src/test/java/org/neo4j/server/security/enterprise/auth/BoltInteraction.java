@@ -334,7 +334,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
 
     static class BoltResult implements ResourceIterator<Map<String,Object>>
     {
-        private int index = 0;
+        private int index;
         private List<Map<String,Object>> data;
 
         BoltResult( List<Map<String,Object>> data )

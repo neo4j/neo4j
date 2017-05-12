@@ -50,7 +50,7 @@ public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabas
     private static class ModuloCounter
     {
         private final int modulo;
-        private int counter = 0;
+        private int counter;
 
         ModuloCounter( int modulo )
         {

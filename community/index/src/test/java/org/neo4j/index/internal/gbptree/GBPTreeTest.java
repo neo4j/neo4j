@@ -1096,7 +1096,7 @@ public class GBPTreeTest
     private class GBPTreeBuilder
     {
         private int pageCachePageSize = 256;
-        private int tentativePageSize = 0;
+        private int tentativePageSize;
         private Monitor monitor = NO_MONITOR;
         private Header.Reader headerReader = NO_HEADER;
         private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;

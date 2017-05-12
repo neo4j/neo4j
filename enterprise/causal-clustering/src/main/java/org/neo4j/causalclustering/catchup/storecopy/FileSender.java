@@ -31,8 +31,8 @@ class FileSender implements ChunkedInput<FileChunk>
 {
     private final ReadableByteChannel channel;
     private final ByteBuffer byteBuffer;
-    private boolean endOfInput = false;
-    private boolean sentChunk = false;
+    private boolean endOfInput;
+    private boolean sentChunk;
     private byte[] preFetchedBytes;
 
     FileSender( ReadableByteChannel channel ) throws IOException

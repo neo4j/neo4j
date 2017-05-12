@@ -28,7 +28,7 @@ import org.neo4j.cluster.com.message.MessageType;
 public class FixedNetworkLatencyStrategy
     implements NetworkLatencyStrategy
 {
-    private long delay = 0;
+    private long delay;
 
     public FixedNetworkLatencyStrategy()
     {

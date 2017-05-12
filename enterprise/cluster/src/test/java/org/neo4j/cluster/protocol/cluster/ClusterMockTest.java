@@ -455,7 +455,7 @@ public class ClusterMockTest
                 , new ObjectStreamFactory() );
 
         private int rounds = 100;
-        private long now = 0;
+        private long now;
 
         public ClusterTestScriptDSL rounds( int n )
         {

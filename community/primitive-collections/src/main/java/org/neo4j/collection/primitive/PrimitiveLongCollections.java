@@ -303,7 +303,7 @@ public class PrimitiveLongCollections
     {
         return new PrimitiveLongFilteringIterator( source )
         {
-            private int skipped = 0;
+            private int skipped;
 
             @Override
             public boolean test( long item )

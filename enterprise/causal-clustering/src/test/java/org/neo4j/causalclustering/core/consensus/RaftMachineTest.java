@@ -508,7 +508,7 @@ public class RaftMachineTest
 
     private static class ExplodingRaftLog implements RaftLog
     {
-        private boolean startExploding = false;
+        private boolean startExploding;
 
         @Override
         public long append( RaftLogEntry... entries ) throws IOException
@@ -580,7 +580,7 @@ public class RaftMachineTest
 
     private class StubLeaderNotFoundMonitor implements LeaderNotFoundMonitor
     {
-        long count = 0;
+        long count;
 
         @Override
         public long leaderNotFoundExceptions()

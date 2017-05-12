@@ -79,8 +79,8 @@ public class VersionedHashMap<K, V> implements Map<K, V>
      */
     private Record<K, V>[] buckets;
 
-    private int size = 0;
-    private int version = 0;
+    private int size;
+    private int version;
 
     /**
      * Number of current non-exhausted iterators. When we know there are iterators pending we need to take special
@@ -90,7 +90,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
      * Ideally, this copying will be very rare, as most records will not be in chains, so this should not incur huge
      * overhead.
      */
-    private short liveIterators = 0;
+    private short liveIterators;
 
     private int bitwiseModByBuckets;
 
@@ -375,14 +375,14 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     private class EntryIterator implements Iterator<Entry<K,V>>
     {
         private int viewVersion;
-        private int currentBucket = 0;
+        private int currentBucket;
         private Record<K,V> next;
         private Record<K,V> current;
 
         // In case the map is resized, we need to retain a fixed view of the buckets, so keep a reference to the current
         // bucket array.
         private Record<K,V>[] bucketsView = buckets;
-        private boolean exhausted = false;
+        private boolean exhausted;
 
         private EntryIterator()
         {
@@ -522,7 +522,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         protected Record<K, V> next;
 
         protected int addedInVersion;
-        protected boolean removed = false;
+        protected boolean removed;
 
         Record( int hashCode, K key, V value, Record<K,V> next, int addedInVersion )
         {

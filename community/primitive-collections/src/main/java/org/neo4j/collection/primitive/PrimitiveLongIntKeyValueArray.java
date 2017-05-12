@@ -36,7 +36,7 @@ public class PrimitiveLongIntKeyValueArray
     private long[] sortedKeys = new long[DEFAULT_INITIAL_CAPACITY];
     private int[] sortedValues = new int[DEFAULT_INITIAL_CAPACITY];
     private double growthFactor;
-    private int size = 0;
+    private int size;
 
     public PrimitiveLongIntKeyValueArray( int initialCapacity, double growthFactor )
     {

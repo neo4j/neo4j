@@ -85,7 +85,7 @@ public class SchemaRecoveryIT
     static class CreateConstraintButDoNotShutDown extends SubProcess<Process, File> implements Process
     {
         // Would use a CountDownLatch but fields of this class need to be serializable.
-        private volatile boolean started = false;
+        private volatile boolean started;
 
         @Override
         protected void startup( File storeDir ) throws Throwable

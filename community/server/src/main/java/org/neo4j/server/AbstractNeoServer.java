@@ -139,7 +139,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
 
-    private boolean initialized = false;
+    private boolean initialized;
     private LifecycleAdapter serverComponents;
 
     protected abstract Iterable<ServerModule> createServerModules();

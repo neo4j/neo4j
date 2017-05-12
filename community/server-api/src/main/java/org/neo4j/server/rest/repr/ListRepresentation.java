@@ -127,7 +127,7 @@ public class ListRepresentation extends Representation
             {
                 return new PrefetchingIterator<ValueRepresentation>()
                 {
-                    int pos = 0;
+                    int pos;
 
                     @Override
                     protected ValueRepresentation fetchNextOrNull()
@@ -153,7 +153,7 @@ public class ListRepresentation extends Representation
                     {
                         return new PrefetchingIterator<ValueRepresentation>()
                         {
-                            int pos = 0;
+                            int pos;
 
                             @Override
                             protected ValueRepresentation fetchNextOrNull()

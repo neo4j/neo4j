@@ -27,13 +27,13 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     private final int sampleSizeLimit;
     private final MultiSet<String> values;
 
-    private int sampledSteps = 0;
+    private int sampledSteps;
 
     // kept as longs to side step overflow issues
 
-    private long accumulatedUniqueValues = 0;
-    private long accumulatedSampledSize = 0;
-    private long sampleSize = 0;
+    private long accumulatedUniqueValues;
+    private long accumulatedSampledSize;
+    private long sampleSize;
 
     public DefaultNonUniqueIndexSampler( int sampleSizeLimit )
     {

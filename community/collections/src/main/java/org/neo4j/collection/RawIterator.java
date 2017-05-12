@@ -54,7 +54,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
     {
         return new RawIterator<T,EX>()
         {
-            private int position = 0;
+            private int position;
 
             @Override
             public boolean hasNext() throws EX

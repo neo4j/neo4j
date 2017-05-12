@@ -81,7 +81,7 @@ import static java.util.Arrays.asList;
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private final Clock clock;
-    private volatile boolean closed = false;
+    private volatile boolean closed;
 
     interface Positionable
     {
@@ -719,7 +719,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         final FileStillOpenException openedAt;
         private final EphemeralFileData data;
-        private long position = 0;
+        private long position;
 
         EphemeralFileChannel( EphemeralFileData data, FileStillOpenException opened )
         {

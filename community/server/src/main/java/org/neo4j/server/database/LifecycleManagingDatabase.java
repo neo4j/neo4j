@@ -52,7 +52,7 @@ public class LifecycleManagingDatabase implements Database
     private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     private final Log log;
 
-    private boolean isRunning = false;
+    private boolean isRunning;
     private GraphDatabaseFacade graph;
 
     public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,

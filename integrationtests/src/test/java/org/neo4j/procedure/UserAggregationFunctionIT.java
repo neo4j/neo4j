@@ -347,7 +347,7 @@ public class UserAggregationFunctionIT
 
         public static class NodeAggregator
         {
-            private Node aggregateNode = null;
+            private Node aggregateNode;
 
             @UserAggregationUpdate
             public void update( @Name( "node" ) Node node )
@@ -376,7 +376,7 @@ public class UserAggregationFunctionIT
 
         public static class RelAggregator
         {
-            private Relationship aggregateRel = null;
+            private Relationship aggregateRel;
 
             @UserAggregationUpdate
             public void update( @Name( "rel" ) Relationship rel )
@@ -405,8 +405,8 @@ public class UserAggregationFunctionIT
 
         public static class LongestPathAggregator
         {
-            private Path aggregatePath = null;
-            private int longest = 0;
+            private Path aggregatePath;
+            private int longest;
 
             @UserAggregationUpdate
             public void update( @Name( "path" ) Path path )
@@ -430,7 +430,7 @@ public class UserAggregationFunctionIT
 
         public static class ClosestTo42Aggregator
         {
-            private Number closest = null;
+            private Number closest;
 
             @UserAggregationUpdate
             public void update( @Name( "number" ) Number number )
@@ -457,7 +457,7 @@ public class UserAggregationFunctionIT
 
         public static class DoubleAggregator
         {
-            private Double closest = null;
+            private Double closest;
 
             @UserAggregationUpdate
             public void update( @Name( "double" ) Double number )
@@ -484,7 +484,7 @@ public class UserAggregationFunctionIT
 
         public static class LongAggregator
         {
-            private Long closest = null;
+            private Long closest;
 
             @UserAggregationUpdate
             public void update( @Name( "long" ) Long number )
@@ -511,7 +511,7 @@ public class UserAggregationFunctionIT
 
         public static class CountAggregator
         {
-            private long count = 0;
+            private long count;
 
             @UserAggregationUpdate
             public void update( @Name( "in" ) String in )
@@ -531,7 +531,7 @@ public class UserAggregationFunctionIT
 
         public static class BoolAggregator
         {
-            private boolean wasCalled = false;
+            private boolean wasCalled;
 
             @UserAggregationUpdate
             public void update()

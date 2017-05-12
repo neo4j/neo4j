@@ -124,7 +124,7 @@ public class ValuePath implements Path
     private final List<Relationship> relationships;
 
     // Used for iteration, built lazily
-    private List<PropertyContainer> entities = null;
+    private List<PropertyContainer> entities;
 
     public ValuePath( List<Node> nodes, List<Relationship> relationships, List<Integer> sequence )
     {

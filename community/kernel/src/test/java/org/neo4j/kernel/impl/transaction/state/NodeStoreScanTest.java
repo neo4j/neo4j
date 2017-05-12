@@ -63,7 +63,7 @@ public class NodeStoreScanTest
 
         final NodeStoreScan scan = new NodeStoreScan( nodeStore, locks,  total )
         {
-            private int read = 0;
+            private int read;
 
             @Override
             public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,

@@ -28,8 +28,8 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 public class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
 {
     private final Map<String,AtomicLong> events = new HashMap<>();
-    private boolean started = false;
-    private boolean finished = false;
+    private boolean started;
+    private boolean finished;
 
     @Override
     public void started()

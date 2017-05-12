@@ -43,18 +43,18 @@ public class PaxosInstance
     }
     PaxosInstanceStore store;
 
-    InstanceId id = null;
+    InstanceId id;
     State state = State.empty;
-    long ballot = 0;
+    long ballot;
     List<URI> acceptors;
     List<ProposerMessage.PromiseState> promises = new ArrayList<ProposerMessage.PromiseState>();
     List<ProposerMessage.AcceptedState> accepts = new ArrayList<ProposerMessage.AcceptedState>();
     List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<ProposerMessage.RejectAcceptState>();
     Object value_1;
-    long phase1Ballot = 0;
+    long phase1Ballot;
     Object value_2;
     // This is true iff the acceptors did not already have a value for this instance
-    boolean clientValue = false;
+    boolean clientValue;
     String conversationIdHeader;
 
     public PaxosInstance( PaxosInstanceStore store, InstanceId instanceId )

@@ -67,7 +67,7 @@ public interface QueueDistribution
     class RoundRobinQueueDistributor<RECORD> implements QueueDistributor<RECORD>
     {
         private final int numberOfThreads;
-        private int nextQIndex = 0;
+        private int nextQIndex;
 
         RoundRobinQueueDistributor( int numberOfThreads )
         {

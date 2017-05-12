@@ -55,12 +55,10 @@ import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterators.loop;
@@ -415,8 +413,8 @@ public class PropertyConstraintsStressIT
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-        Future<Boolean> constraintCreation = null;
-        Future<Integer> constraintViolation = null;
+        Future<Boolean> constraintCreation;
+        Future<Integer> constraintViolation;
 
         abstract void perform();
     }

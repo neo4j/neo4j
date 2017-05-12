@@ -68,7 +68,7 @@ public class XForwardUtil
     {
         String host;
         int port = -1;
-        boolean isValid = false;
+        boolean isValid;
 
         ForwardedHost( String headerValue )
         {

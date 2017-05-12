@@ -85,7 +85,7 @@ public class PersonalUserManagerTest
 
     private class EvilUserManager implements EnterpriseUserManager
     {
-        private boolean failNextCall = false;
+        private boolean failNextCall;
         private EnterpriseUserManager delegate;
 
         EvilUserManager( EnterpriseUserManager delegate )

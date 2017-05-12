@@ -53,7 +53,7 @@ public class FormattedLog extends AbstractLog
     {
         private TimeZone timezone = UTC;
         private Object lock = this;
-        private String category = null;
+        private String category;
         private Level level = Level.INFO;
         private boolean autoFlush = true;
 

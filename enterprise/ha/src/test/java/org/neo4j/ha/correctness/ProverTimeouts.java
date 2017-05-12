@@ -35,7 +35,7 @@ class ProverTimeouts extends Timeouts
 {
     private final Map<Object, Pair<ProverTimeout, Long>> timeouts;
     private final URI to;
-    private long time = 0;
+    private long time;
 
     ProverTimeouts( URI to )
     {

@@ -127,7 +127,7 @@ public class SimpleBitSet implements PrimitiveIntIterable
     {
         return new PrimitiveIntIterator()
         {
-            private int next = 0;
+            private int next;
             private final int size = data.length * 64;
 
             {

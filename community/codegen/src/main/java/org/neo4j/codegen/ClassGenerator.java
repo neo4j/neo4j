@@ -36,7 +36,7 @@ public class ClassGenerator implements AutoCloseable
     private final ClassHandle handle;
     private ClassEmitter emitter;
     private Map<String,FieldReference> fields;
-    private boolean hasConstructor = false;
+    private boolean hasConstructor;
 
     ClassGenerator( ClassHandle handle, ClassEmitter emitter )
     {

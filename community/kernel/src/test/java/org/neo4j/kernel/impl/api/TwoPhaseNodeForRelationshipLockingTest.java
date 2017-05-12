@@ -175,7 +175,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
                             return new Cursor<RelationshipItem>()
                             {
                                 private int i = first ? 1 : 0;
-                                private RelationshipData relationshipData = null;
+                                private RelationshipData relationshipData;
 
                                 @Override
                                 public boolean next()
@@ -213,7 +213,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         {
             Cursor<NodeItem> cursor = new Cursor<NodeItem>()
             {
-                private int i = 0;
+                private int i;
 
                 @Override
                 public boolean next()

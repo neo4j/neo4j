@@ -555,7 +555,7 @@ public class AuthenticationIT
 
     class FailureMsgMatcher extends TypeSafeMatcher<ResponseMessage>
     {
-        FailureMessage specialMessage = null;
+        FailureMessage specialMessage;
 
         @Override
         public void describeTo( Description description )

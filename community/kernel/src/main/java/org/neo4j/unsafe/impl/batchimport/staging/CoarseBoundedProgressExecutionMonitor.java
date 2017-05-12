@@ -33,7 +33,7 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
 {
     private final long totalNumberOfBatches;
     private long prevDoneBatches;
-    private long totalReportedBatches = 0;
+    private long totalReportedBatches;
 
     public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId,
             Configuration configuration )

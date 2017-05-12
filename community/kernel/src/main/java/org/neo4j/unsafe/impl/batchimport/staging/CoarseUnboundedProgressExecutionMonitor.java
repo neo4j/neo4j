@@ -32,7 +32,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
 {
-    private int prevN = 0;
+    private int prevN;
     private final int dotEveryN;
     private final PrintStream out;
 

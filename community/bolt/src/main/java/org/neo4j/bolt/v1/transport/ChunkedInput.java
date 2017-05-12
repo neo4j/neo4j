@@ -36,10 +36,10 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class ChunkedInput implements PackInput
 {
     private List<ByteBuf> chunks = new ArrayList<>();
-    private ByteBuf currentChunk = null;
+    private ByteBuf currentChunk;
     private int currentChunkIndex = -1;
 
-    private int remaining = 0;
+    private int remaining;
 
     public ChunkedInput clear()
     {

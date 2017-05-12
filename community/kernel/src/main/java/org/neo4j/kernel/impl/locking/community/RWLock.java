@@ -96,9 +96,9 @@ class RWLock
         private int writeCount;
         // represent number of active request that where current TxLockElement participate in
         // as soon as hasNoRequests return true - txLockElement can be cleaned up
-        private int requests = 0;
+        private int requests;
         // flag indicate that current TxLockElement is terminated because owning client closed
-        private boolean terminated = false;
+        private boolean terminated;
 
         TxLockElement( Object tx )
         {

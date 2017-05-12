@@ -92,7 +92,7 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 
 public abstract class ProcedureInteractionTestBase<S>
 {
-    protected boolean PWD_CHANGE_CHECK_FIRST = false;
+    protected boolean PWD_CHANGE_CHECK_FIRST;
     protected String CHANGE_PWD_ERR_MSG = AuthorizationViolationException.PERMISSION_DENIED;
     private static final String BOLT_PWD_ERR_MSG =
             "The credentials you provided were valid, but must be changed before you can use this instance.";
@@ -102,7 +102,7 @@ public abstract class ProcedureInteractionTestBase<S>
     String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
 
     protected boolean IS_EMBEDDED = true;
-    boolean IS_BOLT = false;
+    boolean IS_BOLT;
 
     String pwdReqErrMsg( String errMsg )
     {
@@ -564,9 +564,9 @@ public abstract class ProcedureInteractionTestBase<S>
 
         private static final AtomicReference<LatchedRunnables> testLatch = new AtomicReference<>();
 
-        static DoubleLatch doubleLatch = null;
+        static DoubleLatch doubleLatch;
 
-        public static volatile DoubleLatch volatileLatch = null;
+        public static volatile DoubleLatch volatileLatch;
 
         public static List<Exception> exceptionsInProcedure = Collections.synchronizedList( new ArrayList<>() );
 

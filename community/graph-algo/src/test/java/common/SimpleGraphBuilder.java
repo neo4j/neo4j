@@ -42,7 +42,7 @@ public class SimpleGraphBuilder
     HashMap<String,Node> nodes;
     HashMap<Node,String> nodeNames;
     Set<Relationship> edges;
-    RelationshipType currentRelType = null;
+    RelationshipType currentRelType;
 
     public SimpleGraphBuilder( GraphDatabaseService graphDb,
         RelationshipType relationshipType )
