@@ -1586,6 +1586,7 @@ public class OperationsFacade
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
+            ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
             procedureCall = procedures.callProcedure( ctx, name, input );
         }
         return new RawIterator<Object[],ProcedureException>()
