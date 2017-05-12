@@ -79,11 +79,6 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
     }
 
     @Override
-    public void receivePanic( Throwable cause )
-    {
-    }
-
-    @Override
     public void close() throws IOException
     {
     }

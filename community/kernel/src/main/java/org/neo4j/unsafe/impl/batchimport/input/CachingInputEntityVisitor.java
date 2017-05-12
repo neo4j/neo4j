@@ -24,6 +24,18 @@ import java.util.List;
 
 public class CachingInputEntityVisitor implements InputEntityVisitor
 {
+    private final InputEntityVisitor delegate;
+
+    public CachingInputEntityVisitor( InputEntityVisitor delegate )
+    {
+        this.delegate = delegate;
+    }
+
+    public CachingInputEntityVisitor()
+    {
+        this( new InputEntityVisitor.Adapter() );
+    }
+
     public boolean hasPropertyId;
     public long propertyId;
     public final List<Object> properties = new ArrayList<>();
@@ -56,7 +68,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         hasPropertyId = true;
         propertyId = nextProp;
-        return true;
+        return delegate.propertyId( nextProp );
     }
 
     @Override
@@ -64,7 +76,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         properties.add( key );
         properties.add( value );
-        return true;
+        return delegate.property( key, value );
     }
 
     @Override
@@ -72,7 +84,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         hasLongId = true;
         longId = id;
-        return true;
+        return delegate.id( id );
     }
 
     @Override
@@ -80,7 +92,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         objectId = id;
         idGroup = group;
-        return true;
+        return delegate.id( id, group );
     }
 
     @Override
@@ -90,7 +102,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
         {
             this.labels.add( label );
         }
-        return true;
+        return delegate.labels( labels );
     }
 
     @Override
@@ -98,7 +110,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         hasLabelField = true;
         this.labelField = labelField;
-        return true;
+        return delegate.labelField( labelField );
     }
 
     @Override
@@ -106,7 +118,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         hasLongStartId = true;
         longStartId = id;
-        return true;
+        return delegate.startId( id );
     }
 
     @Override
@@ -114,7 +126,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         objectStartId = id;
         startIdGroup = group;
-        return true;
+        return delegate.startId( id, group );
     }
 
     @Override
@@ -122,7 +134,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         hasLongEndId = true;
         longEndId = id;
-        return true;
+        return delegate.endId( id );
     }
 
     @Override
@@ -130,7 +142,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         objectEndId = id;
         endIdGroup = group;
-        return true;
+        return delegate.endId( id, group );
     }
 
     @Override
@@ -138,14 +150,14 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     {
         hasIntType = true;
         intType = type;
-        return true;
+        return delegate.type( type );
     }
 
     @Override
     public boolean type( String type )
     {
         stringType = type;
-        return true;
+        return delegate.type( type );
     }
 
     @Override
@@ -159,6 +171,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
         hasLongStartId = false;
         hasLongEndId = false;
         hasIntType = false;
+        delegate.endOfEntity();
     }
 
     public String[] labels()
