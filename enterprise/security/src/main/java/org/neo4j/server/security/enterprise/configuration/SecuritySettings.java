@@ -185,6 +185,14 @@ public class SecuritySettings implements LoadableConfig
     public static final Setting<Boolean> ldap_authentication_cache_enabled =
             setting( "dbms.security.ldap.authentication.cache_enabled", BOOLEAN, "true" );
 
+    @Description( "Perform authentication with sAMAccountName instead of DN.\n" +
+                  "Using this setting requires `dbms.security.ldap.authorization.system_username` and " +
+                  "dbms.security.ldap.authorization.system_password to be used since there is no way to log in " +
+                  "through ldap directly with the sAMAccountName, instead the login name will be resolved to a DN " +
+                  "that will be used to log in with." )
+    public static final Setting<Boolean> ldap_authentication_use_samaccountname =
+            setting( "dbms.security.ldap.authentication.use_samaccountname", BOOLEAN, "false" );
+
     //-----------------------------------------------------
     // LDAP authorization settings
     //-----------------------------------------------------

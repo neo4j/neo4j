@@ -94,6 +94,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
     private Boolean useStartTls;
+    private boolean useSAMAccountName;
     private String userSearchBase;
     private String userSearchFilter;
     private List<String> membershipAttributeNames;
@@ -143,38 +144,45 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     {
         if ( authenticationEnabled )
         {
-            String serverString = server( (JndiLdapContextFactory) ldapContextFactory );
-            try
+            if ( useSAMAccountName )
             {
-                AuthenticationInfo info =
-                        useStartTls ? queryForAuthenticationInfoUsingStartTls( token, ldapContextFactory ) :
-                        super.queryForAuthenticationInfo( token, ldapContextFactory );
-                securityLog.debug( withRealm( "Authenticated user '%s' against %s",
-                        token.getPrincipal(), serverString ) );
-                return info;
+                return queryForAuthenticationInfoSAM( token, ldapContextFactory );
             }
-            catch ( Exception e )
+            else
             {
-                securityLog.error( withRealm( "Failed to authenticate user '%s' against %s: %s",
-                        token.getPrincipal(), serverString, e.getMessage() ) );
+                String serverString = server( (JndiLdapContextFactory) ldapContextFactory );
+                try
+                {
+                    AuthenticationInfo info =
+                            useStartTls ? queryForAuthenticationInfoUsingStartTls( token, ldapContextFactory )
+                                        : super.queryForAuthenticationInfo( token, ldapContextFactory );
+                    securityLog.debug( withRealm( "Authenticated user '%s' against %s", token.getPrincipal(),
+                            serverString ) );
+                    return info;
+                }
+                catch ( Exception e )
+                {
+                    securityLog.error( withRealm( "Failed to authenticate user '%s' against %s: %s", token.getPrincipal(),
+                            serverString, e.getMessage() ) );
 
-                if ( isExceptionAnLdapConnectionTimeout( e ) )
-                {
-                    securityLog.error( withRealm( "LDAP connection to %s timed out.", serverString ) );
-                    throw new AuthProviderTimeoutException( LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE, e );
+                    if ( isExceptionAnLdapConnectionTimeout( e ) )
+                    {
+                        securityLog.error( withRealm( "LDAP connection to %s timed out.", serverString ) );
+                        throw new AuthProviderTimeoutException( LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE, e );
+                    }
+                    else if ( isExceptionAnLdapReadTimeout( e ) )
+                    {
+                        securityLog.error( withRealm( "LDAP response from %s timed out.", serverString ) );
+                        throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
+                    }
+                    else if ( isExceptionConnectionRefused( e ) )
+                    {
+                        securityLog.error( withRealm( "LDAP connection to %s was refused.", serverString ) );
+                        throw new AuthProviderFailedException( LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE, e );
+                    }
+                    // This exception will be caught and rethrown by Shiro, and then by us, so we do not need to wrap it here
+                    throw e;
                 }
-                else if ( isExceptionAnLdapReadTimeout( e ) )
-                {
-                    securityLog.error( withRealm( "LDAP response from %s timed out.", serverString ) );
-                    throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
-                }
-                else if ( isExceptionConnectionRefused( e ) )
-                {
-                    securityLog.error( withRealm( "LDAP connection to %s was refused.", serverString ) );
-                    throw new AuthProviderFailedException( LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE, e );
-                }
-                // This exception will be caught and rethrown by Shiro, and then by us, so we do not need to wrap it here
-                throw e;
             }
         }
         else
@@ -456,6 +464,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
 
         userSearchBase = config.get( SecuritySettings.ldap_authorization_user_search_base );
         userSearchFilter = config.get( SecuritySettings.ldap_authorization_user_search_filter );
+        useSAMAccountName = config.get( SecuritySettings.ldap_authentication_use_samaccountname );
         membershipAttributeNames = config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names );
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
@@ -515,6 +524,64 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
         }
 
         return map;
+    }
+
+    private AuthenticationInfo queryForAuthenticationInfoSAM( AuthenticationToken token, LdapContextFactory ldapContextFactory ) throws NamingException
+    {
+        Object principal = token.getPrincipal();
+        Object credentials = token.getCredentials();
+
+        LdapContext ctx = null;
+        try
+        {
+            ctx = useStartTls ? getSystemLdapContextUsingStartTls( ldapContextFactory ) :
+                                      ldapContextFactory.getSystemLdapContext();
+            String[] attrs = {"cn"};
+            SearchControls searchCtls = new SearchControls( SearchControls.SUBTREE_SCOPE, 1, 0, attrs, false, false );
+            Object[] searchArguments = new Object[]{principal};
+            String filter = "sAMAccountName={0}";
+            NamingEnumeration<SearchResult> search = ctx.search( userSearchBase, filter, searchArguments, searchCtls );
+            if ( search.hasMore() )
+            {
+                final SearchResult next = search.next();
+                String loginUser = next.getNameInNamespace();
+                if ( search.hasMore() )
+                {
+                    securityLog.error( "More than one user matching: " + principal );
+                    throw new RuntimeException( "More than one user matching: " + principal );
+                }
+                else
+                {
+                    try
+                    {
+                        LdapContext ctx2 = ldapContextFactory.getLdapContext( loginUser, credentials );
+                        LdapUtils.closeContext( ctx2 );
+                    }
+                    catch ( Exception ex )
+                    {
+                        securityLog.warn( "Error in authentication for user " + loginUser, ex );
+                        // We have to rethrow the exception, to indicate invalid login
+                        throw ex;
+                    }
+                }
+            }
+            else
+            {
+                securityLog.warn( "No user matching: " + principal );
+                throw new RuntimeException( "No user matching: " + principal );
+            }
+            return createAuthenticationInfo( token, principal, credentials, ctx );
+        }
+        catch ( NamingException ne )
+        {
+            securityLog.error( "Error in ldap name resolving", ne );
+            // We have to rethrow the exception, to indicate invalid login
+            throw ne;
+        }
+        finally
+        {
+            LdapUtils.closeContext( ctx );
+        }
     }
 
     // TODO: Extract to an LdapAuthorizationStrategy ? This ("group by attribute") is one of multiple possible strategies
