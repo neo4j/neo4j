@@ -600,6 +600,23 @@ return p""")
     res.toList should equal(List(Map("n1.prop" -> 1, "n2.prop" -> 2)))
   }
 
+  test("should handle distinct, variable length and relationship predicate") {
+    // Given
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    val node4 = createNode()
+    relate(node1, node2, "T", Map("roles" -> "NEO"))
+    relate(node2, node3, "T", Map("roles" -> "NEO"))
+    relate(node2, node4, "T", Map("roles" -> "NEO"))
+
+    // When
+    val res = executeWithAllPlannersAndCompatibilityMode("MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
+
+    // Then
+    res.toSet should equal(Set(Map("n" -> node1)))
+  }
+
   /**
    * Append variable to keys and transform value arrays to lists
    */
