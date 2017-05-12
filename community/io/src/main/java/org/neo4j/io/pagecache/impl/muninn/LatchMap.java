@@ -23,6 +23,12 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+/**
+ * The LatchMap is used by the {@link MuninnPagedFile} to coordinate concurrent page faults, and ensure that no two
+ * threads try to fault in the same page at the same time. If there is high demand for a particular page, then the
+ * LatchMap will ensure that only one thread actually does the faulting, and that any other interested threads will
+ * wait for the faulting thread to complete the fault before they proceed.
+ */
 final class LatchMap
 {
     static final class Latch extends BinaryLatch
@@ -70,6 +76,15 @@ final class LatchMap
         return (Latch) UnsafeUtil.getObjectVolatile( latches, offset( index ) );
     }
 
+    /**
+     * If a latch is currently installed for the given (or any colliding) identifier, then it will be waited upon and
+     * {@code null} will be returned.
+     *
+     * Otherwise, if there is currently no latch installed for the given identifier, then one will be created and
+     * installed, and that latch will be returned. Once the page fault has been completed, the returned latch must be
+     * released. Releasing the latch will unblock all threads that are waiting upon it, and the latch will be
+     * atomically uninstalled.
+     */
     Latch takeOrAwaitLatch( long identifier )
     {
         int index = index( identifier );
