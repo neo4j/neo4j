@@ -57,8 +57,8 @@ public class SwapperSetTest
         DummyPageSwapper b = new DummyPageSwapper( "b", 43 );
         int idA = set.allocate( a );
         int idB = set.allocate( b );
-        SwapperSet.Allocation allocA = set.getAllocation( idA );
-        SwapperSet.Allocation allocB = set.getAllocation( idB );
+        SwapperSet.SwapperMapping allocA = set.getAllocation( idA );
+        SwapperSet.SwapperMapping allocB = set.getAllocation( idB );
         assertThat( allocA.swapper, is( a ) );
         assertThat( allocB.swapper, is( b ) );
     }

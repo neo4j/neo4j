@@ -416,12 +416,12 @@ class PageList
         if ( swapperId != 0 )
         {
             // If the swapper id is non-zero, then the page was not only loaded, but also bound, and possibly modified.
-            SwapperSet.Allocation allocation = swappers.getAllocation( swapperId );
-            if ( allocation != null )
+            SwapperSet.SwapperMapping swapperMapping = swappers.getAllocation( swapperId );
+            if ( swapperMapping != null )
             {
                 // The allocation can be null if the file has been unmapped, but there are still pages
                 // lingering in the cache that were bound to file page in that file.
-                PageSwapper swapper = allocation.swapper;
+                PageSwapper swapper = swapperMapping.swapper;
                 evictionEvent.setSwapper( swapper );
 
                 if ( isModified( pageRef ) )
