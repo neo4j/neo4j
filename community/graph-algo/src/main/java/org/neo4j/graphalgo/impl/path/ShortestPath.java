@@ -161,7 +161,7 @@ public class ShortestPath implements PathFinder<Path>
             goOneStep( endData, startData, hits, startData, stopAsap );
         }
         Collection<Hit> least = hits.least();
-        return least != null ? filterPaths(hitsToPaths( least, start, end, stopAsap )) : Collections.<Path> emptyList();
+        return least != null ? filterPaths(hitsToPaths( least, start, end, stopAsap )) : Collections.emptyList();
     }
 
     @Override
@@ -339,7 +339,7 @@ public class ShortestPath implements PathFinder<Path>
             }
             else
             {
-                this.nextRelationships = Collections.<Relationship> emptyList().iterator();
+                this.nextRelationships = Collections.<Relationship>emptyList().iterator();
             }
         }
 
