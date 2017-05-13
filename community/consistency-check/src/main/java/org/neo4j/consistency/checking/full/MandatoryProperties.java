@@ -159,7 +159,7 @@ public class MandatoryProperties
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <RECORD extends PrimitiveRecord,REPORT extends ConsistencyReport.PrimitiveConsistencyReport> Check<RECORD,REPORT>noCheck()
+    private static <RECORD extends PrimitiveRecord, REPORT extends ConsistencyReport.PrimitiveConsistencyReport> Check<RECORD,REPORT> noCheck()
     {
         return NONE;
     }

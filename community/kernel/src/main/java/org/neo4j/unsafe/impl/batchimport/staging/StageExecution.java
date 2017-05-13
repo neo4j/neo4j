@@ -33,7 +33,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -144,7 +143,7 @@ public class StageExecution implements StageControl
                         float factor = next != null
                                 ? (float) stat( current, stat ) / (float) stat( next, stat )
                                 : 1.0f;
-                        return Pair.<Step<?>, Float> of( current, factor );
+                        return Pair.of( current, factor );
                     }
 
                     private long stat( Step<?> step, Key stat )
