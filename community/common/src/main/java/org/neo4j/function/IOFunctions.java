@@ -24,14 +24,11 @@ package org.neo4j.function;
  */
 public final class IOFunctions
 {
-    private static final IOFunction IDENTITY = new IOFunction()
+    private static final IOFunction IDENTITY = value -> value;
+
+    private IOFunctions()
     {
-        @Override
-        public Object apply( Object value )
-        {
-            return value;
-        }
-    };
+    }
 
     @SuppressWarnings( "unchecked" )
     public static <T> IOFunction<T,T> identity()

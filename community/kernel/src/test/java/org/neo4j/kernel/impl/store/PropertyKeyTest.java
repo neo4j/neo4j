@@ -57,7 +57,7 @@ public class PropertyKeyTest
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
 
         // When
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             Node node = db.getNodeById( nodeId );

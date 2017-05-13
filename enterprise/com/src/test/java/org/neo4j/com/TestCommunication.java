@@ -103,7 +103,7 @@ public class TestCommunication
         }
     }
 
-    @Test(expected = MismatchingStoreIdException.class)
+    @Test( expected = MismatchingStoreIdException.class )
     public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
@@ -113,7 +113,7 @@ public class TestCommunication
         client.multiply( 1, 2 );
     }
 
-    @Test(expected = MismatchingStoreIdException.class)
+    @Test( expected = MismatchingStoreIdException.class )
     public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
@@ -424,7 +424,7 @@ public class TestCommunication
     }
 
     @Test
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings( "rawtypes" )
     public void masterResponseShouldBeUnpackedIfRequestTypeRequires() throws Exception
     {
         // Given

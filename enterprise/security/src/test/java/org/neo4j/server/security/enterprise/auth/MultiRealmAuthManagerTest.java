@@ -34,19 +34,19 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
-import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.server.security.auth.InitialUserTest;
-import org.neo4j.kernel.api.security.PasswordPolicy;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -171,10 +171,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
                 EnterpriseSecurityModule.getDefaultAdminRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         defaultAdminRepository.start();
         defaultAdminRepository.create(
-                new User.Builder( "foo", Credential.INACCESSIBLE)
-                        .withRequiredPasswordChange( false )
-                        .build()
-        );
+                new User.Builder( "foo", Credential.INACCESSIBLE ).withRequiredPasswordChange( false ).build() );
         defaultAdminRepository.shutdown();
 
         users.create( newUser( "jake", "abc123" , false ) );

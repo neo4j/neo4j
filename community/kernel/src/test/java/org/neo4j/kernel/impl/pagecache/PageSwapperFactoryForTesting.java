@@ -24,13 +24,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.kernel.configuration.Config;
 
 public class PageSwapperFactoryForTesting
         extends SingleFilePageSwapperFactory
-        implements ConfigurablePageSwapperFactory
+        implements PageSwapperFactory
 {
     public static final String TEST_PAGESWAPPER_NAME = "pageSwapperForTesting";
 
@@ -79,8 +81,9 @@ public class PageSwapperFactoryForTesting
     }
 
     @Override
-    public void configure( Config config )
+    public void open( FileSystemAbstraction fs, Configuration configuration )
     {
+        super.open( fs, configuration );
         configuredCounter.getAndIncrement();
     }
 }

@@ -29,10 +29,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
 
-@RunWith(value = Parameterized.class)
+@RunWith( value = Parameterized.class )
 public class PropertyEqualityTest
 {
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Test> data()
     {
         return asIterable(

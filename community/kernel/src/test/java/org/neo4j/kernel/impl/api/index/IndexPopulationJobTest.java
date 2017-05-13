@@ -222,7 +222,7 @@ public class IndexPopulationJobTest
         long node1 = createNode( map( name, value1 ), FIRST );
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
-        @SuppressWarnings("UnnecessaryLocalVariable")
+        @SuppressWarnings( "UnnecessaryLocalVariable" )
         long changeNode = node1;
         int propertyKeyId = getPropertyKeyForName( name );
         NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,

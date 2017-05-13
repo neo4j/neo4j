@@ -23,7 +23,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-@SuppressWarnings("UnusedDeclaration")
+@SuppressWarnings( "UnusedDeclaration" )
 public class RelationshipFacadeMethods
 {
     private static final FacadeMethod<Relationship> HAS_PROPERTY =
@@ -131,7 +131,7 @@ public class RelationshipFacadeMethods
 
     private static final FacadeMethod<Relationship> GET_NODES = new FacadeMethod<Relationship>( "Node[] getNodes()" )
     {
-        @SuppressWarnings("UnusedDeclaration")
+        @SuppressWarnings( "UnusedDeclaration" )
         @Override
         public void call( Relationship relationship )
         {
@@ -177,4 +177,8 @@ public class RelationshipFacadeMethods
         GET_TYPE,
         IS_TYPE
     ) );
+
+    private RelationshipFacadeMethods()
+    {
+    }
 }

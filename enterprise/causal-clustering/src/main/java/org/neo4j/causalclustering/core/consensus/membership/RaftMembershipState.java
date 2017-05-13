@@ -156,13 +156,16 @@ public class RaftMembershipState extends LifecycleAdapter
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         RaftMembershipState that = (RaftMembershipState) o;
-        return ordinal == that.ordinal &&
-               Objects.equals( committed, that.committed ) &&
-               Objects.equals( appended, that.appended );
+        return ordinal == that.ordinal && Objects.equals( committed, that.committed ) &&
+                Objects.equals( appended, that.appended );
     }
 
     @Override

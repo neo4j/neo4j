@@ -33,6 +33,10 @@ public class SampleData
     private static final Label LABEL = label( "ExampleNode" );
     private static final String PROPERTY_KEY = "prop";
 
+    private SampleData()
+    {
+    }
+
     public static void createSomeData( int items, Cluster cluster ) throws Exception
     {
         for ( int i = 0; i < items; i++ )

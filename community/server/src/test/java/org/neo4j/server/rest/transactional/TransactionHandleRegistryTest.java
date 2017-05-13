@@ -245,7 +245,7 @@ public class TransactionHandleRegistryTest
         verifyNoMoreInteractions( handle );
     }
 
-    @Test(expected = InvalidTransactionId.class)
+    @Test( expected = InvalidTransactionId.class )
     public void gettingInterruptHandlerForUnknownIdShouldThrowErrorInvalidTransactionId() throws TransactionLifecycleException
     {
         // Given

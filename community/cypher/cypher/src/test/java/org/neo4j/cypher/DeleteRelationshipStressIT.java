@@ -60,7 +60,7 @@ public class DeleteRelationshipStressIT
                 {
                     Node node = db.createNode( label( "L" ) );
 
-                    if (prev != null)
+                    if ( prev != null )
                     {
                         Relationship rel = prev.createRelationshipTo( node, DynamicRelationshipType.withName( "T" ) );
                         rel.setProperty( "prop", i + j );

@@ -158,7 +158,7 @@ public enum ClusterMessage
 
         public ConfigurationResponseState snapshot()
         {
-            return new ConfigurationResponseState( new HashMap<>(roles), new HashMap<>(nodes),
+            return new ConfigurationResponseState( new HashMap<>( roles ), new HashMap<>( nodes ),
                     latestReceivedInstanceId, clusterName );
         }
 
@@ -463,7 +463,7 @@ public enum ClusterMessage
     {
         private final int remainingPings;
 
-        public ConfigurationTimeoutState( int remainingPings)
+        public ConfigurationTimeoutState( int remainingPings )
         {
             this.remainingPings = remainingPings;
         }

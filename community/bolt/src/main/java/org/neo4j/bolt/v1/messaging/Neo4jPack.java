@@ -95,7 +95,7 @@ public class Neo4jPack
             {
                 pack( (String) obj );
             }
-            else if (obj instanceof Character )
+            else if ( obj instanceof Character )
             {
                 pack( (char) obj );
             }
@@ -218,10 +218,10 @@ public class Neo4jPack
             {
                 pathPacker.pack( this, (Path) obj );
             }
-            else if ( obj instanceof Point)
+            else if ( obj instanceof Point )
             {
                 error = Optional.of(new Error( Status.Request.Invalid,
-                        "Point is not yet supported as a return type in Bolt"));
+                        "Point is not yet supported as a return type in Bolt" ) );
                 packNull();
 
             }
@@ -245,7 +245,7 @@ public class Neo4jPack
 
         public void consumeError( ) throws BoltIOException
         {
-            if (error.isPresent())
+            if ( error.isPresent() )
             {
                 Error e = error.get();
                 error = Optional.empty();
@@ -482,5 +482,9 @@ public class Neo4jPack
         {
             return msg;
         }
+    }
+
+    private Neo4jPack()
+    {
     }
 }

@@ -78,7 +78,7 @@ class CrashGenerationCleaner
         long startTime = currentTimeMillis();
         int threads = availableProcessors;
         ExecutorService executor = Executors.newFixedThreadPool( threads );
-        AtomicLong nextId = new AtomicLong( lowTreeNodeId);
+        AtomicLong nextId = new AtomicLong( lowTreeNodeId );
         AtomicReference<Throwable> error = new AtomicReference<>();
         AtomicInteger cleanedPointers = new AtomicInteger();
         for ( int i = 0; i < threads; i++ )

@@ -710,25 +710,25 @@ public class HighAvailabilityMemberStateMachineTest
             return this;
         }
 
-        public StateMachineBuilder withEvents(ClusterMemberEvents events)
+        public StateMachineBuilder withEvents( ClusterMemberEvents events )
         {
             this.events = events;
             return this;
         }
 
-        public StateMachineBuilder withClusterMembers(ObservedClusterMembers clusterMember)
+        public StateMachineBuilder withClusterMembers( ObservedClusterMembers clusterMember )
         {
             this.clusterMembers = clusterMember;
             return this;
         }
 
-        public StateMachineBuilder withGuard(AvailabilityGuard guard)
+        public StateMachineBuilder withGuard( AvailabilityGuard guard )
         {
             this.guard = guard;
             return this;
         }
 
-        public StateMachineBuilder withElection(Election election)
+        public StateMachineBuilder withElection( Election election )
         {
             this.election = election;
             return this;

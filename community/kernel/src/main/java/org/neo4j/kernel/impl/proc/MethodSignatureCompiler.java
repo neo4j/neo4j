@@ -51,7 +51,7 @@ public class MethodSignatureCompiler
     public List<Neo4jTypes.AnyType> inputTypesFor( Method method ) throws ProcedureException
     {
         Type[] types = method.getGenericParameterTypes();
-        List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>(types.length);
+        List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>( types.length );
         for ( Type type : types )
         {
             NeoValueConverter valueConverter = typeMappers.converterFor( type );
@@ -65,7 +65,7 @@ public class MethodSignatureCompiler
     {
         Parameter[] params = method.getParameters();
         Type[] types = method.getGenericParameterTypes();
-        List<FieldSignature> signature = new ArrayList<>(params.length);
+        List<FieldSignature> signature = new ArrayList<>( params.length );
         boolean seenDefault = false;
         for ( int i = 0; i < params.length; i++ )
         {
@@ -95,7 +95,7 @@ public class MethodSignatureCompiler
                 NeoValueConverter valueConverter = typeMappers.converterFor( type );
                 Optional<Neo4jValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
-                if (seenDefault && !defaultValue.isPresent())
+                if ( seenDefault && !defaultValue.isPresent() )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                             "Non-default argument at position %d with name %s in method %s follows default argument. " +

@@ -354,7 +354,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         void checkReference( CheckerEngine engine, ComparativeRecordChecker checker, AbstractBaseRecord referenced,
                              RecordAccess records )
         {
@@ -362,7 +362,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
 
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         void checkDiffReference( CheckerEngine engine, ComparativeRecordChecker checker,
                                  AbstractBaseRecord oldReferenced, AbstractBaseRecord newReferenced,
                                  RecordAccess records )
@@ -475,7 +475,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             return (ProxyFactory<T>) instances.get( cls );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         ProxyFactory( Class<T> type ) throws LinkageError
         {
             this.type = type;

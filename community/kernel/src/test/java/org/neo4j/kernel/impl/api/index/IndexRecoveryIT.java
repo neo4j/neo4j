@@ -262,7 +262,7 @@ public class IndexRecoveryIT
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     private void startDb()
     {
         if ( db != null )
@@ -379,7 +379,7 @@ public class IndexRecoveryIT
                 @Override
                 public void close() throws IOException, IndexEntryConflictException
                 {
-                    switch (mode)
+                    switch ( mode )
                     {
                         case ONLINE:
                             regularUpdates.addAll( updates );

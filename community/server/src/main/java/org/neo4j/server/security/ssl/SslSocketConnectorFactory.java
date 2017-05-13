@@ -38,7 +38,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
 {
     public SslSocketConnectorFactory( Config configuration )
     {
-        super(configuration);
+        super( configuration );
     }
 
     @Override
@@ -64,7 +64,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         sslContextFactory.setKeyStorePassword( String.valueOf( ksInfo.getKeyStorePassword() ) );
         sslContextFactory.setKeyManagerPassword( String.valueOf( ksInfo.getKeyPassword() ) );
 
-        return new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        return new SslConnectionFactory( sslContextFactory, HttpVersion.HTTP_1_1.asString() );
     }
 
 }

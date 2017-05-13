@@ -42,6 +42,10 @@ public class BackupHelper
                     new IsChannelClosedException(),
                     new IsStoreClosed() );
 
+    private BackupHelper()
+    {
+    }
+
     public static BackupResult backup( String host, int port, File targetDirectory )
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -50,7 +54,7 @@ public class BackupHelper
         boolean failure = false;
         try
         {
-            BackupService backupService = new BackupService(outputStream);
+            BackupService backupService = new BackupService( outputStream );
             BackupService.BackupOutcome backupOutcome = backupService.doIncrementalBackupOrFallbackToFull( host, port,
                     targetDirectory, ConsistencyCheck.FULL, Config.embeddedDefaults(), BackupClient.BIG_READ_TIMEOUT,
                     false );

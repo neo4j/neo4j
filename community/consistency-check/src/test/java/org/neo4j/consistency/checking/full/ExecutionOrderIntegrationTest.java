@@ -140,7 +140,7 @@ public class ExecutionOrderIntegrationTest
         private final Map<String, Throwable> data = new HashMap<>();
         private final Map<String, Integer> duplicates = new HashMap<>();
 
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+        @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
         void log( PendingReferenceCheck<?> check, InvocationOnMock invocation )
         {
             Method method = invocation.getMethod();
@@ -184,7 +184,7 @@ public class ExecutionOrderIntegrationTest
             missing.keySet().removeAll( multiPassChecks.keySet() );
             extras.keySet().removeAll( singlePassChecks.keySet() );
 
-            StringBuilder headers = new StringBuilder("\n");
+            StringBuilder headers = new StringBuilder( "\n" );
             StringWriter diff = new StringWriter();
             PrintWriter writer = new PrintWriter( diff );
             if ( !missing.isEmpty() )
@@ -330,7 +330,7 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public void dispatch( PendingReferenceCheck<T> reporter )
         {

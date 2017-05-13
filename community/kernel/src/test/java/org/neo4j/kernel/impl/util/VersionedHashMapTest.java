@@ -202,7 +202,7 @@ public class VersionedHashMapTest
     public void shouldAllowRemovalsWhileIteratingEvenInFaceOfResizing() throws Exception
     {
         // Given
-        VersionedHashMap<Object, Object> map = new VersionedHashMap<>(16, 5.0f);
+        VersionedHashMap<Object,Object> map = new VersionedHashMap<>( 16, 5.0f );
         for ( int i = 0; i < 128; i++ )
         {
             map.put( i, true );

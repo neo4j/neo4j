@@ -185,7 +185,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    static final Header.Reader NO_HEADER = (cursor,length) -> {};
+    static final Header.Reader NO_HEADER = ( cursor, length ) ->
+    {
+    };
 
     /**
      * Paged file in a {@link PageCache} providing the means of storage.

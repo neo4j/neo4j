@@ -19,14 +19,13 @@
  */
 package org.neo4j.causalclustering.core.server;
 
+import org.junit.Test;
+
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Supplier;
-
-import org.junit.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
@@ -176,7 +175,7 @@ public class BatchingMessageHandlerTest
                 .debug( "This handler has been stopped, dropping the message: %s", message ) );
     }
 
-    @Test( timeout = 5_000 /* 5 seconds */)
+    @Test( timeout = 5_000 )
     public void shouldGiveUpAddingMessagesInTheQueueIfTheHandlerHasBeenStopped() throws Exception
     {
         // given

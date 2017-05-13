@@ -31,7 +31,7 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 
-@Service.Implementation(ManagementBeanProvider.class)
+@Service.Implementation( ManagementBeanProvider.class )
 public final class HighAvailabilityBean extends ManagementBeanProvider
 {
     public HighAvailabilityBean()

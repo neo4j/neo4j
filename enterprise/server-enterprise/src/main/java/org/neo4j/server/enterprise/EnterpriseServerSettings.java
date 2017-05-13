@@ -29,23 +29,23 @@ import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-@Description("Settings available in the Enterprise server")
+@Description( "Settings available in the Enterprise server" )
 public class EnterpriseServerSettings implements LoadableConfig
 {
-    @SuppressWarnings("unused") // accessed from the browser
+    @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to time out logged in users after this idle period. " +
                   "Setting this to 0 indicates no limit." )
     public static final Setting<Long> browser_credentialTimeout = setting( "browser.credential_timeout", DURATION, "0" );
 
-    @SuppressWarnings("unused") // accessed from the browser
+    @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )
     public static final Setting<Boolean> browser_retainConnectionCredentials = setting( "browser.retain_connection_credentials", BOOLEAN, TRUE );
 
-    @SuppressWarnings("unused") // accessed from the browser
+    @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
     public static final Setting<String> browser_remoteContentHostnameWhitelist = setting( "browser.remote_content_hostname_whitelist", STRING, "http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost" );
 
-    @SuppressWarnings("unused") // accessed from the browser
+    @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the policy for outgoing Neo4j Browser connections." )
     public static final Setting<Boolean> browser_allowOutgoingBrowserConnections = setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE );
 }

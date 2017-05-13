@@ -39,7 +39,7 @@ import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.appe
 import static org.neo4j.causalclustering.core.consensus.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class RaftMachineLogTest
 {
     @Mock

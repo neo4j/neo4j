@@ -38,6 +38,10 @@ public class TxStateCheckerTestSupport
         when( TPTPMC.getBridge() ).thenReturn( bridge );
     }
 
+    protected TxStateCheckerTestSupport()
+    {
+    }
+
     protected static class FakeBridge extends ThreadToStatementContextBridge
     {
         private final KernelTransaction tx = mock( KernelTransaction.class );

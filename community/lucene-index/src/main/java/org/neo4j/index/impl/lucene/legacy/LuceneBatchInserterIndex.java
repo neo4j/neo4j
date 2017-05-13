@@ -244,7 +244,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             Collection<EntityId> ids = cache.get( valueAsString );
             if ( ids != null )
             {
-                ids.remove( new EntityId.IdData(entityId) );
+                ids.remove( new EntityId.IdData( entityId ) );
             }
         }
     }

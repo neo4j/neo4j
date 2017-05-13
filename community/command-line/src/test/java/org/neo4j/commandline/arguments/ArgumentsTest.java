@@ -202,7 +202,7 @@ public class ArgumentsTest
                         .withArgument( new MandatoryNamedArg( "loooooooooooooong-variable-name",
                                 "loooooooooooooong-variable-value",
                                 "This is also a long string which should be printed on a new line because of long " +
-                                        "names.") )
+                                        "names." ) )
                         .description( "How to use" ) );
     }
 

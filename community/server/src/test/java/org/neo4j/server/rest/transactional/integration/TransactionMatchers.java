@@ -54,6 +54,10 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
  */
 public class TransactionMatchers
 {
+    private TransactionMatchers()
+    {
+    }
+
     static Matcher<String> isValidRFCTimestamp()
     {
         return new TypeSafeMatcher<String>()
@@ -557,8 +561,8 @@ public class TransactionMatchers
         };
     }
 
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
-    public static long countNodes(GraphDatabaseService graphdb)
+    @SuppressWarnings( "WhileLoopReplaceableByForEach" )
+    public static long countNodes( GraphDatabaseService graphdb )
     {
         try ( Transaction ignore = graphdb.beginTx() )
         {
@@ -581,7 +585,7 @@ public class TransactionMatchers
             protected boolean matchesSafely( HTTP.Response response )
             {
                 Map<String, Object> content = response.content();
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 List<Map<String, Object>> errors = (List<Map<String, Object>>) content.get( "errors" );
 
                 for ( Map<String, Object> error : errors )

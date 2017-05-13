@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -45,6 +45,10 @@ import org.neo4j.storageengine.api.WritableChannel;
  */
 public class MemberIdSetSerializer
 {
+    private MemberIdSetSerializer()
+    {
+    }
+
     public static void marshal( MemberIdSet memberSet, WritableChannel channel ) throws IOException
     {
         Set<MemberId> members = memberSet.getMembers();

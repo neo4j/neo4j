@@ -53,7 +53,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class RebuildFromLogsTest
 {
     private final TestDirectory dir = TestDirectory.testDirectory();
@@ -67,7 +67,7 @@ public class RebuildFromLogsTest
 
     private final Transaction[] work;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<WorkLog> commands()
     {
         return WorkLog.combinations();

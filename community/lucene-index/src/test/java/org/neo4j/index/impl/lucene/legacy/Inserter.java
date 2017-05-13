@@ -30,6 +30,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class Inserter
 {
+    private Inserter()
+    {
+    }
+
     public static void main( String[] args ) throws IOException
     {
         File path = new File( args[0] );

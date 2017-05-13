@@ -24,6 +24,10 @@ import java.util.function.Predicate;
 
 public class SchemaDescriptorPredicates
 {
+    private SchemaDescriptorPredicates()
+    {
+    }
+
     public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasLabel( int labelId )
     {
         return supplier ->

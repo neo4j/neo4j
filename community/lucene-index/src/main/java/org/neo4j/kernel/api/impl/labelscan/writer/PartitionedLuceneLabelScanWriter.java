@@ -63,7 +63,7 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
     private long currentRange;
     private WritableDatabaseLabelScanIndex index;
 
-    public PartitionedLuceneLabelScanWriter( WritableDatabaseLabelScanIndex index, BitmapDocumentFormat format)
+    public PartitionedLuceneLabelScanWriter( WritableDatabaseLabelScanIndex index, BitmapDocumentFormat format )
     {
         this.index = index;
         this.format = format;

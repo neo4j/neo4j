@@ -37,7 +37,7 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
     {
-        super(startingChannel, readAheadSize);
+        super( startingChannel, readAheadSize );
         this.bridge = bridge;
     }
 

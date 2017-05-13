@@ -209,9 +209,9 @@ public class CatchupPollingProcessTest
         when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) )
                 .thenReturn(
-                        new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0),
-                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10),
-                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 15) );
+                        new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ),
+                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
+                        new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 15 ) );
 
         // when
         txPuller.start();

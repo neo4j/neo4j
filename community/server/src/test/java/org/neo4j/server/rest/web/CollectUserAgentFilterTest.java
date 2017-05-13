@@ -44,7 +44,7 @@ import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class CollectUserAgentFilterTest
 {
-    private final RecentK<String> agents = new RecentK<>(10);
+    private final RecentK<String> agents = new RecentK<>( 10 );
     private final FilterChain filterChain = mock( FilterChain.class );
     private final CollectUserAgentFilter filter = new CollectUserAgentFilter( agents );
 

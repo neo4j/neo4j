@@ -35,6 +35,10 @@ import org.neo4j.kernel.impl.util.Listener;
 
 public class ElectionUtil
 {
+    private ElectionUtil()
+    {
+    }
+
     public static MemberId waitForLeaderAgreement( Iterable<RaftMachine> validRafts, long maxTimeMillis ) throws
             InterruptedException, TimeoutException
     {

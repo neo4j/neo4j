@@ -39,6 +39,10 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relation
 
 public class Inputs
 {
+    private Inputs()
+    {
+    }
+
     public static Input input(
             final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
             final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector )

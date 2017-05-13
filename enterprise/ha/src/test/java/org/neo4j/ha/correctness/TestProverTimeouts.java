@@ -19,9 +19,10 @@
  */
 package org.neo4j.ha.correctness;
 
+import org.junit.Test;
+
 import java.net.URI;
 
-import org.junit.Test;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 
@@ -34,8 +35,8 @@ public class TestProverTimeouts
     public void equalsShouldBeLogicalAndNotExact() throws Exception
     {
         // Given
-        ProverTimeouts timeouts1 = new ProverTimeouts( new URI("http://asd") );
-        ProverTimeouts timeouts2 = new ProverTimeouts( new URI("http://asd") );
+        ProverTimeouts timeouts1 = new ProverTimeouts( new URI( "http://asd" ) );
+        ProverTimeouts timeouts2 = new ProverTimeouts( new URI( "http://asd" ) );
 
         timeouts1.setTimeout( "a", Message.internal( ProposerMessage.join ) );
         timeouts1.setTimeout( "b", Message.internal( ProposerMessage.join ) );
@@ -48,7 +49,7 @@ public class TestProverTimeouts
         timeouts1.cancelTimeout( "a" );
 
         // Then
-        assertEquals(timeouts1, timeouts2);
+        assertEquals( timeouts1, timeouts2 );
     }
 
 }

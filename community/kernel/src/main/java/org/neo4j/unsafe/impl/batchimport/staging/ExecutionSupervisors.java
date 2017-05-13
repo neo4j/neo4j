@@ -30,6 +30,10 @@ import static java.lang.Runtime.getRuntime;
  */
 public class ExecutionSupervisors
 {
+    private ExecutionSupervisors()
+    {
+    }
+
     /**
      * Using an {@link ExecutionMonitors#invisible() invisible} monitor.
      * @see #superviseDynamicExecution(ExecutionMonitor, Stage)

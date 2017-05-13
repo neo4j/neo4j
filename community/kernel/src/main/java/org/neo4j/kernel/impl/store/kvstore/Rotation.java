@@ -30,8 +30,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
 @Inherited
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Target( ElementType.TYPE )
+@Retention( RetentionPolicy.RUNTIME )
 public @interface Rotation
 {
     Strategy value();

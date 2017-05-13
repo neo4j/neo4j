@@ -62,6 +62,10 @@ public class FileUtils
 {
     private static final int WINDOWS_RETRY_COUNT = 5;
 
+    private FileUtils()
+    {
+    }
+
     public static void deleteRecursively( File directory ) throws IOException
     {
         if ( ! directory.exists() )
@@ -279,7 +283,7 @@ public class FileUtils
         copyRecursively( fromDirectory, toDirectory, null );
     }
 
-    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter) throws IOException
+    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter ) throws IOException
     {
         for ( File fromFile : fromDirectory.listFiles( filter ) )
         {
@@ -313,12 +317,12 @@ public class FileUtils
 
     public static BufferedReader newBufferedFileReader( File file, Charset charset ) throws FileNotFoundException
     {
-        return new BufferedReader( new InputStreamReader( new FileInputStream( file ), charset) );
+        return new BufferedReader( new InputStreamReader( new FileInputStream( file ), charset ) );
     }
 
     public static PrintWriter newFilePrintWriter( File file, Charset charset ) throws FileNotFoundException
     {
-        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset) );
+        return new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), charset ) );
     }
 
     public static File path( String root, String... path )
@@ -466,7 +470,7 @@ public class FileUtils
             {
                 if ( tries >= WINDOWS_RETRY_COUNT )
                 {
-                    throw new MaybeWindowsMemoryMappedFileReleaseProblem(e);
+                    throw new MaybeWindowsMemoryMappedFileReleaseProblem( e );
                 }
                 waitAndThenTriggerGC();
                 deleteFileWithRetries( file, tries + 1 );
@@ -481,14 +485,6 @@ public class FileUtils
     private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
     {
         return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
-    }
-
-    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
-    {
-        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
-        {
-            super(e);
-        }
     }
 
     /**
@@ -564,11 +560,20 @@ public class FileUtils
         OpenOption[] options;
         switch ( mode )
         {
-        case "r": options = new OpenOption[]{READ}; break;
-        case "rw": options = new OpenOption[] {CREATE, READ, WRITE}; break;
-        case "rws": options = new OpenOption[] {CREATE, READ, WRITE, SYNC}; break;
-        case "rwd": options = new OpenOption[] {CREATE, READ, WRITE, DSYNC}; break;
-        default: throw new IllegalArgumentException( "Unsupported mode: " + mode );
+        case "r":
+            options = new OpenOption[]{READ};
+            break;
+        case "rw":
+            options = new OpenOption[]{CREATE, READ, WRITE};
+            break;
+        case "rws":
+            options = new OpenOption[]{CREATE, READ, WRITE, SYNC};
+            break;
+        case "rwd":
+            options = new OpenOption[]{CREATE, READ, WRITE, DSYNC};
+            break;
+        default:
+            throw new IllegalArgumentException( "Unsupported mode: " + mode );
         }
         return options;
     }
@@ -621,5 +626,13 @@ public class FileUtils
             options = new OpenOption[] {CREATE, WRITE};
         }
         return Files.newOutputStream( path, options );
+    }
+
+    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
+    {
+        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
+        {
+            super( e );
+        }
     }
 }

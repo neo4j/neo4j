@@ -27,6 +27,10 @@ import static java.lang.System.nanoTime;
 
 public class Processing
 {
+    private Processing()
+    {
+    }
+
     /**
      * Awaits a condition, parking if needed and will abort of health check doesn't pass.
      *

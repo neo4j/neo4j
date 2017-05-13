@@ -60,12 +60,16 @@ public class ServerInfo
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         ServerInfo that = (ServerInfo) o;
         return Objects.equals( boltAddress, that.boltAddress ) && Objects.equals( memberId, that.memberId ) &&
-               Objects.equals( groups, that.groups );
+                Objects.equals( groups, that.groups );
     }
 
     @Override

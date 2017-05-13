@@ -23,7 +23,7 @@ import org.neo4j.graphalgo.CostAccumulator;
 
 public class IntegerAdder implements CostAccumulator<Integer>
 {
-        public Integer addCosts(Integer c1, Integer c2)
+        public Integer addCosts( Integer c1, Integer c2 )
         {
                 return c1 + c2;
         }

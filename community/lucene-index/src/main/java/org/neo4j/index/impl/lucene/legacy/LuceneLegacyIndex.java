@@ -328,7 +328,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         {
             // Add from fulltext tx state
             PrimitiveLongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneLegacyIndex.KEY_DOC_ID );
-            while (valuesIterator.hasNext())
+            while ( valuesIterator.hasNext() )
             {
                 set.add( valuesIterator.next() );
             }

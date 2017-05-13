@@ -60,10 +60,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 
-/**
- * Arbitrary recovery scenarios boiled down to as small tests as possible
- */
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class UniqueIndexRecoveryTest
 {
     @Rule
@@ -76,7 +73,7 @@ public class UniqueIndexRecoveryTest
     private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
     private GraphDatabaseAPI db;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> parameters()
     {
         return asList(
@@ -84,7 +81,7 @@ public class UniqueIndexRecoveryTest
                 new Object[]{new InMemoryIndexProviderFactory()} );
     }
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public KernelExtensionFactory<?> kernelExtensionFactory;
 
     @Before

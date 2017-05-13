@@ -53,7 +53,7 @@ public class FailoverWithAdditionalSlaveFailuresIT
     private int clusterSize;
     private int[] slavesToFail;
 
-    @Parameters( name = "{index} clusterSize:{0}")
+    @Parameters( name = "{index} clusterSize:{0}" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList(new Object[][] {

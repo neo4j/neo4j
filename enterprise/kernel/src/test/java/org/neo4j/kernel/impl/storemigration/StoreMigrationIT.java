@@ -134,7 +134,7 @@ public class StoreMigrationIT
         return data;
     }
 
-    private static String baseDirName(RecordFormats toFormat, RecordFormats fromFormat)
+    private static String baseDirName( RecordFormats toFormat, RecordFormats fromFormat )
     {
         return fromFormat.storeVersion() + toFormat.storeVersion();
     }

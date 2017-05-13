@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.TransactionManager;
 
-@Service.Implementation(ManagementBeanProvider.class)
+@Service.Implementation( ManagementBeanProvider.class )
 public final class TransactionManagerBean extends ManagementBeanProvider
 {
     public TransactionManagerBean()

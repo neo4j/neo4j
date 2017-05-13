@@ -61,6 +61,10 @@ public class HTTP
         CLIENT = Client.create( defaultClientConfig );
     }
 
+    private HTTP()
+    {
+    }
+
     public static Builder withHeaders( String... kvPairs )
     {
         return BUILDER.withHeaders( kvPairs );
@@ -244,7 +248,7 @@ public class HTTP
                     "unable to provide location. Status code was: " + status() );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public <T> T content()
         {
             try
@@ -267,7 +271,7 @@ public class HTTP
             return get(key).asText();
         }
 
-        public JsonNode get(String fieldName) throws JsonParseException
+        public JsonNode get( String fieldName ) throws JsonParseException
         {
             return JsonHelper.jsonNode( entity ).get( fieldName );
         }

@@ -42,6 +42,10 @@ import static org.neo4j.helpers.collection.Iterators.emptyIterator;
  */
 public class LuceneIndexSnapshots
 {
+    private LuceneIndexSnapshots()
+    {
+    }
+
     /**
      * Create index snapshot iterator for a writable index.
      * @param indexFolder index location folder

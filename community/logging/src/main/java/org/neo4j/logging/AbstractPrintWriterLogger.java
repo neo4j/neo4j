@@ -54,7 +54,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     {
         requireNonNull( message, "message must not be null" );
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             writeLog( writer, message );
@@ -72,7 +72,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
             return;
         }
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             writeLog( writer, message, throwable );
@@ -91,7 +91,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
         }
         String message = String.format( format, arguments );
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             writeLog( writer, message );
@@ -104,7 +104,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     {
         requireNonNull( consumer, "consumer must not be null" );
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             consumer.accept( getBulkLogger( writer, lock ) );

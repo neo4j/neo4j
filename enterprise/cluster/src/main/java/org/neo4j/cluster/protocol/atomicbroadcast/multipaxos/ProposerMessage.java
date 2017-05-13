@@ -67,11 +67,12 @@ public enum ProposerMessage
         public String toString()
         {
             Object toStringValue = value;
-            if (toStringValue instanceof Payload )
+            if ( toStringValue instanceof Payload )
             {
                 try
                 {
-                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ).receive( (Payload) toStringValue);
+                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() )
+                                    .receive( (Payload) toStringValue );
                 }
                 catch ( Throwable e )
                 {

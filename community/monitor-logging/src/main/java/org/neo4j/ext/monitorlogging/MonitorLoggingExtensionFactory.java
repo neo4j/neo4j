@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<MonitorLoggingExtensionFactory.Dependencies>
 {
 

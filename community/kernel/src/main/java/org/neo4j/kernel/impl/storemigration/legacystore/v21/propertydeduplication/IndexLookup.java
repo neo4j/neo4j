@@ -126,7 +126,7 @@ class IndexLookup implements AutoCloseable
             return null;
         }
         IndexRule rule = findIndexRuleWithOneOfLabels( indexRules, labelIds );
-        if (rule == null)
+        if ( rule == null )
         {
             return null;
         }

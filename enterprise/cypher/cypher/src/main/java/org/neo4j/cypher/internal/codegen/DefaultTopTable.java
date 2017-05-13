@@ -116,7 +116,7 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
             }
 
             @Override
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             public T next()
             {
                 return (T) array[--cursor];

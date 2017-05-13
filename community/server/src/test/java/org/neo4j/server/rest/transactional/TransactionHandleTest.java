@@ -238,7 +238,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        Statement statement = new Statement("query", map(), false, (ResultDataContent[]) null);
+        Statement statement = new Statement( "query", map(), false, (ResultDataContent[]) null );
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then
@@ -412,7 +412,7 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        Statement statement = new Statement("matsch (n) return n", map(), false, (ResultDataContent[]) null);
+        Statement statement = new Statement( "matsch (n) return n", map(), false, (ResultDataContent[]) null );
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then

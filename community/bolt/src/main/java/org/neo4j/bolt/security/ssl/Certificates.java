@@ -88,7 +88,7 @@ public class Certificates
         random = useInsecureCertificateGeneration ? new InsecureRandom() : new SecureRandom();
     }
 
-    public void createSelfSignedCertificate(File certificatePath, File privateKeyPath, String hostName)
+    public void createSelfSignedCertificate( File certificatePath, File privateKeyPath, String hostName )
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
         installCleanupHook(certificatePath, privateKeyPath);
@@ -144,7 +144,7 @@ public class Certificates
         } ) );
     }
 
-    public Certificate[] loadCertificates(File certFile) throws CertificateException, IOException
+    public Certificate[] loadCertificates( File certFile ) throws CertificateException, IOException
     {
         CertificateFactory certFactory = CertificateFactory.getInstance( CERTIFICATE_TYPE );
         Collection<Certificate> certificates = new LinkedList<>();
@@ -170,7 +170,7 @@ public class Certificates
         return certificates.toArray( new Certificate[certificates.size()] );
     }
 
-    public PrivateKey loadPrivateKey(File privateKeyFile)
+    public PrivateKey loadPrivateKey( File privateKeyFile )
             throws IOException, NoSuchAlgorithmException,
             InvalidKeySpecException, NoSuchPaddingException,
             InvalidKeyException, InvalidAlgorithmParameterException

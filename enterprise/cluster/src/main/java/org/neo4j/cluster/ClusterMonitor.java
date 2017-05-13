@@ -36,7 +36,7 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
  */
 public interface ClusterMonitor extends BindingNotifier, Heartbeat
 {
-    void addClusterListener( ClusterListener listener);
+    void addClusterListener( ClusterListener listener );
 
-    void removeClusterListener( ClusterListener listener);
+    void removeClusterListener( ClusterListener listener );
 }

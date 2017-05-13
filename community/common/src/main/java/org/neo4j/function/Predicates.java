@@ -22,6 +22,7 @@ package org.neo4j.function;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,8 +45,12 @@ public class Predicates
 
     private static final Predicate FALSE = item -> false;
 
-    private static final Predicate NOT_NULL = item -> item != null;
+    private static final Predicate NOT_NULL = Objects::nonNull;
     private static final int DEFAULT_POLL_INTERVAL = 20;
+
+    private Predicates()
+    {
+    }
 
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
@@ -247,7 +252,7 @@ public class Predicates
 
     public static <T> Predicate<T> not( Predicate<T> predicate )
     {
-        return (t) -> !predicate.test( t );
+        return ( t ) -> !predicate.test( t );
     }
 
     public static <T> Predicate<T> in( final Iterable<T> allowed )

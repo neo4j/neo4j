@@ -36,7 +36,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import static org.neo4j.kernel.impl.locking.Locks.Client;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
-@Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
+@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public DeadlockCompatibility( LockingCompatibilityTestSuite suite )

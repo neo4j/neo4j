@@ -103,7 +103,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
     public VersionedHashMap()
     {
-        this(16, 0.85f);
+        this( 16, 0.85f );
     }
 
     public VersionedHashMap( int numBuckets, float resizeAtCapacity )
@@ -273,7 +273,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         return null;
     }
 
-    private void resize(int numBuckets)
+    private void resize( int numBuckets )
     {
         if ( numBuckets >= MAX_BUCKETS )
         {
@@ -314,7 +314,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
     }
 
-    private static int hash(int h)
+    private static int hash( int h )
     {
         // See: http://stackoverflow.com/questions/9335169/understanding-strange-java-hash-function
         h ^= (h >>> 20) ^ (h >>> 12);
@@ -462,7 +462,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     {
         private final Iterator<Entry<K,V>> entryIterator;
 
-        private KeyIterator(Iterator<Entry<K,V>> entryIterator)
+        private KeyIterator( Iterator<Entry<K,V>> entryIterator )
         {
             this.entryIterator = entryIterator;
         }
@@ -490,7 +490,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     {
         private final Iterator<Entry<K,V>> entryIterator;
 
-        private ValueIterator(Iterator<Entry<K,V>> entryIterator)
+        private ValueIterator( Iterator<Entry<K,V>> entryIterator )
         {
             this.entryIterator = entryIterator;
         }
@@ -524,7 +524,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
         protected int addedInVersion;
         protected boolean removed = false;
 
-        Record(int hashCode, K key, V value, Record<K,V> next, int addedInVersion)
+        Record( int hashCode, K key, V value, Record<K,V> next, int addedInVersion )
         {
             this.hashCode = hashCode;
             this.key = key;
@@ -596,7 +596,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
 
         CopiedRecord( Record<K,V> original, int hashCode, K key, V value, Record<K,V> next, int addedInVersion )
         {
-            super(hashCode, key, value, next, addedInVersion);
+            super( hashCode, key, value, next, addedInVersion );
             this.original = original;
         }
 

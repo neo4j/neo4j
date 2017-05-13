@@ -19,11 +19,15 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.messaging.message.*;
+import java.util.Map;
+
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
+import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
-
-import java.util.Map;
 
 public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage> implements BoltResponseMessageHandler<RuntimeException>
 {

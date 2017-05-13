@@ -30,7 +30,7 @@ public class RedirectorIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldRedirectRootToBrowser() throws Exception
     {
-        JaxRsResponse response = new RestRequest(server().baseUri()).get();
+        JaxRsResponse response = new RestRequest( server().baseUri() ).get();
 
         assertThat(response.getStatus(), is(not(404)));
     }
@@ -38,7 +38,7 @@ public class RedirectorIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldNotRedirectTheRestOfTheWorld() throws Exception
     {
-        JaxRsResponse response = new RestRequest(server().baseUri()).get("a/different/relative/data/uri/");
+        JaxRsResponse response = new RestRequest( server().baseUri() ).get( "a/different/relative/data/uri/" );
 
         assertThat(response.getStatus(), is(404));
     }

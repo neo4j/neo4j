@@ -256,7 +256,7 @@ public class GraphDatabaseServiceExecuteTest
 
     }
 
-    private static Point makeFakePoint(double x, double y, final CRS crs)
+    private static Point makeFakePoint( double x, double y, final CRS crs )
     {
         final Coordinate coord = new Coordinate( x, y );
         return new Point()
@@ -282,7 +282,7 @@ public class GraphDatabaseServiceExecuteTest
         };
     }
 
-    private static Geometry makeFakePointAsGeometry(double x, double y, final CRS crs)
+    private static Geometry makeFakePointAsGeometry( double x, double y, final CRS crs )
     {
         final Coordinate coord = new Coordinate( x, y );
         return new Geometry()
@@ -339,13 +339,13 @@ public class GraphDatabaseServiceExecuteTest
         public Stream<PointResult> spatialPoint( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
         {
             Point point = makeFakePoint( longitude, latitude, makeWGS84() );
-            return Stream.of( new PointResult(point) );
+            return Stream.of( new PointResult( point ) );
         }
         @Procedure( "spatial.pointGeometry" )
         public Stream<GeometryResult> spatialPointGeometry( @Name( "longitude" ) double longitude, @Name( "latitude" ) double latitude )
         {
             Geometry geometry = makeFakePointAsGeometry( longitude, latitude, makeWGS84() );
-            return Stream.of( new GeometryResult(geometry) );
+            return Stream.of( new GeometryResult( geometry ) );
         }
     }
 

@@ -514,7 +514,7 @@ class ClusterContextImpl
                                         HeartbeatContextImpl snapshotHeartbeatContext )
     {
         return new ClusterContextImpl( me, commonStateSnapshot, logging, timeouts,
-                joiningInstances == null ? null : new ArrayList<>( asList(joiningInstances)),
+                joiningInstances == null ? null : new ArrayList<>( asList( joiningInstances ) ),
                 joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
                 executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,
                 snapshotHeartbeatContext, config );

@@ -46,7 +46,7 @@ public class ClusterFailoverIT
     // parameters
     private int clusterSize;
 
-    @Parameters( name = "clusterSize:{0}")
+    @Parameters( name = "clusterSize:{0}" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList(new Object[][] {

@@ -352,39 +352,46 @@ public enum HighAvailabilityMemberState
     ILLEGAL
             {
                 @Override
-                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, InstanceId masterId )
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
+                        InstanceId masterId )
                 {
-                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
-                            " something went wrong while handling a message and the state should be set to PENDING");
+                    throw new IllegalStateException(
+                            "The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                                    " something went wrong while handling a message and the state should be set to PENDING" );
                 }
 
                 @Override
-                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, InstanceId masterId, URI masterHaURI )
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
+                        InstanceId masterId, URI masterHaURI )
                 {
-                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
-                            " something went wrong while handling a message and the state should be set to PENDING");
+                    throw new IllegalStateException(
+                            "The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                                    " something went wrong while handling a message and the state should be set to PENDING" );
                 }
 
                 @Override
                 public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
-                                                                     InstanceId slaveId, URI slaveUri )
+                        InstanceId slaveId, URI slaveUri )
                 {
-                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
-                            " something went wrong while handling a message and the state should be set to PENDING");
+                    throw new IllegalStateException(
+                            "The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                                    " something went wrong while handling a message and the state should be set to PENDING" );
                 }
 
                 @Override
                 public boolean isEligibleForElection()
                 {
-                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
-                            " something went wrong while handling a message and the state should be set to PENDING");
+                    throw new IllegalStateException(
+                            "The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                                    " something went wrong while handling a message and the state should be set to PENDING" );
                 }
 
                 @Override
                 public boolean isAccessAllowed()
                 {
-                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
-                            " something went wrong while handling a message and the state should be set to PENDING");
+                    throw new IllegalStateException(
+                            "The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                                    " something went wrong while handling a message and the state should be set to PENDING" );
                 }
             };
 

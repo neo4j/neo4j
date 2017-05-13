@@ -218,7 +218,7 @@ public class LuceneDocumentStructure
 
         PrefixMultiTermsQuery( Term term )
         {
-            super(term.field());
+            super( term.field() );
             this.term = term;
         }
 
@@ -253,7 +253,7 @@ public class LuceneDocumentStructure
         }
     }
 
-    public static Field encodeValueField(Object value)
+    public static Field encodeValueField( Object value )
     {
         ValueEncoding encoding = ValueEncoding.forValue( value );
         return encoding.encodeField( encoding.key(), value );

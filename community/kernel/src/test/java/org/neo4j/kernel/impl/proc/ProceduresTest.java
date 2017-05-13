@@ -168,7 +168,7 @@ public class ProceduresTest
         // Given
         Key<String> someKey = key("someKey", String.class);
 
-        procs.register( new CallableProcedure.BasicProcedure(signature)
+        procs.register( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
@@ -257,7 +257,7 @@ public class ProceduresTest
 
     private CallableProcedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )
     {
-        return new CallableProcedure.BasicProcedure(signature)
+        return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException

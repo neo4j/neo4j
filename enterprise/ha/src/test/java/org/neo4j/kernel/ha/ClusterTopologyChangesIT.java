@@ -67,7 +67,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailabl
 public class ClusterTopologyChangesIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass());
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();

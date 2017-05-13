@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -101,7 +99,7 @@ public class NodeProxySingleRelationshipTest
         }
     }
 
-    private NodeProxy mockNodeWithRels( final long ... relIds) throws EntityNotFoundException
+    private NodeProxy mockNodeWithRels( final long... relIds ) throws EntityNotFoundException
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );

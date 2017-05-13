@@ -74,6 +74,10 @@ public class RsdrMain
             "(\\s*\\|\\s*(?<regex>.+))?" // a pipe signifies a regex to filter records by
     );
 
+    private RsdrMain()
+    {
+    }
+
     public static void main( String[] args ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )

@@ -124,7 +124,7 @@ class BatchingMessageHandler extends LifecycleAdapter
 
         for ( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage : batch )
         {
-            if ( batchRequest != null && !clusterIdAwareMessage.clusterId().equals( clusterId ))
+            if ( batchRequest != null && !clusterIdAwareMessage.clusterId().equals( clusterId ) )
             {
                 handler.handle( new RaftMessages.ClusterIdAwareMessage( clusterId, batchRequest ) );
                 batchRequest = null;

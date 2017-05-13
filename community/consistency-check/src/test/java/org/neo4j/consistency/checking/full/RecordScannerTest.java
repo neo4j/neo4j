@@ -45,12 +45,12 @@ public class RecordScannerTest
         ProgressListener progressListener = mock( ProgressListener.class );
         when( progressBuilder.progressForPart( anyString(), anyLong() ) ).thenReturn( progressListener );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         BoundedIterable<Integer> store = mock( BoundedIterable.class );
 
         when( store.iterator() ).thenReturn( asList( 42, 75, 192 ).iterator() );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
         RecordScanner<Integer> scanner = new SequentialRecordScanner<>( "our test task", Statistics.NONE, 1, store,
@@ -71,12 +71,12 @@ public class RecordScannerTest
         ProgressListener progressListener = mock( ProgressListener.class );
         when( progressBuilder.progressForPart( anyString(), anyLong() ) ).thenReturn( progressListener );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         BoundedIterable<Integer> store = mock( BoundedIterable.class );
 
         when( store.iterator() ).thenReturn( asList( 42, 75, 192 ).iterator() );
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
         RecordScanner<Integer> scanner = new ParallelRecordScanner<>( "our test task", Statistics.NONE, 1, store,

@@ -209,7 +209,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         }
     }
 
-    private void end0(KEY key, VALUE value)
+    private void end0( KEY key, VALUE value )
     {
         repo.remove( key );
         reaper.accept( value );

@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Test;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 public class TestWhiteListClassShutter
 {
@@ -36,7 +36,7 @@ public class TestWhiteListClassShutter
         // Given
         Set<String> whiteList = new HashSet<String>();
         whiteList.add( getClass().getName() );
-        WhiteListClassShutter shutter = new WhiteListClassShutter(whiteList);
+        WhiteListClassShutter shutter = new WhiteListClassShutter( whiteList );
 
         // When
         boolean visible = shutter.visibleToScripts( getClass().getName() );
@@ -48,7 +48,7 @@ public class TestWhiteListClassShutter
     @Test
     public void shouldDisallowUnlistedClasses() throws Exception
     {
-        WhiteListClassShutter shutter = new WhiteListClassShutter(new HashSet<String>());
+        WhiteListClassShutter shutter = new WhiteListClassShutter( new HashSet<String>() );
 
         // When
         boolean visible = shutter.visibleToScripts( getClass().getName() );

@@ -22,16 +22,19 @@ package org.neo4j.bolt.v1.messaging;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.io.IOException;
+import java.util.Map;
+
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
-import org.neo4j.bolt.v1.messaging.message.*;
+import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.util.HexPrinter;
-
-import java.io.IOException;
-import java.util.Map;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;

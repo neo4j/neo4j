@@ -40,8 +40,8 @@ public class KeyStoreFactoryTest
     public void shouldCreateKeyStoreForGivenKeyPair() throws Exception
     {
         // given
-        File certificatePath = new File(dir.getRoot(), "cert" );
-        File privateKeyPath =  new File(dir.getRoot(), "key" );
+        File certificatePath = new File( dir.getRoot(), "cert" );
+        File privateKeyPath = new File( dir.getRoot(), "key" );
 
         new Certificates().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 
@@ -56,8 +56,8 @@ public class KeyStoreFactoryTest
     public void shouldImportSingleCertificateWhenNotInAChain() throws Exception
     {
         // given
-        File certificatePath = new File(dir.getRoot(), "cert" );
-        File privateKeyPath = new File(dir.getRoot(),"key" );
+        File certificatePath = new File( dir.getRoot(), "cert" );
+        File privateKeyPath = new File( dir.getRoot(), "key" );
 
         new Certificates().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 

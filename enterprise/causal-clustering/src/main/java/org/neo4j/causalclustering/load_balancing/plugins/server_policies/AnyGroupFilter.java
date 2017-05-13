@@ -67,9 +67,13 @@ public class AnyGroupFilter implements Filter<ServerInfo>
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         AnyGroupFilter that = (AnyGroupFilter) o;
         return Objects.equals( groups, that.groups );
     }

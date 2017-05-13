@@ -21,6 +21,10 @@ package org.neo4j.desktop;
 
 public final class DesktopIdentification
 {
+    private DesktopIdentification()
+    {
+    }
+
     public static void register()
     {
         System.setProperty( "unsupported.dbms.udc.source", "desktop" );

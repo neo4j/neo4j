@@ -28,8 +28,7 @@ import java.io.ObjectOutputStream;
  */
 public interface SnapshotProvider
 {
-    void getState(ObjectOutputStream output)
-        throws IOException;
-    void setState(ObjectInputStream input)
-        throws IOException, ClassNotFoundException;
+    void getState( ObjectOutputStream output ) throws IOException;
+
+    void setState( ObjectInputStream input ) throws IOException, ClassNotFoundException;
 }

@@ -35,10 +35,10 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description( "Online backup configuration settings" )
 public class OnlineBackupSettings implements LoadableConfig
 {
-    @Description("Enable support for running online backups")
+    @Description( "Enable support for running online backups" )
     public static final Setting<Boolean> online_backup_enabled = setting( "dbms.backup.enabled", BOOLEAN, TRUE );
 
-    @Description("Listening server for online backups")
+    @Description( "Listening server for online backups" )
     public static final Setting<HostnamePort> online_backup_server = setting( "dbms.backup.address", HOSTNAME_PORT,
             "127.0.0.1:6362-6372" );
 }

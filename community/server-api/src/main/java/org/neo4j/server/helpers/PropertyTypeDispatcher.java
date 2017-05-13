@@ -240,7 +240,7 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
 
-    protected T dispatchOtherProperty( Object property, K param)
+    protected T dispatchOtherProperty( Object property, K param )
     {
         throw new IllegalArgumentException( "Unsupported property type: "
                 + property.getClass() );

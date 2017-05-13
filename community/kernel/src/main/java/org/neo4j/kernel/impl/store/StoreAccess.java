@@ -227,7 +227,7 @@ public class StoreAccess
         return store;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store )
             throws FAILURE
     {

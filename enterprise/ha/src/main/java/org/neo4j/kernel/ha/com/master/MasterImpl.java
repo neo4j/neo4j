@@ -193,9 +193,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
                     conversationManager.release(context);
                 }
             }
-            catch (NoSuchEntryException | ConcurrentAccessException e)
+            catch ( NoSuchEntryException | ConcurrentAccessException e )
             {
-                throw new TransactionNotPresentOnMasterException(context);
+                throw new TransactionNotPresentOnMasterException( context );
             }
         }
     }
@@ -276,7 +276,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         if ( !spi.isAccessible() )
         {
-            throw new TransactionFailureException(Status.General.DatabaseUnavailable, "Database is currently not available" );
+            throw new TransactionFailureException( Status.General.DatabaseUnavailable,
+                    "Database is currently not available" );
         }
         assertCorrectEpoch( context );
 
@@ -315,11 +316,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             session = conversationManager.acquire( context ).getLocks();
         }
-        catch ( NoSuchEntryException | ConcurrentAccessException e)
+        catch ( NoSuchEntryException | ConcurrentAccessException e )
         {
-            return spi.packTransactionObligationResponse( context, new LockResult(
-                    LockStatus.NOT_LOCKED,
-                    "Unable to acquire exclusive lock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context,
+                    new LockResult( LockStatus.NOT_LOCKED, "Unable to acquire exclusive lock: " + e.getMessage() ) );
         }
         try
         {
@@ -357,7 +357,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             session = conversationManager.acquire( context ).getLocks();
         }
-        catch ( NoSuchEntryException | ConcurrentAccessException e)
+        catch ( NoSuchEntryException | ConcurrentAccessException e )
         {
             return spi.packTransactionObligationResponse( context, new LockResult(
                     LockStatus.NOT_LOCKED,

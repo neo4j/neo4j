@@ -25,6 +25,10 @@ import java.net.ServerSocket;
 
 public class PortsForIntegrationTesting
 {
+    private PortsForIntegrationTesting()
+    {
+    }
+
     public static InetSocketAddress findFreeAddress() throws IOException
     {
         InetSocketAddress address = null;

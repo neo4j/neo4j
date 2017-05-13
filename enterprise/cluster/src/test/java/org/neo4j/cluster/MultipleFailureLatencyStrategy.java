@@ -30,12 +30,12 @@ public class MultipleFailureLatencyStrategy
 {
     private final NetworkLatencyStrategy[] strategies;
 
-    public MultipleFailureLatencyStrategy(NetworkLatencyStrategy... strategies)
+    public MultipleFailureLatencyStrategy( NetworkLatencyStrategy... strategies )
     {
         this.strategies = strategies;
     }
 
-    public <T extends NetworkLatencyStrategy> T getStrategy(Class<T> strategyClass)
+    public <T extends NetworkLatencyStrategy> T getStrategy( Class<T> strategyClass )
     {
         for ( NetworkLatencyStrategy strategy : strategies )
         {
@@ -48,12 +48,12 @@ public class MultipleFailureLatencyStrategy
     }
 
     @Override
-    public long messageDelay(Message<? extends MessageType> message, String serverIdTo)
+    public long messageDelay( Message<? extends MessageType> message, String serverIdTo )
     {
         long totalDelay = 0;
-        for (NetworkLatencyStrategy strategy : strategies)
+        for ( NetworkLatencyStrategy strategy : strategies )
         {
-            long delay = strategy.messageDelay(message, serverIdTo);
+            long delay = strategy.messageDelay( message, serverIdTo );
             if ( delay == LOST )
             {
                 return delay;

@@ -110,7 +110,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "request body." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true,
-                                              labels = { @LABEL( "Person" ) }) } )
+            labels = {@LABEL( "Person" )} )} )
     public void replacing_labels_on_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
@@ -138,7 +138,7 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
             .expectedStatus( 200 )
             .get( nodeUri + "/labels"  )
             .entity();
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         List<String> labels = (List<String>) readJson( body );
         assertEquals( asSet( "Actor", "Director" ), Iterables.asSet( labels ) );
     }
@@ -208,12 +208,11 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "index is available, all nodes with the given label will be filtered through to find matching nodes.\n" +
                  "\n" +
                  "Currently, it is not possible to search using multiple properties." )
-    @GraphDescription.Graph( nodes = {
-            @NODE( name = "Donald Sutherland",   labels = { @LABEL( "Person" )} ),
-            @NODE( name = "Clint Eastwood", labels = { @LABEL( "Person" )}, properties = { @PROP( key = "name",
-                    value = "Clint Eastwood" )}),
-            @NODE( name = "Steven Spielberg", labels = { @LABEL( "Person" )}, properties = { @PROP( key = "name",
-                    value = "Steven Spielberg" )})})
+    @GraphDescription.Graph( nodes = {@NODE( name = "Donald Sutherland", labels = {@LABEL( "Person" )} ),
+            @NODE( name = "Clint Eastwood", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "name", value = "Clint Eastwood" )} ),
+            @NODE( name = "Steven Spielberg", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "name", value = "Steven Spielberg" )} )} )
     public void get_nodes_with_label_and_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();
@@ -231,12 +230,11 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     @Test
     @Documented( "Get nodes by label and array property." )
-    @GraphDescription.Graph( nodes = {
-            @NODE(name = "Donald Sutherland", labels = {@LABEL("Person")}),
-            @NODE(name = "Clint Eastwood", labels = {@LABEL("Person")}, properties =
-                    {@PROP(key = "names", value = "Clint,Eastwood", type = ARRAY, componentType = STRING)}),
-            @NODE(name = "Steven Spielberg", labels = {@LABEL("Person")}, properties =
-                    {@PROP(key = "names", value = "Steven,Spielberg", type = ARRAY, componentType = STRING)})})
+    @GraphDescription.Graph( nodes = {@NODE( name = "Donald Sutherland", labels = {@LABEL( "Person" )} ),
+            @NODE( name = "Clint Eastwood", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "names", value = "Clint,Eastwood", type = ARRAY, componentType = STRING )} ),
+            @NODE( name = "Steven Spielberg", labels = {@LABEL( "Person" )}, properties = {
+                    @PROP( key = "names", value = "Steven,Spielberg", type = ARRAY, componentType = STRING )} )} )
     public void get_nodes_with_label_and_array_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();

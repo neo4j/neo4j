@@ -19,16 +19,16 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -110,7 +110,7 @@ public class Neo4jWithSocket extends ExternalResource
     {
         try
         {
-            if ( gdb != null)
+            if ( gdb != null )
             {
                 gdb.shutdown();
             }

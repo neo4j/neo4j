@@ -63,6 +63,10 @@ public class StoreUtil
         return !isPartOfBranchedDataRootDirectory( file );
     };
 
+    private StoreUtil()
+    {
+    }
+
     public static void cleanStoreDir( File storeDir, PageCache pageCache ) throws IOException
     {
         for ( File file : relevantDbFiles( storeDir ) )

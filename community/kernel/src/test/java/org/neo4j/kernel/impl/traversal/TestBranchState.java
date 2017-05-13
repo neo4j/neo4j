@@ -50,7 +50,7 @@ public class TestBranchState extends TraversalTestBase
          */
         createGraph( "a to b", "b to c", "c to d", "b to e", "e to f", "f to d", "f to g", "g to h" );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             DepthStateExpander expander = new DepthStateExpander();
             Iterables.count( getGraphDb().traversalDescription().expand( expander,

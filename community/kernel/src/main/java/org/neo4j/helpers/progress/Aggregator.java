@@ -31,9 +31,9 @@ final class Aggregator
     private final Map<ProgressListener, ProgressListener.MultiPartProgressListener.State> states =
             new ConcurrentHashMap<>();
     private final Indicator indicator;
-    @SuppressWarnings("unused"/*accessed through updater*/)
+    @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile long progress;
-    @SuppressWarnings("unused"/*accessed through updater*/)
+    @SuppressWarnings( "unused"/*accessed through updater*/ )
     private volatile int last;
     private static final AtomicLongFieldUpdater<Aggregator> PROGRESS = newUpdater( Aggregator.class, "progress" );
     private static final AtomicIntegerFieldUpdater<Aggregator> LAST =

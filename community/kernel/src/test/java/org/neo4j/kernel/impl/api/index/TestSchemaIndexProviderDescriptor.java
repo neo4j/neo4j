@@ -25,4 +25,8 @@ public class TestSchemaIndexProviderDescriptor
 {
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" );
+
+    private TestSchemaIndexProviderDescriptor()
+    {
+    }
 }

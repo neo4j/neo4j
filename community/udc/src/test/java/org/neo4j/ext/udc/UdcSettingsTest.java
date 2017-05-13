@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.ext.udc.UdcSettings.udc_enabled;
 import static org.neo4j.helpers.Configuration.DEFAULT;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class UdcSettingsTest
 {
     public static final String UDC_DISABLE = "dbms.udc.disable";

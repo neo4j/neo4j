@@ -90,7 +90,7 @@ class FieldInjections
             for ( Field field : currentClass.getDeclaredFields() )
             {
                 //ignore synthetic fields
-                if (field.isSynthetic())
+                if ( field.isSynthetic() )
                 {
                     continue;
                 }
@@ -126,7 +126,7 @@ class FieldInjections
                 throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
                         "has type `%s` which is not a known injectable component.",
-                            cls.getSimpleName(), field.getName(), field.getType());
+                            cls.getSimpleName(), field.getName(), field.getType() );
             }
 
             MethodHandle setter = MethodHandles.lookup().unreflectSetter( field );

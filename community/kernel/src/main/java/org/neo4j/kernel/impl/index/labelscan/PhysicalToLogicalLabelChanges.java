@@ -23,6 +23,10 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 public class PhysicalToLogicalLabelChanges
 {
+    private PhysicalToLogicalLabelChanges()
+    {
+    }
+
     /**
      * Converts physical before/after state to logical add/remove state. This conversion
      * reuses the existing long[] arrays in {@link NodeLabelUpdate}, merely shuffles numbers

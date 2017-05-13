@@ -29,6 +29,10 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class RelationshipExpanderBuilder
 {
+    private RelationshipExpanderBuilder()
+    {
+    }
+
     @SuppressWarnings( "unchecked" )
     public static PathExpander describeRelationships( Map<String, Object> description )
     {

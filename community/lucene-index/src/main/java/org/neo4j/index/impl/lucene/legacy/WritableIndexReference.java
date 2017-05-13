@@ -33,7 +33,7 @@ class WritableIndexReference extends IndexReference
 
     WritableIndexReference( IndexIdentifier identifier, IndexSearcher searcher, IndexWriter writer )
     {
-        super(identifier, searcher );
+        super( identifier, searcher );
         this.writer = writer;
     }
 

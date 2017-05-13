@@ -105,27 +105,27 @@ public abstract class Property implements StorageProperty
 
     public static DefinedProperty numberProperty( int propertyKeyId, Number number )
     {
-        if (number instanceof Long)
+        if ( number instanceof Long )
         {
             return longProperty( propertyKeyId, number.longValue() );
         }
-        if (number instanceof Integer)
+        if ( number instanceof Integer )
         {
             return intProperty( propertyKeyId, number.intValue() );
         }
-        if (number instanceof Double)
+        if ( number instanceof Double )
         {
             return doubleProperty( propertyKeyId, number.doubleValue() );
         }
-        if (number instanceof Byte)
+        if ( number instanceof Byte )
         {
             return byteProperty( propertyKeyId, number.byteValue() );
         }
-        if (number instanceof Float)
+        if ( number instanceof Float )
         {
             return floatProperty( propertyKeyId, number.floatValue() );
         }
-        if (number instanceof Short)
+        if ( number instanceof Short )
         {
             return shortProperty( propertyKeyId, number.shortValue() );
         }

@@ -71,7 +71,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    protected String base64(String value)
+    protected String base64( String value )
     {
         return UTF8.decode( Base64.encode( value ) );
     }

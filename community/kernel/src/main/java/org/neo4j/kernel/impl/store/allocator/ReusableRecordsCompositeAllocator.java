@@ -35,12 +35,14 @@ public class ReusableRecordsCompositeAllocator implements DynamicRecordAllocator
     private final ReusableRecordsAllocator reusableRecordsAllocator;
     private final DynamicRecordAllocator recordAllocator;
 
-    public ReusableRecordsCompositeAllocator(Collection<DynamicRecord> records, DynamicRecordAllocator recordAllocator )
+    public ReusableRecordsCompositeAllocator( Collection<DynamicRecord> records,
+            DynamicRecordAllocator recordAllocator )
     {
-        this(records.iterator(), recordAllocator);
+        this( records.iterator(), recordAllocator );
     }
 
-    public ReusableRecordsCompositeAllocator(Iterator<DynamicRecord> recordsIterator, DynamicRecordAllocator recordAllocator )
+    public ReusableRecordsCompositeAllocator( Iterator<DynamicRecord> recordsIterator,
+            DynamicRecordAllocator recordAllocator )
     {
         this.reusableRecordsAllocator = new ReusableRecordsAllocator( recordAllocator.getRecordDataSize(), recordsIterator );
         this.recordAllocator = recordAllocator;

@@ -40,9 +40,13 @@ public final class RelationshipIdWrapperImpl implements RelationshipIdWrapper
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         RelationshipIdWrapperImpl that = (RelationshipIdWrapperImpl) o;
 

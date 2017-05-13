@@ -106,7 +106,7 @@ public class PaxosInstanceStore
     {
         PaxosInstanceStore snapshotStore = new PaxosInstanceStore();
         snapshotStore.queued = queued;
-        snapshotStore.delivered = new LinkedList<>(delivered);
+        snapshotStore.delivered = new LinkedList<>( delivered );
         for ( Map.Entry<InstanceId, PaxosInstance> instance : instances.entrySet() )
         {
             snapshotStore.instances.put( instance.getKey(), instance.getValue().snapshot(snapshotStore) );

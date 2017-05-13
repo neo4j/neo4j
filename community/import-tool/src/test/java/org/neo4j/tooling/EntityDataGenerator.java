@@ -44,11 +44,11 @@ public class EntityDataGenerator<T> extends InputIterator.Adapter<T>
     public EntityDataGenerator( Function<Range,T[]> generator, long count )
     {
         this.sourceDescription = getClass().getSimpleName();
-        BiFunction<Range,Void,T[]> processor = (batch,ignore) -> generator.apply( batch );
+        BiFunction<Range,Void,T[]> processor = ( batch, ignore ) -> generator.apply( batch );
         this.processing = new TicketedProcessing<>( getClass().getName(),
                 Runtime.getRuntime().availableProcessors(), processor, () -> null );
         this.processing.slurp( idRangeInput( count, Configuration.DEFAULT.batchSize() ), true );
-        this.itemCursor = new ContinuableArrayCursor<>( () -> processing.next() );
+        this.itemCursor = new ContinuableArrayCursor<>( processing::next );
     }
 
     @Override

@@ -26,6 +26,10 @@ import java.lang.Thread.State;
 
 public class DumpVmInformation
 {
+    private DumpVmInformation()
+    {
+    }
+
     public static void dumpVmInfo( File directory ) throws IOException
     {
         File file = new File( directory, "main-vm-dump-" + System.currentTimeMillis() );

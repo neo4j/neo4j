@@ -90,5 +90,5 @@ public enum DynamicStore
         this.type = type;
     }
 
-    abstract RecordReference<DynamicRecord> lookup(RecordAccess records, long block);
+    abstract RecordReference<DynamicRecord> lookup( RecordAccess records, long block );
 }

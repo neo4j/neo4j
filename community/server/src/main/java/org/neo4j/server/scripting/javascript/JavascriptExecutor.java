@@ -46,7 +46,7 @@ public class JavascriptExecutor implements ScriptExecutor
          *
          * @param enableSandboxing
          */
-        public Factory(boolean enableSandboxing)
+        public Factory( boolean enableSandboxing )
         {
             if ( enableSandboxing )
             {
@@ -82,9 +82,8 @@ public class JavascriptExecutor implements ScriptExecutor
     private Scriptable createPrototype( Context cx )
     {
         Scriptable proto = cx.initStandardObjects();
-        Scriptable topLevel = new ImporterTopLevel(cx);
+        Scriptable topLevel = new ImporterTopLevel( cx );
         proto.setParentScope( topLevel );
-
         return proto;
     }
 

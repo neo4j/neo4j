@@ -24,13 +24,18 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 public class PlatformUI
 {
+    private PlatformUI()
+    {
+    }
+
     public static void selectPlatformUI()
     {
         try
         {
             UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
         }
-        catch ( ClassNotFoundException | UnsupportedLookAndFeelException | InstantiationException | IllegalAccessException e)
+        catch ( ClassNotFoundException | UnsupportedLookAndFeelException | InstantiationException |
+                IllegalAccessException e )
         {
             // don't care
             e.printStackTrace( System.out );

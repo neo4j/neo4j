@@ -37,14 +37,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@RunWith( Suite.class )
+@Suite.SuiteClasses( {
         MultiPassStoreTest.Nodes.class,
         MultiPassStoreTest.Relationships.class,
         MultiPassStoreTest.Properties.class,
         MultiPassStoreTest.Strings.class,
         MultiPassStoreTest.Arrays.class
-})
+} )
 public abstract class MultiPassStoreTest
 {
     @Test
@@ -74,7 +74,7 @@ public abstract class MultiPassStoreTest
 
     protected abstract void otherRecords( RecordAccess filter, long id );
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class Nodes extends MultiPassStoreTest
     {
         @Override
@@ -99,7 +99,7 @@ public abstract class MultiPassStoreTest
         }
     }
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class Relationships extends MultiPassStoreTest
     {
         @Override
@@ -124,7 +124,7 @@ public abstract class MultiPassStoreTest
         }
     }
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class Properties extends MultiPassStoreTest
     {
         @Override
@@ -149,7 +149,7 @@ public abstract class MultiPassStoreTest
         }
     }
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class Strings extends MultiPassStoreTest
     {
         @Override
@@ -174,7 +174,7 @@ public abstract class MultiPassStoreTest
         }
     }
 
-    @RunWith(JUnit4.class)
+    @RunWith( JUnit4.class )
     public static class Arrays extends MultiPassStoreTest
     {
         @Override

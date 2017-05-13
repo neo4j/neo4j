@@ -19,7 +19,8 @@
  */
 package org.neo4j.desktop.config.portable;
 
-import java.awt.*;
+
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;

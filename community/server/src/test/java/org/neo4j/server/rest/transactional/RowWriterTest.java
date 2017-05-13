@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Arrays.asList;
@@ -41,7 +42,7 @@ public class RowWriterTest
     public void shouldWriteNestedMaps() throws Exception
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator json = new JsonFactory(new Neo4jJsonCodec()).createJsonGenerator( out );
+        JsonGenerator json = new JsonFactory( new Neo4jJsonCodec() ).createJsonGenerator( out );
 
         JsonNode row = serialize( out, json, new RowWriter(  ) );
 

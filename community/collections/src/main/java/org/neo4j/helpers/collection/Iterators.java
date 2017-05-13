@@ -421,7 +421,7 @@ public abstract class Iterators
         return new HashSet<>( Arrays.asList( items ) );
     }
 
-    public static <T> Set<T> emptySetOf( @SuppressWarnings("unused"/*just used as a type marker*/) Class<T> type )
+    public static <T> Set<T> emptySetOf( @SuppressWarnings( "unused"/*just used as a type marker*/ ) Class<T> type )
     {
         return Collections.emptySet();
     }
@@ -434,9 +434,9 @@ public abstract class Iterators
      * @return the {@link Set} containing the items.
      */
     @SafeVarargs
-    public static <T> Set<T> set( T... items)
+    public static <T> Set<T> set( T... items )
     {
-        return asSet(items);
+        return asSet( items );
     }
 
     /**
@@ -716,7 +716,7 @@ public abstract class Iterators
     }
 
     @SafeVarargs
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Iterator<T> concat( Iterator<? extends T>... iterators )
     {
         return concat( Arrays.asList( (Iterator<T>[]) iterators ).iterator() );
@@ -724,12 +724,12 @@ public abstract class Iterators
 
     public static <T> ResourceIterator<T> concatResourceIterators( Iterator<ResourceIterator<T>> iterators )
     {
-        return new CombiningResourceIterator<>(iterators);
+        return new CombiningResourceIterator<>( iterators );
     }
 
     public static <T> Iterator<T> concat( Iterator<Iterator<T>> iterators )
     {
-        return new CombiningIterator<>(iterators);
+        return new CombiningIterator<>( iterators );
     }
 
     public static <T> ResourceIterable<T> asResourceIterable( final ResourceIterator<T> it )

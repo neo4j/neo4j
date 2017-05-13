@@ -79,13 +79,12 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
     {
         loadNode( db, node );
-        // TODO clear cache here
         loadNode( db, node );
     }
 
     private void loadNode( GraphDatabaseAPI db, Node node )
     {
-        try (Transaction ignored = db.beginTx())
+        try ( Transaction ignored = db.beginTx() )
         {
             Iterables.count( node.getRelationships() );
         }

@@ -1099,10 +1099,13 @@ public class BatchInsertTest
         properties.put("firstName", "Edward");
         properties.put("lastName", "Shevchenko");
         properties.put("gender", "male");
-        properties.put("birthday", new SimpleDateFormat("yyyy-MM-dd").parse( "1987-11-08" ).getTime());
+        properties.put( "birthday", new SimpleDateFormat( "yyyy-MM-dd" ).parse( "1987-11-08" ).getTime() );
         properties.put("birthday_month", 11);
         properties.put("birthday_day", 8);
-        properties.put("creationDate", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse( "2010-04-22T18:05:40.912+0000" ).getTime());
+        long time = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" )
+                        .parse( "2010-04-22T18:05:40.912+0000" )
+                        .getTime();
+        properties.put("creationDate", time );
         properties.put("locationIP", "46.151.255.205");
         properties.put( "browserUsed", "Firefox" );
         properties.put( "email", new String[0] );

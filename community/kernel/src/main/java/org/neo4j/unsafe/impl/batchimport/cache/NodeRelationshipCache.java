@@ -22,14 +22,12 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
-
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -555,7 +553,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         long visit( long nodeId, int typeId, long out, long in, long loop );
     }
 
-    public static final GroupVisitor NO_GROUP_VISITOR = (nodeId, typeId, out, in, loop) -> -1;
+    public static final GroupVisitor NO_GROUP_VISITOR = ( nodeId, typeId, out, in, loop ) -> -1;
 
     private class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Visitable
     {

@@ -33,7 +33,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-@Service.Implementation(QueryEngineProvider.class)
+@Service.Implementation( QueryEngineProvider.class )
 public class EnterpriseCypherEngineProvider extends QueryEngineProvider
 {
     public EnterpriseCypherEngineProvider()

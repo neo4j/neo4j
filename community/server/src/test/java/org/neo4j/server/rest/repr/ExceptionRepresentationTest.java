@@ -45,7 +45,7 @@ public class ExceptionRepresentationTest
     {
         // Given
         ExceptionRepresentation rep = new ExceptionRepresentation(
-                new RuntimeException("Hoho", new RuntimeException("Haha", new RuntimeException( "HAHA!" )) ));
+                new RuntimeException( "Hoho", new RuntimeException( "Haha", new RuntimeException( "HAHA!" ) ) ) );
 
         // When
         JsonNode out = serialize( rep );
@@ -91,7 +91,7 @@ public class ExceptionRepresentationTest
     private JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException
     {
         Map<String, Object> output = new HashMap<>();
-        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter(output), URI.create( "" ),
+        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter( output ), URI.create( "" ),
                 mock(ExtensionInjector.class ) );
 
         // When

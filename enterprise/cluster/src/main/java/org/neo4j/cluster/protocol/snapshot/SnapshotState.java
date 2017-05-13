@@ -152,9 +152,10 @@ public enum SnapshotState
                         case sendSnapshot:
                         {
                             outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
-                                    new SnapshotMessage.SnapshotState( context.getLearnerContext()
-                                            .getLastDeliveredInstanceId(), context.getSnapshotProvider(),
-                                            context.getClusterContext().getObjectOutputStreamFactory()) ) );
+                                    new SnapshotMessage.SnapshotState(
+                                            context.getLearnerContext().getLastDeliveredInstanceId(),
+                                            context.getSnapshotProvider(),
+                                            context.getClusterContext().getObjectOutputStreamFactory() ) ) );
                             break;
                         }
 

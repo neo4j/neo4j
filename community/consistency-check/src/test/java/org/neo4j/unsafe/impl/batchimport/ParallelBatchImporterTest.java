@@ -147,7 +147,7 @@ public class ParallelBatchImporterTest
     private final IdGenerator idGenerator;
     private final boolean multiPassIterators;
 
-    @Parameterized.Parameters(name = "{0},{1},{3}")
+    @Parameterized.Parameters( name = "{0},{1},{3}" )
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(

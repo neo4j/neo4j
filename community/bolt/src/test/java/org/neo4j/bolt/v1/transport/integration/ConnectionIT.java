@@ -38,7 +38,7 @@ import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class ConnectionIT
 {
     @Rule
@@ -47,10 +47,10 @@ public class ConnectionIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket(  getClass() );
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public TransportConnection connection;
 
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter( 1 )
     public HostnamePort address;
 
     @Parameterized.Parameters

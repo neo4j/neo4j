@@ -97,7 +97,7 @@ public class IndexStatisticsTest
     private ThreadToStatementContextBridge bridge;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
-    @Parameters(name = "multiThreadedIndexPopulationEnabled = {0}")
+    @Parameters( name = "multiThreadedIndexPopulationEnabled = {0}" )
     public static Object[] multiThreadedIndexPopulationEnabledValues()
     {
         return new Object[]{true, false};

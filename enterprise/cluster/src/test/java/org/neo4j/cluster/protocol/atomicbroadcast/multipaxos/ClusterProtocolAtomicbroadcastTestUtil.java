@@ -29,6 +29,10 @@ import org.neo4j.cluster.InstanceId;
 
 public class ClusterProtocolAtomicbroadcastTestUtil
 {
+    private ClusterProtocolAtomicbroadcastTestUtil()
+    {
+    }
+
     public static Iterable<InstanceId> ids( int size )
     {
         List<InstanceId> ids = new ArrayList<InstanceId>();

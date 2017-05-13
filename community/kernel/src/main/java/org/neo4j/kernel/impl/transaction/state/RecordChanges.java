@@ -114,8 +114,8 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         }
 
         RECORD record = loader.newUnused( key, additionalData );
-        RecordChange<KEY, RECORD, ADDITIONAL> change =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader,  true, additionalData);
+        RecordChange<KEY,RECORD,ADDITIONAL> change =
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData );
         recordChanges.put( key, change );
         return change;
     }

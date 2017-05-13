@@ -23,9 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -65,7 +65,7 @@ public abstract class InitialUserTest
                 CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
-                new User.Builder( "neo4j", Credential.forPassword( "123" ))
+                new User.Builder( "neo4j", Credential.forPassword( "123" ) )
                         .withRequiredPasswordChange( false )
                         .build()
         );
@@ -89,7 +89,7 @@ public abstract class InitialUserTest
                 CommunitySecurityModule.getInitialUserRepository( config, NullLogProvider.getInstance(), fsRule.get() );
         initialUserRepository.start();
         initialUserRepository.create(
-                new User.Builder( "neo4j", Credential.forPassword( "neo4j" ))
+                new User.Builder( "neo4j", Credential.forPassword( "neo4j" ) )
                         .withRequiredPasswordChange( false )
                         .build()
         );
@@ -156,7 +156,7 @@ public abstract class InitialUserTest
 
     protected User newUser( String userName, String password, boolean pwdChange )
     {
-        return new User.Builder( userName, Credential.forPassword( password ))
+        return new User.Builder( userName, Credential.forPassword( password ) )
                 .withRequiredPasswordChange( pwdChange )
                 .build();
     }

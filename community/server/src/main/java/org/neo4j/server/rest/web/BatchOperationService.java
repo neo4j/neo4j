@@ -51,7 +51,7 @@ import org.neo4j.udc.UsageData;
 import static org.neo4j.udc.UsageDataKeys.Features.http_batch_endpoint;
 import static org.neo4j.udc.UsageDataKeys.features;
 
-@Path("/batch")
+@Path( "/batch" )
 public class BatchOperationService
 {
 
@@ -75,8 +75,8 @@ public class BatchOperationService
     }
 
     @POST
-    public Response performBatchOperations(@Context UriInfo uriInfo,
-            @Context HttpHeaders httpHeaders, @Context HttpServletRequest req, InputStream body)
+    public Response performBatchOperations( @Context UriInfo uriInfo,
+            @Context HttpHeaders httpHeaders, @Context HttpServletRequest req, InputStream body )
     {
         usage.get( features ).flag( http_batch_endpoint );
         if ( isStreaming( httpHeaders ) )

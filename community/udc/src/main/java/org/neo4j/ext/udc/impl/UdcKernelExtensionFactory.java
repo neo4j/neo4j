@@ -44,7 +44,7 @@ import org.neo4j.udc.UsageData;
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.
  */
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelExtensionFactory.Dependencies>
 {
     static final String KEY = "kernel udc";

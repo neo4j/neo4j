@@ -53,7 +53,7 @@ public class ProtocolServer
         this.stateMachines = stateMachines;
         this.msgLog = logProvider.getLog( getClass() );
 
-        StateMachineConversations conversations = new StateMachineConversations(me);
+        StateMachineConversations conversations = new StateMachineConversations( me );
         proxyFactory = new StateMachineProxyFactory( stateMachines, conversations, me, logProvider );
         stateMachines.addMessageProcessor( proxyFactory );
     }

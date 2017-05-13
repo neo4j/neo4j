@@ -21,6 +21,10 @@ package org.neo4j.kernel.api.schema;
 
 public class SchemaDescriptorFactory
 {
+    private SchemaDescriptorFactory()
+    {
+    }
+
     public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
         return new LabelSchemaDescriptor( labelId, propertyIds );

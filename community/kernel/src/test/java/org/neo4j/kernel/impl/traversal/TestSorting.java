@@ -61,7 +61,7 @@ public class TestSorting extends TraversalTestBase
                 triplet( me, knows, zack ), triplet( zack, knows, andreas ), triplet( george, knows, andreas ),
                 triplet( andreas, knows, nicholas ) );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
             assertEquals( nodes, Iterables.asCollection( getGraphDb().traversalDescription().evaluator( excludeStartPosition() )

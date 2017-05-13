@@ -67,36 +67,32 @@ public class NumberArrayTest
         {
             list.add( line(
                     factory.newIntArray( INDEXES, -1 ),
-                    (random) -> random.nextInt( 1_000_000_000 ),
-                    (array, index, value) -> array.set( index, (Integer) value ),
-                    (array, index) -> array.get( index ) ) );
+                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
             list.add( line(
                     factory.newDynamicIntArray( INDEXES / 100, -1 ),
-                    (random) -> random.nextInt( 1_000_000_000 ),
-                    (array, index, value) -> array.set( index, (Integer) value ),
-                    (array, index) -> array.get( index ) ) );
+                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
 
             list.add( line(
                     factory.newLongArray( INDEXES, -1 ),
-                    (random) -> random.nextLong( 1_000_000_000 ),
-                    (array, index, value) -> array.set( index, (Long) value ),
-                    (array, index) -> array.get( index ) ) );
+                    ( random ) -> random.nextLong( 1_000_000_000 ),
+                    ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
             list.add( line(
                     factory.newDynamicLongArray( INDEXES / 100, -1 ),
-                    (random) -> random.nextLong( 1_000_000_000 ),
-                    (array, index, value) -> array.set( index, (Long) value ),
-                    (array, index) -> array.get( index ) ) );
+                    ( random ) -> random.nextLong( 1_000_000_000 ),
+                    ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
 
             list.add( line(
                     factory.newByteArray( INDEXES, new byte[] {-1, -1, -1, -1, -1} ),
-                    (random) -> random.nextInt( 1_000_000_000 ),
-                    (array, index, value) -> array.setInt( index, 1, (Integer) value ),
-                    (array, index) -> array.getInt( index, 1 ) ) );
+                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
+                    ( array, index ) -> array.getInt( index, 1 ) ) );
             list.add( line(
                     factory.newDynamicByteArray( INDEXES / 100, new byte[] {-1, -1, -1, -1, -1} ),
-                    (random) -> random.nextInt( 1_000_000_000 ),
-                    (array, index, value) -> array.setInt( index, 1, (Integer) value ),
-                    (array, index) -> array.getInt( index, 1 ) ) );
+                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
+                    ( array, index ) -> array.getInt( index, 1 ) ) );
         }
         return list;
     }
@@ -142,7 +138,7 @@ public class NumberArrayTest
         for ( int index = 0; index < INDEXES; index++ )
         {
             Object value = reader.read( index % 2 == 0 ? array : array.at( index ), index );
-            Object expectedValue = key.containsKey( index ) ? key.get( index ) : defaultValue;
+            Object expectedValue = key.getOrDefault( index, defaultValue );
             assertEquals( expectedValue, value );
         }
     }

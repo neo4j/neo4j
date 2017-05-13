@@ -131,13 +131,13 @@ public class UserFunctionSignature
             this.name = new QualifiedName( namespace, name );
         }
 
-        public Builder description(String description)
+        public Builder description( String description )
         {
             this.description = Optional.of( description );
             return this;
         }
 
-        public Builder deprecatedBy(String deprecated)
+        public Builder deprecatedBy( String deprecated )
         {
             this.deprecated = Optional.of( deprecated );
             return this;
@@ -165,17 +165,19 @@ public class UserFunctionSignature
 
         public UserFunctionSignature build()
         {
-            if (outputType == null)
+            if ( outputType == null )
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new UserFunctionSignature(name, inputSignature, outputType, deprecated, allowed, description );
+            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description );
         }
     }
 
-    public static Builder functionSignature(String ... namespaceAndName)
+    public static Builder functionSignature( String... namespaceAndName )
     {
-        String[] namespace = namespaceAndName.length > 1 ? Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) : new String[0];
+        String[] namespace = namespaceAndName.length > 1 ?
+                             Arrays.copyOf( namespaceAndName, namespaceAndName.length - 1 ) :
+                             new String[0];
         String name = namespaceAndName[namespaceAndName.length - 1];
         return functionSignature( namespace, name );
     }
@@ -185,12 +187,12 @@ public class UserFunctionSignature
         return new Builder( name.namespace(), name.name() );
     }
 
-    public static Builder functionSignature(String[] namespace, String name)
+    public static Builder functionSignature( String[] namespace, String name )
     {
-        return new Builder(namespace, name);
+        return new Builder( namespace, name );
     }
 
-    public static QualifiedName procedureName( String ... namespaceAndName)
+    public static QualifiedName procedureName( String... namespaceAndName )
     {
         return functionSignature( namespaceAndName ).build().name();
     }

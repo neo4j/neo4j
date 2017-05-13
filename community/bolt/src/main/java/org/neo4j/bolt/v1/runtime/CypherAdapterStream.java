@@ -121,7 +121,7 @@ class CypherAdapterStream extends BoltResult
 
     private String queryTypeCode( QueryExecutionType.QueryType queryType )
     {
-        switch (queryType)
+        switch ( queryType )
         {
             case READ_ONLY:
                 return "r";

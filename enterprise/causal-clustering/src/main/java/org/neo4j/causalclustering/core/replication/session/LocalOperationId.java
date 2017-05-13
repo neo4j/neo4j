@@ -47,16 +47,21 @@ public class LocalOperationId
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         LocalOperationId that = (LocalOperationId) o;
 
         if ( localSessionId != that.localSessionId )
-        { return false; }
+        {
+            return false;
+        }
         return sequenceNumber == that.sequenceNumber;
-
     }
 
     @Override

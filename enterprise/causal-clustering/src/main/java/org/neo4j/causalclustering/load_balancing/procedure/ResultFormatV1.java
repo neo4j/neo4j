@@ -49,6 +49,10 @@ public class ResultFormatV1
     private static final String ROLE_KEY = "role";
     private static final String ADDRESSES_KEY = "addresses";
 
+    private ResultFormatV1()
+    {
+    }
+
     static Object[] build( LoadBalancingProcessor.Result result )
     {
         Object[] routers = result.routeEndpoints().stream().map( Endpoint::address ).map( SocketAddress::toString ).toArray();

@@ -27,6 +27,10 @@ public class XForwardUtil
     public static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";
     public static final String X_FORWARD_PROTO_HEADER_KEY = "X-Forwarded-Proto";
 
+    private XForwardUtil()
+    {
+    }
+
     public static String externalUri( String internalUri, String xForwardedHost, String xForwardedProto )
     {
         return externalUri( UriBuilder.fromUri( internalUri ), xForwardedHost, xForwardedProto ).toString();

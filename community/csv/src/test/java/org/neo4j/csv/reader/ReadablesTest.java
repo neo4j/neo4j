@@ -59,13 +59,13 @@ public class ReadablesTest
     public static Collection<ReadMethod> readMethods()
     {
         return Arrays.asList(
-                (readable,length) ->
+                ( readable, length ) ->
                 {
                     SectionedCharBuffer readText = new SectionedCharBuffer( length );
                     readable.read( readText, readText.front() );
                     return copyOfRange( readText.array(), readText.pivot(), readText.front() );
                 },
-                (readable,length) ->
+                ( readable, length ) ->
                 {
                     char[] result = new char[length];
                     readable.read( result, 0, length );

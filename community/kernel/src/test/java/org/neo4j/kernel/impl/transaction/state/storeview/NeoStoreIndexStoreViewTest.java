@@ -112,7 +112,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId, visitor, labelVisitor, false );
+                storeView.visitNodes( new int[]{labelId}, ( id ) -> id == propertyKeyId, visitor, labelVisitor, false );
 
         // when
         storeScan.run();
@@ -134,8 +134,8 @@ public class NeoStoreIndexStoreViewTest
         NodeUpdateCollectingVisitor visitor = new NodeUpdateCollectingVisitor();
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{labelId}, (id) -> id == propertyKeyId,
-                visitor, labelVisitor, false );
+        StoreScan<Exception> storeScan =
+                storeView.visitNodes( new int[]{labelId}, ( id ) -> id == propertyKeyId, visitor, labelVisitor, false );
 
         // when
         storeScan.run();
@@ -148,10 +148,10 @@ public class NeoStoreIndexStoreViewTest
     public void shouldLockNodesWhileReadingThem() throws Exception
     {
         // given
-        @SuppressWarnings("unchecked")
-        Visitor<NodeUpdates, Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView.visitNodes( new int[] {labelId}, (id) -> id == propertyKeyId,
-                visitor, null, false );
+        @SuppressWarnings( "unchecked" )
+        Visitor<NodeUpdates,Exception> visitor = mock( Visitor.class );
+        StoreScan<Exception> storeScan =
+                storeView.visitNodes( new int[]{labelId}, ( id ) -> id == propertyKeyId, visitor, null, false );
 
         // when
         storeScan.run();
@@ -207,7 +207,7 @@ public class NeoStoreIndexStoreViewTest
                 containsInAnyOrder( index1, index2, index3 ) );
     }
 
-    NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels)
+    NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return NodeUpdates.forNode( nodeId, labels ).added( propertyKeyId, value ).build();
     }

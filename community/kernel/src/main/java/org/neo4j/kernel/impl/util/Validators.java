@@ -49,6 +49,10 @@ public class Validators
         }
     };
 
+    private Validators()
+    {
+    }
+
     static List<File> matchingFiles( File fileWithRegexInName )
     {
         File parent = fileWithRegexInName.getAbsoluteFile().getParentFile();

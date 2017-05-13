@@ -40,6 +40,10 @@ import org.neo4j.server.configuration.ServerSettings;
 
 public class ServerTestUtils
 {
+    private ServerTestUtils()
+    {
+    }
+
     public static File createTempDir() throws IOException
     {
         return Files.createTempDirectory( "neo4j-test" ).toFile();
@@ -184,7 +188,7 @@ public class ServerTestUtils
 
     public interface BlockWithCSVFileURL
     {
-        void execute(String url) throws Exception;
+        void execute( String url ) throws Exception;
     }
 
     public static void withCSVFile( int rowCount, BlockWithCSVFileURL block ) throws Exception
@@ -194,7 +198,7 @@ public class ServerTestUtils
         {
             try ( PrintWriter writer = new PrintWriter( file ) )
             {
-                for (int i = 0; i < rowCount; ++i)
+                for ( int i = 0; i < rowCount; ++i )
                 {
                     writer.println("1,2,3");
                 }

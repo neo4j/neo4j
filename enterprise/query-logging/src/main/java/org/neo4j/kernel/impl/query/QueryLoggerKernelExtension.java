@@ -39,7 +39,6 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
-import static java.lang.String.format;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
@@ -74,7 +73,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         final JobScheduler jobScheduler = dependencies.jobScheduler();
         final Monitors monitoring = dependencies.monitoring();
 
-        if (!queryLogEnabled)
+        if ( !queryLogEnabled )
         {
             return createEmptyAdapter();
         }
@@ -92,7 +91,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );
                 for ( QueryLogEntryContent flag : QueryLogEntryContent.values() )
                 {
-                    if (flag.enabledIn(config))
+                    if ( flag.enabledIn( config ) )
                     {
                         flags.add( flag );
                     }
@@ -100,7 +99,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
                 FormattedLog.Builder logBuilder = FormattedLog.withUTCTimeZone();
                 Log log;
-                if (rotationThreshold == 0)
+                if ( rotationThreshold == 0 )
                 {
                     OutputStream logOutputStream = createOrOpenAsOuputStream( fileSystem, queryLogFile, true );
                     log = logBuilder.toOutputStream( logOutputStream );

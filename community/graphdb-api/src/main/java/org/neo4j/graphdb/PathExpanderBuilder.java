@@ -149,7 +149,7 @@ public class PathExpanderBuilder
      * @param <STATE> the type of the object holding the state
      * @return a PathExpander produced from the configuration you have built up
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public <STATE> PathExpander<STATE> build()
     {
         return expander;

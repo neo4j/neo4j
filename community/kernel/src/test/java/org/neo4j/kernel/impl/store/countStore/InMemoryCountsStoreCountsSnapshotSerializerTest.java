@@ -235,7 +235,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
         return CountsKeyFactory.indexSampleKey( indexId );
     }
 
-    public static IndexStatisticsKey indexStatisticsKey( long indexId)
+    public static IndexStatisticsKey indexStatisticsKey( long indexId )
     {
         return CountsKeyFactory.indexStatisticsKey( indexId );
     }

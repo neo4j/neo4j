@@ -65,7 +65,7 @@ public class TypeReference
 
         Class<?> innerType = type.isArray() ? type.getComponentType() : type;
 
-        if (innerType.isPrimitive())
+        if ( innerType.isPrimitive() )
         {
             name = innerType.getName();
             switch ( name )
@@ -87,7 +87,7 @@ public class TypeReference
             packageName = innerType.getPackage().getName();
             String canonicalName = innerType.getCanonicalName();
             Class<?> declaringClass = innerType.getDeclaringClass();
-            if ( declaringClass != null)
+            if ( declaringClass != null )
             {
                 declaringClassName = declaringClass.getSimpleName();
                 name = canonicalName.substring( packageName.length() + declaringClassName.length() + 2 );
@@ -252,27 +252,45 @@ public class TypeReference
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         TypeReference reference = (TypeReference) o;
 
         if ( isPrimitive != reference.isPrimitive )
-        { return false; }
+        {
+            return false;
+        }
         if ( isArray != reference.isArray )
-        { return false; }
+        {
+            return false;
+        }
         if ( isTypeParameter != reference.isTypeParameter )
-        { return false; }
+        {
+            return false;
+        }
         if ( modifiers != reference.modifiers )
-        { return false; }
+        {
+            return false;
+        }
         if ( packageName != null ? !packageName.equals( reference.packageName ) : reference.packageName != null )
-        { return false; }
+        {
+            return false;
+        }
         if ( name != null ? !name.equals( reference.name ) : reference.name != null )
-        { return false; }
+        {
+            return false;
+        }
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if ( !Arrays.equals( parameters, reference.parameters ) )
-        { return false; }
+        {
+            return false;
+        }
         return declaringClassName != null ? declaringClassName.equals( reference.declaringClassName )
                                           : reference.declaringClassName == null;
 

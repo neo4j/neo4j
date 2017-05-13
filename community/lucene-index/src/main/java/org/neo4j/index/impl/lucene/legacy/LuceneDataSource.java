@@ -139,7 +139,7 @@ public class LuceneDataSource extends LifecycleAdapter
         closed = false;
     }
 
-    public static File getLuceneIndexStoreDirectory(File storeDir)
+    public static File getLuceneIndexStoreDirectory( File storeDir )
     {
         return new File( storeDir, "index" );
     }

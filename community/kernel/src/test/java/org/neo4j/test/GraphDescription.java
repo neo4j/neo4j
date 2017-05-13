@@ -381,7 +381,7 @@ public class GraphDescription implements GraphDefinition
             }
 
             String[] labelNameArray = joinedLabels.toArray(new String[joinedLabels.size()]);
-            nodes.put( name, new NodeWithAddedLabels(preexistingNode, labelNameArray));
+            nodes.put( name, new NodeWithAddedLabels( preexistingNode, labelNameArray ) );
         }
     }
 

@@ -310,7 +310,7 @@ public class TxPushStrategyConfigIT
 
         public void format( StringBuilder failures, long txId )
         {
-            if ( txId < this.txId - this.missed || txId > this.txId)
+            if ( txId < this.txId - this.missed || txId > this.txId )
             {
                 if ( failures.length() > 0 )
                 {

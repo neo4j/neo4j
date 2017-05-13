@@ -52,7 +52,7 @@ public class TestEphemeralFileChannel
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fs.open( new File("yo"), "rw" );
+        channel = fs.open( new File( "yo" ), "rw" );
         long longValue = 1234567890L;
 
         // [1].....[2]........[1234567890L]...

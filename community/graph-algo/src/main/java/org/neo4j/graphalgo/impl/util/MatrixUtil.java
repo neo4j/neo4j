@@ -204,6 +204,10 @@ public class MatrixUtil
         }
     }
 
+    private MatrixUtil()
+    {
+    }
+
     /**
      * Destructive (in-place) LU-decomposition
      * @param matrix

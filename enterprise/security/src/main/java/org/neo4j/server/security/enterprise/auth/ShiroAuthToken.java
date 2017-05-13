@@ -87,7 +87,7 @@ public class ShiroAuthToken implements AuthenticationToken
             return "{}";
         }
 
-        List<String> keys = new ArrayList<>(authToken.keySet());
+        List<String> keys = new ArrayList<>( authToken.keySet() );
         int schemeIndex = keys.indexOf( AuthToken.SCHEME_KEY );
         if ( schemeIndex > 0 )
         {

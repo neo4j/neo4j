@@ -43,6 +43,10 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
 public class TransportTestUtil
 {
+    private TransportTestUtil()
+    {
+    }
+
     public static byte[] dechunk( byte[] chunked ) throws IOException
     {
         ByteBuffer in = ByteBuffer.wrap( chunked );

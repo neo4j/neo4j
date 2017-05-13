@@ -46,7 +46,7 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class WhenToInitializeTransactionOnMasterFromSlaveIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule(getClass());
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     private GraphDatabaseService slave;
     private ClusterManager.ManagedCluster cluster;
@@ -78,7 +78,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
     {
         long nodeId = 0L;
 
-        try (Transaction transaction = slave.beginTx() )
+        try ( Transaction transaction = slave.beginTx() )
         {
             // When
             Node node = slave.getNodeById( nodeId );
@@ -87,7 +87,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
             assertDidntStartMasterTx();
 
             // When
-            count(node.getLabels());
+            count( node.getLabels() );
 
             // Then
             assertDidntStartMasterTx();
@@ -99,7 +99,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
             assertDidntStartMasterTx();
 
             // When
-            readEachProperty(node);
+            readEachProperty( node );
 
             // Then
             assertDidntStartMasterTx();

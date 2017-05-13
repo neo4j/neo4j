@@ -59,9 +59,13 @@ public class TruncateLogCommand implements RaftLogCommand
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         TruncateLogCommand that = (TruncateLogCommand) o;
         return fromIndex == that.fromIndex;
     }

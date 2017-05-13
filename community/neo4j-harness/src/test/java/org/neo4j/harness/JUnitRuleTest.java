@@ -123,15 +123,16 @@ public class JUnitRuleTest
         }
 
         // When a rule with an pre-populated graph db directory is used
-        final Neo4jRule ruleWithDirectory = new Neo4jRule(testDirectory.directory()).copyFrom( testDirectory.directory());
+        final Neo4jRule ruleWithDirectory =
+                new Neo4jRule( testDirectory.directory() ).copyFrom( testDirectory.directory() );
         ruleWithDirectory.apply( new Statement()
         {
             @Override
             public void evaluate() throws Throwable
             {
                 // Then the database is not empty
-                Result result = ruleWithDirectory.getGraphDatabaseService().execute( "match (n) return count(n) as " +
-                                                                                     "count" );
+                Result result = ruleWithDirectory.getGraphDatabaseService()
+                        .execute( "MATCH (n) RETURN count(n) AS " + "count" );
 
                 List<Object> column = Iterators.asList( result.columnAs( "count" ) );
                 assertEquals( 1, column.size() );

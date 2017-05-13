@@ -49,7 +49,7 @@ import org.neo4j.server.rest.repr.StreamingFormat;
 import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
-@Service.Implementation(RepresentationFormat.class)
+@Service.Implementation( RepresentationFormat.class )
 public class StreamingJsonFormat extends RepresentationFormat implements StreamingFormat
 {
 

@@ -213,7 +213,7 @@ public class SchemaIndexHaIT
 
             // Check master
             IndexDefinition index;
-            try ( Transaction tx = master.beginTx())
+            try ( Transaction tx = master.beginTx() )
             {
                 index = Iterables.single( master.schema().getIndexes() );
                 awaitIndexOnline( index, master, data );
@@ -268,7 +268,7 @@ public class SchemaIndexHaIT
         // And the population finishes
         dbFactory.triggerFinish( master );
         IndexDefinition index;
-        try ( Transaction tx = master.beginTx())
+        try ( Transaction tx = master.beginTx() )
         {
             index = Iterables.single( master.schema().getIndexes() );
             awaitIndexOnline( index, master, data );
@@ -302,10 +302,11 @@ public class SchemaIndexHaIT
         }
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private ClusterManager.RepairKit bringSlaveOfflineAndRemoveStoreFiles( ManagedCluster cluster, HighlyAvailableGraphDatabase slave ) throws IOException
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
+    private ClusterManager.RepairKit bringSlaveOfflineAndRemoveStoreFiles( ManagedCluster cluster,
+            HighlyAvailableGraphDatabase slave ) throws IOException
     {
-        ClusterManager.RepairKit slaveDown = cluster.shutdown(slave);
+        ClusterManager.RepairKit slaveDown = cluster.shutdown( slave );
 
         File storeDir = new File( slave.getStoreDir() );
         deleteRecursively( storeDir );
@@ -591,12 +592,12 @@ public class SchemaIndexHaIT
 
         ControlledGraphDatabaseFactory()
         {
-            factory = new ControllingIndexProviderFactory(perDbIndexProvider, Predicates.alwaysTrue());
+            factory = new ControllingIndexProviderFactory( perDbIndexProvider, Predicates.alwaysTrue() );
         }
 
         private ControlledGraphDatabaseFactory( Predicate<GraphDatabaseService> dbsToControlIndexingOn )
         {
-            factory = new ControllingIndexProviderFactory(perDbIndexProvider, dbsToControlIndexingOn);
+            factory = new ControllingIndexProviderFactory( perDbIndexProvider, dbsToControlIndexingOn );
         }
 
         @Override

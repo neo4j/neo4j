@@ -28,7 +28,7 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.impl.AbstractApp;
 
-@Service.Implementation(App.class)
+@Service.Implementation( App.class )
 public class Alias extends AbstractApp
 {
 

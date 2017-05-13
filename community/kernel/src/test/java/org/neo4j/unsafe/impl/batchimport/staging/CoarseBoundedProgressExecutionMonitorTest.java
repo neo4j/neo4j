@@ -31,13 +31,12 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
 @RunWith( Parameterized.class )
 public class CoarseBoundedProgressExecutionMonitorTest
 {
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Integer> parameters()
     {
         return Arrays.asList(1, 10, 123);
@@ -51,7 +50,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
     {
         // GIVEN
         Configuration config = config();
-        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor(batchSize, config());
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config() );
 
         // WHEN
         long total = monitorSingleStageExecution( progressExecutionMonitor, config );
@@ -64,7 +63,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
     public void progressOnMultipleExecutions()
     {
         Configuration config = config();
-        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor(batchSize, config );
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config );
 
         long total = progressExecutionMonitor.total();
 

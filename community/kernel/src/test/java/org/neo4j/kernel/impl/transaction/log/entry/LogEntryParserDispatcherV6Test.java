@@ -154,7 +154,7 @@ public class LogEntryParserDispatcherV6Test
         assertFalse( parser.skip() );
     }
 
-    @Test( expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenParsingPrepareEntry() throws IOException
     {
         // when
@@ -164,7 +164,7 @@ public class LogEntryParserDispatcherV6Test
         // it should throw exception
     }
 
-    @Test( expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenParsingTwoPhaseCommitEntry() throws IOException
     {
         // when
@@ -174,7 +174,7 @@ public class LogEntryParserDispatcherV6Test
         // it should throw exception
     }
 
-    @Test( expected = IllegalArgumentException.class)
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowWhenParsingDoneEntry() throws IOException
     {
         // when

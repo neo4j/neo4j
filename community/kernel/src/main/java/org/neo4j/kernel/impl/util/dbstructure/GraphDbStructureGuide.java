@@ -89,7 +89,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             showSchema( visitor, read );
             showStatistics( visitor, read );
         }
-        catch (KernelException e)
+        catch ( KernelException e )
         {
             throw new IllegalStateException( "Kernel exception when traversing database schema structure and statistics.  This is not expected to happen.", e );
         }

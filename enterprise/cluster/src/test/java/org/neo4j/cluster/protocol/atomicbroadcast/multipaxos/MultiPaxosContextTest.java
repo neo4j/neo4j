@@ -66,9 +66,11 @@ public class MultiPaxosContextTest
         ctx.getClusterContext().instanceIsJoining( joiningId, new URI( joiningUri ) );
 
         // Then
-        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI( joiningUri ) ));
-        assertTrue( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI("http://127.0.0.1:80")));
-        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
+        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI( joiningUri ) ) );
+        assertTrue( ctx.getClusterContext()
+                .isInstanceJoiningFromDifferentUri( joiningId, new URI( "http://127.0.0.1:80" ) ) );
+        assertFalse( ctx.getClusterContext()
+                .isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
     }
 
     @Test

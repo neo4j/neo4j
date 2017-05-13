@@ -55,7 +55,7 @@ import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.r
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class FollowerTest
 {
     private MemberId myself = member( 0 );

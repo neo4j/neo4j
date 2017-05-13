@@ -527,7 +527,7 @@ public class StorageLayer implements StoreReadLayer
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
-    private long tryGetIndexId( LabelSchemaDescriptor descriptor) throws IndexNotFoundKernelException
+    private long tryGetIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexId( descriptor );
     }

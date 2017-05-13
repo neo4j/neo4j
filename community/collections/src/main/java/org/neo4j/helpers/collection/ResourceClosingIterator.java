@@ -66,7 +66,7 @@ public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<
         return hasNext;
     }
 
-    public abstract V map(T elem);
+    public abstract V map( T elem );
 
     @Override
     public V next()

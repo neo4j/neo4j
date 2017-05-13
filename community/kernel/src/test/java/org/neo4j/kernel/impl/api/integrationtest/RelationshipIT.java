@@ -207,8 +207,8 @@ public class RelationshipIT extends KernelIntegrationTest
 
     private void assertRels( PrimitiveLongIterator it, long ... rels )
     {
-        List<Matcher<? super Iterable<Long>>> all = new ArrayList<>(rels.length);
-        for (long element : rels)
+        List<Matcher<? super Iterable<Long>>> all = new ArrayList<>( rels.length );
+        for ( long element : rels )
         {
             all.add(hasItem(element));
         }

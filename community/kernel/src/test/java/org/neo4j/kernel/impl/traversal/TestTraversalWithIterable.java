@@ -45,7 +45,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
 
         createGraph( "a TO b", "b TO c", "d TO e", "e TO f" );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             TraversalDescription basicTraverser = getGraphDb().traversalDescription().evaluator( Evaluators.atDepth(2) );
 
@@ -73,7 +73,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
 
         createGraph( "a FIRST d", "a TO b", "b TO c", "d TO e", "e TO f" );
 
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             TraversalDescription firstTraverser = getGraphDb().traversalDescription()
                     .relationships( RelationshipType.withName( "FIRST" ) )

@@ -37,6 +37,10 @@ public class Support
     public static final List<Label> NO_LABELS = new ArrayList<>();
     public static final Map<String, Object> NO_PROPERTIES = new HashMap<>();
 
+    private Support()
+    {
+    }
+
     // Collect labels from a Node
     public static Collection<Label> labels( Node node )
     {

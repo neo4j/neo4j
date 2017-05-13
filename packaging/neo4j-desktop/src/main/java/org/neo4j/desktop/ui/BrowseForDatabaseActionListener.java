@@ -21,11 +21,13 @@ package org.neo4j.desktop.ui;
 
 import org.apache.commons.lang3.SystemUtils;
 
-import java.awt.*;
+import java.awt.FileDialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import javax.swing.*;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JTextField;
 
 import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.desktop.model.LastLocation;

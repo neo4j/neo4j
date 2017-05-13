@@ -28,6 +28,10 @@ public class StoreIdTestFactory
 {
     private static final RecordFormats format = RecordFormatSelector.defaultFormat();
 
+    private StoreIdTestFactory()
+    {
+    }
+
     private static long currentStoreVersionAsLong()
     {
         return MetaDataStore.versionStringToLong( format.storeVersion() );

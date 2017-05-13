@@ -26,4 +26,8 @@ public class StaticContextMisuse
 {
     @Context
     public static GraphDatabaseService db;
+
+    private StaticContextMisuse()
+    {
+    }
 }

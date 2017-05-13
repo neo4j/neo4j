@@ -35,7 +35,7 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
 
     public PrimitiveIntStack( )
     {
-        this(16);
+        this( 16 );
     }
 
     public PrimitiveIntStack( int initialSize )

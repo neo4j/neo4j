@@ -30,10 +30,14 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.Deser
  */
 public class DeserializerFactories
 {
+    private DeserializerFactories()
+    {
+    }
+
     public static DeserializerFactory<InputNode> defaultNodeDeserializer(
             Groups groups, Configuration config, IdType idType, Collector badCollector )
     {
-        return (header,stream,decorator,validator) ->
+        return ( header, stream, decorator, validator ) ->
         {
             InputNodeDeserialization deserialization =
                     new InputNodeDeserialization( header, stream, groups, idType.idsAreExternal() );
@@ -45,7 +49,7 @@ public class DeserializerFactories
     public static DeserializerFactory<InputRelationship> defaultRelationshipDeserializer(
             Groups groups, Configuration config, IdType idType, Collector badCollector )
     {
-        return (header,stream,decorator,validator) ->
+        return ( header, stream, decorator, validator ) ->
         {
                 InputRelationshipDeserialization deserialization =
                         new InputRelationshipDeserialization( header, stream, groups );

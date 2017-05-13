@@ -236,7 +236,7 @@ public enum ShortArray
             return EMPTY_SHORT_ARRAY;
         }
     },
-    CHAR( PropertyType.CHAR, 16, Character.class , char.class)
+    CHAR( PropertyType.CHAR, 16, Character.class, char.class )
     {
         int getRequiredBits( char value )
         {
@@ -314,7 +314,7 @@ public enum ShortArray
             return EMPTY_CHAR_ARRAY;
         }
     },
-    INT( PropertyType.INT, 32, Integer.class , int.class)
+    INT( PropertyType.INT, 32, Integer.class, int.class )
     {
         int getRequiredBits( int value )
         {
@@ -392,7 +392,7 @@ public enum ShortArray
             return EMPTY_INT_ARRAY;
         }
     },
-    LONG( PropertyType.LONG, 64, Long.class , long.class)
+    LONG( PropertyType.LONG, 64, Long.class, long.class )
     {
         @Override
         public int getRequiredBits( long value )
@@ -471,7 +471,7 @@ public enum ShortArray
             return EMPTY_LONG_ARRAY;
         }
     },
-    FLOAT( PropertyType.FLOAT, 32, Float.class ,float.class)
+    FLOAT( PropertyType.FLOAT, 32, Float.class, float.class )
     {
         int getRequiredBits( float value )
         {
@@ -674,7 +674,7 @@ public enum ShortArray
         return type.intValue();
     }
 
-    public abstract Object createArray(int length, Bits bits, int requiredBits);
+    public abstract Object createArray( int length, Bits bits, int requiredBits );
 
     public static boolean encode( int keyId, Object array,
                                   PropertyBlock target, int payloadSizeInBytes )
@@ -758,7 +758,7 @@ public enum ShortArray
         return totalBitsRequired <= maxBits;
     }
 
-    public int calculateRequiredBitsForArray(Object array, int arrayLength)
+    public int calculateRequiredBitsForArray( Object array, int arrayLength )
     {
         if ( arrayLength == 0 )
         {
@@ -782,7 +782,7 @@ public enum ShortArray
         return highest;
     }
 
-    abstract int getRequiredBits(Object array, int arrayLength);
+    abstract int getRequiredBits( Object array, int arrayLength );
 
     public static ShortArray typeOf( byte typeId )
     {
@@ -822,7 +822,7 @@ public enum ShortArray
         return result;
     }
 
-    public abstract void writeAll(Object array, int length, int requiredBits, Bits result);
+    public abstract void writeAll( Object array, int length, int requiredBits, Bits result );
 
     public Object createEmptyArray()
     {

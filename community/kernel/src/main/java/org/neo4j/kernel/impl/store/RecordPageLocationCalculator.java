@@ -24,6 +24,10 @@ package org.neo4j.kernel.impl.store;
  */
 public class RecordPageLocationCalculator
 {
+    private RecordPageLocationCalculator()
+    {
+    }
+
     /**
      * Calculates which page a record with the given {@code id} should go into.
      *

@@ -36,7 +36,7 @@ public class MethodReference
         }
         catch ( NoSuchMethodException e )
         {
-            throw new IllegalArgumentException("No method with name " + name, e);
+            throw new IllegalArgumentException( "No method with name " + name, e );
         }
 
     }
@@ -51,7 +51,7 @@ public class MethodReference
         }
         catch ( NoSuchMethodException e )
         {
-            throw new IllegalArgumentException("No method with name " + name, e);
+            throw new IllegalArgumentException( "No method with name " + name, e );
         }
 
     }
@@ -95,7 +95,8 @@ public class MethodReference
     private final TypeReference[] parameters;
     private final int modifiers;
 
-    MethodReference( TypeReference owner, String name, TypeReference returns, int modifiers, TypeReference[] parameters)
+    MethodReference( TypeReference owner, String name, TypeReference returns, int modifiers,
+            TypeReference[] parameters )
     {
         this.owner = owner;
 

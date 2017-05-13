@@ -172,7 +172,7 @@ public interface ReadOperations
 
     int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
 
-    boolean nodeIsDense(long nodeId) throws EntityNotFoundException;
+    boolean nodeIsDense( long nodeId ) throws EntityNotFoundException;
 
     /**
      * Returns all labels set on node with id {@code nodeId}.

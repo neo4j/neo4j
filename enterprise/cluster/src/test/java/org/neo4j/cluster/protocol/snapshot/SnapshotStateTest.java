@@ -19,22 +19,23 @@
  */
 package org.neo4j.cluster.protocol.snapshot;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
-import org.mockito.Mockito;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SnapshotStateTest
 {
@@ -54,11 +55,11 @@ public class SnapshotStateTest
         baseNoSendTest( extraMember );
     }
 
-    public void baseNoSendTest( Map<InstanceId, URI> extraMembers) throws Throwable
+    public void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
     {
         URI me = URI.create( "cluster://me" );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId,URI> members = new HashMap<InstanceId,URI>();
         final InstanceId myId = new InstanceId( 1 );
         members.put( myId, me );
         members.putAll( extraMembers );

@@ -435,7 +435,7 @@ public class FormattedLog extends AbstractLog
     public void bulk( @Nonnull Consumer<Log> consumer )
     {
         PrintWriter writer;
-        synchronized (lock)
+        synchronized ( lock )
         {
             writer = writerSupplier.get();
             consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), timezone, lock, category, levelRef.get(), false ) );

@@ -119,7 +119,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
 
         private static void copy( IndexInput source, OutputStream target, byte[] buffer ) throws IOException
         {
-            for ( long remaining = source.length(),read; remaining > 0;remaining -= read)
+            for ( long remaining = source.length(), read; remaining > 0; remaining -= read )
             {
                 read = min( remaining, buffer.length );
                 source.readBytes( buffer, 0, (int) read );
@@ -158,7 +158,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
     final class UncloseableDirectory extends FilterDirectory
     {
 
-        public UncloseableDirectory(Directory delegate)
+        public UncloseableDirectory( Directory delegate )
         {
             super( delegate );
         }

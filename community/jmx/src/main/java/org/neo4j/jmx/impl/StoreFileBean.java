@@ -21,7 +21,6 @@ package org.neo4j.jmx.impl;
 
 import java.io.File;
 import java.io.IOException;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
@@ -30,7 +29,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
-@Service.Implementation(ManagementBeanProvider.class)
+@Service.Implementation( ManagementBeanProvider.class )
 public final class StoreFileBean extends ManagementBeanProvider
 {
     public StoreFileBean()

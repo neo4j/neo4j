@@ -66,7 +66,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writePath( out, ((Path) value).iterator(), TransactionStateChecker.create( container ) );
         }
-        else if (value instanceof Iterable)
+        else if ( value instanceof Iterable )
         {
             writeIterator( out, ((Iterable) value).iterator() );
         }

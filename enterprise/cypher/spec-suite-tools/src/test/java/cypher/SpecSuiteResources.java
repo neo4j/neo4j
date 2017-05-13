@@ -70,7 +70,7 @@ public abstract class SpecSuiteResources extends Enclosed
                 Path path = fileSystem.getPath( "/" );
                 findAndUnpackTo( fileSystem, path, featuresDirectory, graphsDirectory );
             }
-            catch (IllegalArgumentException e)
+            catch ( IllegalArgumentException e )
             {
                 // This is a workaround as the JDK doesn't give us a filesystem for subdirectories
                 if ( "file".equals( uri.getScheme() ) )
@@ -111,7 +111,7 @@ public abstract class SpecSuiteResources extends Enclosed
     {
         System.out.println( "Unpacking to " + targetDirectory.getCanonicalPath() );
         PathMatcher matcher = sourceFileSystem.getPathMatcher( sourceFilePattern );
-        for (Iterator<Path> it = Files.walk( sourceRootDirectory, 3 ).iterator(); it.hasNext(); )
+        for ( Iterator<Path> it = Files.walk( sourceRootDirectory, 3 ).iterator(); it.hasNext(); )
         {
             Path next = it.next();
             if ( matcher.matches( next ) )

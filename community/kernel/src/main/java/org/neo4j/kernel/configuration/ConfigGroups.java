@@ -34,6 +34,10 @@ import static java.util.stream.Collectors.toList;
 
 public class ConfigGroups
 {
+    private ConfigGroups()
+    {
+    }
+
     /**
      * This mechanism can be used as an argument to {@link Config#view(Function)} to view a set of config options that
      * share a common base config key as a group.

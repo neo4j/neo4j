@@ -261,7 +261,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
          */
         resourcePoolReleaser = () ->
         {
-            if ( channelPool != null)
+            if ( channelPool != null )
             {
                 channelPool.release();
             }

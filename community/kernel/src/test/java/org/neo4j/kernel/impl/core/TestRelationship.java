@@ -1002,7 +1002,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test( expected = NotFoundException.class )
     public void deletionOfAlreadyDeletedRelationshipShouldThrow()
     {
         // Given

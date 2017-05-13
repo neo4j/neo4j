@@ -23,6 +23,10 @@ import org.neo4j.kernel.configuration.Config;
 
 public class GraphDatabaseBuilderTestTools
 {
+    private GraphDatabaseBuilderTestTools()
+    {
+    }
+
     /**
      * Create a copy of the current settings of the given {@link GraphDatabaseBuilder}, and return them as a
      * {@link Config} object.

@@ -23,6 +23,6 @@ public abstract class NumberProperty extends DefinedProperty implements DefinedP
 {
     public NumberProperty( int propertyKeyId )
     {
-        super(propertyKeyId);
+        super( propertyKeyId );
     }
 }

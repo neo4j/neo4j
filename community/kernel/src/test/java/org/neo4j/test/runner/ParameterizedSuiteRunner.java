@@ -36,7 +36,7 @@ import java.util.Map;
 
 public class ParameterizedSuiteRunner extends Suite
 {
-    @SuppressWarnings("unused"/*used by jUnit through reflection*/)
+    @SuppressWarnings( "unused"/*used by jUnit through reflection*/ )
     public ParameterizedSuiteRunner( Class<?> testClass ) throws InitializationError
     {
         this( testClass, new ParameterBuilder( testClass ) );

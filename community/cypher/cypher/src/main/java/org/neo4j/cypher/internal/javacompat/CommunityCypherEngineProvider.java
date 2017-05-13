@@ -32,7 +32,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-@Service.Implementation(QueryEngineProvider.class)
+@Service.Implementation( QueryEngineProvider.class )
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
     public CommunityCypherEngineProvider()
@@ -60,6 +60,6 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         CommunityCompatibilityFactory compatibilityFactory =
                 new CommunityCompatibilityFactory( queryService, kernelAPI, monitors, logProvider );
         deps.satisfyDependencies( compatibilityFactory );
-        return new ExecutionEngine( queryService, logProvider, compatibilityFactory);
+        return new ExecutionEngine( queryService, logProvider, compatibilityFactory );
     }
 }

@@ -134,7 +134,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         heartbeat.addHeartbeatListener( heartbeatListener = new HeartbeatListenerImpl() );
 
-        executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("Paxos event notification", namedThreadFactoryMonitor));
+        executor = Executors.newSingleThreadExecutor(
+                new NamedThreadFactory( "Paxos event notification", namedThreadFactoryMonitor ) );
     }
 
     @Override

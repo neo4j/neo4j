@@ -334,13 +334,14 @@ public class ResourceInjectionTest
         @UserAggregationFunction
         public VoidOutput listCoolPeople()
         {
-            return new VoidOutput(api);
+            return new VoidOutput( api );
         }
 
         public static class VoidOutput
         {
             private MyAwesomeAPI api;
-            public VoidOutput(MyAwesomeAPI api)
+
+            public VoidOutput( MyAwesomeAPI api )
             {
                 this.api = api;
             }
@@ -390,13 +391,14 @@ public class ResourceInjectionTest
         @UserAggregationFunction
         public VoidOutput listCoolPeople()
         {
-            return new VoidOutput(api);
+            return new VoidOutput( api );
         }
 
         public static class VoidOutput
         {
             private UnknownAPI api;
-            public VoidOutput(UnknownAPI api)
+
+            public VoidOutput( UnknownAPI api )
             {
                 this.api = api;
             }
@@ -445,14 +447,14 @@ public class ResourceInjectionTest
         @UserAggregationFunction
         public VoidOutput listCoolPeople()
         {
-            return new VoidOutput(api);
+            return new VoidOutput( api );
         }
 
         public static class VoidOutput
         {
             private MyUnsafeAPI api;
 
-            public VoidOutput(MyUnsafeAPI api)
+            public VoidOutput( MyUnsafeAPI api )
             {
                 this.api = api;
             }

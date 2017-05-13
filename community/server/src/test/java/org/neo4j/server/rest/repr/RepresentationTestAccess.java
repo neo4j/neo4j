@@ -33,6 +33,10 @@ public class RepresentationTestAccess
 {
     private static final URI BASE_URI = URI.create( "http://neo4j.org/" );
 
+    private RepresentationTestAccess()
+    {
+    }
+
     public static Object serialize( Representation repr )
     {
         if ( repr instanceof ValueRepresentation )

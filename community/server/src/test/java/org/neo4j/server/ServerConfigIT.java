@@ -19,11 +19,11 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-import javax.ws.rs.core.MediaType;
-
 import org.junit.After;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
@@ -36,7 +36,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.POST;
 
@@ -197,7 +196,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
      *
      * This at least lets us know that the configuration attribute gets picked up and used.
      */
-    @Test(expected = RuntimeException.class)
+    @Test( expected = RuntimeException.class )
     public void shouldBeAbleToDisableSandboxing() throws Exception
     {
         // NOTE: This has to be initialized to sandboxed, because it can only be initialized once per JVM session,

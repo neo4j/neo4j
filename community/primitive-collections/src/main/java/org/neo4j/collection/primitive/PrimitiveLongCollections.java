@@ -47,6 +47,10 @@ public class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
+    private PrimitiveLongCollections()
+    {
+    }
+
     /**
      * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
      */
@@ -799,7 +803,7 @@ public class PrimitiveLongCollections
         return out;
     }
 
-    @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)
+    @SuppressWarnings( "UnusedDeclaration" )
     public static Iterator<Long> toIterator( final PrimitiveLongIterator primIterator )
     {
         return new Iterator<Long>()

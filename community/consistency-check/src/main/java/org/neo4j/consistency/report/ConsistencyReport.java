@@ -45,8 +45,8 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface ConsistencyReport
 {
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
+    @Retention( RetentionPolicy.RUNTIME )
+    @Target( ElementType.METHOD )
     @interface Warning
     {
     }

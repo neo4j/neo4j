@@ -42,6 +42,10 @@ public class MachineRoom
     static final Map<String, Object> EMPTY_PARAMS = emptyMap();
     static final String USER_AGENT = "BoltStateMachineTest/0.0";
 
+    private MachineRoom()
+    {
+    }
+
     public static BoltStateMachine newMachine()
     {
         return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), null, Clock.systemUTC() );

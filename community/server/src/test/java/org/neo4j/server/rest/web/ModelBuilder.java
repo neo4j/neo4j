@@ -29,6 +29,10 @@ import java.util.Map;
  */
 public class ModelBuilder
 {
+    private ModelBuilder()
+    {
+    }
+
     public static DomainModel generateMatrix( RestfulGraphDatabase rgd )
     {
         String key = "key_get";

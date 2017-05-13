@@ -28,6 +28,10 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
  */
 public class IdGenerators
 {
+    private IdGenerators()
+    {
+    }
+
     /**
      * @return an {@link IdGenerator} assuming that the input ids are {@link Long} objects and casts to
      * primitive longs. This is for when the {@link InputNode#id()} contains an actual record id, in the

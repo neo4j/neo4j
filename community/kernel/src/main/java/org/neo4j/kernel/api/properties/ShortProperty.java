@@ -29,7 +29,7 @@ final class ShortProperty extends IntegralNumberProperty
 
     ShortProperty( int propertyKeyId, short value )
     {
-        super(propertyKeyId);
+        super( propertyKeyId );
         this.value = value;
     }
 

@@ -48,7 +48,7 @@ class VariableSubstitutor
         StringBuilder result = new StringBuilder(  );
         Matcher matcher = pattern.matcher( input );
         int cur = 0;
-        while (matcher.find( cur ))
+        while ( matcher.find( cur ) )
         {
             result.append( input.substring( cur, matcher.start() ) );
             result.append( substitutionFunction.apply( matcher.group( 1 ) ) );

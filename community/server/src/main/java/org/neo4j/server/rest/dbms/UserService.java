@@ -47,7 +47,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getSecurityContextFromUserPrincipal;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
 
-@Path("/user")
+@Path( "/user" )
 public class UserService
 {
     public static final String PASSWORD = "password";
@@ -65,8 +65,8 @@ public class UserService
     }
 
     @GET
-    @Path("/{username}")
-    public Response getUser( @PathParam("username") String username, @Context HttpServletRequest req )
+    @Path( "/{username}" )
+    public Response getUser( @PathParam( "username" ) String username, @Context HttpServletRequest req )
     {
         Principal principal = req.getUserPrincipal();
         if ( principal == null || !principal.getName().equals( username ) )
@@ -89,8 +89,9 @@ public class UserService
     }
 
     @POST
-    @Path("/{username}/password")
-    public Response setPassword( @PathParam("username") String username, @Context HttpServletRequest req, String payload )
+    @Path( "/{username}/password" )
+    public Response setPassword( @PathParam( "username" ) String username, @Context HttpServletRequest req,
+            String payload )
     {
         Principal principal = req.getUserPrincipal();
         if ( principal == null || !principal.getName().equals( username ) )

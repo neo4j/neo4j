@@ -19,15 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Stream;
-
 import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
@@ -37,7 +28,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.collection.RawIterator;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
@@ -45,6 +44,7 @@ import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.Role;
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -57,11 +57,9 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
-
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-
 import static org.neo4j.causalclustering.discovery.procedures.Role.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.procedures.Role.LEADER;
 import static org.neo4j.causalclustering.discovery.procedures.Role.READ_REPLICA;
@@ -293,7 +291,7 @@ public class ClusterOverviewIT
                         Set<String> addresses = asSet(item.addresses);
                         for ( URI uri : coreClusterMember.clientConnectorAddresses().uriList() )
                         {
-                            if (!addresses.contains( uri.toString() ))
+                            if ( !addresses.contains( uri.toString() ) )
                             {
                                 return false;
                             }

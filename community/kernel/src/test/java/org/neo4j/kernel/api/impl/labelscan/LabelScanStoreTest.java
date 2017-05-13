@@ -140,7 +140,7 @@ public abstract class LabelScanStoreTest
     {
         prepareIndex();
         createAndStartReadOnly();
-        try (ResourceIterator<File> indexFiles = store.snapshotStoreFiles())
+        try ( ResourceIterator<File> indexFiles = store.snapshotStoreFiles() )
         {
             List<String> filesNames = indexFiles.stream().map( File::getName ).collect( toList() );
             assertThat( "Should have at least index segment file.", filesNames, hasBareMinimumFileList() );

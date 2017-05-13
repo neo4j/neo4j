@@ -38,7 +38,7 @@ public class SimpleBitSetTest
     public void put() throws Exception
     {
         // Given
-        SimpleBitSet set = new SimpleBitSet(16);
+        SimpleBitSet set = new SimpleBitSet( 16 );
 
         // When
         set.put( 2 );
@@ -59,7 +59,7 @@ public class SimpleBitSetTest
     public void putAndRemove() throws Exception
     {
         // Given
-        SimpleBitSet set = new SimpleBitSet(16);
+        SimpleBitSet set = new SimpleBitSet( 16 );
 
         // When
         set.put( 2 );
@@ -79,8 +79,8 @@ public class SimpleBitSetTest
     public void putOtherBitSet() throws Exception
     {
         // Given
-        SimpleBitSet set = new SimpleBitSet(16);
-        SimpleBitSet otherSet = new SimpleBitSet(16);
+        SimpleBitSet set = new SimpleBitSet( 16 );
+        SimpleBitSet otherSet = new SimpleBitSet( 16 );
 
         otherSet.put( 4 );
         otherSet.put( 14 );
@@ -106,8 +106,8 @@ public class SimpleBitSetTest
     public void removeOtherBitSet() throws Exception
     {
         // Given
-        SimpleBitSet set = new SimpleBitSet(16);
-        SimpleBitSet otherSet = new SimpleBitSet(16);
+        SimpleBitSet set = new SimpleBitSet( 16 );
+        SimpleBitSet otherSet = new SimpleBitSet( 16 );
 
         otherSet.put( 4 );
         otherSet.put( 12 );

@@ -86,7 +86,7 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
                         startPath, endPath );
                 if ( isAcceptablePath( path ) )
                 {
-                    if (returnedPaths.add( path ) && includePath( path, startPath, endPath ) )
+                    if ( returnedPaths.add( path ) && includePath( path, startPath, endPath ) )
                     {
                         foundPaths.add( path );
                     }

@@ -46,8 +46,8 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         this.log = logProvider.getLog( getClass() );
     }
 
-    @SuppressWarnings("unchecked")
-    public <K, V> V get(K key)
+    @SuppressWarnings( "unchecked" )
+    public <K, V> V get( K key )
     {
         lock.readLock().lock();
         try
@@ -60,18 +60,18 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Override
-    public <K, V> V getOrCreate(K key, Function<K, V> creator)
+    public <K, V> V getOrCreate( K key, Function<K,V> creator )
     {
         V currentValue = get(key);
-        if (currentValue == null)
+        if ( currentValue == null )
         {
             lock.writeLock().lock();
             try
             {
                 V lockedValue = (V) state.get( key );
-                if (lockedValue == null)
+                if ( lockedValue == null )
                 {
                     V newValue = creator.apply( key );
                     state.put( key, newValue );
@@ -93,7 +93,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
-    public void replace(Map<Object, Object> replacement)
+    public void replace( Map<Object,Object> replacement )
     {
         lock.writeLock().lock();
         try
@@ -106,7 +106,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
-    public <K, V> void apply(Map<K, V> updates)
+    public <K, V> void apply( Map<K,V> updates )
     {
         lock.writeLock().lock();
         try

@@ -148,27 +148,27 @@ public class OutputMappers
         }
 
         Type genericReturnType = method.getGenericReturnType();
-        if (!(genericReturnType instanceof ParameterizedType))
+        if ( !(genericReturnType instanceof ParameterizedType) )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                    "that you define and not a raw Stream.");
+                            "that you define and not a raw Stream." );
         }
 
         ParameterizedType genType = (ParameterizedType) genericReturnType;
         Type recordType = genType.getActualTypeArguments()[0];
-        if ( recordType instanceof WildcardType)
+        if ( recordType instanceof WildcardType )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                    "that you define and not a Stream<?>.");
+                    "that you define and not a Stream<?>." );
         }
-        if (recordType instanceof ParameterizedType)
+        if ( recordType instanceof ParameterizedType )
         {
             ParameterizedType type = (ParameterizedType) recordType;
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
-                    "that you define and not a parameterized type such as %s.", type);
+                            "that you define and not a parameterized type such as %s.", type );
         }
 
         return mapper( (Class<?>) recordType );
@@ -235,8 +235,8 @@ public class OutputMappers
                 "    public %s out;%n" +
                 "'}'%n" +
                 "%n" +
-                "And then define your procedure as returning `Stream<Output>`.",
-                userClass.getSimpleName(), userClass.getSimpleName());
+                "And then define your procedure as returning `Stream<Output>`.", userClass.getSimpleName(),
+                userClass.getSimpleName() );
     }
 
     private List<Field> instanceFields( Class<?> userClass )

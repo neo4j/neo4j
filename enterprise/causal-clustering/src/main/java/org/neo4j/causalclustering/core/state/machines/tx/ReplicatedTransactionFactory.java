@@ -47,6 +47,10 @@ public class ReplicatedTransactionFactory
 {
     private static final long MAX_SERIALIZED_TX_SIZE = gibiBytes( 1 );
 
+    private ReplicatedTransactionFactory()
+    {
+    }
+
     public static ReplicatedTransaction createImmutableReplicatedTransaction( TransactionRepresentation tx  )
     {
         ByteBuf transactionBuffer = Unpooled.buffer();

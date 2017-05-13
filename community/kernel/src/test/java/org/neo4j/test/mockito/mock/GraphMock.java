@@ -44,6 +44,10 @@ import static org.neo4j.helpers.collection.Iterables.reverse;
 
 public class GraphMock
 {
+    private GraphMock()
+    {
+    }
+
     public static Label[] labels( String... names )
     {
         Label[] labels = new Label[names.length];

@@ -108,7 +108,7 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
 
         final long[] labelIds;
         final Bitmap[] bitmaps;
-        if (i < expectedLabelFields)
+        if ( i < expectedLabelFields )
         {
             labelIds = Arrays.copyOf( scratchLabelIds, i );
             bitmaps = Arrays.copyOf( scratchBitmaps, i );

@@ -786,7 +786,7 @@ public class PackStreamTest
         {
             packer.pack( (String) value );
         }
-        else if ( value instanceof Long || value instanceof Integer)
+        else if ( value instanceof Long || value instanceof Integer )
         {
             packer.pack( ((Number) value).longValue() );
         }

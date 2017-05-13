@@ -130,7 +130,7 @@ public class LeaderOnlyLockManager implements Locks
             else
             {
                 throw new AcquireLockTimeoutException( "Failed to acquire lock token. Was taken by another candidate.",
-                        NotALeader);
+                        NotALeader );
             }
         }
         catch ( ExecutionException e )

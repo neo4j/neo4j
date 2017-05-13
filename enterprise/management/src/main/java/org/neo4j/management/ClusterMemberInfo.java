@@ -101,9 +101,9 @@ public class ClusterMemberInfo implements Serializable
     public Pair<Neo4jManager, HighAvailability> connect( String username, String password )
     {
         URI address = null;
-        for (String uri : uris)
+        for ( String uri : uris )
         {
-            if (uri.startsWith( "jmx" ))
+            if ( uri.startsWith( "jmx" ) )
             {
 //                address = uri;
             }

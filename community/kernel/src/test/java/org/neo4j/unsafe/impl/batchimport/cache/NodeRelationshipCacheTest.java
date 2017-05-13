@@ -315,7 +315,7 @@ public class NodeRelationshipCacheTest
 
         {
             // WHEN (sparse)
-            NodeChangeVisitor visitor = (nodeId, array) ->
+            NodeChangeVisitor visitor = ( nodeId, array ) ->
             {
                 // THEN (sparse)
                 assertTrue( "Unexpected sparse change reported for " + nodeId, keySparseChanged.remove( nodeId ) );
@@ -327,7 +327,7 @@ public class NodeRelationshipCacheTest
 
         {
             // WHEN (dense)
-            NodeChangeVisitor visitor = (nodeId, array) ->
+            NodeChangeVisitor visitor = ( nodeId, array ) ->
             {
                 // THEN (dense)
                 assertTrue( "Unexpected dense change reported for " + nodeId, keyDenseChanged.remove( nodeId ) );

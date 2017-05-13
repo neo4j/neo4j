@@ -34,6 +34,11 @@ import org.neo4j.graphdb.Relationship;
  */
 public class Paths
 {
+
+    private Paths()
+    {
+    }
+
     /**
      * Provides hooks to help build a string representation of a {@link org.neo4j.graphdb.Path}.
      * @param <T> the type of {@link org.neo4j.graphdb.Path}.

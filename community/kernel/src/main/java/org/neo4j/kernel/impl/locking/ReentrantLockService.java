@@ -85,7 +85,7 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
     }
 
     @Override
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     protected void release( LockedEntity key, OwnerQueueElement<Thread> ownerQueueElement )
     {
         if ( 0 == --ownerQueueElement.count )

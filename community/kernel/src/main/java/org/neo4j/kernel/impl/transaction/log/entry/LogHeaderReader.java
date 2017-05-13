@@ -31,6 +31,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
 
 public class LogHeaderReader
 {
+    private LogHeaderReader()
+    {
+    }
+
     public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         return readLogHeader( fileSystem, file, true );

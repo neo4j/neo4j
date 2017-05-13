@@ -331,11 +331,11 @@ public class TransactionStateMachine implements StatementProcessor
          * This is overly careful about always closing and nulling the transaction since
          * reset can cause ctx.currentTransaction to be null we store in local variable.
          */
-        void closeTransaction(MutableTransactionState ctx, boolean success) throws TransactionFailureException
+        void closeTransaction( MutableTransactionState ctx, boolean success ) throws TransactionFailureException
         {
             KernelTransaction tx = ctx.currentTransaction;
             ctx.currentTransaction = null;
-            if (tx != null)
+            if ( tx != null )
             {
                 try
                 {
@@ -347,7 +347,7 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         tx.failure();
                     }
-                    if (tx.isOpen())
+                    if ( tx.isOpen() )
                     {
                         tx.close();
                     }

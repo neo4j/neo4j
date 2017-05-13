@@ -19,10 +19,14 @@
  */
 package org.neo4j.desktop.ui;
 
-import java.awt.*;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Frame;
 import java.io.File;
 import java.io.IOException;
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 
 import org.neo4j.desktop.model.DesktopModel;
 
@@ -150,7 +154,7 @@ class SettingsDialog extends JDialog
                 return model.getDatabaseConfigurationFile();
             }
 
-            @SuppressWarnings("ResultOfMethodCallIgnored")
+            @SuppressWarnings( "ResultOfMethodCallIgnored" )
             @Override
             protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
             {

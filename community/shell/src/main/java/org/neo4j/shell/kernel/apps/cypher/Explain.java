@@ -22,7 +22,7 @@ package org.neo4j.shell.kernel.apps.cypher;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 
-@Service.Implementation(App.class)
+@Service.Implementation( App.class )
 public class Explain extends Start
 {
     @Override

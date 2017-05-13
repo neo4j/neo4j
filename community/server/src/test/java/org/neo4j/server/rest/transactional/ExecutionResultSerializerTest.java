@@ -58,6 +58,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.MockGeometry;
+import org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.MockPoint;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mockito.mock.GraphMock;
 import org.neo4j.test.mockito.mock.Link;
@@ -77,7 +79,8 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
-import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.*;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockCartesian;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockWGS84;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.link;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
@@ -399,8 +402,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         ExecutionResultSerializer serializer = getSerializerWith( output );
 
         List<Coordinate> points = new ArrayList<>();
-        points.add( new Coordinate(1,2) );
-        points.add( new Coordinate(2,3) );
+        points.add( new Coordinate( 1, 2 ) );
+        points.add( new Coordinate( 2, 3 ) );
         Result executionResult = mockExecutionResult(
                 map( "geom", new MockPoint( 12.3, 45.6, mockWGS84() ) ),
                 map( "geom", new MockPoint( 123, 456, mockCartesian() ) ),
@@ -785,7 +788,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         return root;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private Map<String, ?> planRootMap( String resultString ) throws JsonParseException
     {
         Map<String, ?> resultMap = (Map<String, ?>) ((List<?>) ((Map<String, ?>) (readJson( resultString ))).get("results")).get( 0 );
@@ -816,7 +819,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     public void shouldAbbreviateWellKnownIOErrors() throws Exception
     {
         // given
-        OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException("Broken pipe") ) );
+        OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException( "Broken pipe" ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         ExecutionResultSerializer serializer = getSerializerWith( output, null, logProvider );
 
@@ -932,7 +935,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult(ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String,Object>... rows )
     {
         return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
     }

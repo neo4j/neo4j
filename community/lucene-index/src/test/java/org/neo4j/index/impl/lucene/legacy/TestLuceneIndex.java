@@ -193,7 +193,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         doubleNumericPropertyValueForAllNodesWithLabel( index, priceProperty, nodeLabel );
 
         queryAndSortNodesByNumericProperty( index, yearProperty );
-        queryAndSortNodesByNumericProperty( index, priceProperty, (value) -> value * 2 );
+        queryAndSortNodesByNumericProperty( index, priceProperty, ( value ) -> value * 2 );
     }
 
     @Test
@@ -1660,7 +1660,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node n = graphDb.createNode();
-        index.add(n, NUMERIC, new ValueContext(5).indexNumeric());
+        index.add( n, NUMERIC, new ValueContext( 5 ).indexNumeric() );
         index.add(n, TEXT, "text");
         index.add(n, TEXT_1, "text");
         commitTx();
@@ -2275,7 +2275,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             {
                 node.setProperty( numericProperty, (Integer) node.getProperty( numericProperty ) * 2 );
                 index.remove( node, numericProperty );
-                index.add( node, numericProperty,  new ValueContext( node.getProperty( numericProperty )).indexNumeric() );
+                index.add( node, numericProperty,
+                        new ValueContext( node.getProperty( numericProperty ) ).indexNumeric() );
             } );
             transaction.success();
         }

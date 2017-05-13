@@ -21,6 +21,10 @@ package org.neo4j.bolt.v1.runtime.spi;
 
 public class Records
 {
+    private Records()
+    {
+    }
+
     public static Record record( final Object ... fields )
     {
         return new ImmutableRecord( fields );

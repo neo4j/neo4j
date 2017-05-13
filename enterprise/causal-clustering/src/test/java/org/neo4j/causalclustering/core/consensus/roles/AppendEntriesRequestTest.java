@@ -53,11 +53,11 @@ import static org.neo4j.causalclustering.core.consensus.roles.AppendEntriesReque
 import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class AppendEntriesRequestTest
 {
 
-    @Parameterized.Parameters(name = "{0} with leader {1} terms ahead.")
+    @Parameterized.Parameters( name = "{0} with leader {1} terms ahead." )
     public static Collection<Object[]> data()
     {
         return Arrays.asList( new Object[][]{
@@ -65,10 +65,10 @@ public class AppendEntriesRequestTest
         } );
     }
 
-    @Parameterized.Parameter(value = 0)
+    @Parameterized.Parameter( value = 0 )
     public Role role;
 
-    @Parameterized.Parameter(value = 1)
+    @Parameterized.Parameter( value = 1 )
     public int leaderTermDifference;
 
     private MemberId myself = member( 0 );

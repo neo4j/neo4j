@@ -167,7 +167,7 @@ public class KernelIT extends KernelIntegrationTest
         }
 
         // THEN
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             Statement statement = statementContextSupplier.get();
             try

@@ -59,11 +59,11 @@ public class ExtensionListingFunctionalTest extends SharedServerTestBase
     @Test
     public void datarootContainsReferenceToExtensions() throws Exception
     {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri());
-        assertThat(response.getStatus(), equalTo( 200 ));
-        Map<String, Object> json = JsonHelper.jsonToMap( response.getEntity() );
-        String extInfo = (String) json.get("extensions_info");
-        assertNotNull(new URI(extInfo));
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() );
+        assertThat( response.getStatus(), equalTo( 200 ) );
+        Map<String,Object> json = JsonHelper.jsonToMap( response.getEntity() );
+        String extInfo = (String) json.get( "extensions_info" );
+        assertNotNull( new URI( extInfo ) );
         response.close();
     }
 

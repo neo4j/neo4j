@@ -29,7 +29,7 @@ public class ReadOnlyIndexReference extends IndexReference
 
     ReadOnlyIndexReference( IndexIdentifier identifier, IndexSearcher searcher )
     {
-        super(identifier, searcher);
+        super( identifier, searcher );
     }
 
     @Override
@@ -53,7 +53,7 @@ public class ReadOnlyIndexReference extends IndexReference
     @Override
     public void setStale()
     {
-        throw new UnsupportedOperationException("Read only indexes can't be marked as stale.");
+        throw new UnsupportedOperationException( "Read only indexes can't be marked as stale." );
     }
 
 }

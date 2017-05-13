@@ -75,7 +75,7 @@ public class ClusterConfiguration
 
     public ClusterConfiguration( ClusterConfiguration copy )
     {
-        this(copy, copy.log);
+        this( copy, copy.log );
     }
 
     private ClusterConfiguration( ClusterConfiguration copy, Log log )

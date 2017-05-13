@@ -77,7 +77,7 @@ public class JavaProceduresTest
         @Context
         public SomeService service;
 
-        @Procedure("hello")
+        @Procedure( "hello" )
         public Stream<OutputRecord> hello()
         {
             OutputRecord t = new OutputRecord();

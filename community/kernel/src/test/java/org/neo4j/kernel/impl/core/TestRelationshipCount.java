@@ -55,7 +55,7 @@ import static org.junit.Assert.fail;
 @RunWith( Parameterized.class )
 public class TestRelationshipCount
 {
-    @Parameterized.Parameters(name = "denseNodeThreshold={0}")
+    @Parameterized.Parameters( name = "denseNodeThreshold={0}" )
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();

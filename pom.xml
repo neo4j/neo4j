@@ -11,7 +11,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.2.0-SNAPSHOT</version>
+  <version>3.3.0-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j</name>
@@ -110,7 +110,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>7.6</version>
+            <version>7.6.1</version>
           </dependency>
         </dependencies>
         <executions>

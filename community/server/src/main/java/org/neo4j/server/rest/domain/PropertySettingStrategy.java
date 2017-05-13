@@ -92,7 +92,7 @@ public class PropertySettingStrategy
         }
     }
 
-    public void setProperty(PropertyContainer entity, String key, Object value) throws PropertyValueException
+    public void setProperty( PropertyContainer entity, String key, Object value ) throws PropertyValueException
     {
         if ( value instanceof Collection )
         {
@@ -114,8 +114,7 @@ public class PropertySettingStrategy
                 }
                 else
                 {
-                    throw new PropertyValueException(
-                            "Unable to set property '" + key + "' to an empty array, " +
+                    throw new PropertyValueException( "Unable to set property '" + key + "' to an empty array, " +
                             "because, since there are no values of any type in it, " +
                             "and no pre-existing collection to infer type from, it is not possible " +
                             "to determine what type of array to store." );

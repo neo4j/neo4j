@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.graphdb.Node;
@@ -137,7 +136,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void afterCommit( ReadableTransactionState state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
@@ -154,7 +153,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public void afterRollback( ReadableTransactionState state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )

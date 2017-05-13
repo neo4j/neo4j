@@ -24,6 +24,10 @@ import java.lang.reflect.Method;
 
 public class ReflectionUtil
 {
+    private ReflectionUtil()
+    {
+    }
+
     public static <T> T getPrivateField( Object target, String fieldName, Class<T> fieldType ) throws Exception
     {
         Class<?> type = target.getClass();

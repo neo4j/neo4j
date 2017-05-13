@@ -41,10 +41,9 @@ import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
 import static javax.swing.JOptionPane.WARNING_MESSAGE;
-
 import static org.neo4j.desktop.ui.ScrollableOptionPane.showWrappedMessageDialog;
 
-@SuppressWarnings("MagicConstant")
+@SuppressWarnings( "MagicConstant" )
 public final class Components
 {
     public static final int BASE_SPACING_SIZE = 5;

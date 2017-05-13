@@ -34,6 +34,10 @@ import org.neo4j.logging.LogProvider;
  */
 public class IndexingServiceFactory
 {
+    private IndexingServiceFactory()
+    {
+    }
+
     public static IndexingService createIndexingService( Config config,
                                           JobScheduler scheduler,
                                           SchemaIndexProviderMap providerMap,
@@ -57,8 +61,8 @@ public class IndexingServiceFactory
         IndexSamplingControllerFactory factory =
                 new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logProvider );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
-        IndexProxyCreator proxySetup = new IndexProxyCreator(
-                samplingConfig, storeView, providerMap, tokenNameLookup, logProvider);
+        IndexProxyCreator proxySetup =
+                new IndexProxyCreator( samplingConfig, storeView, providerMap, tokenNameLookup, logProvider );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaStateChangeCallback,

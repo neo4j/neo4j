@@ -250,7 +250,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
     }
 
-    private int freePort(int startRange, int endRange)
+    private int freePort( int startRange, int endRange )
     {
         try
         {
@@ -301,7 +301,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
         {
-            super("harness");
+            super( "harness" );
             this.userProcs = userProcs;
         }
 

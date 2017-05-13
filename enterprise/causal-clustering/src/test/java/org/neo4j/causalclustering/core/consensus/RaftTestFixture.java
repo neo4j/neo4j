@@ -44,7 +44,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftTestFixture
@@ -89,8 +88,8 @@ public class RaftTestFixture
     {
         for ( MemberFixture member : members() )
         {
-            member.raftLog().append( new RaftLogEntry(0, new MemberIdSet(asSet( members ))) );
-            member.raftInstance().installCoreState( new RaftCoreState( new MembershipEntry( 0,  asSet( members )) ) );
+            member.raftLog().append( new RaftLogEntry( 0, new MemberIdSet( asSet( members ) ) ) );
+            member.raftInstance().installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( members ) ) ) );
             member.raftInstance().postRecoveryActions();
         }
     }

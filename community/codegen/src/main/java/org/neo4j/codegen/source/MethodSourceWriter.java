@@ -162,7 +162,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block)
+    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
 
         indent().append( "try\n" );
@@ -468,7 +468,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         expression.accept( this );
     }
 
-    private void binaryOperation(Expression lhs, Expression rhs, String operator)
+    private void binaryOperation( Expression lhs, Expression rhs, String operator )
     {
         lhs.accept( this );
         append( operator );

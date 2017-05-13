@@ -56,7 +56,7 @@ public class FlippableIndexProxyTest
         // GIVEN
         IndexProxy actual = mockIndexProxy();
         IndexProxy other = mockIndexProxy();
-        FlippableIndexProxy delegate = new FlippableIndexProxy(actual);
+        FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
         delegate.setFlipTarget( singleProxy( other ) );
 
         // WHEN

@@ -68,7 +68,7 @@ public class ServerCommandLineArgs
     public Optional<File> configFile()
     {
         return Optional.ofNullable( args.get( CONFIG_DIR_ARG ) )
-                .map( (dirPath) -> new File( dirPath, ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+                .map( ( dirPath ) -> new File( dirPath, ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
     }
 
     private static Pair<String, String>[] parseConfigOverrides( Args arguments )

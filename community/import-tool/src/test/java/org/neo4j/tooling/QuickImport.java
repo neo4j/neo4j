@@ -67,6 +67,10 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaul
  */
 public class QuickImport
 {
+    private QuickImport()
+    {
+    }
+
     public static void main( String[] arguments ) throws IOException
     {
         Args args = Args.parse( arguments );

@@ -29,6 +29,10 @@ public class HtmlHelper
 {
     private static final String STYLE_LOCATION = "http://resthtml.neo4j.org/style/";
 
+    private HtmlHelper()
+    {
+    }
+
     public static String from( final Object object, final ObjectType objectType )
     {
         StringBuilder builder = start( objectType, null );

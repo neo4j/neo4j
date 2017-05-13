@@ -81,7 +81,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     }
 
     @Override
-    public void onExternalError( Neo4jError error)
+    public void onExternalError( Neo4jError error )
     {
         worker.enqueue( session -> session.externalError( error, defaultHandler ) );
     }

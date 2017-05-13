@@ -125,7 +125,7 @@ public final class Bits implements Cloneable
      *
      * @return the underlying long values that has got all the bits applied.
      */
-    @SuppressWarnings("EI_EXPOSE_REP")
+    @SuppressWarnings( "EI_EXPOSE_REP" )
     public long[] getLongs()
     {
         return longs;

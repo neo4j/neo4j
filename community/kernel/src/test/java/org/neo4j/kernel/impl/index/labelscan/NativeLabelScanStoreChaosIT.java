@@ -33,13 +33,13 @@ public class NativeLabelScanStoreChaosIT extends LabelScanStoreChaosIT
     @Override
     protected RestartAction corruptTheLabelScanStoreIndex()
     {
-        return (fs, directory) -> scrambleFile( storeFile( directory ) );
+        return ( fs, directory ) -> scrambleFile( storeFile( directory ) );
     }
 
     @Override
     protected RestartAction deleteTheLabelScanStoreIndex()
     {
-        return (fs, directory) -> fs.deleteFile( storeFile( directory ) );
+        return ( fs, directory ) -> fs.deleteFile( storeFile( directory ) );
     }
 
     private static File storeFile( File directory )

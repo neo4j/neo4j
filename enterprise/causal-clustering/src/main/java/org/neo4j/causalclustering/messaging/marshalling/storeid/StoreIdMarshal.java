@@ -36,7 +36,7 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
 
     public void marshal( StoreId storeId, WritableChannel channel ) throws IOException
     {
-        if ( storeId == null)
+        if ( storeId == null )
         {
             channel.put( (byte) 0 );
             return;

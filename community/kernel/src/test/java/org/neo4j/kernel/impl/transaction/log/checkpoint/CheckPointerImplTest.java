@@ -273,7 +273,7 @@ public class CheckPointerImplTest
     @Test
     public void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        limiter = (stamp, ios, flushable) -> 42;
+        limiter = ( stamp, ios, flushable ) -> 42;
         when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
         CheckPointerImpl checkPointing = checkPointer();
@@ -391,14 +391,14 @@ public class CheckPointerImplTest
         assertThat( observedRushCount.get(), is( 1L ) );
     }
 
-    @Test(timeout = 5000)
+    @Test( timeout = 5000 )
     public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
     {
         verifyAsyncActionCausesConcurrentFlushingRush(
                 checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
     }
 
-    @Test(timeout = 5000)
+    @Test( timeout = 5000 )
     public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
     {
         verifyAsyncActionCausesConcurrentFlushingRush(

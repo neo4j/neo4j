@@ -49,9 +49,13 @@ public class ReplicatedTransaction implements CoreReplicatedContent
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         ReplicatedTransaction that = (ReplicatedTransaction) o;
         return Arrays.equals( txBytes, that.txBytes );
     }

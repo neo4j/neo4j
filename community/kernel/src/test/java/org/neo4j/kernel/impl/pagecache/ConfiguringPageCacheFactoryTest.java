@@ -110,8 +110,12 @@ public class ConfiguringPageCacheFactoryTest
         Log log = logProvider.getLog( PageCache.class );
 
         // When
-        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, log );
+        ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
+                        PageCursorTracerSupplier.NULL, log );
+        try ( PageCache pageCache = cacheFactory.getOrCreatePageCache() )
+        {
+            // empty block
+        }
 
         // Then
         assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
@@ -128,8 +132,11 @@ public class ConfiguringPageCacheFactoryTest
                 pagecache_swapper.name(), "non-existing" ) );
 
         // When
-        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, NullLog.getInstance() );
+        try ( PageCache pageCache = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
+                PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache() )
+        {
+            //empty
+        }
     }
 
     @Test

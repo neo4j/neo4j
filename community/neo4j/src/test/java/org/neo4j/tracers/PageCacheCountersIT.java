@@ -78,7 +78,7 @@ public class PageCacheCountersIT
     }
 
     @Test
-    @RepeatRule.Repeat( times = 5)
+    @RepeatRule.Repeat( times = 5 )
     public void pageCacheCountersAreSumOfPageCursorCounters() throws Exception
     {
         List<NodeCreator> nodeCreators = new ArrayList<>( numberOfWorkers );

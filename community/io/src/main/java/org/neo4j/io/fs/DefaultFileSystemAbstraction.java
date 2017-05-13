@@ -196,11 +196,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz, Function<Class<K>, K> creator )
     {
-        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
-        if (fileSystem == null)
-        {
-            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
-        }
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.computeIfAbsent( clazz, k -> creator.apply( clazz ) );
         return clazz.cast( fileSystem );
     }
 

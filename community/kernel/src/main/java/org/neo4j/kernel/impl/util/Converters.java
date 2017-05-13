@@ -32,6 +32,10 @@ import org.neo4j.helpers.HostnamePort;
 
 public class Converters
 {
+    private Converters()
+    {
+    }
+
     public static <T> Function<String,T> mandatory()
     {
         return key ->

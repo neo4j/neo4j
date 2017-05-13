@@ -22,6 +22,7 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -161,11 +162,11 @@ public class EnterpriseBuiltInDbmsProcedures
      */
 
     @Description( "List all user functions in the DBMS." )
-    @Procedure(name = "dbms.functions", mode = DBMS)
+    @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
     {
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
     }
 
@@ -192,7 +193,7 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
         return procedures.getAllProcedures().stream()
-                .sorted( ( a, b ) -> a.name().toString().compareTo( b.name().toString() ) )
+                .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
     }
 

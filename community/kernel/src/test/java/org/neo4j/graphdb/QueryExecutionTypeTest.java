@@ -37,10 +37,10 @@ import static org.neo4j.graphdb.QueryExecutionType.explained;
 import static org.neo4j.graphdb.QueryExecutionType.profiled;
 import static org.neo4j.graphdb.QueryExecutionType.query;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class QueryExecutionTypeTest
 {
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> cases()
     {
         return Arrays.asList(

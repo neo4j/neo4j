@@ -146,11 +146,11 @@ public final class CompiledEquivalenceUtils
             }
             return true;
         }
-        else if (lhs instanceof Map<?,?> && rhs instanceof Map<?,?>)
+        else if ( lhs instanceof Map<?,?> && rhs instanceof Map<?,?> )
         {
             Map<String, Object> rMap = (Map<String, Object>) rhs;
             Map<String, Object> lMap = (Map<String, Object>) lhs;
-            if (rMap.size() != lMap.size())
+            if ( rMap.size() != lMap.size() )
             {
                 return false;
             }

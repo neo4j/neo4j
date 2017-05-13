@@ -58,7 +58,7 @@ public interface PathEvaluator<STATE> extends Evaluator
     abstract class Adapter<STATE> implements PathEvaluator<STATE>
     {
         @Override
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         public Evaluation evaluate( Path path )
         {
             return evaluate( path, BranchState.NO_STATE );

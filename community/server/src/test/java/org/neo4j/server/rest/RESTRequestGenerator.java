@@ -96,7 +96,7 @@ public class RESTRequestGenerator
      *
      * @param expectedStatus the expected response status
      */
-    public RESTRequestGenerator expectedStatus( final ClientResponse.Status expectedStatus)
+    public RESTRequestGenerator expectedStatus( final ClientResponse.Status expectedStatus )
     {
         this.expectedResponseStatus = expectedStatus.getStatusCode();
         return this;
@@ -258,8 +258,7 @@ public class RESTRequestGenerator
             }
             else
             {
-                request = withHeaders(REQUEST_BUILDER).accept( accept )
-                        .build(new URI(uri), method);
+                request = withHeaders( REQUEST_BUILDER ).accept( accept ).build( new URI( uri ), method );
             }
         }
         catch ( URISyntaxException e )
@@ -269,9 +268,9 @@ public class RESTRequestGenerator
         return retrieveResponse( uri, responseCode, accept, headerFields, request );
     }
 
-    private <T extends Builder> T withHeaders(T builder)
+    private <T extends Builder> T withHeaders( T builder )
     {
-        for (Entry<String, String> entry : addedRequestHeaders.entrySet())
+        for ( Entry<String,String> entry : addedRequestHeaders.entrySet() )
         {
             builder.header(entry.getKey(),entry.getValue());
         }
@@ -371,7 +370,7 @@ public class RESTRequestGenerator
 
         public ResponseEntity( ClientResponse response, String entity )
         {
-            this.response = new JaxRsResponse(response,entity);
+            this.response = new JaxRsResponse( response, entity );
             this.entity = entity;
         }
 

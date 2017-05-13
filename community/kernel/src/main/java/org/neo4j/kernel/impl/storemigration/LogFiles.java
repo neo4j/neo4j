@@ -46,6 +46,10 @@ public class LogFiles
         }
     }
 
+    private LogFiles()
+    {
+    }
+
     /**
      * Moves all logical logs of a database from one directory
      * to another. Since it just renames files (the standard way of moving with

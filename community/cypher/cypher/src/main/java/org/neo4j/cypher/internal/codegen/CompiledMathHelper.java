@@ -119,7 +119,7 @@ public final class CompiledMathHelper
                 {
                     throw new ArithmeticException(
                             String.format( "result of %d + %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
                 }
             }
             // other numbers we cannot add
@@ -156,7 +156,7 @@ public final class CompiledMathHelper
                 {
                     throw new ArithmeticException(
                             String.format( "result of %d - %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
                 }
             }
             // other numbers we cannot subtract
@@ -193,7 +193,7 @@ public final class CompiledMathHelper
                 {
                     throw new ArithmeticException(
                             String.format( "result of %d * %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
                 }
             }
             // other numbers we cannot multiply
@@ -252,11 +252,11 @@ public final class CompiledMathHelper
 
         if ( lhs instanceof Number && rhs instanceof Number )
         {
-            if ( lhs instanceof Double || rhs instanceof Double)
+            if ( lhs instanceof Double || rhs instanceof Double )
             {
                 return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
             }
-            else if (lhs instanceof Float || rhs instanceof Float )
+            else if ( lhs instanceof Float || rhs instanceof Float )
             {
                 return ((Number) lhs).floatValue() % ((Number) rhs).floatValue();
             }

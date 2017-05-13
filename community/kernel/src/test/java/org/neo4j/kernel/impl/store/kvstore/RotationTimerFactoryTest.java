@@ -39,7 +39,7 @@ public class RotationTimerFactoryTest
         Clock fixedClock = Clock.fixed( Instant.ofEpochMilli( 10000 ), ZoneOffset.UTC );
 
         // WHEN
-        RotationTimerFactory timerFactory = new RotationTimerFactory( fixedClock, 1000);
+        RotationTimerFactory timerFactory = new RotationTimerFactory( fixedClock, 1000 );
         RotationTimerFactory.RotationTimer timer = timerFactory.createTimer();
         RotationTimerFactory.RotationTimer anotherTimer = timerFactory.createTimer();
 
@@ -50,7 +50,7 @@ public class RotationTimerFactoryTest
 
         // WHEN
         FakeClock fakeClock = Clocks.fakeClock();
-        RotationTimerFactory fakeTimerFactory = new RotationTimerFactory( fakeClock, 1000);
+        RotationTimerFactory fakeTimerFactory = new RotationTimerFactory( fakeClock, 1000 );
         RotationTimerFactory.RotationTimer fakeTimer = fakeTimerFactory.createTimer();
         fakeClock.forward( 1001, TimeUnit.MILLISECONDS );
 

@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
  * This is the test suite that tested the original (from 2007) lock manager. It has been ported to test {@link org.neo4j.kernel.impl.locking.Locks}
  * to ensure implementors of that API don't fall in any of the traps this test suite sets for them.
  */
-@Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
+@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public RWLockCompatibility( LockingCompatibilityTestSuite suite )

@@ -73,9 +73,9 @@ public class DatabaseIndexAccessorTest
     @ClassRule
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public IndexDescriptor index;
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter( 1 )
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
     private LuceneIndexAccessor accessor;

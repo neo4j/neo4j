@@ -40,9 +40,13 @@ public final class NodeIdWrapperImpl implements NodeIdWrapper
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         NodeIdWrapper that = (NodeIdWrapper) o;
 

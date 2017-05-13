@@ -33,4 +33,17 @@ public interface Configuration
      * of the given property.
      */
     <T> T get( Setting<T> setting );
+
+    /**
+     * Empty configuration without any settings.
+     */
+    Configuration EMPTY = new Configuration()
+    {
+        @Override
+        public <T> T get( Setting<T> setting )
+        {
+            return null;
+        }
+    };
+
 }

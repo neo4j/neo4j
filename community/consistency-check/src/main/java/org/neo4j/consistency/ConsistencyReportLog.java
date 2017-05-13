@@ -90,7 +90,7 @@ public class ConsistencyReportLog extends AbstractLog
     public void bulk( @Nonnull Consumer<Log> consumer )
     {
         PrintWriter writer;
-        synchronized (this)
+        synchronized ( this )
         {
             writer = writerSupplier.get();
             consumer.accept( new ConsistencyReportLog( Suppliers.singleton( writer ), lock, false ) );

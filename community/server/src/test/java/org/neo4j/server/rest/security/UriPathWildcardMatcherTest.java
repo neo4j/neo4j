@@ -19,71 +19,72 @@
  */
 package org.neo4j.server.rest.security;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
 
 public class UriPathWildcardMatcherTest
 {
     @Test
     public void shouldFailWithoutAsteriskAtStart()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("/some/uri/path");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path" );
 
-        assertFalse(matcher.matches("preamble/some/uri/path"));
+        assertFalse(matcher.matches( "preamble/some/uri/path" ));
     }
 
     @Test
     public void shouldFailWithoutAsteriskAtEnd()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("/some/uri/path/and/some/more");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/and/some/more" );
 
-        assertFalse(matcher.matches("/some/uri/path/with/middle/bit/and/some/more"));
+        assertFalse(matcher.matches( "/some/uri/path/with/middle/bit/and/some/more" ));
     }
 
     @Test
     public void shouldMatchAsteriskAtStart()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("*/some/uri/path");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "*/some/uri/path" );
 
-        assertTrue(matcher.matches("anything/i/like/followed/by/some/uri/path"));
-        assertFalse(matcher.matches("anything/i/like/followed/by/some/deliberately/changed/to/fail/uri/path"));
+        assertTrue(matcher.matches( "anything/i/like/followed/by/some/uri/path" ));
+        assertFalse(matcher.matches( "anything/i/like/followed/by/some/deliberately/changed/to/fail/uri/path" ));
     }
 
     @Test
     public void shouldMatchAsteriskAtEnd()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("/some/uri/path/*");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/*" );
 
-        assertTrue(matcher.matches("/some/uri/path/followed/by/anything/i/like"));
+        assertTrue(matcher.matches( "/some/uri/path/followed/by/anything/i/like" ));
     }
 
     @Test
     public void shouldMatchAsteriskInMiddle()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("/some/uri/path/*/and/some/more");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/*/and/some/more" );
 
-        assertTrue(matcher.matches("/some/uri/path/with/middle/bit/and/some/more"));
+        assertTrue(matcher.matches( "/some/uri/path/with/middle/bit/and/some/more" ));
     }
 
     @Test
     public void shouldMatchMultipleAsterisksInMiddle()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("/some/uri/path/*/and/some/more/*/and/a/final/bit");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "/some/uri/path/*/and/some/more/*/and/a/final/bit" );
 
         assertTrue(matcher.matches(
-                "/some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk/part/and/a/final/bit"));
+                "/some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk/part/and/a/final/bit" ));
     }
 
     @Test
     public void shouldMatchMultipleAsterisksAtStartAndInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher(
-                "*/some/uri/path/*/and/some/more/*/and/a/final/bit");
+                "*/some/uri/path/*/and/some/more/*/and/a/final/bit" );
 
         assertTrue(matcher.matches(
-                "a/bit/of/preamble/and/then/some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk/part/and/a/final/bit"));
+                "a/bit/of/preamble/and/then/some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk" +
+                        "/part/and/a/final/bit" ));
 
     }
 
@@ -91,10 +92,11 @@ public class UriPathWildcardMatcherTest
     public void shouldMatchMultipleAsterisksAtEndAndInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher(
-                "/some/uri/path/*/and/some/more/*/and/a/final/bit/*");
+                "/some/uri/path/*/and/some/more/*/and/a/final/bit/*" );
 
         assertTrue(matcher.matches(
-                "/some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk/part/and/a/final/bit/and/now/some/post/amble"));
+                "/some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk/part/and/a/final/bit/and/now" +
+                        "/some/post/amble" ));
 
     }
 
@@ -102,33 +104,34 @@ public class UriPathWildcardMatcherTest
     public void shouldMatchMultipleAsterisksAtStartAndEndAndInMiddle()
     {
         UriPathWildcardMatcher matcher = new UriPathWildcardMatcher(
-                "*/some/uri/path/*/and/some/more/*/and/a/final/bit/*");
+                "*/some/uri/path/*/and/some/more/*/and/a/final/bit/*" );
 
         assertTrue(matcher.matches(
-                "a/bit/of/preamble/and/then//some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk/part/and/a/final/bit/and/now/some/post/amble"));
+                "a/bit/of/preamble/and/then//some/uri/path/with/middle/bit/and/some/more/with/additional/asterisk" +
+                        "/part/and/a/final/bit/and/now/some/post/amble" ));
     }
 
     @Test
     public void shouldMatchMultipleSimpleString()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("str");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "str" );
 
-        assertTrue(matcher.matches("str"));
+        assertTrue(matcher.matches( "str" ));
     }
 
     @Test
     public void shouldMatchMultipleSimpleStringWithALeadingWildcard()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("*str");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "*str" );
 
-        assertTrue(matcher.matches("my_str"));
+        assertTrue(matcher.matches( "my_str" ));
     }
 
     @Test
     public void shouldFailToMatchMultipleSimpleStringWithATrailingWildcard()
     {
-        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher("str*");
+        UriPathWildcardMatcher matcher = new UriPathWildcardMatcher( "str*" );
 
-        assertFalse(matcher.matches("my_str"));
+        assertFalse(matcher.matches( "my_str" ));
     }
 }

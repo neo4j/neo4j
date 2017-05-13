@@ -46,6 +46,10 @@ public class Stats
         }
     }
 
+    private Stats()
+    {
+    }
+
     public static Stat longStat( final long stat )
     {
         return longStat( stat, DetailLevel.BASIC );

@@ -97,7 +97,7 @@ public class DesktopModel
         return serverConfigurator.getConfigurationsFile();
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressWarnings( "ResultOfMethodCallIgnored" )
     public void prepareGraphDirectoryForStart() throws UnsuitableDirectoryException
     {
         File databaseDirectory = new File( serverConfigurator.getDatabaseDirectory() );

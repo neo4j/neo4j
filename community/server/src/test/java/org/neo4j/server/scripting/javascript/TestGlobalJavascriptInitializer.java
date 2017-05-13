@@ -24,7 +24,7 @@ import org.junit.Test;
 public class TestGlobalJavascriptInitializer
 {
 
-    @Test(expected = RuntimeException.class )
+    @Test( expected = RuntimeException.class )
     public void shouldNotAllowChangingMode() throws Exception
     {
         // Given

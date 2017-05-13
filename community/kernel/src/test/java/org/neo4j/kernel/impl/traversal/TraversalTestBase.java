@@ -209,7 +209,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
             Representation<T> representation, Set<String> expected )
     {
         Collection<String> encounteredItems = new ArrayList<String>();
-        try (Transaction tx = beginTx())
+        try ( Transaction tx = beginTx() )
         {
             for ( T item : items )
             {

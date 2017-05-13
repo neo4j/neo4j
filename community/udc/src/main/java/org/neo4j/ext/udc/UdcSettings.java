@@ -22,10 +22,10 @@ package org.neo4j.ext.udc;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
@@ -80,7 +80,7 @@ public class UdcSettings implements LoadableConfig
          * Explicitly allocate a String here so that we know it is unique and can do identity equality comparisons on it
          * to detect that the default value has been used.
          */
-        @SuppressWarnings("RedundantStringConstructorCall")
+        @SuppressWarnings( "RedundantStringConstructorCall" )
         static final String AS_DEFAULT_VALUE = new String( TRUE );
 
         @Override

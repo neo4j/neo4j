@@ -160,9 +160,8 @@ public class PropertyDeduplicator
 
     private void resolveConflicts(
             final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters,
-            PropertyStore propertyStore,
-            final NodeStore nodeStore,
-            SchemaStore schemaStore, File storeDir) throws IOException
+            PropertyStore propertyStore, final NodeStore nodeStore, SchemaStore schemaStore, File storeDir )
+            throws IOException
     {
         if ( duplicateClusters.isEmpty() )
         {

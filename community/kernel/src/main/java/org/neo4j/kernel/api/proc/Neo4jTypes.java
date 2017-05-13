@@ -41,6 +41,10 @@ public class Neo4jTypes
     public static final GeometryType NTGeometry = new GeometryType();
     public static final PointType NTPoint = new PointType();
 
+    private Neo4jTypes()
+    {
+    }
+
     public static ListType NTList( AnyType innerType )
     {
         return new ListType( innerType );
@@ -100,7 +104,7 @@ public class Neo4jTypes
     {
         public FloatType()
         {
-            super( "FLOAT?");
+            super( "FLOAT?" );
         }
     }
 

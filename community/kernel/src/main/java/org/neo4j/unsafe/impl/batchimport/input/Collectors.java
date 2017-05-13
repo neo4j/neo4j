@@ -29,6 +29,10 @@ import org.neo4j.io.NullOutputStream;
  */
 public class Collectors
 {
+    private Collectors()
+    {
+    }
+
     public static Collector silentBadCollector( int tolerance )
     {
         return silentBadCollector( tolerance, BadCollector.COLLECT_ALL );

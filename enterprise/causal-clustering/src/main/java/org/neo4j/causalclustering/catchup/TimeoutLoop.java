@@ -30,6 +30,10 @@ import org.neo4j.logging.Log;
 
 class TimeoutLoop
 {
+    private TimeoutLoop()
+    {
+    }
+
     static <T> T waitForCompletion( Future<T> future, String operation, Supplier<Optional<Long>> millisSinceLastResponseSupplier,
                                     long inactivityTimeoutMillis, Log log ) throws CatchUpClientException
     {

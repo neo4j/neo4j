@@ -134,7 +134,7 @@ public class IndexSamplingJobTracker
         }
     }
 
-    public void awaitAllJobs(long time, TimeUnit unit) throws InterruptedException
+    public void awaitAllJobs( long time, TimeUnit unit ) throws InterruptedException
     {
         lock.lock();
         try

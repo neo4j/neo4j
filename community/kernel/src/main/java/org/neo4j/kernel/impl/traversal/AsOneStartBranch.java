@@ -209,8 +209,7 @@ class AsOneStartBranch implements TraversalBranch
         @Override
         public TraversalBranch next()
         {
-            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(),
-                    initialState);
+            return new StartNodeTraversalBranch( context, AsOneStartBranch.this, nodeIterator.next(), initialState );
         }
 
         @Override

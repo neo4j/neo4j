@@ -58,7 +58,7 @@ import static org.neo4j.helpers.collection.Iterables.asArray;
  */
 public class Monitors
 {
-    public static final AtomicBoolean FALSE = new AtomicBoolean(false);
+    public static final AtomicBoolean FALSE = new AtomicBoolean( false );
 
     public interface Monitor
     {
@@ -111,7 +111,7 @@ public class Monitors
     {
         if ( !monitoredInterfaces.containsKey( monitorClass ) )
         {
-            monitoredInterfaces.put( monitorClass, new AtomicBoolean(false) );
+            monitoredInterfaces.put( monitorClass, new AtomicBoolean( false ) );
 
             for ( Method method : monitorClass.getMethods() )
             {
@@ -221,7 +221,7 @@ public class Monitors
     private void recalculateAllMethodListeners()
     {
         // Mark all monitored interfaces as having no listeners
-        monitoredInterfaces.values().forEach( (b) -> b.set( false ) );
+        monitoredInterfaces.values().forEach( ( b ) -> b.set( false ) );
         for ( Method method : methodMonitorListeners.keySet() )
         {
             recalculateMethodListeners( method );

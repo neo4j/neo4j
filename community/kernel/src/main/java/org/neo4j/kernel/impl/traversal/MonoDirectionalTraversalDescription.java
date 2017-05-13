@@ -65,7 +65,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
          * significantly less performant, and only used when accessing the traversal framework via the legacy access
          * methods (eg. Traversal.description()).
          */
-        this(NO_STATEMENT);
+        this( NO_STATEMENT );
     }
 
     public MonoDirectionalTraversalDescription( Supplier<? extends Resource> statementProvider )
@@ -150,7 +150,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
     @Override
     public TraversalDescription evaluator( Evaluator evaluator )
     {
-        return evaluator( new Evaluator.AsPathEvaluator( evaluator) );
+        return evaluator( new Evaluator.AsPathEvaluator( evaluator ) );
     }
 
     @Override

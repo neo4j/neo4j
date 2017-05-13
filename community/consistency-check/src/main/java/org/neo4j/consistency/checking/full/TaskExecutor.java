@@ -23,6 +23,10 @@ import java.util.List;
 
 public class TaskExecutor
 {
+    private TaskExecutor()
+    {
+    }
+
     public static void execute( List<ConsistencyCheckerTask> tasks, Runnable callBefore )
             throws ConsistencyCheckIncompleteException
     {

@@ -50,7 +50,9 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private long internalLogRotationThreshold = 0L;
         private long internalLogRotationDelay = 0L;
         private int maxInternalLogArchives = 0;
-        private Consumer<LogProvider> rotationListener = (logProvider) -> {};
+        private Consumer<LogProvider> rotationListener = ( logProvider ) ->
+        {
+        };
         private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
 
@@ -99,7 +101,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File logsDir ) throws IOException
+        public StoreLogService inLogsDirectory( FileSystemAbstraction fileSystem, File logsDir ) throws IOException
         {
             return new StoreLogService(
                     userLogProvider,
@@ -118,7 +120,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, jobScheduler );
     }
 
-    public static StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    public static StoreLogService inLogsDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
     {
         return new Builder().inLogsDirectory( fileSystem, storeDir );
     }

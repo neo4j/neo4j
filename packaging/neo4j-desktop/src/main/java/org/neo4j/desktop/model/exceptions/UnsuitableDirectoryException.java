@@ -25,7 +25,7 @@ import static java.lang.String.format;
 
 public class UnsuitableDirectoryException extends Exception
 {
-    public UnsuitableDirectoryException(String message, File dir)
+    public UnsuitableDirectoryException( String message, File dir )
     {
         super( format( message, dir.getAbsolutePath() ) );
     }

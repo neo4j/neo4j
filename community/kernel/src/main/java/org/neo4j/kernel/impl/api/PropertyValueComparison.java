@@ -37,6 +37,10 @@ public class PropertyValueComparison
         }
     };
 
+    private PropertyValueComparison()
+    {
+    }
+
     // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
 
     // This compares two values that have the same super type according to that super type's comparator
@@ -187,7 +191,7 @@ public class PropertyValueComparison
 
     private static class NumberPropertyValueComparator extends PropertyValueComparator<Number>
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public int compare( Number left, Number right )
         {

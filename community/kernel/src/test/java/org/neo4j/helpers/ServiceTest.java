@@ -98,7 +98,7 @@ public class ServiceTest
 
         ServiceBlockClassLoader( ClassLoader parent )
         {
-            super(parent);
+            super( parent );
         }
 
         @Override
@@ -126,7 +126,7 @@ public class ServiceTest
 
         ServiceRedirectClassLoader( ClassLoader parent )
         {
-            super(parent);
+            super( parent );
         }
 
         @Override

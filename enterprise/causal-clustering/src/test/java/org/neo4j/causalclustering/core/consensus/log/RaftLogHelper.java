@@ -27,6 +27,10 @@ import java.io.IOException;
 
 public class RaftLogHelper
 {
+    private RaftLogHelper()
+    {
+    }
+
     public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws IOException
     {
         try ( RaftLogCursor cursor = raftLog.getEntryCursor( index ) )
@@ -38,7 +42,7 @@ public class RaftLogHelper
         }
 
         //todo: do not do this and update RaftLogContractTest to not depend on this exception.
-        throw new IOException("Asked for raft log entry at index " + index + " but it was not found");
+        throw new IOException( "Asked for raft log entry at index " + index + " but it was not found" );
     }
 
     public static Matcher<? super RaftLog> hasNoContent( long index )

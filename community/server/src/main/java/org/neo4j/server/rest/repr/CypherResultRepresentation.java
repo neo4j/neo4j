@@ -71,24 +71,23 @@ public class CypherResultRepresentation extends MappingRepresentation
     {
         final List<String> columns = executionResult.columns();
         Iterable<Map<String, Object>> inner = new RepresentationExceptionHandlingIterable<>( loop( executionResult ) );
-        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>(inner)
+        return new ListRepresentation( "data", new IterableWrapper<Representation,Map<String,Object>>( inner )
         {
 
             @Override
-            protected Representation underlyingObjectToObject(final Map<String, Object> row)
+            protected Representation underlyingObjectToObject( final Map<String,Object> row )
             {
-                return new ListRepresentation("row",
-                 new IterableWrapper<Representation,String>(columns)
-                 {
+                return new ListRepresentation( "row", new IterableWrapper<Representation,String>( columns )
+                {
 
-                     @Override
-                     protected Representation underlyingObjectToObject(String column)
-                     {
-                         return getRepresentation( row.get( column ) );
-                     }
-                 });
+                    @Override
+                    protected Representation underlyingObjectToObject( String column )
+                    {
+                        return getRepresentation( row.get( column ) );
+                    }
+                } );
             }
-        });
+        } );
     }
 
     private Representation getRepresentation( Object r )
@@ -100,7 +99,7 @@ public class CypherResultRepresentation extends MappingRepresentation
 
         if ( r instanceof Path )
         {
-            return new PathRepresentation<>((Path) r );
+            return new PathRepresentation<>( (Path) r );
         }
 
         if ( r instanceof Iterable )
@@ -108,12 +107,12 @@ public class CypherResultRepresentation extends MappingRepresentation
             return handleIterable( (Iterable) r );
         }
 
-        if ( r instanceof Node)
+        if ( r instanceof Node )
         {
             return new NodeRepresentation( (Node) r );
         }
 
-        if ( r instanceof Relationship)
+        if ( r instanceof Relationship )
         {
             return new RelationshipRepresentation( (Relationship) r );
         }

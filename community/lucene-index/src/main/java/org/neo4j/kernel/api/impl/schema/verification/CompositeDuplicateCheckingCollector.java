@@ -39,7 +39,7 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
 
     public CompositeDuplicateCheckingCollector( PropertyAccessor accessor, int[] propertyKeyIds )
     {
-        super(accessor, -1);
+        super( accessor, -1 );
         this.propertyKeyIds = propertyKeyIds;
         actualValues = new CompositeEntrySet();
     }

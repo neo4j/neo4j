@@ -32,5 +32,5 @@ public interface StreamingFormat
     MediaType MEDIA_TYPE = new MediaType( APPLICATION_JSON_TYPE.getType(),
             APPLICATION_JSON_TYPE.getSubtype(), MapUtil.stringMap("stream", "true", "charset", "UTF-8") );
 
-    RepresentationFormat writeTo(OutputStream output);
+    RepresentationFormat writeTo( OutputStream output );
 }

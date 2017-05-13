@@ -194,8 +194,10 @@ public class CommunityServerBuilder
         properties.put( httpsConnector.encryption.name(), "TLS" );
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-        properties.put( ServerSettings.certificates_directory.name(), new File(temporaryFolder, "certificates").getAbsolutePath() );
-        properties.put( GraphDatabaseSettings.logs_directory.name(), new File(temporaryFolder, "logs").getAbsolutePath() );
+        properties.put( ServerSettings.certificates_directory.name(),
+                new File( temporaryFolder, "certificates" ).getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.logs_directory.name(),
+                new File( temporaryFolder, "logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )

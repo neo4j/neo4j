@@ -29,7 +29,7 @@ final class IntProperty extends IntegralNumberProperty
 
     IntProperty( int propertyKeyId, int value )
     {
-        super(propertyKeyId);
+        super( propertyKeyId );
         this.value = value;
     }
 

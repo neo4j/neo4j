@@ -37,13 +37,14 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.test.rule.RepeatRule;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -117,7 +118,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             PageCursorTracerSupplier cursorTracerSupplier )
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
-        swapperFactory.setFileSystemAbstraction( fs );
+        swapperFactory.open( fs, Configuration.EMPTY );
         return createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier );
     }
 

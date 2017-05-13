@@ -65,7 +65,7 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     @Override
     public void describeTo( Description description )
     {
-        if (message != null)
+        if ( message != null )
         {
             description.appendText( message );
         }

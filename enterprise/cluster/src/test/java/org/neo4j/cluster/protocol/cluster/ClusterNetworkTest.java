@@ -65,7 +65,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.LoggerRule;
 
-@RunWith(value = Parameterized.class)
+@RunWith( value = Parameterized.class )
 public class ClusterNetworkTest
 {
     @Parameterized.Parameters

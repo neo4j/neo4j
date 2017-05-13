@@ -112,7 +112,8 @@ public class ConsistencyCheckTool
         try
         {
             return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose, new CheckConsistencyConfig(tuningConfiguration) );
+                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose,
+                    new CheckConsistencyConfig( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {

@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import java.util.Set;
-
 import org.mozilla.javascript.ClassShutter;
+
+import java.util.Set;
 
 public class WhiteListClassShutter implements ClassShutter
 {
 
     private Set<String> whiteList;
 
-    public WhiteListClassShutter(Set<String> whiteList)
+    public WhiteListClassShutter( Set<String> whiteList )
     {
         this.whiteList = whiteList;
     }

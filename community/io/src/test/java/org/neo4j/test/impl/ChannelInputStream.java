@@ -41,7 +41,7 @@ public class ChannelInputStream extends InputStream
     {
         buffer.clear();
         buffer.limit( 1 );
-        while ( buffer.hasRemaining())
+        while ( buffer.hasRemaining() )
         {
             int read = channel.read( buffer );
 

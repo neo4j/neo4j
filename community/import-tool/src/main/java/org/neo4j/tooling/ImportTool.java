@@ -151,7 +151,7 @@ public class ImportTool
 
         TRIM_STRINGS( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
                 "<true/false>",
-                "Whether or not strings should be trimmed for whitespaces."),
+                "Whether or not strings should be trimmed for whitespaces." ),
 
         INPUT_ENCODING( "input-encoding", null,
                 "<character set>",
@@ -196,7 +196,7 @@ public class ImportTool
                         + "node input data. "
                         + "Skipped nodes will be logged"
                         + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + ", unless "
-                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + " option."),
+                        + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + " option." ),
         SKIP_DUPLICATE_NODES( "skip-duplicate-nodes", Boolean.FALSE,
                 "<true/false>",
                 "Whether or not to skip importing nodes that have the same id/group. In the event of multiple "
@@ -342,6 +342,10 @@ public class ImportTool
      * Delimiter used between files in an input group.
      */
     static final String MULTI_FILE_DELIMITER = ",";
+
+    private ImportTool()
+    {
+    }
 
     /**
      * Runs the import tool given the supplied arguments.

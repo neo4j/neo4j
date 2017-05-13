@@ -27,7 +27,7 @@ public class InvalidAuthTokenException extends Exception implements Status.HasSt
 
     public InvalidAuthTokenException( String message )
     {
-        super(message);
+        super( message );
         this.status = Status.Security.Unauthorized;
     }
 

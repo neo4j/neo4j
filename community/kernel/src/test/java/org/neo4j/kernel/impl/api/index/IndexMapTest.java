@@ -122,7 +122,7 @@ public class IndexMapTest
 
     // HELPERS
 
-    private long[] label( long... labels)
+    private long[] label( long... labels )
     {
         return labels;
     }

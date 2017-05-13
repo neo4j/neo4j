@@ -111,6 +111,10 @@ public class StatUtil
         }
     }
 
+    private StatUtil()
+    {
+    }
+
     public static synchronized StatContext create( String name, long printEvery, boolean clearAfterPrint )
     {
         return create( name, toOutputStream( System.out ).getLog( name ), printEvery, clearAfterPrint );

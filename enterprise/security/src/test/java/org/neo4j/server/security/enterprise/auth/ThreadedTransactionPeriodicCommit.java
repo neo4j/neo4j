@@ -50,8 +50,7 @@ public class ThreadedTransactionPeriodicCommit<S>
 
     void execute( ThreadingRule threading, S subject, int nLines )
     {
-        NamedFunction<Integer, Throwable> servCsv =
-                new NamedFunction<Integer,Throwable>("serv-csv")
+        NamedFunction<Integer, Throwable> servCsv = new NamedFunction<Integer,Throwable>( "serv-csv" )
                 {
                     @Override
                     public Throwable apply( Integer n ) throws RuntimeException
@@ -109,7 +108,7 @@ public class ThreadedTransactionPeriodicCommit<S>
                                     null, r -> {}
                                 );
                         }
-                        catch (Throwable t)
+                        catch ( Throwable t )
                         {
                             return t.getMessage();
                         }

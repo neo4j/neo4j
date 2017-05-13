@@ -42,7 +42,7 @@ public class IterableMatcher<T> extends TypeSafeMatcher<Iterable<T>>
     @Override
     protected boolean matchesSafely( Iterable<T> objects )
     {
-        if ( Iterables.count( toMatch ) != Iterables.count( objects ))
+        if ( Iterables.count( toMatch ) != Iterables.count( objects ) )
         {
             return false;
         }

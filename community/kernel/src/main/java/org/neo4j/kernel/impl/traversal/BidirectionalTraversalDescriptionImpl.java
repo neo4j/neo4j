@@ -65,9 +65,8 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         this.maxDepth = maxDepth;
     }
 
-    public BidirectionalTraversalDescriptionImpl(Supplier<? extends Resource> statementFactory)
+    public BidirectionalTraversalDescriptionImpl( Supplier<? extends Resource> statementFactory )
     {
-        // TODO Proper defaults.
         this( new MonoDirectionalTraversalDescription(), new MonoDirectionalTraversalDescription(),
                 STANDARD,
                 Evaluators.all(), ALTERNATING,
@@ -145,8 +144,8 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     public Traverser traverse( final Iterable<Node> startNodes, final Iterable<Node> endNodes )
     {
         return new DefaultTraverser( () -> new BidirectionalTraverserIterator(
-                statementFactory.get(),
-                start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes) );
+                statementFactory.get(), start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth,
+                startNodes, endNodes ) );
     }
 
     /**

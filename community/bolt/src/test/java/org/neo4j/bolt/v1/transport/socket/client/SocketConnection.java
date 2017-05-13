@@ -37,7 +37,7 @@ public class SocketConnection implements TransportConnection
 
     public SocketConnection()
     {
-        this(new Socket());
+        this( new Socket() );
     }
 
     public SocketConnection( Socket socket )
@@ -86,7 +86,7 @@ public class SocketConnection implements TransportConnection
             throw new SocketTimeoutException( "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
         }
         //all the bytes could not be read, fail
-        if (left != 0)
+        if ( left != 0 )
         {
             throw new IOException( "Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
         }

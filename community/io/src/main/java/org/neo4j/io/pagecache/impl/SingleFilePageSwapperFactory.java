@@ -27,6 +27,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -45,7 +46,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     private FileSystemAbstraction fs;
 
     @Override
-    public void setFileSystemAbstraction( FileSystemAbstraction fs )
+    public void open( FileSystemAbstraction fs, Configuration config )
     {
         this.fs = fs;
     }

@@ -34,7 +34,7 @@ import static org.junit.Assert.fail;
 public class KeyValueWriterTest
 {
     private static final int ENTRIES_PER_PAGE = 4 * 1024 / 16;
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private StubCollector collector = new StubCollector( ENTRIES_PER_PAGE );
     private final StubWriter stub = new StubWriter();
     private KeyValueWriter writer = new KeyValueWriter( collector, stub );

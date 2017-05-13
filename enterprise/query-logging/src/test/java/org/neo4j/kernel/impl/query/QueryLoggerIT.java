@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -34,11 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
@@ -154,7 +154,7 @@ public class QueryLoggerIT
                 ResourceIterator::close );
 
         // Set meta data and execute query in transaction
-        try (InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ))
+        try ( InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ) )
         {
             graph.execute( "CALL dbms.setTXMetaData( { User: 'Johan' } )", Collections.emptyMap() );
             graph.execute( "CALL dbms.procedures() YIELD name RETURN name", Collections.emptyMap() ).close();
@@ -164,7 +164,7 @@ public class QueryLoggerIT
         }
 
         // Ensure that old meta data is not retained
-        try (InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ))
+        try ( InternalTransaction tx = db.beginLocalTransactionAsUser( subject, KernelTransaction.Type.explicit ) )
         {
             graph.execute( "CALL dbms.setTXMetaData( { Location: 'Sweden' } )", Collections.emptyMap() );
             graph.execute( "MATCH ()-[r]-() RETURN count(r)", Collections.emptyMap() ).close();

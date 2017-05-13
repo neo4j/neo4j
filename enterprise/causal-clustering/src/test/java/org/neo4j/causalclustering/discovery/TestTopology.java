@@ -34,6 +34,10 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class TestTopology
 {
+    private TestTopology()
+    {
+    }
+
     private static ClientConnectorAddresses wrapAsClientConnectorAddresses( AdvertisedSocketAddress advertisedSocketAddress )
     {
         return new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );

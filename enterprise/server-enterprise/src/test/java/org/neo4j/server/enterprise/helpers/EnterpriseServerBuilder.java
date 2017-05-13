@@ -63,7 +63,8 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected CommunityNeoServer build(Optional<File> configFile, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies)
+    protected CommunityNeoServer build( Optional<File> configFile, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new TestEnterpriseNeoServer( config, configFile, dependencies, logProvider );
     }
