@@ -50,7 +50,7 @@ public class TokenCreationIT
     @Rule
     public final EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
 
-    private volatile boolean stop = false;
+    private volatile boolean stop;
 
     @Test
     @RepeatRule.Repeat( times = 5 )

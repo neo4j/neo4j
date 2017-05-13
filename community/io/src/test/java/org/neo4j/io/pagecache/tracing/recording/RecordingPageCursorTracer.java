@@ -36,8 +36,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public class RecordingPageCursorTracer extends RecordingTracer implements PageCursorTracer
 {
 
-    private int pins = 0;
-    private int faults = 0;
+    private int pins;
+    private int faults;
     private PageCacheTracer tracer;
 
     public RecordingPageCursorTracer()

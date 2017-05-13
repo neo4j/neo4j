@@ -32,7 +32,7 @@ import java.util.List;
 public class CloseTrackingIndexReader extends CompositeReader
 {
 
-    private boolean closed = false;
+    private boolean closed;
 
     @Override
     protected List<? extends IndexReader> getSequentialSubReaders()

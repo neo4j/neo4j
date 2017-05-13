@@ -45,10 +45,10 @@ public class ComparableRaftState implements ReadableRaftState
     private final Set<MemberId> votingMembers;
     private final Set<MemberId> replicationMembers;
     private final Log log;
-    protected long term = 0;
+    protected long term;
     protected MemberId leader;
     private long leaderCommit = -1;
-    private MemberId votedFor = null;
+    private MemberId votedFor;
     private Set<MemberId> votesForMe = new HashSet<>();
     private Set<MemberId> heartbeatResponses = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;

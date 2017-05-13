@@ -1098,7 +1098,7 @@ public class BackupServiceIT
 
     private static class TestFullConsistencyCheck implements ConsistencyCheck
     {
-        private boolean checked = false;
+        private boolean checked;
         @Override
         public String name()
         {

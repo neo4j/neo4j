@@ -699,9 +699,9 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
         StatementProcessor statementProcessor = NULL_STATEMENT_PROCESSOR;
 
-        String owner = null;
+        String owner;
 
-        boolean closed = false;
+        boolean closed;
 
         MutableConnectionState( SPI spi, Clock clock )
         {

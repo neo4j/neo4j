@@ -35,7 +35,7 @@ import static junit.framework.TestCase.assertTrue;
 
 public class IndexQueryTest
 {
-    private int propId = 0;
+    private final int propId = 0;
 
     // EXISTS
 

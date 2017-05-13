@@ -511,7 +511,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private static class CancellationHandle implements CancellationRequest
     {
-        private volatile boolean cancelled = false;
+        private volatile boolean cancelled;
 
         @Override
         public boolean cancellationRequested()

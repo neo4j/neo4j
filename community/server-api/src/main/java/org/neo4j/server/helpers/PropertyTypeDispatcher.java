@@ -743,7 +743,7 @@ public abstract class PropertyTypeDispatcher<K, T>
             return new Iterator<T>()
             {
                 final int size = length();
-                int pos = 0;
+                int pos;
 
                 @Override
                 public boolean hasNext()

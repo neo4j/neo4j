@@ -521,7 +521,7 @@ public class DocValuesCollector extends SimpleCollector
     {
 
         private final float[] scores;
-        private int index = 0;
+        private int index;
 
         ReplayingScorer( float[] scores )
         {

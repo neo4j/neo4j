@@ -30,7 +30,7 @@ class CommonContextState
     private URI boundAt;
     private long lastKnownLearnedInstanceInCluster = -1;
     private org.neo4j.cluster.InstanceId lastKnownAliveUpToDateInstance;
-    private long nextInstanceId = 0;
+    private long nextInstanceId;
     private ClusterConfiguration configuration;
     private final int maxAcceptors;
 

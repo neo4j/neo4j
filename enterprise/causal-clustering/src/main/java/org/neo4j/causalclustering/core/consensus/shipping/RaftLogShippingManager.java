@@ -57,7 +57,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
     private LeaderContext lastLeaderContext;
 
     private boolean running;
-    private boolean stopped = false;
+    private boolean stopped;
 
     public RaftLogShippingManager( Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                                    ReadableRaftLog raftLog,

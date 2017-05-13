@@ -54,7 +54,7 @@ public class IndexSamplingJobTrackerTest
     IndexDescriptor index11 = IndexDescriptorFactory.forSchema( descriptor11 );
     IndexDescriptor index12 = IndexDescriptorFactory.forSchema( descriptor12 );
     IndexDescriptor index22 = IndexDescriptorFactory.forSchema( descriptor22 );
-    long indexId11 = 0;
+    long indexId11;
     long indexId12 = 1;
     long indexId22 = 2;
 

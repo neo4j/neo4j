@@ -186,9 +186,9 @@ public class RelationshipChangesForNode
     private Map<Integer /* Type */, Set<Long /* Id */>> incoming;
     private Map<Integer /* Type */, Set<Long /* Id */>> loops;
 
-    private int totalOutgoing = 0;
-    private int totalIncoming = 0;
-    private int totalLoops = 0;
+    private int totalOutgoing;
+    private int totalIncoming;
+    private int totalLoops;
 
     public RelationshipChangesForNode( DiffStrategy diffStrategy, RelationshipVisitor.Home relationshipHome )
     {
@@ -199,12 +199,8 @@ public class RelationshipChangesForNode
     public void addRelationship( long relId, int typeId, Direction direction )
     {
         Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-        Set<Long> rels = relTypeToRelsMap.get( typeId );
-        if ( rels == null )
-        {
-            rels = Collections.newSetFromMap( new VersionedHashMap<Long, Boolean>() );
-            relTypeToRelsMap.put( typeId, rels );
-        }
+        Set<Long> rels =
+                relTypeToRelsMap.computeIfAbsent( typeId, k -> Collections.newSetFromMap( new VersionedHashMap<>() ) );
 
         rels.add( relId );
 

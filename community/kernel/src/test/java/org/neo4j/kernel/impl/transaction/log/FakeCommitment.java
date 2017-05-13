@@ -26,7 +26,7 @@ public class FakeCommitment implements Commitment
     private final long id;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
-    private boolean hasLegacyIndexChanges = false;
+    private boolean hasLegacyIndexChanges;
 
     public FakeCommitment( long id, TransactionIdStore transactionIdStore )
     {

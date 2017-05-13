@@ -51,7 +51,7 @@ public class InternalJettyServletRequest extends Request
     {
 
         private final byte[] bytes;
-        private int position = 0;
+        private int position;
         private ReadListener readListener;
 
         Input( String data )

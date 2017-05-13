@@ -29,7 +29,7 @@ import org.neo4j.cursor.IOCursor;
 public class ArrayIOCursor<T> implements IOCursor<T>
 {
     private final T[] entries;
-    private int pos = 0;
+    private int pos;
     private boolean closed;
 
     public ArrayIOCursor( T... entries )

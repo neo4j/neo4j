@@ -28,8 +28,8 @@ public class DurationLogger implements AutoCloseable
     private final Log log;
     private final String tag;
 
-    private long start = 0L;
-    private long end = 0L;
+    private long start;
+    private long end;
     private String outcome = "Not finished";
 
     public DurationLogger( Log log, String tag )

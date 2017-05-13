@@ -57,7 +57,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * If enabled will track unclosed database instances in tests. The place of instantiation
      * will get printed in an exception with the message "Unclosed database instance".
      */
-    private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
+    private static final boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
 
     protected static final File PATH = new File( "target/test-data/impermanent-db" );

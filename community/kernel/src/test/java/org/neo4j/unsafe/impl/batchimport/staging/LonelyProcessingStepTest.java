@@ -57,7 +57,7 @@ public class LonelyProcessingStepTest
     private class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
     {
 
-        private volatile boolean panicOnEndUpstream = false;
+        private volatile boolean panicOnEndUpstream;
 
         FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
         {

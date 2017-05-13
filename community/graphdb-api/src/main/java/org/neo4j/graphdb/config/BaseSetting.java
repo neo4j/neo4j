@@ -27,11 +27,11 @@ import java.util.Optional;
  */
 public abstract class BaseSetting<T> implements Setting<T>
 {
-    private boolean deprecated = false;
-    private String replacement = null;
-    private boolean internal = false;
-    private String documentedDefaultValue = null;
-    private String description = null;
+    private boolean deprecated;
+    private String replacement;
+    private boolean internal;
+    private String documentedDefaultValue;
+    private String description;
 
     @Override
     public boolean deprecated()

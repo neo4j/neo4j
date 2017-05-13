@@ -471,7 +471,7 @@ public class KeyValueStoreFileFormatTest
     {
         class Visitor implements KeyValueVisitor
         {
-            int visited = 0;
+            int visited;
 
             @Override
             public boolean visit( ReadableBuffer key, ReadableBuffer value )

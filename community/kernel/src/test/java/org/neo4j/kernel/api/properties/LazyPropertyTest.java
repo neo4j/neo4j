@@ -169,7 +169,7 @@ public class LazyPropertyTest
     {
         return new Callable<T>()
         {
-            boolean called = false;
+            boolean called;
 
             @Override
             public T call() throws Exception

@@ -50,7 +50,7 @@ import static org.junit.Assert.fail;
 public abstract class Neo4jAlgoTestCase
 {
     protected static GraphDatabaseService graphDb;
-    protected static SimpleGraphBuilder graph = null;
+    protected static SimpleGraphBuilder graph;
     protected Transaction tx;
 
     public enum MyRelTypes implements RelationshipType

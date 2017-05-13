@@ -56,7 +56,7 @@ public abstract class ValuesIterator extends PrimitiveLongCollections.PrimitiveL
     };
 
     protected final int size;
-    protected int index = 0;
+    protected int index;
 
     ValuesIterator( int size )
     {

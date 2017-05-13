@@ -268,7 +268,7 @@ public class LucenePartitionedIndexStressTesting
     private static class SequentialStringSupplier implements Supplier<String>
     {
         private final int step;
-        long value = 0;
+        long value;
 
         SequentialStringSupplier( int populatorNumber, int step )
         {
@@ -286,7 +286,7 @@ public class LucenePartitionedIndexStressTesting
 
     private static class SequentialLongSupplier implements LongSupplier
     {
-        long value = 0;
+        long value;
         private int step;
 
         SequentialLongSupplier( int populatorNumber, int step )

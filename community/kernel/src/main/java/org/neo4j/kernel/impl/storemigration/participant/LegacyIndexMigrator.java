@@ -48,7 +48,7 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
     private File migrationLegacyIndexesRoot;
     private File originalLegacyIndexesRoot;
     private final Log log;
-    private boolean legacyIndexMigrated = false;
+    private boolean legacyIndexMigrated;
 
     public LegacyIndexMigrator( FileSystemAbstraction fileSystem, Map<String,IndexImplementation> indexProviders,
             LogProvider logProvider )

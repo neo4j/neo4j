@@ -85,9 +85,9 @@ public interface ProgressListener
     {
         final Indicator indicator;
         private final long totalCount;
-        private long value = 0;
-        private int lastReported = 0;
-        private boolean stared = false;
+        private long value;
+        private int lastReported;
+        private boolean stared;
 
         SinglePartProgressListener( Indicator indicator, long totalCount )
         {
@@ -144,7 +144,7 @@ public interface ProgressListener
 
     final class OpenEndedProgressListener extends SinglePartProgressListener
     {
-        private int lastReported = 0;
+        private int lastReported;
 
         OpenEndedProgressListener( Indicator indicator )
         {
@@ -174,9 +174,9 @@ public interface ProgressListener
     {
         private final Aggregator aggregator;
         final String part;
-        boolean started = false;
-        private long value = 0;
-        private long lastReported = 0;
+        boolean started;
+        private long value;
+        private long lastReported;
         final long totalCount;
 
         MultiPartProgressListener( Aggregator aggregator, String part, long totalCount )

@@ -296,7 +296,7 @@ public class PrimitiveIntCollections
     {
         return new PrimitiveIntFilteringIterator( source )
         {
-            private int skipped = 0;
+            private int skipped;
 
             @Override
             public boolean test( int item )

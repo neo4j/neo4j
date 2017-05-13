@@ -47,7 +47,7 @@ public class StreamingBatchOperationResults
     private final JsonGenerator g;
     private final ServletOutputStream output;
     private ByteArrayOutputStream errorStream;
-    private int bytesWritten = 0;
+    private int bytesWritten;
     private char[] head = new char[HEAD_BUFFER];
 
     public StreamingBatchOperationResults( JsonGenerator g, ServletOutputStream output ) throws IOException

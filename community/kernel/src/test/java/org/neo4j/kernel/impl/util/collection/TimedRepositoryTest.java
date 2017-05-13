@@ -278,7 +278,7 @@ public class TimedRepositoryTest
 
     private static class NonStoppableCleaner implements Runnable
     {
-        private volatile boolean stop = false;
+        private volatile boolean stop;
         private final TimedRepository<Object,Long> timedRepository;
 
         NonStoppableCleaner( TimedRepository<Object,Long> timedRepository )

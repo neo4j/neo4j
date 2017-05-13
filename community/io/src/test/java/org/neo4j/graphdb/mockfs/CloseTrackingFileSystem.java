@@ -26,7 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class CloseTrackingFileSystem implements FileSystemAbstraction.ThirdPartyFileSystem
 {
-    private boolean closed = false;
+    private boolean closed;
 
     @Override
     public void close()

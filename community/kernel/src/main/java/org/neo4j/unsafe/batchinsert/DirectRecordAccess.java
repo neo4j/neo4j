@@ -117,7 +117,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         private final KEY key;
         private final RECORD record;
         private final ADDITIONAL additionalData;
-        private boolean changed = false;
+        private boolean changed;
         private final boolean created;
 
         DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )

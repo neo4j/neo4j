@@ -80,7 +80,7 @@ public class VerboseTimeout extends Timeout
     public static class VerboseTimeoutBuilder extends Timeout.Builder
     {
         private TimeUnit timeUnit = TimeUnit.SECONDS;
-        private long timeout = 0;
+        private long timeout;
         private List<FailureParameter> additionalParameters = new ArrayList<>();
 
         private static Function<Object,String> toStringFunction()

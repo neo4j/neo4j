@@ -126,7 +126,7 @@ public class Jetty9WebServer implements WebServer
     private final List<FilterDefinition> filters = new ArrayList<>();
 
     private int jettyMaxThreads = 1;
-    private KeyStoreInformation httpsCertificateInformation = null;
+    private KeyStoreInformation httpsCertificateInformation;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
     private final Log log;

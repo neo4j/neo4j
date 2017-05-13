@@ -29,7 +29,7 @@ import static org.junit.Assert.fail;
 public class SystemExitRule extends ExternalResource
 {
     private Integer expectedExitStatusCode;
-    private SecurityManager originalSecurityManager = null;
+    private SecurityManager originalSecurityManager;
 
     private SystemExitRule()
     {

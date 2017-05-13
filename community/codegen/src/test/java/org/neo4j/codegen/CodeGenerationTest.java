@@ -1466,8 +1466,8 @@ public class CodeGenerationTest
 
     public static class TernaryChecker
     {
-        private boolean ranOnTrue = false;
-        private boolean ranOnFalse = false;
+        private boolean ranOnTrue;
+        private boolean ranOnFalse;
 
         public String onTrue()
         {
@@ -1787,7 +1787,7 @@ public class CodeGenerationTest
     public static class NamedBase
     {
         final String name;
-        private boolean defaultConstructorCalled = false;
+        private boolean defaultConstructorCalled;
 
         public NamedBase()
         {

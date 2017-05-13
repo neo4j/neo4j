@@ -516,7 +516,7 @@ public class NodeCursorTest
         private final Mode mode;
         private final Operation[] ops;
 
-        private TxState state = null;
+        private TxState state;
 
         private TestRun( Mode mode, Operation[] ops )
         {
@@ -538,7 +538,7 @@ public class NodeCursorTest
         {
             return new BatchingLongProgression()
             {
-                private int i = 0;
+                private int i;
 
                 @Override
                 public boolean nextBatch( Batch batch )

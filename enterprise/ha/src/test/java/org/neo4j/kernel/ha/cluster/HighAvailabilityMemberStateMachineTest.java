@@ -764,12 +764,12 @@ public class HighAvailabilityMemberStateMachineTest
 
     static final class HAStateChangeListener implements HighAvailabilityMemberListener
     {
-        boolean masterIsElected = false;
-        boolean masterIsAvailable = false;
-        boolean slaveIsAvailable = false;
-        boolean instanceStops = false;
-        boolean instanceDetached = false;
-        HighAvailabilityMemberChangeEvent lastEvent = null;
+        boolean masterIsElected;
+        boolean masterIsAvailable;
+        boolean slaveIsAvailable;
+        boolean instanceStops;
+        boolean instanceDetached;
+        HighAvailabilityMemberChangeEvent lastEvent;
 
         @Override
         public void masterIsElected( HighAvailabilityMemberChangeEvent event )

@@ -41,9 +41,9 @@ public abstract class EigenvectorCentralityBase implements EigenvectorCentrality
     protected final Set<Relationship> relationshipSet;
     protected final double precision;
     protected Set<Node> nodeSet;
-    protected boolean doneCalculation = false;
+    protected boolean doneCalculation;
     protected Map<Node,Double> values;
-    protected int totalIterations = 0;
+    protected int totalIterations;
     protected int maxIterations = Integer.MAX_VALUE;
 
     /**

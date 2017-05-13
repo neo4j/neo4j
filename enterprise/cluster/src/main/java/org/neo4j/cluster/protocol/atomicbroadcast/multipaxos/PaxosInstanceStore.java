@@ -51,7 +51,7 @@ public class PaxosInstanceStore
 
     private static final int MAX_STORED = 5000;
 
-    private int queued = 0;
+    private int queued;
     private Queue<InstanceId> delivered = new LinkedList<InstanceId>();
     private Map<InstanceId, PaxosInstance> instances = new HashMap<InstanceId, PaxosInstance>();
     private final int maxInstancesToStore;

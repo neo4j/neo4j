@@ -26,7 +26,7 @@ public class HeartbeatBuilder
     private long commitIndex = -1;
     private long leaderTerm = -1;
     private long commitIndexTerm = -1;
-    private MemberId from = null;
+    private MemberId from;
 
     public RaftMessages.Heartbeat build()
     {

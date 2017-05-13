@@ -147,7 +147,7 @@ public class InMemoryRaftLog implements RaftLog
         return new RaftLogCursor()
         {
             private long currentIndex = fromIndex - 1; // the cursor starts "before" the first entry
-            RaftLogEntry current = null;
+            RaftLogEntry current;
 
             @Override
             public boolean next() throws IOException

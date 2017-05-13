@@ -43,7 +43,7 @@ public class BoltV1Dechunker
     }
 
     private State state = State.AWAITING_CHUNK;
-    private int chunkSize = 0;
+    private int chunkSize;
 
     public BoltV1Dechunker( BoltRequestMessageHandler<RuntimeException> messageHandler, Runnable onMessageStarted )
     {

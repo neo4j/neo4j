@@ -211,7 +211,7 @@ public class ClusterNetworkTest
         final long start = System.currentTimeMillis();
         timer.scheduleAtFixedRate( new TimerTask()
         {
-            int i = 0;
+            int i;
 
             @Override
             public void run()
@@ -316,7 +316,7 @@ public class ClusterNetworkTest
 
         private Queue<ClusterAction> actions = new LinkedList<>();
 
-        private long now = 0;
+        private long now;
 
         public ClusterTestScriptDSL join( long time, final int joinServer, final int... joinServers )
         {

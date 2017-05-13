@@ -28,7 +28,7 @@ import java.util.Map;
 public class Groups
 {
     private final Map<String,Group> byName = new HashMap<>();
-    private int nextId = 0;
+    private int nextId;
     private Boolean globalMode;
 
     /**

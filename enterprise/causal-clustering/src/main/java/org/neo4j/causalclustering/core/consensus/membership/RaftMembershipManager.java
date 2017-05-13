@@ -53,7 +53,7 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
 {
     private RaftMembershipChanger membershipChanger;
 
-    private Set<MemberId> targetMembers = null;
+    private Set<MemberId> targetMembers;
 
     private final SendToMyself sendToMyself;
     private final RaftGroup.Builder<MemberId> memberSetBuilder;

@@ -23,7 +23,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class LockCountVisitor implements  Locks.Visitor
 {
-    private int lockCount = 0;
+    private int lockCount;
 
     @Override
     public void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime,

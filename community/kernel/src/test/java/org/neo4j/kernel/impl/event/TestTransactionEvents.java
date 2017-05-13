@@ -1177,7 +1177,7 @@ public class TestTransactionEvents
     {
         private final Map<Node,Set<String>> added = new HashMap<>();
         private final Map<Node,Set<String>> removed = new HashMap<>();
-        private boolean active = false;
+        private boolean active;
 
         @Override
         public Void beforeCommit( TransactionData data ) throws Exception

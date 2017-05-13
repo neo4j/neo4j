@@ -50,7 +50,7 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
         final Iterator<Document> iterator = documents.iterator();
         return new Iterator<NodeLabelRange>()
         {
-            private int id = 0;
+            private int id;
 
             public boolean hasNext()
             {

@@ -106,7 +106,7 @@ public class CommandApplicationProcessTest
         return new ReplicatedTransaction( dataArray );
     }
 
-    private int sequenceNumber = 0;
+    private int sequenceNumber;
 
     private synchronized ReplicatedContent operation( CoreReplicatedContent tx )
     {

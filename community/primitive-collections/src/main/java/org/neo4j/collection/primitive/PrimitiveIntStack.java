@@ -71,7 +71,7 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
     {
         return new PrimitiveIntIterator()
         {
-            int idx = 0;
+            int idx;
 
             @Override
             public boolean hasNext()

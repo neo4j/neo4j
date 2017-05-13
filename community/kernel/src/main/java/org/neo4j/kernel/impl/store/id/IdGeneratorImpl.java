@@ -84,7 +84,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     private final File file;
     private final FileSystemAbstraction fs;
-    private StoreChannel fileChannel = null;
+    private StoreChannel fileChannel;
 
     private final long max;
     private final boolean aggressiveReuse;

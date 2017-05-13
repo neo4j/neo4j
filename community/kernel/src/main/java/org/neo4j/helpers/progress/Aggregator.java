@@ -38,7 +38,7 @@ final class Aggregator
     private static final AtomicLongFieldUpdater<Aggregator> PROGRESS = newUpdater( Aggregator.class, "progress" );
     private static final AtomicIntegerFieldUpdater<Aggregator> LAST =
             AtomicIntegerFieldUpdater.newUpdater( Aggregator.class, "last" );
-    private long totalCount = 0;
+    private long totalCount;
     private final Completion completion = new Completion();
 
     Aggregator( Indicator indicator )

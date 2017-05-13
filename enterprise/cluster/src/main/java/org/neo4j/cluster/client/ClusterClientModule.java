@@ -129,7 +129,7 @@ public class ClusterClientModule
 
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
-            private volatile StateTransitionLogger logger = null;
+            private volatile StateTransitionLogger logger;
 
             @Override
             public void listeningAt( URI me )

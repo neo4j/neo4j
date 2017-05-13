@@ -249,7 +249,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     {
         private JsonNode data;
         private JsonNode columns;
-        private int index = 0;
+        private int index;
 
         AbstractRESTResult( JsonNode fullResult )
         {

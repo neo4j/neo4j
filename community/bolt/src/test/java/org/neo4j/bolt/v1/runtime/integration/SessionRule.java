@@ -56,7 +56,7 @@ class SessionRule implements TestRule
     private GraphDatabaseAPI gdb;
     private BoltFactoryImpl boltFactory;
     private LinkedList<BoltStateMachine> runningMachines = new LinkedList<>();
-    private boolean authEnabled = false;
+    private boolean authEnabled;
 
     @Override
     public Statement apply( final Statement base, Description description )

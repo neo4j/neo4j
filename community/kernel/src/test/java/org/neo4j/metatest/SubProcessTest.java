@@ -35,7 +35,7 @@ public class SubProcessTest
     private static class TestingProcess extends SubProcess<Callable<String>, String> implements Callable<String>
     {
         private String message;
-        private transient volatile boolean started = false;
+        private transient volatile boolean started;
 
         @Override
         protected void startup( String parameter )

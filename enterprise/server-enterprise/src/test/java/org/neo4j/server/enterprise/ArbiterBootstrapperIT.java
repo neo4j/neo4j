@@ -121,7 +121,7 @@ public class ArbiterBootstrapperIT
 
     // === Everything else ===
 
-    private static Integer SHOULD_NOT_JOIN = null;
+    private static Integer SHOULD_NOT_JOIN;
 
     @Rule
     public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();

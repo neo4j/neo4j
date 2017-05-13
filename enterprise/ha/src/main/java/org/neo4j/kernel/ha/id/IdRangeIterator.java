@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha.id;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
-
-import java.util.Arrays;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
@@ -39,7 +39,7 @@ public class IdRangeIterator
             };
 
     public static final long VALUE_REPRESENTING_NULL = -1;
-    private int position = 0;
+    private int position;
     private final long[] defrag;
     private final long start;
     private final int length;

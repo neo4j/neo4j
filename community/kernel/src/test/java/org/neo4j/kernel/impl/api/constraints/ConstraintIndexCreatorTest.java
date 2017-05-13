@@ -250,7 +250,7 @@ public class ConstraintIndexCreatorTest
 
         private class StubKernelTransaction implements KernelTransaction
         {
-            private long timeout = 0;
+            private long timeout;
 
             StubKernelTransaction()
             {

@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -40,7 +40,7 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
     private final ReplicatedIdRangeAcquirer idRangeAcquirer;
     private final LogProvider logProvider;
     private IdTypeConfigurationProvider idTypeConfigurationProvider;
-    private boolean replicatedMode = false;
+    private boolean replicatedMode;
 
     public ReplicatedIdGeneratorFactory( FileSystemAbstraction fs, ReplicatedIdRangeAcquirer idRangeAcquirer,
                                    LogProvider logProvider, IdTypeConfigurationProvider idTypeConfigurationProvider )

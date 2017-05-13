@@ -58,7 +58,7 @@ public final class Suppliers
     {
         return new Supplier<T>()
         {
-            volatile T instance = null;
+            volatile T instance;
 
             @Override
             public T get()
@@ -95,8 +95,8 @@ public final class Suppliers
     {
         return new Supplier<T>()
         {
-            volatile V lastValue = null;
-            T instance = null;
+            volatile V lastValue;
+            T instance;
 
             @Override
             public T get()

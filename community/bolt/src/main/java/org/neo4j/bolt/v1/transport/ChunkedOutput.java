@@ -50,7 +50,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     private int currentChunkHeaderOffset;
 
     /** Are currently in the middle of writing a chunk? */
-    private boolean chunkOpen = false;
+    private boolean chunkOpen;
 
     public ChunkedOutput( Channel ch, int bufferSize )
     {

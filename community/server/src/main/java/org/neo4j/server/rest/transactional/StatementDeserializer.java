@@ -55,7 +55,7 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
     private final JsonParser input;
     private State state;
-    private List<Neo4jError> errors = null;
+    private List<Neo4jError> errors;
 
     private enum State
     {

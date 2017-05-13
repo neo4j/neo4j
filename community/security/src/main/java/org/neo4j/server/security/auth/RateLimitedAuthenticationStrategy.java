@@ -36,7 +36,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     private class AuthenticationMetadata
     {
         private final AtomicInteger failedAuthAttempts = new AtomicInteger();
-        private long lastFailedAttemptTime = 0;
+        private long lastFailedAttemptTime;
 
         public boolean authenticationPermitted()
         {

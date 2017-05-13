@@ -54,7 +54,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     private final long[] labelsAfter;
 
     private final PrimitiveIntObjectMap<PropertyValue> knownProperties;
-    private boolean hasLoadedAdditionalProperties = false;
+    private boolean hasLoadedAdditionalProperties;
 
     public static class Builder
     {

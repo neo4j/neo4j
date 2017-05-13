@@ -71,7 +71,7 @@ public class PrimitiveLongStack implements PrimitiveLongCollection
     {
         return new PrimitiveLongIterator()
         {
-            int idx = 0;
+            int idx;
 
             @Override
             public boolean hasNext()

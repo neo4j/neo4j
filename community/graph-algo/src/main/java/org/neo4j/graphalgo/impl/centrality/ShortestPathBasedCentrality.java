@@ -50,13 +50,13 @@ public abstract class ShortestPathBasedCentrality<CentralityType,ShortestPathCos
     protected CostAccumulator<CentralityType> centralityAccumulator;
     protected CentralityType zeroValue;
     protected Set<Node> nodeSet;
-    protected boolean doneCalculation = false;
+    protected boolean doneCalculation;
     /**
      * This map over centrality values is made available to the algorithms
      * inheriting this class. It is supposed to be filled with the method
      * addCentralityToNode.
      */
-    protected Map<Node,CentralityType> centralities = null;
+    protected Map<Node,CentralityType> centralities;
 
     /**
      * Default constructor.
