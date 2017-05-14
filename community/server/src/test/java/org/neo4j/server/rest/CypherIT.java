@@ -206,8 +206,8 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     {
         data.get();
         String script = "UNWIND {props} AS properties CREATE (n:Person) SET n = properties RETURN n";
-        String params =
-                "\"props\" : [ { \"name\" : \"Andres\", \"position\" : \"Developer\" }, { \"name\" : \"Michael\", \"position\" : \"Developer\" } ]";
+        String params = "\"props\" : [ { \"name\" : \"Andres\", \"position\" : \"Developer\" }, " +
+                "{ \"name\" : \"Michael\", \"position\" : \"Developer\" } ]";
         String response = cypherRestCall( script, Status.OK, params );
 
         assertTrue( response.contains( "name" ) );

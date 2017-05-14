@@ -25,6 +25,7 @@ public class TooManyLabelsException extends SchemaKernelException
 {
     public TooManyLabelsException( Throwable cause )
     {
-        super( Status.Schema.LabelLimitReached, "The maximum number of labels available has been reached. Cannot create more labels.", cause );
+        super( Status.Schema.LabelLimitReached,
+                "The maximum number of labels available has been reached. Cannot create more labels.", cause );
     }
 }

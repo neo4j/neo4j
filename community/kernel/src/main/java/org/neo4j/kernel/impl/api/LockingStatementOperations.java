@@ -422,7 +422,8 @@ public class LockingStatementOperations implements
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+            throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException,
+            InvalidTransactionTypeKernelException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need

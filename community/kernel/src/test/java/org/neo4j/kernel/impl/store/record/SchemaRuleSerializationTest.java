@@ -40,25 +40,26 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
     IndexRule indexRegular = IndexRule.indexRule( RULE_ID,
-            IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
+            forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
 
     IndexRule indexUnique = IndexRule.constraintIndexRule( RULE_ID_2,
             IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID );
 
     IndexRule indexCompositeRegular = IndexRule.indexRule( RULE_ID,
-            IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR );
+            forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR );
 
     IndexRule indexCompositeUnique = IndexRule.constraintIndexRule( RULE_ID_2,
             IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
             PROVIDER_DESCRIPTOR, RULE_ID );
 
     IndexRule indexBigComposite = IndexRule.indexRule( RULE_ID,
-            IndexDescriptorFactory.forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
+            forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
 
     ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
             ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
@@ -135,16 +136,17 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         String name = "custom_rule";
 
         assertThat( serialiseAndDeserialise( IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
+                forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( IndexRule.constraintIndexRule( RULE_ID_2,
-                IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( name ) );
+                IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ),
+                PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
+                forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( IndexRule.constraintIndexRule( RULE_ID_2,
                 IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
                 PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
+                forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
@@ -156,7 +158,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
                 ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(), is( name ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(), is( name ) );
+                ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
+                name ) ).getName(), is( name ) );
     }
 
     @Test
@@ -165,28 +168,36 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         String name = null;
 
         assertThat( serialiseAndDeserialise( IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
+                forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
         assertThat( serialiseAndDeserialise( IndexRule.constraintIndexRule( RULE_ID_2,
-                IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( "index_2" ) );
+                IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ),
+                PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( "index_2" ) );
         assertThat( serialiseAndDeserialise( IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
+                forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
         assertThat( serialiseAndDeserialise( IndexRule.constraintIndexRule( RULE_ID_2,
                 IndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
                 PROVIDER_DESCRIPTOR, RULE_ID, name ) ).getName(), is( "index_2" ) );
         assertThat( serialiseAndDeserialise( IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR, name ) ).getName(), is( "index_1" ) );
+                forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR, name ) ).getName(),
+                is( "index_1" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
-                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( "constraint_1" ) );
+                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(),
+                is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( "constraint_2" ) );
+                ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(),
+                is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( "constraint_2" ) );
+                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(),
+                is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), name ) ).getName(), is( "constraint_2" ) );
+                ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), name ) ).getName(),
+                is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
-                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(), is( "constraint_1" ) );
+                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(),
+                is( "constraint_1" ) );
         assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(), is( "constraint_2" ) );
+                ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(),
+                is( "constraint_2" ) );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -194,7 +205,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         String name = "a\0b";
         IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name );
+                forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -203,7 +214,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
         IndexRule.indexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name );
+                forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, name );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -211,7 +222,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         String name = "a\0b";
         IndexRule.constraintIndexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID_2, name );
+                forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID_2, name );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -220,7 +231,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
         IndexRule.constraintIndexRule( RULE_ID,
-                IndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID_2, name );
+                forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR, RULE_ID_2, name );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -335,25 +346,45 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==", "index_24" );
         assertParseIndexRule( "AAACAAEAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAAAQ=", "index_24" ); // LEGACY
-        assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABAAAAAtjdXN0b21fbmFtZQ==", "custom_name" ); // named rule
-        assertParseIndexRule( addNullByte( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
-        assertParseIndexRule( addNullByte( 2, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
-        assertParseIndexRule( addNullByte( 3, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
-        assertParseIndexRule( addNullByte( 4, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
-        assertParseIndexRule( addNullByte( 5, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ), "index_24" ); // empty name
+        assertParseIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABAAAAAtjdXN0b21fbmFtZQ==",
+                "custom_name" ); // named rule
+        assertParseIndexRule( addNullByte( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ),
+                "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 2, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ),
+                "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 3, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ),
+                "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 4, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ),
+                "index_24" ); // empty name
+        assertParseIndexRule( addNullByte( 5, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMB9bAAACAAABAAAABA==" ),
+                "index_24" ); // empty name
     }
 
     @Test
     public void shouldParseUniqueIndexRule() throws Exception
     {
-        assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc", "index_33" );
-        assertParseUniqueIndexRule( "AAAAPQIAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAA9wAAAAAAAAACw==", "index_33" ); // LEGACY
-        assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPcAAAAC2N1c3RvbV9uYW1l", "custom_name" ); // named rule
-        assertParseUniqueIndexRule( addNullByte( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
-        assertParseUniqueIndexRule( addNullByte( 2, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
-        assertParseUniqueIndexRule( addNullByte( 3, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
-        assertParseUniqueIndexRule( addNullByte( 4, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
-        assertParseUniqueIndexRule( addNullByte( 5, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ), "index_33" ); // empty name
+        assertParseUniqueIndexRule( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc",
+                "index_33" );
+        assertParseUniqueIndexRule( "AAAAPQIAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMAABAAAAAAAAA9wAAAAAAAAACw==",
+                "index_33" ); // LEGACY
+        assertParseUniqueIndexRule(
+                "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPcAAAAC2N1c3RvbV9uYW1l",
+                "custom_name" ); // named rule
+        assertParseUniqueIndexRule(
+                addNullByte( "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ),
+                "index_33" ); // empty name
+        assertParseUniqueIndexRule(
+                addNullByte( 2, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ),
+                "index_33" ); // empty name
+        assertParseUniqueIndexRule(
+                addNullByte( 3, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ),
+                "index_33" ); // empty name
+        assertParseUniqueIndexRule(
+                addNullByte( 4, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ),
+                "index_33" ); // empty name
+        assertParseUniqueIndexRule(
+                addNullByte( 5, "/////wsAAAAOaW5kZXgtcHJvdmlkZXIAAAAEMjUuMCAAAAAAAAAAC1sAAAA9AAEAAAPc" ),
+                "index_33" ); // empty name
     }
 
     @Test
@@ -361,24 +392,36 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
         assertParseUniqueConstraintRule( "AAAANwMBAAAAAAAAAAMAAAAAAAAAAg==", "constraint_1" ); // LEGACY
-        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==", "custom_name" ); // named rule
-        assertParseUniqueConstraintRule( addNullByte( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseUniqueConstraintRule( addNullByte( 2, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseUniqueConstraintRule( addNullByte( 3, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseUniqueConstraintRule( addNullByte( 4, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseUniqueConstraintRule( addNullByte( 5, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==",
+                "custom_name" ); // named rule
+        assertParseUniqueConstraintRule( addNullByte( "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 2, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 3, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 4, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseUniqueConstraintRule( addNullByte( 5, "/////ww+AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
     }
 
     @Test
     public void shouldParseNodeKeyConstraintRule() throws Exception
     {
         assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==", "constraint_1" );
-        assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==", "custom_name" ); // named rule
-        assertParseNodeKeyConstraintRule( addNullByte( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseNodeKeyConstraintRule( addNullByte( 2, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseNodeKeyConstraintRule( addNullByte( 3, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseNodeKeyConstraintRule( addNullByte( 4, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
-        assertParseNodeKeyConstraintRule( addNullByte( 5, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ), "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAwAAAAtjdXN0b21fbmFtZQ==",
+                "custom_name" ); // named rule
+        assertParseNodeKeyConstraintRule( addNullByte( "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 2, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 3, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 4, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
+        assertParseNodeKeyConstraintRule( addNullByte( 5, "/////ww/AAAAAAAAAAJbAAAANwABAAAAAw==" ),
+                "constraint_1" ); // empty name
     }
 
     @Test
@@ -386,12 +429,17 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADM=", "constraint_87" );
         assertParseNodePropertyExistsRule( "AAAALQQAAAAz", "constraint_87" ); // LEGACY
-        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADMAAAALY3VzdG9tX25hbWU=", "custom_name" ); // named rule
+        assertParseNodePropertyExistsRule( "/////ww9WwAAAC0AAQAAADMAAAALY3VzdG9tX25hbWU=",
+                "custom_name" ); // named rule
         assertParseNodePropertyExistsRule( addNullByte( "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
-        assertParseNodePropertyExistsRule( addNullByte( 2, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
-        assertParseNodePropertyExistsRule( addNullByte( 3, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
-        assertParseNodePropertyExistsRule( addNullByte( 4, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
-        assertParseNodePropertyExistsRule( addNullByte( 5, "/////ww9WwAAAC0AAQAAADM=" ), "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 2, "/////ww9WwAAAC0AAQAAADM=" ),
+                "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 3, "/////ww9WwAAAC0AAQAAADM=" ),
+                "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 4, "/////ww9WwAAAC0AAQAAADM=" ),
+                "constraint_87" ); // empty name
+        assertParseNodePropertyExistsRule( addNullByte( 5, "/////ww9WwAAAC0AAQAAADM=" ),
+                "constraint_87" ); // empty name
     }
 
     @Test
@@ -399,22 +447,27 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+c=", "constraint_51" );
         assertParseRelationshipPropertyExistsRule( "AAAhQAUAABfn", "constraint_51" ); // LEGACY6
-        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+cAAAALY3VzdG9tX25hbWU=", "custom_name" ); // named rule
-        assertParseRelationshipPropertyExistsRule( addNullByte( "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
-        assertParseRelationshipPropertyExistsRule( addNullByte( 2, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
-        assertParseRelationshipPropertyExistsRule( addNullByte( 3, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
-        assertParseRelationshipPropertyExistsRule( addNullByte( 4, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
-        assertParseRelationshipPropertyExistsRule( addNullByte( 5, "/////ww9XAAAIUAAAQAAF+c=" ), "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( "/////ww9XAAAIUAAAQAAF+cAAAALY3VzdG9tX25hbWU=",
+                "custom_name" ); // named rule
+        assertParseRelationshipPropertyExistsRule( addNullByte( "/////ww9XAAAIUAAAQAAF+c=" ),
+                "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 2, "/////ww9XAAAIUAAAQAAF+c=" ),
+                "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 3, "/////ww9XAAAIUAAAQAAF+c=" ),
+                "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 4, "/////ww9XAAAIUAAAQAAF+c=" ),
+                "constraint_51" ); // empty name
+        assertParseRelationshipPropertyExistsRule( addNullByte( 5, "/////ww9XAAAIUAAAQAAF+c=" ),
+                "constraint_51" ); // empty name
     }
 
     private void assertParseIndexRule( String serialized, String name ) throws Exception
     {
         // GIVEN
         long ruleId = 24;
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 512, 4 );
+        IndexDescriptor index = forLabel( 512, 4 );
         SchemaIndexProvider.Descriptor indexProvider = new SchemaIndexProvider.Descriptor( "index-provider", "25.0" );
         byte[] bytes = decodeBase64( serialized );
-//        System.out.println( encodeBase64( IndexRule.indexRule( ruleId, index, indexProvider, "custom_name" ).serialize() ) );
 
         // WHEN
         IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -436,7 +489,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 61, 988 );
         SchemaIndexProvider.Descriptor indexProvider = new SchemaIndexProvider.Descriptor( "index-provider", "25.0" );
         byte[] bytes = decodeBase64( serialized );
-//        System.out.println( encodeBase64( IndexRule.constraintIndexRule( ruleId, index, indexProvider, constraintId, "custom_name" ).serialize() ) );
 
         // WHEN
         IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -459,7 +511,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         long ownedIndexId = 2;
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
-//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, ownedIndexId, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -481,7 +532,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         long ownedIndexId = 2;
         NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
-//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, ownedIndexId, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -502,7 +552,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         int labelId = 45;
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
-//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
@@ -523,7 +572,6 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         int relTypeId = 8512;
         ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
-//        System.out.println( encodeBase64( ConstraintRule.constraintRule( ruleId, constraint, "custom_name" ).serialize() ) );
 
         // WHEN
         ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );

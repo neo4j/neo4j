@@ -21,9 +21,15 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
-import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -34,21 +40,20 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.lang.String.format;
-
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
 import static org.neo4j.consistency.checking.DynamicStore.NODE_LABEL;
 import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
-    private RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> sparseNodeChecker;
+    private RecordCheck<NodeRecord, NodeConsistencyReport> sparseNodeChecker;
     private RecordCheck<NodeRecord, NodeConsistencyReport> denseNodeChecker;
-    private RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
-    private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
-    private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
-    private final RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
-    private final RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> labelTokenChecker;
-    private final RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> relationshipGroupChecker;
+    private RecordCheck<RelationshipRecord, RelationshipConsistencyReport> relationshipChecker;
+    private final RecordCheck<PropertyRecord, PropertyConsistencyReport> propertyChecker;
+    private final RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
+    private final RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
+    private final RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> labelTokenChecker;
+    private final RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> relationshipGroupChecker;
 
     public AbstractStoreProcessor()
     {
@@ -91,26 +96,26 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
 
     protected abstract void checkRelationship(
             RecordStore<RelationshipRecord> store, RelationshipRecord rel,
-            RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker );
+            RecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker );
 
     protected abstract void checkProperty(
             RecordStore<PropertyRecord> store, PropertyRecord property,
-            RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker );
+            RecordCheck<PropertyRecord, PropertyConsistencyReport> checker );
 
     protected abstract void checkRelationshipTypeToken(
             RecordStore<RelationshipTypeTokenRecord> store,
             RelationshipTypeTokenRecord record,
-            RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker );
+            RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker );
 
     protected abstract void checkLabelToken(
             RecordStore<LabelTokenRecord> store,
             LabelTokenRecord record,
-            RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker );
+            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
 
     protected abstract void checkPropertyKeyToken(
             RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
             RecordCheck<PropertyKeyTokenRecord,
-                    ConsistencyReport.PropertyKeyTokenConsistencyReport> checker );
+                    PropertyKeyTokenConsistencyReport> checker );
 
     protected abstract void checkDynamic(
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
@@ -122,7 +127,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
 
     protected abstract void checkRelationshipGroup(
             RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
-            RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker );
 
     @Override
     public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )

@@ -70,7 +70,8 @@ class SessionRule implements TestRule
                 config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ), resolver.resolveDependency( UserManagerSupplier.class ) );
+                Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
+                        resolver.resolveDependency( UserManagerSupplier.class ) );
                 boltFactory = new BoltFactoryImpl(
                                         gdb,
                                         new UsageData( null ),

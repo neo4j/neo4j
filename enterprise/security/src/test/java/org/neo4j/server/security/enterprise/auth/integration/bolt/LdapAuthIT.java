@@ -315,7 +315,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+        restartServerWithoutSystemAccount();
 
         // Then
         testAuthWithReaderUser();
@@ -324,7 +324,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+        restartServerWithoutSystemAccount();
 
         // Then
         testAuthWithPublisherUser();
@@ -333,7 +333,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldFailIfAuthorizationExpiredWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+        restartServerWithoutSystemAccount();
 
         // Given
         assertAuth( "neo4j", "abc123" );
@@ -356,7 +356,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+        restartServerWithoutSystemAccount();
 
         // Then
         assertAuth( "neo4j", "abc123" );
@@ -371,7 +371,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+        restartServerWithoutSystemAccount();
 
         // Then
         testAuthWithNoPermissionUser( "smith", "abc123" );
@@ -450,7 +450,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldKeepAuthorizationForLifetimeOfTransaction() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+        restartServerWithoutSystemAccount();
 
         DoubleLatch latch = new DoubleLatch( 2 );
         final Throwable[] threadFail = {null};
@@ -1043,6 +1043,12 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
+    private void restartServerWithoutSystemAccount() throws IOException
+    {
+        restartNeo4jServerWithOverriddenSettings(
+                settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+    }
+
     private void modifyLDAPAttribute( String username, Object credentials, String attribute, Object value )
             throws Throwable
     {
@@ -1203,7 +1209,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     };
 
     private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2NotUsingSystemAccountSettings =
-            activeDirectoryOnEc2Settings.andThen( settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
+            activeDirectoryOnEc2Settings.andThen(
+                    settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );
 
     private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2UsingSystemAccountSettings =
             activeDirectoryOnEc2Settings.andThen( settings ->

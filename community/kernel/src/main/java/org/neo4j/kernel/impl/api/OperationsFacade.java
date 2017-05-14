@@ -1526,7 +1526,8 @@ public class OperationsFacade
         }
     }
 
-    private CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name, final AccessMode mode ) throws ProcedureException
+    private CallableUserAggregationFunction.Aggregator aggregationFunction( QualifiedName name, final AccessMode mode )
+            throws ProcedureException
     {
         statement.assertOpen();
 
@@ -1535,7 +1536,7 @@ public class OperationsFacade
             BasicContext ctx = new BasicContext();
             ctx.put( Context.KERNEL_TRANSACTION, tx );
             ctx.put( Context.THREAD, Thread.currentThread() );
-            return procedures.createAggregationFunction( ctx, name  );
+            return procedures.createAggregationFunction( ctx, name );
         }
     }
 

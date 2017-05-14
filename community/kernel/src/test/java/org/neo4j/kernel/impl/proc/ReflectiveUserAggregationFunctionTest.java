@@ -215,7 +215,8 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Class 'MissingAggregator' must contain methods annotated with both '@UserAggregationResult' as well as '@UserAggregationUpdate'." );
+        exception.expectMessage( "Class 'MissingAggregator' must contain methods annotated with " +
+                "both '@UserAggregationResult' as well as '@UserAggregationUpdate'." );
 
         // When
         compile( FunctionWithMissingAnnotations.class );
@@ -226,7 +227,8 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationUpdate'." );
+        exception.expectMessage( "Class 'MissingAggregator' contains multiple methods annotated " +
+                "with '@UserAggregationUpdate'." );
 
         // When
         compile( FunctionWithDuplicateUpdateAnnotations.class );
@@ -237,7 +239,8 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Class 'MissingAggregator' contains multiple methods annotated with '@UserAggregationResult'." );
+        exception.expectMessage( "Class 'MissingAggregator' contains multiple methods annotated " +
+                "with '@UserAggregationResult'." );
 
         // When
         compile( FunctionWithDuplicateResultAnnotations.class );

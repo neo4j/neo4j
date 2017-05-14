@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.io.IOException;
-import javax.ws.rs.core.HttpHeaders;
-
 import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTRequestGenerator;
@@ -224,7 +224,8 @@ public class AuthenticationIT extends CommunityServerTestBase
         assertThat( response.status(), equalTo( 429 ) );
         JsonNode firstError = response.get( "errors" ).get( 0 );
         assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthenticationRateLimit" ) );
-        assertThat( firstError.get( "message" ).asText(), equalTo( "Too many failed authentication requests. Please wait 5 seconds and try again." ) );
+        assertThat( firstError.get( "message" ).asText(),
+                equalTo( "Too many failed authentication requests. Please wait 5 seconds and try again." ) );
     }
 
     @Test
@@ -256,7 +257,8 @@ public class AuthenticationIT extends CommunityServerTestBase
         assertAuthorizationRequired( method, path, null, expectedAuthorizedStatus );
     }
 
-    private void assertAuthorizationRequired( String method, String path, Object payload, int expectedAuthorizedStatus ) throws JsonParseException
+    private void assertAuthorizationRequired( String method, String path, Object payload,
+            int expectedAuthorizedStatus ) throws JsonParseException
     {
         // When no header
         HTTP.Response response = HTTP.request( method, server.baseUri().resolve( path ).toString(), payload );
@@ -266,20 +268,23 @@ public class AuthenticationIT extends CommunityServerTestBase
         assertThat(response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When malformed header
-        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).request( method, server.baseUri().resolve( path ).toString(), payload );
+        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" )
+                .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(400));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Request.InvalidFormat"));
         assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid authentication header."));
 
         // When invalid credential
-        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
+        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) )
+                .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("Invalid username or password."));
         assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When authorized
-        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
+        response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
+                .request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
     }
 

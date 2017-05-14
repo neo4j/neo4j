@@ -188,13 +188,11 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
                 }
                 else
                 {
-                    throw new InvalidRecordException( "While loading relationships for Node[" + fromNodeId +
-                                                      "] a Relationship[" + record.getId() +
-                                                      "] was encountered that had startNode:" +
-                                                      " " +
-                                                      record.getFirstNode() + " and endNode: " +
-                                                      record.getSecondNode() +
-                                                      ", i.e. which had neither start nor end node as the node we're loading relationships for" );
+                    throw new InvalidRecordException(
+                            "While loading relationships for Node[" + fromNodeId + "] a Relationship[" +
+                                    record.getId() + "] was encountered that had startNode:" + " " +
+                                    record.getFirstNode() + " and endNode: " + record.getSecondNode() +
+                                    ", i.e. which had neither start nor end node as the node we're loading relationships for" );
                 }
 
                 // If there are no more relationships, and this is from a dense node, then

@@ -235,7 +235,8 @@ public class GraphDescription implements GraphDefinition
             graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
             {
-                Node node = init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes );
+                Node node = init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(),
+                        graphdb.index().getNodeAutoIndexer(), autoIndexNodes );
                 for ( LABEL label : def.labels() )
                 {
                     node.addLabel( label( label.value() ) );
@@ -361,7 +362,8 @@ public class GraphDescription implements GraphDefinition
             relationships.add( rel );
         }
         parse( graph.value(), nodes, relationships );
-        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), graph.autoIndexNodes(), graph.autoIndexRelationships() );
+        return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ),
+                graph.autoIndexNodes(), graph.autoIndexRelationships() );
     }
 
     private static void createIfAbsent( Map<String, NODE> nodes, String name, String ... labels )

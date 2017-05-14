@@ -105,7 +105,6 @@ public class NettyServer extends LifecycleAdapter
                 // throw checked exceptions, but they actually do. The compiler won't let us catch them explicitly because in theory
                 // they shouldn't be possible, so we have to catch Throwable and do our own checks to grab them
 
-                // In any case, we do all this just in order to throw a more helpful bind exception, oh, and here's that part coming right now!
                 if ( e instanceof BindException )
                 {
                     throw new PortBindException( initializer.address(), (BindException) e );

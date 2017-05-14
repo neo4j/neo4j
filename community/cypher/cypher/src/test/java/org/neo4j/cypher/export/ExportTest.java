@@ -138,7 +138,8 @@ public class ExportTest
         n.setProperty( "age", 42 );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + " {`age`:42, `name`:\"Node1\"})" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
+        assertEquals( "create (_" + n.getId() + " {`age`:42, `name`:\"Node1\"})" +
+                lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
     }
 
     @Test
@@ -148,7 +149,8 @@ public class ExportTest
         n.setProperty( "name", "Brutus \"Brutal\" Howell" );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + " {`name`:\"Brutus \\\"Brutal\\\" Howell\"})" + lineSeparator() + ";" + lineSeparator(),
+        assertEquals( "create (_" + n.getId() + " {`name`:\"Brutus \\\"Brutal\\\" Howell\"})" +
+                        lineSeparator() + ";" + lineSeparator(),
                 doExportGraph( graph ) );
     }
 
@@ -159,7 +161,8 @@ public class ExportTest
         n.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + " {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]})" + lineSeparator() + ";" + lineSeparator(),
+        assertEquals( "create (_" + n.getId() + " {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]})" +
+                        lineSeparator() + ";" + lineSeparator(),
                 doExportGraph( graph ) );
     }
 
@@ -172,7 +175,8 @@ public class ExportTest
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
-                "create (_0)-[:`REL` {`name`:\"Brutus \\\"Brutal\\\" Howell\"}]->(_0)" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
+                "create (_0)-[:`REL` {`name`:\"Brutus \\\"Brutal\\\" Howell\"}]->(_0)" + lineSeparator() + ";" +
+                lineSeparator(), doExportGraph( graph ) );
     }
 
     @Test
@@ -184,7 +188,8 @@ public class ExportTest
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
-                "create (_0)-[:`REL` {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]}]->(_0)" + lineSeparator() + ";" + lineSeparator(),
+                "create (_0)-[:`REL` {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]}]->(_0)" + lineSeparator() + ";" +
+                        lineSeparator(),
                 doExportGraph( graph ) );
     }
 
@@ -195,7 +200,8 @@ public class ExportTest
         n.setProperty( "name", "Some\\thing" );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\thing\"})" + lineSeparator() + ";" + lineSeparator(),
+        assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\thing\"})" + lineSeparator() + ";" +
+                        lineSeparator(),
                 doExportGraph( graph ) );
     }
 
@@ -206,7 +212,8 @@ public class ExportTest
         n.setProperty( "name", "Some\\\"thing" );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\\\\"thing\"})" + lineSeparator() + ";" + lineSeparator(),
+        assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\\\\"thing\"})" + lineSeparator() + ";" +
+                        lineSeparator(),
                 doExportGraph( graph ) );
     }
 
@@ -218,7 +225,8 @@ public class ExportTest
         n.setProperty( "age", new int[]{1, 2} );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + " {`age`:[1, 2], `name`:[\"a\", \"b\"]})" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
+        assertEquals( "create (_" + n.getId() + " {`age`:[1, 2], `name`:[\"a\", \"b\"]})" + lineSeparator() + ";" +
+                lineSeparator(), doExportGraph( graph ) );
     }
 
     @Test
@@ -229,7 +237,8 @@ public class ExportTest
         n.addLabel( Label.label( "Bar" ) );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
-        assertEquals( "create (_" + n.getId() + ":`Foo`:`Bar`)" + lineSeparator() + ";" + lineSeparator(), doExportGraph( graph ) );
+        assertEquals( "create (_" + n.getId() + ":`Foo`:`Bar`)" + lineSeparator() + ";" + lineSeparator(),
+                doExportGraph( graph ) );
     }
 
     @Test
@@ -243,7 +252,8 @@ public class ExportTest
     public void testExportUniquenessConstraint() throws Exception
     {
         gdb.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
-        assertEquals( "create constraint on (n:`Foo`) assert n.`bar` is unique;" + lineSeparator(), doExportGraph( gdb ) );
+        assertEquals( "create constraint on (n:`Foo`) assert n.`bar` is unique;" + lineSeparator(),
+                doExportGraph( gdb ) );
     }
 
     @Test

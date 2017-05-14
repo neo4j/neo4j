@@ -120,8 +120,9 @@ public class ForsetiClient implements Locks.Client
 
     private volatile boolean hasLocks;
 
-    public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
-            Pool<ForsetiClient> clientPool, DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
+    public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
+            WaitStrategy<AcquireLockTimeoutException>[] waitStrategies, Pool<ForsetiClient> clientPool,
+            DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
             long lockAcquisitionTimeoutMillis, Clock clock )
     {
         this.clientId = id;

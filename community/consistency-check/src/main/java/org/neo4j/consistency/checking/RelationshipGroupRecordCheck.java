@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,12 +34,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import static java.util.Arrays.asList;
 
 public class RelationshipGroupRecordCheck implements
-        RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
+        RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport>
 {
-    private static final List<RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>> fields;
+    private static final List<RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport>> fields;
     static
     {
-        List<RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>> list = new ArrayList<>();
+        List<RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport>> list = new ArrayList<>();
         list.add( RelationshipTypeField.RELATIONSHIP_TYPE );
         list.add( GroupField.NEXT );
         list.add( NodeField.OWNER );
@@ -49,8 +48,8 @@ public class RelationshipGroupRecordCheck implements
     }
 
     private enum NodeField implements
-            RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>,
-            ComparativeRecordChecker<RelationshipGroupRecord, NodeRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
+            RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport>,
+            ComparativeRecordChecker<RelationshipGroupRecord, NodeRecord, RelationshipGroupConsistencyReport>
     {
         OWNER;
 
@@ -86,14 +85,14 @@ public class RelationshipGroupRecordCheck implements
     }
 
     private enum RelationshipTypeField implements
-            RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>,
-            ComparativeRecordChecker<RelationshipGroupRecord, RelationshipTypeTokenRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
+            RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport>,
+            ComparativeRecordChecker<RelationshipGroupRecord,RelationshipTypeTokenRecord,RelationshipGroupConsistencyReport>
     {
         RELATIONSHIP_TYPE;
 
         @Override
         public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
         {
             if ( record.getType() < 0 )
@@ -114,7 +113,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipTypeTokenRecord referred,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
         {
             if ( !referred.inUse() )
@@ -125,14 +124,14 @@ public class RelationshipGroupRecordCheck implements
     }
 
     private enum GroupField implements
-            RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>,
-            ComparativeRecordChecker<RelationshipGroupRecord, RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
+            RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport>,
+            ComparativeRecordChecker<RelationshipGroupRecord, RelationshipGroupRecord, RelationshipGroupConsistencyReport>
     {
         NEXT;
 
         @Override
         public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
         {
             if ( record.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -149,7 +148,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipGroupRecord referred,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
         {
             if ( !referred.inUse() )
@@ -171,8 +170,8 @@ public class RelationshipGroupRecordCheck implements
     }
 
     private enum RelationshipField implements
-            RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>,
-            ComparativeRecordChecker<RelationshipGroupRecord, RelationshipRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
+            RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport>,
+            ComparativeRecordChecker<RelationshipGroupRecord, RelationshipRecord, RelationshipGroupConsistencyReport>
     {
         OUT
         {
@@ -273,7 +272,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkConsistency( RelationshipGroupRecord record,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
         {
             long relId = valueFrom( record );
@@ -285,7 +284,7 @@ public class RelationshipGroupRecordCheck implements
 
         @Override
         public void checkReference( RelationshipGroupRecord record, RelationshipRecord referred,
-                CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
                 RecordAccess records )
         {
             if ( !referred.inUse() )
@@ -322,7 +321,7 @@ public class RelationshipGroupRecordCheck implements
         {
             return;
         }
-        for ( RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> field : fields )
+        for ( RecordField<RelationshipGroupRecord, RelationshipGroupConsistencyReport> field : fields )
         {
             field.checkConsistency( record, engine, records );
         }

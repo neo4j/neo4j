@@ -74,7 +74,8 @@ public class JsonHelper
         {
             String message = e.getMessage().split( "\\r?\\n" )[0];
             JsonLocation location = e.getLocation();
-            throw new JsonParseException( String.format( "%s [line: %d, column: %d]", message, location.getLineNr(), location.getColumnNr() ), e );
+            throw new JsonParseException( String.format( "%s [line: %d, column: %d]", message, location.getLineNr(),
+                    location.getColumnNr() ), e );
         }
         catch ( IOException e )
         {

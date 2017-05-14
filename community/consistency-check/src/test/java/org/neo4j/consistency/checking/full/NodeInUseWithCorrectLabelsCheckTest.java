@@ -250,7 +250,8 @@ public class NodeInUseWithCorrectLabelsCheckTest
         return engine;
     }
 
-    private NodeInUseWithCorrectLabelsCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker( long[] expectedLabels, boolean checkStoreToIndex )
+    private NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport> checker(
+            long[] expectedLabels, boolean checkStoreToIndex )
     {
         return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels, checkStoreToIndex );
     }

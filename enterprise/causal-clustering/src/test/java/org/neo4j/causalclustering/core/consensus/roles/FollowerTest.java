@@ -297,14 +297,14 @@ public class FollowerTest
                 new RaftMessages.HeartbeatResponse( myself ) ) ) );
     }
 
-    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term, int firstIndex ) throws IOException
+    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int term,
+            int firstIndex ) throws IOException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )
         {
             int prevLogIndex = (firstIndex + i) - 1;
             raft.update( follower.handle( new AppendEntries.Request( myself, term, prevLogIndex, term,
-                            new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
-                    log() ) );
+                    new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft, log() ) );
         }
     }
 

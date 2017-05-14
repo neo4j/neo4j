@@ -110,23 +110,24 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     /*
-     * Ths methods below are used to track in-flight messages (messages the client has sent us that are waiting to be processed). We use this information
-     * to determine when to explicitly flush our output buffers - if there are no more pending messages when a message is done processing, we should flush
-     * the buffers for the session.
+     * Ths methods below are used to track in-flight messages (messages the client has sent us that are waiting
+     * to be processed). We use this information to determine when to explicitly flush our output buffers - if there
+     * are no more pending messages when a message is done processing, we should flush the buffers for the session.
      */
     private void onMessageStarted()
     {
         inFlight.incrementAndGet();
     }
 
-    // Note: This will get called from another thread; specifically, while most of the code in this class runs in an IO Thread, this method gets
-    //       called from a the session worker thread. This smells bad, and can likely be resolved by moving this whole "when to flush" logic to something
-    //       that hooks into ThreadedSessions somehow, since that class has a lot of knowledge about when there are no pending requests.
+    // Note: This will get called from another thread; specifically, while most of the code in this class runs in an
+    // IO Thread, this method gets called from a the session worker thread. This smells bad, and can likely be
+    // resolved by moving this whole "when to flush" logic to something that hooks into ThreadedSessions somehow,
+    // since that class has a lot of knowledge about when there are no pending requests.
     private void onMessageDone()
     {
         // If this is the last in-flight message, and we're not in the middle of reading another message over the wire
-        // If we are in the middle of a message, we assume there's no need for us to flush partial outbound buffers, we simply
-        // wait for more stuff to do to fill the buffers up in order to use network buffers maximally.
+        // If we are in the middle of a message, we assume there's no need for us to flush partial outbound buffers,
+        // we simply wait for more stuff to do to fill the buffers up in order to use network buffers maximally.
         if ( inFlight.decrementAndGet() == 0 && !dechunker.isInMiddleOfAMessage() )
         {
             try

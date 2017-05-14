@@ -20,8 +20,8 @@
 package org.neo4j.function;
 
 /**
- * Represents an operation upon two long-valued operands and producing a long-valued result. This is the primitive type specialization of {@link
- * ThrowingBinaryOperator} for long.
+ * Represents an operation upon two long-valued operands and producing a long-valued result.
+ * This is the primitive type specialization of {@link ThrowingBinaryOperator} for long.
  *
  * @param <E> the type of exception that may be thrown from the operator
  */

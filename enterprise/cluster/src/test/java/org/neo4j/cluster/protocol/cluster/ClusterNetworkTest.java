@@ -166,11 +166,11 @@ public class ClusterNetworkTest
             Monitors monitors = new Monitors();
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
                     new MultiPaxosServerFactory( new ClusterConfiguration( "default", NullLogProvider.getInstance() ),
-                            NullLogProvider.getInstance(), monitors.newMonitor( StateMachines.Monitor.class )
-                    ),
-                    new FixedTimeoutStrategy( 1000 ), NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),
-                    monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ), monitors.newMonitor( NamedThreadFactory.Monitor.class )
-            );
+                            NullLogProvider.getInstance(), monitors.newMonitor( StateMachines.Monitor.class ) ),
+                    new FixedTimeoutStrategy( 1000 ), NullLogProvider.getInstance(), new ObjectStreamFactory(),
+                    new ObjectStreamFactory(), monitors.newMonitor( NetworkReceiver.Monitor.class ),
+                    monitors.newMonitor( NetworkSender.Monitor.class ),
+                    monitors.newMonitor( NamedThreadFactory.Monitor.class ) );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             ProtocolServer server = factory.newNetworkedServer(

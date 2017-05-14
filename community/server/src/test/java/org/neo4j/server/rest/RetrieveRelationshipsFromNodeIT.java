@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -34,6 +28,12 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -278,7 +278,8 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
     @Test
     public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNodeStreaming()
     {
-        JaxRsResponse response = RestRequest.req().header(StreamingJsonFormat.STREAM_HEADER,"true").get(functionalTestHelper.nodeUri() + "/" + nonExistingNode + "/relationships" + "/in");
+        JaxRsResponse response = RestRequest.req().header( StreamingJsonFormat.STREAM_HEADER, "true" )
+                .get( functionalTestHelper.nodeUri() + "/" + nonExistingNode + "/relationships" + "/in" );
         assertEquals( 404, response.getStatus() );
         response.close();
     }

@@ -24,10 +24,12 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
- * The context in which a procedure is invoked. This is a read-only map-like structure. For instance, a read-only transactional procedure might have
- * access to the current statement it is being invoked in through this.
+ * The context in which a procedure is invoked. This is a read-only map-like structure.
+ * For instance, a read-only transactional procedure might have access to the current statement it is being invoked
+ * in through this.
  *
- * The context is entirely defined by the caller of the procedure, so what is available in the context depends on the context of the call.
+ * The context is entirely defined by the caller of the procedure,
+ * so what is available in the context depends on the context of the call.
  */
 public interface Context
 {

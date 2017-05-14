@@ -135,8 +135,8 @@ public class ConstraintIndexCreatorTest
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) ASSERT label[123].property[456] IS UNIQUE.",
-                          e.getMessage() );
+            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
+                            "ASSERT label[123].property[456] IS UNIQUE.", e.getMessage() );
         }
         assertEquals( 2, kernel.statements.size() );
         WritableTransactionState tx1 = kernel.statements.get( 0 ).writableTxState();

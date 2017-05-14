@@ -26,7 +26,8 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.security.SecurityContext;
 
 /**
- * Defines all types of system-oriented operations - i.e. those which do not read from or write to the graph - that can be done from the {@link KernelAPI}.
+ * Defines all types of system-oriented operations - i.e. those which do not read from or
+ * write to the graph - that can be done from the {@link KernelAPI}.
  * An example of this is changing a user's password
  */
 public interface DbmsOperations

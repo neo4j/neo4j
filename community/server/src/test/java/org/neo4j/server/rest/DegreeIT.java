@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import java.util.Map;
-
 import org.junit.Test;
+
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -74,7 +74,8 @@ public class DegreeIT extends AbstractRestFunctionalTestBase
 
     @Documented( "Get the degree of a node by direction and types\n" +
                  "\n" +
-                 "If you are only interested in the degree of a particular relationship type, or a set of relationship types, you specify relationship types after the direction.\n" +
+                 "If you are only interested in the degree of a particular relationship type, or a set of " +
+                 "relationship types, you specify relationship types after the direction.\n" +
                  "You can combine multiple relationship types by using the `&` character." )
     @Test
     @GraphDescription.Graph( {"Root KNOWS Mattias", "Root KNOWS Johan", "Root LIKES Cookie"} )

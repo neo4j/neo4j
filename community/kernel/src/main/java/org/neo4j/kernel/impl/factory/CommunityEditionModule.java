@@ -222,7 +222,8 @@ public class CommunityEditionModule extends EditionModule
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
+    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         return new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
     }

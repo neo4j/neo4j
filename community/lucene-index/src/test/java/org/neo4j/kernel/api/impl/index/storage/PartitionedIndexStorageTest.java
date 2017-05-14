@@ -183,8 +183,8 @@ public class PartitionedIndexStorageTest
                     }
                 } )
         {
-            PartitionedIndexStorage myStorage =
-                    new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ), scramblingFs, testDir.graphDbDir(), INDEX_ID, false );
+            PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
+                    scramblingFs, testDir.graphDbDir(), INDEX_ID, false );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
             for ( int i = 0; i < directoryCount; i++ )

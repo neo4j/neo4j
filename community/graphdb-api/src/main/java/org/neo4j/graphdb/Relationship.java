@@ -43,13 +43,16 @@ package org.neo4j.graphdb;
  *
  * <pre>
  * <code>
- * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}(), b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
- * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
+ * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}();
+ * {@link Node} b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
+ * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType)
+ * createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
  *
  * assert rel.{@link Relationship#getStartNode() getStartNode}().equals( a );
  * assert rel.{@link Relationship#getEndNode() getEndNode}().equals( b );
- * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp; rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
+ * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp;
+ *        rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
  * </code>
  * </pre>
  *

@@ -77,8 +77,8 @@ public final class BatchInserters
         return new FileSystemClosingBatchInserter( inserter, inserter, fileSystem );
     }
 
-    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
-                                          Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem, Map<String,String> config,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
     }

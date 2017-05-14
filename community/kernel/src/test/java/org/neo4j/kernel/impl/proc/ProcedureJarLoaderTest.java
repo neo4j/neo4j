@@ -245,7 +245,8 @@ public class ProcedureJarLoaderTest
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, contains(
-                procedureSignature( "org","neo4j", "kernel", "impl", "proc", "unsafeFullAccessProcedure" ).out( "someNumber", NTInteger ).build() ));
+                procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "unsafeFullAccessProcedure" )
+                        .out( "someNumber", NTInteger ).build() ) );
 
         assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
                 contains( IsEqual.equalTo( new Object[]{7331L} )) );

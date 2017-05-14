@@ -94,8 +94,8 @@ public class MultiPaxosContextTest
                 objStream, acceptorInstances, timeouts, electionCredentials, config );
 
         // When
-        MultiPaxosContext snapshot = ctx.snapshot( NullLogProvider.getInstance(), timeouts, executor, acceptorInstances, objStream, objStream,
-                electionCredentials );
+        MultiPaxosContext snapshot = ctx.snapshot( NullLogProvider.getInstance(), timeouts, executor, acceptorInstances,
+                objStream, objStream, electionCredentials );
 
         // Then
         assertEquals( ctx, snapshot );

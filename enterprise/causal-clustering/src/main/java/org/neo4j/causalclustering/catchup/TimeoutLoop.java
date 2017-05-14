@@ -69,7 +69,8 @@ class TimeoutLoop
                     }
                     else
                     {
-                        log.info( "Request timed out after period of inactivity. Time since last response: " + millisSinceLastResponse + " ms." );
+                        log.info( "Request timed out after period of inactivity. Time since last response: " +
+                                millisSinceLastResponse + " ms." );
                         throw exception( future, operation, e );
                     }
                 }

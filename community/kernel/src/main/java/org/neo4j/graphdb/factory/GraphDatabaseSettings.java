@@ -250,7 +250,8 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description( "The maximum time interval of a transaction within which it should be completed." )
-    public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
+    public static final Setting<Long> transaction_timeout =
+            setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
 
     @Description( "The maximum time interval within which lock should be acquired." )
     public static final Setting<Long> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
@@ -394,13 +395,15 @@ public class GraphDatabaseSettings implements LoadableConfig
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
             "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
     public static final Setting<String> keep_logical_logs = setting( "dbms.tx_log.rotation.retention_policy",
-            STRING, "7 days", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' for example `100M size` for " +
-                        "limiting logical log space on disk to 100Mb," +
-                        " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
+            STRING, "7 days", illegalValueMessage( "must be `true`/`false` or " +
+                    "of format '<number><optional unit> <type>' for example `100M size` for " +
+                    "limiting logical log space on disk to 100Mb," +
+                    " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
 
     @Description( "Specifies at which file size the logical log will auto-rotate. " +
                   "`0` means that no rotation will automatically occur based on file size. " )
-    public static final Setting<Long> logical_log_rotation_threshold = setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( 1024 * 1024L /*1Mb*/ ) );
+    public static final Setting<Long> logical_log_rotation_threshold =
+            setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( ByteUnit.mebiBytes( 1 ) ) );
 
     @Description( "Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities." )
@@ -413,7 +416,8 @@ public class GraphDatabaseSettings implements LoadableConfig
                  "depending on the storage device used." )
     @Internal
     @Deprecated
-    public static final Setting<Long> mapped_memory_page_size = setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" );
+    public static final Setting<Long> mapped_memory_page_size =
+            setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" );
 
     @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
@@ -480,7 +484,8 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Long> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
 
     @Description( "Relationship count threshold for considering a node to be dense" )
-    public static final Setting<Integer> dense_node_threshold = setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min(1) );
+    public static final Setting<Integer> dense_node_threshold =
+            setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min( 1 ) );
 
     @Description( "Log executed queries that take longer than the configured threshold, dbms.logs.query.threshold. " +
             "Log entries are written to the file _query.log_ located in the Logs directory. " +
@@ -498,16 +503,20 @@ public class GraphDatabaseSettings implements LoadableConfig
             PATH );
 
     @Description( "Log parameters for the executed queries being logged." )
-    public static final Setting<Boolean> log_queries_parameter_logging_enabled = setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
+    public static final Setting<Boolean> log_queries_parameter_logging_enabled =
+            setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
 
     @Description( "Log detailed time information for the executed queries being logged." )
-    public static final Setting<Boolean> log_queries_detailed_time_logging_enabled = setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
+            setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Log allocated bytes for the executed queries being logged." )
-    public static final Setting<Boolean> log_queries_allocation_logging_enabled = setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> log_queries_allocation_logging_enabled =
+            setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "Log page hits and page faults for the executed queries being logged." )
-    public static final Setting<Boolean> log_queries_page_detail_logging_enabled = setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
+            setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
 
     @Description( "If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged." )

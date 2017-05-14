@@ -25,7 +25,7 @@ import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipField;
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipTypeField;
 import org.neo4j.consistency.checking.full.CheckStage;
 import org.neo4j.consistency.checking.full.MultiPassStore;
-import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -38,7 +38,7 @@ import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
 
 public class RelationshipRecordCheckTest extends
-                                         RecordCheckTestBase<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport, RelationshipRecordCheck>
+        RecordCheckTestBase<RelationshipRecord, RelationshipConsistencyReport, RelationshipRecordCheck>
 {
     private boolean checkSingleDirection;
 
@@ -49,7 +49,7 @@ public class RelationshipRecordCheckTest extends
                 RelationshipField.SOURCE_NEXT, NodeField.TARGET, RelationshipField.TARGET_PREV,
                 RelationshipField.TARGET_NEXT,
                 new PropertyChain<>( from -> null ) ),
-                ConsistencyReport.RelationshipConsistencyReport.class,
+                RelationshipConsistencyReport.class,
                 CheckStage.Stage6_RS_Forward.getCacheSlotSizes(), MultiPassStore.RELATIONSHIPS );
     }
 
@@ -59,11 +59,11 @@ public class RelationshipRecordCheckTest extends
     }
 
     @Override
-    final ConsistencyReport.RelationshipConsistencyReport check( RelationshipRecord record )
+    final RelationshipConsistencyReport check( RelationshipRecord record )
     {
         // Make sure the cache is properly populated
         records.populateCache();
-        ConsistencyReport.RelationshipConsistencyReport report = mock( ConsistencyReport.RelationshipConsistencyReport.class );
+        RelationshipConsistencyReport report = mock( RelationshipConsistencyReport.class );
         records.cacheAccess().setCacheSlotSizes( CheckStage.Stage6_RS_Forward.getCacheSlotSizes() );
         super.check( report, record );
         if ( !checkSingleDirection )
@@ -81,7 +81,7 @@ public class RelationshipRecordCheckTest extends
         RelationshipRecord relationship = notInUse( new RelationshipRecord( 42, 0, 0, 0 ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verifyNoMoreInteractions( report );
@@ -97,7 +97,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verifyNoMoreInteractions( report );
@@ -132,7 +132,7 @@ public class RelationshipRecordCheckTest extends
         tPrev.setSecondNextRel( relationship.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verifyNoMoreInteractions( report );
@@ -148,7 +148,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).illegalRelationshipType();
@@ -166,7 +166,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).relationshipTypeNotInUse( relationshipType );
@@ -183,7 +183,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).illegalSourceNode();
@@ -202,7 +202,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNodeNotInUse( node );
@@ -219,7 +219,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 1, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).illegalTargetNode();
@@ -238,7 +238,7 @@ public class RelationshipRecordCheckTest extends
         NodeRecord node = add( notInUse( new NodeRecord( 2, false, NONE, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetNodeNotInUse( node );
@@ -258,7 +258,7 @@ public class RelationshipRecordCheckTest extends
         PropertyRecord property = add( notInUse( new PropertyRecord( 11 ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).propertyNotInUse( property );
@@ -279,7 +279,7 @@ public class RelationshipRecordCheckTest extends
         property.setPrevProp( 6 );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).propertyNotFirstInChain( property );
@@ -298,7 +298,7 @@ public class RelationshipRecordCheckTest extends
         add( inUse( new NodeRecord( 2, false, 42, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNodeDoesNotReferenceBack( source );
@@ -317,7 +317,7 @@ public class RelationshipRecordCheckTest extends
         NodeRecord target = add( inUse( new NodeRecord( 2, false, 7, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetNodeDoesNotReferenceBack( target );
@@ -336,7 +336,7 @@ public class RelationshipRecordCheckTest extends
         NodeRecord target = add( inUse( new NodeRecord( 2, false, NONE, NONE ) ) );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNodeDoesNotReferenceBack( source );
@@ -360,7 +360,7 @@ public class RelationshipRecordCheckTest extends
         sPrev.setFirstNextRel( relationship.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNodeHasNoRelationships( source );
@@ -383,7 +383,7 @@ public class RelationshipRecordCheckTest extends
         tPrev.setSecondNextRel( relationship.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetNodeHasNoRelationships( target );
@@ -403,7 +403,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstInFirstChain( false );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourcePrevReferencesOtherNodes( sPrev );
@@ -423,7 +423,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstInSecondChain( false );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetPrevReferencesOtherNodes( tPrev );
@@ -442,7 +442,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstNextRel( sNext.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNextReferencesOtherNodes( sNext );
@@ -461,7 +461,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setSecondNextRel( tNext.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetNextReferencesOtherNodes( tNext );
@@ -481,7 +481,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstInFirstChain( false );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourcePrevReferencesOtherNodes( sPrev );
@@ -501,7 +501,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstInSecondChain( false );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetPrevReferencesOtherNodes( tPrev );
@@ -520,7 +520,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstNextRel( sNext.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNextReferencesOtherNodes( sNext );
@@ -539,7 +539,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setSecondNextRel( tNext.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetNextReferencesOtherNodes( tNext );
@@ -559,7 +559,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstInFirstChain( false );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourcePrevDoesNotReferenceBack( sPrev );
@@ -579,7 +579,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstInSecondChain( false );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetPrevDoesNotReferenceBack( tPrev );
@@ -598,7 +598,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setFirstNextRel( sNext.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).sourceNextDoesNotReferenceBack( sNext );
@@ -617,7 +617,7 @@ public class RelationshipRecordCheckTest extends
         relationship.setSecondNextRel( tNext.getId() );
 
         // when
-        ConsistencyReport.RelationshipConsistencyReport report = check( relationship );
+        RelationshipConsistencyReport report = check( relationship );
 
         // then
         verify( report ).targetNextDoesNotReferenceBack( tNext );

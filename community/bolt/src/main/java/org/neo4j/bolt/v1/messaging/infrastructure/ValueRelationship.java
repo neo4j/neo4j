@@ -65,7 +65,8 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
         char signature = unpacker.unpackStructSignature();
         if ( signature != Neo4jPack.RELATIONSHIP )
         {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Expected a relationship structure, recieved 0x" + Integer.toHexString( signature ) );
+            throw new BoltIOException( Status.Request.InvalidFormat,
+                    "Expected a relationship structure, recieved 0x" + Integer.toHexString( signature ) );
         }
         if ( numFields != STRUCT_FIELD_COUNT )
         {

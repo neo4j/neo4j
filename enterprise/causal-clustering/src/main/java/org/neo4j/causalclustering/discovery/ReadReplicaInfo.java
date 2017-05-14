@@ -36,7 +36,8 @@ public class ReadReplicaInfo implements CatchupServerAddress, ClientConnector, G
         this( clientConnectorAddresses, catchupServerAddress, emptySet() );
     }
 
-    public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress, Set<String> groups )
+    public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses,
+            AdvertisedSocketAddress catchupServerAddress, Set<String> groups )
     {
         this.clientConnectorAddresses = clientConnectorAddresses;
         this.catchupServerAddress = catchupServerAddress;

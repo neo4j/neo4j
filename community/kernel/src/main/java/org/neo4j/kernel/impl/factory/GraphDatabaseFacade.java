@@ -234,7 +234,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         ThrowingAction<RuntimeException> assertTransactionOpen = this::assertTransactionOpen;
 
         this.schema = new SchemaImpl( statementSupplier );
-        this.relActions = new StandardRelationshipActions( statementSupplier, transactionSupplier, assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
+        this.relActions = new StandardRelationshipActions( statementSupplier, transactionSupplier, assertTransactionOpen,
+                        ( id ) -> new NodeProxy( nodeActions, id ), this );
         this.nodeActions = new StandardNodeActions( statementSupplier, transactionSupplier, assertTransactionOpen, relActions, this );
 
         this.indexManager = Suppliers.lazySingleton( () ->

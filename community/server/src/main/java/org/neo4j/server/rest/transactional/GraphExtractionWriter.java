@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonGenerator;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.codehaus.jackson.JsonGenerator;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,7 +37,8 @@ import org.neo4j.helpers.collection.IterableWrapper;
 class GraphExtractionWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row, TransactionStateChecker txStateChecker ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         Set<Node> nodes = new HashSet<>();
         Set<Relationship> relationships = new HashSet<>();
@@ -55,7 +56,8 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeNodes( JsonGenerator out, Iterable<Node> nodes, TransactionStateChecker txStateChecker ) throws IOException
+    private void writeNodes( JsonGenerator out, Iterable<Node> nodes, TransactionStateChecker txStateChecker )
+            throws IOException
     {
         out.writeArrayFieldStart( "nodes" );
         try
@@ -105,7 +107,8 @@ class GraphExtractionWriter implements ResultDataContentWriter
         out.writeBooleanField( "deleted", Boolean.TRUE );
     }
 
-    private void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships, TransactionStateChecker txStateChecker ) throws IOException
+    private void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeArrayFieldStart( "relationships" );
         try

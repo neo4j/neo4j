@@ -94,7 +94,8 @@ public class HaSettings implements LoadableConfig
     public static final Setting<Integer> tx_push_factor = setting( "ha.tx_push_factor", INTEGER, "1", min( 0 ) );
 
     @Description( "Push strategy of a transaction to a slave during commit." )
-    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
+    public static final Setting<TxPushStrategy> tx_push_strategy =
+            setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
     @Description( "Strategy for how to order handling of branched data on slaves and copying of the store from the" +
             " master. The default is copy_then_branch, which, when combined with the keep_last or keep_none branch" +
@@ -141,9 +142,10 @@ public class HaSettings implements LoadableConfig
         @Description( "Fixed, prioritized by server id in ascending order. This strategy will push to the same set of" +
                 " instances, as long as they remain available, and will prioritize those available instances " +
                 "with the lowest instance ids. This strategy makes it more likely that the most " +
-                 "up-to-date instance in a cluster will be an instance with a low id. This is consistent with the master reelection tie-breaking strategy of letting the " +
-                 "instance with the lowest id win an election if several instances are equally up-to-date. Thus, using this strategy makes it very likely " +
-                 "that failover will happen in a low-id part of the cluster, which can be very helpful in " +
+                "up-to-date instance in a cluster will be an instance with a low id. This is consistent with the " +
+                "master reelection tie-breaking strategy of letting the instance with the lowest id win an election if " +
+                "several instances are equally up-to-date. Thus, using this strategy makes it very likely " +
+                "that failover will happen in a low-id part of the cluster, which can be very helpful in " +
                 "planning a multi-data center deployment." )
         fixed_ascending
     }

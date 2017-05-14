@@ -331,7 +331,8 @@ public class LatestCheckPointFinderTest
     }
 
     @Test
-    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit() throws Throwable
+    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit()
+            throws Throwable
     {
         // given
         StartEntry start = start();

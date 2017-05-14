@@ -99,7 +99,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             if ( coreServerInfo.isPresent() )
             {
                 Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
-                endpoints.add( new ReadWriteEndPoint( coreServerInfo.get().connectors(), role, memberId.getUuid(), asList( coreServerInfo.get().groups() ) ) );
+                endpoints.add( new ReadWriteEndPoint( coreServerInfo.get().connectors(), role, memberId.getUuid(),
+                        asList( coreServerInfo.get().groups() ) ) );
             }
             else
             {
@@ -110,7 +111,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().members().entrySet() )
         {
             ReadReplicaInfo readReplicaInfo = readReplica.getValue();
-            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA, readReplica.getKey().getUuid(), asList( readReplicaInfo.groups() ) ) );
+            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA,
+                    readReplica.getKey().getUuid(), asList( readReplicaInfo.groups() ) ) );
         }
 
         endpoints.sort( comparing( o -> o.addresses().toString() ) );

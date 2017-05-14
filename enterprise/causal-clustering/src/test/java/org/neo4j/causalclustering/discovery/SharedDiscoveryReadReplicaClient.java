@@ -43,7 +43,8 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
         this.addresses = new ReadReplicaInfo( ClientConnectorAddresses.extractFromConfig( config ),
-                socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(), AdvertisedSocketAddress::new ) );
+                socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(),
+                        AdvertisedSocketAddress::new ) );
         this.memberId = memberId;
         this.log = logProvider.getLog( getClass() );
     }

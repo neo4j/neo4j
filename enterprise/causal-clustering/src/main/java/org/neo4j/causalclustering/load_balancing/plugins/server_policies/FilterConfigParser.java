@@ -46,20 +46,23 @@ public class FilterConfigParser
         case "groups":
             if ( args.length < 1 )
             {
-                throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
+                throw new InvalidFilterSpecification(
+                        format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
             }
             for ( String group : args )
             {
                 if ( group.matches( "\\W" ) )
                 {
-                    throw new InvalidFilterSpecification( format( "Invalid group for filter '%s': '%s'", filterName, group ) );
+                    throw new InvalidFilterSpecification(
+                            format( "Invalid group for filter '%s': '%s'", filterName, group ) );
                 }
             }
             return new AnyGroupFilter( args );
         case "min":
             if ( args.length != 1 )
             {
-                throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
+                throw new InvalidFilterSpecification(
+                        format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
             }
             int minCount;
             try
@@ -74,13 +77,15 @@ public class FilterConfigParser
         case "all":
             if ( args.length != 0 )
             {
-                throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
+                throw new InvalidFilterSpecification(
+                        format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
             }
             return IdentityFilter.as();
         case "halt":
             if ( args.length != 0 )
             {
-                throw new InvalidFilterSpecification( format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
+                throw new InvalidFilterSpecification(
+                        format( "Invalid number of arguments for filter '%s': %d", filterName, args.length ) );
             }
             return HaltFilter.INSTANCE;
         default:
@@ -160,11 +165,13 @@ public class FilterConfigParser
                 {
                     if ( filterChain.size() > 0 )
                     {
-                        throw new InvalidFilterSpecification( format( "Filter 'halt' may not be followed by other filters: '%s'", ruleSpec ) );
+                        throw new InvalidFilterSpecification(
+                                format( "Filter 'halt' may not be followed by other filters: '%s'", ruleSpec ) );
                     }
                     else
                     {
-                        throw new InvalidFilterSpecification( format( "Rule 'halt' may not followed by other rules: '%s'", filterConfig ) );
+                        throw new InvalidFilterSpecification(
+                                format( "Rule 'halt' may not followed by other rules: '%s'", filterConfig ) );
                     }
                 }
 
@@ -174,7 +181,8 @@ public class FilterConfigParser
                 {
                     if ( filterChain.size() != 0 )
                     {
-                        throw new InvalidFilterSpecification( format( "Filter 'halt' must be the only filter in a rule: '%s'", ruleSpec ) );
+                        throw new InvalidFilterSpecification(
+                                format( "Filter 'halt' must be the only filter in a rule: '%s'", ruleSpec ) );
                     }
                     haltFilterEncountered = true;
                 }
@@ -185,7 +193,8 @@ public class FilterConfigParser
 
                     if ( allFilterEncountered || filterChain.size() != 0 )
                     {
-                        throw new InvalidFilterSpecification( format( "Filter 'all' is implicit but allowed only first in a rule: '%s'", ruleSpec ) );
+                        throw new InvalidFilterSpecification(
+                                format( "Filter 'all' is implicit but allowed only first in a rule: '%s'", ruleSpec ) );
                     }
 
                     allFilterEncountered = true;

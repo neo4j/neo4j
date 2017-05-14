@@ -122,7 +122,9 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // then
-        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, entry0.term(), RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected =
+                new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, entry0.term(), RaftLogEntry.empty,
+                        leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -140,7 +142,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then: we expect it to ship (empty) entry1 next
-        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, 0, RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected =
+                new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, 0, RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -160,7 +163,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, 0, RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected =
+                new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, 0, RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -239,7 +243,9 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 1, new LeaderContext( 0, 0 ) );
 
         // then
-        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 1, entry1.term(), RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected =
+                new RaftMessages.AppendEntries.Request( leader, leaderTerm, 1, entry1.term(), RaftLogEntry.empty,
+                        leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -263,7 +269,8 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // back-tracking stage
-        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, 0, RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected =
+                new RaftMessages.AppendEntries.Request( leader, leaderTerm, 0, 0, RaftLogEntry.empty, leaderCommit );
         while ( !outbound.sentTo( follower ).contains( expected ) )
         {
             logShipper.onMismatch( -1, new LeaderContext( 0, 0 ) );
@@ -302,7 +309,8 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         //then
-        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 2, entry2.term(), RaftLogEntry.empty, leaderCommit );
+        RaftMessages.AppendEntries.Request expected = new RaftMessages.AppendEntries.Request( leader, leaderTerm, 2,
+                entry2.term(), RaftLogEntry.empty, leaderCommit );
         assertThat( outbound.sentTo( follower ), hasItem( expected ) );
     }
 
@@ -345,7 +353,8 @@ public class RaftLogShipperTest
         logShipper.onTimeout();
         // and now we should be in CATCHUP mode, awaiting a late response
 
-        // the response to the batch never came, so on timeout we enter MISMATCH mode and send a single entry based on the latest we knowingly sent (entry3)
+        // the response to the batch never came, so on timeout we enter MISMATCH mode and send a single entry based on
+        // the latest we knowingly sent (entry3)
         logShipper.onTimeout();
         outbound.clear();
 

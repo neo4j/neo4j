@@ -157,7 +157,8 @@ public enum AcceptorMessage
             {
                 try
                 {
-                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ).receive( (Payload) toStringValue);
+                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() )
+                                    .receive( (Payload) toStringValue );
                 }
                 catch ( Throwable e )
                 {

@@ -371,7 +371,8 @@ public class Ls extends TransactionProvidingApp
             else
             {
                 Path nodeAsPath = Paths.singleNodePath( node );
-                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters ).expand( nodeAsPath, BranchState.NO_STATE );
+                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters,
+                        looseFilters ).expand( nodeAsPath, BranchState.NO_STATE );
             }
         }
     }

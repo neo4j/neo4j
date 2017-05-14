@@ -107,7 +107,8 @@ public class HazelcastClusterTopology
         return new CoreTopology( clusterId, canBeBootstrapped, coreMembers );
     }
 
-    public static Map<MemberId,AdvertisedSocketAddress> extractCatchupAddressesMap( CoreTopology coreTopology, ReadReplicaTopology rrTopology )
+    public static Map<MemberId,AdvertisedSocketAddress> extractCatchupAddressesMap( CoreTopology coreTopology,
+            ReadReplicaTopology rrTopology )
     {
         Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
 

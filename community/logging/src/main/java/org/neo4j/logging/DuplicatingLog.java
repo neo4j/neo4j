@@ -199,7 +199,8 @@ public class DuplicatingLog extends AbstractLog
             bulk( new LinkedList<>( loggers ), new ArrayList<>( loggers.size() ), consumer );
         }
 
-        private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers, final Consumer<Logger> finalConsumer )
+        private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers,
+                final Consumer<Logger> finalConsumer )
         {
             if ( !remaining.isEmpty() )
             {

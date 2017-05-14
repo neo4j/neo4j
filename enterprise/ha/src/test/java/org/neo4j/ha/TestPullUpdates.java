@@ -305,7 +305,8 @@ public class TestPullUpdates
         Thread.sleep( 50 );
     }
 
-    private void awaitPropagation( int expectedPropertyValue, long nodeId, ClusterManager.ManagedCluster cluster, HighlyAvailableGraphDatabase... excepts ) throws Exception
+    private void awaitPropagation( int expectedPropertyValue, long nodeId, ClusterManager.ManagedCluster cluster,
+            HighlyAvailableGraphDatabase... excepts ) throws Exception
     {
         long endTime = currentTimeMillis() + PULL_INTERVAL * 20;
         boolean ok = false;
@@ -324,7 +325,7 @@ public class TestPullUpdates
                 }
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Number value = (Number)db.getNodeById(nodeId).getProperty( "i", null );
+                    Number value = (Number) db.getNodeById( nodeId ).getProperty( "i", null );
                     if ( value == null || value.intValue() != expectedPropertyValue )
                     {
                         ok = false;

@@ -91,7 +91,8 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
         catch ( KernelException e )
         {
-            throw new IllegalStateException( "Kernel exception when traversing database schema structure and statistics.  This is not expected to happen.", e );
+            throw new IllegalStateException( "Kernel exception when traversing database schema structure and statistics. " +
+                    "This is not expected to happen.", e );
         }
     }
 
@@ -137,14 +138,15 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         showUniqueConstraints( visitor, read, nameLookup );
     }
 
-    private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup ) throws IndexNotFoundKernelException
+    private void showIndices( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
+            throws IndexNotFoundKernelException
     {
         for ( IndexDescriptor descriptor : loop( IndexDescriptor.sortByType( read.indexesGetAll() ) ) )
         {
             String userDescription = descriptor.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
             long size = read.indexSize( descriptor );
-            visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage, size );
+            visitor.visitIndex( descriptor, userDescription, uniqueValuesPercentage, size );
         }
     }
 
@@ -234,17 +236,21 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
+    private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId,
+            RelationshipType relType, int relTypeId )
     {
-        String userDescription = format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
+        String userDescription =
+                format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
         long amount = read.countsForRelationship( labelId, relTypeId, ANY_LABEL );
 
         visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
+    private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId,
+            RelationshipType relType, int relTypeId )
     {
-        String userDescription = format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
+        String userDescription =
+                format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
         long amount = read.countsForRelationship( ANY_LABEL, relTypeId, labelId );
 
         visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );

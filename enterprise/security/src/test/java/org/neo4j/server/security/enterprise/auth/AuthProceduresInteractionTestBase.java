@@ -87,7 +87,8 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldChangeOwnPassword() throws Throwable
     {
         assertEmpty( readSubject, "CALL dbms.security.changePassword( '321' )" );
-        neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        // Because RESTSubject caches an auth token that is sent with every request
+        neo.updateAuthToken( readSubject, "readSubject", "321" );
         neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
     }
@@ -97,7 +98,8 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         neo.assertAuthenticated( noneSubject );
         assertEmpty( noneSubject, "CALL dbms.security.changePassword( '321' )" );
-        neo.updateAuthToken( noneSubject, "noneSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        // Because RESTSubject caches an auth token that is sent with every request
+        neo.updateAuthToken( noneSubject, "noneSubject", "321" );
         neo.assertAuthenticated( noneSubject );
     }
 
@@ -153,12 +155,14 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
         assertEmpty( readSubject, "CALL dbms.security.changeUserPassword( 'readSubject', '321', false )" );
-        neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        // Because RESTSubject caches an auth token that is sent with every request
+        neo.updateAuthToken( readSubject, "readSubject", "321" );
         neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
 
         assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba', false )" );
-        neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
+        // Because RESTSubject caches an auth token that is sent with every request
+        neo.updateAuthToken( adminSubject, "adminSubject", "cba" );
         neo.assertAuthenticated( adminSubject );
         testSuccessfulRead( adminSubject, 3 );
     }

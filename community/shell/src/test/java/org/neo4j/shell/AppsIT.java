@@ -598,7 +598,8 @@ public class AppsIT extends AbstractShellIT
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, true, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertEquals( "Shows welcome message: " + outString, true,
+                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
     }
 
     @Test

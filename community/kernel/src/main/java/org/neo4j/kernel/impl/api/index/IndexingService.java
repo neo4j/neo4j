@@ -201,7 +201,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
-            indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( indexId, descriptor ) );
+            indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
+                    .add( new IndexLogRecord( indexId, descriptor ) );
 
             log.debug( indexStateInfo( "init", indexId, initialState, descriptor ) );
             boolean constraintIndex = indexRule.canSupportUniqueConstraint();

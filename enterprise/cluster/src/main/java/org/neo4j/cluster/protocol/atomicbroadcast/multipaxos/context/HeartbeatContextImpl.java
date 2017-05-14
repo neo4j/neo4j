@@ -122,7 +122,8 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
         if ( checkSuspectEverybody() )
         {
-            getLog( HeartbeatContext.class ).warn( "All other instances are being suspected. Moving on to mark all other instances as failed" );
+            getLog( HeartbeatContext.class )
+                    .warn( "All other instances are being suspected. Moving on to mark all other instances as failed" );
             markAllOtherMembersAsFailed();
         }
     }

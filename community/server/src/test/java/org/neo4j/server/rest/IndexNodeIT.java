@@ -891,7 +891,8 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         String uri = functionalTestHelper.nodeIndexUri() + index + "?unique";
         gen().expectedStatus( 201 /* created */ )
                  .payloadType( MediaType.APPLICATION_JSON_TYPE )
-                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
+                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", " +
+                         "\"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
                  .post( uri );
     }
 

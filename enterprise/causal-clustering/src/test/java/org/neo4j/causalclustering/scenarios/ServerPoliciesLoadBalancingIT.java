@@ -200,7 +200,8 @@ public class ServerPoliciesLoadBalancingIT
         assertGetServersEventuallyMatchesOnAllCores( matcher, emptyMap() );
     }
 
-    private void assertGetServersEventuallyMatchesOnAllCores( Matcher<LoadBalancingResult> matcher, Map<String,String> context ) throws InterruptedException
+    private void assertGetServersEventuallyMatchesOnAllCores( Matcher<LoadBalancingResult> matcher,
+            Map<String,String> context ) throws InterruptedException
     {
         for ( CoreClusterMember core : cluster.coreMembers() )
         {
@@ -231,7 +232,8 @@ public class ServerPoliciesLoadBalancingIT
         return lbResult;
     }
 
-    private static <T, E extends Exception> void assertEventually( Matcher<? super T> matcher, ThrowingSupplier<T,E> actual ) throws InterruptedException, E
+    private static <T, E extends Exception> void assertEventually( Matcher<? super T> matcher,
+            ThrowingSupplier<T,E> actual ) throws InterruptedException, E
     {
         org.neo4j.test.assertion.Assert.assertEventually( "", actual, matcher, 120, SECONDS );
     }

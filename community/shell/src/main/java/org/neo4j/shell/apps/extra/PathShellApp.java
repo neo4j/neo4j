@@ -42,9 +42,12 @@ public class PathShellApp extends NonTransactionProvidingApp
     {
         addOptionDefinition( "a", new OptionDefinition( OptionValueType.MUST, "Which algorithm to use" ) );
         addOptionDefinition( "m", new OptionDefinition( OptionValueType.MUST, "Maximum depth to traverse" ) );
-        addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST, "Relationship types and directions, f.ex: {KNOWS:out,LOVES:both}" ) );
-        addOptionDefinition( "from", new OptionDefinition( OptionValueType.MUST, "Use some other star point than the current node" ) );
-        addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE, "More quiet, print less verbose paths" ) );
+        addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
+                "Relationship types and directions, f.ex: {KNOWS:out,LOVES:both}" ) );
+        addOptionDefinition( "from",
+                new OptionDefinition( OptionValueType.MUST, "Use some other star point than the current node" ) );
+        addOptionDefinition( "q",
+                new OptionDefinition( OptionValueType.NONE, "More quiet, print less verbose paths" ) );
         addOptionDefinition( "s", new OptionDefinition( OptionValueType.NONE, "Find max one path" ) );
     }
 

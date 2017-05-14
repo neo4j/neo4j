@@ -102,7 +102,8 @@ public class ClusterClientModule
                 new ClusterConfiguration( config.get( ClusterSettings.cluster_name ), logging ),
                 logging, monitors.newMonitor( StateMachines.Monitor.class ) );
 
-        NetworkReceiver receiver = dependencies.satisfyDependency( new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
+        NetworkReceiver receiver = dependencies.satisfyDependency(
+                new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
                 new NetworkReceiver.Configuration()
         {
             @Override

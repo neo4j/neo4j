@@ -69,7 +69,8 @@ public class ConstraintEnforcingEntityOperationsTest
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.lockTracer() ).thenReturn( LockTracer.NONE );
 
-        this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), null, readOps, schemaWriteOps, schemaReadOps );
+        this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), null, readOps,
+                schemaWriteOps, schemaReadOps );
     }
 
     @Test

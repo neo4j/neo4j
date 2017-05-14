@@ -96,7 +96,8 @@ public class Dbinfo extends NonTransactionProvidingApp
         {
             try
             {
-                kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class ).getSingleManagementBean( Kernel.class );
+                kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+                        .getSingleManagementBean( Kernel.class );
             }
             catch ( Exception e )
             {

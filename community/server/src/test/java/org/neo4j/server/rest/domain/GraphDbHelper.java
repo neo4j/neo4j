@@ -282,7 +282,8 @@ public class GraphDbHelper
     {
         try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            Index<Node> index = database.getGraph().index().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+            Index<Node> index = database.getGraph().index()
+                    .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
             transaction.success();
             return index;
         }

@@ -31,7 +31,8 @@ public class CoreSnapshotService
     private final RaftLog raftLog;
     private final RaftMachine raftMachine;
 
-    public CoreSnapshotService( CommandApplicationProcess applicationProcess, CoreState coreState, RaftLog raftLog, RaftMachine raftMachine )
+    public CoreSnapshotService( CommandApplicationProcess applicationProcess, CoreState coreState, RaftLog raftLog,
+            RaftMachine raftMachine )
     {
         this.applicationProcess = applicationProcess;
         this.coreState = coreState;

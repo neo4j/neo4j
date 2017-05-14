@@ -34,7 +34,8 @@ import java.util.function.Function;
 public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
 {
     private final CopyOnWriteArraySet<LogProvider> logProviders;
-    private final Map<DuplicatingLog, Map<LogProvider, Log>> duplicatingLogCache = Collections.synchronizedMap( new WeakHashMap<DuplicatingLog, Map<LogProvider, Log>>() );
+    private final Map<DuplicatingLog,Map<LogProvider,Log>> duplicatingLogCache =
+            Collections.synchronizedMap( new WeakHashMap<DuplicatingLog,Map<LogProvider,Log>>() );
 
     /**
      * @param logProviders A list of {@link LogProvider} instances that messages should be duplicated to

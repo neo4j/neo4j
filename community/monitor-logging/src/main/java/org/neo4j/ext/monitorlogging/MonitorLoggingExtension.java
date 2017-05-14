@@ -88,7 +88,9 @@ public class MonitorLoggingExtension implements Lifecycle
                     logger = classLog.errorLogger();
                     break;
                 default:
-                    log.warn( "When trying to add a logging monitor for %s not able to understand the log level, got %s", className, logLevel );
+                    log.warn(
+                            "When trying to add a logging monitor for %s not able to understand the log level, got %s",
+                            className, logLevel );
                     continue;
             }
 

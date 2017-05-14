@@ -77,7 +77,8 @@ public class BatchingTransactionAppenderTest
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 
-    private final InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
+    private final InMemoryVersionableReadableClosablePositionAwareChannel channel =
+            new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );

@@ -89,13 +89,14 @@ public class SharedDiscoveryServiceIT
         }
     }
 
-    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory, Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
+    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
+            Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
 
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member,
-                jobScheduler, logProvider, userLogProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory
+                .coreTopologyService( config(), member, jobScheduler, logProvider, userLogProvider );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 
@@ -120,7 +121,8 @@ public class SharedDiscoveryServiceIT
 
                 assertEventually( "should discover complete target set", () ->
                 {
-                    ArgumentCaptor<Set<MemberId>> targetMembers = ArgumentCaptor.forClass( (Class<Set<MemberId>>) expectedTargetSet.getClass() );
+                    ArgumentCaptor<Set<MemberId>> targetMembers =
+                            ArgumentCaptor.forClass( (Class<Set<MemberId>>) expectedTargetSet.getClass() );
                     verify( raftMock, atLeastOnce() ).setTargetMembershipSet( targetMembers.capture() );
                     return targetMembers.getValue();
                 }, equalTo( expectedTargetSet ), TIMEOUT_MS, MILLISECONDS );

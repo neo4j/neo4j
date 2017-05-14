@@ -78,7 +78,8 @@ public class ServerSettings implements LoadableConfig
             "Please use dbms.transaction.timeout instead." )
     @Internal
     @Deprecated
-    public static final Setting<Long> webserver_limit_execution_time = setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
+    public static final Setting<Long> webserver_limit_execution_time =
+            setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
 
     @Internal
     public static final Setting<List<String>> console_module_engines = setting(
@@ -125,7 +126,8 @@ public class ServerSettings implements LoadableConfig
             },
             EMPTY );
 
-    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections. Certificate files must be named _neo4j.cert_ and _neo4j.key_" )
+    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections. " +
+            "Certificate files must be named _neo4j.cert_ and _neo4j.key_" )
     public static final Setting<File> certificates_directory = BoltKernelExtension.Settings.certificates_directory;
 
     @Internal

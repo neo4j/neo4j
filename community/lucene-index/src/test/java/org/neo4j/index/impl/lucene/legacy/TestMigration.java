@@ -103,11 +103,17 @@ public class TestMigration
         try ( Transaction transaction = graphDb.beginTx() )
         {
             assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration(
+                    graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider",
+                    MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+            assertEquals( correctConfig,
+                    graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration(
+                    graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index()
+                    .forRelationships( "w-provider",
+                            MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
             transaction.success();
         }
 
@@ -120,12 +126,17 @@ public class TestMigration
         {
             // Getting the index w/o exception means that the provider has been reinstated
             assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "default" ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration(
+                    graphDb.index().forNodes( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
             assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forNodes( "w-provider",
                     MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
-            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
+            assertEquals( correctConfig,
+                    graphDb.index().getConfiguration( graphDb.index().forRelationships( "default" ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration(
+                    graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
+            assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index()
+                    .forRelationships( "w-provider",
+                            MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         }
 
         graphDb.shutdown();

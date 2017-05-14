@@ -68,7 +68,8 @@ class RightmostInChain
         String errorMessage = errorMessageBuilder.toString();
         if ( !errorMessage.equals( "" ) )
         {
-            setPatternException( cursor, newRightmostNodeGeneration, newRightmostLeftSiblingPointer, newRightmostLeftSiblingPointerGeneration, newRightmostNode, errorMessage );
+            setPatternException( cursor, newRightmostNodeGeneration, newRightmostLeftSiblingPointer,
+                    newRightmostLeftSiblingPointerGeneration, newRightmostNode, errorMessage );
         }
 
         // Update currentRightmostNode = newRightmostNode;

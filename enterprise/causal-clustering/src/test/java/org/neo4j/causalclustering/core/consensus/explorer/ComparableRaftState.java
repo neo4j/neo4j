@@ -207,6 +207,7 @@ public class ComparableRaftState implements ReadableRaftState
     @Override
     public int hashCode()
     {
-        return Objects.hash( myself, votingMembers, term, leader, entryLog, votedFor, votesForMe, lastLogIndexBeforeWeBecameLeader, followerStates );
+        return Objects.hash( myself, votingMembers, term, leader, entryLog, votedFor, votesForMe,
+                lastLogIndexBeforeWeBecameLeader, followerStates );
     }
 }

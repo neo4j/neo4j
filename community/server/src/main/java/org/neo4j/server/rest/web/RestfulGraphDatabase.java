@@ -150,7 +150,8 @@ public class RestfulGraphDatabase
 
     public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/{type}";
     public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE + "/existence";
-    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE + "/{property}";
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY =
+            PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE + "/{property}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";

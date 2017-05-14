@@ -331,10 +331,6 @@ public enum StoreFile
         return false;
     }
 
-    /**
-     * Merely here as convenience since java generics is acting up in many cases, so this is nicer for
-     * inlining such a call into {@link #fileOperation(FileOperation, FileSystemAbstraction, File, File, Iterable, boolean, boolean, StoreFileType...)}
-     */
     public static Iterable<StoreFile> storeFiles( StoreFile... files )
     {
         return iterable( files );

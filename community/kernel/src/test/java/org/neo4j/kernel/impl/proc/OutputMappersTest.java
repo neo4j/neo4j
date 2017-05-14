@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
@@ -141,8 +139,8 @@ public class OutputMappersTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage(
-                "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map `org.neo4j.kernel.impl.proc" +
-                ".OutputMappersTest$UnmappableRecord`" );
+                "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type:" +
+                        " Don't know how to map `org.neo4j.kernel.impl.proc.OutputMappersTest$UnmappableRecord`" );
 
         // When
         mapper( UnmappableRecord.class );
@@ -153,7 +151,8 @@ public class OutputMappersTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `wat` in record `RecordWithPrivateField` cannot be accessed. Please ensure the field is marked as `public`." );
+        exception.expectMessage( "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " +
+                "Please ensure the field is marked as `public`." );
 
         // When
         mapper( RecordWithPrivateField.class );
@@ -164,8 +163,9 @@ public class OutputMappersTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted to a Neo4j type: Maps are required to have `String` " +
-                                 "keys - but this map has `org.neo4j.kernel.impl.proc.OutputMappersTest$RecordWithNonStringKeyMap` keys." );
+        exception.expectMessage( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
+                "to a Neo4j type: Maps are required to have `String` keys - but this map " +
+                "has `org.neo4j.kernel.impl.proc.OutputMappersTest$RecordWithNonStringKeyMap` keys." );
 
         // When
         mapper( RecordWithNonStringKeyMap.class );

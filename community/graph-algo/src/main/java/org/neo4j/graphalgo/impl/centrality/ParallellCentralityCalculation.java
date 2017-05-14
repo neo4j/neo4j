@@ -46,7 +46,7 @@ public class ParallellCentralityCalculation<ShortestPathCostType>
 {
     protected SingleSourceShortestPath<ShortestPathCostType> singleSourceShortestPath;
     protected Set<Node> nodeSet;
-    protected List<ShortestPathBasedCentrality<?,ShortestPathCostType>> calculations = new LinkedList<ShortestPathBasedCentrality<?,ShortestPathCostType>>();
+    protected List<ShortestPathBasedCentrality<?,ShortestPathCostType>> calculations = new LinkedList<>();
     protected boolean doneCalculation;
 
     /**

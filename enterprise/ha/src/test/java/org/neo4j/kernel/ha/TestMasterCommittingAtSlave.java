@@ -69,7 +69,8 @@ public class TestMasterCommittingAtSlave
 
     private Iterable<Slave> slaves;
     private AssertableLogProvider logProvider = new AssertableLogProvider();
-    LogMatcher communicationLogMessage = new LogMatcher( any( String.class ), is( ERROR ), containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
+    LogMatcher communicationLogMessage = new LogMatcher( any( String.class ), is( ERROR ),
+            containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
 
     @Test
     public void commitSuccessfullyToTheFirstOne() throws Exception

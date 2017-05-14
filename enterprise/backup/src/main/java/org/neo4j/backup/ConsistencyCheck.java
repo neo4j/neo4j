@@ -43,7 +43,8 @@ interface ConsistencyCheck
 
                 @Override
                 public boolean runFull( File storeDir, Config tuningConfiguration,
-                        ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
+                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
+                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                         CheckConsistencyConfig checkConsistencyConfig )
                         throws ConsistencyCheckFailedException
                 {

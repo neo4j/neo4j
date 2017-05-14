@@ -93,7 +93,8 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void labelCreateForName( KernelStatement state, String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException
+    public void labelCreateForName( KernelStatement state, String labelName, int id )
+            throws IllegalTokenNameException, TooManyLabelsException
     {
         keyWriteDelegate.labelCreateForName( state, labelName, id );
     }

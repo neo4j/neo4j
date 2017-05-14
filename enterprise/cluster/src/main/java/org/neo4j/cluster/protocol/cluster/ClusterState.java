@@ -88,7 +88,8 @@ public enum ClusterState
                             String name = (String) args[0];
                             URI[] clusterInstanceUris = (URI[]) args[1];
                             context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
-                            context.getLog( getClass() ).info( "Trying to join with DISCOVERY header " + context.generateDiscoveryHeader() );
+                            context.getLog( getClass() )
+                                    .info( "Trying to join with DISCOVERY header " + context.generateDiscoveryHeader() );
 
                             for ( URI potentialClusterInstanceUri : clusterInstanceUris )
                             {
@@ -392,7 +393,8 @@ public enum ClusterState
                                 context.cancelTimeout( "join" );
 
                                 context.joined();
-                                outgoing.offer( message.copyHeadersTo( internal( ClusterMessage.joinResponse, context.getConfiguration() ) ) );
+                                outgoing.offer( message.copyHeadersTo(
+                                        internal( ClusterMessage.joinResponse, context.getConfiguration() ) ) );
                                 return entered;
                             }
                             else

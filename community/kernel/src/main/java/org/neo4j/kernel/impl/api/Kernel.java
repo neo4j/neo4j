@@ -78,7 +78,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext ) throws TransactionFailureException
+    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+            throws TransactionFailureException
     {
         return newTransaction( type, securityContext, defaultTransactionTimeout );
     }

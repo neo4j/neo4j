@@ -333,7 +333,8 @@ public class AuthProceduresIT
     }
 
     @SuppressWarnings( "unchecked" )
-    public static void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
+    public static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+            Map<String,Object> expected )
     {
         List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
 

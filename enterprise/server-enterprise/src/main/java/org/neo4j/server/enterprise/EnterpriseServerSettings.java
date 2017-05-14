@@ -39,13 +39,17 @@ public class EnterpriseServerSettings implements LoadableConfig
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )
-    public static final Setting<Boolean> browser_retainConnectionCredentials = setting( "browser.retain_connection_credentials", BOOLEAN, TRUE );
+    public static final Setting<Boolean> browser_retainConnectionCredentials =
+            setting( "browser.retain_connection_credentials", BOOLEAN, TRUE );
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
-    public static final Setting<String> browser_remoteContentHostnameWhitelist = setting( "browser.remote_content_hostname_whitelist", STRING, "http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost" );
+    public static final Setting<String> browser_remoteContentHostnameWhitelist =
+            setting( "browser.remote_content_hostname_whitelist", STRING,
+                    "http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost" );
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the policy for outgoing Neo4j Browser connections." )
-    public static final Setting<Boolean> browser_allowOutgoingBrowserConnections = setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE );
+    public static final Setting<Boolean> browser_allowOutgoingBrowserConnections =
+            setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE );
 }

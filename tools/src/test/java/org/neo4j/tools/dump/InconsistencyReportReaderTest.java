@@ -66,7 +66,8 @@ public class InconsistencyReportReaderTest
                 "Some error", "something" );
         logger.error( RecordType.INDEX, new IndexEntry( indexNodeId ), "Some index error", "Something wrong with index" );
         logger.error( RecordType.NODE, new NodeRecord( nodeNotInTheIndexId ), "Some index error",
-                IndexRule.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ), new SchemaIndexProvider.Descriptor( "key", "version" ) ).toString() );
+                IndexRule.indexRule( indexId, IndexDescriptorFactory.forLabel( 1, 2 ),
+                        new SchemaIndexProvider.Descriptor( "key", "version" ) ).toString() );
         String text = out.toString();
 
         // WHEN

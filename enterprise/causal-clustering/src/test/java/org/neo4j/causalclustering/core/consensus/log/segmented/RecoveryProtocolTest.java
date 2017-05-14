@@ -230,13 +230,15 @@ public class RecoveryProtocolTest
         }
     }
 
-    private void testRecoveryOfBootstrappedEntry( long bootstrapIndex, long bootstrapTerm ) throws IOException, DamagedLogStorageException, DisposedException
+    private void testRecoveryOfBootstrappedEntry( long bootstrapIndex, long bootstrapTerm )
+            throws IOException, DamagedLogStorageException, DisposedException
     {
         // given
         createLogFile( fsa, -1, 0, 0, -1, -1 );
         createLogFile( fsa, -1, 1, 1, bootstrapIndex, bootstrapTerm );
 
-        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal, NullLogProvider.getInstance() );
+        RecoveryProtocol protocol =
+                new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal, NullLogProvider.getInstance() );
 
         // when
         State state = protocol.run();
@@ -261,7 +263,8 @@ public class RecoveryProtocolTest
         createLogFile( fsa, 100, 2, 2, 200,  99 );
         createLogFile( fsa, 1000, 3, 3, 2000,  999 );
 
-        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal, NullLogProvider.getInstance() );
+        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, readerPool, contentMarshal,
+                NullLogProvider.getInstance() );
 
         // when
         State state = protocol.run();
@@ -280,7 +283,8 @@ public class RecoveryProtocolTest
         assertEquals( 999, state.terms.latest() );
     }
 
-    private void createLogFile( EphemeralFileSystemAbstraction fsa, long prevFileLastIndex, long fileNameVersion, long headerVersion, long prevIndex, long prevTerm ) throws IOException
+    private void createLogFile( EphemeralFileSystemAbstraction fsa, long prevFileLastIndex, long fileNameVersion,
+            long headerVersion, long prevIndex, long prevTerm ) throws IOException
     {
         StoreChannel channel = fsa.open( fileNames.getForVersion( fileNameVersion ), "w" );
         PhysicalFlushableChannel writer = new PhysicalFlushableChannel( channel );

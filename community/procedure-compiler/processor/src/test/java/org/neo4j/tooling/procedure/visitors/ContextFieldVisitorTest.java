@@ -20,12 +20,6 @@
 package org.neo4j.tooling.procedure.visitors;
 
 import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
-import org.neo4j.tooling.procedure.visitors.examples.FinalContextMisuse;
-import org.neo4j.tooling.procedure.visitors.examples.NonPublicContextMisuse;
-import org.neo4j.tooling.procedure.visitors.examples.StaticContextMisuse;
-import org.neo4j.tooling.procedure.visitors.examples.UnsupportedInjectedContextTypes;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +28,13 @@ import java.util.stream.Stream;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
+
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
+import org.neo4j.tooling.procedure.visitors.examples.FinalContextMisuse;
+import org.neo4j.tooling.procedure.visitors.examples.NonPublicContextMisuse;
+import org.neo4j.tooling.procedure.visitors.examples.StaticContextMisuse;
+import org.neo4j.tooling.procedure.visitors.examples.UnsupportedInjectedContextTypes;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -102,9 +103,12 @@ public class ContextFieldVisitorTest
 
         assertThat( result ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
                 .containsExactlyInAnyOrder( tuple( Diagnostic.Kind.WARNING,
-                        "@org.neo4j.procedure.Context usage warning: found type: <java.lang.String>, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>" ),
+                        "@org.neo4j.procedure.Context usage warning: found type: <java.lang.String>, " +
+                                "expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>" ),
                         tuple( Diagnostic.Kind.WARNING,
-                                "@org.neo4j.procedure.Context usage warning: found type: <org.neo4j.kernel.internal.GraphDatabaseAPI>, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>" ) );
+                                "@org.neo4j.procedure.Context usage warning: " +
+                                        "found type: <org.neo4j.kernel.internal.GraphDatabaseAPI>, " +
+                                        "expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>" ) );
     }
 
     @Test

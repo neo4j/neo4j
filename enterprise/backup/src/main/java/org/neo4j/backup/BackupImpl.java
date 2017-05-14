@@ -69,8 +69,9 @@ class BackupImpl implements TheBackupInterface
             logger.log( "%s: Full backup started...", backupIdentifier );
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles(
                     FULL_BACKUP_CHECKPOINT_TRIGGER, storeWriter, forensics );
-            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
-                    transactionIdStore, logFileInformation, storeId, copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() );
+            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore, transactionIdStore,
+                    logFileInformation, storeId, copyStartContext.lastAppliedTransaction() + 1,
+                    storeCopyServer.monitor() );
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }

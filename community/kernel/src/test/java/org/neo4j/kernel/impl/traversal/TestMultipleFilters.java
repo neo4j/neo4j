@@ -114,8 +114,11 @@ public class TestMultipleFilters extends TraversalTestBase
         // Nodes connected (OUTGOING) to c (which "a" is)
         expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
         // Nodes connected (OUTGOING) to c AND e (which none is)
-        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( node( "a" ) ) );
+        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE )
+                .traverse( node( "a" ) ) );
         // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
-        expectNodes( getGraphDb().traversalDescription().evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( node( "a" ) ), "a", "b" );
+        expectNodes( getGraphDb().traversalDescription()
+                        .evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) )
+                        .traverse( node( "a" ) ), "a", "b" );
     }
 }

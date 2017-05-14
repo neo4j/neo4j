@@ -95,7 +95,8 @@ public class TestArrayStore
     {
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7 }, PropertyType.LONG, 3 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.LONG, 4 );
-        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1000, 10000, 13000, 15000000000L }, PropertyType.LONG, 34 );
+        assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[]{1000, 10000, 13000, 15000000000L},
+                PropertyType.LONG, 34 );
     }
 
     @Test

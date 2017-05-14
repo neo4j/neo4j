@@ -123,7 +123,8 @@ public class MainWindow extends JFrame
 
     private void createComponents()
     {
-        directoryDisplay = createUnmodifiableTextField( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ), 35 );
+        String lastLocation = LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() );
+        directoryDisplay = createUnmodifiableTextField( lastLocation, 35 );
 
         optionsButton = createOptionsButton();
         browseButton = createBrowseButton();

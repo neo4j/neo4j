@@ -104,7 +104,8 @@ public class DeleteRelationshipStressIT
     public void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
         // Given
-        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return exists(r.prop)" );
+        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
+                "OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return exists(r.prop)" );
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -116,7 +117,8 @@ public class DeleteRelationshipStressIT
     public void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
         // Given
-        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() REMOVE r.prop" );
+        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
+                "OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() REMOVE r.prop" );
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -128,7 +130,8 @@ public class DeleteRelationshipStressIT
     public void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
     {
         // Given
-        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() SET r.foo = 'bar'" );
+        executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
+                "OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() SET r.foo = 'bar'" );
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When

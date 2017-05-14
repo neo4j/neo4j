@@ -210,9 +210,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         else
         {
-            throw new TransactionFailureException( Status.Schema.SchemaModifiedConcurrently, "Failed to commit, because another transaction is making " +
-                    "schema changes. Slave commits are disallowed while schema changes are being committed. " +
-                    "Retrying the transaction should yield a successful result." );
+            throw new TransactionFailureException( Status.Schema.SchemaModifiedConcurrently,
+                    "Failed to commit, because another transaction is making " +
+                            "schema changes. Slave commits are disallowed while schema changes are being committed. " +
+                            "Retrying the transaction should yield a successful result." );
         }
     }
 

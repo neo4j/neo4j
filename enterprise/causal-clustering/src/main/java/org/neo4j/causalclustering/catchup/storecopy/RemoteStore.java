@@ -162,9 +162,11 @@ public class RemoteStore
         }
     }
 
-    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy ) throws IOException, StoreCopyFailedException
+    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId,
+            boolean asPartOfStoreCopy ) throws IOException, StoreCopyFailedException
     {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory
+                .create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 
@@ -173,7 +175,8 @@ public class RemoteStore
             CatchupResult lastStatus;
             do
             {
-                TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
+                TxPullRequestResult result =
+                        txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
                 lastStatus = result.catchupResult();
                 previousTxId = result.lastTxId();
             }

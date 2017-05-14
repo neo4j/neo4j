@@ -266,11 +266,13 @@ public class RelationshipGroupStoreTest
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
         assertFalse( groupRecord.getNext() == -1 );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
+        assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(),
+                rel2.getId(), rel3.getId() );
 
         RelationshipGroupRecord otherGroupRecord = RecordStore.getRecord( groupStore, groupRecord.getNext() );
         assertEquals( -1, otherGroupRecord.getNext() );
-        assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
+        assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(),
+                rel5.getId(), rel6.getId() );
     }
 
     @Test

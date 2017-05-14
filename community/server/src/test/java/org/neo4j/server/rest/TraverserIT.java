@@ -69,8 +69,10 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
     @Graph( {"I know you", "I own car"} )
     public void return_relationships_from_a_traversal()
     {
-        assertSize( 2, gen().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
-                getTraverseUriRelationships( getNode( "I" ) ) ).entity());
+        assertSize( 2, gen().expectedStatus( 200 )
+                .payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\"," +
+                        "\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" )
+                .post( getTraverseUriRelationships( getNode( "I" ) ) ).entity());
     }
 
     /**
@@ -81,8 +83,10 @@ public class TraverserIT extends AbstractRestFunctionalTestBase
     @Graph( {"I know you", "I own car"} )
     public void return_paths_from_a_traversal()
     {
-        assertSize( 3, gen().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
-                getTraverseUriPaths( getNode( "I" ) ) ).entity());
+        assertSize( 3, gen().expectedStatus( 200 )
+                .payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\"," +
+                        "\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" )
+                .post( getTraverseUriPaths( getNode( "I" ) ) ).entity());
     }
 
     private String getTraverseUriRelationships( Node node )

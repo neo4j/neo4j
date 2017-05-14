@@ -206,8 +206,10 @@ public class CausalClusterInProcessRunner
 
             builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).type.name(), "HTTP" );
             builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).enabled.name(), "true" );
-            builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name(), specifyPortOnly( httpPort ) );
-            builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).advertised_address.name(), specifyPortOnly( httpPort ) );
+            builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name(),
+                    specifyPortOnly( httpPort ) );
+            builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).advertised_address.name(),
+                    specifyPortOnly( httpPort ) );
         }
 
         void shutdown() throws InterruptedException

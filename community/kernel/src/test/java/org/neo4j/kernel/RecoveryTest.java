@@ -410,12 +410,14 @@ public class RecoveryTest
         return recoveryRequired.get();
     }
 
-    private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
+    private void writeSomeData( File file,
+            Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
 
-        try (  LogVersionedStoreChannel versionedStoreChannel =
-                       new PhysicalLogVersionedStoreChannel( fileSystemRule.get().open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
-              PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel ) )
+        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                fileSystemRule.get().open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
+                PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel(
+                        versionedStoreChannel ) )
         {
             writeLogHeader( writableLogChannel, logVersion, 2L );
 

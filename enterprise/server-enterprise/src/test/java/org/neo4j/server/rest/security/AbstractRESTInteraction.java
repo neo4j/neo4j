@@ -323,8 +323,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         else
         {
             throw new RuntimeException( String.format(
-                "Unhandled REST value type '%s'. Need String (TextNode), List (ArrayNode), Object (ObjectNode), long (LongNode), or int (IntNode).",
-                valueNode.getClass()
+                "Unhandled REST value type '%s'. Need String (TextNode), List (ArrayNode), Object (ObjectNode), " +
+                        "long (LongNode), or int (IntNode).", valueNode.getClass()
             ) );
         }
         return value;
