@@ -290,8 +290,8 @@ class ReflectiveProcedureCompiler
         if ( procName.namespace() == null || procName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
-                    procName.name() );
+                    "It is not allowed to define functions in the root namespace please use a namespace, " +
+                            "e.g. `@UserFunction(\"org.example.com.%s\")", procName.name() );
         }
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
@@ -335,8 +335,8 @@ class ReflectiveProcedureCompiler
         if ( funcName.namespace() == null || funcName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. `@UserFunction(\"org.example.com.%s\")",
-                    funcName.name() );
+                    "It is not allowed to define functions in the root namespace please use a namespace, " +
+                            "e.g. `@UserFunction(\"org.example.com.%s\")", funcName.name() );
         }
 
         //find update and result method

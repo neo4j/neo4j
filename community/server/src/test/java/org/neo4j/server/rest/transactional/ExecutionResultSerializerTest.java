@@ -22,8 +22,6 @@ package org.neo4j.server.rest.transactional;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -285,7 +283,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]},{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}," +
+                      "{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -311,9 +310,9 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[" +
-                      "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}," +
-                      "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
-                      "\"errors\":[]}", result );
+                "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}," +
+                "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"],\"meta\":[null,null]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -367,9 +366,12 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
-                      "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]," +
-                      "\"meta\":[{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":1,\"type\":\"node\",\"deleted\":false},[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
-                      "\"errors\":[]}", result );
+                "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12}," +
+                "\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]," +
+                "\"meta\":[{\"id\":1,\"type\":\"relationship\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"node\",\"deleted\":false},[{\"id\":1,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -389,9 +391,10 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
-                      "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
-                      "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
-                      "\"errors\":[]}", result );
+                "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
+                "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
+                "\"errors\":[]}", result );
     }
 
     @Test
@@ -463,8 +466,10 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals(
-                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
-                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
+                        "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\"," +
+                        "\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
 
@@ -500,7 +505,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals(
-                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
                 "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
@@ -536,10 +542,16 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         String node1 = "{\"id\":\"1\",\"labels\":[],\"properties\":{\"name\":\"node1\"}}";
         String node2 = "{\"id\":\"2\",\"labels\":[\"This\",\"That\"],\"properties\":{\"name\":\"node2\"}}";
         String node3 = "{\"id\":\"3\",\"labels\":[\"Other\"],\"properties\":{\"name\":\"node3\"}}";
-        String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\",\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
-        String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\",\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
-        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}],\"meta\":[{\"id\":0,\"type\":\"node\",\"deleted\":false},{\"id\":0,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
-        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}],\"meta\":[{\"id\":2,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+        String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\"," +
+                "\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
+        String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\"," +
+                "\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
+        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}]," +
+                "\"meta\":[{\"id\":0,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":0,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}]," +
+                "\"meta\":[{\"id\":2,\"type\":\"node\",\"deleted\":false}," +
+                "{\"id\":1,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
         int n0 = result.indexOf( node0 );
         int n1 = result.indexOf( node1 );
         int n2 = result.indexOf( node2 );
@@ -828,7 +840,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
         // then
         logProvider.assertExactly(
-                AssertableLogProvider.inLog( ExecutionResultSerializer.class ).error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." )
+                AssertableLogProvider.inLog( ExecutionResultSerializer.class )
+                    .error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." )
         );
     }
 
@@ -941,7 +954,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Iterable<Notification> notifications, Map<String, Object>... rows )
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription,
+            Iterable<Notification> notifications, Map<String, Object>... rows )
     {
         Set<String> keys = new TreeSet<>();
         for ( Map<String, Object> row : rows )

@@ -332,7 +332,8 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, InstanceId slaveId, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                        InstanceId slaveId, URI slaveUri )
                 {
                     return this;
                 }

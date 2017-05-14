@@ -118,7 +118,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
-         * Set the log level for many contexts - equivalent to calling {@link #withLogLevel(String, Level)} for every entry in the provided map.
+         * Set the log level for many contexts - equivalent to calling {@link #withLogLevel(String, Level)}
+         * for every entry in the provided map.
          *
          * @param levels a map containing paris of context and level
          * @return this builder
@@ -194,7 +195,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, levels, defaultLevel, autoFlush );
+            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext,
+                    levels, defaultLevel, autoFlush );
         }
     }
 

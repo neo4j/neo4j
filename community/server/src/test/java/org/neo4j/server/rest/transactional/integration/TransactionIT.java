@@ -870,8 +870,9 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
     {
         // begin and execute and commit
-        Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
-                                                                               "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
+        Response begin = http.POST( "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': " +
+                        "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
         assertThat( begin, hasErrors( Status.Request.Schema.IndexNotFound ) );
     }
 

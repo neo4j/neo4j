@@ -150,7 +150,8 @@ interface ByteCodeVisitor
         @Override
         public FieldVisitor visitField( int access, String name, String desc, String signature, Object value )
         {
-            printf( "  %s %s %s%s;%n", Modifier.toString( access ), getType( desc ).getClassName(), name, value == null ? "" : (" = " + value) );
+            printf( "  %s %s %s%s;%n", Modifier.toString( access ), getType( desc ).getClassName(), name,
+                    value == null ? "" : (" = " + value) );
             return super.visitField( access, name, desc, signature, value );
         }
 

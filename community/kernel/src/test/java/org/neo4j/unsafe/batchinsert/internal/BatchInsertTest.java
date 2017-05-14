@@ -589,9 +589,12 @@ public class BatchInsertTest
             Node realStartNode = db.getNodeById( startNode );
             Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
             Relationship realRelationship = db.getRelationshipById( relationship );
-            assertEquals( realSelfRelationship, realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
-            assertEquals( asSet( realSelfRelationship, realRelationship ), Iterables.asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
-            assertEquals( asSet( realSelfRelationship, realRelationship ), Iterables.asSet( realStartNode.getRelationships() ) );
+            assertEquals( realSelfRelationship,
+                    realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ),
+                    Iterables.asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ),
+                    Iterables.asSet( realStartNode.getRelationships() ) );
         }
         finally
         {

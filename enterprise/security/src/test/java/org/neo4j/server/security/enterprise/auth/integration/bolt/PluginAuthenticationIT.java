@@ -66,7 +66,8 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return super.getSettingsFunction().andThen( settings -> settings.put( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS ) );
+        return super.getSettingsFunction()
+                .andThen( settings -> settings.put( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS ) );
     }
 
     @Test
@@ -179,7 +180,8 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCombinedAuthPlugin" ) );
+        restartNeo4jServerWithOverriddenSettings(
+                settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCombinedAuthPlugin" ) );
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
         assertReadSucceeds();
@@ -200,7 +202,8 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldFailIfAuthorizationExpiredWithAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
+        restartNeo4jServerWithOverriddenSettings(
+                settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
 
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
         assertReadSucceeds();
@@ -221,7 +224,8 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
+        restartNeo4jServerWithOverriddenSettings(
+                settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
 
         // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );

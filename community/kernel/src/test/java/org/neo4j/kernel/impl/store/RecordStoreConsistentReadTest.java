@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.AssumptionViolatedException;
 
 import java.io.File;
 import java.util.Collection;
@@ -501,11 +501,16 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         {
             assertThat( "[" + index + "]getKeyIndexId", actualBlock.getKeyIndexId(),
                     is( expectedBlock.getKeyIndexId() ) );
-            assertThat( "[" + index + "]getSingleValueBlock", actualBlock.getSingleValueBlock(), is( expectedBlock.getSingleValueBlock() ) );
-            assertThat( "[" + index + "]getSingleValueByte", actualBlock.getSingleValueByte(), is( expectedBlock.getSingleValueByte() ) );
-            assertThat( "[" + index + "]getSingleValueInt", actualBlock.getSingleValueInt(), is( expectedBlock.getSingleValueInt() ) );
-            assertThat( "[" + index + "]getSingleValueLong", actualBlock.getSingleValueLong(), is( expectedBlock.getSingleValueLong() ) );
-            assertThat( "[" + index + "]getSingleValueShort", actualBlock.getSingleValueShort(), is( expectedBlock.getSingleValueShort() ) );
+            assertThat( "[" + index + "]getSingleValueBlock", actualBlock.getSingleValueBlock(),
+                    is( expectedBlock.getSingleValueBlock() ) );
+            assertThat( "[" + index + "]getSingleValueByte", actualBlock.getSingleValueByte(),
+                    is( expectedBlock.getSingleValueByte() ) );
+            assertThat( "[" + index + "]getSingleValueInt", actualBlock.getSingleValueInt(),
+                    is( expectedBlock.getSingleValueInt() ) );
+            assertThat( "[" + index + "]getSingleValueLong", actualBlock.getSingleValueLong(),
+                    is( expectedBlock.getSingleValueLong() ) );
+            assertThat( "[" + index + "]getSingleValueShort", actualBlock.getSingleValueShort(),
+                    is( expectedBlock.getSingleValueShort() ) );
             assertThat( "[" + index + "]getSize", actualBlock.getSize(), is( expectedBlock.getSize() ) );
             assertThat( "[" + index + "]getType", actualBlock.getType(), is( expectedBlock.getType() ) );
             assertThat( "[" + index + "]isLight", actualBlock.isLight(), is( expectedBlock.isLight() ) );
@@ -519,14 +524,22 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             {
                 DynamicRecord actualValueRecord = actualValueRecords.get( i );
                 DynamicRecord expectedValueRecord = expectedValueRecords.get( i );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getData", actualValueRecord.getData(), is( expectedValueRecord.getData() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLength", actualValueRecord.getLength(), is( expectedValueRecord.getLength() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(), is( expectedValueRecord.getNextBlock() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(), is( expectedValueRecord.getType() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(), is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(), is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(), is( expectedValueRecord.isStartRecord() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(), is( expectedValueRecord.inUse() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getData", actualValueRecord.getData(),
+                        is( expectedValueRecord.getData() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getLength", actualValueRecord.getLength(),
+                        is( expectedValueRecord.getLength() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(),
+                        is( expectedValueRecord.getNextBlock() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(),
+                        is( expectedValueRecord.getType() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(),
+                        is( expectedValueRecord.getId() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(),
+                        is( expectedValueRecord.getId() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(),
+                        is( expectedValueRecord.isStartRecord() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(),
+                        is( expectedValueRecord.inUse() ) );
             }
         }
     }

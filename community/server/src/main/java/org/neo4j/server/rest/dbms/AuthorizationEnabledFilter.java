@@ -69,7 +69,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     }
 
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain ) throws IOException, ServletException
+    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain )
+            throws IOException, ServletException
     {
         validateRequestType( servletRequest );
         validateResponseType( servletResponse );

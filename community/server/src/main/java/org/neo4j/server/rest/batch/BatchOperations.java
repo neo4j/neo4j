@@ -217,5 +217,6 @@ public abstract class BatchOperations
         invoke( method, path, body, id, targetUri, req, res );
     }
 
-    protected abstract void invoke( String method, String path, String body, Integer id, URI targetUri, InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException;
+    protected abstract void invoke( String method, String path, String body, Integer id, URI targetUri,
+            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException;
 }

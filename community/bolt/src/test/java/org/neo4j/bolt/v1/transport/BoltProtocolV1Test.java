@@ -68,7 +68,8 @@ public class BoltProtocolV1Test
         // When
         protocol.handle( mock(ChannelHandlerContext.class), bomb );
 
-        // Then the protocol should not mess with the channel (because it runs on the IO thread, and only the worker thread should produce writes)
+        // Then the protocol should not mess with the channel (because it runs on the IO thread,
+        // and only the worker thread should produce writes)
         verifyNoMoreInteractions( outputChannel );
 
         // But instead make sure the state machine is shut down

@@ -82,7 +82,8 @@ public interface CursorPools extends Disposable
 
     Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, PropertyContainerState state );
 
-    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock, PropertyContainerState state );
+    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock,
+            PropertyContainerState state );
 
     Cursor<RelationshipGroupItem> acquireRelationshipGroupCursor( long relationshipGroupId );
 

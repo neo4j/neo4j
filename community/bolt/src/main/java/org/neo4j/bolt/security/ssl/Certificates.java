@@ -65,7 +65,8 @@ import javax.crypto.NoSuchPaddingException;
 
 public class Certificates
 {
-    /** Generating SSL certificates takes a long time. This non-official setting allows us to use a fast source of randomness when running tests */
+    /* Generating SSL certificates takes a long time.
+     * This non-official setting allows us to use a fast source of randomness when running tests */
     private static final boolean useInsecureCertificateGeneration = Boolean.getBoolean( "org.neo4j.useInsecureCertificateGeneration" );
     private static final String CERTIFICATE_TYPE = "X.509";
     private static final String DEFAULT_ENCRYPTION = "RSA";

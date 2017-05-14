@@ -163,7 +163,8 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         @Override
         public String toString()
         {
-            return String.format( "%s[%s expected=%d:%d, actual=%d:%d]", getClass().getSimpleName(), key, expectedFirst, expectedSecond, actualFirst, actualSecond );
+            return String.format( "%s[%s expected=%d:%d, actual=%d:%d]", getClass().getSimpleName(), key, expectedFirst,
+                    expectedSecond, actualFirst, actualSecond );
         }
 
         public CountsKey key()

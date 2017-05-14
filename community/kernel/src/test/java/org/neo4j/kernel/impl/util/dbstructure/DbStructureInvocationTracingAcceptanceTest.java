@@ -64,8 +64,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     {
         // GIVEN
         StringBuilder output = new StringBuilder();
-        InvocationTracer<DbStructureVisitor> tracer =
-            new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
+        InvocationTracer<DbStructureVisitor> tracer = new InvocationTracer<>( "Test", packageName, className,
+                DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
         DbStructureVisitor visitor = tracer.newProxy();
 
         // WHEN
@@ -81,8 +81,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     {
         // GIVEN
         StringBuilder output = new StringBuilder();
-        InvocationTracer<DbStructureVisitor> tracer =
-            new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
+        InvocationTracer<DbStructureVisitor> tracer = new InvocationTracer<>( "Test", packageName, className,
+                DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
         exerciseVisitor( from -> tracer.newProxy() );
         tracer.close();
         final Visitable<DbStructureVisitor> visitable = compileVisitable( classNameWithPackage, output.toString() );
@@ -101,8 +101,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     {
         // GIVEN
         StringBuilder output1 = new StringBuilder();
-        InvocationTracer<DbStructureVisitor> tracer1 =
-                new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output1 );
+        InvocationTracer<DbStructureVisitor> tracer1 = new InvocationTracer<>( "Test", packageName, className,
+                DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output1 );
         DbStructureVisitor visitor1 = tracer1.newProxy();
         exerciseVisitor( from -> visitor1 );
         tracer1.close();
@@ -111,8 +111,8 @@ public class DbStructureInvocationTracingAcceptanceTest
 
         // WHEN
         StringBuilder output2 = new StringBuilder();
-        InvocationTracer<DbStructureVisitor> tracer2 =
-            new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output2 );
+        InvocationTracer<DbStructureVisitor> tracer2 = new InvocationTracer<>( "Test", packageName, className,
+                DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output2 );
         DbStructureVisitor visitor2 = tracer2.newProxy();
         visitable.accept( visitor2 );
         tracer2.close();
@@ -131,9 +131,11 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( IndexDescriptorFactory.forLabel( 0, 1 ), ":Person(age)", 0.5d, 1L );
+        visitor.apply( null ).visitIndex( IndexDescriptorFactory.forLabel( 0, 1 ),
+                ":Person(age)", 0.5d, 1L );
         visitor.apply( null )
-                .visitIndex( IndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ), ":Person(name, lastName)", 0.5d, 1L );
+                .visitIndex( IndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ),
+                        ":Person(name, lastName)", 0.5d, 1L );
         visitor.apply( null )
                 .visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
         visitor.apply( null ).visitNodeKeyConstraint(
@@ -141,7 +143,8 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );
         visitor.apply( null ).visitNodeCount( 0, "Party", 5 );
-        visitor.apply( null ).visitRelCount( 0, 1, -1, "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
+        visitor.apply( null ).visitRelCount( 0, 1, -1,
+                "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
     }
 
     private void assertCompiles( final String className, String source )

@@ -76,10 +76,12 @@ public class ServerGroupsIT
         List<List<String>> expected;
 
         Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
-        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> String.join( ", ", makeCoreGroups( suffix.get(), id ) ) );
+        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(),
+                ( id ) -> String.join( ", ", makeCoreGroups( suffix.get(), id ) ) );
 
         Map<String,IntFunction<String>> instanceReplicaParams = new HashMap<>();
-        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> String.join( ", ", makeReplicaGroups( suffix.get(), id ) ) );
+        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(),
+                ( id ) -> String.join( ", ", makeReplicaGroups( suffix.get(), id ) ) );
 
         int nServers = 3;
         cluster = new Cluster( testDir.directory( "cluster" ), nServers, nServers,

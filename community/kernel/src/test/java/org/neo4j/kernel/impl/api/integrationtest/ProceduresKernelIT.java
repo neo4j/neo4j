@@ -30,8 +30,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -133,12 +133,14 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
             {
-                return RawIterator.<Object[], ProcedureException>of( new Object[]{ ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement().readOperations() } );
+                return RawIterator.<Object[],ProcedureException>of(
+                        new Object[]{ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement().readOperations()} );
             }
         } );
 
         // When
-        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx().procedureCallRead( signature.name(), new Object[]{""} );
+        RawIterator<Object[],ProcedureException> stream =
+                procedureCallOpsInNewTx().procedureCallRead( signature.name(), new Object[]{""} );
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );

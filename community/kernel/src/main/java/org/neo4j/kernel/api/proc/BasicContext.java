@@ -38,7 +38,8 @@ public class BasicContext implements Context
         Object o = values.get( key.name() );
         if ( o == null )
         {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "There is no `%s` in the current procedure call context.", key.name() );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                    "There is no `%s` in the current procedure call context.", key.name() );
         }
         return (T) o;
     }

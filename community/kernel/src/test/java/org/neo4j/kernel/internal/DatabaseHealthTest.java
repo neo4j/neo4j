@@ -57,7 +57,8 @@ public class DatabaseHealthTest
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), logProvider.getLog( DatabaseHealth.class ) );
+        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                logProvider.getLog( DatabaseHealth.class ) );
         databaseHealth.healed();
 
         // WHEN

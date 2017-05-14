@@ -136,7 +136,8 @@ public class ImportTool
                 "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
         ARRAY_DELIMITER( "array-delimiter", null,
                 "<array-delimiter-character>",
-                "Delimiter character, or 'TAB', between array elements within a value in CSV data. The default option is `" + COMMAS.arrayDelimiter() + "`." ),
+                "Delimiter character, or 'TAB', between array elements within a value in CSV data. " +
+                        "The default option is `" + COMMAS.arrayDelimiter() + "`." ),
         QUOTE( "quote", null,
                 "<quotation-character>",
                 "Character to treat as quotation character for values in CSV data. "

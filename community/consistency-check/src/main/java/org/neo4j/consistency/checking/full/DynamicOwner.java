@@ -161,7 +161,8 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         }
     }
 
-    abstract static class NameOwner<RECORD extends TokenRecord, REPORT extends ConsistencyReport.NameConsistencyReport> extends DynamicOwner<RECORD>
+    abstract static class NameOwner<RECORD extends TokenRecord,
+            REPORT extends ConsistencyReport.NameConsistencyReport> extends DynamicOwner<RECORD>
             implements ComparativeRecordChecker<RECORD, AbstractBaseRecord, REPORT>
     {
         @SuppressWarnings( "ConstantConditions" )

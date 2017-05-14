@@ -89,7 +89,8 @@ public class RelationshipGroupGetterTest
             verification.verify( store ).getRecord( eq( group_2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store ).getRecord( eq( group_4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store ).getRecord( eq( group_10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store, times( 0 ) ).getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store, times( 0 ) )
+                    .getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
 
             // it should also be reported as not found
             assertNull( result.group() );

@@ -95,7 +95,9 @@ class Appending
                  */
                 if ( logIndex <= state.commitIndex() ) // first, assert that we haven't committed what we are about to truncate
                 {
-                    throw new IllegalStateException( format( "Cannot truncate entry at index %d with term %d when commit index is at %d", logIndex, logTerm, state.commitIndex() ) );
+                    throw new IllegalStateException(
+                            format( "Cannot truncate entry at index %d with term %d when commit index is at %d",
+                                    logIndex, logTerm, state.commitIndex() ) );
                 }
                 outcome.addLogCommand( new TruncateLogCommand( logIndex ) );
                 break;

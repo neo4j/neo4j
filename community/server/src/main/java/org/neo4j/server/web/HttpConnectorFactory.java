@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.web;
 
-import java.util.Arrays;
-
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+
+import java.util.Arrays;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -59,12 +59,14 @@ public class HttpConnectorFactory
         return createConnector(server, address, jettyThreadCalculator, httpFactory );
     }
 
-    public ServerConnector createConnector( Server server, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
+    public ServerConnector createConnector( Server server, ListenSocketAddress address,
+            JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
     {
         int acceptors = jettyThreadCalculator.getAcceptors();
         int selectors = jettyThreadCalculator.getSelectors();
 
-        ServerConnector connector = new ServerConnector( server , null, null, null, acceptors, selectors, httpFactories );
+        ServerConnector connector =
+                new ServerConnector( server, null, null, null, acceptors, selectors, httpFactories );
 
         connector.setConnectionFactories( Arrays.asList( httpFactories ) );
 

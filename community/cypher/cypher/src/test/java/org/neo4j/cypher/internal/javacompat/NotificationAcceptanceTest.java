@@ -180,8 +180,9 @@ public class NotificationAcceptanceTest
                     containsItem(notification(
                             "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                             containsString(
-                                    "The semantics of using colon in the separation of alternative relationship types in conjunction with the " +
-                                              "use of variable binding, inlined property predicates, or variable length will change in a future version."
+                                    "The semantics of using colon in the separation of alternative relationship " +
+                                            "types in conjunction with the use of variable binding, inlined property " +
+                                            "predicates, or variable length will change in a future version."
                             ),
                             any(InputPosition.class),
                             SeverityLevel.WARNING)));

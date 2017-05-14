@@ -58,7 +58,8 @@ import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider, TransitionalPeriodTransactionMessContainer container )
+    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider,
+            TransitionalPeriodTransactionMessContainer container )
     {
         this.baseUri = baseUri;
         this.log = logProvider.getLog( getClass() );
@@ -293,7 +294,8 @@ public class ExecutionResultSerializer
     }
 
     /**
-     * Will get called once if any errors occurred, after {@link #statementResult(org.neo4j.graphdb.Result, boolean, ResultDataContent...)}  statementResults}
+     * Will get called once if any errors occurred,
+     * after {@link #statementResult(org.neo4j.graphdb.Result, boolean, ResultDataContent...)}  statementResults}
      * has been called This method is not allowed to throw exceptions. If there are network errors or similar, the
      * handler should take appropriate action, but never fail this method.
      * @param errors the errors to write

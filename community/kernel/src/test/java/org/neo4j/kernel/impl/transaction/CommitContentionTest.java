@@ -131,7 +131,8 @@ public class CommitContentionTest
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                    GraphDatabaseFacade graphDatabaseFacade )
             {
                 return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {

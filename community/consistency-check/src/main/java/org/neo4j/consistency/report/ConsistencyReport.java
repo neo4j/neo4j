@@ -110,7 +110,8 @@ public interface ConsistencyReport
         @Documented( "The referenced property is owned by the neo store (graph global property)." )
         void multipleOwners( NeoStoreRecord neoStore );
 
-        @Documented( "The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property." )
+        @Documented( "The property chain contains multiple properties that have the same property key id, " +
+                "which means that the entity has at least one duplicate property." )
         void propertyKeyNotUniqueInChain();
 
         @Documented( "The property chain does not contain a property that is mandatory for this entity." )
@@ -138,13 +139,16 @@ public interface ConsistencyReport
         @Documented( "The constraint index does not reference back to the given record" )
         void constraintIndexRuleNotReferencingBack( DynamicRecord ruleRecord );
 
-        @Documented( "This record is required to reference some other record of the given kind but no such obligation was found" )
+        @Documented( "This record is required to reference some other record of the given kind but no such obligation " +
+                "was found" )
         void missingObligation( SchemaRule.Kind kind );
 
-        @Documented( "This record requires some other record to reference back to it but there already was such a conflicting obligation created by the record given as a parameter" )
+        @Documented( "This record requires some other record to reference back to it but there already was such " +
+                "a conflicting obligation created by the record given as a parameter" )
         void duplicateObligation( DynamicRecord record );
 
-        @Documented( "This record contains a schema rule which has the same content as the schema rule contained in the record given as parameter" )
+        @Documented( "This record contains a schema rule which has the same content as the schema rule contained " +
+                "in the record given as parameter" )
         void duplicateRuleContent( DynamicRecord record );
 
         @Documented( "The schema rule contained in the DynamicRecord chain is malformed (not deserializable)" )
@@ -162,10 +166,12 @@ public interface ConsistencyReport
         @Documented( "The referenced relationship record is a relationship between two other nodes." )
         void relationshipForOtherNode( RelationshipRecord relationship );
 
-        @Documented( "The referenced relationship record is not the first in the relationship chain where this node is source." )
+        @Documented( "The referenced relationship record is not the first in the relationship chain where this node " +
+                "is source." )
         void relationshipNotFirstInSourceChain( RelationshipRecord relationship );
 
-        @Documented( "The referenced relationship record is not the first in the relationship chain where this node is target." )
+        @Documented( "The referenced relationship record is not the first in the relationship chain where this node " +
+                "is target." )
         void relationshipNotFirstInTargetChain( RelationshipRecord relationship );
 
         @Documented( "The label token record referenced from a node record is not in use." )
@@ -307,10 +313,12 @@ public interface ConsistencyReport
         @Documented( "The array property is not referenced anymore, but the corresponding block as not been deleted." )
         void arrayUnreferencedButNotDeleted( PropertyBlock block );
 
-        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship does not contain this property in its property chain." )
+        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship " +
+                "does not contain this property in its property chain." )
         void ownerDoesNotReferenceBack();
 
-        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship did not contain this property in its property chain prior to the change. The property is referenced by another owner." )
+        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship " +
+                "did not contain this property in its property chain prior to the change. The property is referenced by another owner." )
         void changedForWrongOwner();
 
         @Documented( "The string record referred from this property is also referred from a another property." )
@@ -332,7 +340,9 @@ public interface ConsistencyReport
         void nameBlockNotInUse( DynamicRecord record );
 
         @Warning
-        @Documented( "The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and above, but they can be accessed just like any other tokens. It's possible that this token have been created in an earlier version where there were no checks for name being empty." )
+        @Documented( "The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and " +
+                "above, but they can be accessed just like any other tokens. It's possible that this token have been " +
+                "created in an earlier version where there were no checks for name being empty." )
         void emptyName( DynamicRecord name );
 
         @Documented( "The string record referred from this name record is also referred from a another string record." )

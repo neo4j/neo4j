@@ -59,7 +59,8 @@ public class MachineRoom
         return machine;
     }
 
-    public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
+    public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state )
+            throws AuthenticationException, BoltConnectionFatality
     {
         BoltStateMachine machine = newMachine();
         init( machine );

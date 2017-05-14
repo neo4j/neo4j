@@ -295,7 +295,8 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    void streamResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
+                    void streamResult( MutableTransactionState ctx,
+                            ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
                     {
                         assert ctx.currentResult != null;
                         resultConsumer.accept( ctx.currentResult );

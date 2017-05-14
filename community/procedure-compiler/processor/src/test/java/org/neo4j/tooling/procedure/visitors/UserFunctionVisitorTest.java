@@ -99,7 +99,8 @@ public class UserFunctionVisitorTest
 
         assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getElement,
                 CompilationMessage::getContents ).contains( tuple( Diagnostic.Kind.ERROR, function,
-                "Unsupported return type <void> of function defined in <org.neo4j.tooling.procedure.visitors.examples.UserFunctionsExamples#wrongReturnType>." ) );
+                "Unsupported return type <void> of function defined in " +
+                        "<org.neo4j.tooling.procedure.visitors.examples.UserFunctionsExamples#wrongReturnType>." ) );
     }
 
     @Test

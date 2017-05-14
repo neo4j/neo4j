@@ -729,7 +729,8 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private Pair<List<DynamicRecord>, List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws TransactionFailureException
+    private Pair<List<DynamicRecord>,List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount )
+            throws TransactionFailureException
     {
         final long[] labels = new long[labelCount + 1]; // allocate enough labels to need three records
         final List<Integer> createdLabels = new ArrayList<>();

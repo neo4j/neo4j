@@ -108,7 +108,8 @@ public class ReplicatedIdAllocationRequest implements CoreReplicatedContent
     @Override
     public String toString()
     {
-        return format( "ReplicatedIdAllocationRequest{owner=%s, idType=%s, idRangeStart=%d, idRangeLength=%d}", owner, idType, idRangeStart, idRangeLength );
+        return format( "ReplicatedIdAllocationRequest{owner=%s, idType=%s, idRangeStart=%d, idRangeLength=%d}", owner,
+                idType, idRangeStart, idRangeLength );
     }
 
     @Override

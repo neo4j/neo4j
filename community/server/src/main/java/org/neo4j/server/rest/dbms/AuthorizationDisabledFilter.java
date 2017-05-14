@@ -29,14 +29,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.security.AuthSubject;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 
 public class AuthorizationDisabledFilter extends AuthorizationFilter
 {
     @Override
-    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain ) throws IOException, ServletException
+    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain )
+            throws IOException, ServletException
     {
         validateRequestType( servletRequest );
         validateResponseType( servletResponse );
@@ -46,8 +46,9 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
 
         try
         {
-            filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request,
-                    getAuthDisabledSecurityContext() ), servletResponse );
+            filterChain.doFilter(
+                    new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, getAuthDisabledSecurityContext() ),
+                    servletResponse );
         }
         catch ( AuthorizationViolationException e )
         {

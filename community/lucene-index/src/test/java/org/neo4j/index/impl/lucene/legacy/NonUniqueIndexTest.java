@@ -152,7 +152,8 @@ public class NonUniqueIndexTest
     {
         Config config = Config.empty();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),
-                DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(), Config.empty(), OperationalMode.single );
+                DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(),
+                Config.empty(), OperationalMode.single );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
                 IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );

@@ -21,7 +21,7 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
-import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
@@ -29,11 +29,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class RelationshipTypeTokenRecordCheckTest extends
-        RecordCheckTestBase<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport, RelationshipTypeTokenRecordCheck>
+        RecordCheckTestBase<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport, RelationshipTypeTokenRecordCheck>
 {
     public RelationshipTypeTokenRecordCheckTest()
     {
-        super( new RelationshipTypeTokenRecordCheck(), ConsistencyReport.RelationshipTypeConsistencyReport.class, new int[0] );
+        super( new RelationshipTypeTokenRecordCheck(), RelationshipTypeConsistencyReport.class, new int[0] );
     }
 
     @Test
@@ -43,7 +43,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         RelationshipTypeTokenRecord label = notInUse( new RelationshipTypeTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verifyNoMoreInteractions( report );
@@ -56,7 +56,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verifyNoMoreInteractions( report );
@@ -71,7 +71,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         label.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verify( report ).nameBlockNotInUse( name );
@@ -87,7 +87,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
         label.setNameId( (int) name.getId() );
 
         // when
-        ConsistencyReport.RelationshipTypeConsistencyReport report = check( label );
+        RelationshipTypeConsistencyReport report = check( label );
 
         // then
         verify( report ).emptyName( name );

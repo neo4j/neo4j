@@ -35,7 +35,8 @@ public class IndexValueLengthValidatorTest
     public void tooLongByteArrayIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Property value bytes length: 35000 is longer then 32766, which is maximum supported length of indexed property value." );
+        expectedException.expectMessage( "Property value bytes length: 35000 is longer then 32766, " +
+                "which is maximum supported length of indexed property value." );
         INSTANCE.validate( RandomUtils.nextBytes( 35000 ) );
     }
 

@@ -133,7 +133,8 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
             // [    ,   x] in use flag
             // [    ,xxx ] first node high order bits
             // [xxxx,    ] next prop high order bits
-            short inUseUnsignedByte = (short)((record.inUse() ? Record.IN_USE : Record.NOT_IN_USE).byteValue() | firstNodeMod | nextPropMod);
+            short inUseUnsignedByte = (short) ((record.inUse() ? Record.IN_USE :
+                                                Record.NOT_IN_USE).byteValue() | firstNodeMod | nextPropMod);
 
             // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
             // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000

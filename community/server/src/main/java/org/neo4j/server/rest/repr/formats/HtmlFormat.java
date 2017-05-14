@@ -56,7 +56,8 @@ public class HtmlFormat extends RepresentationFormat
                 StringBuilder builder = HtmlHelper.start( HtmlHelper.ObjectType.NODE, javascript );
                 HtmlHelper.append( builder, Collections.singletonMap( "data", serialized.get( "data" ) ),
                         HtmlHelper.ObjectType.NODE );
-                builder.append( "<form action='javascript:neo4jHtmlBrowse.getRelationships();'><fieldset><legend>Get relationships</legend>\n" );
+                builder.append( "<form action='javascript:neo4jHtmlBrowse.getRelationships();'>" );
+                builder.append("<fieldset><legend>Get relationships</legend>\n" );
                 builder.append( "<label for='direction'>with direction</label>\n" + "<select id='direction'>" );
                 builder.append( "<option value='" )
                         .append( serialized.get( "all_typed_relationships" ) )

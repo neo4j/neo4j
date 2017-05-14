@@ -96,8 +96,10 @@ public class CoreBootstrapperTest
         /* The session state is initially empty. */
         assertEquals( new GlobalSessionTrackerState(), snapshot.get( CoreStateType.SESSION_TRACKER ) );
 
-        LastCommittedIndexFinder lastCommittedIndexFinder = new LastCommittedIndexFinder( new ReadOnlyTransactionIdStore( pageCache, classicNeo4jStore ), new ReadOnlyTransactionStore(
-                pageCache, fileSystem, classicNeo4jStore, new Monitors() ), NullLogProvider.getInstance() );
+        LastCommittedIndexFinder lastCommittedIndexFinder = new LastCommittedIndexFinder(
+                new ReadOnlyTransactionIdStore( pageCache, classicNeo4jStore ),
+                        new ReadOnlyTransactionStore( pageCache, fileSystem, classicNeo4jStore, new Monitors() ),
+                        NullLogProvider.getInstance() );
 
         long lastCommittedIndex = lastCommittedIndexFinder.getLastCommittedIndex();
         assertEquals( -1, lastCommittedIndex );

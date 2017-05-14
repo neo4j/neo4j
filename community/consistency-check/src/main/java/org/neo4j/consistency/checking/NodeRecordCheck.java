@@ -272,7 +272,8 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
                 }
 
                 @Override
-                public void onWellFormedChain( long[] labelIds, CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records )
+                public void onWellFormedChain( long[] labelIds,
+                        CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, RecordAccess records )
                 {
                     validateLabelIds( labelIds, engine, records );
                 }

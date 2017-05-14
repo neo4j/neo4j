@@ -128,7 +128,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     @Documented( "Listing labels for a node." )
     @Test
-    @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", labels = { @LABEL( "Actor" ), @LABEL( "Director" ) }, setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = {@NODE( name = "Clint Eastwood", labels = {@LABEL( "Actor" ),
+            @LABEL( "Director" )}, setNameProperty = true )} )
     public void listing_node_labels() throws JsonParseException
     {
         Map<String, Node> nodes = data.get();
@@ -262,7 +263,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
                  "By default, the server will return labels in use only. If you also want to return labels not in use,\n" +
                  "append the \"in_use=0\" query parameter." )
     @GraphDescription.Graph( nodes = {
-            @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),
+            @NODE( name = "Clint Eastwood", setNameProperty = true,
+                    labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),
             @NODE( name = "Donald Sutherland", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ) } ),
             @NODE( name = "Steven Spielberg", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Director" ) } )
     } )

@@ -180,7 +180,8 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 
         final String CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH = "99";
         response.close();
-        response = new RestRequest().post( clonedSubgraphUri, "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
+        response = new RestRequest().post( clonedSubgraphUri,
+                "depth=" + CLONE_DEPTH_MUCH_LARGER_THAN_THE_GRAPH, MediaType.APPLICATION_FORM_URLENCODED_TYPE );
 
         Assert.assertEquals( response.getEntity(), 200, response.getStatus() );
 

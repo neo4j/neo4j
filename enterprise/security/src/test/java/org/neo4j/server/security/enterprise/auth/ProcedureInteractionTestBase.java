@@ -141,7 +141,9 @@ public abstract class ProcedureInteractionTestBase<S>
         Path homeDir = Files.createTempDirectory( "logs" );
         securityLog = new File( homeDir.toFile(), "security.log" );
         return stringMap( GraphDatabaseSettings.logs_directory.name(), homeDir.toAbsolutePath().toString(),
-                SecuritySettings.procedure_roles.name(), "test.allowed*Procedure:role1;test.nestedAllowedFunction:role1;test.allowedFunc*:role1;test.*estedAllowedProcedure:role1");
+                SecuritySettings.procedure_roles.name(),
+                "test.allowed*Procedure:role1;test.nestedAllowedFunction:role1;" +
+                        "test.allowedFunc*:role1;test.*estedAllowedProcedure:role1");
     }
 
     @Before

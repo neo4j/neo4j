@@ -1111,7 +1111,8 @@ public class BackupServiceIT
                 CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckFailedException
         {
             markAsChecked();
-            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose, checkConsistencyConfig );
+            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider,
+                    fileSystem, pageCache, verbose, checkConsistencyConfig );
         }
 
         private void markAsChecked()

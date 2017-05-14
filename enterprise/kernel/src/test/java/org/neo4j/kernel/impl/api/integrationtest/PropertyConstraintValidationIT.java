@@ -99,7 +99,8 @@ public class PropertyConstraintValidationIT
                     node.setProperty( "property2", "2" );
                     transaction.success();
                 }
-            }, ConstraintViolationException.class, "Node(0) with label `multiNodeKeyLabel` must have the properties `property2, property3`" );
+            }, ConstraintViolationException.class,
+                    "Node(0) with label `multiNodeKeyLabel` must have the properties `property2, property3`" );
 
             Assert.assertException( () ->
             {
@@ -111,7 +112,8 @@ public class PropertyConstraintValidationIT
                     node.setProperty( "property3", "3" );
                     transaction.success();
                 }
-            }, ConstraintViolationException.class, "Node(1) with label `multiNodeKeyLabel` must have the properties `property3, property4`" );
+            }, ConstraintViolationException.class,
+                    "Node(1) with label `multiNodeKeyLabel` must have the properties `property3, property4`" );
         }
     }
 

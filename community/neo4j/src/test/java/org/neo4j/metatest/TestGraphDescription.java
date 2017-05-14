@@ -150,9 +150,12 @@ public class TestGraphDescription implements GraphHolder
             @NODE( name = "I", properties = {
                     @PROP( key = "name", value = "me" ),
                     @PROP( key = "bool", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ),
-            @NODE( name = "you", setNameProperty = true ) }, relationships = { @REL( start = "I", end = "you", type = "knows", properties = {
-            @PROP( key = "name", value = "relProp" ),
-            @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) }, autoIndexRelationships = true )
+            @NODE( name = "you", setNameProperty = true ) },
+                   relationships = { @REL( start = "I", end = "you", type = "knows",
+                           properties = {
+                    @PROP( key = "name", value = "relProp" ),
+                    @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
+            autoIndexRelationships = true )
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
             throws Exception
     {

@@ -160,16 +160,26 @@ public class TypeReference
     private final String declaringClassName;
     private final int modifiers;
 
-    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false, "", void.class.getModifiers() );
-    public static final TypeReference OBJECT = new TypeReference( "java.lang", "Object", false, false, false, "", Object.class.getModifiers() );
-    public static final TypeReference BOOLEAN = new TypeReference( "", "boolean", true, false, false, "", boolean.class.getModifiers() );
-    public static final TypeReference INT = new TypeReference( "", "int", true, false, false, "", int.class.getModifiers() );
-    public static final TypeReference LONG = new TypeReference( "", "long", true, false, false, "", long.class.getModifiers() );
-    public static final TypeReference DOUBLE = new TypeReference( "", "double", true, false, false, "", double.class.getModifiers() );
-    public static final TypeReference BOOLEAN_ARRAY = new TypeReference( "", "boolean", false, true, false, "", boolean.class.getModifiers() );
-    public static final TypeReference INT_ARRAY = new TypeReference( "", "int", false, true, false, "", int.class.getModifiers() );
-    public static final TypeReference LONG_ARRAY = new TypeReference( "", "long", false, true, false, "", long.class.getModifiers() );
-    public static final TypeReference DOUBLE_ARRAY = new TypeReference( "", "double", false, true, false, "", double.class.getModifiers() );
+    public static final TypeReference VOID =
+            new TypeReference( "", "void", true, false, false, "", void.class.getModifiers() );
+    public static final TypeReference OBJECT =
+            new TypeReference( "java.lang", "Object", false, false, false, "", Object.class.getModifiers() );
+    public static final TypeReference BOOLEAN =
+            new TypeReference( "", "boolean", true, false, false, "", boolean.class.getModifiers() );
+    public static final TypeReference INT =
+            new TypeReference( "", "int", true, false, false, "", int.class.getModifiers() );
+    public static final TypeReference LONG =
+            new TypeReference( "", "long", true, false, false, "", long.class.getModifiers() );
+    public static final TypeReference DOUBLE =
+            new TypeReference( "", "double", true, false, false, "", double.class.getModifiers() );
+    public static final TypeReference BOOLEAN_ARRAY =
+            new TypeReference( "", "boolean", false, true, false, "", boolean.class.getModifiers() );
+    public static final TypeReference INT_ARRAY =
+            new TypeReference( "", "int", false, true, false, "", int.class.getModifiers() );
+    public static final TypeReference LONG_ARRAY =
+            new TypeReference( "", "long", false, true, false, "", long.class.getModifiers() );
+    public static final TypeReference DOUBLE_ARRAY =
+            new TypeReference( "", "double", false, true, false, "", double.class.getModifiers() );
     static final TypeReference[] NO_TYPES = new TypeReference[0];
 
     TypeReference( String packageName, String name, boolean isPrimitive, boolean isArray,

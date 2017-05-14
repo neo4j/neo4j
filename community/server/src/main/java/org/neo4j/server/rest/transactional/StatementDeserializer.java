@@ -50,7 +50,8 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StatementDeserializer extends PrefetchingIterator<Statement>
 {
-    private static final JsonFactory JSON_FACTORY = new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
+    private static final JsonFactory JSON_FACTORY =
+            new JsonFactory().setCodec( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private static final Map<String, Object> NO_PARAMETERS = unmodifiableMap( map() );
 
     private final JsonParser input;
@@ -139,7 +140,8 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                     if ( statement == null )
                     {
-                        addError( new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "No statement provided." ) ) );
+                        addError( new Neo4jError( Status.Request.InvalidFormat,
+                                new DeserializationException( "No statement provided." ) ) );
                         return null;
                     }
                     return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters, includeStats,

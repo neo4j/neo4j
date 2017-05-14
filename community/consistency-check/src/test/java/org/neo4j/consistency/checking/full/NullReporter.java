@@ -22,7 +22,13 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.IndexConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.LabelScanConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
@@ -55,12 +61,13 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> checker )
+    public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord, PropertyConsistencyReport> checker )
     {
     }
 
     @Override
-    public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType, RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> checker )
+    public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
+            RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> checker )
     {
     }
 
@@ -77,23 +84,25 @@ public class NullReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forDynamicBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord, ConsistencyReport
-            .DynamicConsistencyReport> checker )
+    public void forDynamicBlock( RecordType type, DynamicRecord record,
+            RecordCheck<DynamicRecord,DynamicConsistencyReport> checker )
     {
     }
 
     @Override
-    public void forDynamicLabelBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker )
+    public void forDynamicLabelBlock( RecordType type, DynamicRecord record,
+            RecordCheck<DynamicRecord,DynamicLabelConsistencyReport> checker )
     {
     }
 
     @Override
-    public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker )
+    public void forNodeLabelScan( LabelScanDocument document,
+            RecordCheck<LabelScanDocument,LabelScanConsistencyReport> checker )
     {
     }
 
     @Override
-    public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport>
+    public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry, IndexConsistencyReport>
             checker )
     {
     }

@@ -121,7 +121,8 @@ class RecoveryProtocol
 
             if ( segment.header().prevIndex() != segment.header().prevFileLastIndex() )
             {
-                log.info( format( "Skipping from index %d to %d.", segment.header().prevFileLastIndex(), segment.header().prevIndex() + 1 ) );
+                log.info( format( "Skipping from index %d to %d.", segment.header().prevFileLastIndex(),
+                        segment.header().prevIndex() + 1 ) );
                 skip = true;
             }
 
@@ -162,7 +163,8 @@ class RecoveryProtocol
             segmentFiles.add( segment );
         }
 
-        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, segment.header().version() );
+        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider,
+                segment.header().version() );
 
         return state;
     }
@@ -195,7 +197,8 @@ class RecoveryProtocol
     {
         if ( fileNameVersion != expectedVersion )
         {
-            throw new DamagedLogStorageException( "File versions not strictly monotonic. Expected: %d but found: %d", expectedVersion, fileNameVersion );
+            throw new DamagedLogStorageException( "File versions not strictly monotonic. Expected: %d but found: %d",
+                    expectedVersion, fileNameVersion );
         }
     }
 
@@ -203,7 +206,8 @@ class RecoveryProtocol
     {
         if ( headerVersion != fileNameVersion )
         {
-            throw new DamagedLogStorageException( "File version does not match header version. Expected: %d but found: %d", headerVersion, fileNameVersion );
+            throw new DamagedLogStorageException(
+                    "File version does not match header version. Expected: %d but found: %d", headerVersion, fileNameVersion );
         }
     }
 }

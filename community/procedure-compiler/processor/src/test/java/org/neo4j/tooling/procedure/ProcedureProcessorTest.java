@@ -179,7 +179,8 @@ public class ProcedureProcessorTest
 
         assert_().about( javaSource() ).that( procedure ).processedWith( processor ).failsToCompile()
                 .withErrorCount( 1 ).withErrorContaining(
-                "Procedure class org.neo4j.tooling.procedure.procedures.invalid.missing_constructor.MissingConstructorProcedure should contain a public no-arg constructor, none found." )
+                "Procedure class org.neo4j.tooling.procedure.procedures.invalid.missing_constructor.MissingConstructorProcedure " +
+                        "should contain a public no-arg constructor, none found." )
                 .in( procedure ).onLine( 24 );
     }
 
@@ -204,15 +205,18 @@ public class ProcedureProcessorTest
                         .withErrorCount( 4 );
 
         unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBeNonStatic should be public, non-static and non-final" )
+                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBeNonStatic should be public, " +
+                        "non-static and non-final" )
                 .in( sproc ).onLine( 30 );
 
         unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBeNonFinal should be public, non-static and non-final" )
+                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBeNonFinal should be public, " +
+                        "non-static and non-final" )
                 .in( sproc ).onLine( 33 );
 
         unsuccessfulCompilationClause.withErrorContaining(
-                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBePublic should be public, non-static and non-final" )
+                "@org.neo4j.procedure.Context usage error: field BadContextSproc#shouldBePublic should be public, " +
+                        "non-static and non-final" )
                 .in( sproc ).onLine( 37 );
 
         unsuccessfulCompilationClause.withErrorContaining( "Field BadContextSproc#shouldBeStatic should be static" )
@@ -227,7 +231,8 @@ public class ProcedureProcessorTest
 
         assert_().about( javaSource() ).that( sproc ).processedWith( processor ).compilesWithoutError()
                 .withWarningCount( 2 ).withWarningContaining(
-                "@org.neo4j.procedure.Context usage warning: found type: <org.neo4j.kernel.internal.GraphDatabaseAPI>, expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>" )
+                "@org.neo4j.procedure.Context usage warning: found type: <org.neo4j.kernel.internal.GraphDatabaseAPI>, " +
+                        "expected one of: <org.neo4j.graphdb.GraphDatabaseService>, <org.neo4j.logging.Log>" )
                 .in( sproc ).onLine( 30 );
     }
 

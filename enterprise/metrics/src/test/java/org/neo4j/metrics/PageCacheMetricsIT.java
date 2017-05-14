@@ -92,8 +92,10 @@ public class PageCacheMetricsIT
         assertMetrics( "Page cache evictions should be included in metrics report.", PageCacheMetrics.PC_EVICTIONS, equalTo( 0L ) );
         assertMetrics( "Page cache page faults should be included in metrics report.", PageCacheMetrics.PC_PAGE_FAULTS, greaterThan( 0L ) );
         assertMetrics( "Page cache hits should be included in metrics report.", PageCacheMetrics.PC_HITS, greaterThan( 0L ) );
-        assertMetrics( "Page cache flushes should be included in metrics report.", PageCacheMetrics.PC_FLUSHES, greaterThanOrEqualTo( 0L ) );
-        assertMetrics( "Page cache exceptions should be included in metrics report.", PageCacheMetrics.PC_EVICTION_EXCEPTIONS, equalTo( 0L ) );
+        assertMetrics( "Page cache flushes should be included in metrics report.",
+                PageCacheMetrics.PC_FLUSHES, greaterThanOrEqualTo( 0L ) );
+        assertMetrics( "Page cache exceptions should be included in metrics report.",
+                PageCacheMetrics.PC_EVICTION_EXCEPTIONS, equalTo( 0L ) );
     }
 
     private void assertMetrics( String message, String metricName, Matcher<Long> matcher ) throws Exception

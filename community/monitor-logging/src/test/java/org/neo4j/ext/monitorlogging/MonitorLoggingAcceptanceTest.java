@@ -22,8 +22,8 @@ package org.neo4j.ext.monitorlogging;
 import org.junit.Test;
 
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -34,7 +34,8 @@ public class MonitorLoggingAcceptanceTest
     public void shouldBeAbleToLoadPropertiesFromAFile() throws InterruptedException
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseAPI dbAPI = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newImpermanentDatabase();
+        GraphDatabaseAPI dbAPI = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                .newImpermanentDatabase();
 
         Monitors monitors = dbAPI.getDependencyResolver().resolveDependency( Monitors.class );
         AMonitor aMonitor = monitors.newMonitor( AMonitor.class );

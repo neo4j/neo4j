@@ -138,7 +138,8 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value, TransactionStateChecker txStateChecker ) throws IOException
+    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeStartArray();
         try

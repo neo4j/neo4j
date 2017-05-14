@@ -41,8 +41,8 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Takes user-defined record classes, and does two things: Describe the class as a {@link ProcedureSignature}, and provide a mechanism to convert
- * an instance of the class to Neo4j-typed Object[].
+ * Takes user-defined record classes, and does two things: Describe the class as a {@link ProcedureSignature},
+ * and provide a mechanism to convert an instance of the class to Neo4j-typed Object[].
  */
 public class OutputMappers
 {
@@ -52,7 +52,8 @@ public class OutputMappers
     }
 
     /**
-     * A compiled mapper, takes an instance of a java class, and converts it to an Object[] matching the specified {@link #signature()}.
+     * A compiled mapper, takes an instance of a java class, and converts it to an Object[] matching
+     * the specified {@link #signature()}.
      */
     public static class OutputMapper
     {
@@ -203,13 +204,15 @@ public class OutputMappers
             }
             catch ( ProcedureException e )
             {
-                throw new ProcedureException( e.status(), e, "Field `%s` in record `%s` cannot be converted to a Neo4j type: %s", field.getName(),
+                throw new ProcedureException( e.status(), e,
+                        "Field `%s` in record `%s` cannot be converted to a Neo4j type: %s", field.getName(),
                         userClass.getSimpleName(), e.getMessage() );
             }
             catch ( IllegalAccessException e )
             {
-                throw new ProcedureException( Status.Procedure.TypeError, e, "Field `%s` in record `%s` cannot be accessed: %s", field.getName(),
-                        userClass.getSimpleName(), e.getMessage() );
+                throw new ProcedureException( Status.Procedure.TypeError, e,
+                        "Field `%s` in record `%s` cannot be accessed: %s", field.getName(), userClass.getSimpleName(),
+                        e.getMessage() );
             }
         }
 

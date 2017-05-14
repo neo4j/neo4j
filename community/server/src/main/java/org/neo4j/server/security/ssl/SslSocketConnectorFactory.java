@@ -50,10 +50,12 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, KeyStoreInformation config, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator )
+    public ServerConnector createConnector( Server server, KeyStoreInformation config, ListenSocketAddress address,
+            JettyThreadCalculator jettyThreadCalculator )
     {
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( config );
-        return super.createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
+        return super.createConnector( server, address, jettyThreadCalculator, sslConnectionFactory,
+                createHttpConnectionFactory() );
     }
 
     private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation ksInfo )

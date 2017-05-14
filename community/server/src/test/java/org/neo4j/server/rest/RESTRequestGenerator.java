@@ -222,15 +222,13 @@ public class RESTRequestGenerator
     /**
      * Send a request with no payload.
      */
-    private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final int responseCode, final MediaType accept,
-                                                        final List<Pair<String, Predicate<String>>> headerFields )
+    private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final int responseCode,
+            final MediaType accept, final List<Pair<String,Predicate<String>>> headerFields )
     {
         ClientRequest request;
         try
         {
-            request = withHeaders(REQUEST_BUILDER)
-                    .accept(accept)
-                    .build( new URI( uri ), method );
+            request = withHeaders( REQUEST_BUILDER ).accept( accept ).build( new URI( uri ), method );
         }
         catch ( URISyntaxException e )
         {
@@ -242,18 +240,16 @@ public class RESTRequestGenerator
     /**
      * Send a request with payload.
      */
-    private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final String payload, final MediaType payloadType,
-                                                        final int responseCode, final MediaType accept, final List<Pair<String, Predicate<String>>> headerFields )
+    private ResponseEntity retrieveResponseFromRequest( final String method, final String uri, final String payload,
+            final MediaType payloadType, final int responseCode, final MediaType accept,
+            final List<Pair<String,Predicate<String>>> headerFields )
     {
         ClientRequest request;
         try
         {
             if ( payload != null )
             {
-                request = withHeaders(REQUEST_BUILDER)
-                        .type(payloadType)
-                        .accept(accept)
-                        .entity(payload)
+                request = withHeaders( REQUEST_BUILDER ).type( payloadType ).accept( accept ).entity( payload )
                         .build( new URI( uri ), method );
             }
             else

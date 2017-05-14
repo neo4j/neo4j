@@ -67,7 +67,8 @@ public class UserFunctionProcessorTest
 
         assert_().about( javaSource() ).that( function ).processedWith( processor ).failsToCompile().withErrorCount( 1 )
                 .withErrorContaining(
-                        "Unsupported return type <java.util.stream.Stream<java.lang.Long>> of function defined in <org.neo4j.tooling.procedure.procedures.invalid.bad_return_type.BadReturnTypeUserFunction#wrongReturnTypeFunction>" )
+                        "Unsupported return type <java.util.stream.Stream<java.lang.Long>> of function defined in " +
+                "<org.neo4j.tooling.procedure.procedures.invalid.bad_return_type.BadReturnTypeUserFunction#wrongReturnTypeFunction>" )
                 .in( function ).onLine( 36 );
     }
 
@@ -116,7 +117,8 @@ public class UserFunctionProcessorTest
 
         assert_().about( javaSources() ).that( asList( firstDuplicate, secondDuplicate ) ).processedWith( processor )
                 .failsToCompile().withErrorCount( 2 ).withErrorContaining(
-                "Procedure|function name <org.neo4j.tooling.procedure.procedures.invalid.duplicated.foobar> is already defined 2 times. It should be defined only once!" );
+                "Procedure|function name <org.neo4j.tooling.procedure.procedures.invalid.duplicated.foobar> is " +
+                        "already defined 2 times. It should be defined only once!" );
     }
 
     @Test

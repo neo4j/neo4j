@@ -34,7 +34,8 @@ import org.neo4j.server.database.Database;
 
 public class SessionFactoryImpl implements ConsoleSessionFactory
 {
-    private static final Collection<ConsoleSessionCreator> creators = Iterables.asCollection( ServiceLoader.load( ConsoleSessionCreator.class ) );
+    private static final Collection<ConsoleSessionCreator> creators =
+            Iterables.asCollection( ServiceLoader.load( ConsoleSessionCreator.class ) );
 
     private final HttpSession httpSession;
     private final CypherExecutor cypherExecutor;

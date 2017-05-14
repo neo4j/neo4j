@@ -106,9 +106,11 @@ public class UserFunctionIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( containsStringIgnoreNewlines(String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
-                                 "Function org.neo4j.procedure.simpleArgument has signature: org.neo4j.procedure.simpleArgument(someValue :: INTEGER?) :: INTEGER?%n" +
-                                 "meaning that it expects 1 argument of type INTEGER? (line 1, column 8 (offset: 7))" )));
+        exception.expectMessage( containsStringIgnoreNewlines(String.format("Function call does not provide the " +
+                "required number of arguments: expected 1 got 0.%n%n" +
+                "Function org.neo4j.procedure.simpleArgument has signature: " +
+                "org.neo4j.procedure.simpleArgument(someValue :: INTEGER?) :: INTEGER?%n" +
+                "meaning that it expects 1 argument of type INTEGER? (line 1, column 8 (offset: 7))" )));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
@@ -121,10 +123,12 @@ public class UserFunctionIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( containsStringIgnoreNewlines(String.format("Function call does not provide the required number of arguments: expected 1 got 0.%n%n" +
-                                 "Function org.neo4j.procedure.nodeWithDescription has signature: org.neo4j.procedure.nodeWithDescription(someValue :: NODE?) :: NODE?%n" +
-                                 "meaning that it expects 1 argument of type NODE?%n" +
-                                 "Description: This is a description (line 1, column 8 (offset: 7))" )));
+        exception.expectMessage( containsStringIgnoreNewlines(String.format("Function call does not provide the " +
+                "required number of arguments: expected 1 got 0.%n%n" +
+                "Function org.neo4j.procedure.nodeWithDescription has signature: " +
+                "org.neo4j.procedure.nodeWithDescription(someValue :: NODE?) :: NODE?%n" +
+                "meaning that it expects 1 argument of type NODE?%n" +
+                "Description: This is a description (line 1, column 8 (offset: 7))" )));
         // When
         try ( Transaction ignore = db.beginTx() )
         {
@@ -707,13 +711,17 @@ public class UserFunctionIT
         Result res = db.execute( "CALL dbms.functions()" );
 
         String expected =
-                "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" +
+                "+-----------------------------------------------------------------------------------------------------" +
+                "-------------------------------------------------------------------------------------------------------" +
+                "----------------------------------+" +
                 lineSeparator() +
                 "| name                                                | signature                                   " +
                 "                                                                                                    " +
                 "             | description             |" +
                 lineSeparator() +
-                "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" +
+                "+------------------------------------------------------------------------------------------------------" +
+                "-------------------------------------------------------------------------------------------------------" +
+                "---------------------------------+" +
                 lineSeparator() +
                 "| 'org.neo4j.procedure.avgDoubleList'                 | 'org.neo4j.procedure.avgDoubleList(someValue" +
                 " :: LIST? OF FLOAT?) :: (FLOAT?)'                                                                   " +
@@ -819,7 +827,9 @@ public class UserFunctionIT
                 "NUMBER?) :: (NUMBER?)'                                                                              " +
                 "              | ''                      |" +
                 lineSeparator() +
-                "+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+" +
+                "+------------------------------------------------------------------------------------------------------" +
+                "-------------------------------------------------------------------------------------------------------" +
+                "---------------------------------+" +
                 lineSeparator() +
                 "26 rows" + lineSeparator();
 

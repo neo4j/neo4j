@@ -211,7 +211,8 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContextUsingLDAPSOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" ) );
+        restartNeo4jServerWithOverriddenSettings(
+                settings -> settings.put( SecuritySettings.ldap_server, "ldaps://activedirectory.neohq.net:636" ) );
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();
@@ -221,7 +222,8 @@ public class ActiveDirectoryAuthenticationIT
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderUsingStartTlsOnEC2() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings.andThen( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) ) );
+        restartNeo4jServerWithOverriddenSettings( useSystemAccountSettings
+                .andThen( settings -> settings.put( SecuritySettings.ldap_use_starttls, "true" ) ) );
 
         assertAuth( "neo", "ProudListingsMedia1" );
         assertReadSucceeds();

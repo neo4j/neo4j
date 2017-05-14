@@ -59,8 +59,8 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readPointer
  *  │ ││ ││││  │││
  *  │ ││ ││││  └└└────────────────────────────────────── POINTER STATE B (on failure)
  *  │ ││ │└└└─────────────────────────────────────────── POINTER STATE A (on failure)
- *  │ │└─└────────────────────────────────────────────── GENERATION COMPARISON (on failure):
- *  │ │                                                  {@link #FLAG_GENERATION_B_BIG}, {@link #FLAG_GENERATION_EQUAL}, {@link #FLAG_GENERATION_A_BIG}
+ *  │ │└─└────────────────────────────────────────────── GENERATION COMPARISON (on failure):{@link #FLAG_GENERATION_B_BIG},
+ *  │ │                                                  {@link #FLAG_GENERATION_EQUAL}, {@link #FLAG_GENERATION_A_BIG}
  *  │ └───────────────────────────────────────────────── 0:{@link #FLAG_SLOT_A}/1:{@link #FLAG_SLOT_B} (on success)
  *  └─────────────────────────────────────────────────── 0:{@link #FLAG_SUCCESS}/1:{@link #FLAG_FAIL}
  * </pre>
@@ -72,7 +72,8 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointer.readPointer
  *    ││ │││└──└└─────────────────────────────────────── POINTER STATE B
  *    ││ └└└──────────────────────────────────────────── POINTER STATE A
  *    └└──────────────────────────────────────────────── GENERATION COMPARISON:
- *                                                       {@link #FLAG_GENERATION_B_BIG}, {@link #FLAG_GENERATION_EQUAL}, {@link #FLAG_GENERATION_A_BIG}
+ *                                                       {@link #FLAG_GENERATION_B_BIG}, {@link #FLAG_GENERATION_EQUAL},
+ *                                                       {@link #FLAG_GENERATION_A_BIG}
  * </pre>
  * <pre>
  *     READ success

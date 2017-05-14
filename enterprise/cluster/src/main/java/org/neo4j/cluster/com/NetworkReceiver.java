@@ -298,7 +298,9 @@ public class NetworkReceiver
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+            pipeline.addLast( "frameDecoder",
+                    new ObjectDecoder( 1024 * 1000,
+                            NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
         }

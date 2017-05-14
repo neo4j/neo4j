@@ -72,7 +72,8 @@ public class OutputFormat
         return response( Response.ok(), representation );
     }
 
-    public final <REPR extends Representation & EntityRepresentation> Response okIncludeLocation( REPR representation ) throws BadInputException
+    public final <REPR extends Representation & EntityRepresentation> Response okIncludeLocation( REPR representation )
+            throws BadInputException
     {
         if ( representation.isEmpty() )
         {

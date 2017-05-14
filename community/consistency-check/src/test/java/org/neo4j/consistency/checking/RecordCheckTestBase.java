@@ -22,6 +22,13 @@ package org.neo4j.consistency.checking;
 import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.checking.full.Stage;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NeoStoreConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -71,84 +78,84 @@ public abstract class RecordCheckTestBase<RECORD extends AbstractBaseRecord,
         }
     }
 
-    public static PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> dummyNodeCheck()
+    public static PrimitiveRecordCheck<NodeRecord, NodeConsistencyReport> dummyNodeCheck()
     {
         return new NodeRecordCheck()
         {
             @Override
             public void check( NodeRecord record,
-                               CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
+                               CheckerEngine<NodeRecord, NodeConsistencyReport> engine,
                                RecordAccess records )
             {
             }
         };
     }
 
-    public static PrimitiveRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> dummyRelationshipChecker()
+    public static PrimitiveRecordCheck<RelationshipRecord, RelationshipConsistencyReport> dummyRelationshipChecker()
     {
         return new RelationshipRecordCheck()
         {
             @Override
             public void check( RelationshipRecord record,
-                               CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
+                               CheckerEngine<RelationshipRecord, RelationshipConsistencyReport> engine,
                                RecordAccess records )
             {
             }
         };
     }
 
-    public static RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> dummyPropertyChecker()
+    public static RecordCheck<PropertyRecord, PropertyConsistencyReport> dummyPropertyChecker()
     {
         return ( record, engine, records ) -> {};
     }
 
-    public static PrimitiveRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> dummyNeoStoreCheck()
+    public static PrimitiveRecordCheck<NeoStoreRecord, NeoStoreConsistencyReport> dummyNeoStoreCheck()
     {
         return new NeoStoreCheck( new PropertyChain<>( from -> null ) )
         {
             @Override
             public void check( NeoStoreRecord record,
-                               CheckerEngine<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> engine,
+                               CheckerEngine<NeoStoreRecord, NeoStoreConsistencyReport> engine,
                                RecordAccess records )
             {
             }
         };
     }
 
-    public static RecordCheck<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> dummyDynamicCheck(
+    public static RecordCheck<DynamicRecord, DynamicConsistencyReport> dummyDynamicCheck(
             RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
         return new DynamicRecordCheck( store, dereference )
         {
             @Override
             public void check( DynamicRecord record,
-                               CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
+                               CheckerEngine<DynamicRecord, DynamicConsistencyReport> engine,
                                RecordAccess records )
             {
             }
         };
     }
 
-    public static RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> dummyPropertyKeyCheck()
+    public static RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> dummyPropertyKeyCheck()
     {
         return new PropertyKeyTokenRecordCheck()
         {
             @Override
             public void check( PropertyKeyTokenRecord record,
-                               CheckerEngine<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> engine,
+                               CheckerEngine<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> engine,
                                RecordAccess records )
             {
             }
         };
     }
 
-    public static RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> dummyRelationshipLabelCheck()
+    public static RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> dummyRelationshipLabelCheck()
     {
         return new RelationshipTypeTokenRecordCheck()
         {
             @Override
             public void check( RelationshipTypeTokenRecord record,
-                               CheckerEngine<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> engine,
+                               CheckerEngine<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> engine,
                                RecordAccess records )
             {
             }

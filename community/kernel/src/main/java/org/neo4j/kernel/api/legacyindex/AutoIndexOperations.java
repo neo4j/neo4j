@@ -66,7 +66,8 @@ public interface AutoIndexOperations
         }
 
         @Override
-        public void propertyChanged( DataWriteOperations ops, long entityId, Property oldProperty, Property newProperty ) throws AutoIndexingKernelException
+        public void propertyChanged( DataWriteOperations ops, long entityId, Property oldProperty,
+                Property newProperty ) throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }

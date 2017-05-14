@@ -99,7 +99,8 @@ public class RemoteStoreTest
 
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( previousTxId ), any( TxPullResponseListener.class ) );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( previousTxId ),
+                any( TxPullResponseListener.class ) );
     }
 
     @Test

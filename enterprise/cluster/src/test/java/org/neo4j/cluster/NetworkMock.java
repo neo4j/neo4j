@@ -88,12 +88,16 @@ public class NetworkMock
 
     protected TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
     {
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ), logService.getInternalLogProvider(), monitors.newMonitor( StateMachines.Monitor.class ) );
+        ProtocolServerFactory protocolServerFactory =
+                new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ),
+                        logService.getInternalLogProvider(), monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
-        TestProtocolServer protocolServer = new TestProtocolServer( logService.getInternalLogProvider(), timeoutStrategy, protocolServerFactory, serverUri,
-                new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
+        TestProtocolServer protocolServer =
+                new TestProtocolServer( logService.getInternalLogProvider(), timeoutStrategy, protocolServerFactory,
+                        serverUri, new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(),
+                        electionCredentialsProvider );
         protocolServer.addStateTransitionListener( new StateTransitionLogger( logService.getInternalLogProvider(),
                 new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ) ) );
         return protocolServer;

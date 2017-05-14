@@ -57,7 +57,8 @@ public class FreeIdKeeper implements Closeable
     private final boolean aggressiveReuse;
     private long defraggedIdCount;
 
-    private final long lowWatermarkForChannelPosition; // the lowest possible position the channel can be at - we don't own anything "in front" of that
+    // the lowest possible position the channel can be at - we don't own anything "in front" of that
+    private final long lowWatermarkForChannelPosition;
     /*
      * maxReadPosition remains constant if aggressiveReuse is false, pointing to the position after which we should not read because
      * it contains overflow ids from this run. If aggressiveReuse is true, then it points to the end of the file.
@@ -77,7 +78,8 @@ public class FreeIdKeeper implements Closeable
 
     private void restoreIdsOnStartup() throws IOException
     {
-        maxReadPosition = channel.size(); // this is always true regardless of aggressiveReuse. It only matters once we start writing
+        // this is always true regardless of aggressiveReuse. It only matters once we start writing
+        maxReadPosition = channel.size();
         defraggedIdCount = ( maxReadPosition - lowWatermarkForChannelPosition ) / ID_ENTRY_SIZE;
         readIdBatch();
     }

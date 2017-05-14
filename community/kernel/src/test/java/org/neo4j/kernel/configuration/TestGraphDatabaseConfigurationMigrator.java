@@ -99,7 +99,8 @@ public class TestGraphDatabaseConfigurationMigrator
     @Test
     public void migrateExecutionTimeLimitIfPresent()
     {
-        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "120s" ), getLog() );
+        Map<String,String> migratedProperties =
+                migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "120s" ), getLog() );
         assertEquals( "Old property should be migrated to new",
                 migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
 
@@ -127,12 +128,13 @@ public class TestGraphDatabaseConfigurationMigrator
     @Test
     public void migrateTransactionEndTimeout()
     {
-        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.shutdown_transaction_end_timeout", "12s" ), getLog() );
-        assertEquals( "Old property should be migrated to new",
-                migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ));
+        Map<String,String> migratedProperties =
+                migrator.apply( stringMap( "unsupported.dbms.shutdown_transaction_end_timeout", "12s" ), getLog() );
+        assertEquals( "Old property should be migrated to new", migratedProperties,
+                stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ) );
 
-        assertContainsWarningMessage("unsupported.dbms.shutdown_transaction_end_timeout has been " +
-                "replaced with dbms.shutdown_transaction_end_timeout.");
+        assertContainsWarningMessage( "unsupported.dbms.shutdown_transaction_end_timeout has been " +
+                "replaced with dbms.shutdown_transaction_end_timeout." );
     }
 
     @Test

@@ -19,16 +19,16 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.hamcrest.CoreMatchers;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
@@ -469,7 +469,8 @@ public class BoltConnectionIT
                 "USING PERIODIC COMMIT " + batch + "\n" +
                         "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
                         "MATCH (c:Class {name: l.class_name})\n" +
-                        "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
+                        "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, " +
+                        "petal_length: l.petal_length, petal_width: l.petal_width})\n" +
                         "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
                         "RETURN count(*) AS c",
                 params

@@ -148,10 +148,10 @@ public class Settings
         return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConverters );
     }
 
-    public static BiFunction<String, Function<String, String>, String> determineDefaultLookup( String defaultValue,
-                                                                                                BiFunction<String, Function<String, String>, String> valueLookup )
+    public static BiFunction<String,Function<String,String>,String> determineDefaultLookup( String defaultValue,
+            BiFunction<String,Function<String,String>,String> valueLookup )
     {
-        BiFunction<String,Function<String, String>, String> defaultLookup;
+        BiFunction<String,Function<String,String>,String> defaultLookup;
         if ( defaultValue != null )
         {
             // This is explicitly an identity comparison. We are comparing against the known instance above,

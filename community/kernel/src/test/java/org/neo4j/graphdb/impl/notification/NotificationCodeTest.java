@@ -49,7 +49,8 @@ public class NotificationCodeTest
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
         assertThat( notification.getCode(), equalTo( "Neo.ClientError.Schema.IndexNotFound" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
-        assertThat( notification.getDescription(), equalTo( "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" ) );
+        assertThat( notification.getDescription(), equalTo(
+                "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" ) );
     }
 
     @Test
@@ -65,11 +66,12 @@ public class NotificationCodeTest
         assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
         assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.CartesianProductWarning" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
-        assertThat( notification.getDescription(), equalTo( "If a part of a query contains multiple disconnected patterns, this will build a cartesian product " +
-                                                            "between all those parts. This may produce a large amount of data and slow down query processing. While " +
-                                                            "occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross " +
-                                                            "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH " +
-                                                            "(identifiers are: (n, node2))" ) );
+        assertThat( notification.getDescription(), equalTo(
+                "If a part of a query contains multiple disconnected patterns, this will build a cartesian product " +
+                        "between all those parts. This may produce a large amount of data and slow down query processing. While " +
+                        "occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross " +
+                        "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH " +
+                        "(identifiers are: (n, node2))" ) );
     }
 
     @Test

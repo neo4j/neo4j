@@ -42,8 +42,8 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
 {
     public static GraphDatabaseDependencies newDependencies( GraphDatabaseFacadeFactory.Dependencies deps )
     {
-        return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(),
-                asList( deps.settingsClasses() ), asList( deps.kernelExtensions() ), deps.urlAccessRules(), asList( deps.executionEngines() ) );
+        return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(), asList( deps.settingsClasses() ),
+                asList( deps.kernelExtensions() ), deps.urlAccessRules(), asList( deps.executionEngines() ) );
     }
 
     public static GraphDatabaseDependencies newDependencies()

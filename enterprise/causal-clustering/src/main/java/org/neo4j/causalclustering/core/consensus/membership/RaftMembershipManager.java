@@ -67,7 +67,8 @@ public class RaftMembershipManager extends LifecycleAdapter implements RaftMembe
     private final int expectedClusterSize;
 
     private volatile Set<MemberId> votingMembers = Collections.unmodifiableSet( new HashSet<>() );
-    private volatile Set<MemberId> replicationMembers = Collections.unmodifiableSet( new HashSet<>() ); // votingMembers + additionalReplicationMembers
+    // votingMembers + additionalReplicationMembers
+    private volatile Set<MemberId> replicationMembers = Collections.unmodifiableSet( new HashSet<>() );
 
     private Set<Listener> listeners = new HashSet<>();
     private Set<MemberId> additionalReplicationMembers = new HashSet<>();

@@ -264,7 +264,8 @@ public class ReplicatedLockTokenStateMachineTest
         @SuppressWarnings( "unchecked" )
         StateStorage<ReplicatedLockTokenState> storage = mock( StateStorage.class );
         MemberId initialHoldingCoreMember = member( 0 );
-        ReplicatedLockTokenState initialState = new ReplicatedLockTokenState( 123, new ReplicatedLockTokenRequest( initialHoldingCoreMember, 3 ) );
+        ReplicatedLockTokenState initialState = new ReplicatedLockTokenState( 123,
+                new ReplicatedLockTokenRequest( initialHoldingCoreMember, 3 ) );
         when( storage.getInitialState() ).thenReturn( initialState );
 
         // When

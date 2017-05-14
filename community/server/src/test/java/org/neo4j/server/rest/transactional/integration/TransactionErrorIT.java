@@ -110,9 +110,8 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
 
             JsonNode message = response.get( "errors" ).get( 0 ).get( "message" );
             assertTrue("Expected LOAD CSV line number information",
-                    message
-                            .toString()
-                            .contains("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate."));
+                    message.toString().contains("on line 3. Possibly the last row committed during import is line 2. " +
+                            "Note that this information might not be accurate."));
         }
         finally
         {

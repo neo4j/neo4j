@@ -438,7 +438,8 @@ public class FormattedLog extends AbstractLog
         synchronized ( lock )
         {
             writer = writerSupplier.get();
-            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), timezone, lock, category, levelRef.get(), false ) );
+            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), timezone, lock,
+                                               category, levelRef.get(), false ) );
         }
         if ( autoFlush )
         {

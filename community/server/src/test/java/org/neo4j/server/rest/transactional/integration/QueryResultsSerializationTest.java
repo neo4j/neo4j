@@ -580,7 +580,8 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     }
 
     /**
-     * This matcher is hardcoded to check for a list containing one deleted node and one map with a deleted node mapped to the key `someKey`.
+     * This matcher is hardcoded to check for a list containing one deleted node and one map with a
+     * deleted node mapped to the key `someKey`.
      */
     public static Matcher<? super Response> restContainsNestedDeleted()
     {

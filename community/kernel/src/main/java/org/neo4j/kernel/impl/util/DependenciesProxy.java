@@ -71,7 +71,8 @@ public class DependenciesProxy
             {
                 if ( method.getReturnType().equals( Supplier.class ) )
                 {
-                    return dependencyResolver.provideDependency( (Class)((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0] );
+                    return dependencyResolver.provideDependency(
+                            (Class) ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0] );
                 }
                 else
                 {

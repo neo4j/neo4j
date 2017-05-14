@@ -137,7 +137,8 @@ public class ExternallyManagedPageCache implements PageCache
                     {
 
                         @Override
-                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers )
+                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config,
+                                LogService logging, Tracers tracers )
                         {
                             return new ExternallyManagedPageCache( delegatePageCache );
                         }

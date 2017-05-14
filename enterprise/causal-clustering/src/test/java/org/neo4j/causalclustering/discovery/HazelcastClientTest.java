@@ -19,27 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import com.hazelcast.core.Client;
 import com.hazelcast.core.ClientService;
 import com.hazelcast.core.Cluster;
@@ -71,6 +50,27 @@ import com.hazelcast.monitor.LocalMultiMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -80,7 +80,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -89,7 +88,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLIENT_CONNECTOR_ADDRESSES;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.RAFT_SERVER;
@@ -1089,7 +1087,8 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
+                throws InterruptedException
         {
             throw new UnsupportedOperationException();
         }
@@ -1113,13 +1112,15 @@ public class HazelcastClientTest
         }
 
         @Override
-        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier, Aggregation<Object,SuppliedValue,Result> aggregation )
+        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier,
+                Aggregation<Object,SuppliedValue,Result> aggregation )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier, Aggregation<Object,SuppliedValue,Result> aggregation, JobTracker jobTracker )
+        public <SuppliedValue, Result> Result aggregate( Supplier<Object,Object,SuppliedValue> supplier,
+                Aggregation<Object,SuppliedValue,Result> aggregation, JobTracker jobTracker )
         {
             throw new UnsupportedOperationException();
         }

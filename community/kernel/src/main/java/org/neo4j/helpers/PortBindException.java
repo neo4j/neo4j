@@ -22,7 +22,8 @@ package org.neo4j.helpers;
 import java.net.BindException;
 
 /**
- * A bind exception that includes which port we failed to bind to. Whenever possible, catch and rethrow bind exceptions as this, to make it possible to
+ * A bind exception that includes which port we failed to bind to.
+ * Whenever possible, catch and rethrow bind exceptions as this, to make it possible to
  * sort out which address it is that is in use.
  */
 public class PortBindException extends BindException

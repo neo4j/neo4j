@@ -43,8 +43,9 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Logger;
 
 /**
- * This implements the backend for the "classic" Core API - meaning the surface-layer-of-the-database, thread bound API. It's a thin veneer to wire the
- * various components the kernel and related utilities expose in a way that {@link GraphDatabaseFacade} likes.
+ * This implements the backend for the "classic" Core API - meaning the surface-layer-of-the-database, thread bound API.
+ * It's a thin veneer to wire the various components the kernel and related utilities expose in a way that
+ * {@link GraphDatabaseFacade} likes.
  * @see org.neo4j.kernel.impl.factory.GraphDatabaseFacade.SPI
  */
 class ClassicCoreSPI implements GraphDatabaseFacade.SPI

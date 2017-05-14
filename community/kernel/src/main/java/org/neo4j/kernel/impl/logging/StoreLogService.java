@@ -115,9 +115,11 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         return new Builder().withUserLogProvider( userLogProvider );
     }
 
-    public static Builder withRotation( long internalLogRotationThreshold, long internalLogRotationDelay, int maxInternalLogArchives, JobScheduler jobScheduler )
+    public static Builder withRotation( long internalLogRotationThreshold, long internalLogRotationDelay,
+            int maxInternalLogArchives, JobScheduler jobScheduler )
     {
-        return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, jobScheduler );
+        return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
+                        jobScheduler );
     }
 
     public static StoreLogService inLogsDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException

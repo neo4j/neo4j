@@ -203,7 +203,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
             "(MarshallB)-[:ACTED_IN {roles:['Mr. Lachance']}]->(StandByMe), " +
             "(RobR)-[:DIRECTED]->(StandByMe) " +
 
-        "CREATE (AsGoodAsItGets:Movie {title:'As Good as It Gets', released:1997, tagline:'A comedy from the heart that goes for the throat.'}) " +
+        "CREATE (AsGoodAsItGets:Movie {title:'As Good as It Gets', released:1997, tagline:'A comedy from the " +
+                "heart that goes for the throat.'}) " +
         "CREATE (HelenH:Person {name:'Helen Hunt', born:1963}) " +
         "CREATE (GregK:Person {name:'Greg Kinnear', born:1963}) " +
         "CREATE (JamesB:Person {name:'James L. Brooks', born:1940}) " +
@@ -214,7 +215,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
             "(CubaG)-[:ACTED_IN {roles:['Frank Sachs']}]->(AsGoodAsItGets), " +
             "(JamesB)-[:DIRECTED]->(AsGoodAsItGets) " +
 
-        "CREATE (WhatDreamsMayCome:Movie {title:'What Dreams May Come', released:1998, tagline:'After life there is more. The end is just the beginning.'}) " +
+        "CREATE (WhatDreamsMayCome:Movie {title:'What Dreams May Come', released:1998, tagline:'After life there is more. " +
+                "The end is just the beginning.'}) " +
         "CREATE (AnnabellaS:Person {name:'Annabella Sciorra', born:1960}) " +
         "CREATE (MaxS:Person {name:'Max von Sydow', born:1929}) " +
         "CREATE (WernerH:Person {name:'Werner Herzog', born:1942}) " +
@@ -228,7 +230,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
             "(WernerH)-[:ACTED_IN {roles:['The Face']}]->(WhatDreamsMayCome), " +
             "(VincentW)-[:DIRECTED]->(WhatDreamsMayCome) " +
 
-        "CREATE (SnowFallingonCedars:Movie {title:'Snow Falling on Cedars', released:1999, tagline:'First loves last. Forever.'}) " +
+        "CREATE (SnowFallingonCedars:Movie {title:'Snow Falling on Cedars', released:1999, tagline:'First loves last. " +
+                "Forever.'}) " +
         "CREATE (EthanH:Person {name:'Ethan Hawke', born:1970}) " +
         "CREATE (RickY:Person {name:'Rick Yune', born:1971}) " +
         "CREATE (JamesC:Person {name:'James Cromwell', born:1940}) " +
@@ -368,7 +371,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
         "CREATE (StefanArndt:Person {name:'Stefan Arndt', born:1961}) " +
         "CREATE " +
             "(TomH)-[:ACTED_IN {roles:['Zachry', 'Dr. Henry Goose', 'Isaac Sachs', 'Dermot Hoggins']}]->(CloudAtlas), " +
-            "(Hugo)-[:ACTED_IN {roles:['Bill Smoke', 'Haskell Moore', 'Tadeusz Kesselring', 'Nurse Noakes', 'Boardman Mephi', 'Old Georgie']}]->(CloudAtlas), " +
+            "(Hugo)-[:ACTED_IN {roles:['Bill Smoke', 'Haskell Moore', 'Tadeusz Kesselring', 'Nurse Noakes', " +
+                "'Boardman Mephi', 'Old Georgie']}]->(CloudAtlas), " +
             "(HalleB)-[:ACTED_IN {roles:['Luisa Rey', 'Jocasta Ayrs', 'Ovid', 'Meronym']}]->(CloudAtlas), " +
             "(JimB)-[:ACTED_IN {roles:['Vyvyan Ayrs', 'Captain Molyneux', 'Timothy Cavendish']}]->(CloudAtlas), " +
             "(TomT)-[:DIRECTED]->(CloudAtlas), " +
@@ -428,7 +432,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
             "(LanaW)-[:WROTE]->(SpeedRacer), " +
             "(JoelS)-[:PRODUCED]->(SpeedRacer) " +
 
-        "CREATE (NinjaAssassin:Movie {title:'Ninja Assassin', released:2009, tagline:'Prepare to enter a secret world of assassins'}) " +
+        "CREATE (NinjaAssassin:Movie {title:'Ninja Assassin', released:2009, tagline:'Prepare to enter a secret " +
+                "world of assassins'}) " +
         "CREATE (NaomieH:Person {name:'Naomie Harris'}) " +
         "CREATE " +
             "(Rain)-[:ACTED_IN {roles:['Raizo']}]->(NinjaAssassin), " +
@@ -459,7 +464,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
             "(PatriciaC)-[:ACTED_IN {roles:['Melinda Moores']}]->(TheGreenMile), " +
             "(FrankD)-[:DIRECTED]->(TheGreenMile) " +
 
-        "CREATE (FrostNixon:Movie {title:'Frost/Nixon', released:2008, tagline:'400 million people were waiting for the truth.'}) " +
+        "CREATE (FrostNixon:Movie {title:'Frost/Nixon', released:2008, tagline:'400 million people were waiting " +
+                "for the truth.'}) " +
         "CREATE (FrankL:Person {name:'Frank Langella', born:1938}) " +
         "CREATE (MichaelS:Person {name:'Michael Sheen', born:1969}) " +
         "CREATE (OliverP:Person {name:'Oliver Platt', born:1960}) " +
@@ -583,7 +589,8 @@ public class EmbeddedUserManagementProceduresInteractionTest extends AuthProcedu
             "(JamesThompson)-[:REVIEWED {summary:'The coolest football movie ever', rating:100}]->(TheReplacements), " +
             "(AngelaScope)-[:REVIEWED {summary:'Pretty funny at times', rating:62}]->(TheReplacements), " +
             "(JessicaThompson)-[:REVIEWED {summary:'Dark, but compelling', rating:85}]->(Unforgiven), " +
-            "(JessicaThompson)-[:REVIEWED {summary:\"Slapstick redeemed only by the Robin Williams and Gene Hackman's stellar performances\", rating:45}]->(TheBirdcage), " +
+            "(JessicaThompson)-[:REVIEWED {summary:\"Slapstick redeemed only by the Robin Williams and Gene Hackman's " +
+                "stellar performances\", rating:45}]->(TheBirdcage), " +
             "(JessicaThompson)-[:REVIEWED {summary:'A solid romp', rating:68}]->(TheDaVinciCode), " +
             "(JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode), " +
             "(JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire)";

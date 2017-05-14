@@ -125,7 +125,9 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "plan" ).toString(), equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], identifiers=[id2], operatorType=Scan}], identifiers=[id1], operatorType=Join}" ) );
+        assertThat( meta.get( "plan" ).toString(),
+                equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], " +
+                        "identifiers=[id2], operatorType=Scan}], identifiers=[id1], operatorType=Join}" ) );
     }
 
     @Test
@@ -179,7 +181,12 @@ public class CypherAdapterStreamTest
 
         // Then
         assertThat( meta.get( "notifications" ).toString(), equalTo(
-         "[{severity=WARNING, description=The hinted index does not exist, please check the schema, code=Neo.ClientError.Schema.IndexNotFound, title=The request (directly or indirectly) referred to an index that does not exist.}, {severity=WARNING, description=Using COST planner is unsupported for this query, please use RULE planner instead, code=Neo.ClientNotification.Statement.PlannerUnsupportedWarning, position={offset=4, column=6, line=5}, title=This query is not supported by the COST planner.}]"
+         "[{severity=WARNING, description=The hinted index does not exist, please check the schema, " +
+                 "code=Neo.ClientError.Schema.IndexNotFound, title=The request (directly or indirectly) referred to an " +
+                 "index that does not exist.}, {severity=WARNING, description=Using COST planner is unsupported for " +
+                 "this query, please use RULE planner instead, " +
+                 "code=Neo.ClientNotification.Statement.PlannerUnsupportedWarning, position={offset=4, column=6, line=5}, " +
+                 "title=This query is not supported by the COST planner.}]"
         ) );
     }
 
@@ -235,13 +242,15 @@ public class CypherAdapterStreamTest
         }, children );
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final List<String> identifiers, final ExecutionPlanDescription ... children )
+    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args,
+            final List<String> identifiers, final ExecutionPlanDescription ... children )
     {
         return plan( name, args, identifiers, null, children );
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final List<String> identifiers, final
-                                                  ExecutionPlanDescription.ProfilerStatistics profile, final ExecutionPlanDescription ... children )
+    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args,
+            final List<String> identifiers, final ExecutionPlanDescription.ProfilerStatistics profile,
+            final ExecutionPlanDescription ... children )
     {
         return new ExecutionPlanDescription()
         {

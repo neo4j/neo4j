@@ -45,12 +45,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.core.server.CoreServerModule.LAST_FLUSHED_NAME;
 import static org.neo4j.causalclustering.ReplicationModule.SESSION_TRACKER_NAME;
 import static org.neo4j.causalclustering.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.causalclustering.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
 import static org.neo4j.causalclustering.core.consensus.ConsensusModule.RAFT_TERM_NAME;
 import static org.neo4j.causalclustering.core.consensus.ConsensusModule.RAFT_VOTE_NAME;
+import static org.neo4j.causalclustering.core.server.CoreServerModule.LAST_FLUSHED_NAME;
 import static org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule.ID_ALLOCATION_NAME;
 import static org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule.LOCK_TOKEN_NAME;
 
@@ -85,7 +85,8 @@ public class DumpClusterStateTest
 
     private void createStates() throws IOException
     {
-        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fsa.get(), clusterStateDirectory.get(), CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
+        SimpleStorage<MemberId> memberIdStorage = new SimpleFileStorage<>( fsa.get(), clusterStateDirectory.get(),
+                CORE_MEMBER_ID_NAME, new MemberId.Marshal(), NullLogProvider.getInstance() );
         memberIdStorage.writeState( new MemberId( UUID.randomUUID() ) );
 
         createDurableState( LAST_FLUSHED_NAME, new LongIndexMarshal() );

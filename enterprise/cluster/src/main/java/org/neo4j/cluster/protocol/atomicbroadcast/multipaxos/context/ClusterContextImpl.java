@@ -383,7 +383,8 @@ class ClusterContextImpl
          * Maps the keyset of contacting instances from InstanceId to strings, collects them in a Set and joins them
          * in a string with the appropriate separator
          */
-        return String.join( DISCOVERY_HEADER_SEPARATOR, contactingInstances.keySet().stream().map( InstanceId::toString ).collect( Collectors.toSet() ) );
+        return String.join( DISCOVERY_HEADER_SEPARATOR,
+                contactingInstances.keySet().stream().map( InstanceId::toString ).collect( Collectors.toSet() ) );
     }
 
     private Set<InstanceId> parseDiscoveryHeader( String discoveryHeader )

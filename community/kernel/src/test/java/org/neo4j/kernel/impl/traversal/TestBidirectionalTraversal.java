@@ -141,7 +141,8 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO b", "b TO g", "g TO c", "a TO d", "d TO e", "e TO c", "e TO f", "f TO c" );
 
-        expectPaths( getGraphDb().bidirectionalTraversalDescription().mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ) )
+        expectPaths( getGraphDb().bidirectionalTraversalDescription()
+                        .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ) )
             .collisionEvaluator( Evaluators.atDepth( 3 ) )
             .collisionEvaluator( Evaluators.includeIfContainsAll( getNodeWithName( "e" ) ) )
             .traverse( getNodeWithName( "a" ), getNodeWithName( "c" ) ),

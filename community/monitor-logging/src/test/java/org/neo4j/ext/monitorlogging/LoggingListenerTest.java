@@ -19,15 +19,15 @@
  */
 package org.neo4j.ext.monitorlogging;
 
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
-
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -57,7 +57,8 @@ public class LoggingListenerTest
 
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
         LoggingListener listener = new LoggingListener(
-                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor1.class, logProvider.getLog( InterestingMonitor1.class ).infoLogger() )
+                Collections.singletonMap( InterestingMonitor1.class,
+                        logProvider.getLog( InterestingMonitor1.class ).infoLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 
@@ -79,7 +80,8 @@ public class LoggingListenerTest
 
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
         LoggingListener listener = new LoggingListener(
-                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor2.class, logProvider.getLog( InterestingMonitor2.class ).infoLogger() )
+                Collections.singletonMap( InterestingMonitor2.class,
+                        logProvider.getLog( InterestingMonitor2.class ).infoLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 
@@ -125,7 +127,8 @@ public class LoggingListenerTest
 
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
         LoggingListener listener = new LoggingListener(
-                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor1.class, logProvider.getLog( InterestingMonitor1.class ).errorLogger() )
+                Collections.singletonMap( InterestingMonitor1.class,
+                        logProvider.getLog( InterestingMonitor1.class ).errorLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 
@@ -147,7 +150,8 @@ public class LoggingListenerTest
 
         InterestingMonitor2 aMonitor = monitors.newMonitor( InterestingMonitor2.class );
         LoggingListener listener = new LoggingListener(
-                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor2.class, logProvider.getLog( InterestingMonitor2.class ).debugLogger() )
+                Collections.singletonMap( InterestingMonitor2.class,
+                        logProvider.getLog( InterestingMonitor2.class ).debugLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 

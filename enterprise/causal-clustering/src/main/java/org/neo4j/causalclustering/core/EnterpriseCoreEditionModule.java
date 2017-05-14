@@ -217,8 +217,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory.get(),
-                config, replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
+        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
+                platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
+                consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;

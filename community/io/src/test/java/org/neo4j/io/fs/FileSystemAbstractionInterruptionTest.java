@@ -60,7 +60,8 @@ public class FileSystemAbstractionInterruptionTest
     private FileSystemAbstraction fs;
     private File file;
 
-    public FileSystemAbstractionInterruptionTest( @SuppressWarnings( "UnusedParameters" ) String name, Factory<FileSystemAbstraction> factory )
+    public FileSystemAbstractionInterruptionTest( @SuppressWarnings( "UnusedParameters" ) String name,
+            Factory<FileSystemAbstraction> factory )
     {
         fs = factory.newInstance();
     }

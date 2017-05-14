@@ -274,9 +274,12 @@ public class UserManagementProceduresLoggingTest
 
         // Then
         log.assertExactly(
-                error( "[admin]: tried to change password for user `%s`: %s", "andres", "Old password and new password cannot be the same." ),
-                error( "[admin]: tried to change password for user `%s`: %s", "andres", "A password cannot be empty." ),
-                error( "[admin]: tried to change password for user `%s`: %s", "notAndres", "User 'notAndres' does not exist." )
+                error( "[admin]: tried to change password for user `%s`: %s",
+                        "andres", "Old password and new password cannot be the same." ),
+                error( "[admin]: tried to change password for user `%s`: %s",
+                        "andres", "A password cannot be empty." ),
+                error( "[admin]: tried to change password for user `%s`: %s",
+                        "notAndres", "User 'notAndres' does not exist." )
         );
     }
 

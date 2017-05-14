@@ -221,7 +221,8 @@ public class SwitchToSlaveCopyThenBranchTest
         }
 
         // Then
-        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any(URI.class), any(URI.class), any(CancellationRequest.class) );
+        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ), any( URI.class ),
+                any( URI.class ), any( CancellationRequest.class ) );
     }
 
     @Test

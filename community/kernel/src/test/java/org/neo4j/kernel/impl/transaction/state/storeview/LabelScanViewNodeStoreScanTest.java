@@ -102,7 +102,8 @@ public class LabelScanViewNodeStoreScanTest
     {
         LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
         IndexStoreView storeView = mock( IndexStoreView.class );
-        LabelScanTestMultipleIndexPopulator indexPopulator = new LabelScanTestMultipleIndexPopulator( storeView, NullLogProvider.getInstance() );
+        LabelScanTestMultipleIndexPopulator indexPopulator =
+                new LabelScanTestMultipleIndexPopulator( storeView, NullLogProvider.getInstance() );
 
         List<MultipleIndexPopulator.IndexPopulation> populations =
                 Arrays.asList( getPopulation( indexPopulator ), getPopulation( indexPopulator ) );

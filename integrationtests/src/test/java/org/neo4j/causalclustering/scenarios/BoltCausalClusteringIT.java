@@ -713,7 +713,8 @@ public class BoltCausalClusteringIT
                 writeSession.writeTransaction( tx ->
                 {
 
-                    tx.run( "UNWIND range(1, {nodesToCreate}) AS i CREATE (n:Person {name: 'Jim'})", Values.parameters( "nodesToCreate", nodesToCreate ) );
+                    tx.run( "UNWIND range(1, {nodesToCreate}) AS i CREATE (n:Person {name: 'Jim'})",
+                            Values.parameters( "nodesToCreate", nodesToCreate ) );
                     return null;
                 } );
 

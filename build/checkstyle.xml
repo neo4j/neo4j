@@ -88,6 +88,10 @@
     <module name="MultipleVariableDeclarations"/>
     <module name="GenericWhitespace"/>
     <module name="ExplicitInitialization"/>
+    <module name="LineLength">
+      <property name="max" value="140"/>
+      <property name="ignorePattern" value="a href|href|http://|https://"/>
+    </module>
   </module>
 
 </module>

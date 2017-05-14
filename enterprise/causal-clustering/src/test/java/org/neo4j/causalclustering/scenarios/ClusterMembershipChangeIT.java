@@ -28,7 +28,6 @@ import java.util.List;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -48,8 +47,8 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 public class ClusterMembershipChangeIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() )
-            .withNumberOfCoreMembers( 3 );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() ).withNumberOfCoreMembers( 3 );
 
     @Test
     @Ignore( "Incomplete, HC will hang waiting for others to join." )
