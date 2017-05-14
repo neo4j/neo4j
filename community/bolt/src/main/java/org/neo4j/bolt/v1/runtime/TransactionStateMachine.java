@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
@@ -41,9 +42,9 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
 public class TransactionStateMachine implements StatementProcessor
 {
-    private static final String BEGIN = "BEGIN";
-    private static final String COMMIT = "COMMIT";
-    private static final String ROLLBACK = "ROLLBACK";
+    private static final Pattern BEGIN = Pattern.compile("(?i)^\\s*BEGIN\\s*;?\\s*$");
+    private static final Pattern COMMIT = Pattern.compile("(?i)^\\s*COMMIT\\s*;?\\s*$");
+    private static final Pattern ROLLBACK = Pattern.compile("(?i)^\\s*ROLLBACK\\s*;?\\s*$");
 
     final SPI spi;
     final MutableTransactionState ctx;
@@ -143,7 +144,7 @@ public class TransactionStateMachine implements StatementProcessor
                                Map<String, Object> params ) throws KernelException
 
                     {
-                        if ( statement.equalsIgnoreCase( BEGIN ) )
+                        if ( BEGIN.matcher( statement ).matches() )
                         {
                             ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
 
@@ -160,12 +161,12 @@ public class TransactionStateMachine implements StatementProcessor
 
                             return EXPLICIT_TRANSACTION;
                         }
-                        else if ( statement.equalsIgnoreCase( COMMIT ) )
+                        else if ( COMMIT.matcher( statement ).matches() )
                         {
                             throw new QueryExecutionKernelException(
                                     new InvalidSemanticsException( "No current transaction to commit." ) );
                         }
-                        else if ( statement.equalsIgnoreCase( ROLLBACK ) )
+                        else if ( ROLLBACK.matcher( statement ).matches() )
                         {
                             throw new QueryExecutionKernelException(
                                     new InvalidSemanticsException( "No current transaction to rollback." ) );
@@ -219,12 +220,12 @@ public class TransactionStateMachine implements StatementProcessor
                     State run( MutableTransactionState ctx, SPI spi, String statement, Map<String, Object> params )
                             throws KernelException
                     {
-                        if ( statement.equalsIgnoreCase( BEGIN ) )
+                        if ( BEGIN.matcher( statement ).matches() )
                         {
                             throw new QueryExecutionKernelException(
                                     new InvalidSemanticsException( "Nested transactions are not supported." ) );
                         }
-                        else if ( statement.equalsIgnoreCase( COMMIT ) )
+                        else if ( COMMIT.matcher( statement ).matches() )
                         {
                             closeTransaction( ctx, true );
                             long txId = spi.newestEncounteredTxId();
@@ -233,7 +234,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                             return AUTO_COMMIT;
                         }
-                        else if ( statement.equalsIgnoreCase( ROLLBACK ) )
+                        else if ( ROLLBACK.matcher( statement ).matches() )
                         {
                             closeTransaction( ctx, false );
                             ctx.currentResult = BoltResult.EMPTY;
