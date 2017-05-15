@@ -199,6 +199,36 @@ public class NotificationAcceptanceTest
                 SeverityLevel.WARNING ) ) );
     }
 
+    @Test
+    public void shouldWarnOnMissingLabel() throws Exception
+    {
+        assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: NO_SUCH_THING)" ),
+                any( InputPosition.class ),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingRelationshipType() throws Exception
+    {
+        assertNotifications("EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
+                containsString( "the missing relationship type is: NO_SUCH_THING)" ),
+                any( InputPosition.class ),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingProperty() throws Exception
+    {
+        assertNotifications("EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
+                containsString( "the missing property name is: NO_SUCH_THING)" ),
+                any( InputPosition.class ),
+                SeverityLevel.WARNING ) ) );
+    }
+
     private void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
         try ( Result result = db().execute( query ) )

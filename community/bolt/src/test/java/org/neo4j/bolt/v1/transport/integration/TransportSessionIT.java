@@ -22,7 +22,6 @@ package org.neo4j.bolt.v1.transport.integration;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,9 +38,7 @@ import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -354,7 +351,7 @@ public class TransportSessionIT
                                 "The provided label is not in the database.",
                                 "One of the labels in your query is not available in the database, " +
                                 "make sure you didn't misspell it or that the label is available when " +
-                                "you run this statement in your application (the missing label name is is: " +
+                                "you run this statement in your application (the missing label name is: " +
                                 "THIS_IS_NOT_A_LABEL)",
                                 SeverityLevel.WARNING, new InputPosition( 9, 1, 10 ) ) ) ) );
 
