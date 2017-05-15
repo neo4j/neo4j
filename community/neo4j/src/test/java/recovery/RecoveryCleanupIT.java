@@ -19,6 +19,7 @@
  */
 package recovery;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +75,13 @@ public class RecoveryCleanupIT
         LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
         monitors.addMonitorListener( recoveryBarrierMonitor );
         factory.setMonitors( monitors );
+    }
+
+    @After
+    public void tearDown() throws InterruptedException
+    {
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
     }
 
     @Test
