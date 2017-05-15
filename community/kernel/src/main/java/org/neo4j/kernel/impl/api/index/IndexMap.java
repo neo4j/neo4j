@@ -117,7 +117,7 @@ public final class IndexMap implements Cloneable
         return removedProxy;
     }
 
-    public void foreachIndexProxy( BiConsumer<Long, IndexProxy> consumer )
+    public void forEachIndexProxy( BiConsumer<Long, IndexProxy> consumer )
     {
         for ( Map.Entry<Long, IndexProxy> entry : indexesById.entrySet() )
         {

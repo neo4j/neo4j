@@ -189,7 +189,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
         else
         {
-            throw new IllegalStateException( "Cannot call " + name + "() before index has been started" );
+            throw new IllegalStateException( "Cannot call " + name + "() when index state is " + state.get() );
         }
     }
 
