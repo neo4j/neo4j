@@ -158,7 +158,7 @@ public abstract class LabelScanStoreHaIT
         life.shutdown();
     }
 
-    private static class TestMonitor implements LabelScanStore.Monitor
+    private static class TestMonitor extends LabelScanStore.Monitor.Adaptor
     {
         private volatile int callsTo_init;
         private volatile int timesRebuiltWithData;

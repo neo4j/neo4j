@@ -594,7 +594,7 @@ public abstract class LabelScanStoreTest
         }
     }
 
-    private static class TrackingMonitor implements LabelScanStore.Monitor
+    private static class TrackingMonitor extends LabelScanStore.Monitor.Adaptor
     {
         boolean initCalled, rebuildingCalled, rebuiltCalled, noIndexCalled;
         boolean corruptedIndex = false;

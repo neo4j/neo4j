@@ -355,7 +355,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private GBPTree.Monitor treeMonitor()
     {
-        return new GBPTree.Monitor()
+        return new GBPTree.Monitor.Adaptor()
         {
             @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,

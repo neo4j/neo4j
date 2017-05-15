@@ -29,7 +29,7 @@ import static java.lang.String.format;
 /**
  * Logs about important events about {@link LabelScanStore} {@link Monitor}.
  */
-public class LoggingMonitor implements Monitor
+public class LoggingMonitor extends Monitor.Adaptor
 {
     private final Log log;
 
