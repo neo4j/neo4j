@@ -78,7 +78,7 @@ import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
-import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
+import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
 
 interface TimeoutTests
@@ -559,17 +559,14 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
-    public void shouldTimeoutIfInvalidLdapServer() throws Throwable
+    public void shouldFailIfInvalidLdapServer() throws Throwable
     {
         // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
-        {
-            settings.put( SecuritySettings.ldap_server, "ldap://198.51.100.9" ); // An IP in the TEST-NET-2 range
-            settings.put( SecuritySettings.ldap_connection_timeout, "1s" );
-        } ) );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
+                settings -> settings.put( SecuritySettings.ldap_server, "ldap://127.0.0.1" ) ) );
 
-        assertConnectionTimeout( authToken( "neo", "abc123", null ),
-                LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE );
+        assertConnectionRefused( authToken( "neo", "abc123", null ),
+                LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -1030,6 +1027,19 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.AuthProviderTimeout, message ) ) );
+
+        assertThat( client, eventuallyDisconnects() );
+    }
+
+    private void assertConnectionRefused( Map<String,Object> authToken, String message ) throws Exception
+    {
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", authToken ) ) );
+
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.AuthProviderFailed, message ) ) );
 
         assertThat( client, eventuallyDisconnects() );
     }

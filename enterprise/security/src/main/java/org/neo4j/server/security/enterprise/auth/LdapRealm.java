@@ -27,13 +27,14 @@ import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.cache.Cache;
 import org.apache.shiro.crypto.hash.SimpleHash;
+import org.apache.shiro.realm.ldap.DefaultLdapRealm;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
-import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
 import org.apache.shiro.realm.ldap.LdapUtils;
 import org.apache.shiro.subject.PrincipalCollection;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -73,7 +74,7 @@ import static java.lang.String.format;
 /**
  * Shiro realm for LDAP based on configuration settings
  */
-public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAuthorizationInfoProvider
+public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, ShiroAuthorizationInfoProvider
 {
     private static final String GROUP_DELIMITER = ";";
     private static final String KEY_VALUE_DELIMITER = "=";
@@ -88,6 +89,7 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
     public static final String LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE = "LDAP connection timed out.";
     public static final String LDAP_READ_TIMEOUT_CLIENT_MESSAGE = "LDAP response timed out.";
     public static final String LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE = "LDAP authorization request failed.";
+    public static final String LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE = "LDAP connection refused.";
 
     private Boolean authenticationEnabled;
     private Boolean authorizationEnabled;
@@ -165,6 +167,11 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
                 {
                     securityLog.error( withRealm( "LDAP response from %s timed out.", serverString ) );
                     throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
+                }
+                else if ( isExceptionConnectionRefused( e ) )
+                {
+                    securityLog.error( withRealm( "LDAP connection to %s was refused.", serverString ) );
+                    throw new AuthProviderFailedException( LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE, e );
                 }
                 // This exception will be caught and rethrown by Shiro, and then by us, so we do not need to wrap it here
                 throw e;
@@ -397,6 +404,12 @@ public class LdapRealm extends JndiLdapRealm implements RealmLifecycle, ShiroAut
                (((CommunicationException) e).getRootCause() instanceof SocketTimeoutException ||
                 ((CommunicationException) e).getRootCause().getMessage().contains(
                         JNDI_LDAP_CONNECTION_TIMEOUT_MESSAGE_PART ) );
+    }
+
+    private boolean isExceptionConnectionRefused( Exception e )
+    {
+        return e instanceof CommunicationException &&
+                ((CommunicationException) e).getRootCause() instanceof ConnectException;
     }
 
     private boolean isAuthorizationExceptionAnLdapReadTimeout( AuthorizationException e )
