@@ -66,6 +66,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
 
     def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
                                  triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty,
                                  typeConverter = typeConverter)

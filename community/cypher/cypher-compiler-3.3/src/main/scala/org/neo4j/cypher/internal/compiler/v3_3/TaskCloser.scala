@@ -51,5 +51,5 @@ class TaskCloser {
     }
   }
 
-  def isClosed = closed
+  def isClosed: Boolean = closed
 }
