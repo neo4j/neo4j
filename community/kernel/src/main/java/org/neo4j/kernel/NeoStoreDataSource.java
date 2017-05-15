@@ -33,6 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -274,6 +275,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private LabelScanStoreProvider labelScanStoreProvider;
     private File storeDir;
     private boolean readOnly;
+    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final AccessCapability accessCapability;
 
     private StorageEngine storageEngine;
@@ -321,7 +323,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             AvailabilityGuard availabilityGuard,
             SystemNanoClock clock,
             AccessCapability accessCapability,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex )
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -357,6 +360,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.availabilityGuard = availabilityGuard;
         this.clock = clock;
         this.accessCapability = accessCapability;
+        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -452,7 +456,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     monitors.newMonitor( Recovery.Monitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     transactionLogModule.logFiles(), startupStatistics,
-                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore() );
+                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore(),
+                    recoveryCleanupWorkCollector, scheduler );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
             PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );
@@ -682,7 +687,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
-            LogicalTransactionStore logicalTransactionStore )
+            LogicalTransactionStore logicalTransactionStore,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            JobScheduler scheduler )
     {
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
@@ -699,6 +706,21 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             }
         } );
         life.add( recovery );
+
+        life.add( cleanupAfterRecovery( scheduler, recoveryCleanupWorkCollector ) );
+    }
+
+    private LifecycleAdapter cleanupAfterRecovery( JobScheduler jobScheduler,
+            final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws Throwable
+            {
+                jobScheduler.schedule( JobScheduler.Groups.recoveryCleanup, recoveryCleanupWorkCollector );
+            }
+        };
     }
 
     private NeoStoreKernelModule buildKernel( TransactionAppender appender,

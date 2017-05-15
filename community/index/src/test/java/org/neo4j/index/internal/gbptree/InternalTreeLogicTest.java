@@ -34,6 +34,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
@@ -42,6 +43,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -1318,6 +1320,45 @@ public class InternalTreeLogicTest
         // and previously crashed successor GSPP slot should have been overwritten
         goTo( readCursor, originalNodeId );
         assertSuccessorPointerNotCrashOrBroken();
+    }
+
+    @Test
+    public void mustThrowIfReachingNodeWithValidSuccessor() throws Exception
+    {
+        // GIVEN
+        // root with two children
+        assumeTrue( isCheckpointing );
+        initialize();
+        for ( int i = 1; numberOfRootSplits < 1; i++ )
+        {
+            long keyAndValue = i * maxKeyCount;
+            insert( keyAndValue, keyAndValue );
+        }
+        generationManager.checkpoint();
+
+        // and leftmost child has successor that is not pointed to by parent (root)
+        goTo( readCursor, rootId );
+        long leftmostChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
+        giveSuccessor( readCursor, leftmostChild );
+
+        // WHEN
+        // insert in leftmostChild
+        try
+        {
+            insert( 0, 0 );
+            fail( "Expected insert to throw because child targeted for insertion has a valid new successor." );
+        }
+        catch ( TreeInconsistencyException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
+        }
+    }
+
+    private void giveSuccessor( PageCursor cursor, long nodeId ) throws IOException
+    {
+        goTo( cursor, nodeId );
+        TreeNode.setSuccessor( cursor, 42, stableGeneration, unstableGeneration );
     }
 
     private long rightmostInternalKeyInSubtree( long parentNodeId, int subtreePosition ) throws IOException

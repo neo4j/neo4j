@@ -28,7 +28,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -247,13 +249,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * on stable storage, no writes are allowed to happen.
      * For this reason both writer and check-pointing acquires this lock.
      */
-    private final Lock writerCheckpointMutex = new ReentrantLock();
-
-    /**
-     * Currently an index only supports one concurrent writer and so this boolean will act as
-     * guard so that only one thread can have it at any given time.
-     */
-    private final AtomicBoolean writerTaken = new AtomicBoolean();
+    private final ReadWriteLock writerCheckpointMutex = new StampedLock().asReadWriteLock();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -319,6 +315,21 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean clean;
 
     /**
+     * Don't overwrite 'dirty' bit in header on close if tree still needs cleaning.
+     */
+    private volatile boolean needsCleaning;
+
+    /**
+     * Clean jobs part of recovery is posted here.
+     */
+    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+
+    /**
+     * If clean job fails, this throwable is set to the cause.
+     */
+    private volatile Throwable failedRecoveryCause;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
      * be written in index header.
@@ -347,13 +358,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
+     * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader ) throws IOException
+            Monitor monitor, Header.Reader headerReader, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
+        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -377,7 +390,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.monitor.startupState( clean );
 
             // Prepare tree for action
-            boolean needsCleaning = !clean;
+            needsCleaning = !clean;
             clean = false;
             bumpUnstableGeneration();
             forceState();
@@ -741,6 +754,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
+        assertRecoveryCleanSuccessful();
+
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
@@ -753,7 +768,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         // Block writers, or if there's a current writer then wait for it to complete and then block
         // From this point and till the lock is released we know that the tree won't change.
-        writerCheckpointMutex.lock();
+        Lock writeLock = writerCheckpointMutex.writeLock();
+        writeLock.lock();
         try
         {
             // Flush dirty pages since that last flush above. This should be a very small set of pages
@@ -780,7 +796,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // Unblock writers, any writes after this point and up until the next checkpoint will have
             // the new unstable generation.
-            writerCheckpointMutex.unlock();
+            writeLock.unlock();
+        }
+    }
+
+    private void assertRecoveryCleanSuccessful() throws IOException
+    {
+        if ( failedRecoveryCause != null )
+        {
+            throw new IOException( "Pointer cleaning during recovery failed", failedRecoveryCause );
         }
     }
 
@@ -794,7 +818,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     @Override
     public void close() throws IOException
     {
-        writerCheckpointMutex.lock();
+        Lock writeLock = writerCheckpointMutex.writeLock();
+        writeLock.lock();
         try
         {
             if ( closed )
@@ -802,9 +827,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 return;
             }
 
-            // Force close on writer to not risk deadlock on pagedFile.close()
-            writer.close();
-            if ( !changesSinceLastCheckpoint )
+            if ( !changesSinceLastCheckpoint && !needsCleaning )
             {
                 clean = true;
                 forceState();
@@ -814,7 +837,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         finally
         {
-            writerCheckpointMutex.unlock();
+            writeLock.unlock();
         }
     }
 
@@ -830,39 +853,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Writer<KEY,VALUE> writer() throws IOException
     {
-        if ( !writerTaken.compareAndSet( false, true ) )
-        {
-            throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
-                    "Only a single writer is allowed. The writer will become available as soon as " +
-                    "acquired writer is closed" );
-        }
-
-        writerCheckpointMutex.lock();
-        boolean success = false;
-        try
-        {
-            writer.take();
-            success = true;
-            changesSinceLastCheckpoint = true;
-            return writer;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                releaseWriter();
-            }
-        }
-    }
-
-    private void releaseWriter()
-    {
-        writerCheckpointMutex.unlock();
-        if ( !writerTaken.compareAndSet( true, false ) )
-        {
-            throw new IllegalStateException( "Tried to give back the writer of " + this +
-                    ", but somebody else already did" );
-        }
+        assertRecoveryCleanSuccessful();
+        writer.initialize();
+        changesSinceLastCheckpoint = true;
+        return writer;
     }
 
     private void setRoot( long rootId, long rootGeneration )
@@ -911,13 +905,37 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // i.e. recovery creates this gap to be able to distinguish crashed from fixed pointers.
         // After recovery is completed and the next checkpoint/close happens that gap is closed
         // and any remaining CRASH pointers cannot be recognized as such anymore.
-        //
-        // The temporary solution right now is to scan through all tree nodes, as performant as possible,
-        // and zero out all CRASH pointers.
+        // This method will add a cleanup job to ensure all remaining CRASH pointers will be cleared.
+
+        Lock readLock = writerCheckpointMutex.readLock();
+        readLock.lock();
 
         long generation = this.generation;
-        new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID,freeList.lastId() + 1,
-                stableGeneration( generation ), unstableGeneration( generation ), monitor ).clean();
+        long stableGeneration = stableGeneration( generation );
+        long unstableGeneration = unstableGeneration( generation );
+        long highTreeNodeId = freeList.lastId() + 1;
+
+        CleanupJob cleanupJob = () ->
+        {
+            CrashGenerationCleaner crashGenerationCleaner =
+                    new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
+                            stableGeneration, unstableGeneration, monitor );
+            try
+            {
+                crashGenerationCleaner.clean();
+                needsCleaning = false;
+            }
+            catch ( Throwable e )
+            {
+                // Clean failed, report back and let next system checkpoint handle error
+                failedRecoveryCause = e;
+            }
+            finally
+            {
+                readLock.unlock();
+            }
+        };
+        recoveryCleanupWorkCollector.add( cleanupJob );
     }
 
     void printTree() throws IOException
@@ -966,11 +984,22 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
+    private TreeInconsistencyException appendTreeInformation( TreeInconsistencyException e )
+    {
+        return Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
+    }
+
     private class SingleWriter implements Writer<KEY,VALUE>
     {
+        /**
+         * Currently an index only supports one concurrent writer and so this boolean will act as
+         * guard so that only one writer ever exist.
+         */
+        private final AtomicBoolean writerTaken = new AtomicBoolean();
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
+        private Lock readLock;
 
         // Writer can't live past a checkpoint because of the mutex with checkpoint,
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
@@ -983,12 +1012,58 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.treeLogic = treeLogic;
         }
 
-        void take() throws IOException
+        /**
+         * When leaving initialize, writer should be in a fully consistent state.
+         * <p>
+         * Either fully initialized:
+         * <ul>
+         *    <li>{@link #writerTaken} - true</li>
+         *    <li>{@link #writerCheckpointMutex} - locked</li>
+         *    <li>{@link #cursor} - not null</li>
+         * </ul>
+         * Of fully closed:
+         * <ul>
+         *    <li>{@link #writerTaken} - false</li>
+         *    <li>{@link #writerCheckpointMutex} - unlocked</li>
+         *    <li>{@link #cursor} - null</li>
+         * </ul>
+         *
+         * @throws IOException if fail to open {@link PageCursor}
+         */
+        void initialize() throws IOException
         {
-            cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
-            stableGeneration = stableGeneration( generation );
-            unstableGeneration = unstableGeneration( generation );
-            treeLogic.initialize( cursor );
+            if ( !writerTaken.compareAndSet( false, true ) )
+            {
+                throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
+                        "Only a single writer is allowed. The writer will become available as soon as " +
+                        "acquired writer is closed" );
+            }
+
+            boolean success = false;
+            try
+            {
+                readLock = writerCheckpointMutex.readLock();
+                readLock.lock();
+                cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
+                stableGeneration = stableGeneration( generation );
+                unstableGeneration = unstableGeneration( generation );
+                PointerChecking.assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+                treeLogic.initialize( cursor );
+                success = true;
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
+            finally
+            {
+                if ( !success )
+                {
+                    closeCursor();
+                    writerTaken.set( false );
+                    releaseLock();
+                }
+            }
         }
 
         @Override
@@ -1000,8 +1075,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
-                    stableGeneration, unstableGeneration );
+            try
+            {
+                treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
+                        stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
 
             if ( structurePropagation.hasRightKeyInsert )
             {
@@ -1037,8 +1119,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public VALUE remove( KEY key ) throws IOException
         {
-            VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
-                    stableGeneration, unstableGeneration );
+            VALUE result;
+            try
+            {
+                result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
+                        stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
+
             if ( structurePropagation.hasMidChildUpdate )
             {
                 setRoot( structurePropagation.midChild );
@@ -1052,14 +1143,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public void close() throws IOException
         {
-            if ( cursor == null )
+            if ( !writerTaken.compareAndSet( true, false ) )
             {
-                return;
+                throw new IllegalStateException( "Tried to close writer of " + GBPTree.this +
+                        ", but writer is already closed." );
             }
+            closeCursor();
+            releaseLock();
+        }
 
-            cursor.close();
-            cursor = null;
-            releaseWriter();
+        private void releaseLock()
+        {
+            if ( readLock != null )
+            {
+                readLock.unlock();
+                readLock = null;
+            }
+        }
+
+        private void closeCursor()
+        {
+            if ( cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
         }
     }
 }

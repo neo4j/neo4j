@@ -97,7 +97,8 @@ public class FormatCompatibilityTest
         // THEN everything should work, otherwise there has likely been a format change
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER ) )
+                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER,
+                        RecoveryCleanupWorkCollector.IMMEDIATE ) )
         {
             try
             {
@@ -173,7 +174,8 @@ public class FormatCompatibilityTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER ) )
+                new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0, NO_MONITOR, NO_HEADER,
+                        RecoveryCleanupWorkCollector.IMMEDIATE ) )
         {
             MutableLong insertKey = new MutableLong();
             MutableLong insertValue = new MutableLong();

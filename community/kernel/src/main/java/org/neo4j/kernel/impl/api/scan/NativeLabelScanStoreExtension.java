@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
@@ -50,6 +51,8 @@ public class NativeLabelScanStoreExtension extends
 
         LogService getLogService();
 
+        RecoveryCleanupWorkCollector recoveryCleanupExecutor();
+
         Monitors monitors();
     }
 
@@ -64,13 +67,14 @@ public class NativeLabelScanStoreExtension extends
         Log log = dependencies.getLogService().getInternalLog( NativeLabelScanStore.class );
         Monitors monitors = dependencies.monitors();
         monitors.addMonitorListener( new LoggingMonitor( log ) );
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupExecutor();
         NativeLabelScanStore labelScanStore = new NativeLabelScanStore(
                 dependencies.pageCache(),
                 context.storeDir(),
                 new FullLabelStream( dependencies.indexStoreView() ),
                 dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
-                monitors );
-
+                monitors,
+                recoveryCleanupWorkCollector );
         return new LabelScanStoreProvider( NAME, labelScanStore );
     }
 }
