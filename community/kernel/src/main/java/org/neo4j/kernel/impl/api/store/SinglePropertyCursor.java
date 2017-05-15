@@ -55,13 +55,13 @@ public class SinglePropertyCursor extends AbstractPropertyCursor
         }
 
         // go to disk if the state does not contain the keyId we are looking for
-        return state.getAddedProperty( propertyKeyId ) == null;
+        return !state.hasChanges() || state.getAddedProperty( propertyKeyId ) == null;
     }
 
     @Override
     protected DefinedProperty nextAdded()
     {
-        return !fetched ? (DefinedProperty) state.getAddedProperty( propertyKeyId ) : null;
+        return fetched ? null : (DefinedProperty) state.getAddedProperty( propertyKeyId );
     }
 
     @Override
