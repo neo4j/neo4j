@@ -34,7 +34,9 @@ import scala.collection.Iterator
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
   override type EntityAccessor = inner.EntityAccessor
 
-  override def entityAccessor = inner.entityAccessor
+  override def entityAccessor: EntityAccessor = inner.entityAccessor
+
+  override def resources: CloseableResource = inner.resources
 
   override def transactionalContext =
     new ExceptionTranslatingTransactionalContext(inner.transactionalContext)

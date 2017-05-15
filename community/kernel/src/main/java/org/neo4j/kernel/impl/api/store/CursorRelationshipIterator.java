@@ -29,7 +29,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 /**
  * Convert a {@link RelationshipItem} cursor into a {@link RelationshipIterator} that implements {@link Resource}.
  */
-public class CursorRelationshipIterator implements RelationshipIterator, Resource
+public class CursorRelationshipIterator implements RelationshipIterator
 {
     private Cursor<RelationshipItem> cursor;
     private boolean hasDeterminedNext;
@@ -45,26 +45,12 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
         cursor = resourceCursor;
     }
 
-    private boolean nextCursor()
-    {
-        if ( cursor != null )
-        {
-            boolean hasNext = cursor.next();
-            if ( !hasNext )
-            {
-                close();
-            }
-            return hasNext;
-        }
-        return false;
-    }
-
     @Override
     public boolean hasNext()
     {
         if ( !hasDeterminedNext )
         {
-            hasNext = nextCursor();
+            hasNext = cursor != null && cursor.next();
             hasDeterminedNext = true;
         }
         return hasNext;
@@ -83,8 +69,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
                 type = item.type();
                 startNode = item.startNode();
                 endNode = item.endNode();
-
-                return item.id();
+                return id;
             }
             finally
             {

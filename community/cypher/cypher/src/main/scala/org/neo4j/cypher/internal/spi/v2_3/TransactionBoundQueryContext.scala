@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
-import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
+import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, ResourceManager}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionalContextWrapper
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -59,6 +59,7 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   extends TransactionBoundTokenContext(tc.statement) with QueryContext with SchemaDescriptorTranslation {
 
+  val resources = new ResourceManager
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
   private val nodeManager = tc.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
@@ -125,7 +126,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       case Some(typeIds) =>
         tc.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
-    new BeansAPIRelationshipIterator(relationships, nodeManager)
+    new BeansAPIRelationshipIterator(relationships, nodeManager, resources)
   }
 
   def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =

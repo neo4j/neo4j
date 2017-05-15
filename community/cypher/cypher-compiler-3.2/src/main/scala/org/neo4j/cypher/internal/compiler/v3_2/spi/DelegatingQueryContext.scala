@@ -38,6 +38,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   type EntityAccessor = inner.EntityAccessor
 
+  override def resources: CloseableResource = inner.resources
+
   override def transactionalContext: QueryTransactionalContext = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor

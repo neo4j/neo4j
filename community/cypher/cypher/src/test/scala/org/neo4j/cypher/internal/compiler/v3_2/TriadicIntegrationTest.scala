@@ -79,7 +79,8 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
 
   test("triadic should not handle complex incoming predicates for now") {
     // given
-    execute("CREATE INDEX ON :Person(name)")
+    graph.createIndex("Person", "name")
+
     execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c",age:39}), (d:Person{name:"d"}), (e:Person{name:"e"})
                |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (b)-[:FRIEND]->(d), (b)-[:FRIEND]->(e)
                |CREATE (a)-[:FRIEND]->(c), (a)-[:FRIEND]->(d), (c)-[:FRIEND]->(d)""".stripMargin)

@@ -128,6 +128,12 @@ public class RelationshipChangesForNode
                                         txStateRelationshipHome : original;
                                 return home.relationshipVisit( relationshipId, visitor );
                             }
+
+                            @Override
+                            public void close()
+                            {
+                                original.close();
+                            }
                         };
                     }
 
