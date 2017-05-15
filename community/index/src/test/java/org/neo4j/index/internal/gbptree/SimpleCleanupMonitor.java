@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-class SimpleCleanupMonitor implements GBPTree.Monitor
+class SimpleCleanupMonitor extends GBPTree.Monitor.Adaptor
 {
     boolean cleanupFinished;
     long numberOfPagesVisited;

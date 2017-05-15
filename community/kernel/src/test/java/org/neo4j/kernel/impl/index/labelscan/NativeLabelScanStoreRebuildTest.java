@@ -140,7 +140,7 @@ public class NativeLabelScanStoreRebuildTest
         }
     }
 
-    private class RecordingMonitor implements LabelScanStore.Monitor
+    private class RecordingMonitor extends LabelScanStore.Monitor.Adaptor
     {
         boolean notValid;
         boolean rebuilding;

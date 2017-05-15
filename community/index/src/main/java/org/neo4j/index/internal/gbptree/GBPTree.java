@@ -138,20 +138,40 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public interface Monitor
     {
+        class Adaptor implements Monitor
+        {
+            @Override
+            public void checkpointCompleted()
+            {   // no-op
+            }
+
+            @Override
+            public void noStoreFile()
+            {   // no-op
+            }
+
+            @Override
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+                    long durationMillis )
+            {   // no-op
+            }
+
+            @Override
+            public void startupState( boolean clean )
+            {   // no-op
+            }
+        }
+
         /**
          * Called when a {@link GBPTree#checkpoint(IOLimiter)} has been completed, but right before
          * {@link GBPTree#writer() writers} are re-enabled.
          */
-        default void checkpointCompleted()
-        {   // no-op by default
-        }
+        void checkpointCompleted();
 
         /**
          * Called when the tree was started on no existing store file and so will be created.
          */
-        default void noStoreFile()
-        {   // no-op by default
-        }
+        void noStoreFile();
 
         /**
          * Called after recovery has completed and cleaning has been done.
@@ -160,27 +180,20 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * @param numberOfCleanedCrashPointers number of cleaned crashed pointers.
          * @param durationMillis time spent cleaning.
          */
-        default void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
-                long durationMillis )
-        {   // no-op by default
-        }
+        void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
 
         /**
          * Report tree state on startup.
          *
          * @param clean true if tree was clean on startup.
          */
-        default void startupState( boolean clean )
-        {   // no-op by default
-        }
+        void startupState( boolean clean );
     }
 
     /**
      * No-op {@link Monitor}.
      */
-    public static final Monitor NO_MONITOR = new Monitor()
-    {   // does nothing
-    };
+    public static final Monitor NO_MONITOR = new Monitor.Adaptor();
 
     /**
      * No-op header reader.

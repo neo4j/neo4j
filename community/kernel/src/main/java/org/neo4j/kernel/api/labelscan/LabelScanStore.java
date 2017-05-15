@@ -37,37 +37,59 @@ public interface LabelScanStore extends Lifecycle
 {
     interface Monitor
     {
-        Monitor EMPTY = new Monitor()
-        {   // empty
-        };
+        Monitor EMPTY = new Monitor.Adaptor();
 
-        default void init()
-        {   // empty
+        class Adaptor implements Monitor
+        {
+            @Override
+            public void init()
+            {   // empty
+            }
+
+            @Override
+            public void noIndex()
+            {   // empty
+            }
+
+            @Override
+            public void lockedIndex( Exception e )
+            {   // empty
+            }
+
+            @Override
+            public void notValidIndex()
+            {   // empty
+            }
+
+            @Override
+            public void rebuilding()
+            {   // empty
+            }
+
+            @Override
+            public void rebuilt( long roughNodeCount )
+            {   // empty
+            }
+
+            @Override
+            public void recoveryCompleted( Map<String,Object> data )
+            {   // empty
+            }
         }
 
-        default void noIndex()
-        {   // empty
-        }
+        void init();
 
-        default void lockedIndex( Exception e )
-        {   // empty
-        }
+        void noIndex();
 
-        default void notValidIndex()
-        {   // empty
-        }
+        void lockedIndex( Exception e );
 
-        default void rebuilding()
-        {   // empty
-        }
+        void notValidIndex();
 
-        default void rebuilt( long roughNodeCount )
-        {   // empty
-        }
+        void rebuilding();
 
-        default void recoveryCompleted( Map<String,Object> data )
-        {   // empty
-        }
+        void rebuilt( long roughNodeCount );
+
+        void recoveryCompleted( Map<String,Object> data );
     }
 
     /**
