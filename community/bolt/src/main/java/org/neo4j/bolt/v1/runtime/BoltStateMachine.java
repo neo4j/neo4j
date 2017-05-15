@@ -31,6 +31,7 @@ import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
@@ -364,7 +365,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             }
                             return READY;
                         }
-                        catch ( AuthenticationException | AuthProviderTimeoutException e )
+                        catch ( AuthenticationException | AuthProviderTimeoutException | AuthProviderFailedException e)
                         {
                             fail( machine, Neo4jError.fatalFrom( e.status(), e.getMessage() ) );
                             throw new BoltConnectionAuthFatality( e.getMessage() );
