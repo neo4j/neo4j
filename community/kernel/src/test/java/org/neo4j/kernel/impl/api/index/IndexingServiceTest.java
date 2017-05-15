@@ -25,6 +25,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
@@ -32,9 +33,11 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -70,8 +73,10 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -85,6 +90,7 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -110,6 +116,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -141,6 +148,8 @@ public class IndexingServiceTest
 {
     @Rule
     public final LifeRule life = new LifeRule();
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
     private static final Runnable DO_NOTHING_CALLBACK = () -> {};
@@ -1026,6 +1035,67 @@ public class IndexingServiceTest
         logProvider.assertNone( logMatch.info( "IndexingService.start: index 3 on :Label3(prop) is ONLINE" ) );
     }
 
+    @Test
+    public void flushAllIndexesWhileSomeOfThemDropped() throws IOException
+    {
+        IndexMapReference indexMapReference = new IndexMapReference();
+        IndexMap indexMap = indexMapReference.indexMapSnapshot();
+
+        IndexProxy validIndex = createIndexProxyMock();
+        indexMap.putIndexProxy( 1, validIndex );
+        indexMap.putIndexProxy( 2, validIndex );
+        IndexProxy deletedIndexProxy = createIndexProxyMock();
+        indexMap.putIndexProxy( 3, deletedIndexProxy );
+        indexMap.putIndexProxy( 4, validIndex );
+        indexMap.putIndexProxy( 5, validIndex );
+
+        indexMapReference.setIndexMap( indexMap );
+
+        doAnswer( invocation ->
+        {
+            indexMap.removeIndexProxy( 3 );
+            throw new RuntimeException( "Index deleted." );
+        } ).when( deletedIndexProxy ).force();
+
+        IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
+
+        indexingService.forceAll();
+        verify( validIndex, times( 4 ) ).force();
+    }
+
+    @Test
+    public void failForceAllWhenOneOfTheIndexesFailToForce() throws IOException
+    {
+        IndexMapReference indexMapReference = new IndexMapReference();
+        IndexMap indexMap = indexMapReference.indexMapSnapshot();
+
+        IndexProxy validIndex = createIndexProxyMock();
+
+        indexMap.putIndexProxy( 1, validIndex );
+        indexMap.putIndexProxy( 2, validIndex );
+        IndexProxy strangeIndexProxy = createIndexProxyMock();
+        indexMap.putIndexProxy( 3, strangeIndexProxy );
+        indexMap.putIndexProxy( 4, validIndex );
+        indexMap.putIndexProxy( 5, validIndex );
+        doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy ).force();
+
+        indexMapReference.setIndexMap( indexMap );
+
+        IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
+
+        expectedException.expectMessage( "Unable to force" );
+        expectedException.expect( UnderlyingStorageException.class );
+        indexingService.forceAll();
+    }
+
+    private IndexProxy createIndexProxyMock()
+    {
+        IndexProxy proxy = mock( IndexProxy.class );
+        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 2 );
+        when( proxy.getDescriptor() ).thenReturn( descriptor );
+        return proxy;
+    }
+
     private static Matcher<? extends Throwable> causedBy( final Throwable exception )
     {
         return new TypeSafeMatcher<Throwable>()
@@ -1329,5 +1399,14 @@ public class IndexingServiceTest
     {
         return IndexRule.constraintIndexRule(
                 ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), providerDescriptor, constraintId );
+    }
+
+    private IndexingService createIndexServiceWithCustomIndexMap( IndexMapReference indexMapReference )
+    {
+        return new IndexingService( mock( IndexProxyCreator.class ), mock( SchemaIndexProviderMap.class ),
+                indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
+                mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
+                mock( JobScheduler.class ), mock( Runnable.class ), mock( MultiPopulatorFactory.class ),
+                NullLogProvider.getInstance(), IndexingService.NO_MONITOR );
     }
 }

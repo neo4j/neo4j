@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
@@ -38,7 +39,8 @@ public class CheckPointScheduler extends LifecycleAdapter
      * The max number of consecutive check point failures that can be tolerated before treating
      * check point failures more seriously, with a panic.
      */
-    static final int MAX_CONSECUTIVE_FAILURES_TOLERANCE = 3;
+    static final int MAX_CONSECUTIVE_FAILURES_TOLERANCE =
+            FeatureToggles.getInteger( CheckPointScheduler.class, "failure_tolerance", 10 );
 
     private final CheckPointer checkPointer;
     private final IOLimiter ioLimiter;
