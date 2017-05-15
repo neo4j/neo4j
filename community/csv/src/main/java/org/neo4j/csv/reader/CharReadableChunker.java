@@ -71,15 +71,16 @@ public abstract class CharReadableChunker implements Chunker
 
     protected int storeInBackBuffer( char[] data, int offset, int length )
     {
-        System.arraycopy( data, offset, backBuffer( length ), 0, length );
+        System.arraycopy( data, offset, backBuffer( length ), backBufferCursor, length );
+        backBufferCursor += length;
         return length;
     }
 
     private char[] backBuffer( int length )
     {
-        if ( length > backBuffer.length )
+        if ( backBufferCursor + length > backBuffer.length )
         {
-            backBuffer = Arrays.copyOf( backBuffer, length );
+            backBuffer = Arrays.copyOf( backBuffer, backBufferCursor + length );
         }
         return backBuffer;
     }

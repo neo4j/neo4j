@@ -67,7 +67,7 @@ public class SectionedCharBuffer
     public SectionedCharBuffer( int effectiveBuffserSize )
     {
         this.buffer = new char[effectiveBuffserSize * 2];
-        this.front = this.pivot = effectiveBuffserSize;
+        this.back = this.front = this.pivot = effectiveBuffserSize;
     }
 
     /**

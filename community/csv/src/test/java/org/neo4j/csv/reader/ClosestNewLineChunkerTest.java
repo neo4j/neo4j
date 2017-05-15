@@ -118,7 +118,7 @@ public class ClosestNewLineChunkerTest
         };
     }
 
-    private char[] charactersOf( Chunk chunk )
+    static char[] charactersOf( Chunk chunk )
     {
         return copyOfRange( chunk.data(), chunk.startPosition(), chunk.startPosition() + chunk.length() );
     }

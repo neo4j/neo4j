@@ -53,8 +53,11 @@ public class MultiLineAwareChunker extends CharReadableChunker
         int prevPosition = charBuffer.back();
         boolean doContinue = true;
         int cursor = fillFromBackBuffer( array );
+        int prevEntryStart;
         while ( doContinue )
         {
+            prevEntryStart = cursor;
+
             // Read one entry worth of data
             for ( int i = 0; i < fieldsPerEntry; i++ )
             {
@@ -68,11 +71,20 @@ public class MultiLineAwareChunker extends CharReadableChunker
                 // And copy into the chunk array.
                 // TODO would be nice to not require copy here though.
                 int position = mark.position();
+                if ( position < prevPosition )
+                {
+                    // This means that the reader have fetched a new buffer internally
+                    prevPosition = charBuffer.back();
+                }
                 int length = position - prevPosition;
                 if ( cursor + length >= array.length )
                 {
-                    storeInBackBuffer( charBuffer.array(), mark.startPosition(), mark.length() );
+                    // We can't fit this value in the array. Store the entries which have been read so far
+                    // in the back buffer and also finally this value
+                    storeInBackBuffer( array, prevEntryStart, cursor - prevEntryStart );
+                    storeInBackBuffer( charBuffer.array(), prevPosition, length );
                     doContinue = false;
+                    cursor = prevEntryStart;
                     break;
                 }
 
@@ -81,6 +93,11 @@ public class MultiLineAwareChunker extends CharReadableChunker
                 prevPosition = position;
             }
         }
-        return cursor > 0;
+        if ( cursor > 0 )
+        {
+            into.initialize( cursor, reader.sourceDescription() );
+            return true;
+        }
+        return false;
     }
 }
