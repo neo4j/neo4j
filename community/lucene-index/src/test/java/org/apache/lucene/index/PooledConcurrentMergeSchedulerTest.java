@@ -63,7 +63,7 @@ public class PooledConcurrentMergeSchedulerTest
 
         mergeScheduler.merge( indexWriter, MergeTrigger.EXPLICIT, false );
 
-        assertEquals( 0, mergeScheduler.getWriterTaskCounter().get() );
+        assertEquals( 0, mergeScheduler.getWriterTaskCount() );
     }
 
     @Test
@@ -76,7 +76,7 @@ public class PooledConcurrentMergeSchedulerTest
 
         mergeScheduler.merge( indexWriter, MergeTrigger.EXPLICIT, false );
 
-        assertEquals( 1, mergeScheduler.getWriterTaskCounter().get() );
+        assertEquals( 1, mergeScheduler.getWriterTaskCount() );
     }
 
     @Test
@@ -89,7 +89,7 @@ public class PooledConcurrentMergeSchedulerTest
 
         mergeScheduler.merge( indexWriter, MergeTrigger.EXPLICIT, false );
 
-        assertEquals( 2, mergeScheduler.getWriterTaskCounter().get() );
+        assertEquals( 2, mergeScheduler.getWriterTaskCount() );
     }
 
     @Test( timeout = 5000 )
@@ -103,14 +103,14 @@ public class PooledConcurrentMergeSchedulerTest
 
         mergeScheduler.merge( indexWriter, MergeTrigger.EXPLICIT, false );
 
-        assertEquals( 1, mergeScheduler.getWriterTaskCounter().get() );
+        assertEquals( 1, mergeScheduler.getWriterTaskCount() );
 
         Thread closeSchedulerThread = ThreadTestUtils.fork( () -> mergeScheduler.close() );
         ThreadTestUtils.awaitThreadState( closeSchedulerThread, 500, Thread.State.TIMED_WAITING );
         mergeScheduler.getExecutionLatch().countDown();
         closeSchedulerThread.join();
 
-        assertEquals( 0, mergeScheduler.getWriterTaskCounter().get() );
+        assertEquals( 0, mergeScheduler.getWriterTaskCount() );
     }
 
     private SegmentCommitInfo getSegmentCommitInfo()

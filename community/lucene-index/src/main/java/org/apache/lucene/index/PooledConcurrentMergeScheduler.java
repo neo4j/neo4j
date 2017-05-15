@@ -25,8 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
@@ -48,7 +48,7 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
     private static final int POOL_MINIMUM_THREADS =
             FeatureToggles.getInteger( PooledConcurrentMergeScheduler.class, "pool.minimum.threads", 4 );
 
-    private AtomicInteger writerTaskCounter = new AtomicInteger();
+    private final AtomicInteger writerTaskCounter = new AtomicInteger();
 
     @Override
     public synchronized void merge( IndexWriter writer, MergeTrigger trigger, boolean newMergesFound )
@@ -73,8 +73,8 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
             {
                 if ( !success )
                 {
-                    writerTaskCounter.decrementAndGet();
                     writer.mergeFinish( merge );
+                    writerTaskCounter.decrementAndGet();
                 }
             }
         }
@@ -99,9 +99,9 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
         // noop
     }
 
-    AtomicInteger getWriterTaskCounter()
+    int getWriterTaskCount()
     {
-        return writerTaskCounter;
+        return writerTaskCounter.get();
     }
 
     private Runnable mergeTask( MergeThread mergeThread )
@@ -111,9 +111,13 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
 
     private void waitForAllTasks()
     {
-        while ( writerTaskCounter.get() > 0 )
+        try
         {
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+            Predicates.await( () -> writerTaskCounter.get() == 0, 10, TimeUnit.MINUTES, 10, TimeUnit.MILLISECONDS );
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
         }
     }
 
