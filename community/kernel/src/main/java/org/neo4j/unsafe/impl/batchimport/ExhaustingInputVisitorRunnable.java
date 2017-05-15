@@ -26,7 +26,7 @@ class ExhaustingInputVisitorRunnable implements Runnable
     private final InputIterator data;
     private final EntityVisitor visitor;
 
-    public ExhaustingInputVisitorRunnable( InputIterator data, EntityVisitor visitor )
+    ExhaustingInputVisitorRunnable( InputIterator data, EntityVisitor visitor )
     {
         this.data = data;
         this.visitor = visitor;
@@ -39,7 +39,10 @@ class ExhaustingInputVisitorRunnable implements Runnable
         {
             while ( data.next( chunk ) )
             {
-                while ( chunk.next( visitor ) );
+                while ( chunk.next( visitor ) )
+                {
+                    // Just loop
+                }
             }
         }
         catch ( Throwable e )

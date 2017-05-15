@@ -38,7 +38,7 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
     private final PropertyRecord propertyRecord;
     private final int inputIdTokenId;
 
-    public NodeInputIdPropertyLookup( NodeStore nodeStore, PropertyStore propertyStore )
+    NodeInputIdPropertyLookup( NodeStore nodeStore, PropertyStore propertyStore )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;

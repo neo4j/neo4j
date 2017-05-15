@@ -218,7 +218,7 @@ public class CsvInputChunk implements InputChunk
                     "%n  for header: %s" +
                     "%n  raw field value: %s" +
                     "%n  original error: %s",
-                    seeker, entries[i] + ":" + (i+1), header,
+                    seeker, entries[i] + ":" + (i + 1), header,
                     stringValue != null ? stringValue : "??",
                     e.getMessage() );
             if ( e instanceof InputException )

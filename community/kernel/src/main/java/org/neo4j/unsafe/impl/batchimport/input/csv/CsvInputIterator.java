@@ -140,7 +140,7 @@ public class CsvInputIterator extends InputIterator.Adapter
         private final CharSeeker firstSeeker;
         private final Decorator decorator;
 
-        public Single( DataFactory dataFactory ) throws IOException
+        Single( DataFactory dataFactory ) throws IOException
         {
             Data data = dataFactory.create( config );
             CharReadable stream = data.stream();

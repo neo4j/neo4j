@@ -60,7 +60,7 @@ public class InputEntityDecorators
         private final boolean[] seenLabels;
         private boolean seenLabelField;
 
-        public AdditiveLabelsDecorator( InputEntityVisitor actual, String[] labelNamesToAdd )
+        AdditiveLabelsDecorator( InputEntityVisitor actual, String[] labelNamesToAdd )
         {
             super( actual );
             this.labelNamesToAdd = labelNamesToAdd;
@@ -116,7 +116,7 @@ public class InputEntityDecorators
         private final String defaultType;
         private boolean hasType;
 
-        public RelationshipTypeDecorator( InputEntityVisitor actual, String defaultType )
+        RelationshipTypeDecorator( InputEntityVisitor actual, String defaultType )
         {
             super( actual );
             this.defaultType = defaultType;

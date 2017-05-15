@@ -35,7 +35,7 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter implements AutoC
     private final BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
-    private PropertyBlock propertyBlocks[] = new PropertyBlock[100];
+    private PropertyBlock[] propertyBlocks = new PropertyBlock[100];
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
 

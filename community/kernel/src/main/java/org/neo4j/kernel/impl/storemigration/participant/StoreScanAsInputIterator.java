@@ -103,7 +103,7 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
         private long id;
         private long endId;
 
-        public StoreScanChunk( RecordCursor<RECORD> cursor )
+        StoreScanChunk( RecordCursor<RECORD> cursor )
         {
             this.cursor = cursor;
         }
