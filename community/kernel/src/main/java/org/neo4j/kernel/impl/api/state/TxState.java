@@ -1031,39 +1031,62 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId,
             OrderedPropertyValues propertiesBefore, OrderedPropertyValues propertiesAfter )
     {
+        NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
+        Map<OrderedPropertyValues,DiffSets<Long>> updates = getIndexUpdatesByDescriptor( descriptor, true);
         if ( propertiesBefore != null )
         {
-            DiffSets<Long> before = getIndexUpdatesForSeek( descriptor, propertiesBefore, true );
+            DiffSets<Long> before = getIndexUpdatesForSeek( updates, propertiesBefore, true );
             //noinspection ConstantConditions
             before.remove( nodeId );
             if ( before.getRemoved().contains( nodeId ) )
             {
-                getOrCreateNodeState( nodeId ).addIndexDiff( before );
+                nodeState.addIndexDiff( before );
             }
             else
             {
-                getOrCreateNodeState( nodeId ).removeIndexDiff( before );
+                nodeState.removeIndexDiff( before );
             }
         }
-
         if ( propertiesAfter != null )
         {
-            DiffSets<Long> after = getIndexUpdatesForSeek( descriptor, propertiesAfter, true );
+            DiffSets<Long> after = getIndexUpdatesForSeek( updates, propertiesAfter, true );
             //noinspection ConstantConditions
             after.add( nodeId );
             if ( after.getAdded().contains( nodeId ) )
             {
-                getOrCreateNodeState( nodeId ).addIndexDiff( after );
+                nodeState.addIndexDiff( after );
             }
             else
             {
-                getOrCreateNodeState( nodeId ).removeIndexDiff( after );
+                nodeState.removeIndexDiff( after );
             }
         }
     }
 
     private DiffSets<Long> getIndexUpdatesForSeek(
             LabelSchemaDescriptor schema, OrderedPropertyValues values, boolean create )
+    {
+        Map<OrderedPropertyValues,DiffSets<Long>> updates = getIndexUpdatesByDescriptor( schema, create );
+        if ( updates != null )
+        {
+            return getIndexUpdatesForSeek( updates, values, create );
+        }
+        return null;
+    }
+
+    private DiffSets<Long> getIndexUpdatesForSeek( Map<OrderedPropertyValues,DiffSets<Long>> updates,
+            OrderedPropertyValues values, boolean create )
+    {
+        DiffSets<Long> diffs = updates.get( values );
+        if ( diffs == null && create )
+        {
+            updates.put( values, diffs = new DiffSets<>() );
+        }
+        return diffs;
+    }
+
+    private Map<OrderedPropertyValues,DiffSets<Long>> getIndexUpdatesByDescriptor( LabelSchemaDescriptor schema,
+            boolean create )
     {
         if ( indexUpdates == null )
         {
@@ -1082,12 +1105,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             }
             indexUpdates.put( schema, updates = new HashMap<>() );
         }
-        DiffSets<Long> diffs = updates.get( values );
-        if ( diffs == null && create )
-        {
-            updates.put( values, diffs = new DiffSets<>() );
-        }
-        return diffs;
+        return updates;
     }
 
     private DiffSets<Long> getIndexUpdatesForScan( LabelSchemaDescriptor schema )
