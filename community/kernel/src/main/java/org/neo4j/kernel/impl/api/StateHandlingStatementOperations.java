@@ -615,7 +615,10 @@ public class StateHandlingStatementOperations implements
             }
             return constraint;
         }
-        catch ( UniquePropertyValueValidationException | DropIndexFailureException | TransactionFailureException e )
+        catch ( UniquePropertyValueValidationException |
+                DropIndexFailureException |
+                TransactionFailureException |
+                AlreadyConstrainedException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }

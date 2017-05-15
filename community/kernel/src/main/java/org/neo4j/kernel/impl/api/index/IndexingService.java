@@ -204,8 +204,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( indexId, descriptor ) );
 
             log.debug( indexStateInfo( "init", indexId, initialState, descriptor ) );
-            boolean constraintIndex = indexRule.canSupportUniqueConstraint();
-
             switch ( initialState )
             {
                 case ONLINE:
@@ -214,17 +212,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    if ( constraintIndex && indexRule.getOwningConstraint() == null )
-                    {
-                        // don't bother rebuilding if we are going to throw the index away anyhow
-                        indexProxy = indexProxyCreator.createFailedIndexProxy(
-                                indexId, descriptor, providerDescriptor,
-                                failure( "Constraint for index was not committed." ) );
-                    }
-                    else
-                    {
-                        indexProxy = indexProxyCreator.createRecoveringIndexProxy( descriptor, providerDescriptor );
-                    }
+                    indexProxy = indexProxyCreator.createRecoveringIndexProxy( descriptor, providerDescriptor );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
