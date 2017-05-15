@@ -2916,6 +2916,49 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test
+    public void pageCursorCloseWithClosedLinkedCursorShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            a.openLinkedCursor( 0 );
+            a.openLinkedCursor( 0 ).close();
+            a.close();
+
+            PageCursor x = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor y = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor z = pf.io( 0, PF_SHARED_WRITE_LOCK );
+
+            assertNotSame( x, y );
+            assertNotSame( x, z );
+            assertNotSame( y, z );
+            x.close();
+            y.close();
+            z.close();
+        }
+    }
+
+    @Test
+    public void pageCursorCloseMustNotClosePreviouslyLinkedCursorThatGotReused() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            a.openLinkedCursor( 0 ).close();
+            PageCursor x = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            a.close();
+            assertTrue( x.next( 1 ) );
+            x.close();
+        }
+    }
+
     private interface PageCursorAction
     {
         void apply( PageCursor cursor );

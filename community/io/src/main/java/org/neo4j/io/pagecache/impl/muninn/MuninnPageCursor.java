@@ -67,6 +67,7 @@ abstract class MuninnPageCursor extends PageCursor
     private int filePageSize;
     private int offset;
     private boolean outOfBounds;
+    private boolean isLinkedCursor;
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
     // offending code.
@@ -125,34 +126,34 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public final void close()
     {
-        MuninnPageCursor cursor = this;
-        do
+        if ( pagedFile == null )
         {
-            if ( cursor.pagedFile != null )
-            {
-                cursor.unpinCurrentPage();
-                cursor.releaseCursor();
-                // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
-                // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
-                cursor.pagedFile = null;
-            }
+            return; // already closed
         }
-        while ( (cursor = cursor.getAndClearLinkedCursor()) != null );
+        closeLinks( this );
+        if ( !isLinkedCursor )
+        {
+            releaseCursor();
+        }
     }
 
-    private MuninnPageCursor getAndClearLinkedCursor()
+    private void closeLinks( MuninnPageCursor cursor )
     {
-        MuninnPageCursor cursor = linkedCursor;
-        linkedCursor = null;
-        return cursor;
+        while ( cursor != null && cursor.pagedFile != null )
+        {
+            cursor.unpinCurrentPage();
+            // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
+            // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
+            cursor.pagedFile = null;
+            cursor = cursor.linkedCursor;
+        }
     }
 
     private void closeLinkedCursorIfAny()
     {
         if ( linkedCursor != null )
         {
-            linkedCursor.close();
-            linkedCursor = null;
+            closeLinks( linkedCursor );
         }
     }
 
@@ -166,7 +167,16 @@ abstract class MuninnPageCursor extends PageCursor
             // This cursor has been closed
             throw new IllegalStateException( "Cannot open linked cursor on closed page cursor" );
         }
-        linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags );
+        if ( linkedCursor != null )
+        {
+            linkedCursor.initialiseFlags( pf, pageId, pf_flags );
+            linkedCursor.rewind();
+        }
+        else
+        {
+            linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags );
+            linkedCursor.isLinkedCursor = true;
+        }
         return linkedCursor;
     }
 
