@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -174,7 +175,11 @@ public abstract class CompiledConversionUtils
 
     public static Object loadParameter( Object value )
     {
-        if ( value instanceof Node )
+        if (value == null)
+        {
+            return null;
+        }
+        else if ( value instanceof Node )
         {
             return new NodeIdWrapperImpl( ((Node) value).getId() );
         }
@@ -182,6 +187,37 @@ public abstract class CompiledConversionUtils
         {
             return new RelationshipIdWrapperImpl( ((Relationship) value).getId() );
         }
+        else if ( value instanceof List<?>)
+        {
+            List<?> list = (List<?>) value;
+            ArrayList<Object> copy = new ArrayList<>( list.size() );
+            for ( Object o : list )
+            {
+                copy.add( loadParameter( o ));
+            }
+            return copy;
+        }
+        else if ( value instanceof Map<?, ?>)
+        {
+            Map<String, ?> map = (Map<String, ?>) value;
+            HashMap<String,Object> copy = new HashMap<>( map.size() );
+            for ( Map.Entry<String,?> entry : map.entrySet() )
+            {
+                copy.put( entry.getKey(), loadParameter( entry.getValue() ) );
+            }
+            return copy;
+        }
+        else if ( value.getClass().isArray())
+        {
+            int length = Array.getLength( value );
+            Object[] copy = new Object[length];
+            for ( int i = 0; i < length; i++ )
+            {
+                copy[i] = Array.get(value, i);
+            }
+            return copy;
+        }
+
         else
         {
             return value;
@@ -382,6 +418,31 @@ public abstract class CompiledConversionUtils
             return -1L;
         }
         return value.id();
+    }
+
+    @SuppressWarnings( "unused" ) // called from compiled code
+    public static long extractLong(Object obj)
+    {
+        if (obj == null)
+        {
+            return -1L;
+        }
+        else if (obj instanceof NodeIdWrapper)
+        {
+            return ((NodeIdWrapper) obj).id();
+        }
+        else if (obj instanceof RelationshipIdWrapper)
+        {
+            return ((RelationshipIdWrapper) obj).id();
+        }
+        else if (obj instanceof Long)
+        {
+            return (Long) obj;
+        }
+        else
+        {
+            throw new IllegalArgumentException( format( "Can not be converted to long: %s", obj.getClass().getName() ) );
+        }
     }
 
 }
