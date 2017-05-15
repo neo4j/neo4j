@@ -89,7 +89,7 @@ public class PageCacheMetricsIT
         }
         assertMetrics( "Page cache pins should be included in metrics report.", PageCacheMetrics.PC_PINS, greaterThan( 0L ) );
         assertMetrics( "Page cache unpins should be included in metrics report.", PageCacheMetrics.PC_UNPINS, greaterThan( 0L ) );
-        assertMetrics( "Page cache evictions should be included in metrics report.", PageCacheMetrics.PC_EVICTIONS, equalTo( 0L ) );
+        assertMetrics( "Page cache evictions should be included in metrics report.", PageCacheMetrics.PC_EVICTIONS, greaterThanOrEqualTo( 0L ) );
         assertMetrics( "Page cache page faults should be included in metrics report.", PageCacheMetrics.PC_PAGE_FAULTS, greaterThan( 0L ) );
         assertMetrics( "Page cache hits should be included in metrics report.", PageCacheMetrics.PC_HITS, greaterThan( 0L ) );
         assertMetrics( "Page cache flushes should be included in metrics report.",
