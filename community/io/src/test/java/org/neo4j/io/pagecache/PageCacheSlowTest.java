@@ -267,7 +267,9 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     }
                     while ( cursor.shouldRetry() );
 
-                    assertThat( "wrong count for threadId:" + threadId + ", aka. real threadId:" + result.realThreadId + ", filePageId:" + i,
+                    assertThat( "wrong count for threadId:" + threadId +
+                                ", aka. real threadId:" + result.realThreadId +
+                                ", filePageId:" + i,
                             actualCount, is( expectedCount ) );
                 }
             }

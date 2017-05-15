@@ -94,9 +94,12 @@ public final class OffHeapPageLock
     private static final long SEQ_MASK = 0b00000000_00000000_00001111_11111111_11111111_11111111_11111111_11111111L;
     private static final long CNT_UNIT = 0b00000000_00000000_00010000_00000000_00000000_00000000_00000000_00000000L;
     private static final long SEQ_IMSK = 0b11111111_11111111_11110000_00000000_00000000_00000000_00000000_00000000L;
-    private static final long CHK_MASK = 0b01011111_11111111_11111111_11111111_11111111_11111111_11111111_11111111L; // mask used to check optimistic read lock validity
-    private static final long FAE_MASK = 0b11000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000L; // "flush and/or exclusive" mask
-    private static final long UNL_MASK = 0b11011111_11111111_11110000_00000000_00000000_00000000_00000000_00000000L; // unlocked mask
+    // Mask used to check optimistic read lock validity:
+    private static final long CHK_MASK = 0b01011111_11111111_11111111_11111111_11111111_11111111_11111111_11111111L;
+    // "Flush and/or exclusive" mask:
+    private static final long FAE_MASK = 0b11000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000L;
+    // Unlocked mask:
+    private static final long UNL_MASK = 0b11011111_11111111_11110000_00000000_00000000_00000000_00000000_00000000L;
 
     private OffHeapPageLock()
     {
