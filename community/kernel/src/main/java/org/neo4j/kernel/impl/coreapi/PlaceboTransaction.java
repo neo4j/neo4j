@@ -97,4 +97,10 @@ public class PlaceboTransaction implements InternalTransaction
     {
         return currentTransaction.overrideWith( context );
     }
+
+    @Override
+    public Status terminationReason()
+    {
+        return currentTransaction.getReasonIfTerminated();
+    }
 }

@@ -31,8 +31,8 @@ import org.neo4j.bolt.v1.runtime.cypher.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.cypher.StatementProcessor;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
+import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -281,6 +281,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         return ctx.closed;
     }
 
+    @Override
     public void close()
     {
         try

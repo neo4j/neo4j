@@ -27,10 +27,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -122,5 +126,22 @@ public class TestPlaceboTransaction
 
         // then
         verify( readOps ).acquireExclusive( ResourceTypes.NODE, resource.getId() );
+    }
+
+    @Test
+    public void shouldReturnTerminationReason()
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.getReasonIfTerminated() ).thenReturn( null )
+                .thenReturn( Status.Transaction.Interrupted );
+
+        PlaceboTransaction tx = new PlaceboTransaction( () -> kernelTransaction, new ThreadToStatementContextBridge() );
+
+        Status terminationReason1 = tx.terminationReason();
+        Status terminationReason2 = tx.terminationReason();
+
+        assertNull( terminationReason1 );
+        assertNotNull( terminationReason2 );
+        assertEquals( Status.Transaction.Interrupted, terminationReason2 );
     }
 }

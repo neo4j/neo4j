@@ -142,4 +142,10 @@ public class TopLevelTransaction implements InternalTransaction
     {
         return transaction.overrideWith( context );
     }
+
+    @Override
+    public Status terminationReason()
+    {
+        return transaction.getReasonIfTerminated();
+    }
 }
