@@ -30,7 +30,6 @@ import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
@@ -65,14 +64,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -344,19 +341,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
             }
         } );
-    }
-
-    @Override
-    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
-    {
-        super.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
-
-        if ( dependencyResolver.resolveDependency( RaftMachine.class ).isLeader() )
-        {
-            new RemoveOrphanConstraintIndexesOnStartup(
-                    dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getKernel(),
-                    dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
-        }
     }
 
     @Override

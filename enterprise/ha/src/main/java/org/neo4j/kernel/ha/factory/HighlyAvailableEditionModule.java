@@ -128,7 +128,6 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -771,7 +770,7 @@ public class HighlyAvailableEditionModule
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) &&
                         event.getNewState().equals( HighAvailabilityMemberState.MASTER ) )
                 {
-                    doAfterRecoveryAndStartup( true );
+                    doAfterRecoveryAndStartup();
                 }
             }
 
@@ -781,15 +780,16 @@ public class HighlyAvailableEditionModule
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) &&
                         event.getNewState().equals( HighAvailabilityMemberState.SLAVE ) )
                 {
-                    doAfterRecoveryAndStartup( false );
+                    doAfterRecoveryAndStartup();
                 }
             }
 
-            private void doAfterRecoveryAndStartup( boolean isMaster )
+            private void doAfterRecoveryAndStartup()
             {
                 try
                 {
-                    HighlyAvailableEditionModule.this.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver, isMaster );
+                    HighlyAvailableEditionModule.this.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
+                    assureLastCommitTimestampInitialized( dependencyResolver );
                 }
                 catch ( Throwable throwable )
                 {
@@ -814,19 +814,6 @@ public class HighlyAvailableEditionModule
                 }
             }
         } );
-    }
-
-    private void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver resolver, boolean isMaster )
-    {
-        super.doAfterRecoveryAndStartup( databaseInfo, resolver );
-
-        if ( isMaster )
-        {
-            new RemoveOrphanConstraintIndexesOnStartup( resolver.resolveDependency( KernelAPI.class ),
-                    resolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
-        }
-
-        assureLastCommitTimestampInitialized( resolver );
     }
 
     private static void assureLastCommitTimestampInitialized( DependencyResolver resolver )
