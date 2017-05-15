@@ -26,6 +26,11 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class PointerChecking
 {
+    static final String WRITER_TRAVERSE_OLD_STATE_MESSAGE =
+                    "Writer traversed to a tree node that has a valid successor, " +
+                    "This is most likely due to failure to checkpoint the tree before shutdown and/or tree state " +
+                    "being out of date.";
+
     /**
      * Checks a read pointer for success/failure and throws appropriate exception with failure information
      * if failure. Must be called after a consistent read from page cache (after {@link PageCursor#shouldRetry()}.
@@ -45,6 +50,22 @@ class PointerChecking
         {
             throw new TreeInconsistencyException( "Pointer to id " + result + " not allowed. Minimum node id allowed is " +
                     IdSpace.MIN_TREE_NODE_ID );
+        }
+    }
+
+    /**
+     * Assert cursor rest on a node that does not have a valid (not crashed) successor.
+     *
+     * @param cursor PageCursor resting on a tree node.
+     * @param stableGeneration Current stable generation of tree.
+     * @param unstableGeneration Current unstable generation of tree.
+     */
+    static void assertNoSuccessor( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    {
+        long successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration );
+        if ( TreeNode.isNode( successor ) )
+        {
+            throw new TreeInconsistencyException( WRITER_TRAVERSE_OLD_STATE_MESSAGE );
         }
     }
 }
