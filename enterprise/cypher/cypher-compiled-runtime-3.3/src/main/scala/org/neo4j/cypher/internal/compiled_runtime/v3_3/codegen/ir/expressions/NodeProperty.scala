@@ -50,20 +50,20 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
-      body.ifNotStatement(body.isNull(nodeIdVar.name, CodeGenType.primitiveNode)) {ifBody =>
-        ifBody.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
+      body.ifNotStatement(body.isNull(nodeIdVar.name, nodeIdVar.codeGenType)) {ifBody =>
+        ifBody.nodeGetPropertyForVar(nodeIdVar.name, nodeIdVar.codeGenType, propKeyVar, localName)
       }
     else
-      body.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
+      body.nodeGetPropertyForVar(nodeIdVar.name, nodeIdVar.codeGenType, propKeyVar, localName)
 
   //TODO will probably need to send in type so that nodes can be unboxed
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
-      body.ifNotStatement(body.isNull(nodeIdVar.name, CodeGenType.primitiveNode)) {ifBody =>
-        ifBody.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
+      body.ifNotStatement(body.isNull(nodeIdVar.name, nodeIdVar.codeGenType)) {ifBody =>
+        ifBody.nodeGetPropertyById(nodeIdVar.name, nodeIdVar.codeGenType, token.get, localName)
       }
     else
-      body.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
+      body.nodeGetPropertyById(nodeIdVar.name, nodeIdVar.codeGenType, token.get, localName)
 
   override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }
