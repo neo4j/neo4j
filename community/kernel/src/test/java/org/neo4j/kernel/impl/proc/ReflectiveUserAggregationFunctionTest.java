@@ -262,7 +262,7 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Aggregation update method 'test' in InnerAggregator must be public." );
+        exception.expectMessage( "Aggregation update method 'update' in InnerAggregator must be public." );
 
         // When
         compile( NonPublicUpdateMethod.class );
@@ -273,7 +273,7 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Aggregation result method 'test' in InnerAggregator must be public." );
+        exception.expectMessage( "Aggregation result method 'result' in InnerAggregator must be public." );
 
         // When
         compile( NonPublicResultMethod.class );
