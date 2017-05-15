@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -47,6 +48,8 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -264,7 +267,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn(
+            when( storeStatement.acquireSingleNodeCursor( eq( nodeLabels.nodeId ), any( AssertOpen.class ) ) ).thenReturn(
                     StubCursors.asNodeCursor( nodeLabels.nodeId,
                             Cursors.<PropertyItem>empty(), StubCursors.asLabelCursor( nodeLabels.labelIds ) ) );
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -37,9 +38,10 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
         super( cursors, (Consumer) instanceCache );
     }
 
-    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock )
+    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock,
+            AssertOpen assertOpen )
     {
-        super.init( firstPropertyId, lock );
+        super.init( firstPropertyId, lock, assertOpen );
         this.propertyKeyId = propertyKeyId;
         return this;
     }

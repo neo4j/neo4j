@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -54,6 +55,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.Iterables.asSet;
 
 @RunWith( Parameterized.class )
 public class TerminationOfSlavesDuringPullUpdatesTest
@@ -76,38 +78,51 @@ public class TerminationOfSlavesDuringPullUpdatesTest
     public static Iterable<Object> data()
     {
         return Arrays.<Object>asList( new Object[][]
-                {
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
-                                "NodeStringProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
-                                "NodeStringProperty[txTerminationAwareLocks=no]"},
+        {
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "NodeStringProperty[allProps]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "NodeStringProperty[singleProp]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "NodeStringProperty[varArgsProp]"},
 
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
-                                "RelationshipStringProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
-                                "RelationshipStringProperty[txTerminationAwareLocks=no]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "RelationshipStringProperty[allProps]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "RelationshipStringProperty[singleProp]"},
+                {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "RelationshipStringProperty[varArgsProp]"},
 
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
-                                "NodeArrayProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
-                                "NodeArrayProperty[txTerminationAwareLocks=no]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "NodeArrayProperty[allProps]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "NodeArrayProperty[singleProp]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "NodeArrayProperty[varArgsProp]"},
 
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
-                                "RelationshipArrayProperty[txTerminationAwareLocks=yes]"},
-                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
-                                "RelationshipArrayProperty[txTerminationAwareLocks=no]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getAllProperties().get( key ) ),
+                        "RelationshipArrayProperty[allProps]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperty( key, null ) ),
+                        "RelationshipArrayProperty[singleProp]"},
+                {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false,
+                        ( db, entityId, key, node ) -> getEntity( db, entityId, node ).getProperties( key ).get( key ) ),
+                        "RelationshipArrayProperty[varArgsProp]"},
 
-                        {new PropertyKeyActions( 'a', 'b', true ),
-                                "NodePropertyKeys[txTerminationAwareLocks=yes]"},
-                        {new PropertyKeyActions( 'a', 'b', true ),
-                                "NodePropertyKeys[txTerminationAwareLocks=no]"},
+                {new PropertyKeyActions( 'a', 'b', true ), "NodePropertyKeys"},
 
-                        {new PropertyKeyActions( 'a', 'b', false ),
-                                "RelationshipPropertyKeys[txTerminationAwareLocks=yes]"},
-                        {new PropertyKeyActions( 'a', 'b', false ),
-                                "RelationshipPropertyKeys[txTerminationAwareLocks=no]"}
-                }
-        );
+                {new PropertyKeyActions( 'a', 'b', false ), "RelationshipPropertyKeys"},
+        } );
     }
 
     @Test
@@ -241,18 +256,27 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         void verifyProperties( HighlyAvailableGraphDatabase db, long entityId );
     }
 
+    @FunctionalInterface
+    private interface FetchProperty
+    {
+        Object get( GraphDatabaseService db, long entityId, String key, boolean node );
+    }
+
     private static class PropertyValueActions implements ReadContestantActions
     {
         static final String KEY = "key";
         final Object valueA;
         final Object valueB;
         final boolean node;
+        private final FetchProperty fetchProperty;
 
-        PropertyValueActions( Object valueA, Object valueB, boolean node )
+        PropertyValueActions( Object valueA, Object valueB, boolean node,
+                FetchProperty fetchProperty )
         {
             this.valueA = valueA;
             this.valueB = valueB;
             this.node = node;
+            this.fetchProperty = fetchProperty;
         }
 
         @Override
@@ -295,7 +319,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                getEntity( db, entityId ).removeProperty( KEY );
+                getEntity( db, entityId, node ).removeProperty( KEY );
                 tx.success();
             }
         }
@@ -305,7 +329,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                getEntity( db, entityId ).setProperty( KEY, valueB );
+                getEntity( db, entityId, node ).setProperty( KEY, valueB );
                 tx.success();
             }
         }
@@ -313,14 +337,14 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         @Override
         public void verifyProperties( HighlyAvailableGraphDatabase db, long entityId )
         {
-            Object value = getEntity( db, entityId ).getProperty( KEY, null );
+            Object value = fetchProperty.get( db, entityId, KEY, node );
             assertPropertyValue( value, valueA, valueB );
         }
+    }
 
-        PropertyContainer getEntity( HighlyAvailableGraphDatabase db, long id )
-        {
-            return node ? db.getNodeById( id ) : db.getRelationshipById( id );
-        }
+    private static PropertyContainer getEntity( GraphDatabaseService db, long id, boolean node )
+    {
+        return node ? db.getNodeById( id ) : db.getRelationshipById( id );
     }
 
     private static class PropertyKeyActions implements ReadContestantActions
@@ -406,7 +430,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         @Override
         public void verifyProperties( HighlyAvailableGraphDatabase db, long entityId )
         {
-            assertPropertyChain( getEntity( db, entityId ).getAllProperties().keySet(), keyPrefixA, keyPrefixB );
+            assertPropertyChain( asSet( getEntity( db, entityId ).getPropertyKeys() ), keyPrefixA, keyPrefixB );
         }
 
         PropertyContainer getEntity( HighlyAvailableGraphDatabase db, long id )

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -46,6 +47,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
 
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
+    private AssertOpen assertOpen;
 
     public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
             LockService lockService )
@@ -70,6 +72,11 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
                 return new StorePropertyCursor( cursors, this );
             }
         };
+    }
+
+    protected void initialize( AssertOpen assertOpen )
+    {
+        this.assertOpen = assertOpen;
     }
 
     @Override
@@ -143,12 +150,14 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), shortLivedReadLock() );
+        return allPropertyCursor.get()
+                .init( relationshipRecord.getNextProp(), shortLivedReadLock(), assertOpen );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        return singlePropertyCursor.get()
+                .init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock(), assertOpen );
     }
 }

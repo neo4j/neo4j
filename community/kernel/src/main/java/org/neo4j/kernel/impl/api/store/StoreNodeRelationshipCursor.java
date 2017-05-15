@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -66,15 +67,17 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     public StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
-            Direction direction )
+            Direction direction,
+            AssertOpen assertOpen )
     {
-        return init( isDense, firstRelId, fromNodeId, direction, null );
+        return init( isDense, firstRelId, fromNodeId, direction, assertOpen, null );
     }
 
-    public StoreNodeRelationshipCursor init( boolean isDense,
+    public final StoreNodeRelationshipCursor init( boolean isDense,
             long firstRelId,
             long fromNodeId,
             Direction direction,
+            AssertOpen assertOpen,
             int... relTypes )
     {
         this.isDense = isDense;
@@ -83,7 +86,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.direction = direction;
         this.relTypes = relTypes;
         this.end = false;
-
+        initialize( assertOpen );
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             cursors.relationshipGroup().next( firstRelId, groupRecord, FORCE );

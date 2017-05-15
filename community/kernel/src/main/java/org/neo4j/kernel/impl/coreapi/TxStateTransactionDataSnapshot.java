@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -37,12 +36,11 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -206,7 +204,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
+                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId, AssertOpen.ALWAYS_OPEN ) )
                 {
                     if ( node.next() )
                     {
@@ -234,7 +232,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship =
+                              storeStatement.acquireSingleRelationshipCursor( relId, AssertOpen.ALWAYS_OPEN ) )
                 {
                     if ( relationship.next() )
                     {
@@ -362,7 +361,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
+        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId(), AssertOpen.ALWAYS_OPEN ) )
         {
             if ( !node.next() )
             {
@@ -389,7 +388,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
 
         try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor(
-                relState.getId() ) )
+                relState.getId(), AssertOpen.ALWAYS_OPEN ) )
         {
             if ( !relationship.next() )
             {

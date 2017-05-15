@@ -31,6 +31,7 @@ import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
  * Test reading committed node and relationships from disk.
@@ -89,7 +90,7 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
     {
         try ( StorageStatement statement = disk.newStatement() )
         {
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id, ALWAYS_OPEN ) )
             {
                 return node.next();
             }
@@ -100,7 +101,7 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
     {
         try ( StorageStatement statement = disk.newStatement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id ) )
+            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id, ALWAYS_OPEN ) )
             {
                 return relationship.next();
             }

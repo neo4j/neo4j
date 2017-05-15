@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IntValue;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.cursor.NodeItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -71,6 +72,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
     protected final RecordCursors cursors;
+    private AssertOpen assertOpen;
 
     public StoreAbstractNodeCursor( NodeRecord nodeRecord,
             final NeoStores neoStores,
@@ -127,6 +129,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
                 return new StorePropertyCursor( cursors, allPropertyCursor );
             }
         };
+    }
+
+    protected void initialize( AssertOpen assertOpen )
+    {
+        this.assertOpen = assertOpen;
     }
 
     @Override
@@ -187,27 +194,28 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock() );
+        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock(), assertOpen );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock(),
+                assertOpen );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction )
     {
-        return nodeRelationshipCursor.get().init(  nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
-                direction, null );
+        return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
+                direction, assertOpen );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
     {
         return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
-                direction, relTypes );
+                direction, assertOpen, relTypes );
     }
 
     @Override

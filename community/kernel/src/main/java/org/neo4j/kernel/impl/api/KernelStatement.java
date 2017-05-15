@@ -25,6 +25,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutingQuery;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -61,7 +62,7 @@ import org.neo4j.storageengine.api.StorageStatement;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement implements TxStateHolder, Statement
+public class KernelStatement implements TxStateHolder, Statement, AssertOpen
 {
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
@@ -164,7 +165,8 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
-    void assertOpen()
+    @Override
+    public void assertOpen()
     {
         if ( referenceCount == 0 )
         {

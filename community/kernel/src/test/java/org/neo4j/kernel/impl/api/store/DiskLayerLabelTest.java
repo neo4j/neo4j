@@ -31,6 +31,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -63,7 +64,7 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        Cursor<NodeItem> node = disk.newStatement().acquireSingleNodeCursor( nodeId );
+        Cursor<NodeItem> node = disk.newStatement().acquireSingleNodeCursor( nodeId, AssertOpen.ALWAYS_OPEN );
         node.next();
         PrimitiveIntIterator readLabels = node.get().getLabels();
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),

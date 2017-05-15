@@ -100,6 +100,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -292,7 +293,7 @@ public class NeoStoresTest
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noNodeProperty( nodeId, key );
         try ( StorageStatement statement = storeLayer.newStatement();
-                Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId ) )
+              Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId, ALWAYS_OPEN ) )
         {
             if ( cursor.next() )
             {
@@ -313,7 +314,8 @@ public class NeoStoresTest
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noRelationshipProperty( relationshipId, key );
         try ( StorageStatement statement = storeLayer.newStatement();
-                Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
+                Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId,
+                        ALWAYS_OPEN ) )
         {
             if ( cursor.next() )
             {
@@ -947,7 +949,7 @@ public class NeoStoresTest
     {
         int count = 0;
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node, statement ) )
         {
             nodeCursor.next();
 
@@ -1029,7 +1031,7 @@ public class NeoStoresTest
         count = 0;
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node, statement ) )
         {
             nodeCursor.next();
 
@@ -1064,7 +1066,7 @@ public class NeoStoresTest
     {
         try ( StorageStatement statement = storeLayer.newStatement() )
         {
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId, ALWAYS_OPEN ) )
             {
                 return node.next();
             }
@@ -1327,7 +1329,7 @@ public class NeoStoresTest
     {
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node, statement ) )
         {
             nodeCursor.next();
             PrimitiveLongIterator rels = nodeCursor.get().getRelationships( Direction.BOTH );
@@ -1435,7 +1437,8 @@ public class NeoStoresTest
         {
             for ( long relId : relIds )
             {
-                try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( relId,
+                        ALWAYS_OPEN ) )
                 {
                     assertFalse( relationship.next() );
                 }
@@ -1446,7 +1449,7 @@ public class NeoStoresTest
     private void deleteRelationships( long nodeId ) throws Exception
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )
+              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId, statement ) )
         {
             nodeCursor.next();
             PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );

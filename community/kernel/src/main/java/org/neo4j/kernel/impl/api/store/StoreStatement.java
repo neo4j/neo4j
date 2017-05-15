@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
@@ -123,43 +124,43 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, AssertOpen assertOpen )
     {
         neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId );
+        return singleNodeCursor.get().init( nodeId, assertOpen );
     }
 
     @Override
-    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
+    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator, AssertOpen assertOpen )
     {
         neoStores.assertOpen();
-        return iteratorNodeCursor.get().init( nodeIdIterator );
+        return iteratorNodeCursor.get().init( nodeIdIterator, assertOpen );
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
+    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId, AssertOpen assertOpen )
     {
         neoStores.assertOpen();
-        return singleRelationshipCursor.get().init( relId );
+        return singleRelationshipCursor.get().init( relId, assertOpen );
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
+    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator, AssertOpen assertOpen )
     {
         neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( iterator );
+        return iteratorRelationshipCursor.get().init( iterator, assertOpen );
     }
 
     @Override
-    public Cursor<NodeItem> nodesGetAllCursor()
+    public Cursor<NodeItem> nodesGetAllCursor( AssertOpen assertOpen )
     {
-        return acquireIteratorNodeCursor( new AllStoreIdIterator( nodeStore ) );
+        return acquireIteratorNodeCursor( new AllStoreIdIterator( nodeStore ), assertOpen );
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor()
+    public Cursor<RelationshipItem> relationshipsGetAllCursor( AssertOpen assertOpen )
     {
-        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( relationshipStore ) );
+        return acquireIteratorRelationshipCursor( new AllStoreIdIterator( relationshipStore ), assertOpen );
     }
 
     @Override

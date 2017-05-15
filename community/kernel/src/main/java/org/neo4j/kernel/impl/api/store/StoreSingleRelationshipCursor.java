@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -42,8 +43,9 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleRelationshipCursor init( long relId )
+    public StoreSingleRelationshipCursor init( long relId, AssertOpen assertOpen )
     {
+        initialize( assertOpen );
         this.relationshipId = relId;
         return this;
     }

@@ -25,6 +25,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -149,7 +150,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private Cursor<NodeItem> nodeCursor( long id )
     {
-        Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
+        Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id, AssertOpen.ALWAYS_OPEN );
         return txState.augmentSingleNodeCursor( cursor, id );
     }
 
@@ -213,7 +214,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private Cursor<RelationshipItem> relationshipCursor( long id )
     {
-        Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
+        Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id, AssertOpen.ALWAYS_OPEN );
         return txState.augmentSingleRelationshipCursor( cursor, id );
     }
 }

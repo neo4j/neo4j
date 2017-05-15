@@ -33,10 +33,11 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.Direction;
 
+import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.storageengine.api.Direction.BOTH;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
@@ -57,7 +58,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
-            relationshipCursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId, Direction.BOTH );
+            relationshipCursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId, BOTH, ALWAYS_OPEN );
         }
         catch ( InvalidRecordException e )
         {
