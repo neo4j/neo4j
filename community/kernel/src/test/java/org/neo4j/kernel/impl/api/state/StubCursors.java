@@ -186,6 +186,12 @@ public class StubCursors
             {
                 throw new UnsupportedOperationException();
             }
+
+            @Override
+            public String toString()
+            {
+                return String.format( "StubRelationShipItem[id=%d, type=%d, start=%d, end=%d]", id, type, start, end);
+            }
         };
     }
 
