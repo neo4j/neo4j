@@ -20,7 +20,7 @@
 package org.neo4j.management.impl;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.jmx.impl.ManagementSupport;a
+import org.neo4j.jmx.impl.ManagementSupport;
 
 @Service.Implementation( ManagementSupport.class )
 public class HotspotManagementSupport extends AdvancedManagementSupport
