@@ -36,6 +36,7 @@ import org.neo4j.csv.reader.Source;
 import org.neo4j.csv.reader.Source.Chunk;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 public class CsvInputIterator extends InputIterator.Adapter
@@ -45,16 +46,18 @@ public class CsvInputIterator extends InputIterator.Adapter
     private final IdType idType;
     private final Configuration config;
     private final Collector badCollector;
+    private final Groups groups;
     private Single current;
 
     public CsvInputIterator( Iterator<DataFactory> source, Header.Factory headerFactory,
-            IdType idType, Configuration config, Collector badCollector )
+            IdType idType, Configuration config, Collector badCollector, Groups groups )
     {
         this.source = source;
         this.headerFactory = headerFactory;
         this.idType = idType;
         this.config = config;
         this.badCollector = badCollector;
+        this.groups = groups;
     }
 
     @Override
@@ -148,7 +151,7 @@ public class CsvInputIterator extends InputIterator.Adapter
             ChunkImpl firstChunk = new ChunkImpl( firstLineBuffer );
             firstChunk.initialize( firstLineBuffer.length, stream.sourceDescription() );
             firstSeeker = seeker( firstChunk );
-            header = headerFactory.create( firstSeeker, config, idType );
+            header = headerFactory.create( firstSeeker, config, idType, groups );
 
             // Since we don't know whether or not the header is supplied or extracted
             // (it's abstracted in HeaderFactory) we have to treat this first line as the first chunk anyway

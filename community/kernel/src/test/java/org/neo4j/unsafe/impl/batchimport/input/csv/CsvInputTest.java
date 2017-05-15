@@ -93,6 +93,7 @@ public class CsvInputTest
     public Boolean allowMultilineFields;
 
     private final CachingInputEntityVisitor visitor = new CachingInputEntityVisitor();
+    private final Groups groups = new Groups();
     private InputChunk chunk;
 
     @Test
@@ -970,7 +971,7 @@ public class CsvInputTest
 
     private Header.Factory header( final Header.Entry... entries )
     {
-        return ( from, configuration, idType ) -> new Header( entries );
+        return ( from, configuration, idType, groups ) -> new Header( entries );
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
@@ -980,7 +981,7 @@ public class CsvInputTest
 
     private Header.Entry entry( String name, Type type, String groupName, Extractor<?> extractor )
     {
-        return new Header.Entry( name, type, groupName, extractor );
+        return new Header.Entry( name, type, groups.getOrCreate( groupName ), extractor );
     }
 
     private static DataFactory data( final String data )

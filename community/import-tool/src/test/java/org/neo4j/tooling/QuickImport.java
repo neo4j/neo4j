@@ -37,6 +37,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
@@ -78,8 +79,9 @@ public class QuickImport
         Extractors extractors = new Extractors( config.arrayDelimiter() );
         IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
 
-        Header nodeHeader = parseNodeHeader( args, idType, extractors );
-        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
+        Groups groups = new Groups();
+        Header nodeHeader = parseNodeHeader( args, idType, extractors, groups );
+        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors, groups );
 
         FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
         org.neo4j.unsafe.impl.batchimport.Configuration importConfig =
@@ -120,7 +122,7 @@ public class QuickImport
         }
     }
 
-    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors )
+    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors, Groups groups )
     {
         String definition = args.get( "node-header", null );
         if ( definition == null )
@@ -129,10 +131,10 @@ public class QuickImport
         }
 
         Configuration config = Configuration.COMMAS;
-        return DataFactories.defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType );
+        return DataFactories.defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType, groups );
     }
 
-    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors )
+    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors, Groups groups )
     {
         String definition = args.get( "relationship-header", null );
         if ( definition == null )
@@ -141,7 +143,8 @@ public class QuickImport
         }
 
         Configuration config = Configuration.COMMAS;
-        return DataFactories.defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config, idType );
+        return DataFactories.defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config,
+                idType, groups );
     }
 
     private static CharSeeker seeker( String definition, Configuration config )

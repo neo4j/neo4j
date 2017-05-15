@@ -107,7 +107,7 @@ public class CsvInput implements Input
 
     private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory )
     {
-        return new CsvInputIterator( data.iterator(), headerFactory, idType, config, badCollector );
+        return new CsvInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups );
     }
 
     @Override
