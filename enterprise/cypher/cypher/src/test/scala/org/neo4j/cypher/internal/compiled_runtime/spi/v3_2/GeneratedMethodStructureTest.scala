@@ -49,24 +49,24 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
 
   val modes = Seq(SourceCode.SOURCECODE, ByteCode.BYTECODE)
   val ops = Seq(
-        Operation("create rel extractor", _.createRelExtractor("foo")),
-        Operation("nullable object", m => {
+    Operation("create rel extractor", _.setUpRelIteration("foo", "bar")),
+    Operation("nullable object", m => {
           m.declareAndInitialize("foo", CodeGenType.Any)
           m.generator.assign(typeRef[Object], "bar",
                              m.nullablePrimitive("foo", CodeGenType.Any, Expression.constant("hello")))
 
         }),
-        Operation("load node from parameters", m => {
+    Operation("load node from parameters", m => {
           m.declareAndInitialize("a", CodeGenType.primitiveNode)
           m.generator.assign(typeRef[Long], "node", m.node("a", CodeGenType.primitiveNode))
         }),
-        Operation("nullable node", m => {
+    Operation("nullable node", m => {
           m.declareAndInitialize("foo", CodeGenType.primitiveNode)
           m.generator.assign(typeRef[Long], "bar",
                              m.nullablePrimitive("foo", CodeGenType.primitiveNode, m.loadVariable("foo")))
 
         }),
-        Operation("mark variables as null", m => {
+    Operation("mark variables as null", m => {
           m.declareFlag("flag", initialValue = false)
           m.updateFlag("flag", newValue = true)
           m.ifNotStatement(m.generator.load("flag")) { ifBody =>
@@ -75,7 +75,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
            ifBody.markAsNull("object", CodeGenType.Any)
           }
         }),
-        Operation("use a LongsToCount probe table", m => {
+    Operation("use a LongsToCount probe table", m => {
           m.declareAndInitialize("a", CodeGenType.primitiveNode)
           m.allocateProbeTable("table", LongsToCountTable)
           m.updateProbeTableCount("table", LongsToCountTable, Seq("a"))
@@ -83,7 +83,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
             inner.allNodesScan("foo")
           }
         }),
-       Operation("use a LongToCount key probe table", m => {
+    Operation("use a LongToCount key probe table", m => {
           m.declareAndInitialize("a", CodeGenType.primitiveNode)
           m.allocateProbeTable("table", LongToCountTable)
           m.updateProbeTableCount("table", LongToCountTable, Seq("a"))
@@ -91,7 +91,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
             inner.allNodesScan("foo")
           }
         }),
-       Operation("use a LongToList probe table", m => {
+    Operation("use a LongToList probe table", m => {
          val table: LongToListTable =
            LongToListTable(SimpleTupleDescriptor(Map("a" -> CodeGenType.primitiveNode)),
                            localMap = Map("b" -> "a"))
@@ -103,7 +103,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
            inner.allNodesScan("foo")
          }
        }),
-       Operation("use a LongsToList probe table", m => {
+    Operation("use a LongsToList probe table", m => {
          val table: LongsToListTable =
            LongsToListTable(SimpleTupleDescriptor(Map("a" -> CodeGenType.primitiveNode,
                                                       "b" -> CodeGenType.primitiveNode)),
@@ -117,57 +117,60 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
            inner.allNodesScan("foo")
          }
        }),
-        Operation("Method invocation", m => {
+    Operation("Method invocation", m => {
           m.invokeMethod(LongToCountTable, "v1", "inner") { inner => {
             inner.allocateProbeTable("v1", LongToCountTable)
           }}
         }),
-        Operation("look up rel type", _.lookupRelationshipTypeId("foo", "bar")),
-        Operation("all relationships for node", (m) => {
+    Operation("look up rel type", _.lookupRelationshipTypeId("foo", "bar")),
+    Operation("all relationships for node", (m) => {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
+          m.setUpRelIteration("bar", "foo")
           m.nodeGetRelationshipsWithDirection("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
         }),
-        Operation("has label", m => {
+    Operation("has label", m => {
           m.lookupLabelId("label", "A")
           m.declarePredicate("predVar")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.hasLabel("node", "label", "predVar")
         }),
-        Operation("property by name for node", m => {
+    Operation("property by name for node", m => {
           m.lookupPropertyKey("prop", "prop")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.declareProperty("propVar")
           m.nodeGetPropertyForVar("node", CodeGenType.primitiveNode, "prop", "propVar")
         }),
-        Operation("property by id for node", m => {
+    Operation("property by id for node", m => {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.declareProperty("propVar")
           m.nodeGetPropertyById("node", CodeGenType.primitiveNode, 13, "propVar")
         }),
-        Operation("property by name for relationship", m => {
+    Operation("property by name for relationship", m => {
           m.lookupPropertyKey("prop", "prop")
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
           m.declareProperty("propVar")
           m.relationshipGetPropertyForVar("rel", "prop", "propVar")
         }),
-        Operation("property by id for relationship", m => {
+    Operation("property by id for relationship", m => {
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
           m.declareProperty("propVar")
           m.nodeGetPropertyById("rel", CodeGenType.primitiveNode, 13, "propVar")
         }),
-        Operation("rel type", m => {
-          m.createRelExtractor("bar")
+    Operation("rel type", m => {
+          m.setUpRelIteration("bar", "foo")
           m.declareAndInitialize("foo", CypherCodeGenType(symbols.CTString, ReferenceType))
           m.relType("bar", "foo")
         }),
-        Operation("all relationships for node and types", (m) => {
+    Operation("all relationships for node and types", (m) => {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
+          m.setUpRelIteration("bar", "foo")
           m.lookupRelationshipTypeId("a", "A")
           m.lookupRelationshipTypeId("b", "B")
           m.nodeGetRelationshipsWithDirectionAndTypes("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING, Seq("a", "b"))
         }),
-        Operation("next relationship", (m) => {
-          m.createRelExtractor("r")
+    Operation("next relationship", (m) => {
+          m.setUpRelIteration("r", "rIter")
+          m.setUpRelIteration("bar", "foo")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.nodeGetRelationshipsWithDirection("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
           m.nextRelationshipAndNode("nextNode", "foo", SemanticDirection.OUTGOING, "node", "r")
@@ -196,7 +199,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       }
     }),
     Operation("expand from all node", (m) => {
-      m.createRelExtractor("r")
+      m.setUpRelIteration("r", "rIter")
+      m.setUpRelIteration("bar", "relIter")
       m.allNodesScan("nodeIter")
       m.whileLoop(m.hasNextNode("nodeIter")) { b1 =>
         b1.nextNode("node", "nodeIter")

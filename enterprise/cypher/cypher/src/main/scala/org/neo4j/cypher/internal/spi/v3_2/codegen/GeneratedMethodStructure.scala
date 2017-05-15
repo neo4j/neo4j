@@ -111,8 +111,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), nextLong))
 
-  override def createRelExtractor(relVar: String) =
+  override def setUpRelIteration(relVar: String, iterVar: String) = {
     generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), newRelationshipDataExtractor)
+
+    val field = generator.classGenerator().field(typeRef[RelationshipIterator], iterVar)
+    //Make sure cursor is always closed
+    _finalizers.append((_: Boolean) => (block) =>
+      using(block.ifStatement(Expression.notNull(Expression.get(block.self(), field)))) {inner =>
+        inner.expression(invoke(Expression.get(inner.self(), field), method[RelationshipIterator, Unit]("close")))
+      })
+  }
 
   override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection,
                                        fromNodeVar: String,
@@ -123,8 +131,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
     generator.expression(
       pop(
-        invoke(generator.load(iterVar), relationshipVisit,
-               invoke(generator.load(iterVar), fetchNextRelationship),
+        invoke(getFieldInstance(iterVar), relationshipVisit,
+               invoke(getFieldInstance(iterVar), fetchNextRelationship),
                generator.load(extractor))))
     generator.assign(typeRef[Long], toNodeVar, toGraphDb(direction) match {
       case Direction.INCOMING => start
@@ -140,10 +148,18 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val extractor = relExtractor(relVar)
     generator.expression(
       pop(
-        invoke(generator.load(iterVar), relationshipVisit,
-               invoke(generator.load(iterVar), fetchNextRelationship),
+        invoke(getFieldInstance(iterVar), relationshipVisit,
+               invoke(getFieldInstance(iterVar), fetchNextRelationship),
                generator.load(extractor))))
     generator.assign(typeRef[Long], relVar, invoke(generator.load(extractor), getRelationship))
+  }
+
+  private def getFieldInstance(name: String): Expression = {
+    Expression.get(generator.self(), getField(name))
+  }
+
+  private def getField(name: String) = {
+    generator.classGenerator().getField(name)
   }
 
   override def allNodesScan(iterVar: String) =
@@ -170,18 +186,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     invoke(generator.load(iterVar), hasNextLong)
 
   override def hasNextRelationship(iterVar: String) =
-    invoke(generator.load(iterVar), hasMoreRelationship)
+    invoke(getFieldInstance(iterVar), hasMoreRelationship)
 
-  override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) =
+  override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) = {
     using(generator.whileLoop(test)) { body =>
       block(copy(generator = body))
     }
+  }
 
   override def forEach(varName: String, codeGenType: CodeGenType, iterable: Expression)
-                      (block: MethodStructure[Expression] => Unit) =
+                      (block: MethodStructure[Expression] => Unit) = {
     using(generator.forEach(Parameter.param(lowerType(codeGenType), varName), iterable)) { body =>
       block(copy(generator = body))
     }
+  }
 
   override def ifStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
     using(generator.ifStatement(test)) { body =>
@@ -271,7 +289,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     _finalizers.foreach(block => block(false)(onError))
     onError.throwException(onError.load("e"))
   }
-
 
   override def materializeNode(nodeIdVar: String, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive)
@@ -425,31 +442,20 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def toFloat(expression: Expression) = toDouble(expression)
 
   override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    generator.assign(local, constant(null))
-    //Make sure cursor is always closed
-    _finalizers.append((_: Boolean) => (block) =>
-      using(block.ifStatement(Expression.notNull(block.load(local.name())))) {inner =>
-        inner.expression(invoke(inner.load(local.name()), method[RelationshipIterator, Unit]("close")))
-      })
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
-                                dir(direction)))
+
+      body.put(body.self(), getField(iterVar),
+               invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
+                                                                         dir(direction)))
     }
   }
 
   override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType,
                                                          direction: SemanticDirection,
                                                          typeVars: Seq[String]) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    generator.assign(local, constant(null))
-    //Make sure cursor is always closed
-    _finalizers.append((_: Boolean) => (block) =>
-      using(block.ifStatement(Expression.notNull(block.load(local.name())))) {inner =>
-        inner.expression(invoke(inner.load(local.name()), method[RelationshipIterator, Unit]("close")))
-      })
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
+      body.put(body.self(), getField(iterVar),
+               invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
                                 forceLong(nodeVar, nodeVarType), dir(direction),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
 
@@ -458,9 +464,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        toNode: String, toNodeType: CodeGenType) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(Methods.allConnectingRelationships,
+      body.put(body.self(), getField(iterVar), invoke(Methods.allConnectingRelationships,
                                 readOperations, forceLong(fromNode, fromNodeType), dir(direction),
                                forceLong(toNode, toNodeType)))
     }
@@ -468,9 +473,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(Methods.connectingRelationships, readOperations, forceLong(fromNode, fromNodeType), dir(direction),
+      body.put(body.self(), getField(iterVar), invoke(Methods.connectingRelationships, readOperations, forceLong(fromNode, fromNodeType), dir(direction),
                                 forceLong(toNode, toNodeType),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
     }
@@ -636,11 +640,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType]) = {
     if (codeGenTypes.size == 1 && codeGenTypes.head.repr == LongType) {
       generator.assign(generator.declare(typeRef[PrimitiveLongSet], name),
-                       invoke(method[Primitive, PrimitiveLongSet]("offHeapLongSet")))
-      _finalizers.append((_: Boolean) => (block) =>
-                           block.expression(
-                             invoke(block.load(name), method[PrimitiveLongSet, Unit]("close"))))
-
+                       invoke(method[Primitive, PrimitiveLongSet]("longSet")))
     } else {
       generator.assign(generator.declare(typeRef[util.HashSet[Object]], name),
                        createNewInstance(typeRef[util.HashSet[Object]]))
@@ -732,16 +732,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]) = {
-    if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
-      generator.assign(generator.declare(typeRef[PrimitiveLongLongMap], name),
-                       invoke(method[Primitive, PrimitiveLongLongMap]("offHeapLongLongMap")))
-      _finalizers.append((_: Boolean) => (block) =>
-                           block.expression(
-                             invoke(block.load(name), method[PrimitiveLongLongMap, Unit]("close"))))
-    } else {
-      val local = generator.declare(typeRef[util.HashMap[Object, java.lang.Long]], name)
-      generator.assign(local, createNewInstance(typeRef[util.HashMap[Object, java.lang.Long]]))
-    }
+    val local = generator.declare(typeRef[util.HashMap[Object, java.lang.Long]], name)
+    generator.assign(local, createNewInstance(typeRef[util.HashMap[Object, java.lang.Long]]))
   }
 
   override def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType) = {
@@ -809,23 +801,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = generator.declare(typeRef[Long], valueVarName)
     locals += valueVarName -> local
 
-    if (key.size == 1 && key.head._2._1.repr == LongType) {
-      val (_, (_, keyExpression)) = key.head
-      generator.assign(local, invoke(generator.load(mapName), method[PrimitiveLongLongMap, Long]("get", typeRef[
-        Long]), keyExpression))
-      using(generator.ifStatement(equal(generator.load(valueVarName), constant(Long.box(-1L))))) { body =>
-        body.assign(local, constant(Long.box(0L)))
-      }
-    } else {
-      newUniqueAggregationKey(keyVar, key)
-      generator.assign(local, unbox(
-        cast(typeRef[java.lang.Long],
-             invoke(generator.load(mapName),
-                    method[util.HashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
-                                                                         typeRef[Object]),
-                    generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
-        CypherCodeGenType(symbols.CTInteger, ReferenceType)))
-    }
+    newUniqueAggregationKey(keyVar, key)
+    generator.assign(local, unbox(
+      cast(typeRef[java.lang.Long],
+           invoke(generator.load(mapName),
+                  method[util.HashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
+                                                                       typeRef[Object]),
+                  generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
+      CypherCodeGenType(symbols.CTInteger, ReferenceType)))
   }
 
   override def checkDistinct(name: String, key: Map[String, (CodeGenType, Expression)], keyVar: String,
@@ -941,78 +924,52 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def aggregationMapPut(name: String, key: Map[String, (CodeGenType, Expression)], keyVar: String,
                                  value: Expression) = {
-    if (key.size == 1 && key.head._2._1.repr == LongType) {
-      val (_, (_, keyExpression)) = key.head
-      generator.expression(pop(invoke(generator.load(name),
-                                      method[PrimitiveLongLongMap, Long]("put", typeRef[Long], typeRef[Long]),
-                                      keyExpression, value)))
-    } else {
-
-      if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
-      generator.expression(pop(invoke(generator.load(name),
-                                      method[util.HashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
-                                                                                           typeRef[Object]),
-                                      generator.load(keyVar), box(value, CodeGenType.javaLong))))
-    }
+    if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
+    generator.expression(pop(invoke(generator.load(name),
+                                    method[util.HashMap[Object, java.lang.Long], Object]("put", typeRef[Object],
+                                                                                         typeRef[Object]),
+                                    generator.load(keyVar), box(value, CodeGenType.javaLong))))
   }
 
   override def aggregationMapIterate(name: String, keyTupleDescriptor: HashableTupleDescriptor, valueVar: String)
                                     (block: (MethodStructure[Expression]) => Unit) = {
     val key = keyTupleDescriptor.structure
-    if (key.size == 1 && key.head._2.repr == LongType) {
-      val (keyName, keyType) = key.head
-      val localName = context.namer.newVarName()
-      val variable = generator.declare(typeRef[PrimitiveLongIterator], localName)
-      generator.assign(variable, invoke(generator.load(name),
-                                        method[PrimitiveLongLongMap, PrimitiveLongIterator]("iterator")))
-      using(generator.whileLoop(
-        invoke(generator.load(localName), method[PrimitiveLongIterator, Boolean]("hasNext")))) { body =>
+    val localName = context.namer.newVarName()
+    val next = context.namer.newVarName()
+    val variable = generator
+      .declare(typeRef[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]], localName)
+    val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
+    generator.assign(variable,
+                     invoke(invoke(generator.load(name),
+                                   method[util.HashMap[Object, java.lang.Long],
+                                     java.util.Set[java.util.Map.Entry[Object, java.lang.Long]]]("entrySet")),
+                            method[java.util.Set[java.util.Map.Entry[Object, java.lang.Long]], java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]](
+                              "iterator")))
+    using(generator.whileLoop(
+      invoke(generator.load(localName),
+             method[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]], Boolean]("hasNext")))) { body =>
+      body.assign(body.declare(typeRef[java.util.Map.Entry[Object, java.lang.Long]], next),
+                  cast(typeRef[util.Map.Entry[Object, java.lang.Long]],
+                       invoke(body.load(localName),
+                              method[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]], Object](
+                                "next"))))
+      key.foreach {
+        case (keyName, keyType) =>
 
-        body.assign(body.declare(typeRef[Long], keyName),
-                    invoke(body.load(localName), method[PrimitiveLongIterator, Long]("next")))
-        body.assign(body.declare(typeRef[Long], valueVar),
-                    invoke(body.load(name), method[PrimitiveLongLongMap, Long]("get", typeRef[Long]),
-                           body.load(keyName)))
-        block(copy(generator = body))
+          body.assign(body.declare(lowerType(keyType), keyName),
+                      Expression.get(
+                        cast(keyStruct,
+                             invoke(body.load(next),
+                                    method[java.util.Map.Entry[Object, java.lang.Long], Object]("getKey"))),
+                        FieldReference.field(keyStruct, lowerType(keyType), keyName)))
       }
-    } else {
-      val localName = context.namer.newVarName()
-      val next = context.namer.newVarName()
-      val variable = generator
-        .declare(typeRef[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]], localName)
-      val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
-      generator.assign(variable,
-                       invoke(invoke(generator.load(name),
-                                     method[util.HashMap[Object, java.lang.Long],
-                                       java.util.Set[java.util.Map.Entry[Object, java.lang.Long]]]("entrySet")),
-                              method[java.util.Set[java.util.Map.Entry[Object, java.lang.Long]], java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]](
-                                "iterator")))
-      using(generator.whileLoop(
-        invoke(generator.load(localName),
-               method[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]], Boolean]("hasNext")))) { body =>
-        body.assign(body.declare(typeRef[java.util.Map.Entry[Object, java.lang.Long]], next),
-                    cast(typeRef[util.Map.Entry[Object, java.lang.Long]],
-                         invoke(body.load(localName),
-                                method[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]], Object](
-                                  "next"))))
-        key.foreach {
-          case (keyName, keyType) =>
 
-            body.assign(body.declare(lowerType(keyType), keyName),
-                        Expression.get(
-                          cast(keyStruct,
-                               invoke(body.load(next),
-                                      method[java.util.Map.Entry[Object, java.lang.Long], Object]("getKey"))),
-                          FieldReference.field(keyStruct, lowerType(keyType), keyName)))
-        }
-
-        body.assign(body.declare(typeRef[Long], valueVar),
-                    unbox(cast(typeRef[java.lang.Long],
-                               invoke(body.load(next),
-                                      method[java.util.Map.Entry[Object, java.lang.Long], Object]("getValue"))),
-                          CypherCodeGenType(symbols.CTInteger, ReferenceType)))
-        block(copy(generator = body))
-      }
+      body.assign(body.declare(typeRef[Long], valueVar),
+                  unbox(cast(typeRef[java.lang.Long],
+                             invoke(body.load(next),
+                                    method[java.util.Map.Entry[Object, java.lang.Long], Object]("getValue"))),
+                        CypherCodeGenType(symbols.CTInteger, ReferenceType)))
+      block(copy(generator = body))
     }
   }
 

@@ -155,7 +155,7 @@ public class ClassGenerator implements AutoCloseable
         return new CodeBlock( this, emitter.method( declaration ), declaration.parameters() );
     }
 
-    FieldReference getField( String name )
+    public FieldReference getField( String name )
     {
         return fields == null ? null : fields.get( name );
     }
