@@ -43,12 +43,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("n").toList should equal(List(n1, n2, n3, n4, n5))
   }
 
-  test("foo") {
-    createNode()
-    createNode()
-    println(executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n), (m) RETURN count(*)").toList)
-  }
-
   // Not TCK material -- no character type
   test("comparing string and chars should work nicely") {
     val n1 = createNode(Map("x" -> "Anders"))

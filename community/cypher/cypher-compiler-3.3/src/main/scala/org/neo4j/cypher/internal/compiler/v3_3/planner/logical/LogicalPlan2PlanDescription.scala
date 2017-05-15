@@ -82,8 +82,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
 
-      case NodeCountFromCountStore(IdName(variable), labelName, _) =>
-        val arguments = Seq(CountNodesExpression(variable, labelName.map(l => l.map(_.name))))
+      case NodeCountFromCountStore(IdName(variable), labelNames, _) =>
+        val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
       case NodeIndexContainsScan(_, label, propertyKey, valueExpr, _) =>
