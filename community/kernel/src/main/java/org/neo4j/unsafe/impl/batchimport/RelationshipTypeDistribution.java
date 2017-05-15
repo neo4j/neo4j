@@ -55,7 +55,7 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
         return client;
     }
 
-    private void closeClient()
+    private synchronized void closeClient()
     {
         if ( --opened == 0 )
         {
@@ -126,7 +126,7 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
         }
 
         @Override
-        public synchronized void close()
+        public void close()
         {
             closeClient();
         }
