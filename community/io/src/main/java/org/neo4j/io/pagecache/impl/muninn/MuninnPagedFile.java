@@ -257,6 +257,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
             flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter );
             syncDevice();
         }
+        pageCache.clearEvictorException();
     }
 
     void flushAndForceForClose() throws IOException
@@ -274,6 +275,7 @@ final class MuninnPagedFile implements PagedFile, Flushable
             flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.unlimited() );
             syncDevice();
         }
+        pageCache.clearEvictorException();
     }
 
     private void markAllDirtyPagesAsClean()
