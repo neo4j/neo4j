@@ -66,6 +66,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -77,6 +78,7 @@ import static org.neo4j.function.Predicates.await;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class SessionResetIT
 {
@@ -205,14 +207,13 @@ public class SessionResetIT
         }
         catch ( Throwable error )
         {
-            Throwable cause = rootCause( error );
-            if ( !isAcceptable( cause ) )
+            if ( !stop.get() && !isAcceptable( error ) )
             {
                 stop.set( true );
                 throw error;
             }
-            // else it is fine to receive transient errors from the driver because
-            // sessions are being reset concurrently by the main thread
+            // else it is fine to receive some errors from the driver because
+            // sessions are being reset concurrently by the main thread, driver can also be closed concurrently
         }
     }
 
@@ -273,10 +274,10 @@ public class SessionResetIT
         }
     }
 
-    private void assertDatabaseIsIdle()
+    private void assertDatabaseIsIdle() throws InterruptedException
     {
-        assertEquals( 0, activeQueriesCount() );
-        assertEquals( 0, activeTransactionsCount() );
+        assertEventually( "Wrong number of active queries", this::activeQueriesCount, is( 0L ), 10, SECONDS );
+        assertEventually( "Wrong number of active transactions", this::activeTransactionsCount, is( 0L ), 10, SECONDS );
     }
 
     private long activeQueriesCount()
@@ -339,10 +340,12 @@ public class SessionResetIT
 
     private static boolean isAcceptable( Throwable error )
     {
-        return isTransactionTerminatedException( error ) ||
-               error instanceof ServiceUnavailableException ||
-               error instanceof ClientException ||
-               error instanceof ClosedChannelException;
+        Throwable cause = rootCause( error );
+
+        return isTransactionTerminatedException( cause ) ||
+               cause instanceof ServiceUnavailableException ||
+               cause instanceof ClientException ||
+               cause instanceof ClosedChannelException;
     }
 
     private static boolean isTransactionTerminatedException( Throwable error )
