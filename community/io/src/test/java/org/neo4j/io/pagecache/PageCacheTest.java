@@ -2922,7 +2922,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
@@ -2948,7 +2948,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
