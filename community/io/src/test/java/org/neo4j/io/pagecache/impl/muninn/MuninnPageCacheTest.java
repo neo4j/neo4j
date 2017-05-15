@@ -363,7 +363,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private void writeInitialDataTo( File file ) throws IOException
     {
-        try (StoreChannel channel = fs.create( file ))
+        try ( StoreChannel channel = fs.create( file ) )
         {
             ByteBuffer buf = ByteBuffer.allocate( 16 );
             buf.putLong( x );
