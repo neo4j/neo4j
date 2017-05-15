@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -253,12 +254,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * For this reason both writer and check-pointing acquires this lock.
      */
     private final Lock writerCheckpointMutex = new ReentrantLock();
-
-    /**
-     * Currently an index only supports one concurrent writer and so this boolean will act as
-     * guard so that only one thread can have it at any given time.
-     */
-    private final AtomicBoolean writerTaken = new AtomicBoolean();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -807,8 +802,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 return;
             }
 
-            // Force close on writer to not risk deadlock on pagedFile.close()
-            writer.close();
             if ( !changesSinceLastCheckpoint )
             {
                 clean = true;
@@ -835,39 +828,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public Writer<KEY,VALUE> writer() throws IOException
     {
-        if ( !writerTaken.compareAndSet( false, true ) )
-        {
-            throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
-                    "Only a single writer is allowed. The writer will become available as soon as " +
-                    "acquired writer is closed" );
-        }
-
-        writerCheckpointMutex.lock();
-        boolean success = false;
-        try
-        {
-            writer.take();
-            success = true;
-            changesSinceLastCheckpoint = true;
-            return writer;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                releaseWriter();
-            }
-        }
-    }
-
-    private void releaseWriter()
-    {
-        writerCheckpointMutex.unlock();
-        if ( !writerTaken.compareAndSet( true, false ) )
-        {
-            throw new IllegalStateException( "Tried to give back the writer of " + this +
-                    ", but somebody else already did" );
-        }
+        writer.initialize();
+        changesSinceLastCheckpoint = true;
+        return writer;
     }
 
     private void setRoot( long rootId, long rootGeneration )
@@ -971,8 +934,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
+    private TreeInconsistencyException appendTreeInformation( TreeInconsistencyException e )
+    {
+        return Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
+    }
+
     private class SingleWriter implements Writer<KEY,VALUE>
     {
+        /**
+         * Currently an index only supports one concurrent writer and so this boolean will act as
+         * guard so that only one writer ever exist.
+         */
+        private final AtomicBoolean writerTaken = new AtomicBoolean();
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
@@ -988,12 +961,57 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.treeLogic = treeLogic;
         }
 
-        void take() throws IOException
+        /**
+         * When leaving initialize, writer should be in a fully consistent state.
+         * <p>
+         * Either fully initialized:
+         * <ul>
+         *    <li>{@link #writerTaken} - true</li>
+         *    <li>{@link #writerCheckpointMutex} - locked</li>
+         *    <li>{@link #cursor} - not null</li>
+         * </ul>
+         * Of fully closed:
+         * <ul>
+         *    <li>{@link #writerTaken} - false</li>
+         *    <li>{@link #writerCheckpointMutex} - unlocked</li>
+         *    <li>{@link #cursor} - null</li>
+         * </ul>
+         *
+         * @throws IOException if fail to open {@link PageCursor}
+         */
+        void initialize() throws IOException
         {
-            cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
-            stableGeneration = stableGeneration( generation );
-            unstableGeneration = unstableGeneration( generation );
-            treeLogic.initialize( cursor );
+            if ( !writerTaken.compareAndSet( false, true ) )
+            {
+                throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
+                        "Only a single writer is allowed. The writer will become available as soon as " +
+                        "acquired writer is closed" );
+            }
+
+            boolean success = false;
+            writerCheckpointMutex.lock();
+            try
+            {
+                cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
+                stableGeneration = stableGeneration( generation );
+                unstableGeneration = unstableGeneration( generation );
+                PointerChecking.assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+                treeLogic.initialize( cursor );
+                success = true;
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
+            finally
+            {
+                if ( !success )
+                {
+                    closeCursor();
+                    writerTaken.set( false );
+                    writerCheckpointMutex.unlock();
+                }
+            }
         }
 
         @Override
@@ -1005,8 +1023,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
         {
-            treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
-                    stableGeneration, unstableGeneration );
+            try
+            {
+                treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
+                        stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
 
             if ( structurePropagation.hasRightKeyInsert )
             {
@@ -1042,8 +1067,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public VALUE remove( KEY key ) throws IOException
         {
-            VALUE result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
-                    stableGeneration, unstableGeneration );
+            VALUE result;
+            try
+            {
+                result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
+                        stableGeneration, unstableGeneration );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                throw appendTreeInformation( e );
+            }
+
             if ( structurePropagation.hasMidChildUpdate )
             {
                 setRoot( structurePropagation.midChild );
@@ -1057,14 +1091,22 @@ public class GBPTree<KEY,VALUE> implements Closeable
         @Override
         public void close() throws IOException
         {
-            if ( cursor == null )
+            if ( !writerTaken.compareAndSet( true, false ) )
             {
-                return;
+                throw new IllegalStateException( "Tried to close writer of " + GBPTree.this +
+                        ", but writer is already closed." );
             }
+            closeCursor();
+            writerCheckpointMutex.unlock();
+        }
 
-            cursor.close();
-            cursor = null;
-            releaseWriter();
+        private void closeCursor()
+        {
+            if ( cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
         }
     }
 }

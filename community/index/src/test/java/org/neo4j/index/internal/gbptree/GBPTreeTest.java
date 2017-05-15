@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,6 +67,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -74,6 +76,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 @SuppressWarnings( "EmptyTryBlock" )
@@ -394,6 +397,8 @@ public class GBPTreeTest
         }
     }
 
+    /* Lifecycle tests */
+
     @Test
     public void shouldNotBeAbleToAcquireModifierTwice() throws Exception
     {
@@ -413,12 +418,15 @@ public class GBPTreeTest
                 // THEN good
             }
 
+            // Should be able to close old writer
             writer.close();
+            // And open and closing a new one
+            index.writer().close();
         }
     }
 
     @Test
-    public void shouldAllowClosingWriterMultipleTimes() throws Exception
+    public void shouldNotAllowClosingWriterMultipleTimes() throws Exception
     {
         // GIVEN
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
@@ -427,11 +435,71 @@ public class GBPTreeTest
             writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             writer.close();
 
-            // WHEN
-            writer.close();
-
-            // THEN that should be OK
+            try
+            {
+                // WHEN
+                writer.close();
+                fail( "Should have failed" );
+            }
+            catch ( IllegalStateException e )
+            {
+                // THEN
+                assertThat( e.getMessage(), containsString( "already closed" ) );
+            }
         }
+    }
+
+    @Test
+    public void failureDuringInitializeWriterShouldNotFailNextInitialize() throws Exception
+    {
+        // GIVEN
+        IOException no = new IOException( "No" );
+        AtomicBoolean throwOnNextIO = new AtomicBoolean();
+        PageCache controlledPageCache = pageCacheThatThrowOnIOWhenToldTo( no, throwOnNextIO );
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( controlledPageCache ).build() )
+        {
+            // WHEN
+            assert throwOnNextIO.compareAndSet( false, true );
+            try ( Writer<MutableLong, MutableLong> ignored = index.writer() )
+            {
+                fail( "Expected to throw" );
+            }
+            catch ( IOException e )
+            {
+                assertSame( no, e );
+            }
+
+            // THEN
+            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
+            }
+        }
+    }
+
+    private PageCache pageCacheThatThrowOnIOWhenToldTo( final IOException e, final AtomicBoolean throwOnNextIO )
+    {
+        return new DelegatingPageCache( createPageCache( 256 ) )
+            {
+                @Override
+                public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+                {
+                    return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                    {
+                        @Override
+                        public PageCursor io( long pageId, int pf_flags ) throws IOException
+                        {
+                            if ( throwOnNextIO.get() )
+                            {
+                                throwOnNextIO.set( false );
+                                assert e != null;
+                                throw e;
+                            }
+                            return super.io( pageId, pf_flags );
+                        }
+                    };
+                }
+            };
     }
 
     @Test
@@ -544,7 +612,7 @@ public class GBPTreeTest
 
     /* Check-pointing tests */
 
-    @Test
+    @Test( timeout = 5_000L )
     public void checkPointShouldLockOutWriter() throws Exception
     {
         // GIVEN
@@ -573,7 +641,7 @@ public class GBPTreeTest
         }
     }
 
-    @Test
+    @Test( timeout = 5_000L )
     public void checkPointShouldWaitForWriter() throws Exception
     {
         // GIVEN
@@ -600,7 +668,7 @@ public class GBPTreeTest
         }
     }
 
-    @Test
+    @Test( timeout = 5_000L )
     public void closeShouldLockOutWriter() throws Exception
     {
         // GIVEN
@@ -665,7 +733,7 @@ public class GBPTreeTest
         };
     }
 
-    @Test
+    @Test( timeout = 5_000L )
     public void closeShouldWaitForWriter() throws Exception
     {
         // GIVEN
@@ -1062,6 +1130,49 @@ public class GBPTreeTest
         }
     }
 
+    /* TreeState has outdated root */
+
+    @Test
+    public void shouldThrowIfTreeStatePointToRootWithValidSuccessor() throws Exception
+    {
+        // GIVEN
+        int pageSize = 256;
+        try ( PageCache specificPageCache = createPageCache( pageSize ) )
+        {
+            try ( GBPTree<MutableLong,MutableLong> ignore = index().with( specificPageCache ).build() )
+            {
+            }
+
+            // a tree state pointing to root with valid successor
+            try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
+                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                Pair<TreeState,TreeState> treeStates =
+                        TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+                TreeState newestState = TreeStatePair.selectNewestValidState( treeStates );
+                long rootId = newestState.rootId();
+                long stableGeneration = newestState.stableGeneration();
+                long unstableGeneration = newestState.unstableGeneration();
+
+                TreeNode.goTo( cursor, "root", rootId );
+                TreeNode.setSuccessor( cursor, 42, stableGeneration + 1, unstableGeneration + 1 );
+            }
+
+            // WHEN
+            try ( GBPTree<MutableLong,MutableLong> index = index().with( specificPageCache ).build() )
+            {
+                try ( Writer<MutableLong, MutableLong> ignored = index.writer() )
+                {
+                    fail( "Expected to throw because root pointed to by tree state should have a valid successor." );
+                }
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
+            }
+        }
+    }
+
     private void insert( GBPTree<MutableLong,MutableLong> index, long key, long value ) throws IOException
     {
         try ( Writer<MutableLong, MutableLong> writer = index.writer() )
@@ -1198,7 +1309,7 @@ public class GBPTreeTest
     private void setFormatVersion( int pageSize, int formatVersion ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
-              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_WRITE_LOCK ) )
+              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             cursor.putInt( formatVersion );
