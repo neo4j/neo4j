@@ -145,7 +145,8 @@ public class CsvInputIterator extends InputIterator.Adapter
             Data data = dataFactory.create( config );
             CharReadable stream = data.stream();
             char[] firstLineBuffer = Readables.extractFirstLineFrom( stream );
-            Chunk firstChunk = new ChunkImpl( firstLineBuffer );
+            ChunkImpl firstChunk = new ChunkImpl( firstLineBuffer );
+            firstChunk.initialize( firstLineBuffer.length, stream.sourceDescription() );
             firstSeeker = seeker( firstChunk );
             header = headerFactory.create( firstSeeker, config, idType );
 
@@ -155,7 +156,7 @@ public class CsvInputIterator extends InputIterator.Adapter
 
             decorator = data.decorator();
             chunker = config.multilineFields()
-                    ? new MultiLineAwareChunker( stream, config.bufferSize(), header.entries().length )
+                    ? new MultiLineAwareChunker( stream, config, header.entries().length, config.delimiter() )
                     : new ClosestNewLineChunker( stream, config.bufferSize() );
         }
 

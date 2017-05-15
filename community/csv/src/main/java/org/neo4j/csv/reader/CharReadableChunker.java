@@ -96,7 +96,7 @@ public abstract class CharReadableChunker implements Chunker
             this.buffer = buffer;
         }
 
-        void initialize( int length, String sourceDescription )
+        public void initialize( int length, String sourceDescription )
         {
             this.length = length;
             this.sourceDescription = sourceDescription;

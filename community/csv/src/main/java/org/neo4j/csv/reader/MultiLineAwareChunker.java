@@ -29,7 +29,7 @@ public class MultiLineAwareChunker extends CharReadableChunker
     private final SectionedCharBuffer charBuffer;
     private final BufferedCharSeeker seeker;
     private final Mark mark = new Mark();
-    private final char delimiter;
+    private final int delimiter;
 
     public MultiLineAwareChunker( CharReadable reader, Configuration config, int fieldsPerEntry, char delimiter )
     {
