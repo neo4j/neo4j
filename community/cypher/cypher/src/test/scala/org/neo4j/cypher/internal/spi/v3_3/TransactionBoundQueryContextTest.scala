@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.spi.v3_3
 import java.net.URL
 import java.util.Collections
 
+import org.hamcrest.Matchers.greaterThan
+import org.junit.Assert.assertThat
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
@@ -182,7 +184,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     graph.getNodeById(2)
     graph.getNodeById(1)
-    tracer.getPageCacheHits should equal(2)
+    val accesses = tracer.getPageCacheHits + tracer.getPageCacheMisses
+    assertThat(Long.box(accesses), greaterThan(Long.box(1L)))
 
     tx.close()
   }
