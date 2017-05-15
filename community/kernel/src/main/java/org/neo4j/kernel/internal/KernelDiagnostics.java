@@ -31,6 +31,7 @@ import java.util.TimeZone;
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.Logger;
@@ -73,11 +74,16 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            logger.log( getDiskSpace( storeDir ) + "\nStorage files: (filename : modification date - size)" );
-            logStoreFiles( logger, "  ", storeDir );
+            logger.log( getDiskSpace( storeDir ) );
+            logger.log( "Storage files: (filename : modification date - size)" );
+            MappedFileCounter mappedCounter = new MappedFileCounter();
+            long totalSize = logStoreFiles( logger, "  ", storeDir, mappedCounter );
+            logger.log( "Storage summary: " );
+            logger.log( "  Total size of store: " + Format.bytes( totalSize ) );
+            logger.log( "  Total size of mapped files: " + Format.bytes( mappedCounter.getSize() ) );
         }
 
-        private long logStoreFiles( Logger logger, String prefix, File dir )
+        private long logStoreFiles( Logger logger, String prefix, File dir, MappedFileCounter mappedCounter )
         {
             if ( !dir.isDirectory() )
             {
@@ -109,12 +115,13 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
                 if ( file.isDirectory() )
                 {
                     logger.log( prefix + filename + ":" );
-                    size = logStoreFiles( logger, prefix + "  ", file );
+                    size = logStoreFiles( logger, prefix + "  ", file, mappedCounter );
                     filename = "- Total";
                 }
                 else
                 {
                     size = file.length();
+                    mappedCounter.addFile( file );
                 }
 
                 String fileModificationDate = getFileModificationDate( file );
@@ -140,6 +147,25 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
             long percentage = total != 0 ? (free * 100 / total) : 0;
             return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
         }
+
+        private static class MappedFileCounter
+        {
+            private long size;
+
+            public void addFile( File file )
+            {
+                if ( StoreType.shouldBeManagedByPageCache( file.getName() ) )
+                {
+                    size += file.length();
+                }
+            }
+
+            public long getSize()
+            {
+                return size;
+            }
+        }
+
     }
 
     @Override
