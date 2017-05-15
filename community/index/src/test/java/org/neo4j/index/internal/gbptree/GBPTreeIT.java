@@ -146,7 +146,10 @@ public class GBPTreeIT
                         }
 
                         assertTrue( keyComparator.compare( key, from ) >= 0 );
-                        assertTrue( keyComparator.compare( key, to ) < 0 );
+                        if ( keyComparator.compare( from, to ) != 0 )
+                        {
+                            assertTrue( keyComparator.compare( key, to ) < 0 );
+                        }
                     }
                     if ( !expectedHits.isEmpty() )
                     {
@@ -193,7 +196,11 @@ public class GBPTreeIT
         Map<MutableLong,MutableLong> hits = new TreeMap<>( comparator );
         for ( Map.Entry<MutableLong,MutableLong> candidate : data.entrySet() )
         {
-            if ( comparator.compare( candidate.getKey(), from ) >= 0 &&
+            if ( comparator.compare( from, to ) == 0 && comparator.compare( candidate.getKey(), from ) == 0 )
+            {
+                hits.put( candidate.getKey(), candidate.getValue() );
+            }
+            else if ( comparator.compare( candidate.getKey(), from ) >= 0 &&
                     comparator.compare( candidate.getKey(), to ) < 0 )
             {
                 hits.put( candidate.getKey(), candidate.getValue() );
