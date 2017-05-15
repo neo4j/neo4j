@@ -25,11 +25,9 @@ import java.util.Hashtable;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.ManagementInterface;
-import org.neo4j.kernel.internal.KernelData;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
@@ -78,19 +76,6 @@ public class ManagementSupport
     protected boolean supportsMxBeans()
     {
         return false;
-    }
-
-    /**
-     * Get the URI to which connections can be made to the {@link MBeanServer}
-     * of this JVM.
-     *
-     * @param kernel the kernel that wishes to access the URI.
-     * @return a URI that can be used for connecting to the {@link MBeanServer}
-     *         of this JVM.
-     */
-    protected JMXServiceURL getJMXServiceURL( KernelData kernel )
-    {
-        return null;
     }
 
     public final ObjectName createObjectName( String instanceId, Class<?> beanInterface, String... extraNaming )

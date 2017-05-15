@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import javax.management.MBeanServer;
-import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
@@ -41,7 +40,6 @@ public class JmxKernelExtension implements Lifecycle
     private List<Neo4jMBean> beans;
     private MBeanServer mbs;
     private ManagementSupport support;
-    private JMXServiceURL url;
 
     public JmxKernelExtension( KernelData kernelData, LogProvider logProvider )
     {
@@ -53,7 +51,6 @@ public class JmxKernelExtension implements Lifecycle
     public void init() throws Throwable
     {
         support = ManagementSupport.load();
-        url = support.getJMXServiceURL( kernelData );
         mbs = support.getMBeanServer();
         beans = new LinkedList<>();
         try
@@ -118,11 +115,6 @@ public class JmxKernelExtension implements Lifecycle
                 log.warn( "Could not unregister MBean " + bean.objectName.toString(), e );
             }
         }
-    }
-
-    public JMXServiceURL getConnectionURL()
-    {
-        return url;
     }
 
     public final <T> T getSingleManagementBean( Class<T> type )
