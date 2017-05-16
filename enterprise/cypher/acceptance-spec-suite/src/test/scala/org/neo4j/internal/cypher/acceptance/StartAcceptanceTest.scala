@@ -98,6 +98,14 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(List(Map("n"-> node1, "m" -> node2)))
   }
 
+  test("START n=node(*) RETURN n") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(*) RETURN n").toList
+
+    result should equal(List(Map("n"-> node1), Map("n" -> node2)))
+  }
+
   test("Relationship legacy index mk II") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))

@@ -31,6 +31,10 @@ case object startClauseRewriter extends StatementRewriter {
   override def instance(context: BaseContext): Rewriter = topDown(Rewriter.lift {
     case start@Start(items, where) =>
       val newPredicates = items.collect {
+        //We can safely ignore AllNodes here, i.e. nodes(*) since that is corresponding to
+        //no predicate on the identifier
+
+        //START n=nodes(1,5,7)....
         case n@NodeByIds(variable, ids) =>
           val pos = n.position
           val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
