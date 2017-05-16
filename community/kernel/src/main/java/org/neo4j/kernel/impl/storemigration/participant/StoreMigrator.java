@@ -67,12 +67,15 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -766,8 +769,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws
             IOException
     {
-        if ( StandardV2_1.STORE_VERSION.equals( versionToMigrateFrom ) ||
-             StandardV2_2.STORE_VERSION.equals( versionToMigrateFrom ) )
+        if ( countStoreRebuildRequired( versionToMigrateFrom ) )
         {
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
@@ -778,6 +780,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
         }
+    }
+
+    boolean countStoreRebuildRequired( String versionToMigrateFrom )
+    {
+        return StandardV2_1.STORE_VERSION.equals( versionToMigrateFrom ) ||
+             StandardV2_2.STORE_VERSION.equals( versionToMigrateFrom ) ||
+             StandardV2_3.STORE_VERSION.equals( versionToMigrateFrom ) ||
+             StandardV3_0.STORE_VERSION.equals( versionToMigrateFrom ) ||
+             StoreVersion.HIGH_LIMIT_V3_0_0.versionString().equals( versionToMigrateFrom ) ||
+             StoreVersion.HIGH_LIMIT_V3_0_6.versionString().equals( versionToMigrateFrom ) ||
+             StoreVersion.HIGH_LIMIT_V3_1_0.versionString().equals( versionToMigrateFrom );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
