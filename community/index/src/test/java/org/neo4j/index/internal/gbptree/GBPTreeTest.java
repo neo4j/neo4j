@@ -1417,7 +1417,7 @@ public class GBPTreeTest
         }
     }
 
-    private static class CleanJobControlledMonitor implements Monitor
+    private static class CleanJobControlledMonitor extends Monitor.Adaptor
     {
         private final Barrier.Control barrier = new Barrier.Control();
 
