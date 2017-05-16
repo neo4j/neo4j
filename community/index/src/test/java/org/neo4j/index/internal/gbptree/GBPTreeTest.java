@@ -769,7 +769,7 @@ public class GBPTreeTest
     }
 
     @Test( timeout = 5_000L )
-    public void cleanJobShouldLockOutClose() throws Exception
+    public void cleanJobShouldNotLockOutClose() throws Exception
     {
         // GIVEN
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
@@ -789,11 +789,10 @@ public class GBPTreeTest
 
         // THEN
         Future<?> close = executor.submit( throwing( index::close ) );
-        shouldWait( close );
+        close.get();
 
         monitor.barrier.release();
         cleanup.get();
-        close.get();
     }
 
     @Test( timeout = 5_000L )
