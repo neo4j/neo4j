@@ -30,25 +30,28 @@ case object pruningVarExpander extends Rewriter {
   private def findDistinctSet(plan: LogicalPlan): Set[LogicalPlan] = {
 
     def collectDistinctSet(plan: LogicalPlan,
-                           distinctBy: Option[Set[String]],
+                           dependencies: Option[Set[String]],
                            distinctSet: mutable.Set[VarExpand]): Unit = {
       val lowerDistinctLand: Option[Set[String]] = plan match {
         case Aggregation(left, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
+
           val variablesInTheDistinctSet = groupExpr.values.flatMap(_.dependencies.map(_.name)).toSet
           Some(variablesInTheDistinctSet)
 
         case expand: VarExpand
-          if distinctBy.nonEmpty && !distinctNeedsRelsFromExpand(distinctBy, expand) && expand.length.max.nonEmpty =>
+          if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && expand.length.max.nonEmpty =>
           distinctSet += expand
-          distinctBy
+          dependencies
 
-        case _: Selection |
-             _: Expand |
+        case _: Expand |
              _: VarExpand |
              _: Apply |
              _: Optional |
              _: Projection =>
-          distinctBy
+          dependencies
+
+        case Selection(predicates, _) =>
+          dependencies.map(_ ++ predicates.flatMap(_.dependencies.map(_.name)))
 
         case _ =>
           None
@@ -59,14 +62,15 @@ case object pruningVarExpander extends Rewriter {
     }
 
     val distinctSet = mutable.Set[VarExpand]()
-    collectDistinctSet(plan, distinctBy = None, distinctSet)
+    collectDistinctSet(plan, dependencies = None, distinctSet)
     distinctSet.toSet
   }
 
   // When the distinct horizon needs the path that includes the var length relationship,
   // we can't use DistinctVarExpand - we need all the paths
-  def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean =
-  inDistinctLand.forall(vars => vars(expand.relName.name))
+  def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
+    inDistinctLand.forall(vars => vars(expand.relName.name))
+  }
 
   private def isDistinct(e: Expression) = e match {
     case f: FunctionInvocation => f.distinct
