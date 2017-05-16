@@ -194,4 +194,13 @@ final class SwapperSet
             }
         }
     }
+
+    synchronized int countAvailableIds()
+    {
+        // the max id is one less than the allowed count, but we subtract one for the reserved id 0
+        int available = MAX_SWAPPER_ID;
+        available -= swapperMappings.length; // ids that are allocated are not available
+        available += free.size(); // add back the ids that are free to be reused
+        return available;
+    }
 }

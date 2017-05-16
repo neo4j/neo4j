@@ -916,6 +916,10 @@ public class MuninnPageCache implements PageCache
 
     void vacuum( SwapperSet swappers )
     {
+        if ( getFreelistHead() instanceof AtomicInteger  && swappers.countAvailableIds() > 200 )
+        {
+            return; // We probably still have plenty of free pages left. Don't bother vacuuming just yet.
+        }
         swappers.vacuum( swapperIds ->
         {
             int pageCount = pages.getPageCount();

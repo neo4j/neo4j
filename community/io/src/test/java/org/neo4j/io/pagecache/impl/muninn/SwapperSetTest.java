@@ -186,4 +186,18 @@ public class SwapperSetTest
         exception.expect( IllegalArgumentException.class );
         set.free( 0 );
     }
+
+    @Test
+    public void mustKeepTrackOfAvailableSwapperIds() throws Exception
+    {
+        PageSwapper swapper = new DummyPageSwapper( "a", 42 );
+        int initial = Short.MAX_VALUE - 1;
+        assertThat( set.countAvailableIds(), is( initial ) );
+        int id = set.allocate( swapper );
+        assertThat( set.countAvailableIds(), is( initial - 1 ) );
+        set.free( id );
+        assertThat( set.countAvailableIds(), is( initial - 1 ) );
+        set.vacuum( x -> {} );
+        assertThat( set.countAvailableIds(), is( initial ) );
+    }
 }
