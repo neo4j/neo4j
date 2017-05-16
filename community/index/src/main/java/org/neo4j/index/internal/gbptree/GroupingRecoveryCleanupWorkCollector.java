@@ -35,7 +35,7 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     /**
      * Separate add phase from run phase
      */
-    private volatile boolean started = false;
+    private volatile boolean started;
 
     @Override
     public synchronized void add( CleanupJob job )
