@@ -225,7 +225,7 @@ public class MuninnPageCache implements PageCache
 
         this.pages = new PageList( maxPages, cachePageSize, memoryManager, new SwapperSet(), victimPage );
 
-        UnsafeUtil.putObjectVolatile( this, freelistOffset, new AtomicInteger() );
+        setFreelistHead( new AtomicInteger() );
     }
 
     private static void verifyHacks()
@@ -760,10 +760,9 @@ public class MuninnPageCache implements PageCache
                 this, freelistOffset, expected, update );
     }
 
-    private Object getAndSetFreelistHead( Object newFreelistHead )
+    private void setFreelistHead( Object newFreelistHead )
     {
-        return UnsafeUtil.getAndSetObject(
-                this, freelistOffset, newFreelistHead );
+        UnsafeUtil.putObjectVolatile( this, freelistOffset, newFreelistHead );
     }
 
     /**
@@ -789,7 +788,7 @@ public class MuninnPageCache implements PageCache
 
         // The last thing we do, is signalling the shutdown of the cache via
         // the freelist. This signal is looked out for in grabFreePage.
-        getAndSetFreelistHead( shutdownSignal );
+        setFreelistHead( shutdownSignal );
     }
 
     private int parkUntilEvictionRequired( int keepFree )
@@ -886,7 +885,11 @@ public class MuninnPageCache implements PageCache
         do
         {
             current = getFreelistHead();
-            freePage.setNext( current instanceof FreePage ? (FreePage) current : null );
+            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() >= pages.getPageCount() )
+            {
+                current = null;
+            }
+            freePage.setNext( current );
         }
         while ( !compareAndSetFreelistHead( current, freePage ) );
     }
