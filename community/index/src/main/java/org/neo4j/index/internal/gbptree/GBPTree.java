@@ -1047,9 +1047,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 if ( !success )
                 {
-                    closeCursor();
-                    writerTaken.set( false );
-                    releaseLock();
+                    close();
                 }
             }
         }
