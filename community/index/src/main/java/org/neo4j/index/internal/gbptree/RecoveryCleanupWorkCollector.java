@@ -21,6 +21,14 @@ package org.neo4j.index.internal.gbptree;
 
 /**
  * Place to add recovery cleanup work to be done as part of recovery of {@link GBPTree}.
+ * <p>
+ * Lifecycle has two phases: Add phase and run phase.
+ * <p>
+ * During add phase, jobs are added, potentially from different
+ * threads. From system perspective this happens during startup of database as part of {@code life.init()} in
+ * {@code NeoStoreDataSource} when indexes are started.
+ * <p>
+ * Run phase is triggered as part of {@code life.start()} in {@code NeoStoreDataSource}.
  */
 public interface RecoveryCleanupWorkCollector extends Runnable
 {

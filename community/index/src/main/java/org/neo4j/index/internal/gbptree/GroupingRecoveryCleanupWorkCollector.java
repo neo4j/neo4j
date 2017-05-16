@@ -25,21 +25,27 @@ import java.util.Queue;
 /**
  * Collects recovery cleanup work to be performed and {@link #run() runs} them all as one job,
  * each cleanup job sequentially one after the other.
+ * <p>
+ * Also see {@link RecoveryCleanupWorkCollector}
  */
 public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWorkCollector
 {
     private final Queue<CleanupJob> jobs = new LinkedList<>();
+
+    /**
+     * Separate add phase from run phase
+     */
     private volatile boolean started = false;
 
     @Override
-    public void add( CleanupJob job )
+    public synchronized void add( CleanupJob job )
     {
         assert !started : "Tried to add cleanup job after started";
         jobs.add( job );
     }
 
     @Override
-    public void run()
+    public synchronized void run()
     {
         assert !started : "Tried to start cleanup job more than once";
         started = true;
