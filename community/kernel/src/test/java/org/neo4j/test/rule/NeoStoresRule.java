@@ -95,7 +95,7 @@ public class NeoStoresRule extends ExternalResource
     protected void after( boolean successful ) throws Throwable
     {
         IOUtils.closeAll( neoStores, rulePageCache );
-        if ( ruleFs!= null )
+        if ( ruleFs != null )
         {
             ruleFs.close();
         }

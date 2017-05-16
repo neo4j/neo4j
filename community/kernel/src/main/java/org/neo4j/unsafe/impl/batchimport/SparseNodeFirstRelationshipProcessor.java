@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 
 /**
- * Sets the {@link NodeRecord#setNextRel(long) relationship field} on sparse nodes. 
+ * Sets the {@link NodeRecord#setNextRel(long) relationship field} on sparse nodes.
  * This is done after all sparse node relationship links have been done and the {@link NodeRelationshipCache node cache}
  * points to the first relationship for sparse each node.
  */
