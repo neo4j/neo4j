@@ -77,7 +77,16 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("START n=node(0) RETURN n") {
     val node = createNode()
+    createNode()
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(0) RETURN n").toList
+
+    result should equal(List(Map("n"-> node)))
+  }
+
+  test("START n=node({id}) RETURN n") {
+    val node = createNode()
+    createNode()
+    val result = executeWithAllPlannersAndCompatibilityMode("START n=node({id}) RETURN n", "id" -> node.getId).toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -87,13 +96,32 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val node2 = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("START n=node(0,1) RETURN n").toList
 
-    result should equal(List(Map("n"-> node1), Map("n" -> node2)))
+    result should equal(List(Map("n" -> node1), Map("n" -> node2)))
+  }
+
+  test("START n=node({id}) RETURN n, id-> [0,1]") {
+
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndCompatibilityMode("START n=node({id}) RETURN n",
+                                                            "id" -> List(node1.getId, node2.getId)).toList
+
+    result should equal(List(Map("n" -> node1), Map("n" -> node2)))
   }
 
   test("START n=node(0),m=node(1) RETURN n") {
     val node1 = createNode()
     val node2 = createNode()
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(0),m=node(1) RETURN n,m").toList
+
+    result should equal(List(Map("n"-> node1, "m" -> node2)))
+  }
+
+  test("START n=node({id1}),m=node({id2}) RETURN n") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndCompatibilityMode("START n=node({id1}),m=node({id2}) RETURN n,m",
+                                                                       "id1" -> node1.getId, "id2" -> node2.getId).toList
 
     result should equal(List(Map("n"-> node1, "m" -> node2)))
   }
