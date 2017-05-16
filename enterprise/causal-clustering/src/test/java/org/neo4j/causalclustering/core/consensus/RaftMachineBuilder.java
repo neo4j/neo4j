@@ -78,14 +78,13 @@ public class RaftMachineBuilder
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private CommitListener commitListener = commitIndex -> {};
-    private final InFlightMap<RaftLogEntry> inFlightMap;
+    private InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
 
     public RaftMachineBuilder( MemberId member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
         this.member = member;
         this.expectedClusterSize = expectedClusterSize;
         this.memberSetBuilder = memberSetBuilder;
-        inFlightMap = new InFlightMap<>();
     }
 
     public RaftMachine build()
@@ -158,6 +157,12 @@ public class RaftMachineBuilder
     public RaftMachineBuilder raftLog( RaftLog raftLog )
     {
         this.raftLog = raftLog;
+        return this;
+    }
+
+    public RaftMachineBuilder inFlightMap( InFlightMap<RaftLogEntry> inFlightMap )
+    {
+        this.inFlightMap = inFlightMap;
         return this;
     }
 

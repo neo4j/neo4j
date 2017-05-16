@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.segmented.InFlightMap;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.core.consensus.membership.MembershipEntry;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
@@ -41,6 +42,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.core.consensus.RaftMachine.Timeouts.ELECTION;
@@ -64,6 +66,7 @@ public class RaftMachineTest
     private MemberId member4 = member( 4 );
 
     private ReplicatedInteger data1 = ReplicatedInteger.valueOf( 1 );
+    private ReplicatedInteger data2 = ReplicatedInteger.valueOf( 2 );
 
     private RaftLog raftLog = new InMemoryRaftLog();
 
@@ -93,7 +96,7 @@ public class RaftMachineTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         // When
         timeouts.invokeTimeout( ELECTION );
@@ -118,7 +121,7 @@ public class RaftMachineTest
                 .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
         assertThat( raft.isLeader(), is( false ) );
@@ -141,7 +144,7 @@ public class RaftMachineTest
 
         raft.installCoreState( new RaftCoreState(
                 new MembershipEntry( 0, asSet( myself, member1, member2, member3, member4 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -166,7 +169,7 @@ public class RaftMachineTest
 
         raft.installCoreState( new RaftCoreState(
                 new MembershipEntry( 0, asSet( myself, member1, member2, member3, member4 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -188,7 +191,7 @@ public class RaftMachineTest
                 .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -209,7 +212,7 @@ public class RaftMachineTest
                 .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -231,7 +234,7 @@ public class RaftMachineTest
                 .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
         // When
@@ -257,7 +260,7 @@ public class RaftMachineTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         // When
         raft.handle( voteRequest().from( member1 ).term( -1 ).candidate( member1 )
@@ -278,7 +281,7 @@ public class RaftMachineTest
                 .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
 
@@ -307,7 +310,7 @@ public class RaftMachineTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         // When
         timeouts.invokeTimeout( ELECTION );
@@ -332,7 +335,7 @@ public class RaftMachineTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         timeouts.invokeTimeout( ELECTION );
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
@@ -356,7 +359,7 @@ public class RaftMachineTest
                 .timeoutService( timeouts ).clock( fakeClock ).build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         try
         {
@@ -421,7 +424,7 @@ public class RaftMachineTest
                 .build();
 
         raft.installCoreState( new RaftCoreState( new MembershipEntry( 0, asSet( myself, member1, member2 )  ) ) );
-        raft.startTimers();
+        raft.postRecoveryActions();
 
         // We make ourselves the leader
         timeouts.invokeTimeout( ELECTION );
@@ -468,6 +471,40 @@ public class RaftMachineTest
             // expected
             assertEquals(1, leaderNotFoundMonitor.leaderNotFoundExceptions());
         }
+    }
+
+    @Test
+    public void shouldNotCacheInFlightEntriesUntilAfterRecovery() throws Exception
+    {
+        // given
+        FakeClock fakeClock = Clocks.fakeClock();
+        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );
+        RaftMachine raft = new RaftMachineBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts )
+                .clock( fakeClock )
+                .raftLog( raftLog )
+                .inFlightMap( inFlightMap )
+                .build();
+
+        raftLog.append( new RaftLogEntry(0, new MemberIdSet(asSet( myself, member1, member2 ))) );
+
+        // when
+        raft.handle( appendEntriesRequest().from( member1 ).prevLogIndex( 0 ).prevLogTerm( 0 ).leaderTerm( 0 )
+                .logEntry( new RaftLogEntry( 0, data1 ) ).build() );
+
+        // then
+        assertEquals( data1, readLogEntry( raftLog, 1 ).content() );
+        assertNull( inFlightMap.get( 1L ) );
+
+        // when
+        raft.postRecoveryActions();
+        raft.handle( appendEntriesRequest().from( member1 ).prevLogIndex( 1 ).prevLogTerm( 0 ).leaderTerm( 0 )
+                .logEntry( new RaftLogEntry( 0, data2 ) ).build() );
+
+        // then
+        assertEquals( data2, readLogEntry( raftLog, 2 ).content() );
+        assertEquals( data2, inFlightMap.get( 2L ).content() );
     }
 
     private class StubLeaderNotFoundMonitor implements LeaderNotFoundMonitor

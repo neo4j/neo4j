@@ -62,7 +62,7 @@ public class RaftStateTest
         //Test that updates applied to the raft state will be refelcted in the entry cache.
 
         //given
-        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> cache = new InFlightMap<>( true );
         RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance() );

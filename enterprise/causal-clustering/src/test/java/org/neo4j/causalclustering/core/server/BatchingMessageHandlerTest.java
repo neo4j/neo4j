@@ -25,13 +25,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.ClusterIdentity;
 import org.neo4j.causalclustering.messaging.Inbound.MessageHandler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -39,21 +37,13 @@ import org.neo4j.logging.NullLogProvider;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 public class BatchingMessageHandlerTest
 {
     private static final int MAX_BATCH = 16;
     private static final int QUEUE_SIZE = 64;
-    private ClusterIdentity clusterIdentity = mock( ClusterIdentity.class );
     private MessageHandler<RaftMessages.ClusterIdAwareMessage> raftStateMachine = mock( MessageHandler.class );
     private ClusterId localClusterId = new ClusterId( UUID.randomUUID() );
-
-    @Before
-    public void setup()
-    {
-        when( clusterIdentity.clusterId() ).thenReturn( localClusterId );
-    }
 
     @Test
     public void shouldInvokeInnerHandlerWhenRun() throws Exception

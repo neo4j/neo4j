@@ -30,7 +30,8 @@ import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.core.state.CoreState;
+import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
+import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -53,7 +54,9 @@ public class CoreStateDownloaderTest
     private final RemoteStore remoteStore = mock( RemoteStore.class );
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
-    private final CoreState coreState = mock( CoreState.class );
+    private CoreSnapshotService snaptshotService = mock( CoreSnapshotService.class );
+    private CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
@@ -64,7 +67,7 @@ public class CoreStateDownloaderTest
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider,
-                    storeCopyProcess, coreStateMachines );
+                    storeCopyProcess, coreStateMachines, snaptshotService, applicationProcess );
 
     @Before
     public void commonMocking()
@@ -82,7 +85,7 @@ public class CoreStateDownloaderTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
-        downloader.downloadSnapshot( remoteMember, coreState );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( remoteStore, never() ).tryCatchingUp( any(), any(), any() );
@@ -96,7 +99,7 @@ public class CoreStateDownloaderTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
-        downloader.downloadSnapshot( remoteMember, coreState );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( startStopLife ).stop();
@@ -116,7 +119,7 @@ public class CoreStateDownloaderTest
         // when
         try
         {
-            downloader.downloadSnapshot( remoteMember, coreState );
+            downloader.downloadSnapshot( remoteMember );
             fail();
         }
         catch ( StoreCopyFailedException e )
@@ -138,7 +141,7 @@ public class CoreStateDownloaderTest
         when( remoteStore.tryCatchingUp( remoteMember, storeId, storeDir ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
-        downloader.downloadSnapshot( remoteMember, coreState );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteMember, storeId, storeDir );
@@ -154,7 +157,7 @@ public class CoreStateDownloaderTest
         when( remoteStore.tryCatchingUp( remoteMember, storeId, storeDir ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when
-        downloader.downloadSnapshot( remoteMember, coreState );
+        downloader.downloadSnapshot( remoteMember );
 
         // then
         verify( remoteStore ).tryCatchingUp( remoteMember, storeId, storeDir );

@@ -44,7 +44,7 @@ public class TruncateLogCommandTest
         Log log = logProvider.getLog( getClass() );
         long fromIndex = 2L;
         TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
-        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>( true );
 
         inFlightMap.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
         inFlightMap.put( 1L, new RaftLogEntry( 1L, valueOf( 1 ) ) );
@@ -71,7 +71,7 @@ public class TruncateLogCommandTest
         long fromIndex = 1L;
         TruncateLogCommand truncateLogCommand = new TruncateLogCommand( fromIndex );
 
-        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> inFlightMap = new InFlightMap<>( true );
 
         inFlightMap.put( 0L, new RaftLogEntry( 0L, valueOf( 0 ) ) );
         inFlightMap.put( 2L, new RaftLogEntry( 1L, valueOf( 1 ) ) );

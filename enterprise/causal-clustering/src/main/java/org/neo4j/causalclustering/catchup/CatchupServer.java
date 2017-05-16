@@ -53,7 +53,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponseEncoder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.state.CoreState;
+import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotEncoder;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequest;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler;
@@ -89,7 +89,7 @@ public class CatchupServer extends LifecycleAdapter
     private final FileSystemAbstraction fs;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
-    private final CoreState coreState;
+    private final CoreSnapshotService snapshotService;
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
@@ -100,10 +100,10 @@ public class CatchupServer extends LifecycleAdapter
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
-            CoreState coreState, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
+            CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
             FileSystemAbstraction fs )
     {
-        this.coreState = coreState;
+        this.snapshotService = snapshotService;
         this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
@@ -167,7 +167,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier, fs, logProvider ) );
                         pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
-                        pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
+                        pipeline.addLast( new CoreSnapshotRequestHandler( protocol, snapshotService ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                         pipeline.addLast( new ExceptionMonitoringHandler(

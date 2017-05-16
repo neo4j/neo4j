@@ -21,194 +21,59 @@ package org.neo4j.causalclustering.core.state;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
-import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.log.pruning.LogPruner;
-import org.neo4j.causalclustering.core.consensus.outcome.ConsensusOutcome;
+import org.neo4j.causalclustering.SessionTracker;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
-import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.ClusterIdentity;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.messaging.Inbound.MessageHandler;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
+import org.neo4j.causalclustering.core.state.storage.StateStorage;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.lang.Long.max;
 
-public class CoreState implements MessageHandler<RaftMessages.ClusterIdAwareMessage>, LogPruner, Lifecycle
+public class CoreState
 {
-    private final RaftMachine raftMachine;
-    private final LocalDatabase localDatabase;
-    private final Log log;
-    private final ClusterIdentity clusterIdentity;
-    private final CoreStateDownloader downloader;
-    private final CommandApplicationProcess applicationProcess;
-    private final CoreStateMachines coreStateMachines;
-    private boolean allowMessageHandling;
+    private CoreStateMachines coreStateMachines;
+    private final SessionTracker sessionTracker;
+    private final StateStorage<Long> lastFlushedStorage;
 
-    public CoreState(
-            RaftMachine raftMachine,
-            LocalDatabase localDatabase,
-            ClusterIdentity clusterIdentity,
-            LogProvider logProvider,
-            CoreStateDownloader downloader,
-            CommandApplicationProcess commandApplicationProcess,
-            CoreStateMachines coreStateMachines )
+    public CoreState( CoreStateMachines coreStateMachines, SessionTracker sessionTracker,
+            StateStorage<Long> lastFlushedStorage )
     {
-        this.raftMachine = raftMachine;
-        this.localDatabase = localDatabase;
-        this.clusterIdentity = clusterIdentity;
-        this.downloader = downloader;
-        this.log = logProvider.getLog( getClass() );
-        this.applicationProcess = commandApplicationProcess;
         this.coreStateMachines = coreStateMachines;
+        this.sessionTracker = sessionTracker;
+        this.lastFlushedStorage = lastFlushedStorage;
     }
 
-    public synchronized void handle( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage )
+    synchronized void augmentSnapshot( CoreSnapshot coreSnapshot )
     {
-        if ( !allowMessageHandling )
-        {
-            return;
-        }
-
-        ClusterId clusterId = clusterIdAwareMessage.clusterId();
-        if ( clusterId.equals( clusterIdentity.clusterId() ) )
-        {
-            try
-            {
-                ConsensusOutcome outcome = raftMachine.handle( clusterIdAwareMessage.message() );
-                if ( outcome.needsFreshSnapshot() )
-                {
-                    downloadSnapshot( clusterIdAwareMessage.message().from() );
-                }
-                else
-                {
-                    notifyCommitted( outcome.getCommitIndex() );
-                }
-            }
-            catch ( Throwable e )
-            {
-                log.error( "Error handling message", e );
-                raftMachine.panic();
-                localDatabase.panic( e );
-            }
-        }
-        else
-        {
-            log.info( "Discarding message[%s] owing to mismatched storeId. Expected: %s, Encountered: %s",
-                    clusterIdAwareMessage.message(), clusterId, clusterIdentity.clusterId() );
-        }
+        coreStateMachines.addSnapshots( coreSnapshot );
+        coreSnapshot.add( CoreStateType.SESSION_TRACKER, sessionTracker.snapshot() );
     }
 
-    private synchronized void notifyCommitted( long commitIndex )
+    synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws IOException
     {
-        applicationProcess.notifyCommitted( commitIndex );
+        coreStateMachines.installSnapshots( coreSnapshot );
+        sessionTracker.installSnapshot( coreSnapshot.get( CoreStateType.SESSION_TRACKER ) );
     }
 
-    /**
-     * Attempts to download a fresh snapshot from another core instance.
-     *
-     * @param source The source address to attempt a download of a snapshot from.
-     */
-    private synchronized void downloadSnapshot( MemberId source )
+    synchronized void flush( long lastApplied ) throws IOException
     {
-        try
-        {
-            applicationProcess.sync();
-            downloader.downloadSnapshot( source, this );
-        }
-        catch ( InterruptedException | StoreCopyFailedException e )
-        {
-            log.error( "Failed to download snapshot", e );
-        }
+        coreStateMachines.flush();
+        sessionTracker.flush();
+        lastFlushedStorage.persistStoreData( lastApplied );
     }
 
-    public synchronized CoreSnapshot snapshot() throws IOException, InterruptedException
+    public CommandDispatcher commandDispatcher()
     {
-        return applicationProcess.snapshot( raftMachine );
+        return coreStateMachines.commandDispatcher();
     }
 
-    public synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws Throwable
+    long getLastAppliedIndex()
     {
-        applicationProcess.installSnapshot( coreSnapshot, raftMachine );
-        notifyAll();
+        return max( coreStateMachines.getLastAppliedIndex(), sessionTracker.getLastAppliedIndex() );
     }
 
-    @SuppressWarnings("unused") // used in embedded robustness testing
-    public long lastApplied()
+    long getLastFlushed()
     {
-        return applicationProcess.lastApplied();
-    }
-
-    @Override
-    public void prune() throws IOException
-    {
-        raftMachine.handle( new RaftMessages.PruneRequest( applicationProcess.lastFlushed() ) );
-    }
-
-    @Override
-    public synchronized void init() throws Throwable
-    {
-        localDatabase.init();
-        applicationProcess.init();
-    }
-
-    @Override
-    public synchronized void start() throws Throwable
-    {
-        // How can state be installed?
-        // 1. Already installed (detected by checking on-disk state)
-        // 2. Bootstrap (single selected server)
-        // 3. Download from someone else (others)
-
-        clusterIdentity.bindToCluster( this::installSnapshot );
-        allowMessageHandling = true;
-
-        // TODO: Move haveState and CoreBootstrapper into CommandApplicationProcess, which perhaps needs a better name.
-        // TODO: Include the None/Partial/Full in the move.
-
-        long endTime = System.currentTimeMillis() + MINUTES.toMillis( 30 );
-        while( !haveState() )
-        {
-            if ( System.currentTimeMillis() > endTime )
-            {
-                throw new RuntimeException( "This machine failed to get the start state in time." );
-            }
-
-            wait( 1000 );
-        }
-
-        localDatabase.start();
-        coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
-        applicationProcess.start();
-        raftMachine.startTimers();
-    }
-
-    private boolean haveState()
-    {
-        // this is updated when a snapshot is installed and
-        // the earliest snapshot is at 0
-        return raftMachine.state().appendIndex() > -1;
-    }
-
-    @Override
-    public synchronized void stop() throws Throwable
-    {
-        raftMachine.stopTimers();
-        applicationProcess.stop();
-        localDatabase.stop();
-        allowMessageHandling = false;
-    }
-
-    @Override
-    public synchronized void shutdown() throws Throwable
-    {
-        applicationProcess.shutdown();
-        localDatabase.shutdown();
+        return lastFlushedStorage.getInitialState();
     }
 }

@@ -90,7 +90,7 @@ public class BatchAppendLogEntriesTest
 
         BatchAppendLogEntries batchAppend = new BatchAppendLogEntries( baseIndex, offset, entries );
 
-        InFlightMap<RaftLogEntry> cache = new InFlightMap<>();
+        InFlightMap<RaftLogEntry> cache = new InFlightMap<>( true );
 
         //when
         batchAppend.applyTo( cache, log );
