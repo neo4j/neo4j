@@ -75,6 +75,29 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("r"-> relationship)))
   }
 
+  test("START n=node(0) RETURN n") {
+    val node = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(0) RETURN n").toList
+
+    result should equal(List(Map("n"-> node)))
+  }
+
+  test("START n=node(0,1) RETURN n") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndCompatibilityMode("START n=node(0,1) RETURN n").toList
+
+    result should equal(List(Map("n"-> node1), Map("n" -> node2)))
+  }
+
+  test("START n=node(0),m=node(1) RETURN n") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(0),m=node(1) RETURN n,m").toList
+
+    result should equal(List(Map("n"-> node1, "m" -> node2)))
+  }
+
   test("Relationship legacy index mk II") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
@@ -110,5 +133,70 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(
       Map("r"-> relationship)
     ))
+  }
+  test("Should return unique relationship on rel-id") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """start a=node(0), ab=relationship(0)
+        |match (a)-[ab]->(b)
+        |return b
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> b)))
+  }
+
+  test("Should return unique node on node-id") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      """start a=node(0), b=node(1)
+        |match (a)-[ab]->(b)
+        |return b
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> b)))
+  }
+
+  test("Should return unique relationship on multiple rel-id") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val e = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val bd = relate(b, d)
+    val ce = relate(c, e)
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """start a=node(0), ab=relationship(0), bd=relationship(2)
+        |match (a)-[ab]->(b)-[bd]->(d)
+        |return b, d
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> b, "d" -> d)))
+  }
+
+  test("Should return unique relationship on rel-ids") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val ad = relate(a, d)
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """start a=node(0), ab=relationship(0, 1)
+        |match (a)-[ab]->(b)
+        |return b
+      """.stripMargin)
+
+    result.toSet should equal(Set(Map("b" -> c), Map("b" -> b)))
   }
 }
