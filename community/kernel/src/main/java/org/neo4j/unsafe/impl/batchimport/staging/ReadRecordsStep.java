@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.RecordIdIterator;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
@@ -39,69 +38,63 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProducerStep
+public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<PrimitiveLongIterator>
 {
     protected final RecordStore<RECORD> store;
-    protected final RECORD record;
-    protected final PageCursor cursor;
-    protected final long highId;
-    private final RecordIdIterator ids;
     private final Class<RECORD> klass;
-    private final int recordSize;
-    // volatile since written by processing threads and read by execution monitor
-    private volatile long count;
+    protected final int batchSize;
 
     @SuppressWarnings( "unchecked" )
-    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            RecordIdIterator ids )
+    public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
+            RecordStore<RECORD> store )
     {
-        super( control, config );
+        super( control, ">", config, parallelReading( config, inRecordWritingStage ) ? 0 : 1 );
         this.store = store;
-        this.ids = ids;
         this.klass = (Class<RECORD>) store.newRecord().getClass();
-        this.recordSize = store.getRecordSize();
-        this.record = store.newRecord();
-        this.cursor = store.newPageCursor();
-        this.highId = store.getHighId();
+        this.batchSize = config.batchSize();
     }
 
-    @SuppressWarnings( "unchecked" )
-    @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize )
+    private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
     {
-        PrimitiveLongIterator ids;
-        while ( (ids = this.ids.nextBatch()) != null )
+        return (inRecordWritingStage && config.parallelRecordReadsWhenWriting())
+                || (!inRecordWritingStage && config.parallelRecordReads());
+    }
+
+    @Override
+    public void start( int orderingGuarantees )
+    {
+        super.start( orderingGuarantees | ORDER_SEND_DOWNSTREAM );
+    }
+
+    @Override
+    protected void process( PrimitiveLongIterator idRange, BatchSender sender ) throws Throwable
+    {
+        if ( !idRange.hasNext() )
         {
-            RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
-            int i = 0;
-            while ( ids.hasNext() )
+            return;
+        }
+
+        long id = idRange.next();
+        RECORD record = store.newRecord();
+        RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
+        int i = 0;
+        try ( PageCursor cursor = store.newPageCursor() )
+        {
+            boolean hasNext = true;
+            while ( hasNext )
             {
-                RECORD record = store.readRecord( ids.next(), this.record, CHECK, cursor );
+                store.readRecord( id, record, CHECK, cursor );
                 if ( record.inUse() && !IdValidator.isReservedId( record.getId() ) )
                 {
                     batch[i++] = (RECORD) record.clone();
                 }
-            }
-
-            if ( i > 0 )
-            {
-                count += i;
-                return i == batchSize ? batch : Arrays.copyOf( batch, i );
+                if ( hasNext = idRange.hasNext() )
+                {
+                    id = idRange.next();
+                }
             }
         }
-        return null;
-    }
 
-    @Override
-    public void close() throws Exception
-    {
-        super.close();
-        cursor.close();
-    }
-
-    @Override
-    protected long position()
-    {
-        return count * recordSize;
+        sender.send( i == batchSize ? batch : Arrays.copyOf( batch, i ) );
     }
 }

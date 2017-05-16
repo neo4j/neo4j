@@ -19,14 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
-import org.neo4j.unsafe.impl.batchimport.staging.AbstractStep;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
+import org.neo4j.unsafe.impl.batchimport.staging.ProducerStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.System.nanoTime;
@@ -35,76 +36,60 @@ import static java.lang.System.nanoTime;
  * Using the {@link NodeRelationshipCache} efficiently looks for changed nodes and reads those
  * {@link NodeRecord} and sends downwards.
  */
-public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
+public class ReadGroupRecordsByCacheStep extends ProducerStep
 {
-    private final int nodeTypes;
+    private final RecordStore<RelationshipGroupRecord> store;
     private final NodeRelationshipCache cache;
-    private final int batchSize;
-    private final NodeStore nodeStore;
-    private final PageCursor nodeCursor;
-    private final NodeRecord nodeRecord;
 
-    public ReadNodeRecordsByCacheStep( StageControl control, Configuration config,
-            NodeStore nodeStore, NodeRelationshipCache cache, int nodeTypes )
+    public ReadGroupRecordsByCacheStep( StageControl control, Configuration config,
+            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
     {
-        super( control, ">", config );
+        super( control, config );
+        this.store = store;
         this.cache = cache;
-        this.nodeTypes = nodeTypes;
-        this.batchSize = config.batchSize();
-        this.nodeStore = nodeStore;
-        this.nodeRecord = nodeStore.newRecord();
-        this.nodeCursor = nodeStore.newPageCursor();
     }
 
     @Override
-    public void close() throws Exception
+    protected void process()
     {
-        nodeCursor.close();
-        super.close();
-    }
-
-    @Override
-    public long receive( long ticket, NodeRecord[] batch )
-    {
-        new Thread()
+        try ( NodeVisitor visitor = new NodeVisitor() )
         {
-            @Override
-            public void run()
-            {
-                assertHealthy();
-                try ( NodeVisitor visitor = new NodeVisitor() )
-                {
-                    cache.visitChangedNodes( visitor, nodeTypes );
-                }
-                endOfUpstream();
-            }
-        }.start();
-        return 0;
+            cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );
+        }
     }
 
-    private class NodeVisitor implements NodeChangeVisitor, AutoCloseable
+    private class NodeVisitor implements NodeChangeVisitor, AutoCloseable, GroupVisitor
     {
-        private NodeRecord[] batch = new NodeRecord[batchSize];
+        private RelationshipGroupRecord[] batch = new RelationshipGroupRecord[batchSize];
         private int cursor;
         private long time = nanoTime();
 
         @Override
         public void change( long nodeId, ByteArray array )
         {
-            batch[cursor++] = nodeStore.readRecord( nodeId, nodeRecord, RecordLoad.NORMAL, nodeCursor ).clone();
+            cache.getFirstRel( nodeId, this );
+        }
+
+        @Override
+        public long visit( long nodeId, int typeId, long out, long in, long loop )
+        {
+            long id = store.nextId();
+            RelationshipGroupRecord record = store.newRecord();
+            record.setId( id );
+            batch[cursor++] = record.initialize( true, typeId, out, in, loop, nodeId, loop );
             if ( cursor == batchSize )
             {
                 send();
-                batch = new NodeRecord[batchSize];
+                batch = new RelationshipGroupRecord[batchSize];
                 cursor = 0;
             }
+            return id;
         }
 
-        @SuppressWarnings( "unchecked" )
         private void send()
         {
             totalProcessingTime.add( nanoTime() - time );
-            downstream.receive( doneBatches.getAndIncrement(), batch );
+            sendDownstream( batch );
             time = nanoTime();
             assertHealthy();
         }
@@ -117,5 +102,11 @@ public class ReadNodeRecordsByCacheStep extends AbstractStep<NodeRecord[]>
                 send();
             }
         }
+    }
+
+    @Override
+    protected long position()
+    {
+        return store.getHighId() * store.getRecordSize();
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -299,6 +300,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public long nextId()
         {
             return actual.nextId();
+        }
+
+        @Override
+        public IdRange nextIdBatch( int size )
+        {
+            return actual.nextIdBatch( size );
         }
 
         @Override

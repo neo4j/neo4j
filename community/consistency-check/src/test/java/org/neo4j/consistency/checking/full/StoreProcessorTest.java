@@ -49,7 +49,7 @@ public class StoreProcessorTest
     public void shouldProcessAllTheRecordsInAStore() throws Exception
     {
         // given
-        RecordStore<NodeRecord> nodeStore = stores.open().getNodeStore();
+        RecordStore<NodeRecord> nodeStore = stores.builder().build().getNodeStore();
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 reporter, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
@@ -78,7 +78,8 @@ public class StoreProcessorTest
         ConsistencyReport.Reporter reporter = mock( ConsistencyReport.Reporter.class );
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 reporter, Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
-        RecordStore<NodeRecord> nodeStore = new RecordStore.Delegator<NodeRecord>( stores.open().getNodeStore() )
+        RecordStore<NodeRecord> nodeStore = new RecordStore.Delegator<NodeRecord>(
+                stores.builder().build().getNodeStore() )
         {
 
             @Override
