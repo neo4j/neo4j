@@ -37,6 +37,8 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
  */
 public class CsvInput implements Input
 {
+    public static final String ID_PROPERTY = "__id";
+
     private final Iterable<DataFactory> nodeDataFactory;
     private final Header.Factory nodeHeaderFactory;
     private final Iterable<DataFactory> relationshipDataFactory;

@@ -19,17 +19,21 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 class ExhaustingInputVisitorRunnable implements Runnable
 {
     private final InputIterator data;
     private final EntityVisitor visitor;
+    private final AtomicLong entitiesCallback;
 
-    ExhaustingInputVisitorRunnable( InputIterator data, EntityVisitor visitor )
+    ExhaustingInputVisitorRunnable( InputIterator data, EntityVisitor visitor, AtomicLong entitiesCallback )
     {
         this.data = data;
         this.visitor = visitor;
+        this.entitiesCallback = entitiesCallback;
     }
 
     @Override
@@ -39,10 +43,12 @@ class ExhaustingInputVisitorRunnable implements Runnable
         {
             while ( data.next( chunk ) )
             {
+                int count = 0;
                 while ( chunk.next( visitor ) )
                 {
-                    // Just loop
+                    count++;
                 }
+                entitiesCallback.addAndGet( count );
             }
         }
         catch ( Throwable e )

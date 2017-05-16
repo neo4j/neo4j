@@ -65,6 +65,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.ID_PROPERTY;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -179,7 +180,8 @@ public class ParallelBatchImporter implements BatchImporter
             if ( idMapper.needsPreparation() )
             {
                 LongFunction<Object> inputIdLookup = new NodeInputIdPropertyLookup(
-                        neoStore.getNodeStore(), neoStore.getPropertyStore() );
+                        neoStore.getNodeStore(), neoStore.getPropertyStore(),
+                        neoStore.getPropertyKeyRepository().getOrCreateId( ID_PROPERTY ) );
                 executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup,
                         badCollector, memoryUsageStats ) );
                 PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();

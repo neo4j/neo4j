@@ -38,6 +38,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.String.format;
 
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.ID_PROPERTY;
+
 /**
  * Knows how to interpret raw character data into entities according to a {@link Header}.
  */
@@ -123,7 +125,12 @@ public class CsvInputChunk implements InputChunk
                     {
                     case STRING:
                     case INTEGER:
-                        doContinue = visitor.id( entry.extractor().value(), entry.group() );
+                        Object idValue = entry.extractor().value();
+                        doContinue = visitor.id( idValue, entry.group() );
+                        if ( doContinue )
+                        {
+                            doContinue = visitor.property( ID_PROPERTY, idValue );
+                        }
                         break;
                     case ACTUAL:
                         doContinue = visitor.id( ((LongExtractor) entry.extractor()).longValue() );

@@ -52,6 +52,7 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
         Client client = new Client();
         clients.add( client );
         opened++;
+        System.out.println( "newClient " + opened );
         return client;
     }
 
@@ -59,6 +60,7 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
     {
         if ( --opened == 0 )
         {
+            System.out.println( "closeClient yeah" );
             int highestTypeId = 0;
             for ( Client client : clients )
             {
@@ -76,6 +78,10 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
                 typeCounts[i] = new RelationshipTypeCount( i, counts[i] );
             }
             Arrays.sort( typeCounts );
+        }
+        else
+        {
+            System.out.println( "closeClient now at " + opened );
         }
     }
 

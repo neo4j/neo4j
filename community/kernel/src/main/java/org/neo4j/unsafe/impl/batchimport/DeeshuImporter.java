@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -29,63 +30,29 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+import static org.neo4j.helpers.Format.bytes;
+
 public class DeeshuImporter
 {
-//    public static void main( String[] args ) throws InterruptedException
-//    {
-//        int numRunners = Runtime.getRuntime().availableProcessors();
-//        Configuration configuration = Configuration.COMMAS;
-//        File database = new File( "K:/graph.db" );
-//        try ( DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-//              Collector collector = new BadCollector( System.out, 0, 0 ); )
-//        {
-//            fileSystemAbstraction.deleteRecursively( database );
-//            DataFactory nodeData = data( NO_DECORATOR, defaultCharset(), new File( "K:/csv/nodes.csv" ) );
-//            DataFactory relationshipData = data( NO_DECORATOR, defaultCharset(),
-//                    new File( "K:/csv/relationships2.csv" ) );
-//            IdType idType = IdType.STRING;
-//            Input input = new CsvInput(
-//                    // nodes
-//                    datas( nodeData ), defaultFormatNodeFileHeader(),
-//                    // relationships
-//                    datas( relationshipData ), defaultFormatRelationshipFileHeader(),
-//                    idType, configuration, collector );
-//
-//            Config config = Config.defaults();
-//            RecordFormats format = RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
-//            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStores(
-//                    fileSystemAbstraction, database, format, DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
-//            {
-//                IdMapper idMapper = idType.idMapper();
-//                long time = currentTimeMillis();
-//                stores.startFlushingPageCache();
-//                importNodes( numRunners, input, stores, idMapper );
-//                stores.stopFlushingPageCache();
-//                idMapper.prepare( new NodeInputIdPropertyLookup( stores.getNodeStore(), stores.getPropertyStore() ),
-//                        collector, ProgressListener.NONE );
-//                stores.startFlushingPageCache();
-//                importRelationships( numRunners, input, stores, idMapper );
-//                stores.stopFlushingPageCache();
-//                time = currentTimeMillis() - time;
-//                System.out.println( "Imported in " + duration( time ) );
-//            }
-//        }
-//        catch ( IOException e )
-//        {
-//            e.printStackTrace();
-//        }
-//    }
-
-    private static void importData( int numRunners, InputIterator data, Supplier<EntityVisitor> visitors )
+   private static void importData( int numRunners, InputIterator data, Supplier<EntityVisitor> visitors )
             throws InterruptedException
     {
+        AtomicLong entitiesCallback = new AtomicLong();
         ExecutorService pool = Executors.newFixedThreadPool( numRunners );
         for ( int i = 0; i < numRunners; i++ )
         {
-            pool.submit( new ExhaustingInputVisitorRunnable( data, visitors.get() ) );
+            pool.submit( new ExhaustingInputVisitorRunnable( data, visitors.get(), entitiesCallback ) );
         }
         pool.shutdown();
-        pool.awaitTermination( 100, TimeUnit.DAYS );
+
+        long entitiesLastReport = 0;
+        while ( !pool.awaitTermination( 5, TimeUnit.SECONDS ) )
+        {
+            long entities = entitiesCallback.get();
+            long entitiesDiff = (entities - entitiesLastReport) / 5;
+            System.out.println( bytes( entitiesDiff ) + "/s" + ", now at " + bytes( entities ) );
+            entitiesLastReport = entities;
+        }
     }
 
     public static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper,

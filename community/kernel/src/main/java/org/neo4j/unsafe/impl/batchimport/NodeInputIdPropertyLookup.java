@@ -38,13 +38,13 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
     private final PropertyRecord propertyRecord;
     private final int inputIdTokenId;
 
-    NodeInputIdPropertyLookup( NodeStore nodeStore, PropertyStore propertyStore )
+    NodeInputIdPropertyLookup( NodeStore nodeStore, PropertyStore propertyStore, int inputIdPropertyKeyTokenId )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.nodeRecord = nodeStore.newRecord();
         this.propertyRecord = propertyStore.newRecord();
-        this.inputIdTokenId = -1; // TODO: implement
+        this.inputIdTokenId = inputIdPropertyKeyTokenId;
     }
 
     @Override
@@ -66,6 +66,6 @@ class NodeInputIdPropertyLookup implements LongFunction<Object>
             }
             propertyId = propertyRecord.getNextProp();
         }
-        throw new IllegalStateException( "Input id not found for " + nodeId );
+        throw new IllegalStateException( "Input id not found for node " + nodeId );
     }
 }
