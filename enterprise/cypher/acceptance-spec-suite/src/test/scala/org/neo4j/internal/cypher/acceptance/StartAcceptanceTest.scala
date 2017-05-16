@@ -26,7 +26,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("START n=node:index(key = \"value\") RETURN n") {
     val node = createNode()
     graph.inTx {
-      graph.index.forNodes("index").add(node, "key", "value")
+      graph.index().forNodes("index").add(node, "key", "value")
     }
 
     val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index(key = "value") RETURN n""").toList
@@ -37,7 +37,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("START n=node:index(\"key:value\") RETURN n") {
     val node = createNode()
     graph.inTx {
-      graph.index.forNodes("index").add(node, "key", "value")
+      graph.index().forNodes("index").add(node, "key", "value")
     }
 
     val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index("key:value") RETURN n""").toList
@@ -50,8 +50,8 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val otherNode = createNode(Map("prop" -> 21))
 
     graph.inTx {
-      graph.index.forNodes("index").add(node, "key", "value")
-      graph.index.forNodes("index").add(otherNode, "key", "value")
+      graph.index().forNodes("index").add(node, "key", "value")
+      graph.index().forNodes("index").add(otherNode, "key", "value")
     }
 
     val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
@@ -65,7 +65,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val relationship = relate(node, otherNode)
 
     graph.inTx {
-      val relationshipIndex = graph.index.forRelationships("relIndex")
+      val relationshipIndex = graph.index().forRelationships("relIndex")
       relationshipIndex.add(relationship, "key", "value")
     }
 
@@ -106,13 +106,44 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(List(Map("n"-> node1), Map("n" -> node2)))
   }
 
+  test("START r=rel(0) RETURN r") {
+    val rel = relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0) RETURN id(r)").toList
+
+    result should equal(List(Map("id(r)"-> rel)))
+  }
+
+  test("START r=rel(0,1) RETURN r") {
+    val rel1 = relate(createNode(), createNode()).getId
+    val rel2 = relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0,1) RETURN id(r)").toList
+
+    result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
+  }
+
+  test("START r=rel(0),rr=rel(1) RETURN r") {
+    val rel1 = relate(createNode(), createNode()).getId
+    val rel2 = relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0),rr=rel(1) RETURN id(r), id(rr)").toList
+
+    result should equal(List(Map("id(r)"-> rel1, "id(rr)"-> rel2)))
+  }
+
+  test("START r=rel(*) RETURN r") {
+    val rel1 = relate(createNode(), createNode()).getId
+    val rel2 = relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START r=rel(*) RETURN id(r)").toList
+
+    result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
+  }
+
   test("Relationship legacy index mk II") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
-      val relationshipIndex = graph.index.forRelationships("relIndex")
+      val relationshipIndex = graph.index().forRelationships("relIndex")
       relationshipIndex.add(relationship, "key", "value")
     }
 
@@ -131,7 +162,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val relationship = relate(node, otherNode)
 
     graph.inTx {
-      val relationshipIndex = graph.index.forRelationships("relIndex")
+      val relationshipIndex = graph.index().forRelationships("relIndex")
       relationshipIndex.add(relationship, "key", "value")
     }
 

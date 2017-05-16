@@ -53,6 +53,30 @@ class StartClauseRewriterTest extends CypherFunSuite with AstRewritingTestSuppor
       "MATCH (n)")
   }
 
+  test("START r=rel(0)") {
+    shouldRewrite(
+      "START r=rel(0)",
+      "MATCH (`  UNNAMED6`)-[r]->(`  UNNAMED7`) WHERE id(r) IN [0]")
+  }
+
+  test("START r=rel(0,1)") {
+    shouldRewrite(
+      "START r=rel(0,1)",
+      "MATCH (`  UNNAMED6`)-[r]->(`  UNNAMED7`) WHERE id(r) IN [0,1]")
+  }
+
+  test("START r=rel(0),rr=rel(1)") {
+    shouldRewrite(
+      "START r=rel(0),rr=rel(1)",
+      "MATCH (`  UNNAMED6`)-[r]->(`  UNNAMED7`),(`  UNNAMED15`)-[rr]->(`  UNNAMED16`) WHERE id(r) IN [0] AND id(rr) IN [1]")
+  }
+
+  test("START r=rel(*)") {
+    shouldRewrite(
+      "START r=rel(*)",
+      "MATCH (`  UNNAMED6`)-[r]->(`  UNNAMED7`)")
+  }
+
   private def shouldRewrite(from: String, to: String) {
     //START uses UnsignedDecimalIntegerLiteral whereas IN uses signed
     //this is not important for this test so just ignore by rewriting

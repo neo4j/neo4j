@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, SemanticDirection, topDown}
 
 case object startClauseRewriter extends StatementRewriter {
 
@@ -38,15 +39,25 @@ case object startClauseRewriter extends StatementRewriter {
         case n@NodeByIds(variable, ids) =>
           val pos = n.position
           val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
-          val in = In(invocation, ListLiteral(ids)(pos))(pos)
-          in
+          In(invocation, ListLiteral(ids)(pos))(pos)
+
+        //START r=rels(1,5,7)....
+        case n@RelationshipByIds(variable, ids) =>
+          val pos = n.position
+          val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
+          In(invocation, ListLiteral(ids)(pos))(pos)
       }
 
       val hints = items.collect {
         case hint: LegacyIndexHint => hint
       }
-      val nodes = items.collect {
-        case n: NodeStartItem => NodePattern(Some(n.variable.copyId), Seq.empty, None)(start.position)
+      val patterns: Seq[PatternElement] = items.collect {
+        case n: NodeStartItem => NodePattern(Some(n.variable.copyId), Seq.empty, None)(n.position)
+        case r: RelationshipStartItem => RelationshipChain(
+          NodePattern(Some(Variable(UnNamedNameGenerator.name(r.position))(r.position)), Seq.empty, None)(r.position),
+          RelationshipPattern(Some(r.variable.copyId), Seq.empty, None, None, SemanticDirection.OUTGOING)(r.position),
+          NodePattern(Some(Variable(UnNamedNameGenerator.name(r.position.bumped()))(r.position)),
+                      Seq.empty, None)(r.position))(r.position)
       }
 
       val allPredicates = (newPredicates ++ where.map(_.expression)).toSet
@@ -54,7 +65,7 @@ case object startClauseRewriter extends StatementRewriter {
         if (allPredicates.isEmpty) None
         else if (allPredicates.size == 1) Some(Where(allPredicates.head)(start.position))
         else Some(Where(Ands(allPredicates)(start.position))(start.position))
-      Match(optional = false, Pattern(nodes.map(EveryPath))(start.position), hints, newWhere)(start.position)
+      Match(optional = false, Pattern(patterns.map(EveryPath))(start.position), hints, newWhere)(start.position)
   })
 
 }
