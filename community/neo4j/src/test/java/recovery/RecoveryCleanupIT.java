@@ -176,7 +176,8 @@ public class RecoveryCleanupIT
     private CheckPointer checkPointer( GraphDatabaseService db )
     {
         DependencyResolver dependencyResolver = dependencyResolver( db );
-        return dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( CheckPointer.class );
+        return dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver()
+                .resolveDependency( CheckPointer.class );
     }
 
     private DependencyResolver dependencyResolver( GraphDatabaseService db )
@@ -184,7 +185,7 @@ public class RecoveryCleanupIT
         return ((GraphDatabaseAPI) db).getDependencyResolver();
     }
 
-    private class RecoveryBarrierMonitor implements LabelScanStore.Monitor
+    private class RecoveryBarrierMonitor extends LabelScanStore.Monitor.Adaptor
     {
         private final Barrier.Control barrier;
 

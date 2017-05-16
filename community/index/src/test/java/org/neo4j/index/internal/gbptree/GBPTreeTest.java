@@ -32,7 +32,9 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,6 +59,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -295,7 +298,7 @@ public class GBPTreeTest
             // Good
         }
 
-        try ( GBPTree<MutableLong, MutableLong> ignored = index()
+        try ( GBPTree<MutableLong,MutableLong> ignored = index()
                 .withPageCachePageSize( pageCachePageSize / 2 )
                 .withIndexPageSize( pageCachePageSize )
                 .build() )
@@ -322,10 +325,10 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = index()
                 .withPageCachePageSize( pageSize )
                 .withIndexPageSize( pageSize / 2 )
-              .build() )
+                .build() )
         {
             // Insert some data
-            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 MutableLong key = new MutableLong();
                 MutableLong value = new MutableLong();
@@ -345,7 +348,7 @@ public class GBPTreeTest
         {
             MutableLong fromInclusive = new MutableLong( 0L );
             MutableLong toExclusive = new MutableLong( 200L );
-            try ( RawCursor<Hit<MutableLong,MutableLong>, IOException> seek = index.seek( fromInclusive, toExclusive ) )
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = index.seek( fromInclusive, toExclusive ) )
             {
                 int i = 0;
                 while ( seek.next() )
@@ -456,11 +459,11 @@ public class GBPTreeTest
         IOException no = new IOException( "No" );
         AtomicBoolean throwOnNextIO = new AtomicBoolean();
         PageCache controlledPageCache = pageCacheThatThrowExceptionWhenToldTo( no, throwOnNextIO );
-        try ( GBPTree<MutableLong, MutableLong> index = index().with( controlledPageCache ).build() )
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( controlledPageCache ).build() )
         {
             // WHEN
             assert throwOnNextIO.compareAndSet( false, true );
-            try ( Writer<MutableLong, MutableLong> ignored = index.writer() )
+            try ( Writer<MutableLong,MutableLong> ignored = index.writer() )
             {
                 fail( "Expected to throw" );
             }
@@ -470,7 +473,7 @@ public class GBPTreeTest
             }
 
             // THEN
-            try ( Writer<MutableLong, MutableLong> writer = index.writer() )
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
             }
@@ -557,7 +560,8 @@ public class GBPTreeTest
         verifyHeaderDataAfterClose( beforeClose );
     }
 
-    private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose ) throws IOException
+    private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose )
+            throws IOException
     {
         byte[] expectedHeader = new byte[12];
         ThreadLocalRandom.current().nextBytes( expectedHeader );
@@ -744,13 +748,13 @@ public class GBPTreeTest
             index.writer().close();
         }
 
-        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
         try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
         {
             // WHEN
             // Cleanup not finished
-            Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
             monitor.barrier.awaitUninterruptibly();
             index.writer().close();
 
@@ -774,13 +778,13 @@ public class GBPTreeTest
             index.writer().close();
         }
 
-        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
         GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build();
 
         // WHEN
         // Cleanup not finished
-        Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+        Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
         monitor.barrier.awaitUninterruptibly();
 
         // THEN
@@ -802,13 +806,13 @@ public class GBPTreeTest
             index.writer().close();
         }
 
-        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
         try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
         {
             // WHEN
             // Cleanup not finished
-            Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
@@ -830,14 +834,14 @@ public class GBPTreeTest
             index.writer().close();
         }
 
-        RecoveryCleanupWorkCollector cleanupWork = new GroupingRecoveryCleanupWorkCollector();
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         try ( GBPTree<MutableLong,MutableLong> index = index().with( cleanupWork ).build() )
         {
             // WHEN
             try ( Writer<MutableLong,MutableLong> writer = index.writer() )
             {
                 // THEN
-                Future<?> cleanup = executor.submit( throwing( cleanupWork::run ) );
+                Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
                 // Move writer to let cleaner pass
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
                 cleanup.get();
@@ -1268,10 +1272,32 @@ public class GBPTreeTest
         AtomicBoolean throwOnNext = new AtomicBoolean();
         IOException exception = new IOException( "My failure" );
         PageCache pageCache = pageCacheThatThrowExceptionWhenToldTo( exception, throwOnNext );
-        try ( GBPTree<MutableLong, MutableLong> index = index().with( pageCache ).build() )
+        try ( GBPTree<MutableLong, MutableLong> ignored = index().with( pageCache ).build() )
         {
             // WHEN
             throwOnNext.set( true );
+        }
+    }
+
+    private class ControlledRecoveryCleanupWorkCollector extends LifecycleAdapter
+            implements RecoveryCleanupWorkCollector
+    {
+        Queue<CleanupJob> jobs = new LinkedList<>();
+
+        @Override
+        public void start() throws Throwable
+        {
+            CleanupJob job;
+            while ( (job = jobs.poll()) != null )
+            {
+                job.run();
+            }
+        }
+
+        @Override
+        public void add( CleanupJob job )
+        {
+            jobs.add( job );
         }
     }
 

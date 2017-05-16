@@ -19,8 +19,12 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.neo4j.kernel.impl.util.JobScheduler;
+
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.recoveryCleanup;
 
 /**
  * Collects recovery cleanup work to be performed and {@link #run() runs} them all as one job,
@@ -30,29 +34,44 @@ import java.util.Queue;
  */
 public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWorkCollector
 {
-    private final Queue<CleanupJob> jobs = new LinkedList<>();
+    private final Queue<CleanupJob> jobs;
+    private final JobScheduler jobScheduler;
 
-    /**
-     * Separate add phase from run phase
-     */
-    private volatile boolean started;
+    public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler )
+    {
+        this.jobScheduler = jobScheduler;
+        this.jobs = new LinkedBlockingQueue<>();
+    }
 
     @Override
-    public synchronized void add( CleanupJob job )
+    public void init() throws Throwable
     {
-        assert !started : "Tried to add cleanup job after started";
+        jobs.clear();
+    }
+
+    @Override
+    public void add( CleanupJob job )
+    {
         jobs.add( job );
     }
 
     @Override
-    public synchronized void run()
+    public void start() throws Throwable
     {
-        assert !started : "Tried to start cleanup job more than once";
-        started = true;
         CleanupJob job;
         while ( (job = jobs.poll()) != null )
         {
-            job.run();
+            jobScheduler.schedule( recoveryCleanup, job );
         }
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {   // no-op
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {   // no-op
     }
 }

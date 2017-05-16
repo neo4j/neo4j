@@ -153,7 +153,7 @@ public class PlatformModule
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
 
         // Cleanup after recovery, used by GBPTree, added to life in CommunityEditionModule
-        recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector();
+        recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector( jobScheduler );
         dependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
         // Database system information, used by UDC

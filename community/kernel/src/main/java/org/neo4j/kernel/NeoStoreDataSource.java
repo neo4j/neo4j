@@ -412,6 +412,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         dependencies = new Dependencies();
         life = new LifeSupport();
 
+        life.add( recoveryCleanupWorkCollector );
+
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
 
@@ -460,8 +462,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     monitors.newMonitor( Recovery.Monitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     transactionLogModule.logFiles(), startupStatistics,
-                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore(),
-                    recoveryCleanupWorkCollector, scheduler );
+                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore()
+            );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
             PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );
@@ -692,9 +694,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
-            LogicalTransactionStore logicalTransactionStore,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            JobScheduler scheduler )
+            LogicalTransactionStore logicalTransactionStore )
     {
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
@@ -711,21 +711,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             }
         } );
         life.add( recovery );
-
-        life.add( cleanupAfterRecovery( scheduler, recoveryCleanupWorkCollector ) );
-    }
-
-    private LifecycleAdapter cleanupAfterRecovery( JobScheduler jobScheduler,
-            final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
-    {
-        return new LifecycleAdapter()
-        {
-            @Override
-            public void start() throws Throwable
-            {
-                jobScheduler.schedule( JobScheduler.Groups.recoveryCleanup, recoveryCleanupWorkCollector );
-            }
-        };
     }
 
     private NeoStoreKernelModule buildKernel( TransactionAppender appender,

@@ -19,18 +19,18 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
 /**
  * Place to add recovery cleanup work to be done as part of recovery of {@link GBPTree}.
  * <p>
- * Lifecycle has two phases: Add phase and run phase.
+ * {@link Lifecycle#init()} must prepare implementing class to be reused, probably by cleaning current state. After
+ * this, implementing class must be ready to receive new jobs through {@link #add(CleanupJob)}.
  * <p>
- * During add phase, jobs are added, potentially from different
- * threads. From system perspective this happens during startup of database as part of {@code life.init()} in
- * {@code NeoStoreDataSource} when indexes are started.
- * <p>
- * Run phase is triggered as part of {@code life.start()} in {@code NeoStoreDataSource}.
+ * Jobs may be processed during {@link #add(CleanupJob) add} or {@link Lifecycle#start() start}.
  */
-public interface RecoveryCleanupWorkCollector extends Runnable
+public interface RecoveryCleanupWorkCollector extends Lifecycle
 {
     /**
      * Adds {@link CleanupJob} to this collector.
@@ -43,17 +43,14 @@ public interface RecoveryCleanupWorkCollector extends Runnable
      * {@link CleanupJob#run() Runs} {@link #add(CleanupJob) added} cleanup jobs right away in the thread
      * calling {@link #add(CleanupJob)}.
      */
-    RecoveryCleanupWorkCollector IMMEDIATE = new RecoveryCleanupWorkCollector()
+    RecoveryCleanupWorkCollector IMMEDIATE = new ImmediateRecoveryCleanupWorkCollector();
+
+    class ImmediateRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
     {
         @Override
         public void add( CleanupJob job )
         {
             job.run();
         }
-
-        @Override
-        public void run()
-        {   // no-op
-        }
-    };
+    }
 }
