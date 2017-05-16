@@ -306,6 +306,8 @@ public class ParallelBatchImporter implements BatchImporter
         Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
         Iterator<Collection<Object>> rounds = nodeRelationshipCache.splitRelationshipTypesIntoRounds(
                 typeDistribution.iterator(), freeMemoryForDenseNodeCache );
+        Configuration groupConfig =
+                configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipGroupStore() );
 
         // Do multiple rounds of relationship importing. Each round fits as many relationship types
         // as it can (comparing with worst-case memory usage and available memory).
@@ -337,9 +339,12 @@ public class ParallelBatchImporter implements BatchImporter
 
             int nodeTypes = thisIsTheOnlyRound ? NodeType.NODE_TYPE_ALL : NodeType.NODE_TYPE_DENSE;
 
-            // Set node nextRel fields for dense nodes
-            executeStage( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
-                    neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, nodeTypes ) );
+            // Write relationship groups cached from the relationship import above
+            executeStage( new RelationshipGroupStage( topic, groupConfig,
+                    neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache ) );
+            // Set node nextRel fields
+            executeStage( new SparseNodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
+                    nodeRelationshipCache ) );
 
             // Link relationship chains together for dense nodes
             nodeRelationshipCache.setForwardScan( false, true/*dense*/ );
@@ -357,18 +362,13 @@ public class ParallelBatchImporter implements BatchImporter
         // there were multiple passes of dense linking above.
         if ( round > 1 )
         {
-            // Set node nextRel fields for sparse nodes
-            String topic = " Sparse";
-            nodeRelationshipCache.setForwardScan( true, false/*sparse*/ );
-            executeStage( new NodeFirstRelationshipStage( topic, nodeConfig, neoStore.getNodeStore(),
-                    neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, NodeType.NODE_TYPE_SPARSE ) );
-
             // Link relationship chains together for sparse nodes
             nodeRelationshipCache.setForwardScan( false, false/*sparse*/ );
-            executeStage( new RelationshipLinkbackStage( topic, relationshipConfig,
+            executeStage( new RelationshipLinkbackStage( " Sparse", relationshipConfig,
                     neoStore.getRelationshipStore(), nodeRelationshipCache, 0, nextRelationshipId,
                     NodeType.NODE_TYPE_SPARSE ) );
         }
+        // else we did in the single round above to avoid doing another pass
     }
 
     private static Configuration configWithRecordsPerPageBasedBatchSize( Configuration source, RecordStore<?> store )

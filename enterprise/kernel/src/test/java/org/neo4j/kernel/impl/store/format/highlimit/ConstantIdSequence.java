@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
+import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 
 class ConstantIdSequence implements IdSequence
@@ -27,5 +28,11 @@ class ConstantIdSequence implements IdSequence
     public long nextId()
     {
         return 1;
+    }
+
+    @Override
+    public IdRange nextIdBatch( int size )
+    {
+        throw new UnsupportedOperationException();
     }
 }

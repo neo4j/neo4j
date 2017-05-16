@@ -68,17 +68,26 @@ public class ProcessorStepTest
     }
 
     @Test
-    public void shouldHaveTaskQueueSizeEqualToNumberOfProcessorsIfSpecificallySet() throws Exception
+    public void shouldHaveTaskQueueSizeEqualToMaxNumberOfProcessors() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
         final CountDownLatch latch = new CountDownLatch( 1 );
         final int processors = 2;
-        final ProcessorStep<Void> step = new BlockingProcessorStep( control, processors, latch );
+        int maxProcessors = 5;
+        Configuration configuration = new Configuration()
+        {
+            @Override
+            public int maxNumberOfProcessors()
+            {
+                return maxProcessors;
+            }
+        };
+        final ProcessorStep<Void> step = new BlockingProcessorStep( control, configuration, processors, latch );
         step.start( ORDER_SEND_DOWNSTREAM );
         step.processors( 1 ); // now at 2
-        // adding two should be fine
-        for ( int i = 0; i < processors + 1 /* +1 since we allow queueing one more*/; i++ )
+        // adding up to max processors should be fine
+        for ( int i = 0; i < processors + maxProcessors /* +1 since we allow queueing one more*/; i++ )
         {
             step.receive( i, null );
         }
@@ -92,45 +101,14 @@ public class ProcessorStepTest
         receiveFuture.get();
     }
 
-    @Test
-    public void shouldHaveTaskQueueSizeEqualToCurrentNumberOfProcessorsIfNotSpecificallySet() throws Exception
-    {
-        // GIVEN
-        StageControl control = mock( StageControl.class );
-        final CountDownLatch latch = new CountDownLatch( 1 );
-        final ProcessorStep<Void> step = new BlockingProcessorStep( control, 0, latch );
-        step.start( ORDER_SEND_DOWNSTREAM );
-        step.processors( 2 ); // now at 3
-        // adding two should be fine
-        for ( int i = 0; i < step.processors( 0 ) + 1 /* +1 since we allow queueing one more*/; i++ )
-        {
-            step.receive( i, null );
-        }
-
-        // WHEN
-        Future<Void> receiveFuture = t2.execute( new WorkerCommand<Void,Void>()
-        {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                step.receive( step.processors( 0 ), null );
-                return null;
-            }
-        } );
-        t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING );
-        latch.countDown();
-
-        // THEN
-        receiveFuture.get();
-    }
-
     private static class BlockingProcessorStep extends ProcessorStep<Void>
     {
         private final CountDownLatch latch;
 
-        BlockingProcessorStep( StageControl control, int maxProcessors, CountDownLatch latch )
+        BlockingProcessorStep( StageControl control, Configuration configuration,
+                int maxProcessors, CountDownLatch latch )
         {
-            super( control, "test", Configuration.DEFAULT, maxProcessors );
+            super( control, "test", configuration, maxProcessors );
             this.latch = latch;
         }
 

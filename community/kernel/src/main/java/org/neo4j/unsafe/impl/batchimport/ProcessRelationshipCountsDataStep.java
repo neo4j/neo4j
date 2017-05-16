@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -30,10 +31,10 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Processes relationship count data received from {@link ReadRelationshipCountsDataStep} and keeps
- * the accumulated counts per thread. Aggregated when {@link #done()}.
+ * Processes relationship records, feeding them to {@link RelationshipCountsProcessor} which keeps
+ * the accumulated counts per thread. Aggregated in {@link #done()}.
  */
-public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
+public class ProcessRelationshipCountsDataStep extends ProcessorStep<RelationshipRecord[]>
 {
     private final NodeLabelsCache cache;
     private final Map<Thread,RelationshipCountsProcessor> processors = new ConcurrentHashMap<>();
@@ -55,12 +56,13 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
     }
 
     @Override
-    protected void process( long[] batch, BatchSender sender )
+    protected void process( RelationshipRecord[] batch, BatchSender sender )
     {
         RelationshipCountsProcessor processor = processor();
         for ( int i = 0; i < batch.length; i++ )
         {
-            processor.process( batch[i++], (int)batch[i++], batch[i] );
+            RelationshipRecord relationship = batch[i];
+            processor.process( relationship.getFirstNode(), relationship.getType(), relationship.getSecondNode() );
         }
     }
 

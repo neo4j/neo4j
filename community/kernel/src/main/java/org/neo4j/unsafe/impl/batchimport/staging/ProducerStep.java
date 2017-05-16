@@ -19,21 +19,26 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.unsafe.impl.batchimport.Configuration;
+import java.util.Collection;
 
-import static java.lang.System.nanoTime;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.IoThroughputStat;
+import org.neo4j.unsafe.impl.batchimport.stats.Key;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.stats.Stat;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream
  * to other {@link Step steps}.
  */
-public abstract class ProducerStep extends AbstractStep<Void>
+public abstract class ProducerStep extends AbstractStep<Void> implements StatsProvider
 {
     protected final int batchSize;
 
-    public ProducerStep( StageControl control, String name, Configuration config )
+    public ProducerStep( StageControl control, Configuration config )
     {
-        super( control, name, config );
+        super( control, ">", config );
         this.batchSize = config.batchSize();
     }
 
@@ -65,32 +70,40 @@ public abstract class ProducerStep extends AbstractStep<Void>
         return 0;
     }
 
-    /**
-     * Forms batches out of some sort of data stream and sends these batches downstream.
-     */
-    @SuppressWarnings( "unchecked" )
-    protected void process()
-    {
-        Object batch = null;
-        while ( true )
-        {
-            long startTime = nanoTime();
-            batch = nextBatchOrNull( doneBatches.get(), batchSize );
-            if ( batch == null )
-            {
-                break;
-            }
+    protected abstract void process();
 
-            totalProcessingTime.add( nanoTime() - startTime );
-            downstreamIdleTime.addAndGet( downstream.receive( doneBatches.getAndIncrement(), batch ) );
-            assertHealthy();
+    @SuppressWarnings( "unchecked" )
+    protected void sendDownstream( Object batch )
+    {
+        long time = downstream.receive( doneBatches.getAndIncrement(), batch );
+        downstreamIdleTime.addAndGet( time );
+    }
+
+    @Override
+    protected void collectStatsProviders( Collection<StatsProvider> into )
+    {
+        super.collectStatsProviders( into );
+        into.add( this );
+    }
+
+    @Override
+    public Stat stat( Key key )
+    {
+        if ( key == Keys.io_throughput )
+        {
+            return new IoThroughputStat( startTime, endTime, position() );
         }
+        return null;
+    }
+
+    @Override
+    public Key[] keys()
+    {
+        return new Key[] { Keys.io_throughput };
     }
 
     /**
-     * Generates next batch object with a target size of {@code batchSize} items from its data stream in it.
-     * @param batchSize number of items to grab from its data stream (whatever a subclass defines as a data stream).
-     * @return the batch object to send downstream, or null if the data stream came to an end.
+     * @return progress in terms of bytes.
      */
-    protected abstract Object nextBatchOrNull( long ticket, int batchSize );
+    protected abstract long position();
 }

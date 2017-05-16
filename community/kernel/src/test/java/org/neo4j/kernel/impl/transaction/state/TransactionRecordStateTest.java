@@ -119,9 +119,9 @@ public class TransactionRecordStateTest
     private static final String value1 = "first";
     private static final int value2 = 4;
     private static final long[] noLabels = new long[0];
-    private long[] oneLabelId = new long[]{3};
-    private long[] secondLabelId = new long[]{4};
-    private long[] bothLabelIds = new long[]{3, 4};
+    private final long[] oneLabelId = new long[]{3};
+    private final long[] secondLabelId = new long[]{4};
+    private final long[] bothLabelIds = new long[]{3, 4};
 
     public static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node,
             int type )
@@ -203,7 +203,7 @@ public class TransactionRecordStateTest
          * was created resulted in two exact copies of NodePropertyUpdates. */
 
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         int labelId = 5, propertyKeyId = 7;
 
@@ -254,7 +254,7 @@ public class TransactionRecordStateTest
          */
 
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         int nodeId = 0;
         recordState.nodeCreate( nodeId );
@@ -297,7 +297,7 @@ public class TransactionRecordStateTest
     public void shouldConvertLabelAdditionToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
@@ -320,7 +320,7 @@ public class TransactionRecordStateTest
     public void shouldConvertMixedLabelAdditionAndSetPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
@@ -346,7 +346,7 @@ public class TransactionRecordStateTest
     public void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
@@ -369,7 +369,7 @@ public class TransactionRecordStateTest
     public void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
@@ -395,7 +395,7 @@ public class TransactionRecordStateTest
     public void shouldConvertMixedLabelRemovalAndAddPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
@@ -421,7 +421,7 @@ public class TransactionRecordStateTest
     public void shouldConvertChangedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         int nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
@@ -449,7 +449,7 @@ public class TransactionRecordStateTest
     public void shouldConvertRemovedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         int nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
@@ -477,7 +477,7 @@ public class TransactionRecordStateTest
     public void shouldDeleteDynamicLabelsForDeletedNode() throws Throwable
     {
         // GIVEN a store that has got a node with a dynamic label record
-        NeoStores store = neoStoresRule.open();
+        NeoStores store = neoStoresRule.builder().build();
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( store, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
@@ -496,7 +496,7 @@ public class TransactionRecordStateTest
     public void shouldDeleteDynamicLabelsForDeletedNodeForRecoveredTransaction() throws Throwable
     {
         // GIVEN a store that has got a node with a dynamic label record
-        NeoStores store = neoStoresRule.open();
+        NeoStores store = neoStoresRule.builder().build();
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( store, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
@@ -520,7 +520,8 @@ public class TransactionRecordStateTest
     public void shouldExtractCreatedCommandsInCorrectOrder() throws Throwable
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "1" ).build();
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         long nodeId = 0, relId = 1;
         recordState.nodeCreate( nodeId );
@@ -547,7 +548,8 @@ public class TransactionRecordStateTest
     public void shouldExtractUpdateCommandsInCorrectOrder() throws Throwable
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "1" ).build();
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         long nodeId = 0, relId1 = 1, relId2 = 2, relId3 = 3;
         recordState.nodeCreate( nodeId );
@@ -599,7 +601,8 @@ public class TransactionRecordStateTest
         // Given:
         // - dense node threshold of 5
         // - node with 4 rels of type A and 1 rel of type B
-        NeoStores neoStore = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "5" );
+        NeoStores neoStore = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "5" ).build();
         int A = 0, B = 1;
         TransactionRecordState state = newTransactionRecordState( neoStore );
         state.nodeCreate( 0 );
@@ -626,7 +629,8 @@ public class TransactionRecordStateTest
     public void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "1" ).build();
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         long nodeId1 = 0, nodeId2 = 1, relId1 = 1, relId2 = 2, relId4 = 10;
         recordState.nodeCreate( nodeId1 );
@@ -667,7 +671,7 @@ public class TransactionRecordStateTest
     public void shouldValidateConstraintIndexAsPartOfExtraction() throws Throwable
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
 
         final long indexId = neoStores.getSchemaStore().nextId();
@@ -686,7 +690,7 @@ public class TransactionRecordStateTest
     public void shouldCreateProperBeforeAndAfterPropertyCommandsWhenAddingProperty() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
 
         int nodeId = 1;
@@ -714,7 +718,7 @@ public class TransactionRecordStateTest
     public void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
 
@@ -751,7 +755,7 @@ public class TransactionRecordStateTest
                 return null;
             }
         } );
-        NeoStores neoStores = neoStoresRule.open();
+        NeoStores neoStores = neoStoresRule.builder().build();
         NodeStore nodeStore = neoStores.getNodeStore();
         long[] nodes = { // allocate ids
                 nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(), nodeStore.nextId(),
@@ -810,7 +814,8 @@ public class TransactionRecordStateTest
     public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "10" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "10" ).build();
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
 
@@ -871,7 +876,8 @@ public class TransactionRecordStateTest
     public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "50" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "50" ).build();
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0, typeB = 1, typeC = 2;
@@ -905,7 +911,8 @@ public class TransactionRecordStateTest
             throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "49" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "49" ).build();
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -930,7 +937,8 @@ public class TransactionRecordStateTest
             throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "8" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "8" ).build();
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -953,7 +961,8 @@ public class TransactionRecordStateTest
     public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithOneType() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "13" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "13" ).build();
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         int nodeId = (int) neoStores.getNodeStore().nextId(), typeA = 0;
         tx.nodeCreate( nodeId );
@@ -971,7 +980,8 @@ public class TransactionRecordStateTest
     public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "1" ).build();
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0, typeB = 12, typeC = 600;
@@ -1051,7 +1061,8 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         int type5 = 5, type10 = 10, type15 = 15;
-        NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "1" ).build();
         {
             TransactionRecordState recordState = newTransactionRecordState( neoStores );
             neoStores.getRelationshipTypeTokenStore().setHighId( 16 );
@@ -1118,8 +1129,9 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( Standard.LATEST_RECORD_FORMATS );
-        NeoStores neoStores = neoStoresRule.open( format,
-                GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStores neoStores = neoStoresRule.builder()
+                .with( format )
+                .with( GraphDatabaseSettings.dense_node_threshold.name(), "1" ).build();
 
         // WHEN
         TransactionRecordState state = newTransactionRecordState( neoStores );
