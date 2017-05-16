@@ -21,7 +21,50 @@ package org.neo4j.index.internal.gbptree;
 
 /**
  * A job cleaning something up after recovery. Usually added to {@link RecoveryCleanupWorkCollector}.
+ * <p>
+ * Report state of cleaning progress.
  */
 public interface CleanupJob extends Runnable
 {
+    /**
+     * @return {@code true} if gbptree still needs cleaning, meaning job is not yet finished or has not started at all.
+     * {@code false} if gbptree does not need cleaning, meaning job has finished or it was never needed in the first place.
+     */
+    boolean needed();
+
+    /**
+     * @return {@code true} if the job has failed. Use {@link #getCause()} to see cause of failure.
+     */
+    boolean hasFailed();
+
+    /**
+     * @return Cause of failure if {@link #hasFailed()} or {@code null} if job has not failed.
+     */
+    Exception getCause();
+
+    CleanupJob CLEAN = new CleanupJob()
+    {
+        @Override
+        public void run()
+        {   // no-op
+        }
+
+        @Override
+        public boolean needed()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasFailed()
+        {
+            return false;
+        }
+
+        @Override
+        public Exception getCause()
+        {
+            return null;
+        }
+    };
 }
