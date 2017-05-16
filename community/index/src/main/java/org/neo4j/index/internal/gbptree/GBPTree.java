@@ -797,18 +797,36 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 return;
             }
 
-            if ( !changesSinceLastCheckpoint )
+            internalIndexClose();
+        }
+        catch ( IOException ioe )
+        {
+            try
             {
-                clean = true;
-                forceState();
+                pagedFile.flushAndForce();
+                internalIndexClose();
             }
-            pagedFile.close();
-            closed = true;
+            catch ( IOException e )
+            {
+                ioe.addSuppressed( e );
+                throw ioe;
+            }
         }
         finally
         {
             writerCheckpointMutex.unlock();
         }
+    }
+
+    private void internalIndexClose() throws IOException
+    {
+        if ( !changesSinceLastCheckpoint )
+        {
+            clean = true;
+            forceState();
+        }
+        pagedFile.close();
+        closed = true;
     }
 
     /**

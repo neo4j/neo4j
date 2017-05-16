@@ -37,7 +37,7 @@ import org.neo4j.test.impl.ChannelOutputStream;
 
 public class LimitedFilesystemAbstraction extends DelegatingFileSystemAbstraction
 {
-    private boolean outOfSpace;
+    private volatile boolean outOfSpace;
 
     public LimitedFilesystemAbstraction( FileSystemAbstraction delegate )
     {
