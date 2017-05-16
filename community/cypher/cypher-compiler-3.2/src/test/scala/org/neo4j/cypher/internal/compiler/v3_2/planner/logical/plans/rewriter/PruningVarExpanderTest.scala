@@ -223,6 +223,22 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
+  test("do not use pruning for length=1") {
+    // Simplest query:
+    // match (a)-[*1..1]->(b) return distinct b
+
+    val fromId = IdName("from")
+    val allNodes = AllNodesScan(fromId, Set.empty)(solved)
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(1, Some(1))
+    val toId = IdName("to")
+    val relId = IdName("r")
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+
+    rewrite(input) should equal(input)
+  }
+
   private def rewrite(p: LogicalPlan): LogicalPlan =
     p.endoRewrite(pruningVarExpander)
 }
