@@ -78,6 +78,11 @@ public interface Configuration
      */
     default int maxNumberOfProcessors()
     {
+        return allAvailableProcessors();
+    }
+
+    static int allAvailableProcessors()
+    {
         return Runtime.getRuntime().availableProcessors();
     }
 

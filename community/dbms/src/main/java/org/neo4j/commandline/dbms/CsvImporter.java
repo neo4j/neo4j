@@ -28,6 +28,8 @@ import java.util.Collection;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.dbms.config.WrappedBatchImporterConfigurationForNeo4jAdmin;
+import org.neo4j.commandline.dbms.config.WrappedCsvInputConfigurationForNeo4jAdmin;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -41,6 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.tooling.ImportTool.csvConfiguration;
 import static org.neo4j.tooling.ImportTool.extractInputFiles;
@@ -58,7 +61,7 @@ class CsvImporter implements Importer
     private final Collection<Args.Option<File[]>> nodesFiles, relationshipsFiles;
     private final IdType idType;
     private final Charset inputEncoding;
-    private final Config config;
+    private final Config databaseConfig;
     private final Args args;
     private final OutsideWorld outsideWorld;
     private final String reportFileName;
@@ -66,7 +69,7 @@ class CsvImporter implements Importer
     private final boolean ignoreDuplicateNodes;
     private final boolean ignoreExtraColumns;
 
-    CsvImporter( Args args, Config config, OutsideWorld outsideWorld ) throws IncorrectUsage
+    CsvImporter( Args args, Config databaseConfig, OutsideWorld outsideWorld ) throws IncorrectUsage
     {
         this.args = args;
         this.outsideWorld = outsideWorld;
@@ -89,28 +92,33 @@ class CsvImporter implements Importer
         idType = args.interpretOption( "id-type", withDefault( IdType.STRING ),
                 from -> IdType.valueOf( from.toUpperCase() ) );
         inputEncoding = Charset.forName( args.get( "input-encoding", defaultCharset().name() ) );
-        this.config = config;
+        this.databaseConfig = databaseConfig;
     }
 
     @Override
     public void doImport() throws IOException
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
+        File storeDir = databaseConfig.get( DatabaseManagementSystemSettings.database_path );
+        File logsDir = databaseConfig.get( GraphDatabaseSettings.logs_directory );
         File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
         Collector badCollector = badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
                 collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) );
 
-        Configuration configuration = importConfiguration( null, false, config );
-        CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
-                relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(), idType,
-                csvConfiguration( args, false ), badCollector, configuration.maxNumberOfProcessors() );
+        Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration( null, false,
+                databaseConfig ) );
+        CsvInput input = new CsvInput(
+                nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
+                relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
+                idType,
+                new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
+                badCollector,
+                configuration.maxNumberOfProcessors() );
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), storeDir, logsDir, reportFile, fs,
-                nodesFiles, relationshipsFiles, false, input, config, badOutput, configuration );
+                nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration );
     }
 
     private boolean isIgnoringSomething()
