@@ -455,7 +455,7 @@ public class GBPTreeTest
         // GIVEN
         IOException no = new IOException( "No" );
         AtomicBoolean throwOnNextIO = new AtomicBoolean();
-        PageCache controlledPageCache = pageCacheThatThrowOnIOWhenToldTo( no, throwOnNextIO );
+        PageCache controlledPageCache = pageCacheThatThrowExceptionWhenToldTo( no, throwOnNextIO );
         try ( GBPTree<MutableLong, MutableLong> index = index().with( controlledPageCache ).build() )
         {
             // WHEN
@@ -475,31 +475,6 @@ public class GBPTreeTest
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
             }
         }
-    }
-
-    private PageCache pageCacheThatThrowOnIOWhenToldTo( final IOException e, final AtomicBoolean throwOnNextIO )
-    {
-        return new DelegatingPageCache( createPageCache( 256 ) )
-            {
-                @Override
-                public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
-                {
-                    return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
-                    {
-                        @Override
-                        public PageCursor io( long pageId, int pf_flags ) throws IOException
-                        {
-                            if ( throwOnNextIO.get() )
-                            {
-                                throwOnNextIO.set( false );
-                                assert e != null;
-                                throw e;
-                            }
-                            return super.io( pageId, pf_flags );
-                        }
-                    };
-                }
-            };
     }
 
     @Test
@@ -1171,6 +1146,59 @@ public class GBPTreeTest
                 assertThat( e.getMessage(), containsString( PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE ) );
             }
         }
+    }
+
+    /* IO failure on close */
+
+    @Test
+    public void mustRetryCloseIfFailure() throws Exception
+    {
+        // GIVEN
+        AtomicBoolean throwOnNext = new AtomicBoolean();
+        IOException exception = new IOException( "My failure" );
+        PageCache pageCache = pageCacheThatThrowExceptionWhenToldTo( exception, throwOnNext );
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( pageCache ).build() )
+        {
+            // WHEN
+            throwOnNext.set( true );
+        }
+    }
+
+    private PageCache pageCacheThatThrowExceptionWhenToldTo( final IOException e, final AtomicBoolean throwOnNextIO )
+    {
+        return new DelegatingPageCache( createPageCache( 256 ) )
+        {
+            @Override
+            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            {
+                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                {
+                    @Override
+                    public PageCursor io( long pageId, int pf_flags ) throws IOException
+                    {
+                        maybeThrow();
+                        return super.io( pageId, pf_flags );
+                    }
+
+                    @Override
+                    public void flushAndForce( IOLimiter limiter ) throws IOException
+                    {
+                        maybeThrow();
+                        super.flushAndForce( limiter );
+                    }
+
+                    private void maybeThrow() throws IOException
+                    {
+                        if ( throwOnNextIO.get() )
+                        {
+                            throwOnNextIO.set( false );
+                            assert e != null;
+                            throw e;
+                        }
+                    }
+                };
+            }
+        };
     }
 
     private void insert( GBPTree<MutableLong,MutableLong> index, long key, long value ) throws IOException

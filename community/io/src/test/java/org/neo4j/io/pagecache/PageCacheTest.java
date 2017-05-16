@@ -3363,7 +3363,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void mustRecoverFromFullDriveWhenMoreStorageBecomesAvailable() throws IOException
+    public void mustRecoverViaFileCloseFromFullDriveWhenMoreStorageBecomesAvailable() throws IOException
     {
         final AtomicBoolean hasSpace = new AtomicBoolean();
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -3402,13 +3402,78 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         catch ( IOException ignore )
         {
-            // We're not out of space! Salty tears...
+            // We're out of space! Salty tears...
         }
 
         // Fix the situation:
         hasSpace.set( true );
 
         // Closing the last reference of a paged file implies a flush, and it mustn't throw:
+        pagedFile.close();
+
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( cursor.next() ); // this should not throw
+        }
+    }
+
+    @Test
+    public void mustRecoverViaFileFlushFromFullDriveWhenMoreStorageBecomesAvailable() throws Exception
+    {
+
+        final AtomicBoolean hasSpace = new AtomicBoolean();
+        final AtomicBoolean hasThrown = new AtomicBoolean();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public void writeAll( ByteBuffer src, long position ) throws IOException
+                    {
+                        if ( !hasSpace.get() )
+                        {
+                            hasThrown.set( true );
+                            throw new IOException( "No space left on device" );
+                        }
+                        super.writeAll( src, position );
+                    }
+                };
+            }
+        };
+
+        fs.create( file( "a" ) ).close();
+
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            //noinspection InfiniteLoopStatement
+            while ( !hasThrown.get() ) // Keep writing until we get an exception! (when the cache starts evicting stuff)
+            {
+                assertTrue( cursor.next() );
+                writeRecords( cursor );
+            }
+        }
+        catch ( IOException ignore )
+        {
+            // We're out of space! Salty tears...
+        }
+
+        // Fix the situation:
+        hasSpace.set( true );
+
+        // Flushing the paged file implies the eviction exception gets cleared, and mustn't itself throw:
+        pagedFile.flushAndForce();
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( cursor.next() ); // this should not throw
+        }
         pagedFile.close();
     }
 

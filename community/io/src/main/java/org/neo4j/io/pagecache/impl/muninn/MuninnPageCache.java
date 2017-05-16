@@ -1014,7 +1014,7 @@ public class MuninnPageCache implements PageCache
         return false;
     }
 
-    private void clearEvictorException()
+    void clearEvictorException()
     {
         if ( evictorException != null )
         {
