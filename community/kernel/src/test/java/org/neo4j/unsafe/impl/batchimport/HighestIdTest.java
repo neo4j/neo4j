@@ -54,7 +54,7 @@ public class HighestIdTest
             int cc = c;
             race.addContestant( new Runnable()
             {
-                boolean run = false;
+                boolean run;
                 ThreadLocalRandom random = ThreadLocalRandom.current();
 
                 @Override
