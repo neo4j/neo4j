@@ -116,7 +116,7 @@ object InternalPlanDescription {
     }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String,
                                 direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
-    case class CountNodesExpression(ident: String, label: Option[String]) extends Argument
+    case class CountNodesExpression(ident: String, labels: List[Option[String]]) extends Argument
     case class CountRelationshipsExpression(ident: String, startLabel: Option[String],
                                             typeNames: Seq[String], endLabel: Option[String]) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {

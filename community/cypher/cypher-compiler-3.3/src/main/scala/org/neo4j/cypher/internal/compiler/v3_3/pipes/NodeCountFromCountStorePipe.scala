@@ -23,18 +23,24 @@ import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.NameId
 
-case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])
+case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])
                                       (val id: Id = new Id)
                                       (implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
-    val count = label match {
-      case Some(lazyLabel) => lazyLabel.getOptId(state.query) match {
-        case Some(idOfLabel) => state.query.nodeCountByCountStore(idOfLabel)
-        case _ => 0
+    var count = 1L
+    val it = labels.iterator
+    while (it.hasNext) {
+      it.next() match {
+        case Some(lazyLabel) => lazyLabel.getOptId(state.query) match {
+          case Some(idOfLabel) =>
+            count = count * state.query.nodeCountByCountStore(idOfLabel)
+          case _ => count = 0
+        }
+        case _ =>
+          count *= state.query.nodeCountByCountStore(NameId.WILDCARD)
       }
-      case _ => state.query.nodeCountByCountStore(NameId.WILDCARD)
     }
     Seq(baseContext.newWith1(ident, count)).iterator
   }

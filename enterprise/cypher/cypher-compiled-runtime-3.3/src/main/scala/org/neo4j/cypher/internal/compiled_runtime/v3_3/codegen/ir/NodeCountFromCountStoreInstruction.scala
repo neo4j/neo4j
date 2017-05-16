@@ -22,33 +22,47 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, Variable}
 
-case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable, label: Option[(Option[Int], String)],
+case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable, labels: List[Option[(Option[Int], String)]],
                                               inner: Instruction) extends Instruction {
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
+    val ops: List[(MethodStructure[E]) => E] = labels.map(findOps[E])
     generator.trace(opName) { body =>
-      body.incrementDbHits()
-
-      label match {
-        //no label specified by the user
-        case None =>
-          body.assign(variable, body.nodeCountFromCountStore(generator.wildCardToken))
-
-        // label specified and token known
-        case Some((Some(token), _)) =>
-          val tokenConstant = body.token(Int.box(token))
-          body.assign(variable, generator.nodeCountFromCountStore(tokenConstant))
-
-        // label specified, but token did not exists at compile time
-        case Some((None, labelName)) =>
-          val tokenConstant: E = generator.lookupLabelIdE(labelName)
-          val isMissing = generator.primitiveEquals(tokenConstant, generator.wildCardToken)
-          val zero = body.constantExpression(0L.asInstanceOf[AnyRef])
-          val getFromCountStore = body.nodeCountFromCountStore(tokenConstant)
-          body.assign(variable, body.ternaryOperator(isMissing, zero, getFromCountStore))
-      }
+      ops.foreach( b => {
+        body.incrementDbHits()
+      })
+      body.assign(variable, multiplyAll[E](ops, body))
       inner.body(body)
     }
   }
+
+  private def multiplyAll[E](ops: List[(MethodStructure[E]) => E], body: MethodStructure[E]): E = ops match {
+    case Nil => throw new IllegalStateException("At least one operation must be present at this stage")
+    case f :: Nil => f(body)
+    case a :: b :: Nil =>
+      body.multiplyPrimitive(a(body), b(body))
+    case a :: b :: tl =>
+      //body.multiplyPrimitive(a(body), b(body))
+      multiplyAll( ((bb: MethodStructure[E]) => bb.multiplyPrimitive(a(bb), b(bb))) :: tl , body)
+  }
+
+  private def findOps[E](label: Option[(Option[Int], String)]): MethodStructure[E] => E = label match {
+      //no label specified by the user
+      case None => (body: MethodStructure[E]) => body.nodeCountFromCountStore(body.wildCardToken)
+
+      // label specified and token known
+      case Some((Some(token), _)) => (body: MethodStructure[E]) => {
+        val tokenConstant = body.token(Int.box(token))
+        body.nodeCountFromCountStore(tokenConstant)
+      }
+
+      // label specified, but token did not exists at compile time
+      case Some((None, labelName)) => (body: MethodStructure[E]) => {
+        val isMissing = body.primitiveEquals(body.loadVariable(tokenVar(labelName)), body.wildCardToken)
+        val zero = body.constantExpression(0L.asInstanceOf[AnyRef])
+        val getFromCountStore = body.nodeCountFromCountStore(body.loadVariable(tokenVar(labelName)))
+        body.ternaryOperator(isMissing, zero, getFromCountStore)
+      }
+    }
 
   override def operatorId: Set[String] = Set(opName)
 
@@ -56,12 +70,14 @@ case class NodeCountFromCountStoreInstruction(opName: String, variable: Variable
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     super.init(generator)
-    label.foreach {
+    labelNames.foreach {
       case (token, name) if token.isEmpty =>
-        generator.lookupLabelId(tokenVar, name)
+        generator.lookupLabelId(tokenVar(name), name)
       case _ => ()
     }
   }
 
-  private def tokenVar = s"${variable.name}LabelToken"
+  private def labelNames = labels.filter(_.nonEmpty).flatten.toSet
+
+  private def tokenVar(label: String) = s"${label}Token"
 }

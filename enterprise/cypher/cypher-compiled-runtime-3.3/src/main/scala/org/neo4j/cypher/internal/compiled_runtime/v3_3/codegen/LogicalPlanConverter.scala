@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.SortItem
 import org.neo4j.cypher.internal.compiler.v3_3.commands._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{One, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{SortDescription, plans}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{SortDescription, plans}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast, symbols}
@@ -566,7 +566,7 @@ object LogicalPlanConverter {
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
 
-      val label: Option[(Option[Int], String)] = nodeCount.labelName.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
+      val label = nodeCount.labelName.map(ll => ll.map(l => l.id(context.semanticTable).map(_.id) -> l.name))
       (methodHandle, NodeCountFromCountStoreInstruction(opName, variable, label, actions) :: tl)
     }
   }

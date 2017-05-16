@@ -413,10 +413,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable)(lhs.solved)
   }
 
-  def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: IdName, label: Option[LabelName], argumentIds: Set[IdName])
+  def planCountStoreNodeAggregation(query: PlannerQuery, projectedColumn: IdName, labels: List[Option[LabelName]], argumentIds: Set[IdName])
                                    (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(query.queryGraph, query.horizon)
-    NodeCountFromCountStore(projectedColumn, label, argumentIds)(solved)
+    NodeCountFromCountStore(projectedColumn, labels, argumentIds)(solved)
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LabelName],
