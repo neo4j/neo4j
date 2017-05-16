@@ -94,7 +94,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     }
   }
 
-  def size = patternRelationships.size
+  def size: Int = patternRelationships.size
 
   def isEmpty: Boolean = this == QueryGraph.empty
 
@@ -111,7 +111,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       patternRelationships = patternRelationships + rel
     )
 
-  def addPatternRelationships(rels: Seq[PatternRelationship]) =
+  def addPatternRelationships(rels: Seq[PatternRelationship]): QueryGraph =
     rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRelationship(rel))
 
   def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
@@ -149,7 +149,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(selections = selections ++ newSelections)
   }
 
-  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = copy(hints = hints ++ addedHints)
+  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = {
+    copy(hints = hints ++ addedHints)
+  }
 
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]): QueryGraph = copy(hints = hints -- hintsToIgnore)
 
@@ -181,10 +183,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
-  def withPatternRelationships(patterns: Set[PatternRelationship]) =
+  def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
    copy(patternRelationships = patterns)
 
-  def withPatternNodes(nodes: Set[IdName]) =
+  def withPatternNodes(nodes: Set[IdName]): QueryGraph =
     copy(patternNodes = nodes)
 
   def knownProperties(idName: IdName): Set[Property] =
@@ -237,7 +239,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   val allHints: Set[Hint] =
     if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
 
-  def numHints = allHints.size
+  def numHints: Int = allHints.size
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
@@ -262,7 +264,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def covers(other: QueryGraph): Boolean = other.isCoveredBy(this)
 
-  def hasOptionalPatterns = optionalMatches.nonEmpty
+  def hasOptionalPatterns: Boolean = optionalMatches.nonEmpty
 
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
     patternNodes.collect { case node: IdName => node -> selections.labelsOnNode(node) }.toMap
@@ -350,7 +352,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     containsMergeRecursive
   }
 
-  def writeOnly = !containsReads && containsUpdates
+  def writeOnly: Boolean = !containsReads && containsUpdates
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)
@@ -359,7 +361,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 object QueryGraph {
   val empty = QueryGraph()
 
-  def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
+  def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]): Set[IdName] = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }

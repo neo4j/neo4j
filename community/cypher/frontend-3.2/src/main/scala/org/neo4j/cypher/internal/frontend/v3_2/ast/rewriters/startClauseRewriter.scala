@@ -24,6 +24,11 @@ import org.neo4j.cypher.internal.frontend.v3_2.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseContext, Condition}
 import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, SemanticDirection, topDown}
 
+/*
+ * The objective of this rewriter is to rewrite queries containing `START` to
+ * an equivalent query using `MATCH`. In a glorious future where we no longer support
+ * START this rewriter can be safely removed.
+ */
 case object startClauseRewriter extends StatementRewriter {
 
   override def description: String = "Rewrites queries using START to equivalent MATCH queries"
@@ -31,53 +36,57 @@ case object startClauseRewriter extends StatementRewriter {
   override def postConditions: Set[Condition] = Set.empty
   override def instance(context: BaseContext): Rewriter = topDown(Rewriter.lift {
     case start@Start(items, where) =>
-      val newPredicates = items.collect {
-        //We can safely ignore AllNodes here, i.e. nodes(*) since that is corresponding to
-        //no predicate on the identifier
-
-        //START n=nodes(1,5,7)....
-        case n@NodeByIds(variable, ids) =>
-          val pos = n.position
-          val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
-          In(invocation, ListLiteral(ids)(pos))(pos)
-
-        //START n=nodes({id})....
-        case n@NodeByParameter(variable, parameter) =>
-          val pos = n.position
-          val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
-          In(invocation, parameter)(pos)
-
-        //START r=rels(1,5,7)....
-        case n@RelationshipByIds(variable, ids) =>
-          val pos = n.position
-          val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
-          In(invocation, ListLiteral(ids)(pos))(pos)
-
-        //START r=rel({id})....
-        case r@RelationshipByParameter(variable, parameter) =>
-          val pos = r.position
-          val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
-          In(invocation, parameter)(pos)
-      }
-
+      val newPredicates = asPredicates(items)
+      val patterns = asPatterns(items)
       val hints = items.collect {
         case hint: LegacyIndexHint => hint
       }
-      val patterns: Seq[PatternElement] = items.collect {
-        case n: NodeStartItem => NodePattern(Some(n.variable.copyId), Seq.empty, None)(n.position)
-        case r: RelationshipStartItem => RelationshipChain(
-          NodePattern(Some(Variable(UnNamedNameGenerator.name(r.position))(r.position)), Seq.empty, None)(r.position),
-          RelationshipPattern(Some(r.variable.copyId), Seq.empty, None, None, SemanticDirection.OUTGOING)(r.position),
-          NodePattern(Some(Variable(UnNamedNameGenerator.name(r.position.bumped()))(r.position)),
-                      Seq.empty, None)(r.position))(r.position)
-      }
-
+      //Combine with original predicates from the START-clause
       val allPredicates = (newPredicates ++ where.map(_.expression)).toSet
       val newWhere =
         if (allPredicates.isEmpty) None
         else if (allPredicates.size == 1) Some(Where(allPredicates.head)(start.position))
         else Some(Where(Ands(allPredicates)(start.position))(start.position))
+
       Match(optional = false, Pattern(patterns.map(EveryPath))(start.position), hints, newWhere)(start.position)
   })
+
+  private def asPredicates(items: Seq[StartItem]) = items.collect {
+    //We can safely ignore AllNodes and AllRelationships here, i.e. nodes(*) and rels(*) since that is corresponding to
+    //no predicate on the identifier
+
+    //START n=nodes(1,5,7)....
+    case n@NodeByIds(variable, ids) =>
+      val pos = n.position
+      val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
+      In(invocation, ListLiteral(ids)(pos))(pos)
+
+    //START n=nodes({id})....
+    case n@NodeByParameter(variable, parameter) =>
+      val pos = n.position
+      val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
+      In(invocation, parameter)(pos)
+
+    //START r=rels(1,5,7)....
+    case n@RelationshipByIds(variable, ids) =>
+      val pos = n.position
+      val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
+      In(invocation, ListLiteral(ids)(pos))(pos)
+
+    //START r=rel({id})....
+    case r@RelationshipByParameter(variable, parameter) =>
+      val pos = r.position
+      val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
+      In(invocation, parameter)(pos)
+  }
+
+  private def asPatterns(items: Seq[StartItem]): Seq[PatternElement] =  items.collect {
+    case n: NodeStartItem => NodePattern(Some(n.variable.copyId), Seq.empty, None)(n.position)
+    case r: RelationshipStartItem => RelationshipChain(
+      NodePattern(Some(Variable(UnNamedNameGenerator.name(r.position))(r.position)), Seq.empty, None)(r.position),
+      RelationshipPattern(Some(r.variable.copyId), Seq.empty, None, None, SemanticDirection.OUTGOING)(r.position),
+      NodePattern(Some(Variable(UnNamedNameGenerator.name(r.position.bumped()))(r.position)),
+                  Seq.empty, None)(r.position))(r.position)
+  }
 
 }
