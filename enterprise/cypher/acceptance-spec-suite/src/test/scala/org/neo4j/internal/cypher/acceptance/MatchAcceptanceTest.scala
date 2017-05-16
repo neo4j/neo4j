@@ -617,6 +617,21 @@ return p""")
     res.toSet should equal(Set(Map("n" -> node1)))
   }
 
+  test("should handle distinct collect where the path is needed") {
+    // Given
+    val n1 = createNode()
+    val n2 = createNode()
+    val n3 = createNode()
+    relate(n1, n2)
+    relate(n3, createNode())
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
+
+    // Then
+    result.toList should equal(List(Map("size" -> 8)))
+  }
+
   /**
    * Append variable to keys and transform value arrays to lists
    */
