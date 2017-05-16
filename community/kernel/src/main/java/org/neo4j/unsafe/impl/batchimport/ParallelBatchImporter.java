@@ -374,7 +374,7 @@ public class ParallelBatchImporter implements BatchImporter
 
     private static Configuration configWithRecordsPerPageBasedBatchSize( Configuration source, RecordStore<?> store )
     {
-        return Configuration.withBatchSize( source, store.getRecordsPerPage() * 100 );
+        return Configuration.withBatchSize( source, store.getRecordsPerPage() * 10 );
     }
 
     private void executeStage( Stage stage )
