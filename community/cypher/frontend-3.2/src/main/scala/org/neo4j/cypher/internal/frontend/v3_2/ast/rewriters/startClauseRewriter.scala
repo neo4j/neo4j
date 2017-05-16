@@ -41,7 +41,7 @@ case object startClauseRewriter extends StatementRewriter {
           val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
           In(invocation, ListLiteral(ids)(pos))(pos)
 
-        //START n=nodes(1,5,7)....
+        //START n=nodes({id})....
         case n@NodeByParameter(variable, parameter) =>
           val pos = n.position
           val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
@@ -52,6 +52,12 @@ case object startClauseRewriter extends StatementRewriter {
           val pos = n.position
           val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
           In(invocation, ListLiteral(ids)(pos))(pos)
+
+        //START r=rel({id})....
+        case r@RelationshipByParameter(variable, parameter) =>
+          val pos = r.position
+          val invocation = FunctionInvocation(FunctionName(functions.Id.name)(pos), variable.copyId)(pos)
+          In(invocation, parameter)(pos)
       }
 
       val hints = items.collect {

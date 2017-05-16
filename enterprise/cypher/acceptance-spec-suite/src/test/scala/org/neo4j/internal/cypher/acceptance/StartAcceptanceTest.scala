@@ -141,6 +141,14 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(List(Map("id(r)"-> rel)))
   }
 
+  test("START r=rel({id}) RETURN r") {
+    val rel = relate(createNode(), createNode()).getId
+    relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel({id}) RETURN id(r)", "id" -> rel).toList
+
+    result should equal(List(Map("id(r)"-> rel)))
+  }
+
   test("START r=rel(0,1) RETURN r") {
     val rel1 = relate(createNode(), createNode()).getId
     val rel2 = relate(createNode(), createNode()).getId
@@ -149,10 +157,27 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
   }
 
+  test("START r=rel({id}) RETURN r, id -> [0,1]") {
+    val rel1 = relate(createNode(), createNode()).getId
+    val rel2 = relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel({id}) RETURN id(r)", "id" -> List(rel1,rel2)).toList
+
+    result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
+  }
+
   test("START r=rel(0),rr=rel(1) RETURN r") {
     val rel1 = relate(createNode(), createNode()).getId
     val rel2 = relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0),rr=rel(1) RETURN id(r), id(rr)").toList
+
+    result should equal(List(Map("id(r)"-> rel1, "id(rr)"-> rel2)))
+  }
+
+  test("START r=rel({id1}),rr=rel({id2}) RETURN r") {
+    val rel1 = relate(createNode(), createNode()).getId
+    val rel2 = relate(createNode(), createNode()).getId
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel({id1}),rr=rel({id2}) RETURN id(r), id(rr)",
+                                                            "id1" -> rel1, "id2" -> rel2).toList
 
     result should equal(List(Map("id(r)"-> rel1, "id(rr)"-> rel2)))
   }
