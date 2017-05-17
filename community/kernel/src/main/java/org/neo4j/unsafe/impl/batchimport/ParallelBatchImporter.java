@@ -66,6 +66,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
@@ -181,7 +182,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
 
-            // Stage 1 -- nodes, properties, labels
+            // Import nodes, properties, labels
             Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
@@ -200,6 +201,7 @@ public class ParallelBatchImporter implements BatchImporter
                 }
             }
 
+            // Import relationships (unlinked), properties
             Configuration relationshipConfig =
                     configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             RelationshipStage unlinkedRelationshipStage =
@@ -209,8 +211,9 @@ public class ParallelBatchImporter implements BatchImporter
             executeStage( unlinkedRelationshipStage );
             neoStore.stopFlushingPageCache();
 
+            // Link relationships together with each other, their nodes and their relationship groups
             long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
-            linkRelationships( nodeRelationshipCache, neoStore, unlinkedRelationshipStage.getDistribution(),
+            linkData( nodeRelationshipCache, neoStore, unlinkedRelationshipStage.getDistribution(),
                     availableMemory );
 
             // Release this potentially really big piece of cached data
@@ -221,15 +224,16 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache.close();
             nodeRelationshipCache = null;
 
+            // Defragment relationships groups for better performance
             new RelationshipGroupDefragmenter( config, executionMonitor ).run( max( maxMemory, peakMemoryUsage ),
                     neoStore, highNodeId );
 
-            // Stage 6 -- count nodes per label and labels per node
+            // Count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
             memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
             executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
                     neoStore.getLabelRepository().getHighId(), countsUpdater, memoryUsageStats ) );
-            // Stage 7 -- count label-[type]->label
+            // Count label-[type]->label
             executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
                     neoStore.getLabelRepository().getHighId(),
                     neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, AUTO ) );
@@ -285,22 +289,34 @@ public class ParallelBatchImporter implements BatchImporter
         return total.getHeapUsage() + total.getOffHeapUsage();
     }
 
-    private void linkRelationships( NodeRelationshipCache nodeRelationshipCache,
+    /**
+     * Performs one or more rounds linking together relationships with each other. Number of rounds required
+     * is dictated by available memory. The more dense nodes and relationship types, the more memory required.
+     * Every round all relationships of one or more types are linked.
+     *
+     * Links together:
+     * <ul>
+     * <li>
+     * Relationship <--> Relationship. Two sequential passes are made over the relationship store.
+     * The forward pass links next pointers, each next pointer pointing "backwards" to lower id.
+     * The backward pass links prev pointers, each prev pointer pointing "forwards" to higher id.
+     * </li>
+     * Sparse Node --> Relationship. Sparse nodes are updated with relationship heads of completed chains.
+     * This is done in the first round only, if there are multiple rounds.
+     * </li>
+     * </ul>
+     *
+     * Other linking happens after this method.
+     *
+     * @param nodeRelationshipCache cache to use for linking.
+     * @param neoStore the stores.
+     * @param typeDistribution distribution of imported relationship types.
+     * @param freeMemoryForDenseNodeCache max available memory to use for caching.
+     */
+    private void linkData( NodeRelationshipCache nodeRelationshipCache,
             BatchingNeoStores neoStore, RelationshipTypeDistribution typeDistribution,
             long freeMemoryForDenseNodeCache )
     {
-        // Imports the relationships from the Input. This isn't a straight forward as importing nodes,
-        // since keeping track of and updating heads of relationship chains in scenarios where most nodes
-        // are dense and there are many relationship types scales poorly w/ regards to cache memory usage
-        // also as a side-effect time required to update this cache.
-        //
-        // The approach is instead to do multiple iterations where each iteration imports relationships
-        // of a single type. For each iteration Node --> Relationship and Relationship --> Relationship
-        // stages _for dense nodes only_ are run so that the cache can be reused to hold relationship chain heads
-        // of the next type in the next iteration. All relationships will be imported this way and then
-        // finally there will be one Node --> Relationship and Relationship --> Relationship stage linking
-        // all sparse relationship chains together.
-
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
