@@ -50,8 +50,6 @@ trait QueryContext extends TokenContext {
 
   def entityAccessor: EntityAccessor
 
-  def resources: CloseableResource
-
   def transactionalContext: QueryTransactionalContext
 
   def nodeOps: Operations[Node]
@@ -215,7 +213,7 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 }
 
-trait QueryTransactionalContext extends CloseableResource {
+trait QueryTransactionalContext {
 
   type ReadOps
   type DbmsOps
@@ -226,14 +224,12 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def isTopLevelTx: Boolean
 
+  def close(success: Boolean)
+
   def commitAndRestartTx()
 
   def kernelStatisticProvider: KernelStatisticProvider
 
   def databaseInfo: DatabaseInfo
-}
-
-trait CloseableResource {
-  def close(success: Boolean)
 }
 

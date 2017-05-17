@@ -32,8 +32,6 @@ trait QueryContextAdaptation {
 
   override type EntityAccessor = this.type
 
-  override def resources: CloseableResource = ???
-
   override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] = ???
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String): Iterator[Node] = ???

@@ -36,8 +36,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, ResourceManager}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -53,9 +53,9 @@ import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
-import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema.{IndexQuery, RelationTypeSchemaDescriptor, SchemaDescriptorFactory}
+import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptor, ConstraintDescriptorFactory, UniquenessConstraintDescriptor}
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
@@ -67,9 +67,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   type EntityAccessor = NodeManager
 
-  val resources: ResourceManager = new ResourceManager
-  override val nodeOps = new NodeOperations
-  override val relationshipOps = new RelationshipOperations
+  val nodeOps = new NodeOperations
+  val relationshipOps = new RelationshipOperations
 
   override lazy val entityAccessor = txContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
@@ -129,14 +128,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   override def getOrCreateLabelId(labelName: String) =
     txContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] with AutoCloseable = {
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
     val relationships = types match {
       case None =>
         txContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
       case Some(typeIds) =>
         txContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor, resources)
+    new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {

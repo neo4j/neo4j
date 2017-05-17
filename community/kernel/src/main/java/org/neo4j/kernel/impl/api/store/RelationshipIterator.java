@@ -22,10 +22,9 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
-public interface RelationshipIterator extends PrimitiveLongIterator, RelationshipVisitor.Home, Resource
+public interface RelationshipIterator extends PrimitiveLongIterator, RelationshipVisitor.Home
 {
     /**
      * Can be called to visit the data about the most recent id returned from {@link #next()}.
@@ -47,11 +46,6 @@ public interface RelationshipIterator extends PrimitiveLongIterator, Relationshi
         protected boolean fetchNext()
         {
             return false;
-        }
-
-        @Override
-        public void close()
-        {
         }
     }
 

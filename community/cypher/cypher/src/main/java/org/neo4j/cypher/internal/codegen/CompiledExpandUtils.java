@@ -142,12 +142,6 @@ public abstract class CompiledExpandUtils
 
                 return false;
             }
-
-            @Override
-            public void close()
-            {
-                allRelationships.close();
-            }
         };
     }
 
