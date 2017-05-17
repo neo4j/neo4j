@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -116,12 +115,6 @@ public class CsvInput implements Input
     public IdMapper idMapper()
     {
         return idType.idMapper();
-    }
-
-    @Override
-    public IdGenerator idGenerator()
-    {
-        return idType.idGenerator();
     }
 
     @Override

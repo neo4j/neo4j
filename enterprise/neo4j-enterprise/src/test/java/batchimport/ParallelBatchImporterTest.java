@@ -22,7 +22,6 @@ package batchimport;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
@@ -30,9 +29,9 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
  */
 public class ParallelBatchImporterTest extends org.neo4j.unsafe.impl.batchimport.ParallelBatchImporterTest
 {
-    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator )
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper )
     {
-        super( inputIdGenerator, idMapper, idGenerator );
+        super( inputIdGenerator, idMapper );
     }
 
     @Override

@@ -26,10 +26,10 @@ import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 class ExhaustingInputVisitorRunnable implements Runnable
 {
     private final InputIterator data;
-    private final EntityVisitor visitor;
+    private final EntityImporter visitor;
     private final AtomicLong entitiesCallback;
 
-    ExhaustingInputVisitorRunnable( InputIterator data, EntityVisitor visitor, AtomicLong entitiesCallback )
+    ExhaustingInputVisitorRunnable( InputIterator data, EntityImporter visitor, AtomicLong entitiesCallback )
     {
         this.data = data;
         this.visitor = visitor;

@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
-abstract class EntityVisitor extends InputEntityVisitor.Adapter implements AutoCloseable
+abstract class EntityImporter extends InputEntityVisitor.Adapter implements AutoCloseable
 {
     private final BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;
     private final PropertyStore propertyStore;
@@ -39,7 +39,7 @@ abstract class EntityVisitor extends InputEntityVisitor.Adapter implements AutoC
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
 
-    protected EntityVisitor( PropertyStore propertyStore,
+    protected EntityImporter( PropertyStore propertyStore,
             BatchingPropertyKeyTokenRepository propertyKeyTokenRepository )
     {
         this.propertyStore = propertyStore;

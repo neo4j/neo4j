@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
-public class NodeVisitor extends EntityVisitor
+public class NodeImporter extends EntityImporter
 {
     private final BatchingLabelTokenRepository labelTokenRepository;
     private final NodeStore nodeStore;
@@ -37,7 +37,7 @@ public class NodeVisitor extends EntityVisitor
     private final IdMapper idMapper;
     private final BatchingIdGetter nodeIds;
 
-    public NodeVisitor( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
+    public NodeImporter( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingLabelTokenRepository labelTokenRepository, IdMapper idMapper )
     {
         super( stores.getPropertyStore(), propertyKeyTokenRepository );
@@ -52,7 +52,8 @@ public class NodeVisitor extends EntityVisitor
     @Override
     public boolean id( long id )
     {
-        throw new UnsupportedOperationException();
+        nodeRecord.setId( id );
+        return true;
     }
 
     @Override

@@ -65,7 +65,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -86,8 +85,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
@@ -144,24 +141,22 @@ public class ParallelBatchImporterTest
     };
     private final InputIdGenerator inputIdGenerator;
     private final IdMapper idMapper;
-    private final IdGenerator idGenerator;
 
     @Parameterized.Parameters(name = "{0},{1},{3}")
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
                 // Long input ids, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( NumberArrayFactory.HEAP ), fromInput()},
+                new Object[]{new LongInputIdGenerator(), longs( NumberArrayFactory.HEAP )},
                 // String input ids, generate ids from stores
-                new Object[]{new StringInputIdGenerator(), strings( NumberArrayFactory.HEAP ), startingFromTheBeginning()}
+                new Object[]{new StringInputIdGenerator(), strings( NumberArrayFactory.HEAP )}
         );
     }
 
-    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator )
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdMapper idMapper )
     {
         this.inputIdGenerator = inputIdGenerator;
         this.idMapper = idMapper;
-        this.idGenerator = idGenerator;
     }
 
     @Test
@@ -182,8 +177,7 @@ public class ParallelBatchImporterTest
             inserter.doImport( Inputs.input(
                     nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groups ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
-                            inputIdGenerator, groups ),
-                    idMapper, idGenerator,
+                            inputIdGenerator, groups ), idMapper,
                     /*insanely high bad tolerance, but it will actually never be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ) ) );
 

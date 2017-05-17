@@ -103,7 +103,6 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -460,9 +459,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             InputIterator nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
             InputIterator relationships =
                     legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
-            importer.doImport(
-                    Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
-                            Collectors.badCollector( badOutput, 0 ) ) );
+            importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(),
+                    Collectors.badCollector( badOutput, 0 ) ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written

@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingR
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
-public class RelationshipVisitor extends EntityVisitor
+public class RelationshipImporter extends EntityImporter
 {
     private final BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository;
     private final IdMapper idMapper;
@@ -42,7 +42,7 @@ public class RelationshipVisitor extends EntityVisitor
     private final NodeRelationshipCache nodeRelationshipCache;
     private final Client typeCounts;
 
-    protected RelationshipVisitor( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
+    protected RelationshipImporter( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper,
             NodeRelationshipCache nodeRelationshipCache, RelationshipTypeDistribution typeDistribution )
     {

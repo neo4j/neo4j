@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
@@ -50,11 +49,6 @@ public interface Input
      * to resolve potentially temporary input node ids to actual node ids in the database.
      */
     IdMapper idMapper();
-
-    /**
-     * @return {@link IdGenerator} which is responsible for generating actual node ids from input node ids.
-     */
-    IdGenerator idGenerator();
 
     /**
      * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}

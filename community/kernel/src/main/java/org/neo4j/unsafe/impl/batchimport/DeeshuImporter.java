@@ -34,7 +34,7 @@ import static org.neo4j.helpers.Format.bytes;
 
 public class DeeshuImporter
 {
-   private static void importData( int numRunners, InputIterator data, Supplier<EntityVisitor> visitors )
+   private static void importData( int numRunners, InputIterator data, Supplier<EntityImporter> visitors )
             throws InterruptedException
     {
         AtomicLong entitiesCallback = new AtomicLong();
@@ -60,7 +60,7 @@ public class DeeshuImporter
             throws InterruptedException
     {
         importData( numRunners, input.nodes(), () ->
-            new NodeVisitor( stores.getNeoStores(),
+            new NodeImporter( stores.getNeoStores(),
                     stores.getPropertyKeyRepository(), stores.getLabelRepository(), idMapper ) );
         nodeRelationshipCache.setHighNodeId( stores.getNodeStore().getHighId() );
     }
@@ -71,7 +71,7 @@ public class DeeshuImporter
     {
         RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution();
         importData( numRunners, input.relationships(), () ->
-                new RelationshipVisitor( stores.getNeoStores(),
+                new RelationshipImporter( stores.getNeoStores(),
                         stores.getPropertyKeyRepository(), stores.getRelationshipTypeRepository(), idMapper,
                         nodeRelationshipCache, typeDistribution ) );
         return typeDistribution;

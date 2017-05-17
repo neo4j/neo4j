@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
@@ -39,7 +38,7 @@ public class Inputs
 {
     public static Input input(
             final InputIterator nodes, final InputIterator relationships,
-            final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector )
+            final IdMapper idMapper, final Collector badCollector )
     {
         return new Input()
         {
@@ -59,12 +58,6 @@ public class Inputs
             public IdMapper idMapper()
             {
                 return idMapper;
-            }
-
-            @Override
-            public IdGenerator idGenerator()
-            {
-                return idGenerator;
             }
 
             @Override
