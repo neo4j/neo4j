@@ -171,7 +171,7 @@ public class CommandApplicationProcess extends LifecycleAdapter
         }
     }
 
-    synchronized long lastApplied()
+    public synchronized long lastApplied()
     {
         return lastApplied;
     }
