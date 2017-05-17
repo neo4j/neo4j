@@ -30,20 +30,51 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+import static java.lang.String.format;
+
 import static org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor.fitInProgress;
 
 public class DataImporter
 {
-    private static void importData( String title, int numRunners, InputIterator data,
+    public static class Monitor
+    {
+        private final AtomicLong nodes = new AtomicLong();
+        private final AtomicLong relationships = new AtomicLong();
+        private final AtomicLong properties = new AtomicLong();
+
+        public void nodesImported( long nodes )
+        {
+            this.nodes.addAndGet( nodes );
+        }
+
+        public void relationshipsImported( long relationships )
+        {
+            this.relationships.addAndGet( relationships );
+        }
+
+        public void propertiesImported( long properties )
+        {
+            this.properties.addAndGet( properties );
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "Imported:%n  %d nodes%n  %d relationships%n  %d properties",
+                    nodes, relationships, properties );
+        }
+    }
+
+    private static long importData( String title, int numRunners, InputIterator data,
             Supplier<EntityImporter> visitors )
             throws InterruptedException
     {
         System.out.println( "Importing " + title );
-        AtomicLong entitiesCallback = new AtomicLong();
+        AtomicLong roughEntityCountProgress = new AtomicLong();
         ExecutorService pool = Executors.newFixedThreadPool( numRunners );
         for ( int i = 0; i < numRunners; i++ )
         {
-            pool.submit( new ExhaustingEntityImporterRunnable( data, visitors.get(), entitiesCallback ) );
+            pool.submit( new ExhaustingEntityImporterRunnable( data, visitors.get(), roughEntityCountProgress ) );
         }
         pool.shutdown();
 
@@ -51,32 +82,33 @@ public class DataImporter
         int interval = 2;
         while ( !pool.awaitTermination( interval, TimeUnit.SECONDS ) )
         {
-            long entities = entitiesCallback.get();
+            long entities = roughEntityCountProgress.get();
             long entitiesDiff = (entities - entitiesLastReport) / interval;
             System.out.print( "\r" + fitInProgress( entities ) + " ∆" + fitInProgress( entitiesDiff ) + "/s" );
             entitiesLastReport = entities;
         }
+        return roughEntityCountProgress.get();
     }
 
     public static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper,
-            NodeRelationshipCache nodeRelationshipCache )
+            NodeRelationshipCache nodeRelationshipCache, Monitor monitor )
             throws InterruptedException
     {
         importData( "Nodes", numRunners, input.nodes(), () ->
             new NodeImporter( stores.getNeoStores(),
-                    stores.getPropertyKeyRepository(), stores.getLabelRepository(), idMapper ) );
+                    stores.getPropertyKeyRepository(), stores.getLabelRepository(), idMapper, monitor ) );
         nodeRelationshipCache.setHighNodeId( stores.getNodeStore().getHighId() );
     }
 
     public static RelationshipTypeDistribution importRelationships( int numRunners, Input input,
-            BatchingNeoStores stores, IdMapper idMapper, NodeRelationshipCache nodeRelationshipCache )
-                    throws InterruptedException
+            BatchingNeoStores stores, IdMapper idMapper, NodeRelationshipCache nodeRelationshipCache,
+            Monitor monitor ) throws InterruptedException
     {
         RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution();
         importData( "Relationships", numRunners, input.relationships(), () ->
                 new RelationshipImporter( stores.getNeoStores(),
                         stores.getPropertyKeyRepository(), stores.getRelationshipTypeRepository(), idMapper,
-                        nodeRelationshipCache, typeDistribution ) );
+                        nodeRelationshipCache, typeDistribution, monitor ) );
         return typeDistribution;
     }
 }

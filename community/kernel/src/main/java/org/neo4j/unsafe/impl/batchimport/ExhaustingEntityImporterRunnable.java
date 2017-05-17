@@ -23,17 +23,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 class ExhaustingEntityImporterRunnable implements Runnable
 {
     private final InputIterator data;
     private final EntityImporter visitor;
-    private final AtomicLong entitiesCallback;
+    private final AtomicLong roughEntityCountProgress;
 
-    ExhaustingEntityImporterRunnable( InputIterator data, EntityImporter visitor, AtomicLong entitiesCallback )
+    ExhaustingEntityImporterRunnable( InputIterator data, EntityImporter visitor, AtomicLong roughEntityCountProgress )
     {
         this.data = data;
         this.visitor = visitor;
-        this.entitiesCallback = entitiesCallback;
+        this.roughEntityCountProgress = roughEntityCountProgress;
     }
 
     @Override
@@ -48,13 +50,12 @@ class ExhaustingEntityImporterRunnable implements Runnable
                 {
                     count++;
                 }
-                entitiesCallback.addAndGet( count );
+                roughEntityCountProgress.addAndGet( count );
             }
         }
         catch ( Throwable e )
         {
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            throw launderedException( e );
         }
         finally
         {

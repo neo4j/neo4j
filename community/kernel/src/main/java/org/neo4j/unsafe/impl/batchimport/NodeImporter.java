@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
@@ -37,10 +38,12 @@ public class NodeImporter extends EntityImporter
     private final IdMapper idMapper;
     private final BatchingIdGetter nodeIds;
 
+    private long nodeCount;
+
     public NodeImporter( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
-            BatchingLabelTokenRepository labelTokenRepository, IdMapper idMapper )
+            BatchingLabelTokenRepository labelTokenRepository, IdMapper idMapper, Monitor monitor )
     {
-        super( stores.getPropertyStore(), propertyKeyTokenRepository );
+        super( stores.getPropertyStore(), propertyKeyTokenRepository, monitor );
         this.labelTokenRepository = labelTokenRepository;
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
@@ -86,6 +89,7 @@ public class NodeImporter extends EntityImporter
         nodeRecord.setNextProp( createAndWritePropertyChain() );
         nodeRecord.setInUse( true );
         nodeStore.updateRecord( nodeRecord );
+        nodeCount++;
         nodeRecord.clear();
         super.endOfEntity();
     }
@@ -94,5 +98,12 @@ public class NodeImporter extends EntityImporter
     protected PrimitiveRecord primitiveRecord()
     {
         return nodeRecord;
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        monitor.nodesImported( nodeCount );
     }
 }

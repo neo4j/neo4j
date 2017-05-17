@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
@@ -38,12 +39,15 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     private PropertyBlock[] propertyBlocks = new PropertyBlock[100];
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
+    protected final Monitor monitor;
+    private long propertyCount;
 
     protected EntityImporter( PropertyStore propertyStore,
-            BatchingPropertyKeyTokenRepository propertyKeyTokenRepository )
+            BatchingPropertyKeyTokenRepository propertyKeyTokenRepository, Monitor monitor )
     {
         this.propertyStore = propertyStore;
         this.propertyKeyTokenRepository = propertyKeyTokenRepository;
+        this.monitor = monitor;
         for ( int i = 0; i < propertyBlocks.length; i++ )
         {
             propertyBlocks[i] = new PropertyBlock();
@@ -56,6 +60,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     public boolean property( String key, Object value )
     {
         encodeProperty( nextPropertyBlock(), key, value );
+        propertyCount++;
         return true;
     }
 
@@ -140,5 +145,6 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     @Override
     public void close()
     {
+        monitor.propertiesImported( propertyCount );
     }
 }

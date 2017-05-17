@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution.Client;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -42,11 +43,14 @@ public class RelationshipImporter extends EntityImporter
     private final NodeRelationshipCache nodeRelationshipCache;
     private final Client typeCounts;
 
+    private long relationshipCount;
+
     protected RelationshipImporter( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper,
-            NodeRelationshipCache nodeRelationshipCache, RelationshipTypeDistribution typeDistribution )
+            NodeRelationshipCache nodeRelationshipCache, RelationshipTypeDistribution typeDistribution,
+            Monitor monitor )
     {
-        super( stores.getPropertyStore(), propertyKeyTokenRepository );
+        super( stores.getPropertyStore(), propertyKeyTokenRepository, monitor );
         this.relationshipTypeTokenRepository = relationshipTypeTokenRepository;
         this.idMapper = idMapper;
         this.nodeRelationshipCache = nodeRelationshipCache;
@@ -129,6 +133,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipRecord.setId( relationshipIds.next() );
             relationshipRecord.setNextProp( createAndWritePropertyChain() );
             relationshipStore.updateRecord( relationshipRecord );
+            relationshipCount++;
         }
         // TODO else collect, right?
 
@@ -140,6 +145,8 @@ public class RelationshipImporter extends EntityImporter
     @Override
     public void close()
     {
+        super.close();
         typeCounts.close();
+        monitor.relationshipsImported( relationshipCount );
     }
 }

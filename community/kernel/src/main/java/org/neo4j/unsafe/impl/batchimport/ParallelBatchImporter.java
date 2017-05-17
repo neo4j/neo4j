@@ -167,13 +167,13 @@ public class ParallelBatchImporter implements BatchImporter
             IdMapper idMapper = input.idMapper();
             nodeRelationshipCache = new NodeRelationshipCache( NumberArrayFactory.HEAP, config.denseNodeThreshold() );
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
-
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
+            DataImporter.Monitor storeUpdateMonitor = new DataImporter.Monitor();
 
             // Import nodes, properties, labels
             neoStore.startFlushingPageCache();
             DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
-                    nodeRelationshipCache );
+                    nodeRelationshipCache, storeUpdateMonitor );
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
@@ -192,7 +192,8 @@ public class ParallelBatchImporter implements BatchImporter
             // Import relationships (unlinked), properties
             neoStore.startFlushingPageCache();
             RelationshipTypeDistribution typeDistribution = DataImporter.importRelationships(
-                    config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache );
+                    config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache,
+                    storeUpdateMonitor );
             neoStore.stopFlushingPageCache();
 
             // Release this potentially really big piece of cached data
@@ -228,14 +229,10 @@ public class ParallelBatchImporter implements BatchImporter
             long totalTimeMillis = currentTimeMillis() - startTime;
             executionMonitor.done( totalTimeMillis,
                     format( "%n" ) +
-                    // TODO: print number of imported nodes/relationships/properties
-//                    storeUpdateMonitor.toString() +
+                    storeUpdateMonitor.toString() +
                     format( "%n" ) +
                     "Peak memory usage: " + bytes( peakMemoryUsage ) );
-            log.info( "Import completed, took " + Format.duration( totalTimeMillis )
-                    // TODO: print number of imported nodes/relationships/properties
-//                    + ". " + storeUpdateMonitor
-                    );
+            log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
         }
         catch ( Throwable t )
         {
