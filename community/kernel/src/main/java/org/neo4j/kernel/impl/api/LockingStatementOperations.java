@@ -62,7 +62,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class LockingStatementOperations implements
@@ -110,7 +109,7 @@ public class LockingStatementOperations implements
         //
         // It would be cleaner if the schema and data cakes were separated so that the SchemaReadOperations object used
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, labelId );
 
         acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
@@ -130,7 +129,7 @@ public class LockingStatementOperations implements
     public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveLabelLock( state, descriptor.getLabelId() );
         state.assertOpen();
         return schemaWriteDelegate.indexCreate( state, descriptor );
     }
@@ -138,7 +137,7 @@ public class LockingStatementOperations implements
     @Override
     public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();
         schemaWriteDelegate.indexDrop( state, descriptor );
     }
@@ -146,7 +145,7 @@ public class LockingStatementOperations implements
     @Override
     public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();
         schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
     }
@@ -160,6 +159,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    // TODO:remove
     public <K> boolean schemaStateContains( KernelStatement state, K key )
     {
         acquireSharedSchemaLock( state );
@@ -178,7 +178,7 @@ public class LockingStatementOperations implements
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, labelId );
         state.assertOpen();
         return schemaReadDelegate.indexesGetForLabel( state, labelId );
     }
@@ -186,7 +186,7 @@ public class LockingStatementOperations implements
     @Override
     public IndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, descriptor.getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetForSchema( state, descriptor );
     }
@@ -203,7 +203,7 @@ public class LockingStatementOperations implements
     public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetState( state, descriptor );
     }
@@ -212,7 +212,7 @@ public class LockingStatementOperations implements
     public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetPopulationProgress( state, descriptor );
     }
@@ -220,7 +220,7 @@ public class LockingStatementOperations implements
     @Override
     public long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexSize( state, descriptor );
     }
@@ -229,7 +229,7 @@ public class LockingStatementOperations implements
     public double indexUniqueValuesPercentage( KernelStatement state,
             IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, descriptor.schema().getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexUniqueValuesPercentage( state, descriptor );
     }
@@ -237,7 +237,7 @@ public class LockingStatementOperations implements
     @Override
     public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, index.schema().getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, index );
     }
@@ -246,7 +246,7 @@ public class LockingStatementOperations implements
     public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, index.schema().getLabelId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetCommittedId( state, index );
     }
@@ -292,13 +292,10 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long relationshipCreate( KernelStatement state,
-            int relationshipTypeId,
-            long startNodeId,
-            long endNodeId )
+    public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
             throws EntityNotFoundException
     {
-        acquireSharedSchemaLock( state );
+        sharedRelationshipTypeLock( state, relationshipTypeId );
         lockRelationshipNodes( state, startNodeId, endNodeId );
         return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
     }
@@ -329,7 +326,7 @@ public class LockingStatementOperations implements
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveLabelLock( state, descriptor.getLabelId() );
         state.assertOpen();
         return schemaWriteDelegate.nodeKeyConstraintCreate( state, descriptor );
     }
@@ -339,7 +336,7 @@ public class LockingStatementOperations implements
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveLabelLock( state, descriptor.getLabelId() );
         state.assertOpen();
         return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }
@@ -349,7 +346,7 @@ public class LockingStatementOperations implements
             LabelSchemaDescriptor descriptor ) throws AlreadyConstrainedException, CreateConstraintFailureException,
             RepeatedPropertyInCompositeSchemaException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveLabelLock( state, descriptor.getLabelId() );
         state.assertOpen();
         return schemaWriteDelegate.nodePropertyExistenceConstraintCreate( state, descriptor );
     }
@@ -360,7 +357,7 @@ public class LockingStatementOperations implements
             throws AlreadyConstrainedException, CreateConstraintFailureException,
             RepeatedPropertyInCompositeSchemaException
     {
-        acquireExclusiveSchemaLock( state );
+        exclusiveRelationshipTypeLock( state, descriptor.getRelTypeId() );
         state.assertOpen();
         return schemaWriteDelegate.relationshipPropertyExistenceConstraintCreate( state, descriptor );
     }
@@ -368,7 +365,8 @@ public class LockingStatementOperations implements
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
-        acquireSharedSchemaLock( state );
+
+        sharedLock( state, descriptor.resourceType(), descriptor.resourceId() );
         state.assertOpen();
         return schemaReadDelegate.constraintsGetForSchema( state, descriptor );
     }
@@ -376,7 +374,8 @@ public class LockingStatementOperations implements
     @Override
     public boolean constraintExists( KernelStatement state, ConstraintDescriptor descriptor )
     {
-        acquireSharedSchemaLock( state );
+        SchemaDescriptor schema = descriptor.schema();
+        sharedLock( state, schema.resourceType(), schema.resourceId() );
         state.assertOpen();
         return schemaReadDelegate.constraintExists( state, descriptor );
     }
@@ -384,7 +383,7 @@ public class LockingStatementOperations implements
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel( KernelStatement state, int labelId )
     {
-        acquireSharedSchemaLock( state );
+        sharedLabelLock( state, labelId );
         state.assertOpen();
         return schemaReadDelegate.constraintsGetForLabel( state, labelId );
     }
@@ -393,7 +392,7 @@ public class LockingStatementOperations implements
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( KernelStatement state,
             int typeId )
     {
-        acquireSharedSchemaLock( state );
+        sharedRelationshipTypeLock( state, typeId );
         state.assertOpen();
         return schemaReadDelegate.constraintsGetForRelationshipType( state, typeId );
     }
@@ -410,7 +409,8 @@ public class LockingStatementOperations implements
     public void constraintDrop( KernelStatement state, ConstraintDescriptor constraint )
             throws DropConstraintFailureException
     {
-        acquireExclusiveSchemaLock( state );
+        SchemaDescriptor schema = constraint.schema();
+        exclusiveLock( state, schema.resourceType(), schema.resourceId() );
         state.assertOpen();
         schemaWriteDelegate.constraintDrop( state, constraint );
     }
@@ -511,7 +511,6 @@ public class LockingStatementOperations implements
         state.assertOpen();
     }
 
-    // === TODO Below is unnecessary delegate methods
     @Override
     public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
@@ -535,23 +534,53 @@ public class LockingStatementOperations implements
         }
     }
 
-    private void acquireSharedSchemaLock( KernelStatement state )
+    private void exclusiveLabelLock( KernelStatement state, long labelId )
     {
-        if ( !SCHEMA_WRITES_DISABLE )
-        {
-            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-        }
+        exclusiveLock( state, ResourceTypes.LABEL, labelId );
     }
 
-    private void acquireExclusiveSchemaLock( KernelStatement state )
+    private void sharedLabelLock( KernelStatement state, long labelId )
     {
-        if ( SCHEMA_WRITES_DISABLE )
-        {
-            throw new IllegalStateException( "Schema modifications have been disabled via feature toggle" );
-        }
-        else
-        {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-        }
+        sharedLock( state, ResourceTypes.LABEL, labelId );
     }
+
+    private void exclusiveRelationshipTypeLock( KernelStatement state, long typeId )
+    {
+        exclusiveLock( state, ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void sharedRelationshipTypeLock( KernelStatement state, long typeId )
+    {
+        sharedLock( state, ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void sharedLock( KernelStatement statement, ResourceType resource, long resourceId )
+    {
+        statement.locks().optimistic().acquireShared( statement.lockTracer(), resource, resourceId );
+    }
+
+    private void exclusiveLock( KernelStatement statement, ResourceType resource, long resourceId )
+    {
+        statement.locks().optimistic().acquireExclusive( statement.lockTracer(), resource, resourceId );
+    }
+
+//    private void acquireSharedSchemaLock( KernelStatement state )
+//    {
+//        if ( !SCHEMA_WRITES_DISABLE )
+//        {
+//            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+//        }
+//    }
+//
+//    private void acquireExclusiveSchemaLock( KernelStatement state )
+//    {
+//        if ( SCHEMA_WRITES_DISABLE )
+//        {
+//            throw new IllegalStateException( "Schema modifications have been disabled via feature toggle" );
+//        }
+//        else
+//        {
+//            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+//        }
+//    }
 }

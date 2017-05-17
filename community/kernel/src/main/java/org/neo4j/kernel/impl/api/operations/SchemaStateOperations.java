@@ -41,10 +41,12 @@ public interface SchemaStateOperations
     /**
      * Check if some key is in the schema state.
      */
+    //TODO:remove?
     <K> boolean schemaStateContains( KernelStatement state, K key );
 
     /**
      * Flush the schema state.
      */
+    //TODO:remove?
     void schemaStateFlush( KernelStatement state );
 }

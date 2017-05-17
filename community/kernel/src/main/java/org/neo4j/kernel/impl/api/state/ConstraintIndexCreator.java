@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class ConstraintIndexCreator
@@ -61,30 +61,28 @@ public class ConstraintIndexCreator
     private final IndexingService indexingService;
     private final Supplier<KernelAPI> kernelSupplier;
     private final PropertyAccessor propertyAccessor;
-    private final boolean releaseSchemaLockWhenCreatingConstraint;
 
-    public ConstraintIndexCreator( Supplier<KernelAPI> kernelSupplier, IndexingService indexingService,
-            PropertyAccessor propertyAccessor, boolean releaseSchemaLockWhenCreatingConstraint )
+    public ConstraintIndexCreator( Supplier<KernelAPI> kernelSupplier, IndexingService indexingService, PropertyAccessor propertyAccessor )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
         this.propertyAccessor = propertyAccessor;
-        this.releaseSchemaLockWhenCreatingConstraint = releaseSchemaLockWhenCreatingConstraint;
     }
 
+    //TODO: javadoc
     /**
-     * You MUST hold a schema write lock before you call this method.
-     * However the schema write lock is temporarily released while populating the index backing the constraint.
+     * You MUST hold a label write lock before you call this method.
+     * However the label write lock is temporarily released while populating the index backing the constraint.
      * It goes a little like this:
      * <ol>
      * <li>Prerequisite: Getting here means that there's an open schema transaction which has acquired the
-     * SCHEMA WRITE lock.</li>
+     * LABEL WRITE lock.</li>
      * <li>Index schema rule which is backing the constraint is created in a nested mini-transaction
      * which doesn't acquire any locking, merely adds tx state and commits so that the index rule is applied
      * to the store, which triggers the index population</li>
-     * <li>Release the SCHEMA WRITE lock</li>
+     * <li>Release the LABEL WRITE lock</li>
      * <li>Await index population to complete</li>
-     * <li>Acquire the SCHEMA WRITE lock (effectively blocking concurrent transactions changing
+     * <li>Acquire the LABEL WRITE lock (effectively blocking concurrent transactions changing
      * data related to this constraint, and it so happens, most other transactions as well) and verify
      * the uniqueness of the built index</li>
      * <li>Leave this method, knowing that the uniqueness constraint rule will be added to tx state
@@ -122,7 +120,7 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            releaseSchemaLock( locks );
+            releaseLabelLock( locks );
 
             awaitConstrainIndexPopulation( constraint, indexId );
 
@@ -130,7 +128,7 @@ public class ConstraintIndexCreator
             // Acquire SCHEMA WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
-            acquireSchemaLock( state, locks );
+            acquireLabelLock( state, locks );
             reacquiredSchemaLock = true;
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
             success = true;
@@ -155,27 +153,21 @@ public class ConstraintIndexCreator
             {
                 if ( !reacquiredSchemaLock )
                 {
-                    acquireSchemaLock( state, locks );
+                    acquireLabelLock( state, locks );
                 }
                 dropUniquenessConstraintIndex( index );
             }
         }
     }
 
-    private void acquireSchemaLock( KernelStatement state, Client locks )
+    private void acquireLabelLock( KernelStatement state, Client locks )
     {
-        if ( releaseSchemaLockWhenCreatingConstraint )
-        {
-            locks.acquireExclusive( state.lockTracer(), SCHEMA, schemaResource() );
-        }
+        locks.acquireExclusive( state.lockTracer(), LABEL, schemaResource() );
     }
 
-    private void releaseSchemaLock( Client locks )
+    private void releaseLabelLock( Client locks )
     {
-        if ( releaseSchemaLockWhenCreatingConstraint )
-        {
-            locks.releaseExclusive( SCHEMA, schemaResource() );
-        }
+        locks.releaseExclusive( LABEL, schemaResource() );
     }
 
     /**
@@ -188,13 +180,6 @@ public class ConstraintIndexCreator
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
-            // write lock. It is assumed that the transaction that invoked this "inner" transaction
-            // holds a schema write lock, and that it will wait for this inner transaction to do its
-            // work.
-            // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
-            // internal implementation of Statement. However it is currently used by the external
-            // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
             ((KernelStatement) statement).txState().indexDoDrop( descriptor );
             transaction.success();
         }
