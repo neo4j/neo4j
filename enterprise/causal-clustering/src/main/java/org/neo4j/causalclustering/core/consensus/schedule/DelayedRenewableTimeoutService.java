@@ -30,14 +30,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.System.nanoTime;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * A bare bones, wall clock based implementation of the {@link RenewableTimeoutService}. It uses a scheduled thread

@@ -22,11 +22,11 @@ package org.neo4j.causalclustering.helper;
 import java.util.concurrent.CancellationException;
 
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * A robust job catches and logs any exceptions, but keeps running if the job

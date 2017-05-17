@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;

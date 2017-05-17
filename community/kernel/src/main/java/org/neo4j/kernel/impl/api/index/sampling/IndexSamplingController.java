@@ -29,12 +29,12 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexSamplingController;
+import static org.neo4j.scheduler.JobScheduler.Groups.indexSamplingController;
 
 public class IndexSamplingController
 {

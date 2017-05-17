@@ -22,9 +22,9 @@ package org.neo4j.index.internal.gbptree;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.recoveryCleanup;
+import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
 
 /**
  * Collects recovery cleanup work to be performed and {@link #run() runs} them all as one job,

@@ -36,11 +36,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
+import static org.neo4j.scheduler.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {

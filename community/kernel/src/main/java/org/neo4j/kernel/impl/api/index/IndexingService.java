@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -69,7 +69,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
+import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for

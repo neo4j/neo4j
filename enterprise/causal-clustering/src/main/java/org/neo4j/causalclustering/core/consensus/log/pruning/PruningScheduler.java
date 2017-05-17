@@ -20,7 +20,7 @@
 package org.neo4j.causalclustering.core.consensus.log.pruning;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
+import static org.neo4j.scheduler.JobScheduler.Groups.raftLogPruning;
 
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
@@ -28,7 +28,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

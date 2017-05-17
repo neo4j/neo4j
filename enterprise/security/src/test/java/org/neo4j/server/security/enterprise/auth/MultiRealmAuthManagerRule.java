@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.AuthenticationStrategy;

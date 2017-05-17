@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.neo4j.function.Factory;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -38,7 +39,7 @@ import static org.neo4j.helpers.Format.duration;
  * acquire/release methods.
  *
  * The {@link #run()} method here performs one "sweep", checking for idle entries to reap. You will want to trigger
- * that run on a recurring basis, for instance using {@link org.neo4j.kernel.impl.util.JobScheduler}.
+ * that run on a recurring basis, for instance using {@link JobScheduler}.
  */
 public class TimedRepository<KEY, VALUE> implements Runnable
 {

@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;

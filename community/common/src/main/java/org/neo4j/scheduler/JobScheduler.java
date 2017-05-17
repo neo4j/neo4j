@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.scheduler;
 
 import java.util.Collections;
 import java.util.Map;
@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.NEW_THREAD;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so on.

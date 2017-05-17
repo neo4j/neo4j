@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.util.watcher;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Factory used for construction of proper adaptor for available {@link FileWatcher}.

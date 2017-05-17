@@ -25,8 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.impl.util.JobScheduler.Group;
-import org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy;
+import org.neo4j.scheduler.JobScheduler.Group;
+import org.neo4j.scheduler.JobScheduler.SchedulingStrategy;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;

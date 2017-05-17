@@ -20,7 +20,7 @@
 package org.neo4j.kernel.ha.cluster;
 
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Conversation part of HA master SPI.

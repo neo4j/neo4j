@@ -31,7 +31,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
+import static org.neo4j.scheduler.JobScheduler.Groups.raftLogPruning;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

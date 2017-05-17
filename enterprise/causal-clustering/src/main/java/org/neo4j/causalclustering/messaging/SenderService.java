@@ -32,7 +32,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;

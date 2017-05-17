@@ -26,14 +26,14 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * Waits until member has "fully joined" the raft membership.

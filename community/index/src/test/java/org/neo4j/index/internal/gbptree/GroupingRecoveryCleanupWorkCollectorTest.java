@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.JobSchedulerAdapter;
+import org.neo4j.scheduler.JobSchedulerAdapter;
 
 import static org.junit.Assert.assertTrue;
 

@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 public interface DiscoveryServiceFactory

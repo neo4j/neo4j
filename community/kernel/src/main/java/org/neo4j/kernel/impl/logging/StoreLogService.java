@@ -29,7 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
