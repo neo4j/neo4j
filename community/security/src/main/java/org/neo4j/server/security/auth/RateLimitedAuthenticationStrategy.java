@@ -40,8 +40,9 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 
         public boolean authenticationPermitted()
         {
-            return failedAuthAttempts.get() < maxFailedAttempts
-                    || clock.millis() >= ( lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD );
+            return maxFailedAttempts <= 0 || // amount of attempts is not limited
+                   failedAuthAttempts.get() < maxFailedAttempts || // less failed attempts than configured
+                   clock.millis() >= (lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD); // cool down period expired
         }
 
         public void authSuccess()

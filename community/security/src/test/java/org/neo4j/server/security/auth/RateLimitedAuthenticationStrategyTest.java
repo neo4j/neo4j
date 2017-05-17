@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import org.junit.Test;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -30,6 +31,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class RateLimitedAuthenticationStrategyTest
@@ -118,6 +120,31 @@ public class RateLimitedAuthenticationStrategyTest
 
         // Then things should be alright
         assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ) );
+    }
+
+    @Test
+    public void shouldAllowUnlimitedFailedAttemptsWhenMaxFailedAttemptsIsZero()
+    {
+        testUnlimitedFailedAuthAttempts( 0 );
+    }
+
+    @Test
+    public void shouldAllowUnlimitedFailedAttemptsWhenMaxFailedAttemptsIsNegative()
+    {
+        testUnlimitedFailedAuthAttempts( -42 );
+    }
+
+    private void testUnlimitedFailedAuthAttempts( int maxFailedAttempts )
+    {
+        FakeClock clock = getFakeClock();
+        AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, maxFailedAttempts );
+        User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
+
+        int attempts = ThreadLocalRandom.current().nextInt( 5, 100 );
+        for ( int i = 0; i < attempts; i++ )
+        {
+            assertEquals( AuthenticationResult.FAILURE, authStrategy.authenticate( user, "wrong" ) );
+        }
     }
 
     private FakeClock getFakeClock()

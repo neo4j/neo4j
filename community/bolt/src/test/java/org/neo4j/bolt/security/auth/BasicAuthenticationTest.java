@@ -26,15 +26,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.PasswordPolicy;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -86,17 +92,15 @@ public class BasicAuthenticationTest
     @Test
     public void shouldFailWhenTooManyAttempts() throws Exception
     {
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.AuthenticationRateLimit ) );
-        exception.expectMessage( "The client has provided incorrect authentication details too many times in a row." );
-
         // Given
-        for ( int i = 0; i < 3; ++i )
+        int maxFailedAttempts = ThreadLocalRandom.current().nextInt( 1, 10 );
+        Authentication auth = createAuthentication( maxFailedAttempts );
+
+        for ( int i = 0; i < maxFailedAttempts; ++i )
         {
             try
             {
-                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato" ) );
+                auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato" ) );
             }
             catch ( AuthenticationException e )
             {
@@ -104,8 +108,13 @@ public class BasicAuthenticationTest
             }
         }
 
+        // Expect
+        exception.expect( AuthenticationException.class );
+        exception.expect( hasStatus( Status.Security.AuthenticationRateLimit ) );
+        exception.expectMessage( "The client has provided incorrect authentication details too many times in a row." );
+
         //When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato" ) );
+        auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "gelato" ) );
     }
 
     @Test
@@ -182,12 +191,24 @@ public class BasicAuthenticationTest
     @Before
     public void setup() throws Throwable
     {
-        UserRepository userRepository = new InMemoryUserRepository();
+        authentication = createAuthentication( 3 );
+    }
+
+    private static Authentication createAuthentication( int maxFailedAttempts ) throws Exception
+    {
+        UserRepository users = new InMemoryUserRepository();
         PasswordPolicy policy = mock( PasswordPolicy.class );
-        BasicAuthManager manager = new BasicAuthManager( userRepository, policy, Clocks.systemClock(), userRepository );
-        authentication =  new BasicAuthentication( manager, manager );
+
+        Map<String,String> maxAttamptsConfig = singletonMap( GraphDatabaseSettings.auth_max_failed_attempts.name(),
+                String.valueOf( maxFailedAttempts ) );
+        Config config = Config.defaults().augment( maxAttamptsConfig );
+
+        BasicAuthManager manager = new BasicAuthManager( users, policy, Clocks.systemClock(), users, config );
+        Authentication authentication = new BasicAuthentication( manager, manager );
         manager.newUser( "bob", "secret", true );
         manager.newUser( "mike", "secret2", false );
+
+        return authentication;
     }
 
     private HasStatus hasStatus( Status status )

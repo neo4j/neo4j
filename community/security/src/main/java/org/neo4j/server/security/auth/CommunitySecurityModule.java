@@ -55,8 +55,8 @@ public class CommunitySecurityModule extends SecurityModule
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        BasicAuthManager authManager =
-                new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(), initialUserRepository );
+        BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, Clocks.systemClock(),
+                initialUserRepository, config );
 
         dependencies.lifeSupport().add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 

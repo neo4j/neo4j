@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.time.Clocks;
@@ -46,7 +47,8 @@ public class SecurityContextDescriptionTest
                     new InMemoryUserRepository(),
                     new BasicPasswordPolicy(),
                     Clocks.systemClock(),
-                    new InMemoryUserRepository() );
+                    new InMemoryUserRepository(),
+                    Config.defaults() );
         manager.init();
         manager.start();
         manager.newUser( "johan", "bar", false );

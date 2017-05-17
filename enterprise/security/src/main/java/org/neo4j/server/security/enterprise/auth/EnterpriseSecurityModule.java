@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
@@ -196,13 +198,19 @@ public class EnterpriseSecurityModule extends SecurityModule
                 CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem ),
                 getRoleRepository( config, logProvider, fileSystem ),
                 new BasicPasswordPolicy(),
-                new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
+                createAuthenticationStrategy( config ),
                 config.get( SecuritySettings.native_authentication_enabled ),
                 config.get( SecuritySettings.native_authorization_enabled ),
                 jobScheduler,
                 CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem ),
                 getDefaultAdminRepository( config, logProvider, fileSystem )
             );
+    }
+
+    private static AuthenticationStrategy createAuthenticationStrategy( Config config )
+    {
+        int maxFailedAttempts = config.get( GraphDatabaseSettings.auth_max_failed_attempts );
+        return new RateLimitedAuthenticationStrategy( Clocks.systemClock(), maxFailedAttempts );
     }
 
     private static CacheManager createCacheManager( Config config )

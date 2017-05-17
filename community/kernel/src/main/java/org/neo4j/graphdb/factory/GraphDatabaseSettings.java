@@ -569,6 +569,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
+    @Internal
+    public static final Setting<Integer> auth_max_failed_attempts =
+            setting( "unsupported.dbms.security.auth_max_failed_attempts", INTEGER, "3", min( 0 ) );
+
     @Description( "A list of procedures and user defined functions (comma separated) that are allowed full access to " +
             "the database. The list may contain both fully-qualified procedure names, and partial names with the " +
             "wildcard '*'. Note that this enables these procedures to bypass security. Use with caution." )
