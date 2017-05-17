@@ -30,27 +30,30 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor.fitInProgress;
 
-public class DeeshuImporter
+public class DataImporter
 {
-   private static void importData( int numRunners, InputIterator data, Supplier<EntityImporter> visitors )
+    private static void importData( String title, int numRunners, InputIterator data,
+            Supplier<EntityImporter> visitors )
             throws InterruptedException
     {
+        System.out.println( "Importing " + title );
         AtomicLong entitiesCallback = new AtomicLong();
         ExecutorService pool = Executors.newFixedThreadPool( numRunners );
         for ( int i = 0; i < numRunners; i++ )
         {
-            pool.submit( new ExhaustingInputVisitorRunnable( data, visitors.get(), entitiesCallback ) );
+            pool.submit( new ExhaustingEntityImporterRunnable( data, visitors.get(), entitiesCallback ) );
         }
         pool.shutdown();
 
         long entitiesLastReport = 0;
-        while ( !pool.awaitTermination( 5, TimeUnit.SECONDS ) )
+        int interval = 2;
+        while ( !pool.awaitTermination( interval, TimeUnit.SECONDS ) )
         {
             long entities = entitiesCallback.get();
-            long entitiesDiff = (entities - entitiesLastReport) / 5;
-            System.out.println( bytes( entitiesDiff ) + "/s" + ", now at " + bytes( entities ) );
+            long entitiesDiff = (entities - entitiesLastReport) / interval;
+            System.out.print( "\r" + fitInProgress( entities ) + " ∆" + fitInProgress( entitiesDiff ) + "/s" );
             entitiesLastReport = entities;
         }
     }
@@ -59,7 +62,7 @@ public class DeeshuImporter
             NodeRelationshipCache nodeRelationshipCache )
             throws InterruptedException
     {
-        importData( numRunners, input.nodes(), () ->
+        importData( "Nodes", numRunners, input.nodes(), () ->
             new NodeImporter( stores.getNeoStores(),
                     stores.getPropertyKeyRepository(), stores.getLabelRepository(), idMapper ) );
         nodeRelationshipCache.setHighNodeId( stores.getNodeStore().getHighId() );
@@ -70,7 +73,7 @@ public class DeeshuImporter
                     throws InterruptedException
     {
         RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution();
-        importData( numRunners, input.relationships(), () ->
+        importData( "Relationships", numRunners, input.relationships(), () ->
                 new RelationshipImporter( stores.getNeoStores(),
                         stores.getPropertyKeyRepository(), stores.getRelationshipTypeRepository(), idMapper,
                         nodeRelationshipCache, typeDistribution ) );

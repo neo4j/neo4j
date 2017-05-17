@@ -165,8 +165,6 @@ public class ParallelBatchImporter implements BatchImporter
             // Some temporary caches and indexes in the import
             IoMonitor writeMonitor = new IoMonitor( neoStore.getIoTracer() );
             IdMapper idMapper = input.idMapper();
-            // TODO: how to do the IdGenerator thing?
-//            IdGenerator idGenerator = input.idGenerator();
             nodeRelationshipCache = new NodeRelationshipCache( NumberArrayFactory.HEAP, config.denseNodeThreshold() );
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
 
@@ -174,7 +172,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Import nodes, properties, labels
             neoStore.startFlushingPageCache();
-            DeeshuImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
+            DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
                     nodeRelationshipCache );
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
@@ -193,7 +191,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Import relationships (unlinked), properties
             neoStore.startFlushingPageCache();
-            RelationshipTypeDistribution typeDistribution = DeeshuImporter.importRelationships(
+            RelationshipTypeDistribution typeDistribution = DataImporter.importRelationships(
                     config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache );
             neoStore.stopFlushingPageCache();
 

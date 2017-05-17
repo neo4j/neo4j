@@ -23,13 +23,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
-class ExhaustingInputVisitorRunnable implements Runnable
+class ExhaustingEntityImporterRunnable implements Runnable
 {
     private final InputIterator data;
     private final EntityImporter visitor;
     private final AtomicLong entitiesCallback;
 
-    ExhaustingInputVisitorRunnable( InputIterator data, EntityImporter visitor, AtomicLong entitiesCallback )
+    ExhaustingEntityImporterRunnable( InputIterator data, EntityImporter visitor, AtomicLong entitiesCallback )
     {
         this.data = data;
         this.visitor = visitor;
