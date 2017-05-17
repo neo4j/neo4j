@@ -35,7 +35,8 @@ case object pruningVarExpander extends Rewriter {
       val lowerDistinctLand: Option[Set[String]] = plan match {
         case Aggregation(left, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
 
-          val variablesInTheDistinctSet = groupExpr.values.flatMap(_.dependencies.map(_.name)).toSet
+          val variablesInTheDistinctSet = (groupExpr.values.flatMap(_.dependencies.map(_.name)) ++
+            aggrExpr.values.flatMap(_.dependencies.map(_.name))).toSet
           Some(variablesInTheDistinctSet)
 
         case expand: VarExpand
@@ -77,7 +78,7 @@ case object pruningVarExpander extends Rewriter {
     case _ => false
   }
 
-  override def apply(input: AnyRef) = {
+  override def apply(input: AnyRef): AnyRef = {
     input match {
       case plan: LogicalPlan =>
         val distinctSet = findDistinctSet(plan)
@@ -88,8 +89,9 @@ case object pruningVarExpander extends Rewriter {
               // These constants were selected by benchmarking on randomized graphs, with different
               // degrees of interconnection.
               FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
-            else
+            else if (length.max.get > 1)
               PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
+            else expand
         })
         plan.endoRewrite(innerRewriter)
 

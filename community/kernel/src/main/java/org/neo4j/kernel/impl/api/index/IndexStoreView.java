@@ -56,12 +56,12 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
 
     /**
      * Produces {@link NodeUpdates} objects from reading node {@code nodeId}, its labels and properties
-     * and puts those updates into {@code target}.
+     * and puts those updates into node updates container.
      *
      * @param nodeId id of node to load.
-     * @param target {@link Collection} to add updates into.
+     * @return node updates container
      */
-    void nodeAsUpdates( long nodeId, Collection<NodeUpdates> target );
+    NodeUpdates nodeAsUpdates( long nodeId );
 
     DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
 
@@ -129,8 +129,9 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public void nodeAsUpdates( long nodeId, Collection<NodeUpdates> target )
+        public NodeUpdates nodeAsUpdates( long nodeId )
         {
+            return null;
         }
 
         @Override

@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.Collection;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -107,22 +106,22 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void nodeAsUpdates( long nodeId, Collection<NodeUpdates> target )
+    public NodeUpdates nodeAsUpdates( long nodeId )
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
         {
-            return;
+            return null;
         }
         long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
-            return; // no properties => no updates (it's not going to be in any index)
+            return null; // no properties => no updates (it's not going to be in any index)
         }
         long[] labels = parseLabelsField( node ).get( nodeStore );
         if ( labels.length == 0 )
         {
-            return; // no labels => no updates (it's not going to be in any index)
+            return null; // no labels => no updates (it's not going to be in any index)
         }
         NodeUpdates.Builder update = NodeUpdates.forNode( nodeId, labels );
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
@@ -133,7 +132,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 update.added( property.getKeyIndexId(), value );
             }
         }
-        target.add( update.build() );
+        return update.build();
     }
 
     @Override

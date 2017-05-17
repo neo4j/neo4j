@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,10 +34,9 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -115,7 +115,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds );
 
-        void appliedRecoveredData( Iterable<NodeUpdates> updates );
+        void applyingRecoveredUpdate( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate );
+
+        void recoveredUpdatesApplied();
 
         void populationCompleteOn( IndexDescriptor descriptor );
 
@@ -127,13 +129,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     public static class MonitorAdapter implements Monitor
     {
         @Override
-        public void appliedRecoveredData( Iterable<NodeUpdates> updates )
+        public void recoveredUpdatesApplied()
         {   // Do nothing
         }
 
         @Override
         public void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds )
         {   // Do nothing
+        }
+
+        @Override
+        public void applyingRecoveredUpdate( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
+        {
+            // empty
         }
 
         @Override
@@ -432,19 +440,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         {
             for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
             {
-                IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
-                if ( updater != null )
-                {
-                    updater.process( indexUpdate );
-                }
+                processUpdate( updaterMap, indexUpdate );
             }
         }
-    }
-
-    public void convertToIndexUpdatesAndApply( Iterable<NodeUpdates> updates, IndexUpdateMode updateMode )
-            throws IOException, IndexEntryConflictException
-    {
-        apply( Iterables.flatMap( this::convertToIndexUpdates, updates ), updateMode );
     }
 
     @Override
@@ -535,28 +533,35 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     updater.remove( recoveredNodeIds );
                 }
 
-                Iterable<NodeUpdates> updates = readNodeUpdatesFromRecoveredStore();
-                convertToIndexUpdatesAndApply( updates, IndexUpdateMode.RECOVERY );
-                monitor.appliedRecoveredData( updates );
+                Iterator<NodeUpdates> updates = recoveredNodeUpdatesIterator();
+                Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> indexEntryUpdates =
+                        Iterators.flatMap( nodeUpdates -> convertToIndexUpdates( nodeUpdates ).iterator(), updates );
+                while ( indexEntryUpdates.hasNext() )
+                {
+                    IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate = indexEntryUpdates.next();
+                    monitor.applyingRecoveredUpdate( indexUpdate );
+                    processUpdate( updaterMap, indexUpdate );
+                }
+                monitor.recoveredUpdatesApplied();
             }
         }
         recoveredNodeIds.clear();
     }
 
-    private Iterable<NodeUpdates> readNodeUpdatesFromRecoveredStore()
+    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
+            throws IOException, IndexEntryConflictException
     {
-        final List<NodeUpdates> nodeUpdates = new ArrayList<>();
-        recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
+        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
+        if ( updater != null )
         {
-            @Override
-            public boolean visited( long nodeId )
-            {
-                storeView.nodeAsUpdates( nodeId, nodeUpdates );
-                return false;
-            }
-        } );
+            updater.process( indexUpdate );
+        }
+    }
 
-        return nodeUpdates;
+    private Iterator<NodeUpdates> recoveredNodeUpdatesIterator()
+    {
+        PrimitiveLongIterator nodeIdIterator = recoveredNodeIds.iterator();
+        return new NodeUpdatesIterator( storeView, nodeIdIterator );
     }
 
     public void dropIndex( IndexRule rule )

@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
@@ -71,6 +70,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -502,7 +502,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 }
                 try
                 {
-                    indexService.convertToIndexUpdatesAndApply( updates, IndexUpdateMode.ONLINE );
+                    for ( NodeUpdates update : updates )
+                    {
+                        Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> entryUpdates =
+                                indexService.convertToIndexUpdates( update );
+                        DirectIndexUpdates directIndexUpdates = new DirectIndexUpdates( entryUpdates );
+                        indexService.apply( directIndexUpdates );
+                    }
                 }
                 catch ( IOException | IndexEntryConflictException e )
                 {
