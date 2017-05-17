@@ -110,7 +110,7 @@ public class CausalClusterInProcessRunner
             List<Thread> coreThreads = new ArrayList<>();
             List<Thread> replicaThreads = new ArrayList<>();
 
-            for ( int coreId = 0; coreId < nReplicas; coreId++ )
+            for ( int coreId = 0; coreId < nCores; coreId++ )
             {
                 int hazelcastPort = 55000 + coreId;
                 int txPort = 56000 + coreId;
@@ -154,7 +154,7 @@ public class CausalClusterInProcessRunner
                 coreThread.join();
             }
 
-            for ( int replicaId = 0; replicaId < nCores; replicaId++ )
+            for ( int replicaId = 0; replicaId < nReplicas; replicaId++ )
             {
                 int txPort = 56500 + replicaId;
                 int boltPort = 58500 + replicaId;
