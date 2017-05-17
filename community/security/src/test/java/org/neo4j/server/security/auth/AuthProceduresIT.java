@@ -122,7 +122,8 @@ public class AuthProceduresIT
         BasicSecurityContext user = login("andres", "banana");
 
         // Then
-        assertFail( user, "CALL dbms.procedures", "The credentials you provided were valid, but must be changed before you can use this instance." );
+        assertFail( user, "CALL dbms.procedures",
+                "The credentials you provided were valid, but must be changed before you can use this instance." );
     }
 
     //---------- create user -----------

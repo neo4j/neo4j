@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -93,6 +94,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * Written in header to indicate native label scan store is rebuilding
      */
     private static final byte REBUILDING = (byte) 0x01;
+
+    /**
+     * Native label index tag, to distinguish native label index from other label indexes
+     */
+    public static final String NATIVE_LABEL_INDEX_TAG = GraphDatabaseSettings.LabelIndex.NATIVE.name();
 
     /**
      * Whether or not this label scan store is read-only.
@@ -177,7 +183,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
         this.monitors = monitors;
-        this.monitor = monitors.newMonitor( Monitor.class );
+        this.monitor = monitors.newMonitor( Monitor.class, NATIVE_LABEL_INDEX_TAG );
     }
 
     /**
@@ -344,8 +350,8 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private boolean instantiateTree() throws IOException
     {
-        monitors.addMonitorListener( treeMonitor() );
-        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
+        monitors.addMonitorListener( treeMonitor(), NATIVE_LABEL_INDEX_TAG );
+        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class, NATIVE_LABEL_INDEX_TAG );
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
                 ( pageCursor, length ) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );

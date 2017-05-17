@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.labelscan;
 
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -45,7 +44,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<LuceneLabelScanStoreExtension.Dependencies>
 {
-    private static final String NAME = LabelIndex.LUCENE.name();
 
     public interface Dependencies
     {
@@ -82,12 +80,13 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         LuceneLabelScanIndexBuilder indexBuilder = getIndexBuilder( context, directoryFactory, fileSystem, config );
         LogProvider logger = dependencies.getLogService().getInternalLogProvider();
         Monitors monitors = dependencies.monitors();
-        monitors.addMonitorListener( new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ) ) );
+        monitors.addMonitorListener( new LoggingMonitor( logger.getLog( LuceneLabelScanStore.class ) ),
+                LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ),
-                monitors.newMonitor( LabelScanStore.Monitor.class ) );
+                monitors.newMonitor( LabelScanStore.Monitor.class, LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG ) );
 
-        return new LabelScanStoreProvider( NAME, scanStore );
+        return new LabelScanStoreProvider( LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG, scanStore );
     }
 
     private LuceneLabelScanIndexBuilder getIndexBuilder( KernelContext context, DirectoryFactory directoryFactory,
