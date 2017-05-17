@@ -41,6 +41,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static org.neo4j.csv.reader.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 
 public class ImportCommand implements AdminCommand
@@ -102,13 +104,25 @@ public class ImportCommand implements AdminCommand
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
                     "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "multiline-fields",
+                    DEFAULT.multilineFields(),
+                    "Whether or not fields from input source can span multiple lines," +
+                            " i.e. contain newline characters." ) )
             .withArgument( new OptionalNamedArg( "delimiter",
                     allowedDelimiterCharacters,
                     String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
             .withArgument( new OptionalNamedArg( "array-delimiter",
                     allowedDelimiterCharacters,
                     String.valueOf( COMMAS.arrayDelimiter() ),
-                    "Delimiter character between array elements within a value in CSV data." ) );
+                    "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "max-memory",
+                    "max-memory-that-importer-can-use",
+                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
+                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
+                            "to improve performance. " +
+                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
+                            "." ) );
+
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -151,14 +165,24 @@ public class ImportCommand implements AdminCommand
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
                     "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "multiline-fields",
+                    DEFAULT.multilineFields(),
+                    "Whether or not fields from input source can span multiple lines," +
+                            " i.e. contain newline characters." ) )
             .withArgument( new OptionalNamedArg( "delimiter",
                     allowedDelimiterCharacters,
                     String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
             .withArgument( new OptionalNamedArg( "array-delimiter",
                     allowedDelimiterCharacters,
                     String.valueOf( COMMAS.arrayDelimiter() ),
-                    "Delimiter character between array elements within a value in CSV data." ) );
-
+                    "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "max-memory",
+                    "max-memory-that-importer-can-use",
+                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
+                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
+                            "to improve performance. " +
+                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
+                            "." ) );
     public static Arguments databaseArguments()
     {
         return databaseArguments;
