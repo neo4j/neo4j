@@ -154,6 +154,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         try
         {
+            platform.availabilityGuard.shutdown();
             msgLog.log( "Shutdown started" );
             platform.life.shutdown();
         }

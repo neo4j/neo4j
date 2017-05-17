@@ -93,6 +93,5 @@ public class DatabaseAvailability implements Lifecycle
     public void shutdown()
             throws Throwable
     {
-        availabilityGuard.shutdown();
     }
 }
