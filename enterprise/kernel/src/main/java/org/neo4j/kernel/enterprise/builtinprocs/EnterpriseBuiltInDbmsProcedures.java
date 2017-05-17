@@ -200,6 +200,11 @@ public class EnterpriseBuiltInDbmsProcedures
     @SuppressWarnings( "WeakerAccess" )
     public static class ProcedureResult
     {
+        private static final List<String> ADMIN_PROCEDURES =
+                Arrays.asList( "createUser", "deleteUser", "listUsers", "clearAuthCache", "changeUserPassword",
+                        "addRoleToUser", "removeRoleFromUser", "suspendUser", "activateUser", "listRoles",
+                        "listRolesForUser", "listUsersForRole", "createRole", "deleteRole" );
+
         public final String name;
         public final String signature;
         public final String description;
@@ -214,10 +219,21 @@ public class EnterpriseBuiltInDbmsProcedures
             switch ( signature.mode() )
             {
             case DBMS:
-                roles.add( "admin" );
+                // TODO: not enough granularity for dbms and user management, needs fix
+                if ( isAdminProcedure( signature.name().name() ) )
+                {
+                    roles.add( "admin" );
+                }
+                else
+                {
+                    roles.add( "reader" );
+                    roles.add( "publisher" );
+                    roles.add( "architect" );
+                    roles.add( "admin" );
+                    roles.addAll( Arrays.asList( signature.allowed() ) );
+                }
                 break;
             case DEFAULT:
-                roles.add( "reader" );
             case READ:
                 roles.add( "reader" );
             case WRITE:
@@ -229,6 +245,11 @@ public class EnterpriseBuiltInDbmsProcedures
                 roles.add( "admin" );
                 roles.addAll( Arrays.asList( signature.allowed() ) );
             }
+        }
+
+        private boolean isAdminProcedure( String procedureName )
+        {
+            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName );
         }
     }
 
