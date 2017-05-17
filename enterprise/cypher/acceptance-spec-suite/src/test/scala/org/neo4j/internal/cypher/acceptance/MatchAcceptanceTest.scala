@@ -563,43 +563,6 @@ return p""")
     resultWithAlias.close()
   }
 
-  test("should handle unwind on a list of nodes in both runtimes") {
-    // Given
-    val node1 = createNode()
-    val node2 = createNode()
-    relate(createLabeledNode("Ping"), node1, "PING_DAY")
-    relate(createLabeledNode("Ping"), node2, "PING_DAY")
-    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
-    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
-
-    // When
-    val res =
-      executeWithAllPlannersAndRuntimesAndCompatibilityMode("UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
-
-    //Then
-    res.toList should equal(List(Map("c" -> 2)))
-  }
-
-  test("should handle unwind followed by expand into on a list of nodes in both runtimes") {
-    // Given
-    val node1 = createNode("prop" -> 1)
-    val node2 = createLabeledNode(Map("prop" -> 2), "Ping")
-    relate(node2, node1, "PING_DAY")
-    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
-    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
-    relate(createLabeledNode("Ping"), createNode(), "PING_DAY")
-
-    // When
-    val res =
-      executeWithAllPlannersAndRuntimesAndCompatibilityMode( """UNWIND {p1} AS n1
-                                                               |UNWIND {p2} AS n2
-                                                               |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
-                                                             "p1" -> List(node1), "p2" -> List(node2))
-
-    //Then
-    res.toList should equal(List(Map("n1.prop" -> 1, "n2.prop" -> 2)))
-  }
-
   test("should handle distinct, variable length and relationship predicate") {
     // Given
     val node1 = createNode()
