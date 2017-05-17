@@ -41,10 +41,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+
 public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
     private static final String[] allowedModes = {"database", "csv"};
+    private static final String[] allowedDelimiterCharacters = {",", "TAB", ";", "|", ":", "#"};
     private static final Arguments databaseArguments = new Arguments()
             .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." )
             {
@@ -98,7 +101,14 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) );
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalNamedArg( "delimiter",
+                    allowedDelimiterCharacters,
+                    String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "array-delimiter",
+                    allowedDelimiterCharacters,
+                    String.valueOf( COMMAS.arrayDelimiter() ),
+                    "Delimiter character between array elements within a value in CSV data." ) );
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -140,7 +150,14 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) );
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalNamedArg( "delimiter",
+                    allowedDelimiterCharacters,
+                    String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "array-delimiter",
+                    allowedDelimiterCharacters,
+                    String.valueOf( COMMAS.arrayDelimiter() ),
+                    "Delimiter character between array elements within a value in CSV data." ) );
 
     public static Arguments databaseArguments()
     {

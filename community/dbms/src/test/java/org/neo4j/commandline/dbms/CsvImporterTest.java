@@ -22,7 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +56,7 @@ public class CsvImporterTest
         File reportLocation = testDir.file( "the_report" );
 
         File inputFile = testDir.file( "foobar.csv" );
-        List<String> lines = Arrays.asList( "foo,bar,baz" );
+        List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
@@ -67,8 +67,11 @@ public class CsvImporterTest
                                 DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath(),
                                 GraphDatabaseSettings.logs_directory.name(), logDir.getAbsolutePath() ) );
             CsvImporter csvImporter = new CsvImporter(
-                    Args.parse( String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
-                            String.format( "--nodes=%s", inputFile.getAbsolutePath() ) ), config,
+                    Args.parse(
+                            String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
+                            String.format( "--nodes=%s", inputFile.getAbsolutePath() ),
+                            "--delimiter=TAB" ),
+                    config,
                     outsideWorld );
             csvImporter.doImport();
         }

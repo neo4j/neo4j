@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -208,6 +208,8 @@ public class ImportCommandTest
                             "                          [--ignore-extra-columns[=<true|false>]]%n" +
                             "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
                             "                          [--ignore-missing-nodes[=<true|false>]]%n" +
+                            "                          [--delimiter=<,|TAB|;|||:|#>]%n" +
+                            "                          [--array-delimiter=<,|TAB|;|||:|#>]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -258,7 +260,12 @@ public class ImportCommandTest
                             "      If duplicate nodes should be ignored during the import. [default:false]%n" +
                             "  --ignore-missing-nodes=<true|false>%n" +
                             "      If relationships referring to missing nodes should be ignored during the%n" +
-                            "      import. [default:false]%n" ),
+                            "      import. [default:false]%n" +
+                            "  --delimiter=<,|TAB|;|||:|#>%n" +
+                            "      Delimiter character between values in CSV data. [default:,]%n" +
+                            "  --array-delimiter=<,|TAB|;|||:|#>%n" +
+                            "      Delimiter character between array elements within a value in CSV data.%n" +
+                            "      [default:;]%n" ),
                     baos.toString() );
         }
     }
