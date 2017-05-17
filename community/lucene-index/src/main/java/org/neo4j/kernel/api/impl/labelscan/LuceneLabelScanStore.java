@@ -23,7 +23,9 @@ import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -35,6 +37,11 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneLabelScanStore implements LabelScanStore
 {
+    /**
+     * Lucene label index tag, to distinguish lucene label index from other label indexes
+     */
+    public static final String LUCENE_LABEL_INDEX_TAG = GraphDatabaseSettings.LabelIndex.LUCENE.name();
+
     private final LuceneLabelScanIndexBuilder indexBuilder;
     private volatile LabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
