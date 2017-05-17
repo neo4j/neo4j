@@ -83,6 +83,7 @@ public class EnterpriseBuiltInDbmsProcedures
     @Procedure( name = "dbms.setTXMetaData", mode = DBMS )
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
+        securityContext.assertCredentialsNotExpired();
         int totalCharSize = data.entrySet().stream()
                 .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() )
                 .sum();
@@ -165,6 +166,7 @@ public class EnterpriseBuiltInDbmsProcedures
     @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
     {
+        securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
@@ -191,6 +193,7 @@ public class EnterpriseBuiltInDbmsProcedures
     @Procedure( name = "dbms.procedures", mode = DBMS )
     public Stream<ProcedureResult> listProcedures()
     {
+        securityContext.assertCredentialsNotExpired();
         Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
         return procedures.getAllProcedures().stream()
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
@@ -261,6 +264,7 @@ public class EnterpriseBuiltInDbmsProcedures
     @Procedure( name = "dbms.listQueries", mode = DBMS )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         try
         {
             return getKernelTransactions().activeTransactions().stream()
@@ -280,6 +284,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<ActiveLocksQueryResult> listActiveLocks( @Name( "queryId" ) String queryId )
             throws InvalidArgumentsException
     {
+        securityContext.assertCredentialsNotExpired();
         try
         {
             long id = fromExternalString( queryId ).kernelQueryId();
@@ -298,6 +303,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         try
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
@@ -317,6 +323,7 @@ public class EnterpriseBuiltInDbmsProcedures
     public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
             throws InvalidArgumentsException, IOException
     {
+        securityContext.assertCredentialsNotExpired();
         try
         {
             Set<Long> queryIds = idTexts

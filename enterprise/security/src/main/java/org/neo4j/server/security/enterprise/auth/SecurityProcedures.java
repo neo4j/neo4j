@@ -49,6 +49,7 @@ public class SecurityProcedures extends AuthProceduresBase
     @Procedure( name = "dbms.security.clearAuthCache", mode = DBMS )
     public void clearAuthenticationCache()
     {
+        securityContext.assertCredentialsNotExpired();
         if ( !securityContext.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );

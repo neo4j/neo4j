@@ -281,13 +281,55 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
   }
 
   test("should not use range queries against a composite index") {
-    // given
+    // Given
     graph.createIndex("X", "p1", "p2")
     val n = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
+
+    // When
     val result = executeWithAllPlanners("match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
 
+    // Then
     result should evaluateTo(Seq(Map("n" -> n)))
     result shouldNot useIndex(":X(p1,p2)")
+  }
+
+  test("should not use composite index for range, prefix, contains and exists predicates") {
+    // Given
+    graph.createIndex("User", "name", "surname", "age", "active")
+    val n = createLabeledNode(Map("name" -> "joe", "surname" -> "soap", "age" -> 25, "active" -> true), "User")
+
+    // For all combinations
+    Map(
+      "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> true,         // all equality
+      "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'" -> true,         // different order
+      "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND exists(n.active)" -> false,       // exists()
+      "n.name = 'joe' AND n.surname = 'soap' AND n.age >= 25 AND n.active = true" -> false,        // inequality
+      "n.name = 'joe' AND n.surname STARTS WITH 's' AND n.age = 25 AND n.active = true" -> false, // prefix
+      "n.name = 'joe' AND n.surname ENDS WITH 'p' AND n.age = 25 AND n.active = true" -> false,   // suffix
+      "n.name >= 'i' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> false,         // inequality first
+      "n.name STARTS WITH 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> false,// prefix first
+      "n.name CONTAINS 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> false,   // contains first
+      "n.name = 'joe' AND n.surname STARTS WITH 'soap' AND n.age <= 25 AND exists(n.active)" -> false  // combination: equality, prefix, inequality, exists()
+    ).foreach { case (predicates, valid) =>
+
+      // When
+      val query = s"MATCH (n:User) WHERE ${predicates} RETURN n"
+      val result = executeWithAllPlanners(query)
+      try {
+
+        // Then
+        result should evaluateTo(Seq(Map("n" -> n)))
+        if (valid)
+          result should useIndex(":User(name,surname,age,active)")
+        else
+          result shouldNot useIndex(":User(name,surname,age,active)")
+      } catch {
+        case e: Exception =>
+          System.err.println(s"Failed for predicates: $predicates")
+          System.err.println(result.executionPlanDescription())
+          throw e
+      }
+    }
   }
 
   test("nested index join with composite indexes") {
