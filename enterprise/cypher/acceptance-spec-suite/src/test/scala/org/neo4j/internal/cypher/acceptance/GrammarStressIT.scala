@@ -144,7 +144,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
         case _: DefaultLength => name
         case _ => name.map(_ + "s")
       }
-      RelPattern(idName, relType, properties, length)
+      new RelPattern(idName, relType, properties, length)
     }
   }
 
