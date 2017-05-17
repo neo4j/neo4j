@@ -150,6 +150,12 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public double hitRatio()
+    {
+        return 0;
+    }
+
+    @Override
     public void pins( long pins )
     {
         this.pins.getAndAdd( pins );

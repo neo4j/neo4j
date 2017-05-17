@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultPageCursorTracerTest
 {
@@ -198,6 +199,32 @@ public class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.flushes() );
         assertEquals( 30, cacheTracer.bytesWritten() );
         assertEquals( 450, cacheTracer.bytesRead() );
+    }
+
+    @Test
+    public void shouldCalculateHitRatio() throws Exception
+    {
+        assertTrue( Double.isNaN( pageCursorTracer.hitRatio() ) );
+
+        pinFaultAndHit();
+
+        assertEquals( 0.0 / 1, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pinAndHit();
+
+        assertEquals( 1.0 / 2, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pinFaultAndHit();
+        pinFaultAndHit();
+        pinFaultAndHit();
+        pinAndHit();
+        pinAndHit();
+
+        assertEquals( 3.0 / 7, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pageCursorTracer.reportEvents();
+
+        assertEquals( 3.0 / 7, cacheTracer.hitRatio(), 0.0001 );
     }
 
     private void generateEventSet()

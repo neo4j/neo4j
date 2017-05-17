@@ -28,8 +28,10 @@ import java.io.IOException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
 
+import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultPageCacheTracerTest
 {
@@ -74,7 +76,7 @@ public class DefaultPageCacheTracerTest
             evictionRunEvent.beginEviction().close();
         }
 
-        assertCounts( 0, 0, 0, 0, 4, 2, 3, 0, 36, 0, 0 );
+        assertCounts( 0, 0, 0, 0, 4, 2, 3, 0, 36, 0, 0,  Double.NaN );
     }
 
     @Test
@@ -82,11 +84,11 @@ public class DefaultPageCacheTracerTest
     {
         tracer.mappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  Double.NaN );
 
         tracer.unmappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  Double.NaN );
     }
 
     @Test
@@ -99,7 +101,7 @@ public class DefaultPageCacheTracerTest
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, Double.NaN );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
@@ -108,11 +110,20 @@ public class DefaultPageCacheTracerTest
             fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0 );
+        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, Double.NaN );
+    }
+
+    @Test
+    public void shouldCalculateHitRatio() throws Exception
+    {
+        assertTrue( "hitRatio", Double.isNaN( tracer.hitRatio() ) );
+        tracer.hits( 3 );
+        tracer.faults( 7 );
+        assertThat( "hitRation", tracer.hitRatio(), closeTo( 3.0 / 10, 0.0001 ) );
     }
 
     private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions,
-            long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped )
+            long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio )
     {
         assertThat( "pins", tracer.pins(), is( pins ) );
         assertThat( "unpins", tracer.unpins(), is( unpins ) );
@@ -125,5 +136,14 @@ public class DefaultPageCacheTracerTest
         assertThat( "bytesWritten", tracer.bytesWritten(), is( bytesWritten ) );
         assertThat( "filesMapped", tracer.filesMapped(), is( filesMapped ) );
         assertThat( "filesUnmapped", tracer.filesUnmapped(), is( filesUnmapped ) );
+        double actualHitRatio = tracer.hitRatio();
+        if ( Double.isNaN( hitRatio ) )
+        {
+            assertTrue( "hitRatio", Double.isNaN( actualHitRatio ) );
+        }
+        else
+        {
+            assertThat( "hitRatio", actualHitRatio, closeTo( hitRatio, 0.0001 ) );
+        }
     }
 }

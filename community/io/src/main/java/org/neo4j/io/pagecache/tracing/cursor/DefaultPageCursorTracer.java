@@ -159,6 +159,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public double hitRatio()
+    {
+        return ((double) hits()) / (hits() + faults());
+    }
+
+    @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         pins++;

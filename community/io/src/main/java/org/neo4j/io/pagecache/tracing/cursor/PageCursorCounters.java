@@ -74,4 +74,8 @@ public interface PageCursorCounters
      */
     long flushes();
 
+    /**
+     * @return The hit ratio observed thus far.
+     */
+    double hitRatio();
 }

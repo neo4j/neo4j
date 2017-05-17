@@ -92,6 +92,12 @@ public interface PageCursorTracer extends PageCursorCounters
         }
 
         @Override
+        public double hitRatio()
+        {
+            return 0;
+        }
+
+        @Override
         public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
         {
             return PinEvent.NULL;

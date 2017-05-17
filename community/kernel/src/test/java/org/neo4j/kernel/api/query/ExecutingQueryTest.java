@@ -518,5 +518,11 @@ public class ExecutingQueryTest
         {
             flushes += increment;
         }
+
+        @Override
+        public double hitRatio()
+        {
+            return ((double) hits()) / (hits() + faults());
+        }
     }
 }

@@ -231,6 +231,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public double hitRatio()
+    {
+        double totalHits = hits();
+        return totalHits / (totalHits + faults());
+    }
+
+    @Override
     public void pins( long pins )
     {
         this.pins.add( pins );

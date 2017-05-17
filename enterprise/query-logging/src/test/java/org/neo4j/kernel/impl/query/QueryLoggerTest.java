@@ -559,6 +559,12 @@ public class QueryLoggerTest
                     {
                         return 0;
                     }
+
+                    @Override
+                    public double hitRatio()
+                    {
+                        return 0;
+                    }
                 }, Thread.currentThread(),
                 clock,
                 cpuClock,
