@@ -265,6 +265,13 @@ public enum StoreType
         return matchStoreName( fileName, getStoreName() );
     }
 
+    /**
+     * Helper method for {@link #isStoreFile(String)}. Given a file name and store name, see if they match.
+     *
+     * @param fileName File name to match.
+     * @param storeName Name of store to match with.
+     * @return {@code true} if file name match with store name, otherwise false.
+     */
     protected boolean matchStoreName( String fileName, String storeName )
     {
         return fileName.equals( MetaDataStore.DEFAULT_NAME + storeName );
