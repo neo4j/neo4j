@@ -67,6 +67,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -742,11 +743,7 @@ public class GBPTreeTest
     public void cleanJobShouldLockOutCheckpoint() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // Make dirty
-            index.writer().close();
-        }
+        makeDirty();
 
         RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
@@ -772,11 +769,7 @@ public class GBPTreeTest
     public void cleanJobShouldNotLockOutClose() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // Make dirty
-            index.writer().close();
-        }
+        makeDirty();
 
         RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
@@ -799,11 +792,7 @@ public class GBPTreeTest
     public void cleanJobShouldNotLockOutWriter() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // Make dirty
-            index.writer().close();
-        }
+        makeDirty();
 
         RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
@@ -827,11 +816,7 @@ public class GBPTreeTest
     public void writerShouldNotLockOutCleanJob() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
-        {
-            // Make dirty
-            index.writer().close();
-        }
+        makeDirty();
 
         RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
         try ( GBPTree<MutableLong,MutableLong> index = index().with( cleanupWork ).build() )
@@ -845,6 +830,93 @@ public class GBPTreeTest
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
                 cleanup.get();
             }
+        }
+    }
+
+    /* Cleaner test */
+
+    @Test
+    public void cleanerShouldDieSilentlyOnClose() throws Throwable
+    {
+        // GIVEN
+        makeDirty();
+
+        AtomicBoolean blockOnNextIO = new AtomicBoolean();
+        Barrier.Control control = new Barrier.Control();
+        PageCache pageCache = pageCacheThatBlockWhenToldTo( control, blockOnNextIO );
+        ControlledRecoveryCleanupWorkCollector collector = new ControlledRecoveryCleanupWorkCollector();
+        collector.init();
+
+        Future<?> cleanJob;
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( pageCache ).with( collector ).build() )
+        {
+            blockOnNextIO.set( true );
+            cleanJob = executor.submit( ThrowingRunnable.throwing( collector::start ) );
+
+            // WHEN
+            // ... cleaner is still alive
+            control.await();
+
+            // ... close
+        }
+
+        // THEN
+        control.release();
+        try
+        {
+            cleanJob.get();
+            fail( "Expected clean job to fail after index has been closed" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getMessage(),
+                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
+        }
+    }
+
+    @Test
+    public void treeMustBeDirtyAfterCleanerDiedOnClose() throws Throwable
+    {
+        // GIVEN
+        makeDirty();
+
+        AtomicBoolean blockOnNextIO = new AtomicBoolean();
+        Barrier.Control control = new Barrier.Control();
+        PageCache pageCache = pageCacheThatBlockWhenToldTo( control, blockOnNextIO );
+        ControlledRecoveryCleanupWorkCollector collector = new ControlledRecoveryCleanupWorkCollector();
+        collector.init();
+
+        Future<?> cleanJob;
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( pageCache ).with( collector ).build() )
+        {
+            blockOnNextIO.set( true );
+            cleanJob = executor.submit( ThrowingRunnable.throwing( collector::start ) );
+
+            // WHEN
+            // ... cleaner is still alive
+            control.await();
+
+            // ... close
+        }
+
+        // THEN
+        control.release();
+        try
+        {
+            cleanJob.get();
+            fail( "Expected clean job to fail after index has been closed" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getMessage(),
+                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
+        }
+
+        MonitorDirty monitor = new MonitorDirty();
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( monitor ).build() )
+        {
+            assertTrue( monitor.called );
+            assertFalse( monitor.cleanOnStart);
         }
     }
 
@@ -1335,6 +1407,44 @@ public class GBPTreeTest
                 };
             }
         };
+    }
+
+    private PageCache pageCacheThatBlockWhenToldTo( final Barrier barrier, final AtomicBoolean blockOnNextIO )
+    {
+        return new DelegatingPageCache( createPageCache( 256 ) )
+        {
+            @Override
+            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            {
+                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                {
+                    @Override
+                    public PageCursor io( long pageId, int pf_flags ) throws IOException
+                    {
+                        maybeBlock();
+                        return super.io( pageId, pf_flags );
+                    }
+
+                    private void maybeBlock() throws IOException
+                    {
+                        if ( blockOnNextIO.get() )
+                        {
+                            blockOnNextIO.set( false );
+                            barrier.reached();
+                        }
+                    }
+                };
+            }
+        };
+    }
+
+    private void makeDirty() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Make dirty
+            index.writer().close();
+        }
     }
 
     private void insert( GBPTree<MutableLong,MutableLong> index, long key, long value ) throws IOException
