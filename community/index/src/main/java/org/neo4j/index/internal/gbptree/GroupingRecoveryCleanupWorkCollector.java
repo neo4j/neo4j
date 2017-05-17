@@ -27,8 +27,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
 
 /**
- * Collects recovery cleanup work to be performed and {@link #run() runs} them all as one job,
- * each cleanup job sequentially one after the other.
+ * Collects recovery cleanup work to be performed and schedule them one by one in {@link #start()}}.
  * <p>
  * Also see {@link RecoveryCleanupWorkCollector}
  */
