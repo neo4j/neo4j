@@ -230,6 +230,7 @@ public class EnterpriseBuiltInDbmsProcedures
                 else
                 {
                     roles.add( "reader" );
+                    roles.add( "editor" );
                     roles.add( "publisher" );
                     roles.add( "architect" );
                     roles.add( "admin" );
@@ -252,7 +253,8 @@ public class EnterpriseBuiltInDbmsProcedures
 
         private boolean isAdminProcedure( String procedureName )
         {
-            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName );
+            return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
+                   name.equals( "dbms.listConfig" );
         }
     }
 

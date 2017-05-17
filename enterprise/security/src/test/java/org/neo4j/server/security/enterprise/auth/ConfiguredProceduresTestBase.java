@@ -230,17 +230,17 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         configuredSetup( defaultConfiguration() );
 
         Map<String,Set<String>> expected = genericMap(
-                "dbms.changePassword", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.functions", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.killQueries", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.killQuery", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.listActiveLocks", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.changePassword", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.functions", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.killQueries", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.killQuery", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listActiveLocks", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.listConfig", newSet( ADMIN ),
-                "dbms.listQueries", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
-                "dbms.procedures", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.listQueries", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.procedures", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.activateUser", newSet( ADMIN ),
                 "dbms.security.addRoleToUser", newSet( ADMIN ),
-                "dbms.security.changePassword", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.changePassword", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.changeUserPassword", newSet( ADMIN ),
                 "dbms.security.clearAuthCache", newSet( ADMIN ),
                 "dbms.security.createRole", newSet( ADMIN ),
@@ -252,9 +252,9 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.security.listUsers", newSet( ADMIN ),
                 "dbms.security.listUsersForRole", newSet( ADMIN ),
                 "dbms.security.removeRoleFromUser", newSet( ADMIN ),
-                "dbms.security.showCurrentUser", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ),
+                "dbms.security.showCurrentUser", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.suspendUser", newSet( ADMIN ),
-                "dbms.setTXMetaData", newSet( READER, PUBLISHER, ARCHITECT, ADMIN ));
+                "dbms.setTXMetaData", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ));
 
         assertListProceduresHasRoles( readSubject, expected, "CALL dbms.procedures" );
     }
