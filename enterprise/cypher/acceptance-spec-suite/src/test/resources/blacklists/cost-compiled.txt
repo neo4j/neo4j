@@ -145,3 +145,8 @@ Ordering for lists, descending
 Long chains of integer comparisons
 Long chains of floating point comparisons
 Long chains of string comparisons
+
+Accessing a list with null should return null
+Accessing a list with null as lower bound should return null
+Accessing a list with null as upper bound should return null
+Accessing a map with null should return null

@@ -5,3 +5,9 @@ Ordering is well defined across all types, ascending
 Ordering is well defined across all types, descending
 Ordering for lists, ascending
 Ordering for lists, descending
+
+// ReturnAcceptance.feature
+Accessing a list with null should return null
+Accessing a list with null as lower bound should return null
+Accessing a list with null as upper bound should return null
+Accessing a map with null should return null
