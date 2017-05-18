@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
@@ -40,16 +41,18 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<PrimitiveLongIterator>
 {
-    protected final RecordStore<RECORD> store;
+    private final RecordStore<RECORD> store;
     private final Class<RECORD> klass;
-    protected final int batchSize;
+    private final Predicate<RECORD> filter;
+    private final int batchSize;
 
     @SuppressWarnings( "unchecked" )
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
-            RecordStore<RECORD> store )
+            RecordStore<RECORD> store, Predicate<RECORD> filter )
     {
         super( control, ">", config, parallelReading( config, inRecordWritingStage ) ? 0 : 1 );
         this.store = store;
+        this.filter = filter;
         this.klass = (Class<RECORD>) store.newRecord().getClass();
         this.batchSize = config.batchSize();
     }
@@ -84,7 +87,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
             while ( hasNext )
             {
                 store.readRecord( id, record, CHECK, cursor );
-                if ( record.inUse() && !IdValidator.isReservedId( record.getId() ) )
+                if ( record.inUse() && !IdValidator.isReservedId( record.getId() ) && (filter == null || filter.test( record )) )
                 {
                     batch[i++] = (RECORD) record.clone();
                 }

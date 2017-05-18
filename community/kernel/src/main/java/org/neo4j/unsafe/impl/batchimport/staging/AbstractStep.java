@@ -75,12 +75,14 @@ public abstract class AbstractStep<T> implements Step<T>
     protected long endTime;
     private final List<StatsProvider> additionalStatsProvider;
     protected final Runnable healthChecker = () -> assertHealthy();
+    protected final Configuration config;
 
     public AbstractStep( StageControl control, String name, Configuration config,
             StatsProvider... additionalStatsProvider )
     {
         this.control = control;
         this.name = name;
+        this.config = config;
         this.totalProcessingTime = new MovingAverage( config.movingAverageSize() );
         this.additionalStatsProvider = asList( additionalStatsProvider );
     }

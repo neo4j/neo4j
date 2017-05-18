@@ -40,7 +40,7 @@ public class CalculateDenseNodesStep extends ForkedProcessorStep<Batch<InputRela
     public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache,
             Collector badCollector )
     {
-        super( control, "CALCULATE", config, 0 );
+        super( control, "CALCULATE", config );
         this.cache = cache;
         this.badCollector = badCollector;
     }

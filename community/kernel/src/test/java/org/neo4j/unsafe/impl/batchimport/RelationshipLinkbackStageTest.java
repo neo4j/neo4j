@@ -49,7 +49,7 @@ public class RelationshipLinkbackStageTest
         long highId = 5;
         RelationshipStore store = newRelationshipStoreMock( highId );
         RelationshipLinkbackStage stage = new RelationshipLinkbackStage( "Test",
-                Configuration.DEFAULT, store, newCache(), 0, highId, NodeType.NODE_TYPE_SPARSE );
+                Configuration.DEFAULT, store, newCache(), null, null, NodeType.NODE_TYPE_SPARSE );
 
         ExecutionSupervisors.superviseExecution( ExecutionMonitors.invisible(), Configuration.DEFAULT, stage );
 
