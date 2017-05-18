@@ -63,13 +63,13 @@ with ListSupport {
 
     val longValue = number match {
       case _: java.lang.Double | _: java.lang.Float =>
-        throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
+        throw new CypherTypeException(s"Cannot index a list using an non-integer number, got $number")
       case _ => number.longValue()
     }
 
     if (longValue > Int.MaxValue || longValue < Int.MinValue)
       throw new InvalidArgumentException(
-        s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
+        s"Cannot index a list using a value greater than ${Int.MaxValue} or lesser than ${Int.MinValue}, got $number")
 
     longValue.toInt
   }
