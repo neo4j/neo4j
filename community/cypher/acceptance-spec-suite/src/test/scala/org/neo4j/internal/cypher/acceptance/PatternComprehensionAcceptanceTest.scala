@@ -21,8 +21,40 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  test("pattern comprehension nested in function call") {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
+
+    val n1 = createLabeledNode("Tweet")
+    val n2 = createLabeledNode("User")
+    val r = relate(n2, n1, "POSTED")
+
+    val query = """MATCH(t:Tweet) WITH t LIMIT 1
+               |WITH collect(t) AS tweets
+               |RETURN test.toSet([ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ]) AS users""".stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+    println(result.toList)
+  }
+
+  test("pattern comprehension outside function call") {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
+
+    val n1 = createLabeledNode("Tweet")
+    val n2 = createLabeledNode("User")
+    val r = relate(n2, n1, "POSTED")
+
+    val query = """MATCH(t:Tweet) WITH t LIMIT 1
+                  |WITH collect(t) AS tweets
+                  |WITH [ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ] AS pattern
+                  |RETURN test.toSet(pattern) AS users""".stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+    println(result.toList)
+  }
 
   test("with named path") {
     val n1 = createLabeledNode("Start")
