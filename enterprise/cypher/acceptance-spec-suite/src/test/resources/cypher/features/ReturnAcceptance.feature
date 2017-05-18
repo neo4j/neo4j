@@ -53,3 +53,47 @@ Feature: ReturnAcceptance
       | n            |
     And no side effects
 
+  Scenario: Accessing list with null should yield a null
+    Given an empty graph
+    When executing query:
+      """
+      WITH [1,2,3] AS list RETURN list[null] AS item
+      """
+    Then the result should be:
+      | item |
+      | null |
+    And no side effects
+
+  Scenario: Accessing list with null as lower bound should yield a null
+    Given an empty graph
+    When executing query:
+      """
+      WITH [1,2,3] AS list RETURN list[null..3] AS item
+      """
+    Then the result should be:
+      | item |
+      | null |
+    And no side effects
+
+  Scenario: Accessing list with null as upper bound should yield a null
+    Given an empty graph
+    When executing query:
+      """
+      WITH [1,2,3] AS list RETURN list[1..null] AS item
+      """
+    Then the result should be:
+      | item |
+      | null |
+    And no side effects
+
+  Scenario: Accessing map with null should yield a null
+    Given an empty graph
+    When executing query:
+      """
+      WITH {key: "value"} AS map RETURN map[null] AS item
+      """
+    Then the result should be:
+      | item |
+      | null |
+    And no side effects
+
