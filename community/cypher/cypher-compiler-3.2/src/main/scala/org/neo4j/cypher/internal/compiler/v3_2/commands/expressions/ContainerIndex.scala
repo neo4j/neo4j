@@ -42,18 +42,7 @@ with ListSupport {
         val item = index(ctx)
         if (item == null) null
         else {
-          val number = CastSupport.castOrFail[Number](item)
-
-          val longValue = number match {
-            case _ : java.lang.Double | _: java.lang.Float =>
-              throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
-            case _ => number.longValue()
-          }
-
-          if (longValue > Int.MaxValue || longValue < Int.MinValue)
-            throw new InvalidArgumentException(s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
-
-          var idx = longValue.toInt
+          var idx = validateTypeAndRange(item)
           val collectionValue = collection.toIndexedSeq
 
           if (idx < 0)
@@ -67,6 +56,22 @@ with ListSupport {
         throw new CypherTypeException(
           s"`$value` is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: $value[${index(ctx)}])")
     }
+  }
+
+  private def validateTypeAndRange(item: Any): Int = {
+    val number = CastSupport.castOrFail[Number](item)
+
+    val longValue = number match {
+      case _: java.lang.Double | _: java.lang.Float =>
+        throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
+      case _ => number.longValue()
+    }
+
+    if (longValue > Int.MaxValue || longValue < Int.MinValue)
+      throw new InvalidArgumentException(
+        s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
+
+    longValue.toInt
   }
 
   def rewrite(f: (Expression) => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
