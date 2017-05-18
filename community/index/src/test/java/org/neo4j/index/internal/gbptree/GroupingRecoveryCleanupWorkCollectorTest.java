@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.scheduler.JobSchedulerAdapter;
@@ -33,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GroupingRecoveryCleanupWorkCollectorTest
 {
-    private final RegisteringJobScheduler jobScheduler = new RegisteringJobScheduler();
+    private final ImmediateJobScheduler jobScheduler = new ImmediateJobScheduler();
     private final GroupingRecoveryCleanupWorkCollector collector =
             new GroupingRecoveryCleanupWorkCollector( jobScheduler );
 
@@ -41,21 +40,23 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     public void mustNotScheduleAnyJobsBeforeStart() throws Throwable
     {
         // given
-        List<CleanupJob> expectedJobs = someJobs();
+        List<CleanupJob> allRuns = new ArrayList<>();
+        List<CleanupJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
         addAll( expectedJobs );
 
         // then
-        assertTrue( jobScheduler.registeredJobs.isEmpty() );
+        assertTrue( allRuns.isEmpty() );
     }
 
     @Test
     public void mustScheduleAllJobs() throws Throwable
     {
         // given
-        List<CleanupJob> expectedJobs = someJobs();
+        List<CleanupJob> allRuns = new ArrayList<>();
+        List<CleanupJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -63,14 +64,15 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         collector.start();
 
         // then
-        assertSame( expectedJobs, jobScheduler.registeredJobs );
+        assertSame( expectedJobs, allRuns );
     }
 
     @Test
     public void mustNotScheduleOldJobsAfterRestart() throws Throwable
     {
         // given
-        List<CleanupJob> someJobs = someJobs();
+        List<CleanupJob> allRuns = new ArrayList<>();
+        List<CleanupJob> someJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -79,14 +81,15 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         collector.start();
 
         // then
-        assertTrue( jobScheduler.registeredJobs.isEmpty() );
+        assertTrue( allRuns.isEmpty() );
     }
 
     @Test
     public void mustNotScheduleOldJobsOnMultipleStart() throws Throwable
     {
         // given
-        List<CleanupJob> expectedJobs = someJobs();
+        List<CleanupJob> allRuns = new ArrayList<>();
+        List<CleanupJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -95,14 +98,15 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         collector.start();
 
         // then
-        assertSame( expectedJobs, jobScheduler.registeredJobs );
+        assertSame( expectedJobs, allRuns );
     }
 
     @Test
     public void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
     {
         // given
-        List<CleanupJob> expectedJobs = someJobs();
+        List<CleanupJob> allRuns = new ArrayList<>();
+        List<CleanupJob> expectedJobs = someJobs( allRuns );
 
         // when
         collector.init();
@@ -112,7 +116,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         collector.start();
 
         // then
-        assertSame( expectedJobs, jobScheduler.registeredJobs );
+        assertSame( expectedJobs, allRuns );
     }
 
     private void addAll( Collection<CleanupJob> jobs )
@@ -120,29 +124,27 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         jobs.forEach( collector::add );
     }
 
-    private void assertSame( List<CleanupJob> someJobs, List<Runnable> actual )
+    private void assertSame( List<CleanupJob> someJobs, List<CleanupJob> actual )
     {
         assertTrue( actual.containsAll( someJobs ) );
         assertTrue( someJobs.containsAll( actual ) );
     }
 
-    private List<CleanupJob> someJobs()
+    private List<CleanupJob> someJobs( List<CleanupJob> allRuns )
     {
         return new ArrayList<>( Arrays.asList(
-                new DummyJob( "A" ),
-                new DummyJob( "B" ),
-                new DummyJob( "C" )
+                new DummyJob( "A", allRuns ),
+                new DummyJob( "B", allRuns ),
+                new DummyJob( "C", allRuns )
         ) );
     }
 
-    private class RegisteringJobScheduler extends JobSchedulerAdapter
+    private class ImmediateJobScheduler extends JobSchedulerAdapter
     {
-        List<Runnable> registeredJobs = new LinkedList<>();
-
         @Override
         public JobHandle schedule( Group group, Runnable job )
         {
-            registeredJobs.add( job );
+            job.run();
             return super.schedule( group, job );
         }
     }
@@ -150,10 +152,12 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     private class DummyJob implements CleanupJob
     {
         private final String name;
+        private final List<CleanupJob> allRuns;
 
-        DummyJob( String name )
+        DummyJob( String name, List<CleanupJob> allRuns )
         {
             this.name = name;
+            this.allRuns = allRuns;
         }
 
         @Override
@@ -182,7 +186,8 @@ public class GroupingRecoveryCleanupWorkCollectorTest
 
         @Override
         public void run()
-        {   // no-op
+        {
+            allRuns.add( this );
         }
     }
 }
