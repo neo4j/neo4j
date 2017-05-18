@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**

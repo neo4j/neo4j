@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -111,7 +112,8 @@ public class StoreMigration
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new Monitors() );
+            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new Monitors(),
+                    RecoveryCleanupWorkCollector.IMMEDIATE );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
             KernelExtensions kernelExtensions = life.add( new KernelExtensions(

@@ -45,7 +45,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

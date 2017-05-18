@@ -220,7 +220,8 @@ public class DataSourceModule
                 platformModule.availabilityGuard,
                 platformModule.clock, editionModule.accessCapability,
                 platformModule.storeCopyCheckPointMutex,
-                editionModule.progressionFactory ) );
+                editionModule.progressionFactory,
+                platformModule.recoveryCleanupWorkCollector ) );
 
         dataSourceManager.register( neoStoreDataSource );
 

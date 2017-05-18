@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;

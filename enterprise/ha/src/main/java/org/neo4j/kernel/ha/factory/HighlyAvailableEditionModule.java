@@ -166,7 +166,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;

@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.unmodifiableMap;

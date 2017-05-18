@@ -73,7 +73,7 @@ import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;

@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 

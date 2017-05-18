@@ -70,7 +70,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -83,7 +83,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
+import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 
 /**
  * Wraps Bolt and exposes it as a Kernel Extension.

@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertEquals;

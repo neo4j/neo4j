@@ -21,11 +21,11 @@ package org.neo4j.udc;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.DAYS;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.udc;
+import static org.neo4j.scheduler.JobScheduler.Groups.udc;
 
 /**
  * An in-memory storage location for usage metadata.

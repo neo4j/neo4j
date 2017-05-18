@@ -33,6 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -135,7 +136,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -276,6 +277,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private LabelScanStoreProvider labelScanStoreProvider;
     private File storeDir;
     private boolean readOnly;
+    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final AccessCapability accessCapability;
 
     private StorageEngine storageEngine;
@@ -324,7 +326,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             SystemNanoClock clock,
             AccessCapability accessCapability,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex,
-            BatchingProgressionFactory progressionFactory )
+            BatchingProgressionFactory progressionFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -361,6 +364,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.clock = clock;
         this.accessCapability = accessCapability;
         this.progressionFactory = progressionFactory;
+        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -407,6 +411,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         dependencies = new Dependencies();
         life = new LifeSupport();
+
+        life.add( recoveryCleanupWorkCollector );
 
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
@@ -456,7 +462,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     monitors.newMonitor( Recovery.Monitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     transactionLogModule.logFiles(), startupStatistics,
-                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore() );
+                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore()
+            );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
             PropertyAccessor propertyAccessor = dependencies.resolveDependency( PropertyAccessor.class );

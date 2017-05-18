@@ -23,6 +23,8 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -66,7 +68,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -140,7 +142,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock( Procedures.class ),
                 IOLimiter.unlimited(), new AvailabilityGuard( clock, NullLog.getInstance() ), clock, new CanWrite(),
-                new StoreCopyCheckPointMutex(), new CommunityBatchingProgressionFactory() );
+                new StoreCopyCheckPointMutex(), new CommunityBatchingProgressionFactory(),
+                GroupingRecoveryCleanupWorkCollector.IMMEDIATE );
 
         return dataSource;
     }
@@ -158,7 +161,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         try
         {
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService, monitors );
+            dependencies.satisfyDependencies( pageCache, config, IndexStoreView.EMPTY, logService, monitors,
+                    RecoveryCleanupWorkCollector.IMMEDIATE );
             KernelContext kernelContext =
                     new SimpleKernelContext( storeDir, DatabaseInfo.COMMUNITY, dependencies );
             return (LabelScanStoreProvider) new NativeLabelScanStoreExtension()

@@ -39,7 +39,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
 

@@ -50,8 +50,6 @@ public class Recovery extends LifecycleAdapter
 
     public interface SPI
     {
-        void forceEverything();
-
         TransactionCursor getTransactions( LogPosition position ) throws IOException;
 
         LogPosition getPositionToRecoverFrom() throws IOException;
@@ -108,7 +106,6 @@ public class Recovery extends LifecycleAdapter
 
         spi.allTransactionsRecovered( lastTransaction, recoveryToPosition );
         recoveredLog = true;
-        spi.forceEverything();
     }
 
     @Override
@@ -117,7 +114,6 @@ public class Recovery extends LifecycleAdapter
         // This is here as by now all other services have reacted to the recovery process
         if ( recoveredLog )
         {
-            spi.forceEverything();
             monitor.recoveryCompleted( numberOfRecoveredTransactions );
         }
     }

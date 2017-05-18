@@ -26,7 +26,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public abstract class SecurityModule extends Service

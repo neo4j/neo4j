@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

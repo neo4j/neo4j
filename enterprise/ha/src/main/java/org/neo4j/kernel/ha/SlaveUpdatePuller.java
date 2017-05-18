@@ -41,8 +41,8 @@ import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedLogger;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

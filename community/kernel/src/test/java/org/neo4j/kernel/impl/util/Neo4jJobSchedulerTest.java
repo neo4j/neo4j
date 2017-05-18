@@ -34,7 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,10 +47,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
-import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
+import static org.neo4j.scheduler.JobScheduler.Group.THREAD_ID;
+import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.NEW_THREAD;
+import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
 public class Neo4jJobSchedulerTest

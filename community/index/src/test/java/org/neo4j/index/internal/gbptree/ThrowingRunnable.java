@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 interface ThrowingRunnable
 {
-    void run() throws Exception;
+    void run() throws Throwable;
 
     static Runnable throwing( ThrowingRunnable callable )
     {
@@ -31,7 +31,7 @@ interface ThrowingRunnable
             {
                 callable.run();
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 throw new RuntimeException( e );
             }
