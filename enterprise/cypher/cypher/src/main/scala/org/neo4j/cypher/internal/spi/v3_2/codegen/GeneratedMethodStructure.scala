@@ -281,8 +281,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
 
   override def node(nodeIdVar: String, codeGenType: CodeGenType) =
-    if (codeGenType.isPrimitive) generator.load(nodeIdVar)
-    else invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId)
+    generator.load(nodeIdVar)
 
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CypherCodeGenType(CTNode, LongType) | CypherCodeGenType(CTRelationship, LongType) =>
@@ -424,42 +423,39 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def toFloat(expression: Expression) = toDouble(expression)
 
-  override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection) = {
+  override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
-                                dir(direction)))
+      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, body.load(nodeVar), dir(direction)))
     }
   }
 
-  override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType,
-                                                         direction: SemanticDirection,
+  override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection,
                                                          typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
-                                forceLong(nodeVar, nodeVarType), dir(direction),
+                                body.load(nodeVar), dir(direction),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
-
     }
   }
 
-  override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
-                                       toNode: String, toNodeType: CodeGenType) = {
+  override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection,
+                                       toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       body.assign(local, invoke(Methods.allConnectingRelationships,
-                                readOperations, forceLong(fromNode, fromNodeType), dir(direction),
-                               forceLong(toNode, toNodeType)))
+                                readOperations, body.load(fromNode), dir(direction),
+                                body.load(toNode)))
     }
   }
 
-  override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
-                                       typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
+  override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection,
+                                       typeVars: Seq[String], toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(Methods.connectingRelationships, readOperations, forceLong(fromNode, fromNodeType), dir(direction),
-                                forceLong(toNode, toNodeType),
+      body.assign(local, invoke(Methods.connectingRelationships, readOperations, body.load(fromNode), dir(direction),
+                                body.load(toNode),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
     }
   }
@@ -1298,17 +1294,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     locals += (name -> generator.declare(typeRef[Boolean], name))
   }
 
-  override def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
+  override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), body.load(propIdVar)))
+      body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)))
     }
   }
 
-  override def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String) = {
+  override def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), constant(propId)))
+      body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), constant(propId)))
     }
   }
 
@@ -1417,13 +1413,5 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         val tupleType = aux.comparableTypeReference(tupleDescriptor)
         TypeReference.parameterizedType(classOf[DefaultTopTable[_]], tupleType)
     }
-  }
-
-  //Forces variable to be of type long or fails accordingly
-  private def forceLong(name: String, typ: CodeGenType): Expression = typ.repr match {
-    case LongType => generator.load(name)
-    case ReferenceType =>
-      invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Long], "extractLong", typeRef[Object]), generator.load(name))
-    case _ => throw new IllegalStateException(s"$name has type $typ which cannot be represented as a long")
   }
 }

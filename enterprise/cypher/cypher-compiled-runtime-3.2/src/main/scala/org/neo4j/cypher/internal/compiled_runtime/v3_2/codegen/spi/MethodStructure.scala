@@ -128,7 +128,7 @@ trait MethodStructure[E] {
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
 
-  // parameters, and external data loading
+  // parameters
   def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
 
   // map
@@ -147,17 +147,17 @@ trait MethodStructure[E] {
   def lookupLabelIdE(labelName: String): E
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
   def lookupRelationshipTypeIdE(typeName: String): E
-  def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection): Unit
-  def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection, typeVars: Seq[String]): Unit
-  def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, toNode:String, toNodeType: CodeGenType)
-  def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, types: Seq[String], toNode: String, toNodeType: CodeGenType)
+  def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, direction: SemanticDirection): Unit
+  def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]): Unit
+  def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, toNode:String)
+  def connectingRelationships(iterVar: String, fromNode: String, dir: SemanticDirection, types: Seq[String], toNode: String)
   def nextNode(targetVar: String, iterVar: String): Unit
   def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
   def hasNextNode(iterVar: String): E
   def hasNextRelationship(iterVar: String): E
-  def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
-  def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
+  def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
+  def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit

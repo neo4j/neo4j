@@ -125,7 +125,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         Operation("look up rel type", _.lookupRelationshipTypeId("foo", "bar")),
         Operation("all relationships for node", (m) => {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
-          m.nodeGetRelationshipsWithDirection("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
+          m.nodeGetRelationshipsWithDirection("foo", "node", SemanticDirection.OUTGOING)
         }),
         Operation("has label", m => {
           m.lookupLabelId("label", "A")
@@ -137,12 +137,12 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.lookupPropertyKey("prop", "prop")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.declareProperty("propVar")
-          m.nodeGetPropertyForVar("node", CodeGenType.primitiveNode, "prop", "propVar")
+          m.nodeGetPropertyForVar("node", "prop", "propVar")
         }),
         Operation("property by id for node", m => {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.declareProperty("propVar")
-          m.nodeGetPropertyById("node", CodeGenType.primitiveNode, 13, "propVar")
+          m.nodeGetPropertyById("node", 13, "propVar")
         }),
         Operation("property by name for relationship", m => {
           m.lookupPropertyKey("prop", "prop")
@@ -153,7 +153,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         Operation("property by id for relationship", m => {
           m.declareAndInitialize("rel", CodeGenType.primitiveRel)
           m.declareProperty("propVar")
-          m.nodeGetPropertyById("rel", CodeGenType.primitiveNode, 13, "propVar")
+          m.nodeGetPropertyById("rel", 13, "propVar")
         }),
         Operation("rel type", m => {
           m.createRelExtractor("bar")
@@ -164,12 +164,12 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
           m.lookupRelationshipTypeId("a", "A")
           m.lookupRelationshipTypeId("b", "B")
-          m.nodeGetRelationshipsWithDirectionAndTypes("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING, Seq("a", "b"))
+          m.nodeGetRelationshipsWithDirectionAndTypes("foo", "node", SemanticDirection.OUTGOING, Seq("a", "b"))
         }),
         Operation("next relationship", (m) => {
           m.createRelExtractor("r")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
-          m.nodeGetRelationshipsWithDirection("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
+          m.nodeGetRelationshipsWithDirection("foo", "node", SemanticDirection.OUTGOING)
           m.nextRelationshipAndNode("nextNode", "foo", SemanticDirection.OUTGOING, "node", "r")
         }),
     Operation("expand into", (m) => {
@@ -200,7 +200,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       m.allNodesScan("nodeIter")
       m.whileLoop(m.hasNextNode("nodeIter")) { b1 =>
         b1.nextNode("node", "nodeIter")
-        b1.nodeGetRelationshipsWithDirection("relIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
+        b1.nodeGetRelationshipsWithDirection("relIter", "node", SemanticDirection.OUTGOING)
         b1.whileLoop(b1.hasNextRelationship("relIter")) { b2 =>
           b2.nextRelationshipAndNode("nextNode", "relIter", SemanticDirection.OUTGOING, "node", "r")
         }
