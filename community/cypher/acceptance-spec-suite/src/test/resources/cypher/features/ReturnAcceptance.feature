@@ -41,3 +41,46 @@ Feature: ReturnAcceptance
       | []           |
     And no side effects
 
+  Scenario: Accessing a list with null should return null
+    Given any graph
+    When executing query:
+      """
+      RETURN [1, 2, 3][null] AS result
+      """
+    Then the result should be:
+      | result |
+      | null   |
+    And no side effects
+
+  Scenario: Accessing a list with null as lower bound should return null
+    Given any graph
+    When executing query:
+      """
+      RETURN [1, 2, 3][null..5] AS result
+      """
+    Then the result should be:
+      | result |
+      | null   |
+    And no side effects
+
+  Scenario: Accessing a list with null as upper bound should return null
+    Given any graph
+    When executing query:
+      """
+      RETURN [1, 2, 3][1..null] AS result
+      """
+    Then the result should be:
+      | result |
+      | null   |
+    And no side effects
+
+  Scenario: Accessing a map with null should return null
+    Given any graph
+    When executing query:
+      """
+      RETURN {key: 1337}[null] AS result
+      """
+    Then the result should be:
+      | result |
+      | null   |
+    And no side effects

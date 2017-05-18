@@ -130,3 +130,7 @@ Find a shortest path among paths of length 1
 Find a shortest path of length 1 if requested to
 Find a shortest path among paths matched using a non-variable length pattern
 Find a combination of a shortest path and a pattern expression
+Accessing a list with null should return null
+Accessing a list with null as lower bound should return null
+Accessing a list with null as upper bound should return null
+Accessing a map with null should return null
