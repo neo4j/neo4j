@@ -469,9 +469,22 @@ order by a.age""").toList)
   test("returning * and additional unaliased columns should not give duplicate returned columns 2") {
     val n = createNode(Map("foo" -> 42))
 
-    val result = executeWithAllPlanners("MATCH (n) RETURN *, n.foo ORDER BY n.foo SKIP 0 LIMIT 5 ")
-    println(result.executionPlanDescription())
+    executeWithAllPlanners("MATCH (n) RETURN *, n.foo ORDER BY n.foo SKIP 0 LIMIT 5 ").toList should equal(List(Map("n"-> n, "n.foo" -> 42)))
+  }
 
-    result.toList should equal(List(Map("n"-> n, "n.foo" -> 42)))
+  test("accessing a list with null should return null") {
+    executeWithAllPlanners("RETURN [1,2,3][null] AS result").toList should equal(List(Map("result" -> null)))
+  }
+
+  test("accessing a list with null as lower bound should return null") {
+    executeWithAllPlanners("RETURN [1,2,3][null..5] AS result").toList should equal(List(Map("result" -> null)))
+  }
+
+  test("accessing a list with null as upper bound should return null") {
+    executeWithAllPlanners("RETURN [1,2,3][1..null] AS result").toList should equal(List(Map("result" -> null)))
+  }
+
+  test("accessing a map with null should return null") {
+    executeWithAllPlanners("RETURN {key: 1337}[null] AS result").toList should equal(List(Map("result" -> null)))
   }
 }
