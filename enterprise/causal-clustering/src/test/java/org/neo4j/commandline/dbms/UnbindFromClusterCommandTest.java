@@ -37,7 +37,6 @@ import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
-import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -83,22 +82,17 @@ public class UnbindFromClusterCommandTest
     }
 
     @Test
-    public void shouldFailIfSpecifiedDatabaseDoesNotExist() throws Exception
+    public void shouldIgnoreIfSpecifiedDatabaseDoesNotExist() throws Exception
     {
         // given
+        File clusterStateDir = createClusterStateDir( fs );
         UnbindFromClusterCommand command = new UnbindFromClusterCommand( homeDir, confDir, outsideWorld );
 
-        try
-        {
-            // when
-            command.execute( databaseNameParameter( "doesnotexist.db" ) );
-            fail();
-        }
-        catch ( IncorrectUsage e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "does not contain a database" ) );
-        }
+        // when
+        command.execute( databaseNameParameter( "doesnotexist.db" ) );
+
+        // then
+        assertFalse( fs.fileExists( clusterStateDir ) );
     }
 
     @Test

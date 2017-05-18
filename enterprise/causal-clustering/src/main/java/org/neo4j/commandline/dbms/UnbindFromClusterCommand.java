@@ -86,9 +86,21 @@ public class UnbindFromClusterCommand implements AdminCommand
             File dataDirectory = config.get( DatabaseManagementSystemSettings.data_directory );
             Path pathToSpecificDatabase = config.get( DatabaseManagementSystemSettings.database_path ).toPath();
 
-            Validators.CONTAINS_EXISTING_DATABASE.validate( pathToSpecificDatabase.toFile() );
+            boolean hasDatabase = true;
+            try
+            {
+                Validators.CONTAINS_EXISTING_DATABASE.validate( pathToSpecificDatabase.toFile() );
+            }
+            catch ( IllegalArgumentException ignored )
+            {
+                // No such database, it must have been deleted. Must be OK to delete cluster state
+                hasDatabase = false;
+            }
 
-            confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
+            if ( hasDatabase )
+            {
+                confirmTargetDirectoryIsWritable( pathToSpecificDatabase );
+            }
 
             ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDirectory );
             clusterStateDirectory.initialize( outsideWorld.fileSystem() );
