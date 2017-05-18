@@ -57,11 +57,7 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     @Override
     public void start() throws Throwable
     {
-        CleanupJob job;
-        while ( (job = jobs.poll()) != null )
-        {
-            jobScheduler.schedule( recoveryCleanup, job );
-        }
+        jobScheduler.schedule( recoveryCleanup, allJobs() );
     }
 
     @Override
@@ -72,5 +68,17 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     @Override
     public void shutdown() throws Throwable
     {   // no-op
+    }
+
+    private Runnable allJobs()
+    {
+        return () ->
+        {
+            CleanupJob job;
+            while ( (job = jobs.poll()) != null )
+            {
+                job.run();
+            }
+        };
     }
 }
