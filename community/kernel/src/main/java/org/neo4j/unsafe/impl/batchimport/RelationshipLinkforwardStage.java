@@ -38,7 +38,7 @@ public class RelationshipLinkforwardStage extends Stage
             Predicate<RelationshipRecord> denseChangeFilter, int nodeTypes )
     {
         super( "Relationship --> Relationship " + topic, config, ORDER_SEND_DOWNSTREAM );
-        add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize()) );
+        add( new BatchFeedStep( control(), config, forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
         add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );

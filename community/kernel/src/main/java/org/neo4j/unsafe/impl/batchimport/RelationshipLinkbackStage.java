@@ -53,7 +53,7 @@ public class RelationshipLinkbackStage extends Stage
             Predicate<RelationshipRecord> changeFilter, int nodeTypes )
     {
         super( "Relationship --> Relationship" + topic, config );
-        add( new BatchFeedStep( control(), config, backwards( 0, store.getHighId(), config ), store.getRecordSize()) );
+        add( new BatchFeedStep( control(), config, backwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, readFilter ) );
         add( new RelationshipLinkbackStep( control(), config, cache, changeFilter, nodeTypes ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
