@@ -31,30 +31,37 @@ with ListSupport {
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
     value match {
       case IsMap(m) =>
-        val idx = CastSupport.castOrFail[String](index(ctx))
-        m(state.query).getOrElse(idx, null)
-
-      case IsList(collection) =>
-        val number = CastSupport.castOrFail[Number](index(ctx))
-
-        val longValue = number match {
-          case _ : java.lang.Double | _: java.lang.Float =>
-            throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
-          case _ => number.longValue()
+        val item = index(ctx)
+        if (item == null) null
+        else {
+          val key = CastSupport.castOrFail[String](item)
+          m(state.query).getOrElse(key, null)
         }
 
-        if (longValue > Int.MaxValue || longValue < Int.MinValue)
-          throw new InvalidArgumentException(s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
+      case IsList(collection) =>
+        val item = index(ctx)
+        if (item == null) null
+        else {
+          val number = CastSupport.castOrFail[Number](item)
 
-        var idx = longValue.toInt
+          val longValue = number match {
+            case _ : java.lang.Double | _: java.lang.Float =>
+              throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
+            case _ => number.longValue()
+          }
 
-        val collectionValue = collection.toIndexedSeq
+          if (longValue > Int.MaxValue || longValue < Int.MinValue)
+            throw new InvalidArgumentException(s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
 
-        if (idx < 0)
-          idx = collectionValue.size + idx
+          var idx = longValue.toInt
+          val collectionValue = collection.toIndexedSeq
 
-        if (idx >= collectionValue.size || idx < 0) null
-        else collectionValue.apply(idx)
+          if (idx < 0)
+            idx = collectionValue.size + idx
+
+          if (idx >= collectionValue.size || idx < 0) null
+          else collectionValue.apply(idx)
+        }
 
       case _ =>
         throw new CypherTypeException(
