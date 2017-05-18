@@ -42,12 +42,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
+import static org.neo4j.metrics.MetricsTestHelper.readDoubleValue;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_EVICTIONS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_EVICTION_EXCEPTIONS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_FLUSHES;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_HITS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_HIT_RATIO;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_PAGE_FAULTS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_PINS;
 import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_UNPINS;
@@ -93,6 +96,7 @@ public class PageCacheMetricsIT
             ResourceIterator<Node> nodes = database.findNodes( testLabel );
             Assert.assertEquals( 1, nodes.stream().count() );
         }
+
         assertMetrics( "Metrics report should include page cache pins", PC_PINS, greaterThan( 0L ) );
         assertMetrics( "Metrics report should include page cache unpins", PC_UNPINS, greaterThan( 0L ) );
         assertMetrics( "Metrics report should include page cache evictions", PC_EVICTIONS, greaterThanOrEqualTo( 0L ) );
@@ -100,11 +104,16 @@ public class PageCacheMetricsIT
         assertMetrics( "Metrics report should include page cache hits", PC_HITS, greaterThan( 0L ) );
         assertMetrics( "Metrics report should include page cache flushes", PC_FLUSHES, greaterThanOrEqualTo( 0L ) );
         assertMetrics( "Metrics report should include page cache exceptions", PC_EVICTION_EXCEPTIONS, equalTo( 0L ) );
+
+        assertEventually(
+                "Metrics report should include page cache hit ratio",
+                () -> readDoubleValue( metricsCsv( metricsDirectory, PC_HIT_RATIO ) ),
+                lessThanOrEqualTo( 1.0 ),
+                5, SECONDS );
     }
 
     private void assertMetrics( String message, String metricName, Matcher<Long> matcher ) throws Exception
     {
         assertEventually( message, () -> readLongValue( metricsCsv( metricsDirectory, metricName ) ), matcher, 5, SECONDS );
     }
-
 }
