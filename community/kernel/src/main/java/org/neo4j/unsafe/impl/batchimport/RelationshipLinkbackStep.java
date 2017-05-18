@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
-import org.neo4j.unsafe.impl.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
@@ -33,110 +33,55 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_
  * initially creating the relationship records. Setting prev pointers at that time would incur
  * random access and so that is done here separately with help from {@link NodeRelationshipCache}.
  */
-public class RelationshipLinkbackStep extends ForkedProcessorStep<RelationshipRecord[]>
+public class RelationshipLinkbackStep extends RelationshipLinkStep
 {
-    private final NodeRelationshipCache cache;
-    private final int nodeTypes;
-
     public RelationshipLinkbackStep( StageControl control, Configuration config,
-            NodeRelationshipCache cache, int nodeTypes )
+            NodeRelationshipCache cache, Predicate<RelationshipRecord> filter, int nodeTypes )
     {
-        super( control, "LINK", config, 0 );
-        this.cache = cache;
-        this.nodeTypes = nodeTypes;
+        super( control, config, cache, filter, nodeTypes, false );
     }
 
     @Override
-    protected void forkedProcess( int id, int processors, RelationshipRecord[] batch )
+    protected void linkStart( RelationshipRecord record )
     {
-        for ( int i = batch.length - 1; i >= 0; i-- )
-        {
-            RelationshipRecord item = batch[i];
-            if ( item != null && item.inUse() )
-            {
-                if ( !process( item, id, processors ) )
-                {
-                    // No change for this record, it's OK, all the processors will reach the same conclusion
-                    batch[i] = null;
-                }
-            }
+        int typeId = record.getType();
+        long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
+                typeId, Direction.OUTGOING, record.getId(), false );
+        if ( firstPrevRel == ID_NOT_FOUND )
+        {   // First one
+            record.setFirstInFirstChain( true );
+            firstPrevRel = cache.getCount( record.getFirstNode(), typeId, Direction.OUTGOING );
         }
+        record.setFirstPrevRel( firstPrevRel );
     }
 
-    public boolean process( RelationshipRecord record, int id, int processors )
+    @Override
+    protected void linkEnd( RelationshipRecord record )
     {
-        boolean processFirst = record.getFirstNode() % processors == id;
-        boolean processSecond = record.getSecondNode() % processors == id;
-        if ( !processFirst && !processSecond )
-        {
-            // We won't process this relationship, but we cannot return false because that means
-            // that it won't even be updated. Arriving here merely means that this thread won't process
-            // this record at all and so we won't even have to ask cache about dense or not (which is costly)
-            return true;
-        }
-
-        boolean firstIsDense = cache.isDense( record.getFirstNode() );
-        boolean changed = false;
-        boolean isLoop = record.getFirstNode() == record.getSecondNode();
         int typeId = record.getType();
-        if ( isLoop )
-        {
-            if ( NodeType.matchesDense( nodeTypes, firstIsDense ) )
-            {
-                if ( processFirst )
-                {
-                    long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                            typeId, Direction.BOTH, record.getId(), false );
-                    if ( prevRel == ID_NOT_FOUND )
-                    {   // First one
-                        record.setFirstInFirstChain( true );
-                        record.setFirstInSecondChain( true );
-                        prevRel = cache.getCount( record.getFirstNode(), typeId, Direction.BOTH );
-                    }
-                    record.setFirstPrevRel( prevRel );
-                    record.setSecondPrevRel( prevRel );
-                }
-                changed = true;
-            }
+        long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
+                typeId, Direction.INCOMING, record.getId(), false );
+        if ( secondPrevRel == ID_NOT_FOUND )
+        {   // First one
+            record.setFirstInSecondChain( true );
+            secondPrevRel = cache.getCount( record.getSecondNode(), typeId, Direction.INCOMING );
         }
-        else
-        {
-            // Start node
-            if ( NodeType.matchesDense( nodeTypes, firstIsDense ) )
-            {
-                if ( processFirst )
-                {
-                    long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
-                            typeId, Direction.OUTGOING, record.getId(), false );
-                    if ( firstPrevRel == ID_NOT_FOUND )
-                    {   // First one
-                        record.setFirstInFirstChain( true );
-                        firstPrevRel = cache.getCount( record.getFirstNode(), typeId, Direction.OUTGOING );
-                    }
-                    record.setFirstPrevRel( firstPrevRel );
-                }
-                changed = true;
-            }
+        record.setSecondPrevRel( secondPrevRel );
+    }
 
-            // End node
-            boolean secondIsDense = cache.isDense( record.getSecondNode() );
-            if ( NodeType.matchesDense( nodeTypes, secondIsDense ) )
-            {
-                if ( processSecond )
-                {
-                    long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
-                            typeId, Direction.INCOMING, record.getId(), false );
-                    if ( secondPrevRel == ID_NOT_FOUND )
-                    {   // First one
-                        record.setFirstInSecondChain( true );
-                        secondPrevRel = cache.getCount( record.getSecondNode(), typeId, Direction.INCOMING );
-                    }
-                    record.setSecondPrevRel( secondPrevRel );
-                }
-                changed = true;
-            }
+    @Override
+    protected void linkLoop( RelationshipRecord record )
+    {
+        int typeId = record.getType();
+        long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
+                typeId, Direction.BOTH, record.getId(), false );
+        if ( prevRel == ID_NOT_FOUND )
+        {   // First one
+            record.setFirstInFirstChain( true );
+            record.setFirstInSecondChain( true );
+            prevRel = cache.getCount( record.getFirstNode(), typeId, Direction.BOTH );
         }
-
-        return changed;
+        record.setFirstPrevRel( prevRel );
+        record.setSecondPrevRel( prevRel );
     }
 }
