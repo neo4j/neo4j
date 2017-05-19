@@ -710,7 +710,7 @@ public abstract class StandardExpander implements PathExpander
         @Override
         boolean exclude( Path path )
         {
-            return !predicate.test( path.lastRelationship().getOtherNode( path.endNode() ) );
+            return !predicate.test( path.endNode() );
         }
     }
 

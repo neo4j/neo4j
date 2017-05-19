@@ -23,24 +23,12 @@ import common.Neo4jAlgoTestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
+import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.PathExpanders;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.collection.Iterables;
@@ -48,10 +36,7 @@ import org.neo4j.helpers.collection.Iterables;
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -241,6 +226,34 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         };
         testShortestPathFinder( finder -> assertPaths( finder.findAllPaths( a, d ), "a,g,h,d" ),
                 ((StandardExpander) PathExpanders.allTypesAndDirections()).addNodeFilter( filter ), 10 );
+    }
+
+    @Test
+    public void filtersTouchesAllIntermediateNodes() throws Exception
+    {
+        // Layout:
+        //
+        // (a)-->(b)-->(c)-->(d)
+        //
+        graph.makeEdgeChain( "a,b,c,d" );
+        final Node a = graph.getNode( "a" );
+        final Node d = graph.getNode( "d" );
+        Collection<Node> touchedByFilter = new HashSet<>();
+        final Predicate<Node> filter = item -> {
+            touchedByFilter.add(item);
+            return true;
+        };
+        final PathExpander expander = PathExpanderBuilder.empty().add(MyRelTypes.R1, OUTGOING).addNodeFilter(filter).build();
+        //final PathExpander expander = ((StandardExpander) PathExpanders.forTypeAndDirection(R1, OUTGOING)).addNodeFilter( filter );
+        Path path = Iterables.single( GraphAlgoFactory.shortestPath(expander, 10)
+                .findAllPaths(a,d));
+        assertEquals(3, path.length());
+
+        List<Node> nodes = Iterables.asList(path.nodes());
+        List<Node> intermediateNodes = nodes.subList(1, nodes.size() - 1);
+        assertTrue("touchedByFilter: " + touchedByFilter, touchedByFilter.containsAll(intermediateNodes));
+        assertTrue( "startNode was not filtered", !touchedByFilter.contains(a));
+        assertTrue( "endNode was not filtered", !touchedByFilter.contains(d));
     }
 
     @Test
