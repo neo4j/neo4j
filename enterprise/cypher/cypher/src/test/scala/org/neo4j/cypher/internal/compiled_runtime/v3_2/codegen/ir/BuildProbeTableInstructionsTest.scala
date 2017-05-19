@@ -174,7 +174,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {
     val counter = new AtomicInteger(0)
     val buildWhileLoop = nodes.foldRight[Instruction](buildInstruction){
-      case (variable, instruction) => WhileLoop(variable, ScanAllNodes("scanOp" + counter.incrementAndGet()), instruction)
+      case (variable, instruction) => WhileLoop(variable, s"${variable}Iter", ScanAllNodes("scanOp" + counter.incrementAndGet()), instruction)
     }
 
     val buildProbeTableMethod = MethodInvocation(operatorId = Set.empty,
@@ -193,7 +193,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
                                                  action = acceptVisitor)
 
     val probeTheTableWhileLoop = probeVars.foldRight[Instruction](probeTheTable){
-      case (variable, instruction) => WhileLoop(variable, ScanAllNodes("scanOp" + counter.incrementAndGet()), instruction)
+      case (variable, instruction) => WhileLoop(variable, "${variable}Iter", ScanAllNodes("scanOp" + counter.incrementAndGet()), instruction)
     }
     Seq(buildProbeTableMethod, probeTheTableWhileLoop)
   }
