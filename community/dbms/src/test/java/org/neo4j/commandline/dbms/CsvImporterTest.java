@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -38,6 +38,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CsvImporterTest

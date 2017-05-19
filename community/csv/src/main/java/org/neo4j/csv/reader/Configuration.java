@@ -69,8 +69,8 @@ public interface Configuration
     {
         return DEFAULT_LEGACY_STYLE_QUOTING;
     }
-
     int KB = 1024, MB = KB * KB;
+    int DEFAULT_BUFFER_SIZE_4MB = 4 * MB;
 
     class Default implements Configuration
     {
@@ -83,7 +83,7 @@ public interface Configuration
         @Override
         public int bufferSize()
         {
-            return 4 * MB;
+            return DEFAULT_BUFFER_SIZE_4MB;
         }
 
         @Override
