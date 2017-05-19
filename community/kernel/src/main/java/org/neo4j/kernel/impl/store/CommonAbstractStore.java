@@ -1038,7 +1038,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
+    public void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id
@@ -1130,6 +1130,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             cursor.acquire( firstId, mode );
             return cursor.getAll();
+        }
+    }
+
+    public PageCursor newPageCursor()
+    {
+        try
+        {
+            return storeFile.io( getNumberOfReservedLowIds(), PF_SHARED_READ_LOCK );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 

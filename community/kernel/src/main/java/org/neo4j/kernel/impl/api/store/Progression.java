@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.store;
 
-public final class StatementConstants
+public interface Progression
 {
-    public static final int NO_SUCH_RELATIONSHIP_TYPE = -1;
-    public static final int NO_SUCH_LABEL = -1;
-    public static final int NO_SUCH_PROPERTY_KEY = -1;
-    public static final long NO_SUCH_NODE = -1;
-    public static final long NO_SUCH_RELATIONSHIP = -1;
-    public static final long NO_SUCH_PROPERTY = -1;
-
-    private StatementConstants()
+    enum Mode
     {
-        throw new UnsupportedOperationException();
+        APPEND,
+        FETCH
     }
+
+    long nextId();
+
+    Mode mode();
 }

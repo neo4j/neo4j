@@ -34,15 +34,16 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -67,13 +68,9 @@ public class LabelTransactionStateTest
         when( store.indexesGetForLabel( anyInt() ) ).then( answerAsIteratorFrom( Collections.emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.emptyList() ) );
 
-        txState = new TxState();
-        state = StatementOperationsTestHelper.mockedState( txState );
+        state = StatementOperationsTestHelper.mockedState( new TxState() );
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
-
-        storeStatement = mock( StoreStatement.class );
-        when( state.getStoreStatement() ).thenReturn( storeStatement );
     }
 
     @Test
@@ -246,12 +243,13 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
-                .thenReturn( asPropertyCursor() );
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( asNodeCursor( 1337L ) );
+        when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
+                any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
 
         // WHEN
-        boolean added = txContext.nodeAddLabel( state, 1337, 12 );
+        boolean added = txContext.nodeAddLabel( state, 1337L, 12 );
 
         // THEN
         assertTrue( "Label should have been added", added );
@@ -261,13 +259,13 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
-                StubCursors.labels( 12 ) ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
-                .thenReturn( asPropertyCursor() );
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null  ) ) )
+                .thenReturn( asNodeCursor( 1337L, StubCursors.labels( 12 ) ) );
+        when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
+                any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
 
         // WHEN
-        boolean added = txContext.nodeAddLabel( state, 1337, 12 );
+        boolean added = txContext.nodeAddLabel( state, 1337L, 12 );
 
         // THEN
         assertFalse( "Label should have been added", added );
@@ -277,13 +275,13 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
-                StubCursors.labels( 12 ) ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
-                .thenReturn( asPropertyCursor() );
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( asNodeCursor( 1337L, StubCursors.labels( 12 ) ) );
+        when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
+                any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
 
         // WHEN
-        boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
+        boolean added = txContext.nodeRemoveLabel( state, 1337L, 12 );
 
         // THEN
         assertTrue( "Label should have been removed", added );
@@ -293,10 +291,11 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
+        when( store.nodeCursor( any( StorageStatement.class ), eq( 1337L ), eq( null ) ) )
+                .thenReturn( asNodeCursor( 1337L ) );
 
         // WHEN
-        boolean removed = txContext.nodeRemoveLabel( state, 1337, 12 );
+        boolean removed = txContext.nodeRemoveLabel( state, 1337L, 12 );
 
         // THEN
         assertFalse( "Label should have been removed", removed );
@@ -308,11 +307,9 @@ public class LabelTransactionStateTest
     private final long nodeId = 20;
 
     private StoreReadLayer store;
-    private TransactionState txState;
     private StateHandlingStatementOperations txContext;
 
     private KernelStatement state;
-    private StoreStatement storeStatement;
 
     private static class Labels
     {
@@ -336,10 +333,11 @@ public class LabelTransactionStateTest
         Map<Integer,Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) )
+            when( store.nodeCursor( any( StorageStatement.class ), eq( nodeLabels.nodeId ),
+                    any( ReadableTransactionState.class ) ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
-            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
-                    .thenReturn( asPropertyCursor() );
+            when( store.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
+                    any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
 
             for ( int label : nodeLabels.labelIds )
             {

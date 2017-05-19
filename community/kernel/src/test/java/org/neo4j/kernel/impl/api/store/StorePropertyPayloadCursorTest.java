@@ -29,8 +29,10 @@ import org.junit.runners.Parameterized.Parameter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.Strings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -53,9 +55,21 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
+import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.store.PropertyType.BOOL;
+import static org.neo4j.kernel.impl.store.PropertyType.BYTE;
+import static org.neo4j.kernel.impl.store.PropertyType.CHAR;
+import static org.neo4j.kernel.impl.store.PropertyType.DOUBLE;
+import static org.neo4j.kernel.impl.store.PropertyType.FLOAT;
+import static org.neo4j.kernel.impl.store.PropertyType.INT;
+import static org.neo4j.kernel.impl.store.PropertyType.LONG;
+import static org.neo4j.kernel.impl.store.PropertyType.SHORT;
+import static org.neo4j.kernel.impl.store.PropertyType.SHORT_ARRAY;
+import static org.neo4j.kernel.impl.store.PropertyType.SHORT_STRING;
+import static org.neo4j.kernel.impl.store.PropertyType.STRING;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @RunWith( Enclosed.class )
@@ -66,8 +80,9 @@ public class StorePropertyPayloadCursorTest
         @Test
         public void nextShouldAlwaysReturnFalseWhenNotInitialized()
         {
-            StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( mock( RecordCursor.class ),
-                    mock( RecordCursor.class ) );
+            @SuppressWarnings( "unchecked" )
+            StorePropertyPayloadCursor cursor =
+                    new StorePropertyPayloadCursor( mock( RecordCursor.class ), mock( RecordCursor.class ) );
 
             assertFalse( cursor.next() );
 
@@ -76,13 +91,13 @@ public class StorePropertyPayloadCursorTest
         }
 
         @Test
-        public void nextShouldAlwaysReturnFalseWhenCleared()
+        public void nextShouldAlwaysReturnFalseWhenClosed()
         {
-            StorePropertyPayloadCursor cursor = newCursor( "cat-dog" );
+            StorePropertyPayloadCursor cursor = allProperties( params( paramArg( 42, "cat-dog", STRING ) ) );
 
             assertTrue( cursor.next() );
 
-            cursor.clear();
+            cursor.close();
 
             // Should still be true the Nth time
             assertFalse( cursor.next() );
@@ -90,69 +105,73 @@ public class StorePropertyPayloadCursorTest
         }
 
         @Test
-        public void shouldBeOkToClearUnusedCursor()
+        public void shouldBeOkToCloseAnUnusedCursor()
         {
             // Given
-            StorePropertyPayloadCursor cursor = newCursor( "cat-dog" );
+            StorePropertyPayloadCursor cursor = allProperties( params( paramArg( 42, "cat-dog", STRING ) ) );
 
             // When
-            cursor.clear();
+            cursor.close();
 
             // Then
-            // clear() on an unused cursor works just fine
+            // close() on an unused cursor works just fine
         }
 
         @Test
-        public void shouldBeOkToClearPartiallyExhaustedCursor()
+        public void shouldBeOkToClosePartiallyExhaustedCursor()
         {
             // Given
-            StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3L );
+            StorePropertyPayloadCursor cursor =
+                    allProperties( params( paramArg( 42, 1, INT ), paramArg( 55, 2, INT ),
+                            paramArg( 73, 3L, LONG ) ) );
 
             assertTrue( cursor.next() );
             assertTrue( cursor.next() );
 
             // When
-            cursor.clear();
+            cursor.close();
 
             // Then
-            // clear() on an used cursor works just fine
+            // close() on an used cursor works just fine
         }
 
         @Test
-        public void shouldBeOkToClearExhaustedCursor()
+        public void shouldBeOkToCloseExhaustedCursor()
         {
             // Given
-            StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3 );
+            StorePropertyPayloadCursor cursor =
+                    allProperties( params(paramArg( 42, 1, INT ), paramArg( 55, 2, INT ),
+                            paramArg( 73, 3L, INT ) ) );
 
             assertTrue( cursor.next() );
             assertTrue( cursor.next() );
             assertTrue( cursor.next() );
 
             // When
-            cursor.clear();
+            cursor.close();
 
             // Then
-            // clear() on an exhausted cursor works just fine
+            // close() on an exhausted cursor works just fine
         }
 
         @Test
-        public void shouldBePossibleToCallClearOnEmptyCursor()
+        public void shouldBePossibleToCallCloseOnEmptyCursor()
         {
             // Given
-            StorePropertyPayloadCursor cursor = newCursor();
+            StorePropertyPayloadCursor cursor = allProperties( params() );
 
             // When
-            cursor.clear();
+            cursor.close();
 
             // Then
-            // clear() on an empty cursor works just fine
+            // close() on an empty cursor works just fine
         }
 
         @Test
         public void shouldBePossibleToCallNextOnEmptyCursor()
         {
             // Given
-            StorePropertyPayloadCursor cursor = newCursor();
+            StorePropertyPayloadCursor cursor = allProperties( params() );
 
             // When
             assertFalse( cursor.next() );
@@ -168,16 +187,17 @@ public class StorePropertyPayloadCursorTest
             DynamicStringStore dynamicStringStore = newDynamicStoreMock( DynamicStringStore.class );
             DynamicArrayStore dynamicArrayStore = newDynamicStoreMock( DynamicArrayStore.class );
 
-            String string = RandomStringUtils.randomAlphanumeric( 5000 );
-            byte[] array = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();
-            StorePropertyPayloadCursor cursor = newCursor( dynamicStringStore, dynamicArrayStore, string, array );
+            Param[] params = {paramArg( 42, RandomStringUtils.randomAlphanumeric( 5000 ), STRING ),
+                    paramArg( 55, RandomStringUtils.randomAlphanumeric( 10000 ).getBytes(), ARRAY )};
+            StorePropertyPayloadCursor cursor =
+                    createCursor( ALWAYS_TRUE_INT, dynamicStringStore, dynamicArrayStore, params );
 
             // When
             assertTrue( cursor.next() );
-            assertNotNull( cursor.stringValue() );
+            assertNotNull( cursor.value() );
 
             assertTrue( cursor.next() );
-            assertNotNull( cursor.arrayValue() );
+            assertNotNull( cursor.value() );
 
             assertFalse( cursor.next() );
 
@@ -189,7 +209,7 @@ public class StorePropertyPayloadCursorTest
         @Test
         public void nextMultipleInvocations()
         {
-            StorePropertyPayloadCursor cursor = newCursor();
+            StorePropertyPayloadCursor cursor = allProperties( params() );
 
             assertFalse( cursor.next() );
             assertFalse( cursor.next() );
@@ -200,70 +220,7 @@ public class StorePropertyPayloadCursorTest
     }
 
     @RunWith( Parameterized.class )
-    public static class SingleValuePayload
-    {
-        @Parameter( 0 )
-        public Param param;
-
-        @Parameterized.Parameters( name = "{0}" )
-        public static List<Object[]> parameters()
-        {
-            return Arrays.asList(
-                    param( false, PropertyType.BOOL ),
-                    param( true, PropertyType.BOOL ),
-                    param( (byte) 24, PropertyType.BYTE ),
-                    param( Byte.MIN_VALUE, PropertyType.BYTE ),
-                    param( Byte.MAX_VALUE, PropertyType.BYTE ),
-                    param( (short) 99, PropertyType.SHORT ),
-                    param( Short.MIN_VALUE, PropertyType.SHORT ),
-                    param( Short.MAX_VALUE, PropertyType.SHORT ),
-                    param( 'c', PropertyType.CHAR ),
-                    param( Character.MIN_LOW_SURROGATE, PropertyType.CHAR ),
-                    param( Character.MAX_HIGH_SURROGATE, PropertyType.CHAR ),
-                    param( 10293, PropertyType.INT ),
-                    param( Integer.MIN_VALUE, PropertyType.INT ),
-                    param( Integer.MAX_VALUE, PropertyType.INT ),
-                    param( (float) 564.29393, PropertyType.FLOAT ),
-                    param( Float.MIN_VALUE, PropertyType.FLOAT ),
-                    param( Float.MAX_VALUE, PropertyType.FLOAT ),
-                    param( 93039173.12848, PropertyType.DOUBLE ),
-                    param( Double.MIN_VALUE, PropertyType.DOUBLE ),
-                    param( Double.MAX_VALUE, PropertyType.DOUBLE ),
-                    param( 484381293L, PropertyType.LONG ),
-                    param( Long.MIN_VALUE, PropertyType.LONG ),
-                    param( Long.MAX_VALUE, PropertyType.LONG ),
-                    param( "short", PropertyType.SHORT_STRING ),
-                    param( "alongershortstring", PropertyType.SHORT_STRING ),
-                    param( "areallylongshortstringbutstillnotsobig", PropertyType.SHORT_STRING ),
-                    param( new boolean[]{true}, PropertyType.SHORT_ARRAY ),
-                    param( new byte[]{(byte) 250}, PropertyType.SHORT_ARRAY ),
-                    param( new short[]{(short) 12000}, PropertyType.SHORT_ARRAY ),
-                    param( new char[]{'T'}, PropertyType.SHORT_ARRAY ),
-                    param( new int[]{314}, PropertyType.SHORT_ARRAY ),
-                    param( new float[]{(float) 3.14}, PropertyType.SHORT_ARRAY ),
-                    param( new double[]{314159.2653}, PropertyType.SHORT_ARRAY ),
-                    param( new long[]{1234567890123L}, PropertyType.SHORT_ARRAY )
-            );
-        }
-
-        @Test
-        public void shouldReturnCorrectSingleValue()
-        {
-            // Given
-            StorePropertyPayloadCursor cursor = newCursor( param );
-
-            // When
-            boolean next = cursor.next();
-
-            // Then
-            assertTrue( next );
-            assertEquals( param.type, cursor.type() );
-            assertObjectOrArrayEquals( param.value, cursor.value() );
-        }
-    }
-
-    @RunWith( Parameterized.class )
-    public static class MultipleValuePayload
+    public static class SingleAndMultipleValuePayload
     {
         @Parameter( 0 )
         public Params parameters;
@@ -271,156 +228,179 @@ public class StorePropertyPayloadCursorTest
         @Parameterized.Parameters( name = "{0}" )
         public static List<Object[]> parameters()
         {
-            return Arrays.asList(
-                    params(
-                            paramArg( false, PropertyType.BOOL ),
-                            paramArg( true, PropertyType.BOOL )
-                    ),
-                    params(
-                            paramArg( (byte) 24, PropertyType.BYTE ),
-                            paramArg( Byte.MIN_VALUE, PropertyType.BYTE )
-                    ),
-                    params(
-                            paramArg( (short) 99, PropertyType.SHORT ),
-                            paramArg( Short.MAX_VALUE, PropertyType.SHORT )
-                    ),
-                    params(
-                            paramArg( 'c', PropertyType.CHAR ),
-                            paramArg( Character.MAX_HIGH_SURROGATE, PropertyType.CHAR )
-                    ),
-                    params(
-                            paramArg( 10293, PropertyType.INT ),
-                            paramArg( Integer.MIN_VALUE, PropertyType.INT )
-                    ),
-                    params(
-                            paramArg( (float) 564.29393, PropertyType.FLOAT ),
-                            paramArg( Float.MAX_VALUE, PropertyType.FLOAT )
-                    ),
-                    params(
-                            paramArg( Double.MAX_VALUE, PropertyType.DOUBLE ),
-                            paramArg( Double.MIN_VALUE, PropertyType.DOUBLE )
-                    ),
-                    params(
-                            paramArg( Long.MIN_VALUE, PropertyType.LONG ),
-                            paramArg( Long.MAX_VALUE, PropertyType.LONG )
-                    ),
-                    params(
-                            paramArg( new boolean[]{true}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new byte[]{(byte) 250}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( new short[]{(short) 12000}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new short[]{Short.MIN_VALUE}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( new char[]{'T'}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new int[]{314}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( new float[]{(float) 3.14}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new long[]{1234567890123L}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( new double[]{Double.MIN_VALUE}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new long[]{Long.MAX_VALUE}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( new long[]{1234567890123L}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new long[]{Long.MIN_VALUE}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( new long[]{1234567890123L}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new long[]{Long.MIN_VALUE}, PropertyType.SHORT_ARRAY )
-                    ),
-                    params(
-                            paramArg( false, PropertyType.BOOL ),
-                            paramArg( true, PropertyType.BOOL ),
-                            paramArg( false, PropertyType.BOOL ),
-                            paramArg( true, PropertyType.BOOL )
-                    ),
-                    params(
-                            paramArg( (byte) 24, PropertyType.BYTE ),
-                            paramArg( true, PropertyType.BOOL ),
-                            paramArg( (short) 99, PropertyType.SHORT )
-                    ),
-                    params(
-                            paramArg( Byte.MIN_VALUE, PropertyType.BYTE ),
-                            paramArg( Byte.MAX_VALUE, PropertyType.BYTE ),
-                            paramArg( (short) 99, PropertyType.SHORT ),
-                            paramArg( true, PropertyType.BOOL )
-                    ),
-                    params(
-                            paramArg( (short) 99, PropertyType.SHORT ),
-                            paramArg( (byte) 1, PropertyType.BYTE ),
-                            paramArg( Short.MIN_VALUE, PropertyType.SHORT ),
-                            paramArg( Short.MAX_VALUE, PropertyType.SHORT )
-                    ),
-                    params(
-                            paramArg( Short.MAX_VALUE, PropertyType.SHORT ),
-                            paramArg( 5L, PropertyType.LONG ),
-                            paramArg( 6L, PropertyType.LONG )
-                    ),
-                    params(
-                            paramArg( 'c', PropertyType.CHAR ),
-                            paramArg( 'h', PropertyType.CHAR ),
-                            paramArg( 'a', PropertyType.CHAR ),
-                            paramArg( 'r', PropertyType.CHAR )
-                    ),
-                    params(
-                            paramArg( 10293, PropertyType.INT ),
-                            paramArg( 'r', PropertyType.CHAR ),
-                            paramArg( 3.14, PropertyType.DOUBLE )
-                    ),
-                    params(
-                            paramArg( Integer.MIN_VALUE, PropertyType.INT ),
-                            paramArg( Integer.MAX_VALUE, PropertyType.INT ),
-                            paramArg( Integer.MAX_VALUE, PropertyType.INT ),
-                            paramArg( Integer.MAX_VALUE, PropertyType.INT )
-                    ),
-                    params(
-                            paramArg( Float.MIN_VALUE, PropertyType.FLOAT ),
-                            paramArg( (float) 256.256, PropertyType.FLOAT )
-                    ),
-                    params(
-                            paramArg( Double.MIN_VALUE + 1, PropertyType.DOUBLE ),
-                            paramArg( Double.MAX_VALUE - 1, PropertyType.DOUBLE )
-                    ),
-                    params(
-                            paramArg( Double.MIN_VALUE, PropertyType.DOUBLE ),
-                            paramArg( Short.MAX_VALUE, PropertyType.SHORT ),
-                            paramArg( Byte.MAX_VALUE, PropertyType.BYTE )
-                    ),
-                    params(
-                            paramArg( 484381293L, PropertyType.LONG ),
-                            paramArg( 'c', PropertyType.CHAR ),
-                            paramArg( 1, PropertyType.INT ),
-                            paramArg( true, PropertyType.BOOL )
-                    ),
-                    params(
-                            paramArg( 's', PropertyType.CHAR ),
-                            paramArg( 'o', PropertyType.CHAR ),
-                            paramArg( "rt", PropertyType.SHORT_STRING ),
-                            paramArg( true, PropertyType.BOOL )
-                    ),
-                    params(
-                            paramArg( "abc", PropertyType.SHORT_STRING ),
-                            paramArg( 11L, PropertyType.LONG )
-                    ),
-                    params(
-                            paramArg( new boolean[]{true}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new boolean[]{true, false, false}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new byte[]{(byte) 1024}, PropertyType.SHORT_ARRAY )
-                    ),
-
-                    params(
-                            paramArg( new byte[]{(byte) 250, (byte) 251, (byte) 252}, PropertyType.SHORT_ARRAY ),
-                            paramArg( new char[]{'C', 'T'}, PropertyType.SHORT_ARRAY ),
-                            paramArg( true, PropertyType.BOOL )
-                    ),
-                    params(
-                            paramArg( new long[]{1234567890123L, Long.MAX_VALUE}, PropertyType.SHORT_ARRAY ),
-                            paramArg( (byte) 42, PropertyType.BYTE )
-                    )
+            return Arrays.asList( new Object[]{params( paramArg( 42, false, BOOL ) )},
+                    new Object[]{params( paramArg( 42, true, BOOL ) )},
+                    new Object[]{params( paramArg( 42, (byte) 24, BYTE ) )},
+                    new Object[]{params( paramArg( 42, Byte.MIN_VALUE, BYTE ) )},
+                    new Object[]{params( paramArg( 42, Byte.MAX_VALUE, BYTE ) )},
+                    new Object[]{params( paramArg( 42, (short) 99, SHORT ) )},
+                    new Object[]{params( paramArg( 42, Short.MIN_VALUE, SHORT ) )},
+                    new Object[]{params( paramArg( 42, Short.MAX_VALUE, SHORT ) )},
+                    new Object[]{params( paramArg( 42, 'c', CHAR ) )},
+                    new Object[]{params( paramArg( 42, Character.MIN_LOW_SURROGATE, CHAR ) )},
+                    new Object[]{params( paramArg( 42, Character.MAX_HIGH_SURROGATE, CHAR ) )},
+                    new Object[]{params( paramArg( 42, 10293, INT ) )},
+                    new Object[]{params( paramArg( 42, Integer.MIN_VALUE, INT ) )},
+                    new Object[]{params( paramArg( 42, Integer.MAX_VALUE, INT ) )},
+                    new Object[]{params( paramArg( 42, (float) 564.29393, FLOAT ) )},
+                    new Object[]{params( paramArg( 42, Float.MIN_VALUE, FLOAT ) )},
+                    new Object[]{params( paramArg( 42, Float.MAX_VALUE, FLOAT ) )},
+                    new Object[]{params( paramArg( 42, 93039173.12848, DOUBLE ) )},
+                    new Object[]{params( paramArg( 42, Double.MIN_VALUE, DOUBLE ) )},
+                    new Object[]{params( paramArg( 42, Double.MAX_VALUE, DOUBLE ) )},
+                    new Object[]{params( paramArg( 42, 484381293L, LONG ) )},
+                    new Object[]{params( paramArg( 42, Long.MIN_VALUE, LONG ) )},
+                    new Object[]{params( paramArg( 42, Long.MAX_VALUE, LONG ) )},
+                    new Object[]{params( paramArg( 42, "short", SHORT_STRING ) )},
+                    new Object[]{params( paramArg( 42, "alongershortstring", SHORT_STRING ) )},
+                    new Object[]{params( paramArg( 42, "areallylongshortstringbutstillnotsobig", SHORT_STRING ) )},
+                    new Object[]{params( paramArg( 42, new boolean[]{true}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new byte[]{(byte) 250}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new short[]{(short) 12000}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new char[]{'T'}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new int[]{314}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new float[]{(float) 3.14}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new double[]{314159.2653}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, new long[]{1234567890123L}, SHORT_ARRAY ) )},
+                    new Object[]{params( paramArg( 42, false, BOOL ), paramArg( 55, true, BOOL ) )},
+                    new Object[]{params( paramArg( 42, (byte) 24, BYTE ), paramArg( 55, Byte.MIN_VALUE, BYTE ) )},
+                    new Object[]{params( paramArg( 42, (short) 99, SHORT ), paramArg( 55, Short.MAX_VALUE, SHORT ) )},
+                    new Object[]{params(
+                            paramArg( 42, 'c', CHAR ),
+                            paramArg( 55, Character.MAX_HIGH_SURROGATE, CHAR)
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, 10293, INT ),
+                            paramArg( 55, Integer.MIN_VALUE, INT )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, (float) 564.29393, FLOAT ),
+                            paramArg( 55, Float.MAX_VALUE, FLOAT )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Double.MAX_VALUE, DOUBLE ),
+                            paramArg( 55, Double.MIN_VALUE, DOUBLE )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Long.MIN_VALUE, LONG ),
+                            paramArg( 55, Long.MAX_VALUE, LONG )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new boolean[]{true}, SHORT_ARRAY ),
+                            paramArg( 55, new byte[]{(byte) 250}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new short[]{(short) 12000}, SHORT_ARRAY ),
+                            paramArg( 55, new short[]{Short.MIN_VALUE}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new char[]{'T'}, SHORT_ARRAY ),
+                            paramArg( 55, new int[]{314}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new float[]{(float) 3.14}, SHORT_ARRAY ),
+                            paramArg( 55, new long[]{1234567890123L}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new double[]{Double.MIN_VALUE}, SHORT_ARRAY ),
+                            paramArg( 55, new long[]{Long.MAX_VALUE}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new long[]{1234567890123L}, SHORT_ARRAY ),
+                            paramArg( 55, new long[]{Long.MIN_VALUE}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new long[]{1234567890123L}, SHORT_ARRAY ),
+                            paramArg( 55, new long[]{Long.MIN_VALUE}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, false, BOOL ),
+                            paramArg( 55, true, BOOL ),
+                            paramArg( 73, false, BOOL ),
+                            paramArg( 99, true, BOOL )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, (byte) 24, BYTE ),
+                            paramArg( 55, true, BOOL ),
+                            paramArg( 73, (short) 99, SHORT )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Byte.MIN_VALUE, BYTE ),
+                            paramArg( 55, Byte.MAX_VALUE, BYTE ),
+                            paramArg( 73, (short) 99, SHORT ),
+                            paramArg( 99, true, BOOL )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, (short) 99, SHORT ),
+                            paramArg( 55, (byte) 1, BYTE ),
+                            paramArg( 73, Short.MIN_VALUE, SHORT ),
+                            paramArg( 99, Short.MAX_VALUE, SHORT )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Short.MAX_VALUE, SHORT ),
+                            paramArg( 55, 5L, LONG ),
+                            paramArg( 73, 6L, LONG )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, 'c', CHAR ),
+                            paramArg( 55, 'h', CHAR ),
+                            paramArg( 73, 'a', CHAR ),
+                            paramArg( 99, 'r', CHAR )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, 10293, INT ),
+                            paramArg( 55, 'r', CHAR ),
+                            paramArg( 73, 3.14, DOUBLE )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Integer.MIN_VALUE, INT ),
+                            paramArg( 55, Integer.MAX_VALUE, INT ),
+                            paramArg( 73, Integer.MAX_VALUE, INT ),
+                            paramArg( 99, Integer.MAX_VALUE, INT )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Float.MIN_VALUE, FLOAT ),
+                            paramArg( 55, (float) 256.256, FLOAT )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Double.MIN_VALUE + 1, DOUBLE ),
+                            paramArg( 55, Double.MAX_VALUE - 1, DOUBLE )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, Double.MIN_VALUE, DOUBLE ),
+                            paramArg( 55, Short.MAX_VALUE, SHORT ),
+                            paramArg( 73, Byte.MAX_VALUE, BYTE )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, 484381293L, LONG ),
+                            paramArg( 55, 'c', CHAR ),
+                            paramArg( 73, 1, INT ),
+                            paramArg( 99, true, BOOL )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, 's', CHAR ),
+                            paramArg( 55, 'o', CHAR ),
+                            paramArg( 73, "rt", SHORT_STRING ),
+                            paramArg( 99, true, BOOL )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, "abc", SHORT_STRING ),
+                            paramArg( 55, 11L, LONG )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new boolean[]{true}, SHORT_ARRAY ),
+                            paramArg( 55, new boolean[]{true, false, false}, SHORT_ARRAY ),
+                            paramArg( 73, new byte[]{(byte) 1024}, SHORT_ARRAY )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new byte[]{(byte) 250, (byte) 251, (byte) 252}, SHORT_ARRAY ),
+                            paramArg( 55, new char[]{'C', 'T'}, SHORT_ARRAY ),
+                            paramArg( 73, true, BOOL )
+                    )},
+                    new Object[]{params(
+                            paramArg( 42, new long[]{1234567890123L, Long.MAX_VALUE}, SHORT_ARRAY ),
+                            paramArg( 55, (byte) 42, BYTE )
+                    )}
             );
         }
 
@@ -428,7 +408,7 @@ public class StorePropertyPayloadCursorTest
         public void shouldReturnCorrectValues()
         {
             // Given
-            StorePropertyPayloadCursor cursor = newCursor( parameters );
+            StorePropertyPayloadCursor cursor = allProperties( parameters );
 
             for ( Param param : parameters )
             {
@@ -436,60 +416,91 @@ public class StorePropertyPayloadCursorTest
                 boolean next = cursor.next();
 
                 // Then
-                assertTrue( next );
-                assertEquals( param.type, cursor.type() );
-                assertObjectOrArrayEquals( param.value, cursor.value() );
+                assertNextAndSameValue( next, param, cursor.type(), cursor.value() );
+            }
+            // and then
+            assertFalse( cursor.next() );
+        }
+
+        @Test
+        public void shouldReturnCorrectSingleValueOrNone()
+        {
+            // Given
+            int[] keyIds = {42, 55, 73, 99};
+            for ( int keyId : keyIds )
+            {
+                StorePropertyPayloadCursor cursor = singleProperty( keyId, parameters );
+
+                for ( Param param : Iterables.filter( ( param ) -> param.keyId == keyId, parameters ) )
+                {
+                    // When
+                    boolean next = cursor.next();
+
+                    // Then
+                    assertNextAndSameValue( next, param, cursor.type(), cursor.value() );
+
+                }
+                // and then
+                assertFalse( cursor.next() );
             }
         }
-    }
 
-    private static StorePropertyPayloadCursor newCursor( Params input )
-    {
-        return newCursor( input.params );
-    }
-
-    private static StorePropertyPayloadCursor newCursor( Param... params )
-    {
-        Object[] values = new Object[params.length];
-        for ( int i = 0; i < params.length; i++ )
+        @Test
+        public void shouldReturnNothingForNonExistentPropertyKeyId()
         {
-            values[i] = params[i].value;
+            // Given
+            StorePropertyPayloadCursor cursor = singleProperty( 21, parameters );
+            // When/Then
+            assertFalse( cursor.next() );
         }
-        return newCursor( values );
     }
 
-    private static StorePropertyPayloadCursor newCursor( Object... values )
+    private static void assertNextAndSameValue( boolean next, Param param, PropertyType type, Object value )
+    {
+        assertTrue( next );
+        assertEquals( param.type, type );
+        assertObjectOrArrayEquals( param.value, value );
+    }
+
+    private static StorePropertyPayloadCursor allProperties( Params input )
     {
         DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
         DynamicArrayStore dynamicArrayStore = mock( DynamicArrayStore.class );
-
-        return newCursor( dynamicStringStore, dynamicArrayStore, values );
+        return createCursor( ALWAYS_TRUE_INT, dynamicStringStore, dynamicArrayStore, input.params );
     }
 
-    private static StorePropertyPayloadCursor newCursor( DynamicStringStore dynamicStringStore,
-            DynamicArrayStore dynamicArrayStore, Object... values )
+    private static StorePropertyPayloadCursor singleProperty( int keyId, Params input )
+    {
+        DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
+        DynamicArrayStore dynamicArrayStore = mock( DynamicArrayStore.class );
+        return createCursor( k -> k == keyId, dynamicStringStore, dynamicArrayStore, input.params );
+    }
+
+    private static StorePropertyPayloadCursor createCursor( IntPredicate allPropertyKeyIds, DynamicStringStore
+            dynamicStringStore,
+            DynamicArrayStore dynamicArrayStore, Param[] params )
     {
         StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor(
                 dynamicStringStore.newRecordCursor( null ), dynamicArrayStore.newRecordCursor( null ) );
 
-        long[] blocks = asBlocks( values );
-        cursor.init( blocks, blocks.length );
+        long[] blocks = asBlocks( params );
+        cursor.init( allPropertyKeyIds, blocks, blocks.length );
 
         return cursor;
     }
 
-    private static long[] asBlocks( Object... values )
+    private static long[] asBlocks( Param... params )
     {
         DynamicRecordAllocator stringAllocator = new StandaloneDynamicRecordAllocator();
         DynamicRecordAllocator arrayAllocator = new StandaloneDynamicRecordAllocator();
         long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
         int cursor = 0;
-        for ( int i = 0; i < values.length; i++ )
+        for ( int i = 0; i < params.length; i++ )
         {
-            Object value = values[i];
+            Param param = params[i];
 
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, i, value, stringAllocator, arrayAllocator );
+            PropertyStore.encodeValue( block, param.keyId, param.value, stringAllocator, arrayAllocator );
             long[] valueBlocks = block.getValueBlocks();
             System.arraycopy( valueBlocks, 0, blocks, cursor, valueBlocks.length );
             cursor += valueBlocks.length;
@@ -517,27 +528,24 @@ public class StorePropertyPayloadCursorTest
     {
         final Object value;
         final PropertyType type;
+        final int keyId;
 
-        Param( Object value, PropertyType type )
+        private Param( Object value, PropertyType type, int keyId )
         {
             this.value = value;
             this.type = type;
+            this.keyId = keyId;
         }
 
-        static Object[] param( Object value, PropertyType type )
+        static Param paramArg( int keyId, Object value, PropertyType type )
         {
-            return new Object[]{paramArg( value, type )};
-        }
-
-        static Param paramArg( Object value, PropertyType type )
-        {
-            return new Param( value, type );
+            return new Param( value, type, keyId );
         }
 
         @Override
         public String toString()
         {
-            return "{type=" + type + ", value=" + Strings.prettyPrint( value ) + "}";
+            return "Param{keyId=" + keyId + ", type=" + type + ", value=" + Strings.prettyPrint( value ) + '}';
         }
     }
 
@@ -545,14 +553,14 @@ public class StorePropertyPayloadCursorTest
     {
         final Param[] params;
 
-        Params( Param[] params )
+        private Params( Param[] params )
         {
             this.params = params;
         }
 
-        static Object[] params( Param... input )
+        static Params params( Param... input )
         {
-            return new Object[]{new Params( input )};
+            return new Params( input );
         }
 
         @Override
@@ -564,7 +572,7 @@ public class StorePropertyPayloadCursorTest
         @Override
         public String toString()
         {
-            return "{params=" + Arrays.toString( params ) + "}";
+            return Arrays.toString( params );
         }
     }
 }

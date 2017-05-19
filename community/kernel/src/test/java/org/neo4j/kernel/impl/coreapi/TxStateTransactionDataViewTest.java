@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -100,13 +101,16 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 1L );
         state.nodeDoDelete( 2L );
 
-        when( storeStatement.acquireSingleNodeCursor( 2L ) ).thenReturn( asNodeCursor( 2L, 20L, labels( 15 ) ) );
+        when( storeStatement.acquireSingleNodeCursor( eq( 2L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( 2L, 20L, labels( 15 ) ) );
 
-        when( storeStatement.acquirePropertyCursor( eq( 20L ), any( Lock.class ) ) )
+        when( storeStatement.acquirePropertyCursor( eq( 20L ), any( Lock.class ), eq( null ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( 1, "p" ) ) );
 
-        when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn( asNodeCursor( 1L, 21L, labels() ) );
-        when( storeStatement.acquirePropertyCursor( eq( 21L ), any( Lock.class ) ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquireSingleNodeCursor( eq( 1L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( 1L, 21L, labels() ) );
+        when( storeStatement.acquirePropertyCursor( eq( 21L ), any( Lock.class ), eq( null ) ) )
+                .thenReturn( asPropertyCursor() );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
         when( ops.labelGetName( 15 ) ).thenReturn( "label" );
@@ -137,13 +141,13 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoDelete( 2L, 1, 1L, 1L );
 
         long noPropertyId = -1L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1L ) ).
+        when( storeStatement.acquireSingleRelationshipCursor( 1L , null ) ).
                 thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, null ) ).thenReturn( asPropertyCursor() );
         long propertyId = 40L;
-        when( storeStatement.acquireSingleRelationshipCursor( 2L ) ).
+        when( storeStatement.acquireSingleRelationshipCursor( 2L, null ) ).
                 thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
-        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK ) )
+        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK, null ) )
                 .thenReturn( asPropertyCursor( Property.stringProperty( 1, "p" ) ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
@@ -161,8 +165,8 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 1L );
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1L );
-        when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1, -1 ) );
-        when( storeStatement.acquirePropertyCursor( -1, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquireSingleNodeCursor( 1, null ) ).thenReturn( asNodeCursor( 1, -1 ) );
+        when( storeStatement.acquirePropertyCursor( -1, NO_LOCK, null ) ).thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( node ), equalTo( true ) );
@@ -177,9 +181,9 @@ public class TxStateTransactionDataViewTest
         Relationship rel = mock( Relationship.class );
         when( rel.getId() ).thenReturn( 1L );
         long noPropertyId = -1L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1L ) )
+        when( storeStatement.acquireSingleRelationshipCursor( 1L, null ) )
                 .thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, null ) ).thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
@@ -194,9 +198,9 @@ public class TxStateTransactionDataViewTest
         state.nodeDoChangeProperty( 1L, prevProp, stringProperty( propertyKeyId, "newValue" ) );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
-        when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
-                asNodeCursor( 1L, propertyId, labels() ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement.acquireSingleNodeCursor( eq( 1L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( 1L, propertyId, labels() ) );
+        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, null ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -219,9 +223,9 @@ public class TxStateTransactionDataViewTest
         state.nodeDoRemoveProperty( 1L, prevProp );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
-        when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
-                asNodeCursor( 1L, propertyId, labels() ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement.acquireSingleNodeCursor( eq( 1L ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( 1L, propertyId, labels() ) );
+        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, null ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -243,9 +247,9 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoRemoveProperty( 1L, prevValue );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
+        when( storeStatement.acquireSingleRelationshipCursor( 1, null ) )
                 .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, null ) )
                 .thenReturn( asPropertyCursor( prevValue ) );
 
         // When
@@ -268,9 +272,9 @@ public class TxStateTransactionDataViewTest
 
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
-        when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
-                asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement.acquireSingleRelationshipCursor( 1, null ) )
+                .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
+        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, null ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -290,7 +294,8 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoAddLabel( 2, 1L );
         when( ops.labelGetName( 2 ) ).thenReturn( "theLabel" );
-        when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1 ) );
+        when( storeStatement.acquireSingleNodeCursor( eq( 1 ), any( ReadableTransactionState.class ) ) )
+                .thenReturn( asNodeCursor( 1 ) );
 
         // When
         Iterable<LabelEntry> labelEntries = snapshot().assignedLabels();

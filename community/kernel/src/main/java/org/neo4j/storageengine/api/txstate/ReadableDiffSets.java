@@ -45,7 +45,7 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
 
         public static <T> ReadableDiffSets<T> ifNull( ReadableDiffSets<T> diffSets )
         {
-            return diffSets == null ? Empty.<T>instance() : diffSets;
+            return diffSets == null ? instance() : diffSets;
         }
 
         private static final ReadableDiffSets INSTANCE = new Empty();
