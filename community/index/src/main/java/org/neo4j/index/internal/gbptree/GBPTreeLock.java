@@ -31,6 +31,14 @@ class GBPTreeLock
     private static final long cleanerLockBit = 0x00000000_00000002L;
     private volatile long state;
 
+    // Used for testing
+    GBPTreeLock copy()
+    {
+        GBPTreeLock copy = new GBPTreeLock();
+        copy.state = state;
+        return copy;
+    }
+
     void writerLock()
     {
         doLock( writerLockBit );
@@ -51,6 +59,16 @@ class GBPTreeLock
         doUnlock( cleanerLockBit );
     }
 
+    void writerAndCleanerLock()
+    {
+        doLock( writerLockBit | cleanerLockBit );
+    }
+
+    void writerAndCleanerUnlock()
+    {
+        doUnlock( writerLockBit | cleanerLockBit );
+    }
+
     private void doLock( long targetLockBit )
     {
         long currentState;
@@ -58,7 +76,7 @@ class GBPTreeLock
         do
         {
             currentState = state;
-            while ( isLocked( currentState, targetLockBit ) )
+            while ( !canLock( currentState, targetLockBit ) )
             {
                 // sleep
                 sleep();
@@ -68,11 +86,6 @@ class GBPTreeLock
         } while ( !UnsafeUtil.compareAndSwapLong( this, stateOffset, currentState, newState ) );
     }
 
-    private boolean isLocked( long state, long targetLockBit )
-    {
-        return (state & targetLockBit) == targetLockBit;
-    }
-
     private void doUnlock( long targetLockBit )
     {
         long currentState;
@@ -80,13 +93,23 @@ class GBPTreeLock
         do
         {
             currentState = state;
-            if ( !isLocked( currentState, targetLockBit) )
+            if ( !canUnlock( currentState, targetLockBit) )
             {
                 throw new IllegalStateException( "Can not unlock lock that is already locked" );
             }
             newState = currentState & ~targetLockBit;
         }
         while ( !UnsafeUtil.compareAndSwapLong( this, stateOffset, currentState, newState ) );
+    }
+
+    private boolean canLock( long state, long targetLockBit )
+    {
+        return (state & targetLockBit) == 0;
+    }
+
+    private boolean canUnlock( long state, long targetLockBit )
+    {
+        return (state & targetLockBit) == targetLockBit;
     }
 
     private void sleep()

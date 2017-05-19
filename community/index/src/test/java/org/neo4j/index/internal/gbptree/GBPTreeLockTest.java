@@ -41,6 +41,7 @@ public class GBPTreeLockTest
     // State LL - locked   | locked
 
     private GBPTreeLock lock = new GBPTreeLock();
+    private GBPTreeLock copy;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Test
@@ -103,6 +104,20 @@ public class GBPTreeLockTest
         assertLU();
     }
 
+    @Test
+    public void test_UU_LL_UU() throws Exception
+    {
+        // given
+        assertUU();
+
+        // then
+        lock.writerAndCleanerLock();
+        assertLL();
+
+        lock.writerAndCleanerUnlock();
+        assertUU();
+    }
+
     private void assertThrow( Runnable unlock )
     {
         try
@@ -116,11 +131,11 @@ public class GBPTreeLockTest
         }
     }
 
-    private void assertBlock( Runnable lock, Runnable unlock ) throws ExecutionException, InterruptedException
+    private void assertBlock( Runnable runLock, Runnable runUnlock ) throws ExecutionException, InterruptedException
     {
-        Future<?> future = executor.submit( lock );
+        Future<?> future = executor.submit( runLock );
         shouldWait( future );
-        unlock.run();
+        runUnlock.run();
         future.get();
     }
 
@@ -141,23 +156,34 @@ public class GBPTreeLockTest
     {
         assertThrow( lock::writerUnlock );
         assertThrow( lock::cleanerUnlock );
+        assertThrow( lock::writerAndCleanerUnlock );
     }
 
     private void assertUL() throws ExecutionException, InterruptedException
     {
         assertThrow( lock::writerUnlock );
-        assertBlock( lock::cleanerLock, lock::cleanerUnlock );
+        assertThrow( lock::writerAndCleanerUnlock );
+        copy = lock.copy();
+        assertBlock( copy::cleanerLock, copy::cleanerUnlock );
+        copy = lock.copy();
+        assertBlock( copy::writerAndCleanerLock, copy::cleanerUnlock );
     }
 
     private void assertLU() throws ExecutionException, InterruptedException
     {
-        assertBlock( lock::writerLock, lock::writerUnlock );
         assertThrow( lock::cleanerUnlock );
+        assertThrow( lock::writerAndCleanerUnlock );
+        copy = lock.copy();
+        assertBlock( copy::writerLock, copy::writerUnlock );
     }
 
     private void assertLL() throws ExecutionException, InterruptedException
     {
-        assertBlock( lock::writerLock, lock::writerUnlock );
-        assertBlock( lock::cleanerLock, lock::cleanerUnlock );
+        copy = lock.copy();
+        assertBlock( copy::writerLock, copy::writerUnlock );
+        copy = lock.copy();
+        assertBlock( copy::cleanerLock, copy::cleanerUnlock );
+        copy = lock.copy();
+        assertBlock( copy::writerAndCleanerLock, copy::writerAndCleanerUnlock );
     }
 }

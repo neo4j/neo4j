@@ -764,8 +764,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         // Block writers, or if there's a current writer then wait for it to complete and then block
         // From this point and till the lock is released we know that the tree won't change.
-        lock.cleanerLock();
-        lock.writerLock();
+        lock.writerAndCleanerLock();
         try
         {
             // Flush dirty pages since that last flush above. This should be a very small set of pages
@@ -792,8 +791,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // Unblock writers, any writes after this point and up until the next checkpoint will have
             // the new unstable generation.
-            lock.writerUnlock();
-            lock.cleanerUnlock();
+            lock.writerAndCleanerUnlock();
         }
     }
 
