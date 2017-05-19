@@ -49,7 +49,8 @@ public class ExecutionPlanConverterTest
         assertEquals( convertedMap.get( "dbHits" ), 2L );
         assertEquals( convertedMap.get( "pageCacheHits" ), 3L );
         assertEquals( convertedMap.get( "pageCacheMisses" ), 2L );
-        assertEquals( convertedMap.size(), 8 );
+        assertEquals( (double)convertedMap.get( "pageCacheHitRatio" ), 3.0 / 5, 0.0001 );
+        assertEquals( convertedMap.size(), 9 );
     }
 
     private Map<String,Object> getArguments()

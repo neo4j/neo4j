@@ -49,6 +49,7 @@ object PlanDescriptionArgumentSerializer {
       case DbHits(value) => Long.box(value)
       case PageCacheHits(value) => Long.box(value)
       case PageCacheMisses(value) => Long.box(value)
+      case PageCacheHitRatio(value) => Double.box(value)
       case _: EntityByIdRhs => arg.toString
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)

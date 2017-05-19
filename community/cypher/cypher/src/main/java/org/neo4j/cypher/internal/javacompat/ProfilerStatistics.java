@@ -49,4 +49,12 @@ public interface ProfilerStatistics
     {
         return 0;
     }
+
+    /**
+     * @return the ratio of page cache hits to total number of lookups or {@link Double#NaN} if no data is available
+     */
+    default double getPageCacheHitRatio()
+    {
+        return ((double)getPageCacheHits()) / (getPageCacheHits() + getPageCacheMisses());
+    }
 }

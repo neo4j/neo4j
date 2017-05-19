@@ -77,6 +77,7 @@ object InternalPlanDescription {
     case class DbHits(value: Long) extends Argument
     case class PageCacheHits(value: Long) extends Argument
     case class PageCacheMisses(value: Long) extends Argument
+    case class PageCacheHitRatio(value: Double) extends Argument
     case class ColumnsLeft(value: Seq[String]) extends Argument
     case class Expression(value: ast.Expression) extends Argument
     case class Expressions(expressions: Map[String, ast.Expression]) extends Argument
