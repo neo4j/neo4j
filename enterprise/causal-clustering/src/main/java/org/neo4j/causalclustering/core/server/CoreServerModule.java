@@ -69,14 +69,12 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
-
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 public class CoreServerModule
 {
@@ -222,8 +220,8 @@ public class CoreServerModule
         // batches messages from raft server -> core state
         // core state will drop messages if not ready
         life.add( batchingMessageHandler );
-        life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
-                batchingMessageHandler, logProvider ) );
+        final JobScheduler.Group group = new JobScheduler.Group( "raft-batch-handler" );
+        life.add( new ContinuousJob( jobScheduler.threadFactory( group ), batchingMessageHandler, logProvider ) );
 
         life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         life.add( coreLife );

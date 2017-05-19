@@ -29,22 +29,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.NEW_THREAD;
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
-
 /**
  * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so on.
  */
 public interface JobScheduler extends Lifecycle
 {
-    enum SchedulingStrategy
-    {
-        /** Create a new thread each time a job is scheduled */
-        NEW_THREAD,
-        /** Run the job from a pool of threads, shared among all groups with this strategy */
-        POOLED
-    }
-
     /**
      * Represents a common group of jobs, defining how they should be scheduled.
      */
@@ -53,24 +42,17 @@ public interface JobScheduler extends Lifecycle
         public static final String THREAD_ID = "thread-id";
         public static final Map<String, String> NO_METADATA = Collections.emptyMap();
 
+        private final AtomicInteger threadCounter = new AtomicInteger();
         private final String name;
-        private final SchedulingStrategy strategy;
-        private final AtomicInteger threadCounter = new AtomicInteger( 0 );
 
-        public Group( String name, SchedulingStrategy strategy )
+        public Group( String name )
         {
             this.name = name;
-            this.strategy = strategy;
         }
 
         public String name()
         {
             return name;
-        }
-
-        public SchedulingStrategy strategy()
-        {
-            return strategy;
         }
 
         /**
@@ -98,89 +80,89 @@ public interface JobScheduler extends Lifecycle
     class Groups
     {
         /** Session workers, these perform the work of actually executing client queries.  */
-        public static final Group sessionWorker = new Group( "Session", NEW_THREAD );
+        public static final Group sessionWorker = new Group( "Session" );
 
         /** Background index population */
-        public static final Group indexPopulation = new Group( "IndexPopulation", POOLED );
+        public static final Group indexPopulation = new Group( "IndexPopulation" );
 
         /** Push transactions from master to slaves */
-        public static final Group masterTransactionPushing = new Group( "TransactionPushing", POOLED );
+        public static final Group masterTransactionPushing = new Group( "TransactionPushing" );
 
         /**
          * Rolls back idle transactions on the server.
          */
-        public static final Group serverTransactionTimeout = new Group( "ServerTransactionTimeout", POOLED );
+        public static final Group serverTransactionTimeout = new Group( "ServerTransactionTimeout" );
 
         /**
          * Aborts idle slave lock sessions on the master.
          */
-        public static final Group slaveLocksTimeout = new Group( "SlaveLocksTimeout", POOLED );
+        public static final Group slaveLocksTimeout = new Group( "SlaveLocksTimeout" );
 
         /**
          * Pulls updates from the master.
          */
-        public static final Group pullUpdates = new Group( "PullUpdates", POOLED );
+        public static final Group pullUpdates = new Group( "PullUpdates" );
 
         /**
          * Gathers approximated data about the underlying data store.
          */
-        public static final Group indexSamplingController = new Group( "IndexSamplingController", POOLED );
-        public static final Group indexSampling = new Group( "IndexSampling", POOLED );
+        public static final Group indexSamplingController = new Group( "IndexSamplingController" );
+        public static final Group indexSampling = new Group( "IndexSampling" );
 
         /**
          * Rotates internal diagnostic logs
          */
-        public static final Group internalLogRotation = new Group( "InternalLogRotation", POOLED );
+        public static final Group internalLogRotation = new Group( "InternalLogRotation" );
 
         /**
          * Rotates query logs
          */
-        public static final Group queryLogRotation = new Group( "queryLogRotation", POOLED );
+        public static final Group queryLogRotation = new Group( "queryLogRotation" );
 
         /**
          * Checkpoint and store flush
          */
-        public static final Group checkPoint = new Group( "CheckPoint", POOLED );
+        public static final Group checkPoint = new Group( "CheckPoint" );
 
         /**
          * Raft Log pruning
          */
-        public static final Group raftLogPruning = new Group( "RaftLogPruning", POOLED );
+        public static final Group raftLogPruning = new Group( "RaftLogPruning" );
 
         /**
          * Network IO threads for the Bolt protocol.
          */
-        public static final Group boltNetworkIO = new Group( "BoltNetworkIO", NEW_THREAD );
+        public static final Group boltNetworkIO = new Group( "BoltNetworkIO" );
 
         /**
          * Reporting thread for Metrics events
          */
-        public static final Group metricsEvent = new Group( "MetricsEvent", POOLED );
+        public static final Group metricsEvent = new Group( "MetricsEvent" );
 
         /**
          * UDC timed events.
          */
-        public static Group udc  = new Group( "UsageDataCollection", POOLED );
+        public static Group udc  = new Group( "UsageDataCollection" );
 
         /**
          * Storage maintenance.
          */
-        public static Group storageMaintenance = new Group( "StorageMaintenance", POOLED );
+        public static Group storageMaintenance = new Group( "StorageMaintenance" );
 
         /**
          * Native security.
          */
-        public static Group nativeSecurity = new Group( "NativeSecurity", POOLED );
+        public static Group nativeSecurity = new Group( "NativeSecurity" );
 
         /**
          * File watch service group
          */
-        public static Group fileWatch = new Group( "FileWatcher", NEW_THREAD );
+        public static Group fileWatch = new Group( "FileWatcher" );
 
         /**
          * Recovery cleanup.
          */
-        public static Group recoveryCleanup = new Group( "RecoveryCleanup", POOLED );
+        public static Group recoveryCleanup = new Group( "RecoveryCleanup" );
 
         private Groups()
         {

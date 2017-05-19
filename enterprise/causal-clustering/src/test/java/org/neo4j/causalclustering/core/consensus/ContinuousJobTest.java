@@ -25,11 +25,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.scheduler.JobScheduler.Group;
-import org.neo4j.scheduler.JobScheduler.SchedulingStrategy;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler.Group;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.lessThan;
@@ -39,7 +38,8 @@ import static org.junit.Assert.assertTrue;
 public class ContinuousJobTest
 {
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
-    private Group jobGroup = new Group( "test", SchedulingStrategy.NEW_THREAD );
+    private final Group jobGroup = new Group( "test" );
+    private final Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
 
     @Test
     public void shouldRunJobContinuously() throws Throwable
@@ -48,8 +48,8 @@ public class ContinuousJobTest
         CountDownLatch latch = new CountDownLatch( 10 );
         Runnable task = latch::countDown;
 
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        ContinuousJob continuousJob = new ContinuousJob( scheduler, jobGroup, task, NullLogProvider.getInstance() );
+        ContinuousJob continuousJob =
+                new ContinuousJob( scheduler.threadFactory( jobGroup ), task, NullLogProvider.getInstance() );
 
         // when
         try ( Lifespan ignored = new Lifespan( scheduler, continuousJob ) )
@@ -71,8 +71,8 @@ public class ContinuousJobTest
             semaphore.release();
         };
 
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        ContinuousJob continuousJob = new ContinuousJob( scheduler, jobGroup, task, NullLogProvider.getInstance() );
+        ContinuousJob continuousJob =
+                new ContinuousJob( scheduler.threadFactory( jobGroup ), task, NullLogProvider.getInstance() );
 
         // when
         long startTime = System.currentTimeMillis();

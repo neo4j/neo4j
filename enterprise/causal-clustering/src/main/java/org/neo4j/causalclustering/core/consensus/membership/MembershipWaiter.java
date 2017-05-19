@@ -26,14 +26,13 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * Waits until member has "fully joined" the raft membership.
@@ -77,7 +76,7 @@ public class MembershipWaiter
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
         JobScheduler.JobHandle jobHandle = jobScheduler.schedule(
-                new JobScheduler.Group( getClass().toString(), POOLED ),
+                new JobScheduler.Group( getClass().toString() ),
                 evaluator, currentCatchupDelayInMs, MILLISECONDS );
 
         catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
@@ -117,7 +116,7 @@ public class MembershipWaiter
             {
                 currentCatchupDelayInMs += SECONDS.toMillis( 1 );
                 long longerDelay = currentCatchupDelayInMs < maxCatchupLag ? currentCatchupDelayInMs : maxCatchupLag;
-                jobScheduler.schedule( new JobScheduler.Group( MembershipWaiter.class.toString(), POOLED ), this,
+                jobScheduler.schedule( new JobScheduler.Group( MembershipWaiter.class.toString() ), this,
                         longerDelay, MILLISECONDS );
             }
         }

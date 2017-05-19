@@ -22,11 +22,10 @@ package org.neo4j.causalclustering.helper;
 import java.util.concurrent.CancellationException;
 
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
  * A robust job catches and logs any exceptions, but keeps running if the job
@@ -48,13 +47,13 @@ public class RobustJobSchedulerWrapper
 
     public JobScheduler.JobHandle schedule( String name, long delayMillis, ThrowingAction<Exception> action )
     {
-        return delegate.schedule( new JobScheduler.Group( name, POOLED ),
+        return delegate.schedule( new JobScheduler.Group( name ),
                 () -> withErrorHandling( action ), delayMillis, MILLISECONDS );
     }
 
     public JobScheduler.JobHandle scheduleRecurring( String name, long periodMillis, ThrowingAction<Exception> action )
     {
-        return delegate.scheduleRecurring( new JobScheduler.Group( name, POOLED ),
+        return delegate.scheduleRecurring( new JobScheduler.Group( name ),
                 () -> withErrorHandling( action ), periodMillis, MILLISECONDS );
     }
 

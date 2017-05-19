@@ -86,17 +86,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
 
-        switch ( group.strategy() )
-        {
-        case POOLED:
-            return register( new PooledJobHandle( this.globalPool.submit( job ) ) );
-        case NEW_THREAD:
-            Thread thread = createNewThread( group, job, metadata );
-            thread.start();
-            return new SingleThreadHandle( thread );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy for scheduling job: " + group.strategy() );
-        }
+        return register( new PooledJobHandle( this.globalPool.submit( job ) ) );
     }
 
     private JobHandle register( PooledJobHandle pooledJobHandle )
@@ -136,27 +126,15 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 
     @Override
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
-                                        TimeUnit timeUnit )
+            TimeUnit timeUnit )
     {
-        switch ( group.strategy() )
-        {
-        case POOLED:
-            return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy to use for recurring jobs: " + group.strategy() );
-        }
+        return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
     }
 
     @Override
     public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit timeUnit )
     {
-        switch ( group.strategy() )
-        {
-        case POOLED:
-            return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
-        default:
-            throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
-        }
+        return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
     }
 
     @Override
@@ -265,31 +243,6 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         public void registerCancelListener( CancelListener listener )
         {
             cancelListeners.add( listener );
-        }
-    }
-
-    private static class SingleThreadHandle implements JobHandle
-    {
-        private final Thread thread;
-
-        SingleThreadHandle( Thread thread )
-        {
-            this.thread = thread;
-        }
-
-        @Override
-        public void cancel( boolean mayInterruptIfRunning )
-        {
-            if ( mayInterruptIfRunning )
-            {
-                thread.interrupt();
-            }
-        }
-
-        @Override
-        public void waitTermination() throws InterruptedException
-        {
-            thread.join();
         }
     }
 }

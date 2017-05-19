@@ -20,11 +20,8 @@
 package org.neo4j.kernel.impl.util;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -34,9 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,11 +44,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.scheduler.JobScheduler.Group.THREAD_ID;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.NEW_THREAD;
-import static org.neo4j.scheduler.JobScheduler.SchedulingStrategy.POOLED;
 import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
 public class Neo4jJobSchedulerTest
@@ -120,41 +114,6 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldRunJobInNewThread() throws Throwable
-    {
-        // Given
-        life.start();
-
-        // We start a thread that will signal when it's running, and remain running until we tell it to stop.
-        // This way we can check and make sure a thread with the name we expect is live and well
-        final CountDownLatch threadStarted = new CountDownLatch( 1 );
-        final CountDownLatch unblockThread = new CountDownLatch( 1 );
-
-        // When
-        scheduler.schedule( new JobScheduler.Group( "MyGroup", NEW_THREAD ),
-                waitForLatch( threadStarted, unblockThread ), stringMap( THREAD_ID, "MyTestThread" ) );
-        threadStarted.await();
-
-        // Then
-        try
-        {
-            String threadName = "neo4j.MyGroup-MyTestThread";
-            for ( String name : threadNames() )
-            {
-                if ( name.equals( threadName ) )
-                {
-                    return;
-                }
-            }
-            Assert.fail( "Expected a thread named '" + threadName + "' in " + threadNames() );
-        }
-        finally
-        {
-            unblockThread.countDown();
-        }
-    }
-
-    @Test
     public void shouldRunWithDelay() throws Throwable
     {
         // Given
@@ -165,14 +124,10 @@ public class Neo4jJobSchedulerTest
 
         long time = System.nanoTime();
 
-        scheduler.schedule( new JobScheduler.Group( "group", POOLED ), new Runnable()
+        scheduler.schedule( new JobScheduler.Group( "group" ), () ->
         {
-            @Override
-            public void run()
-            {
-                runTime.set( System.nanoTime() );
-                latch.countDown();
-            }
+            runTime.set( System.nanoTime() );
+            latch.countDown();
         }, 100, TimeUnit.MILLISECONDS );
 
         latch.await();
@@ -234,32 +189,6 @@ public class Neo4jJobSchedulerTest
         // THEN
         assertTrue( halted.get() );
         neo4jJobScheduler.shutdown();
-    }
-
-    private List<String> threadNames()
-    {
-        List<String> names = new ArrayList<>();
-        for ( Thread thread : Thread.getAllStackTraces().keySet() )
-        {
-            names.add( thread.getName() );
-        }
-        return names;
-    }
-
-    private Runnable waitForLatch( final CountDownLatch threadStarted, final CountDownLatch runUntil )
-    {
-        return () ->
-        {
-            try
-            {
-                threadStarted.countDown();
-                runUntil.await();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
-        };
     }
 
     private void awaitFirstInvocation()
