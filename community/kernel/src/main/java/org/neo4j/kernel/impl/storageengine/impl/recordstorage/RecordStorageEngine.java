@@ -355,8 +355,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
         catch ( Throwable cause )
         {
-            databaseHealth.panic( cause );
-            throw new TransactionApplyKernelException( cause, "Failed to apply transaction: %s", batch );
+            TransactionApplyKernelException kernelException =
+                    new TransactionApplyKernelException( cause, "Failed to apply transaction: %s", batch );
+            databaseHealth.panic( kernelException );
+            throw kernelException;
         }
     }
 
