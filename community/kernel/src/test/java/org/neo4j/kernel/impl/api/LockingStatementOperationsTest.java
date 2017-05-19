@@ -346,17 +346,6 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeCheckingSchemaState() throws Exception
-    {
-        // when
-        lockingOps.schemaStateContains( state, null );
-
-        // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaStateOps ).schemaStateContains( state, null );
-    }
-
-    @Test
     public void shouldAcquireSchemaReadLockBeforeFlushingSchemaState() throws Exception
     {
         // when

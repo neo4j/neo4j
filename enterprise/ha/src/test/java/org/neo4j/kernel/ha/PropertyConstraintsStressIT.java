@@ -44,7 +44,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -71,9 +70,6 @@ public class PropertyConstraintsStressIT
 {
     @Parameter( 0 )
     public ConstraintOperations constraintOps;
-
-    @Parameter( 1 )
-    public boolean releaseSchemaLockWhileBuildingIndex;
 
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -105,14 +101,10 @@ public class PropertyConstraintsStressIT
     private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
     @Parameterized.Parameters( name = "{0}:{1}" )
-    public static Iterable<Object[]> params()
+    public static Iterable<ConstraintOperations> params()
     {
-        return Arrays.asList( new Object[][]{
-                {UNIQUE_PROPERTY_CONSTRAINT_OPS, false},
-                {UNIQUE_PROPERTY_CONSTRAINT_OPS, true},
-                {NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, false},
-                {REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS, false},
-        } );
+        return Arrays.asList( UNIQUE_PROPERTY_CONSTRAINT_OPS, UNIQUE_PROPERTY_CONSTRAINT_OPS,
+                NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS );
     }
 
     @Before
@@ -120,8 +112,6 @@ public class PropertyConstraintsStressIT
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.pull_interval, "0" )
-                .withSharedSetting( GraphDatabaseSettings.release_schema_lock_while_building_constraint,
-                        String.valueOf( releaseSchemaLockWhileBuildingIndex ) )
                 .startCluster();
         clearData();
     }

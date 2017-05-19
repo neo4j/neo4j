@@ -62,6 +62,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class LockingStatementOperations implements
@@ -156,15 +157,6 @@ public class LockingStatementOperations implements
         acquireSharedSchemaLock( state );
         state.assertOpen();
         return schemaStateDelegate.schemaStateGetOrCreate( state, key, creator );
-    }
-
-    @Override
-    // TODO:remove
-    public <K> boolean schemaStateContains( KernelStatement state, K key )
-    {
-        acquireSharedSchemaLock( state );
-        state.assertOpen();
-        return schemaStateDelegate.schemaStateContains( state, key );
     }
 
     @Override
@@ -564,23 +556,23 @@ public class LockingStatementOperations implements
         statement.locks().optimistic().acquireExclusive( statement.lockTracer(), resource, resourceId );
     }
 
-//    private void acquireSharedSchemaLock( KernelStatement state )
-//    {
-//        if ( !SCHEMA_WRITES_DISABLE )
-//        {
-//            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-//        }
-//    }
-//
-//    private void acquireExclusiveSchemaLock( KernelStatement state )
-//    {
-//        if ( SCHEMA_WRITES_DISABLE )
-//        {
-//            throw new IllegalStateException( "Schema modifications have been disabled via feature toggle" );
-//        }
-//        else
-//        {
-//            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-//        }
-//    }
+    private void acquireSharedSchemaLock( KernelStatement state )
+    {
+        if ( !SCHEMA_WRITES_DISABLE )
+        {
+            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+        }
+    }
+
+    private void acquireExclusiveSchemaLock( KernelStatement state )
+    {
+        if ( SCHEMA_WRITES_DISABLE )
+        {
+            throw new IllegalStateException( "Schema modifications have been disabled via feature toggle" );
+        }
+        else
+        {
+            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+        }
+    }
 }

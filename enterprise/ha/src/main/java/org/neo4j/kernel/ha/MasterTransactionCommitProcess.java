@@ -58,7 +58,6 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     private final IntegrityValidator validator;
     private final Monitor monitor;
     private final Locks locks;
-    private final boolean reacquireSharedSchemaLockOnIncomingTransactions;
 
     public interface Monitor
     {
@@ -66,15 +65,13 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     }
 
     public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess, TransactionPropagator txPropagator,
-            IntegrityValidator validator, Monitor monitor, Locks locks,
-            boolean reacquireSharedSchemaLockOnIncomingTransactions )
+            IntegrityValidator validator, Monitor monitor, Locks locks )
     {
         this.inner = commitProcess;
         this.txPropagator = txPropagator;
         this.validator = validator;
         this.monitor = monitor;
         this.locks = locks;
-        this.reacquireSharedSchemaLockOnIncomingTransactions = reacquireSharedSchemaLockOnIncomingTransactions;
     }
 
     @Override
@@ -106,10 +103,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
         {
             while ( batch != null )
             {
-                if ( reacquireSharedSchemaLockOnIncomingTransactions )
-                {
-                    locks = acquireSharedSchemaLockIfTransactionResultsInIndexUpdates( batch, locks );
-                }
+                locks = acquireLocksIfTransactionResultsInIndexUpdates( batch, locks );
                 validator.validateTransactionStartKnowledge(
                         batch.transactionRepresentation().getLatestCommittedTxWhenStarted() );
                 batch = batch.next();
@@ -131,6 +125,8 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     }
 
     /**
+     * TODO: javadoc update
+     * TODO: we need to take only locks for labels that changed
      * Looks at the transaction coming from slave and decide whether or not the shared schema lock
      * should be acquired before letting it apply.
      * <p>
@@ -147,7 +143,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
      * and some locking is required then a new locks instance.
      * @throws TransactionFailureException on failure to read transaction.
      */
-    private Locks.Client acquireSharedSchemaLockIfTransactionResultsInIndexUpdates( TransactionToApply batch,
+    private Locks.Client acquireLocksIfTransactionResultsInIndexUpdates( TransactionToApply batch,
             Locks.Client locks ) throws TransactionFailureException
     {
         try

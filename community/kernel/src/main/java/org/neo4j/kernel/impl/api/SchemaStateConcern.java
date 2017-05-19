@@ -39,12 +39,6 @@ public class SchemaStateConcern implements SchemaStateOperations
     }
 
     @Override
-    public <K> boolean schemaStateContains( KernelStatement state, K key )
-    {
-        return schemaState.get( key ) != null;
-    }
-
-    @Override
     public void schemaStateFlush( KernelStatement state )
     {
         schemaState.clear();

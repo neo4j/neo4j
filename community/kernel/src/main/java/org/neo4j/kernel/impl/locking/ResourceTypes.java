@@ -36,7 +36,7 @@ public enum ResourceTypes implements ResourceType
     NODE( 0, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP( 1, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     GRAPH_PROPS( 2, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-//    SCHEMA( 3, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    SCHEMA( 3, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     INDEX_ENTRY( 4, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     LEGACY_INDEX( 5, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
