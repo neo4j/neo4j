@@ -121,6 +121,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
                     TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId );
                     tx.commitment( commitment, transactionId );
+                    tx.logPosition( commitment.logPosition() );
                     tx = tx.next();
                     lastTransactionId = transactionId;
                 }

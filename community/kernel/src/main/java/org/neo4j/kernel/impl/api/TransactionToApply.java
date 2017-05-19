@@ -25,10 +25,14 @@ import java.util.function.LongConsumer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+
+import static org.neo4j.helpers.Format.date;
 
 /**
  * A chain of transactions to apply. Transactions form a linked list, each pointing to the {@link #next()}
@@ -64,10 +68,10 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     private long transactionId;
     private TransactionToApply nextTransactionInBatch;
 
-    // These fields are provided by commit process/storage engine
+    // These fields are provided by commit process, storage engine, or recovery process
     private Commitment commitment;
-
     private LongConsumer closedCallback;
+    private LogPosition logPosition;
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
@@ -128,6 +132,11 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
         this.transactionId = transactionId;
     }
 
+    public void logPosition( LogPosition position )
+    {
+        this.logPosition = position;
+    }
+
     @Override
     public TransactionToApply next()
     {
@@ -145,6 +154,47 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
         if ( closedCallback != null )
         {
             closedCallback.accept( transactionId );
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        TransactionRepresentation tr = this.transactionRepresentation;
+        return "Transaction #" + transactionId +
+               (logPosition != null ? " at log position " + logPosition : " (no log position)") +
+               " {started " + date( tr.getTimeStarted() ) +
+               ", committed " + date( tr.getTimeCommitted() ) +
+               ", with " + countCommands() + " commands in this transaction" +
+               ", authored by " + tr.getAuthorId() +
+               ", with master id " + tr.getMasterId() +
+               ", lock session " + tr.getLockSessionId() +
+               ", latest committed transaction id when started was " + tr.getLatestCommittedTxWhenStarted() +
+               ", additional header bytes: " + HexPrinter.hex( tr.additionalHeader(), Integer.MAX_VALUE, "" ) + "}";
+    }
+
+    private String countCommands()
+    {
+        class Counter implements Visitor<StorageCommand,IOException>
+        {
+            private int count;
+
+            @Override
+            public boolean visit( StorageCommand element ) throws IOException
+            {
+                count++;
+                return false;
+            }
+        }
+        try
+        {
+            Counter counter = new Counter();
+            accept( counter );
+            return String.valueOf( counter.count );
+        }
+        catch ( IOException e )
+        {
+            return "(unable to count: " + e.getMessage() + ")";
         }
     }
 }
