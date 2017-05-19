@@ -393,14 +393,16 @@ class LoadCsvAcceptanceTest
   }
 
   test("should fail for file urls if local file access disallowed") {
-    val db = new TestEnterpriseGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
+    val db = acceptanceTestDatabaseBuilder
       .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
       .newGraphDatabase()
-
-    intercept[QueryExecutionException] {
-      db.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})", emptyMap())
-    }.getMessage should endWith(": configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
+    try {
+      intercept[QueryExecutionException] {
+        db.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})", emptyMap())
+      }.getMessage should endWith(": configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
+    } finally {
+      db.shutdown()
+    }
   }
 
   test("should allow paths relative to authorized directory") {
@@ -410,27 +412,32 @@ class LoadCsvAcceptanceTest
         writer.println("something")
     )
 
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
+    val db = acceptanceTestDatabaseBuilder
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
       .newGraphDatabase()
-
-    val result = db.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field", emptyMap())
-    result.asScala.map(_.asScala).toList should equal(List(Map("field" -> "something")))
-    result.close()
+    try {
+      val result = db.execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field", emptyMap())
+      result.asScala.map(_.asScala).toList should equal(List(Map("field" -> "something")))
+      result.close()
+    } finally {
+      db.shutdown()
+    }
   }
 
   test("should restrict file urls to be rooted within an authorized directory") {
     val dir = createTempDirectory("loadcsvroot")
 
-    val db = new TestEnterpriseGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
+    val db = acceptanceTestDatabaseBuilder
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
       .newGraphDatabase()
 
-    intercept[QueryExecutionException] {
-      db.execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", emptyMap()).asScala.size
-    }.getMessage should endWith(" file URL points outside configured import directory")
+    try {
+      intercept[QueryExecutionException] {
+        db.execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", emptyMap()).asScala.size
+      }.getMessage should endWith(" file URL points outside configured import directory")
+    } finally {
+      db.shutdown()
+    }
   }
 
   test("should apply protocol rules set at db construction") {
@@ -452,10 +459,13 @@ class LoadCsvAcceptanceTest
     val db = new TestGraphDatabaseFactory()
       .addURLAccessRule( "testproto", new URLAccessRule {
         override def validate(config: Configuration, url: URL): URL = url
-      }).newImpermanentDatabaseBuilder().newGraphDatabase()
-
-    val result = db.execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field", emptyMap())
-    result.asScala.map(_.asScala).toList should equal(List(Map("field" -> "something")))
+      }).newImpermanentDatabaseBuilder(acceptanceDbFolder).newGraphDatabase()
+    try {
+      val result = db.execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field", emptyMap())
+      result.asScala.map(_.asScala).toList should equal(List(Map("field" -> "something")))
+    } finally {
+      db.shutdown()
+    }
   }
 
   test("eager queries should be handled correctly") {
@@ -564,6 +574,14 @@ class LoadCsvAcceptanceTest
 
   override def afterAll() {
     httpServer.stop()
+  }
+
+  private def acceptanceTestDatabaseBuilder = {
+    new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder(acceptanceDbFolder)
+  }
+
+  private def acceptanceDbFolder = {
+    new File("target/test-data/acceptance-db")
   }
 
   private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =

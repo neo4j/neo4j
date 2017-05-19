@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.io.File
 import java.util
 
 import org.neo4j.cypher._
@@ -52,6 +53,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   )
 
   test("changing idp max table size should affect IDP inner loop count") {
+    graph.shutdown()
     // GIVEN
     val numberOfPatternRelationships = 13
     val maxTableSizes = Seq(128, 64, 32, 16)
@@ -70,6 +72,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
   test("changing idp iteration duration threshold should affect IDP inner loop count") {
     // GIVEN
+    graph.shutdown()
     val numberOfPatternRelationships = 13
     val iterationDurationThresholds = Seq(1000, 500, 100, 10)
 
@@ -255,7 +258,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       case (setting, settingValue) => setting.name() -> settingValue
     }.toMap.asJava
 
-    val graph = new GraphDatabaseCypherService(new ImpermanentGraphDatabase(config))
+    val graph = new GraphDatabaseCypherService(new ImpermanentGraphDatabase(new File("target/test-data/pattern-acceptance"), config))
     try {
       val kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
       val monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
