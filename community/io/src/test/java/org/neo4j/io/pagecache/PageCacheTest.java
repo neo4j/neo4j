@@ -1741,7 +1741,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), 20 ) )
         {
-
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
@@ -1753,7 +1752,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursor.putByte( (byte) 41 );   // 14+1 = 15
                 cursor.putBytes( data );       // 15+5 = 20
             }
-
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
@@ -2081,48 +2079,44 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         configureStandardPageCache();
 
-        try ( PagedFile pagedFile1 = pageCache.map( file( "a" ), filePageSize ) )
+        try ( PagedFile pagedFile1 = pageCache.map( file( "a" ), filePageSize );
+              PagedFile pagedFile2 = pageCache.map( file2, filePageSize2 ) )
         {
-            try ( PagedFile pagedFile2 = pageCache.map( file2, filePageSize2 ) )
+            long pageId1 = 0;
+            long pageId2 = 0;
+            boolean moreWorkToDo;
+            do
             {
+                boolean cursorReady1;
+                boolean cursorReady2;
 
-                long pageId1 = 0;
-                long pageId2 = 0;
-                boolean moreWorkToDo;
-                do
+                try ( PageCursor cursor = pagedFile1.io( pageId1, PF_SHARED_WRITE_LOCK ) )
                 {
-                    boolean cursorReady1;
-                    boolean cursorReady2;
-
-                    try ( PageCursor cursor = pagedFile1.io( pageId1, PF_SHARED_WRITE_LOCK ) )
+                    cursorReady1 = cursor.next() && cursor.getCurrentPageId() < maxPageIdCursor1;
+                    if ( cursorReady1 )
                     {
-                        cursorReady1 = cursor.next() && cursor.getCurrentPageId() < maxPageIdCursor1;
-                        if ( cursorReady1 )
-                        {
-                            writeRecords( cursor );
-                            pageId1++;
-                        }
+                        writeRecords( cursor );
+                        pageId1++;
                     }
-
-                    try ( PageCursor cursor = pagedFile2.io( pageId2, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
-                    {
-                        cursorReady2 = cursor.next();
-                        if ( cursorReady2 )
-                        {
-                            for ( int i = 0; i < filePageSize2; i++ )
-                            {
-                                cursor.putByte( (byte) 'b' );
-                            }
-                            assertFalse( cursor.shouldRetry() );
-                        }
-                        pageId2++;
-                    }
-
-                    moreWorkToDo = cursorReady1 || cursorReady2;
                 }
-                while ( moreWorkToDo );
 
+                try ( PageCursor cursor = pagedFile2.io( pageId2, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+                {
+                    cursorReady2 = cursor.next();
+                    if ( cursorReady2 )
+                    {
+                        for ( int i = 0; i < filePageSize2; i++ )
+                        {
+                            cursor.putByte( (byte) 'b' );
+                        }
+                        assertFalse( cursor.shouldRetry() );
+                    }
+                    pageId2++;
+                }
+
+                moreWorkToDo = cursorReady1 || cursorReady2;
             }
+            while ( moreWorkToDo );
         }
 
         // Verify the file contents
