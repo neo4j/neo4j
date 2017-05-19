@@ -311,7 +311,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   var engine: ExecutionEngine = null
 
   override protected def beforeEach(): Unit = {
-    super.beforeEach()
     db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     monitor = mock[QueryExecutionMonitor]
     val monitors = db.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
@@ -321,6 +320,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    if (db != null) db.shutdown()
+    if (db != null) {
+      db.shutdown()
+    }
   }
 }

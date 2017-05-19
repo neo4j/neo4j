@@ -29,7 +29,8 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 
 class StoreLockChecker implements Closeable
 {
@@ -40,7 +41,7 @@ class StoreLockChecker implements Closeable
     private StoreLockChecker( FileSystemAbstraction fileSystem, File storeDirectory )
     {
         this.fileSystem = fileSystem;
-        this.storeLocker = new StoreLocker( fileSystem, storeDirectory );
+        this.storeLocker = new GlobalStoreLocker( fileSystem, storeDirectory );
     }
 
     /**

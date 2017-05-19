@@ -34,6 +34,7 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
   }
 
   test("can also be configured to fail hard") {
+    graph.shutdown()
     graph = createGraphDatabase(Map(GraphDatabaseSettings.cypher_hints_error -> "true"))
     eengine = createEngine(graph)
 

@@ -149,7 +149,8 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -305,7 +306,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
     {
-        StoreLocker storeLocker = new StoreLocker( fileSystem, this.storeDir );
+        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.storeDir );
         try
         {
             storeLocker.checkLock();

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -42,6 +43,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,6 +53,9 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
     private long node1Id = -1;
     private long node2Id = -1;
     private final String key1 = "key1";
@@ -79,12 +84,10 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node1.setProperty( arrayKey, array );
         node2.setProperty( arrayKey, array );
         rel.setProperty( arrayKey, array );
- //       assertTrue( node1.getProperty( key1 ).equals( 1 ) );
         Transaction tx = getTransaction();
         tx.success();
         tx.close();
         tx = getGraphDb().beginTx();
-//        node1.getPropertyKeys().iterator().next();
         assertTrue( node1.getProperty( key1 ).equals( 1 ) );
         setTransaction( tx );
     }
@@ -354,8 +357,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         config.put( "relationship_grab_size", "1" );
         File storeDir = getStorePath( "neo2" );
         deleteFileOrDirectory( storeDir );
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphDb = getImpermanentDatabase( config );
 
         Node node1;
         Node node2;
@@ -413,8 +415,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         config.put( "relationship_grab_size", "2" );
         File storeDir = getStorePath( "neo2" );
         deleteFileOrDirectory( storeDir );
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphDb = getImpermanentDatabase( config );
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -531,5 +532,13 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         tx.success();
         tx.close();
         graphDb.shutdown();
+    }
+
+    private GraphDatabaseService getImpermanentDatabase( Map<String,String> config )
+    {
+        return new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
+                .setConfig( config )
+                .newGraphDatabase();
     }
 }

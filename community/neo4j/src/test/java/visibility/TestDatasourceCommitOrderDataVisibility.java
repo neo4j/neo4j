@@ -19,6 +19,7 @@
  */
 package visibility;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,6 +48,12 @@ public class TestDatasourceCommitOrderDataVisibility
     public void setUp() throws Exception
     {
         graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
+    }
+
+    @After
+    public void tearDown()
+    {
+        graphDatabaseService.shutdown();
     }
 
     @Test

@@ -39,7 +39,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -53,7 +52,6 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
@@ -62,6 +60,7 @@ public class StartClientIT extends AbstractShellIT
 {
     @Rule
     public SuppressOutput mute = suppressAll();
+    private GraphDatabaseShellServer shellServer;
 
     @Before
     public void startDatabase() throws Exception
@@ -176,9 +175,9 @@ public class StartClientIT extends AbstractShellIT
         StartClient client = new StartClient( new PrintStream( out ), new PrintStream( err ) );
 
         // when
-        client.start( new String[]{"-path", db.getStoreDir(), "-c", "dbinfo -g Configuration unsupported.dbms.edition"},
+        client.start( new String[]{"-path", db.getStoreDir() + "testDb", "-c",
+                        "dbinfo -g Configuration unsupported.dbms.edition"},
                 ctrlCHandler );
-
         // then
         assertEquals( 0, err.size() );
         assertThat( out.toString(), containsString( "\"unsupported.dbms.edition\": \"community\"" ) );
@@ -215,14 +214,23 @@ public class StartClientIT extends AbstractShellIT
             protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
                     String configFile ) throws RemoteException
             {
-                return new GraphDatabaseShellServer( new TestGraphDatabaseFactory().setUserLogProvider( log ), path,
-                        readOnly, configFile );
+                TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory().setUserLogProvider( log );
+                shellServer = new GraphDatabaseShellServer( factory, path, readOnly, configFile );
+                return shellServer;
             }
-        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir(), "-config",
+        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir() + "test-db", "-config",
                 getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()}, mock( CtrlCHandler.class ) );
-
-        // Then
-        log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );
+        try
+        {
+            log.assertNone( inLog( startsWith( WorkerFactory.class.getPackage().getName() ) ).any() );
+        }
+        finally
+        {
+            if ( shellServer != null )
+            {
+                shellServer.shutdown();
+            }
+        }
     }
 
     private String runAndCaptureOutput( String[] arguments )

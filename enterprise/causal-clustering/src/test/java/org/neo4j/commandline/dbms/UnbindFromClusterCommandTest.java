@@ -56,7 +56,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
+import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 
 public class UnbindFromClusterCommandTest
 {

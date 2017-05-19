@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -188,18 +189,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 .withDefaults( stringMap( pagecache_memory.name(), "8M" ) );
     }
 
-    /*private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
-    {
-        Map<String, String> result = new HashMap<>( params );
-        // To signal to index provides that we should be in-memory
-        result.put( ephemeral.name(), TRUE );
-        if ( !result.containsKey( pagecache_memory.name() ) )
-        {
-            result.put( pagecache_memory.name(), "8M" );
-        }
-        return result;
-    }*/
-
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
         public ImpermanentPlatformModule( File storeDir, Config config, DatabaseInfo databaseInfo,
@@ -207,6 +196,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                           GraphDatabaseFacade graphDatabaseFacade )
         {
             super( storeDir, withForcedInMemoryConfiguration(config), databaseInfo, dependencies, graphDatabaseFacade );
+        }
+
+        @Override
+        protected StoreLocker createStoreLocker()
+        {
+            return new StoreLocker( fileSystem, storeDir );
         }
 
         @Override

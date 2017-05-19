@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_3.Cardinality
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type._
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -35,13 +36,23 @@ import org.neo4j.test.TestGraphDatabaseFactory
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
+  var database:GraphDatabaseService = _
+
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
     contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", Collections.emptyMap())
   }
 
+  override protected def initTest(): Unit = {
+    database = new TestGraphDatabaseFactory().newImpermanentDatabase()
+  }
+
+  override protected def afterEach(): Unit = {
+    database.shutdown()
+  }
+
   test("statistics should default to single cardinality on empty db") {
-    val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    val graph = new GraphDatabaseCypherService(database)
     val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
     val planContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
@@ -63,7 +74,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("statistics should default to single cardinality for unknown counts on nonempty db") {
-    val graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    val graph = new GraphDatabaseCypherService(database)
     graph.getGraphDatabaseService.execute("UNWIND range(1, 100) AS i CREATE (:L1)-[:T]->()")
 
     val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)

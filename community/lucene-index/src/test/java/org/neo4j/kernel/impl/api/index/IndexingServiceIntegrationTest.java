@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,6 +78,19 @@ public class IndexingServiceIntegrationTest
                 .addKernelExtension( new LuceneSchemaIndexProviderFactory() )
                 .newImpermanentDatabase();
         createData( database, 100 );
+    }
+
+    @After
+    public void tearDown()
+    {
+        try
+        {
+            database.shutdown();
+        }
+        catch ( Exception e )
+        {
+            //ignore
+        }
     }
 
     @Test

@@ -35,6 +35,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -45,7 +46,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.internal.StoreLocker.STORE_LOCK_FILENAME;
+import static org.neo4j.kernel.internal.locker.StoreLocker.STORE_LOCK_FILENAME;
 
 public class StoreLockerTest
 {

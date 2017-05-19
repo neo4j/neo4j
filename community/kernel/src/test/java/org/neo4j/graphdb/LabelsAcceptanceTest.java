@@ -62,6 +62,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItems;
@@ -86,7 +87,9 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class LabelsAcceptanceTest
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private enum Labels implements Label
     {
@@ -780,7 +783,7 @@ public class LabelsAcceptanceTest
             }
         };
 
-        return dbFactory.newImpermanentDatabase();
+        return dbFactory.newImpermanentDatabase( testDirectory.directory( "impermanent-directory" ) );
     }
 
     private Node createNode( GraphDatabaseService db, Label... labels )
