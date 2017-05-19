@@ -30,14 +30,14 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val n1 = createLabeledNode("Tweet")
     val n2 = createLabeledNode("User")
-    val r = relate(n2, n1, "POSTED")
+    relate(n2, n1, "POSTED")
 
     val query = """MATCH(t:Tweet) WITH t LIMIT 1
                |WITH collect(t) AS tweets
                |RETURN test.toSet([ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ]) AS users""".stripMargin
 
     val result = executeWithCostPlannerOnly(query)
-    println(result.toList)
+    result.toList should equal(List(Map("users" -> List(List(n2)))))
   }
 
   test("pattern comprehension outside function call") {
@@ -45,7 +45,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val n1 = createLabeledNode("Tweet")
     val n2 = createLabeledNode("User")
-    val r = relate(n2, n1, "POSTED")
+    relate(n2, n1, "POSTED")
 
     val query = """MATCH(t:Tweet) WITH t LIMIT 1
                   |WITH collect(t) AS tweets
@@ -53,7 +53,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
                   |RETURN test.toSet(pattern) AS users""".stripMargin
 
     val result = executeWithCostPlannerOnly(query)
-    println(result.toList)
+    result.toList should equal(List(Map("users" -> List(List(n2)))))
   }
 
   test("with named path") {
