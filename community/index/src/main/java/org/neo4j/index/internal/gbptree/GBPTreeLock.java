@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 class GBPTreeLock
@@ -88,14 +91,6 @@ class GBPTreeLock
 
     private void sleep()
     {
-        try
-        {
-            Thread.sleep( 10 );
-        }
-        catch ( InterruptedException e )
-        {
-            // todo what to do in this case
-            throw new RuntimeException( e );
-        }
+        LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
     }
 }
