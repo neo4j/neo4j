@@ -30,9 +30,9 @@ object PatternConverters {
   object DestructResult { def empty = DestructResult(Seq.empty, Seq.empty, Seq.empty) }
 
   case class DestructResult(nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
-    def addNodeId(newId: IdName*) = copy(nodeIds = nodeIds ++ newId)
-    def addRel(r: PatternRelationship*) = copy(rels = rels ++ r)
-    def addShortestPaths(r: ShortestPathPattern*) = copy(shortestPaths = shortestPaths ++ r)
+    def addNodeId(newId: IdName*): DestructResult = copy(nodeIds = nodeIds ++ newId)
+    def addRel(r: PatternRelationship*): DestructResult = copy(rels = rels ++ r)
+    def addShortestPaths(r: ShortestPathPattern*): DestructResult = copy(shortestPaths = shortestPaths ++ r)
   }
 
   implicit class PatternElementDestructor(val pattern: PatternElement) extends AnyVal {
@@ -47,10 +47,16 @@ object PatternConverters {
       DestructResult(nodeIds = Seq(IdName(node.variable.get.name)), Seq.empty, Seq.empty)
   }
 
+  //RelationshipChain(
+  // NodePattern(Some(Variable(  UNNAMED6)),List(),Some(Variable(  UNNAMED7))),
+  // RelationshipPattern(Some(Variable(r)),List(),None,None,OUTGOING,false),
+  // NodePattern(Some(Variable(  UNNAMED8)),List(),Some(Variable(  UNNAMED9))))
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
     def destructedRelationshipChain: DestructResult = chain match {
       // (a)->[r]->(b)
-      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None), RelationshipPattern(Some(relId), relTypes, length, None, direction, _), NodePattern(Some(rightNodeId), Seq(), None)) =>
+      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None),
+                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
+                             NodePattern(Some(rightNodeId), Seq(), None)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
         val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)

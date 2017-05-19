@@ -38,6 +38,7 @@ object CompilationPhases {
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
+      startClauseRewriter andThen
       LateAstRewriting
 
 }
