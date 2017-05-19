@@ -42,15 +42,11 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.test.rule.PageCacheRule;
@@ -60,8 +56,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
 @RunWith( Parameterized.class )
@@ -91,22 +85,7 @@ public class StoreMigratorIT
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
     {
-        return Arrays.asList(
-                new Object[]{
-                        StandardV2_0.STORE_VERSION,
-                        new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET ),
-                        txInfoAcceptanceOnIdAndTimestamp( 1039, UNKNOWN_TX_COMMIT_TIMESTAMP )
-                },
-                new Object[]{
-                        StandardV2_1.STORE_VERSION,
-                        new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET ),
-                        txInfoAcceptanceOnIdAndTimestamp( 38, UNKNOWN_TX_COMMIT_TIMESTAMP)
-                },
-                new Object[]{
-                        StandardV2_2.STORE_VERSION,
-                        new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET ),
-                        txInfoAcceptanceOnIdAndTimestamp( 38, UNKNOWN_TX_COMMIT_TIMESTAMP )
-                },
+        return Arrays.<Object[]>asList(
                 new Object[]{
                         StandardV2_3.STORE_VERSION, new LogPosition( 3, 169 ),
                         txInfoAcceptanceOnIdAndTimestamp( 39, UNKNOWN_TX_COMMIT_TIMESTAMP )
@@ -131,19 +110,19 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
                         selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
         migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
@@ -163,12 +142,11 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
-                         selectFormat() );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
         migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "section" ),
@@ -178,7 +156,7 @@ public class StoreMigratorIT
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         migrator.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
@@ -198,12 +176,11 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
-                        selectFormat() );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
 
@@ -226,12 +203,11 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
-                        selectFormat() );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, schemaIndexProvider );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdir( migrationDir );
 

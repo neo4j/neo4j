@@ -241,7 +241,7 @@ public class HAClusterStartupIT
 
     private static void deleteAllLogsOn( File storeDirectory )
     {
-        File[] files = storeDirectory.listFiles( new LogFiles.LogicalLogFilenameFilter() );
+        File[] files = storeDirectory.listFiles( LogFiles.FILENAME_FILTER );
         assertNotNull( files );
         for ( File file : files )
         {

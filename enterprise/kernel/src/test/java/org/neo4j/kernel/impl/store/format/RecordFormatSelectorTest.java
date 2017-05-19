@@ -36,9 +36,6 @@ import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.store.format.highlimit.v306.HighLimitV3_0_6;
 import org.neo4j.kernel.impl.store.format.highlimit.v310.HighLimitV3_1_0;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
@@ -91,9 +88,6 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForVersionTest()
     {
-        assertSame( StandardV2_0.RECORD_FORMATS, selectForVersion( StandardV2_0.STORE_VERSION ) );
-        assertSame( StandardV2_1.RECORD_FORMATS, selectForVersion( StandardV2_1.STORE_VERSION ) );
-        assertSame( StandardV2_2.RECORD_FORMATS, selectForVersion( StandardV2_2.STORE_VERSION ) );
         assertSame( StandardV2_3.RECORD_FORMATS, selectForVersion( StandardV2_3.STORE_VERSION ) );
         assertSame( StandardV3_0.RECORD_FORMATS, selectForVersion( StandardV3_0.STORE_VERSION ) );
         assertSame( StandardV3_2.RECORD_FORMATS, selectForVersion( StandardV3_2.STORE_VERSION ) );
@@ -147,9 +141,6 @@ public class RecordFormatSelectorTest
     public void selectForStoreWithValidStore() throws IOException
     {
         PageCache pageCache = getPageCache();
-        verifySelectForStore( pageCache, StandardV2_0.RECORD_FORMATS );
-        verifySelectForStore( pageCache, StandardV2_1.RECORD_FORMATS );
-        verifySelectForStore( pageCache, StandardV2_2.RECORD_FORMATS );
         verifySelectForStore( pageCache, StandardV2_3.RECORD_FORMATS );
         verifySelectForStore( pageCache, StandardV3_0.RECORD_FORMATS );
         verifySelectForStore( pageCache, HighLimitV3_0_0.RECORD_FORMATS );
@@ -361,9 +352,6 @@ public class RecordFormatSelectorTest
     @Test
     public void findSuccessorToOlderVersion() throws Exception
     {
-        assertEquals( StandardV2_1.RECORD_FORMATS, findSuccessor( StandardV2_0.RECORD_FORMATS ).get() );
-        assertEquals( StandardV2_2.RECORD_FORMATS, findSuccessor( StandardV2_1.RECORD_FORMATS ).get() );
-        assertEquals( StandardV2_3.RECORD_FORMATS, findSuccessor( StandardV2_2.RECORD_FORMATS ).get() );
         assertEquals( StandardV3_0.RECORD_FORMATS, findSuccessor( StandardV2_3.RECORD_FORMATS ).get() );
         assertEquals( StandardV3_2.RECORD_FORMATS, findSuccessor( StandardV3_0.RECORD_FORMATS ).get() );
 

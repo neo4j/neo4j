@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -524,8 +523,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             {
                 final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore( type );
                 StoreFileMetadata metadata =
-                        new StoreFileMetadata( recordStore.getStorageFileName(), Optional.of( type ),
-                                recordStore.getRecordSize() );
+                        new StoreFileMetadata( recordStore.getStorageFileName(), recordStore.getRecordSize() );
                 files.add( metadata );
             }
         }
@@ -538,7 +536,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         for ( File countStoreFile : countStoreFiles )
         {
             StoreFileMetadata countStoreFileMetadata = new StoreFileMetadata( countStoreFile,
-                    Optional.of( StoreType.COUNTS ), RecordFormat.NO_RECORD_SIZE );
+                    RecordFormat.NO_RECORD_SIZE );
             files.add( countStoreFileMetadata );
         }
     }
