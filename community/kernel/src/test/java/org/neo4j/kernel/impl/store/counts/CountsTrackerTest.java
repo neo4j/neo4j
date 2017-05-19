@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 import org.neo4j.function.IOFunction;
@@ -374,16 +375,31 @@ public class CountsTrackerTest
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
         }
-        clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ) * 2, MILLISECONDS );
-        try
+
+        while ( true )
         {
-            rotation.get();
-            fail( "Should've failed rotation due to timeout" );
-        }
-        catch ( ExecutionException e )
-        {
-            // good
-            assertTrue( e.getCause() instanceof RotationTimeoutException );
+            /*
+             * There is a race between forwarding the clock and the thread calling rotate, in case the call to forward
+             * the clock happens before the thread calls rotate, then this test hangs. In order to solve this issue,
+             * a timeout is set on the future and if the timeout is trigger the clock is forwarded again and we try
+             * again.
+             */
+            clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ) * 2, MILLISECONDS );
+            try
+            {
+                rotation.get( 100, MILLISECONDS );
+                fail( "Should've failed rotation due to timeout" );
+            }
+            catch ( TimeoutException e )
+            {
+                // ignore try again
+            }
+            catch ( ExecutionException e )
+            {
+                // good
+                assertTrue( e.getCause() instanceof RotationTimeoutException );
+                break;
+            }
         }
 
         // THEN
