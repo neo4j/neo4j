@@ -20,26 +20,22 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.StampedLock;
 
 class GBPTreeCleanupJob implements CleanupJob
 {
     private final CrashGenerationCleaner crashGenerationCleaner;
-    private final StampedLock stampedLock;
-    private final long stamp;
+    private final GBPTreeLock gbpTreeLock;
     private volatile boolean needed;
     private volatile Exception failure;
 
     /**
      * @param crashGenerationCleaner {@link CrashGenerationCleaner} to use for cleaning.
-     * @param lock {@link Lock} to be released when job has either successfully finished or failed.
+     * @param gbpTreeLock {@link GBPTreeLock} to be released when job has either successfully finished or failed.
      */
-    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, StampedLock lock, long stamp )
+    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock )
     {
         this.crashGenerationCleaner = crashGenerationCleaner;
-        this.stampedLock = lock;
-        this.stamp = stamp;
+        this.gbpTreeLock = gbpTreeLock;
         this.needed = true;
 
     }
@@ -76,7 +72,7 @@ class GBPTreeCleanupJob implements CleanupJob
         }
         finally
         {
-            stampedLock.unlockWrite( stamp );
+            gbpTreeLock.cleanerUnlock();
         }
     }
 }

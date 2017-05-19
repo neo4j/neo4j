@@ -27,9 +27,6 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -249,24 +246,20 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private volatile boolean changesSinceLastCheckpoint;
 
     /**
+     * Lock with two individual parts. Writer lock and cleaner lock.
+     * <p>
      * There are a few different scenarios that involve writing or flushing that can not be happen concurrently:
      * <ul>
      *     <li>Checkpoint and writing</li>
      *     <li>Checkpoint and close</li>
      *     <li>Write and checkpoint</li>
      * </ul>
-     * This lock is acquired as part of all of those tasks.
-     */
-    private final Lock writerLock = new ReentrantLock();
-
-    /**
-     * If cleaning of crash pointers is needed the tree can not be allowed to perform a checkpoint until that job
-     * has finished. Therefore this lock is acquired by checkpoint and when cleaning is needed.
+     * For those scenarios, writer lock is taken.
      * <p>
-     * The cleaner job is responsible for releasing this lock after it has finished. This job will be executed by
-     * some other thread, that's why this lock is a {@link StampedLock}.
+     * If cleaning of crash pointers is needed the tree can not be allowed to perform a checkpoint until that job
+     * has finished. For this scenario, cleaner lock is taken.
      */
-    private final StampedLock cleanerLock = new StampedLock();
+    private final GBPTreeLock lock = new GBPTreeLock();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -771,8 +764,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         // Block writers, or if there's a current writer then wait for it to complete and then block
         // From this point and till the lock is released we know that the tree won't change.
-        long stamp = cleanerLock.writeLock();
-        writerLock.lock();
+        lock.cleanerLock();
+        lock.writerLock();
         try
         {
             // Flush dirty pages since that last flush above. This should be a very small set of pages
@@ -799,8 +792,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             // Unblock writers, any writes after this point and up until the next checkpoint will have
             // the new unstable generation.
-            writerLock.unlock();
-            cleanerLock.unlockWrite( stamp );
+            lock.writerUnlock();
+            lock.cleanerUnlock();
         }
     }
 
@@ -822,7 +815,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     @Override
     public void close() throws IOException
     {
-        writerLock.lock();
+        lock.writerLock();
         try
         {
             if ( closed )
@@ -847,7 +840,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         finally
         {
-            writerLock.unlock();
+            lock.writerUnlock();
         }
     }
 
@@ -923,7 +916,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         else
         {
-            long stamp = cleanerLock.writeLock();
+            lock.cleanerLock();
 
             long generation = this.generation;
             long stableGeneration = stableGeneration( generation );
@@ -933,7 +926,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
                             stableGeneration, unstableGeneration, monitor );
-            return new GBPTreeCleanupJob( crashGenerationCleaner, cleanerLock, stamp );
+            return new GBPTreeCleanupJob( crashGenerationCleaner, lock );
         }
     }
 
@@ -1016,13 +1009,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * Either fully initialized:
          * <ul>
          *    <li>{@link #writerTaken} - true</li>
-         *    <li>{@link #writerLock} - locked</li>
+         *    <li>{@link #lock} - writerLock locked</li>
          *    <li>{@link #cursor} - not null</li>
          * </ul>
          * Of fully closed:
          * <ul>
          *    <li>{@link #writerTaken} - false</li>
-         *    <li>{@link #writerLock} - unlocked</li>
+         *    <li>{@link #lock} - writerLock unlocked</li>
          *    <li>{@link #cursor} - null</li>
          * </ul>
          *
@@ -1040,7 +1033,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             boolean success = false;
             try
             {
-                writerLock.lock();
+                lock.writerLock();
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
@@ -1144,7 +1137,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         ", but writer is already closed." );
             }
             closeCursor();
-            writerLock.unlock();
+            lock.writerUnlock();
         }
 
         private void closeCursor()
