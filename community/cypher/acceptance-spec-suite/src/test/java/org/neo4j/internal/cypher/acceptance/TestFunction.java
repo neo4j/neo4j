@@ -20,16 +20,32 @@
 package org.neo4j.internal.cypher.acceptance;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
 public class TestFunction
 {
+    @Context
+    public GraphDatabaseService db;
+
     @UserFunction( "test.toSet" )
-    public List<Object> toSet(@Name("values") List<Object> list) {
-        return new ArrayList<>( new LinkedHashSet(list) );
+    public List<Object> toSet(@Name("values") List<Object> list)
+    {
+        return new ArrayList<>( new LinkedHashSet<>( list ) );
+    }
+
+    @UserFunction( "test.nodeList" )
+    public List<Object> nodeList()
+    {
+        Result result = db.execute( "MATCH (n) RETURN n LIMIT 1" );
+        Object node = result.next().get( "n" );
+        return Collections.singletonList( node );
     }
 }
