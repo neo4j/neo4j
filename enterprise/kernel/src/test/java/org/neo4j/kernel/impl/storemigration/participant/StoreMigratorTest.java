@@ -23,13 +23,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -41,6 +44,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -90,6 +94,38 @@ public class StoreMigratorTest
 
             // THEN
             verifyNoMoreInteractions( monitor );
+        }
+    }
+
+    @Test
+    public void detectObsoleteCountStoresToRebuildDuringMigration() throws IOException
+    {
+        TestStoreMigrator storeMigrator = new TestStoreMigrator( new DefaultFileSystemAbstraction(),
+                mock( PageCache.class ), Config.empty(), NullLogService.getInstance(), mock( SchemaIndexProvider.class ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V2_1.versionString() ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V2_2.versionString() ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V2_3.versionString() ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_0.versionString() ) );
+        assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_2.versionString() ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_0_0.versionString() ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_0_6.versionString() ) );
+        assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_1_0.versionString() ) );
+        assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_2_0.versionString() ) );
+    }
+
+    private class TestStoreMigrator extends StoreMigrator
+    {
+
+        TestStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, LogService logService,
+                SchemaIndexProvider schemaIndexProvider )
+        {
+            super( fileSystem, pageCache, config, logService, schemaIndexProvider );
+        }
+
+        @Override
+        public boolean countStoreRebuildRequired( String versionToMigrateFrom )
+        {
+            return super.countStoreRebuildRequired( versionToMigrateFrom );
         }
     }
 }
