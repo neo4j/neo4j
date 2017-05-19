@@ -26,6 +26,13 @@ import java.util.Iterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
+/**
+ * A utility to be able to write an {@link InputIterator} with low effort.
+ * Since {@link InputIterator} is multi-threaded in that multiple threads can call {@link #newChunk()} and each
+ * call to {@link #next(InputChunk)} handing out the next chunkstate instance from the supplied {@link Iterator}.
+ *
+ * @param <CHUNKSTATE> type of objects handed out from the supplied {@link Iterator}.
+ */
 public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
 {
     private final Iterator<CHUNKSTATE> states;
@@ -65,6 +72,15 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
         return new Chunk();
     }
 
+    /**
+     * Generates data for the current {@code state}, {@code batch} and {@code itemInBatch}.
+     *
+     * @param state CHUNKSTATE gotten from the state {@link Iterator}.
+     * @param batch zero-based id (ordered) of the batch to generate data for.
+     * @param itemInBatch zero-based index of the item in this batch to generate data for.
+     * @param visitor {@link InputEntityVisitor} receiving calls which is the generated data.
+     * @return {@code true} if data was generated, otherwise {@code false} meaning that this batch reached its end.
+     */
     protected abstract boolean generateNext( CHUNKSTATE state, long batch, int itemInBatch,
             InputEntityVisitor visitor );
 
@@ -91,6 +107,10 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
         {
         }
 
+        /**
+         * @param state CHUNKSTATE which is the source of data generation for this chunk.
+         * @param batch zero-based id (order) of this batch.
+         */
         private void initialize( CHUNKSTATE state, long batch )
         {
             this.state = state;
