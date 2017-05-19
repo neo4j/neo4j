@@ -45,7 +45,7 @@ sealed trait UsingHint extends Hint
 
 // allowed on start item
 
-sealed trait LegacyIndexHint extends Hint {
+sealed trait LegacyIndexHint extends UsingHint {
   self: StartItem =>
 
   def variable: Variable

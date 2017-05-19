@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: SemanticDirection,
-                   types: Map[String, String], toVar: Variable, relVar: Variable)
+                   types: Map[String, String], toVar: Variable, relVar: Variable, iterVar: String)
   extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.createRelExtractor(relVar.name)
+    generator.setUpRelIteration(relVar.name, iterVar)
     types.foreach {
       case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }

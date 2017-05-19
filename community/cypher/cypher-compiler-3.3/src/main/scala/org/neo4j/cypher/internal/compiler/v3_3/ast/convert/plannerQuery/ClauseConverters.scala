@@ -39,7 +39,6 @@ object ClauseConverters {
     case c: With => addWithToLogicalPlanInput(acc, c)
     case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
     case c: ResolvedCall => addCallToLogicalPlanInput(acc, c)
-    case c: Start => addStartToLogicalPlanInput(acc, c)
     case c: Create => addCreateToLogicalPlanInput(acc, c)
     case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
     case c: Delete => addDeleteToLogicalPlanInput(acc, c)
@@ -455,31 +454,6 @@ object ClauseConverters {
       .withTail(RegularPlannerQuery(queryGraph = foreachGraph))
       .withHorizon(PassthroughAllHorizon()) // NOTE: We do not expose anything from foreach itself
       .withTail(RegularPlannerQuery())
-  }
-
-  private def addStartToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Start): PlannerQueryBuilder = {
-    builder.amendQueryGraph { qg =>
-      val items = clause.items.map {
-        case hints: LegacyIndexHint => Right(hints)
-        case item => Left(item)
-      }
-
-      val hints = items.collect { case Right(hint) => hint }
-      val nonHints = items.collect { case Left(item) => item }
-
-      if (nonHints.nonEmpty) {
-        // all other start queries is delegated to legacy planner
-        throw new CantHandleQueryException()
-      }
-
-      val nodeIds = hints.collect { case n: NodeHint => IdName(n.variable.name) }
-
-      val selections = asSelections(clause.where)
-
-      qg.addPatternNodes(nodeIds: _*)
-        .addSelections(selections)
-        .addHints(hints)
-    }
   }
 
   private def addRemoveToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Remove): PlannerQueryBuilder = {

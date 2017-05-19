@@ -37,7 +37,8 @@ object StatementConverters {
     classOf[And],
     classOf[Or],
     // classOf[ReturnAll],
-    classOf[UnaliasedReturnItem]
+    classOf[UnaliasedReturnItem],
+    classOf[Start]
   )
 
 

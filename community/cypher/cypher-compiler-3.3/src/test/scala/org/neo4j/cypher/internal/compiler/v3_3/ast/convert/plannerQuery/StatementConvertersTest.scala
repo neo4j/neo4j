@@ -903,10 +903,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     graph.argumentIds should equal(Set(IdName("xes"), IdName("x"), IdName("y")))
   }
 
-  val one = SignedDecimalIntegerLiteral("1")(pos)
-  val two = SignedDecimalIntegerLiteral("2")(pos)
-  val three = SignedDecimalIntegerLiteral("3")(pos)
-  val collection = ListLiteral(Seq(one, two, three))(pos)
+  private val one = SignedDecimalIntegerLiteral("1")(pos)
+  private val two = SignedDecimalIntegerLiteral("2")(pos)
+  private val three = SignedDecimalIntegerLiteral("3")(pos)
+  private val collection = ListLiteral(Seq(one, two, three))(pos)
 
   test("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n") {
     val query = buildPlannerQuery("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n")
@@ -1027,35 +1027,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tail.queryGraph.patternNodes should equal(Set(IdName("x"), IdName("d")))
 
     tail.queryGraph.optionalMatches should be (empty)
-  }
-
-  test("START n=node:nodes(name = \"A\") RETURN n") {
-    val query = buildPlannerQuery("START n=node:nodes(name = \"A\") RETURN n")
-
-    val hint: LegacyIndexHint = NodeByIdentifiedIndex(varFor("n"), "nodes", "name", StringLiteral("A")_)_
-
-    query.queryGraph.hints should equal(Set(hint))
-    query.tail should equal(None)
-  }
-
-  test("START n=node:nodes(\"name:A\") RETURN n") {
-    val query = buildPlannerQuery("START n=node:nodes(\"name:A\") RETURN n")
-
-    val hint: LegacyIndexHint = NodeByIndexQuery(varFor("n"), "nodes", StringLiteral("name:A")_)_
-
-    query.queryGraph.hints should equal(Set(hint))
-    query.tail should equal(None)
-  }
-
-  test("START n=rel:relationships(\"name:A\") RETURN n") {
-    val query = buildPlannerQuery("START r=rel:relationships(\"name:A\") RETURN r")
-
-    val hint: LegacyIndexHint = RelationshipByIndexQuery(varFor("r"), "relationships", StringLiteral("name:A") _) _
-
-    query.queryGraph.hints should equal(Set(hint))
-    query.queryGraph.patternRelationships should not(be(empty))
-
-    query.tail should equal(None)
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_

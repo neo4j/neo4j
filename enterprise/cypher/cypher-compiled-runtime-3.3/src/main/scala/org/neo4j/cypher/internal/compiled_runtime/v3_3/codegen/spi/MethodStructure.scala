@@ -167,7 +167,7 @@ trait MethodStructure[E] {
   def indexUniqueSeek(name: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
-  def createRelExtractor(extractorName: String): Unit
+  def setUpRelIteration(extractorName: String, iteratorName: String): Unit
   def nodeCountFromCountStore(expression: E): E
   def relCountFromCountStore(start: E, end: E, types: E*): E
   def token(t: Int): E
