@@ -61,7 +61,7 @@ public class DataImporter
         public String toString()
         {
             return format( "Imported:%n  %d nodes%n  %d relationships%n  %d properties",
-                    nodes, relationships, properties );
+                    nodes.get(), relationships.get(), properties.get() );
         }
     }
 

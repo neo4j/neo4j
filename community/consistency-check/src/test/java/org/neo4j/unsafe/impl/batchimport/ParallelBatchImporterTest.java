@@ -100,7 +100,7 @@ public class ParallelBatchImporterTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
 
-    private static final int NODE_COUNT = 10_000;
+    private static final int NODE_COUNT = 2;
     private static final int RELATIONSHIPS_PER_NODE = 5;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
     private static final int RELATIONSHIP_TYPES = 3;
@@ -371,7 +371,8 @@ public class ParallelBatchImporterTest
             {
                 while ( chunk.next( input ) )
                 {
-                    Node node = nodeByInputId.get( uniqueId( input.idGroup, input.objectId ) );
+                    String iid = uniqueId( input.idGroup, input.objectId );
+                    Node node = nodeByInputId.get( iid );
                     assertNodeEquals( input, node );
                     verifiedNodes++;
                     assertDegrees( node );
@@ -416,8 +417,8 @@ public class ParallelBatchImporterTest
                                 relationship.getEndNode() );
                         assertRelationshipEquals( input, relationship );
                     }
+                    verifiedRelationships++;
                 }
-                verifiedRelationships++;
             }
             assertEquals( relationshipCount, verifiedRelationships );
         }
@@ -484,7 +485,7 @@ public class ParallelBatchImporterTest
 
     private void assertPropertiesEquals( CachingInputEntityVisitor input, PropertyContainer entity )
     {
-        Object[] properties = input.properties.toArray();
+        Object[] properties = input.properties();
         for ( int i = 0; i < properties.length; i++ )
         {
             String key = (String) properties[i++];
@@ -565,7 +566,7 @@ public class ParallelBatchImporterTest
                     return false;
                 }
 
-                Object nodeId = inputIdGenerator.nextNodeId( random.random() );
+                Object nodeId = inputIdGenerator.nextNodeId( randoms.random() );
                 Group group = groups.groupOf( item );
                 visitor.id( nodeId, group );
                 randomProperties( randoms, uniqueId( group, nodeId ), visitor );

@@ -19,59 +19,47 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.IOException;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
 
-public class DeleteDuplicateNodesStep extends LonelyProcessingStep
+public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
 {
+    private final LabelScanWriter writer;
     private final NodeStore nodeStore;
-    private final PrimitiveLongIterator nodeIds;
-    private final LabelScanWriter labelScanWriter;
 
-    public DeleteDuplicateNodesStep( StageControl control, Configuration config, PrimitiveLongIterator nodeIds,
-            NodeStore nodeStore, LabelScanStore labelScanStore )
+    public LabelIndexWriterStep( StageControl control, Configuration config, LabelScanStore store,
+            NodeStore nodeStore )
     {
-        super( control, "DEDUP", config );
+        super( control, "LABEL INDEX", config, 1 );
+        this.writer = store.newWriter();
         this.nodeStore = nodeStore;
-        this.nodeIds = nodeIds;
-        this.labelScanWriter = labelScanStore.newWriter();
     }
 
     @Override
-    protected void process() throws IOException
+    protected void process( NodeRecord[] batch, BatchSender sender ) throws Throwable
     {
-        NodeRecord record = nodeStore.newRecord();
-        RecordCursor<NodeRecord> cursor = nodeStore.newRecordCursor( record ).acquire( 0, NORMAL );
-        while ( nodeIds.hasNext() )
+        for ( NodeRecord node : batch )
         {
-            long duplicateNodeId = nodeIds.next();
-            cursor.next( duplicateNodeId );
-            long[] labels = NodeLabelsField.get( record, nodeStore );
-            record.setInUse( false );
-            nodeStore.updateRecord( record );
-            if ( labels.length > 0 )
+            if ( node.inUse() )
             {
-                labelScanWriter.write( labelChanges( duplicateNodeId, labels, EMPTY_LONG_ARRAY ) );
+                writer.write( labelChanges( node.getId(), EMPTY_LONG_ARRAY, get( node, nodeStore ) ) );
             }
         }
+        sender.send( batch );
     }
 
     @Override
     public void close() throws Exception
     {
-        labelScanWriter.close();
-        super.close();
+        writer.close();
     }
 }

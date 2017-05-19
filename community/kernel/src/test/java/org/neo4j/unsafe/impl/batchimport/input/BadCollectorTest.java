@@ -27,16 +27,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
@@ -163,46 +160,6 @@ public class BadCollectorTest
             // then expect to end up here
             assertEquals( 1 /* only duplicate rel collected */, badCollector.badEntries() );
         }
-    }
-
-    @Test
-    public void shouldBeAbleToRetrieveDuplicateNodeIds() throws IOException
-    {
-        // given
-        int tolerance = 15;
-
-        BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL );
-
-        // when
-        for ( int i = 0; i < 15; i++ )
-        {
-            badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
-        }
-
-        // then
-        assertEquals( 15, PrimitiveLongCollections.count( badCollector.leftOverDuplicateNodesIds() ) );
-
-        PrimitiveLongSet longs = PrimitiveLongCollections.asSet( badCollector.leftOverDuplicateNodesIds() );
-        for ( int i = 0; i < 15; i++ )
-        {
-            assertTrue( longs.contains( i ) );
-        }
-    }
-
-    @Test
-    public void shouldProvideNodeIdsSorted() throws Exception
-    {
-        // GIVEN
-        BadCollector badCollector = new BadCollector( badOutputFile(), 10, BadCollector.DUPLICATE_NODES );
-        badCollector.collectDuplicateNode( "a", 10, "group", "source1", "source2" );
-        badCollector.collectDuplicateNode( "b", 8, "group", "source1", "source2" );
-        badCollector.collectDuplicateNode( "c", 12, "group", "source1", "source2" );
-
-        // WHEN
-        long[] nodeIds = PrimitiveLongCollections.asArray( badCollector.leftOverDuplicateNodesIds() );
-
-        // THEN
-        assertArrayEquals( new long[] {8, 10, 12}, nodeIds );
     }
 
     @Test

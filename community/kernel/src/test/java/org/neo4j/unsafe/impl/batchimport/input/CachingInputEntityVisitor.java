@@ -22,6 +22,10 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Simple utility for gathering all information about an {@link InputEntityVisitor} and exposing getters
+ * for that data. Easier to work with than purely visitor-based implementation in tests.
+ */
 public class CachingInputEntityVisitor implements InputEntityVisitor
 {
     private final InputEntityVisitor delegate;
@@ -63,9 +67,12 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     public int intType;
     public String stringType;
 
+    private boolean end;
+
     @Override
     public boolean propertyId( long nextProp )
     {
+        checkClear();
         hasPropertyId = true;
         propertyId = nextProp;
         return delegate.propertyId( nextProp );
@@ -74,6 +81,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean property( String key, Object value )
     {
+        checkClear();
         properties.add( key );
         properties.add( value );
         return delegate.property( key, value );
@@ -82,6 +90,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean id( long id )
     {
+        checkClear();
         hasLongId = true;
         longId = id;
         return delegate.id( id );
@@ -90,6 +99,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean id( Object id, Group group )
     {
+        checkClear();
         objectId = id;
         idGroup = group;
         return delegate.id( id, group );
@@ -98,6 +108,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean labels( String[] labels )
     {
+        checkClear();
         for ( String label : labels )
         {
             this.labels.add( label );
@@ -108,6 +119,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean labelField( long labelField )
     {
+        checkClear();
         hasLabelField = true;
         this.labelField = labelField;
         return delegate.labelField( labelField );
@@ -116,6 +128,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean startId( long id )
     {
+        checkClear();
         hasLongStartId = true;
         longStartId = id;
         return delegate.startId( id );
@@ -124,6 +137,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean startId( Object id, Group group )
     {
+        checkClear();
         objectStartId = id;
         startIdGroup = group;
         return delegate.startId( id, group );
@@ -132,6 +146,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean endId( long id )
     {
+        checkClear();
         hasLongEndId = true;
         longEndId = id;
         return delegate.endId( id );
@@ -140,6 +155,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean endId( Object id, Group group )
     {
+        checkClear();
         objectEndId = id;
         endIdGroup = group;
         return delegate.endId( id, group );
@@ -148,6 +164,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean type( int type )
     {
+        checkClear();
         hasIntType = true;
         intType = type;
         return delegate.type( type );
@@ -156,6 +173,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public boolean type( String type )
     {
+        checkClear();
         stringType = type;
         return delegate.type( type );
     }
@@ -163,14 +181,8 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     @Override
     public void endOfEntity()
     {
-        hasPropertyId = false;
-        properties.clear();
-        hasLongId = false;
-        labels.clear();
-        hasLabelField = false;
-        hasLongStartId = false;
-        hasLongEndId = false;
-        hasIntType = false;
+        // Mark that the next call to any data method should clear the state
+        end = true;
         delegate.endOfEntity();
     }
 
@@ -197,5 +209,21 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
     public Object startId()
     {
         return hasLongStartId ? longStartId : objectStartId;
+    }
+
+    private void checkClear()
+    {
+        if ( end )
+        {
+            end = false;
+            hasPropertyId = false;
+            properties.clear();
+            hasLongId = false;
+            labels.clear();
+            hasLabelField = false;
+            hasLongStartId = false;
+            hasLongEndId = false;
+            hasIntType = false;
+        }
     }
 }

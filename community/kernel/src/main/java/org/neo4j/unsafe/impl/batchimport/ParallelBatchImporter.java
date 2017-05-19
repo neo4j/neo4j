@@ -26,7 +26,6 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -182,11 +181,6 @@ public class ParallelBatchImporter implements BatchImporter
                         neoStore.getPropertyKeyRepository().getOrCreateId( ID_PROPERTY ) );
                 executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup,
                         badCollector, memoryUsageStats ) );
-                PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
-                if ( duplicateNodeIds.hasNext() )
-                {
-                    executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
-                }
             }
 
             // Import relationships (unlinked), properties
@@ -218,8 +212,9 @@ public class ParallelBatchImporter implements BatchImporter
             // Count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
             memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
-            executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                    neoStore.getLabelRepository().getHighId(), countsUpdater, memoryUsageStats ) );
+            executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                    neoStore.getLabelRepository().getHighId(), countsUpdater, neoStore.getLabelScanStore(),
+                    memoryUsageStats ) );
             // Count label-[type]->label
             executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
                     neoStore.getLabelRepository().getHighId(),
