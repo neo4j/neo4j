@@ -30,6 +30,17 @@ import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
 
 abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expression] {
+
+  // WARNING: MUTABILITY IN IMMUTABLE CLASSES ...
+  private var _owningPipe: Option[Pipe] = None
+
+  def owningPipe: Pipe = _owningPipe.get
+
+  def registerOwningPipe(pipe: Pipe): Unit = visit {
+    case x:Expression => x._owningPipe = Some(pipe)
+  }
+  // ... TREAD WITH CAUTION
+
   def rewrite(f: Expression => Expression): Expression
 
   def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
@@ -53,15 +64,6 @@ abstract class Expression extends Typed with TypeSafe with EffectfulAstNode[Expr
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
-
-  private var _owningPipe: Option[Pipe] = None
-
-  def owningPipe: Pipe = _owningPipe.get
-
-  def registerOwningPipe(pipe: Pipe): Unit = rewrite( expr => {
-    expr._owningPipe = Some(pipe)
-    expr
-  })
 
   /*When calculating the type of an expression, the expression should also
   make sure to check the types of any downstream expressions*/

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_1.commands
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import expressions.{Closure, Expression}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.ListSupport
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 
-import collection.Seq
+import scala.collection.Seq
 
 abstract class InList(collectionExpression: Expression, id: String, predicate: Predicate)
   extends Predicate
