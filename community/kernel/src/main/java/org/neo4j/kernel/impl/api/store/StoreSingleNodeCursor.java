@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
@@ -33,8 +32,15 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
@@ -50,7 +56,11 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     private final RecordCursors recordCursors;
 
     private long nodeId = StatementConstants.NO_SUCH_NODE;
+    private ReadableTransactionState state;
+
     private long[] labels;
+    private boolean fetched;
+    private NodeState nodeState;
 
     StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
             RecordCursors recordCursors, LockService lockService )
@@ -61,8 +71,9 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId )
+    public StoreSingleNodeCursor init( long nodeId, ReadableTransactionState state )
     {
+        this.state = state;
         this.nodeId = nodeId;
         return this;
     }
@@ -76,28 +87,59 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     @Override
     public boolean next()
     {
-        labels = null;
-        if ( nodeId != StatementConstants.NO_SUCH_NODE )
+        clearCurrentNodeState();
+        if ( nodeId == StatementConstants.NO_SUCH_NODE )
         {
-            try
-            {
-                return recordCursors.node().next( nodeId, nodeRecord, CHECK );
-            }
-            finally
-            {
-                nodeId = StatementConstants.NO_SUCH_NODE;
-            }
+            return false;
         }
 
+        if ( hasNext() )
+        {
+            nodeState = state != null ? state.getNodeState( nodeId ) : null;
+            return true;
+        }
+
+        nodeId = StatementConstants.NO_SUCH_NODE;
         return false;
+    }
+
+    private boolean hasNext()
+    {
+        // fetched makes sure we read the node from disk/tx state only once and we do not loop forever
+        if ( fetched )
+        {
+            return false;
+        }
+
+        try
+        {
+            if ( state != null && state.nodeIsDeletedInThisTx( nodeId ) )
+            {
+                return false;
+            }
+            return recordCursors.node().next( nodeId, nodeRecord, CHECK ) ||
+                    state != null && state.nodeIsAddedInThisTx( nodeId );
+        }
+        finally
+        {
+            fetched = true;
+        }
     }
 
     @Override
     public void close()
     {
-        labels = null;
+        state = null;
+        clearCurrentNodeState();
+        fetched = false;
         nodeRecord.clear();
         instanceCache.accept( this );
+    }
+
+    private void clearCurrentNodeState()
+    {
+        labels = null;
+        nodeState = null;
     }
 
     @Override
@@ -109,23 +151,26 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     @Override
     public PrimitiveIntSet labels()
     {
-        ensureLabels();
-        return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
-    }
-
-    private void ensureLabels()
-    {
-        if ( labels == null )
-        {
-            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
-        }
+        PrimitiveIntSet baseLabels = state != null && state.nodeIsAddedInThisTx( nodeId )
+                                     ? intSet()
+                                     : asSet( loadedLabels(), IoPrimitiveUtils::safeCastLongToInt );
+        return state != null ? state.augmentLabels( baseLabels, nodeState ) : baseLabels;
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        ensureLabels();
-        for ( long label : labels )
+        if ( state != null && nodeState.labelDiffSets().getRemoved().contains( labelId ) )
+        {
+            return false;
+        }
+
+        if ( state != null && nodeState.labelDiffSets().getAdded().contains( labelId ) )
+        {
+            return true;
+        }
+
+        for ( long label : loadedLabels() )
         {
             if ( safeCastLongToInt( label ) == labelId )
             {
@@ -135,10 +180,19 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
         return false;
     }
 
+    private long[] loadedLabels()
+    {
+        if ( labels == null )
+        {
+            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
+        }
+        return labels;
+    }
+
     @Override
     public boolean isDense()
     {
-        return nodeRecord.isDense();
+        return state != null && state.nodeIsAddedInThisTx( nodeId )  ? false : nodeRecord.isDense();
     }
 
     @Override
@@ -151,17 +205,24 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     @Override
     public long nextRelationshipId()
     {
-        return nodeRecord.getNextRel();
+        return state != null && state.nodeIsAddedInThisTx( nodeId ) ? NO_NEXT_RELATIONSHIP.longValue()
+                                                                 : nodeRecord.getNextRel();
     }
 
     @Override
     public long nextPropertyId()
     {
-        return nodeRecord.getNextProp();
+        return state != null && state.nodeIsAddedInThisTx( nodeId ) ? NO_NEXT_PROPERTY.longValue()
+                                                                 : nodeRecord.getNextProp();
     }
 
     @Override
     public Lock lock()
+    {
+        return state != null && state.nodeIsAddedInThisTx( nodeId ) ? NO_LOCK : acquireLock();
+    }
+
+    private Lock acquireLock()
     {
         Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
         if ( lockService != NO_LOCK_SERVICE )
