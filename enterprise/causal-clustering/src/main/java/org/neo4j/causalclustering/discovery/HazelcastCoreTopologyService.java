@@ -19,6 +19,12 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -30,12 +36,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -165,10 +165,21 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
 
+        // We'll use election_timeout as a base value to calculate HC timeouts. We multiply by 1.5
+        Long electionTimeoutMillis = config.get( CausalClusteringSettings.leader_election_timeout );
+        Long baseHazelcastTimeoutMillis = ( 3 * electionTimeoutMillis ) / 2;
+        /*
+         * Some HC settings require the value in seconds. Adding the divider and subtracting 1 is equivalent to the
+         * ceiling function for integers ( Math.ceil() returns double ). Anything < 0 will return 0, any
+         * multiple of 1000 returns the result of the division by 1000, any non multiple of 1000 returns the result
+         * of the division + 1. In other words, values in millis are rounded up.
+         */
+        long baseHazelcastTimeoutSeconds = ( baseHazelcastTimeoutMillis + 1000 - 1 ) / 1000;
+
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();
-        c.setProperty( OPERATION_CALL_TIMEOUT_MILLIS.getName(), String.valueOf( 10_000 ) );
-        c.setProperty( MERGE_NEXT_RUN_DELAY_SECONDS.getName(), "10" );
-        c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), "10" );
+        c.setProperty( OPERATION_CALL_TIMEOUT_MILLIS.getName(), String.valueOf( baseHazelcastTimeoutMillis ) );
+        c.setProperty( MERGE_NEXT_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
+        c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
         c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
         c.setProperty( LOGGING_TYPE.getName(), "none" );
