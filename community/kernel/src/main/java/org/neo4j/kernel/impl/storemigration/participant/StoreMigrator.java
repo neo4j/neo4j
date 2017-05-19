@@ -42,6 +42,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.PropertyCursor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -61,13 +63,16 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -83,6 +88,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -101,6 +107,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -167,7 +174,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
         }
         // Extract information about the last transaction from legacy neostore
-        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        File neoStore = new File( storeDir, DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
         TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, storeDir, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, storeDir, lastTxId );
@@ -666,10 +673,57 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         legacyLogs.deleteUnusedLogFiles( storeDir );
     }
 
+    @Override
+    public void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws
+            IOException
+    {
+        if ( countStoreRebuildRequired( versionToMigrateFrom ) )
+        {
+            // create counters from scratch
+            Iterable<StoreFile> countsStoreFiles =
+                    Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
+            StoreFile.fileOperation( DELETE, fileSystem, storeDir, storeDir,
+                    countsStoreFiles, true, null, StoreFileType.STORE );
+            File neoStore = new File( storeDir, DEFAULT_NAME );
+            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+        }
+    }
+
+    boolean countStoreRebuildRequired( String versionToMigrateFrom )
+    {
+        return StandardV2_3.STORE_VERSION.equals( versionToMigrateFrom ) ||
+                StandardV3_0.STORE_VERSION.equals( versionToMigrateFrom ) ||
+                StoreVersion.HIGH_LIMIT_V3_0_0.versionString().equals( versionToMigrateFrom ) ||
+                StoreVersion.HIGH_LIMIT_V3_0_6.versionString().equals( versionToMigrateFrom ) ||
+                StoreVersion.HIGH_LIMIT_V3_1_0.versionString().equals( versionToMigrateFrom );
+    }
+
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache )
+    {
+        final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fileSystem, NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        {
+            NodeStore nodeStore = neoStores.getNodeStore();
+            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+            try ( Lifespan life = new Lifespan() )
+            {
+                int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
+                int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
+                CountsComputer initializer = new CountsComputer( lastTxId, nodeStore, relationshipStore, highLabelId,
+                        highRelationshipTypeId );
+                life.add( new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config,
+                        storeFileBase ).setInitializer( initializer ) );
+            }
+        }
+    }
+
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
             String versionToMigrateTo, LogPosition lastClosedTxLogPosition ) throws IOException
     {
-        final File storeDirNeoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        final File storeDirNeoStore = new File( storeDir, DEFAULT_NAME );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
                 MetaDataStore.getRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TIME, System.currentTimeMillis() );
