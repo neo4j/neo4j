@@ -59,7 +59,13 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     @Override
     public boolean property( String key, Object value )
     {
-        encodeProperty( nextPropertyBlock(), key, value );
+        return property( propertyKeyTokenRepository.getOrCreateId( key ), value );
+    }
+
+    @Override
+    public boolean property( int propertyKeyId, Object value )
+    {
+        encodeProperty( nextPropertyBlock(), propertyKeyId, value );
         propertyCount++;
         return true;
     }
@@ -67,7 +73,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     @Override
     public boolean propertyId( long nextProp )
     {
-        return super.propertyId( nextProp );
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -89,10 +95,10 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
         return propertyBlocks[propertyBlocksCursor++];
     }
 
-    private void encodeProperty( PropertyBlock block, String key, Object value )
+    private void encodeProperty( PropertyBlock block, int key, Object value )
     {
         // TODO: dynamic record ids, batching of those
-        propertyStore.encodeValue( block, propertyKeyTokenRepository.getOrCreateId( key ), value );
+        propertyStore.encodeValue( block, key, value );
     }
 
     protected long createAndWritePropertyChain()

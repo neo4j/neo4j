@@ -47,8 +47,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
@@ -68,9 +66,9 @@ import static java.util.Arrays.asList;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -664,7 +662,7 @@ public class CsvInputTest
     public void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.data(
                 ":ID,name:IGNORE,other:int,:LABEL\n" +
                 "1,Mattias,10,Person\n" +
                 "2,Johan,111,Person\n" +
@@ -731,7 +729,7 @@ public class CsvInputTest
     public void shouldNotIncludeEmptyArraysInEntities() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.data(
                 ":ID,sprop:String[],lprop:long[]\n" +
                 "1,,\n" +
                 "2,a;b,10;20"
@@ -776,7 +774,7 @@ public class CsvInputTest
     public void shouldFailOnRelationshipWithMissingEndIdField() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.<InputRelationship>data(
+        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 "1,," ) );
         Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
@@ -799,7 +797,7 @@ public class CsvInputTest
     public void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.data(
                 ":ID,one,two,three\n" +
                 "1,\"\",,value" ) );
         Configuration config = config( new Configuration.Overridden( COMMAS )
@@ -826,7 +824,7 @@ public class CsvInputTest
     public void shouldIgnoreEmptyExtraColumns() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory> data = DataFactories.datas( CsvInputTest.data(
                 ":ID,one\n" +
                 "1,test,\n" +
                 "2,test,,additional" ) );

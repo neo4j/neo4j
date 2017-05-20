@@ -100,7 +100,7 @@ public class ParallelBatchImporterTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
 
-    private static final int NODE_COUNT = 2;
+    private static final int NODE_COUNT = 3;
     private static final int RELATIONSHIPS_PER_NODE = 5;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
     private static final int RELATIONSHIP_TYPES = 3;

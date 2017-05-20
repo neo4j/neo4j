@@ -22,14 +22,20 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution.Client;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
+
+import static java.lang.String.format;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
@@ -42,18 +48,27 @@ public class RelationshipImporter extends EntityImporter
     private final BatchingIdGetter relationshipIds;
     private final NodeRelationshipCache nodeRelationshipCache;
     private final Client typeCounts;
+    private final Collector badCollector;
 
     private long relationshipCount;
+
+    // State to keep in the event of bad relationships that need to be handed to the Collector
+    private Object startId;
+    private Group startIdGroup;
+    private Object endId;
+    private Group endIdGroup;
+    private String type;
 
     protected RelationshipImporter( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingRelationshipTypeTokenRepository relationshipTypeTokenRepository, IdMapper idMapper,
             NodeRelationshipCache nodeRelationshipCache, RelationshipTypeDistribution typeDistribution,
-            Monitor monitor )
+            Monitor monitor, Collector badCollector )
     {
         super( stores.getPropertyStore(), propertyKeyTokenRepository, monitor );
         this.relationshipTypeTokenRepository = relationshipTypeTokenRepository;
         this.idMapper = idMapper;
         this.nodeRelationshipCache = nodeRelationshipCache;
+        this.badCollector = badCollector;
         this.relationshipStore = stores.getRelationshipStore();
         this.relationshipRecord = relationshipStore.newRecord();
         this.relationshipIds = new BatchingIdGetter( relationshipStore );
@@ -77,9 +92,12 @@ public class RelationshipImporter extends EntityImporter
     @Override
     public boolean startId( Object id, Group group )
     {
+        this.startId = id;
+        this.startIdGroup = group;
+
         long nodeId = nodeId( id, group );
         relationshipRecord.setFirstNode( nodeId );
-        return nodeId != ID_NOT_FOUND;
+        return true;
     }
 
     @Override
@@ -92,9 +110,12 @@ public class RelationshipImporter extends EntityImporter
     @Override
     public boolean endId( Object id, Group group )
     {
+        this.endId = id;
+        this.endIdGroup = group;
+
         long nodeId = nodeId( id, group );
         relationshipRecord.setSecondNode( nodeId );
-        return nodeId != ID_NOT_FOUND;
+        return true;
     }
 
     private long nodeId( Object id, Group group )
@@ -121,6 +142,7 @@ public class RelationshipImporter extends EntityImporter
     @Override
     public boolean type( String type )
     {
+        this.type = type;
         int typeId = relationshipTypeTokenRepository.getOrCreateId( type );
         return type( typeId );
     }
@@ -130,16 +152,52 @@ public class RelationshipImporter extends EntityImporter
     {
         if ( relationshipRecord.inUse() )
         {
+            validateNode( relationshipRecord.getFirstNode(), Type.START_ID );
+            validateNode( relationshipRecord.getSecondNode(), Type.END_ID );
+            if ( relationshipRecord.getType() == -1 )
+            {
+                throw new MissingRelationshipDataException(Type.TYPE,
+                        relationshipDataString() + " is missing " + Type.TYPE + " field" );
+            }
+
             relationshipRecord.setId( relationshipIds.next() );
             relationshipRecord.setNextProp( createAndWritePropertyChain() );
+            relationshipRecord.setFirstInFirstChain( false );
+            relationshipRecord.setFirstInSecondChain( false );
+            relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
+            relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipStore.updateRecord( relationshipRecord );
             relationshipCount++;
         }
-        // TODO else collect, right?
+        else
+        {
+            badCollector.collectBadRelationship( startId, startIdGroup.name(), type, endId, endIdGroup.name(),
+                    relationshipRecord.getFirstNode() == ID_NOT_FOUND ? startId : endId );
+        }
 
         relationshipRecord.clear();
         relationshipRecord.setInUse( true );
+        startId = null;
+        startIdGroup = null;
+        endId = null;
+        endIdGroup = null;
+        type = null;
         super.endOfEntity();
+    }
+
+    private void validateNode( long nodeId, Type fieldType )
+    {
+        if ( nodeId == ID_NOT_FOUND )
+        {
+            throw new MissingRelationshipDataException( fieldType, relationshipDataString() +
+                    " is missing " + fieldType + " field" );
+        }
+    }
+
+    private String relationshipDataString()
+    {
+        return format( "start:%s (%s) type:%s en:d%s (%s)",
+                startId, startIdGroup.name(), type, endId, endIdGroup.name() );
     }
 
     @Override

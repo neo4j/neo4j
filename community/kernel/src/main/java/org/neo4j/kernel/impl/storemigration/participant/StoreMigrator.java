@@ -35,14 +35,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.FileHandle;
@@ -71,8 +69,6 @@ import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
@@ -105,16 +101,13 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
-import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -645,7 +638,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
-        final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
+        final BiConsumer<InputEntityVisitor,RelationshipRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
         return new StoreScanAsInputIterator<RelationshipRecord>( store )
         {
@@ -656,7 +649,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 visitor.endId( record.getSecondNode() );
                 visitor.type( record.getType() );
                 visitor.propertyId( record.getNextProp() );
-                // TODO visit properties too if needed
+                propertyDecorator.accept( visitor, record );
                 return true;
             }
         };
@@ -666,7 +659,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         NodeStore store = legacyStore.getNodeStore();
-        final BiConsumer<InputNode,NodeRecord> propertyDecorator =
+        final BiConsumer<InputEntityVisitor,NodeRecord> propertyDecorator =
                 propertyDecorator( requiresPropertyMigration, cursors );
 
         return new StoreScanAsInputIterator<NodeRecord>( store )
@@ -677,13 +670,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 visitor.id( record.getId() );
                 visitor.propertyId( record.getNextProp() );
                 visitor.labelField( record.getLabelField() );
-                // TODO visit properties too if needed
+                propertyDecorator.accept( visitor, record );
                 return false;
             }
         };
     }
 
-    private <ENTITY extends InputEntity, RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
+    private <RECORD extends PrimitiveRecord> BiConsumer<InputEntityVisitor,RECORD> propertyDecorator(
             boolean requiresPropertyMigration, RecordCursors cursors )
     {
         if ( !requiresPropertyMigration )
@@ -692,17 +685,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        final List<Object> scratch = new ArrayList<>();
-        return ( ENTITY entity, RECORD record ) ->
+        return ( InputEntityVisitor entity, RECORD record ) ->
         {
             cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
-            scratch.clear();
             while ( cursor.next() )
             {
-                scratch.add( cursor.propertyKeyId() ); // add key as int here as to have the importer use the token id
-                scratch.add( cursor.value() );
+                // add key as int here as to have the importer use the token id
+                entity.property( cursor.propertyKeyId(), cursor.value() );
             }
-            entity.setProperties( scratch.isEmpty() ? InputEntity.NO_PROPERTIES : scratch.toArray() );
             cursor.close();
         };
     }

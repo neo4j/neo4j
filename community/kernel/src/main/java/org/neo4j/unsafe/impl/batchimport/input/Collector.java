@@ -25,7 +25,9 @@ package org.neo4j.unsafe.impl.batchimport.input;
  */
 public interface Collector extends AutoCloseable
 {
-    void collectBadRelationship( InputRelationship relationship, Object specificValue );
+    void collectBadRelationship(
+            Object startId, String startIdGroup, String type,
+            Object endId, String endIdGroup, Object specificValue );
 
     void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource );
 

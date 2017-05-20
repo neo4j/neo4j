@@ -1068,6 +1068,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void updateRecord( RECORD record )
     {
+        System.out.println( record );
         long id = record.getId();
         IdValidator.assertValidId( id, recordFormat.getMaxId() );
 

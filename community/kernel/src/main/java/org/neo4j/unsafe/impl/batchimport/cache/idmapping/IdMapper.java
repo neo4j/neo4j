@@ -25,12 +25,10 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 /**
- * Maps node ids as specified by {@link InputNode#id()}, {@link InputRelationship#startNode()} and
- * {@link InputRelationship#endNode()} from an id of some unknown sort, coming directly from input, to actual node ids.
+ * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.
  */
 public interface IdMapper extends MemoryStatsVisitor.Visitable
 {

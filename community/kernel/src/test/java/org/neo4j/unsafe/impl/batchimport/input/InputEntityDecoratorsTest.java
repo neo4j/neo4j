@@ -36,6 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.decorators;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
@@ -52,7 +53,7 @@ public class InputEntityDecoratorsTest
         InputEntityVisitor relationship = spy( defaultRelationshipType( defaultType ).apply( entity ) );
 
         // WHEN
-        relationship( relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null, "start", "end", null, null );
+        relationship( relationship, "source", 1, 0, NO_PROPERTIES, null, "start", "end", null, null );
 
         // THEN
         verify( relationship ).type( defaultType );
@@ -67,7 +68,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         String customType = "CUSTOM_TYPE";
-        relationship( relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null,
+        relationship( relationship, "source", 1, 0, NO_PROPERTIES, null,
                 "start", "end", customType, null );
 
         // THEN
@@ -84,7 +85,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         int typeId = 5;
-        relationship( relationship, "source", 1, 0, InputEntity.NO_PROPERTIES, null,
+        relationship( relationship, "source", 1, 0, NO_PROPERTIES, null,
                 "start", "end", null, typeId );
 
         // THEN
@@ -100,7 +101,7 @@ public class InputEntityDecoratorsTest
         CachingInputEntityVisitor node = new CachingInputEntityVisitor( additiveLabels( toAdd ).apply( entity ) );
 
         // WHEN
-        node( node, "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, null );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, null, null );
 
         // THEN
         assertArrayEquals( toAdd, node.labels() );
@@ -115,7 +116,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         String[] nodeLabels = new String[] {"SomeOther"};
-        node( node, "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, nodeLabels, null );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, nodeLabels, null );
 
         // THEN
         assertEquals( asSet( ArrayUtil.union( toAdd, nodeLabels ) ), asSet( node.labels() ) );
@@ -130,7 +131,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         long labelField = 123L;
-        node( node, "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, labelField );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, null, labelField );
 
         // THEN
         assertNull( node.labels() );

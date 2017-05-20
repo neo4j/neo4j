@@ -26,12 +26,13 @@ import org.neo4j.test.Randoms;
 import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.RandomsStates;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.Math.abs;
+
+import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_LABELS;
 
 /**
  * Data generator as {@link InputIterator}, parallelizable
@@ -138,7 +139,7 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
         int length = random.nextInt( 3 );
         if ( length == 0 )
         {
-            return InputEntity.NO_LABELS;
+            return NO_LABELS;
         }
 
         String[] result = new String[length];

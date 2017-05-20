@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
@@ -102,13 +103,13 @@ public class DataImporter
 
     public static RelationshipTypeDistribution importRelationships( int numRunners, Input input,
             BatchingNeoStores stores, IdMapper idMapper, NodeRelationshipCache nodeRelationshipCache,
-            Monitor monitor ) throws InterruptedException
+            Collector badCollector, Monitor monitor ) throws InterruptedException
     {
         RelationshipTypeDistribution typeDistribution = new RelationshipTypeDistribution();
         importData( "Relationships", numRunners, input.relationships(), () ->
                 new RelationshipImporter( stores.getNeoStores(),
                         stores.getPropertyKeyRepository(), stores.getRelationshipTypeRepository(), idMapper,
-                        nodeRelationshipCache, typeDistribution, monitor ) );
+                        nodeRelationshipCache, typeDistribution, monitor, badCollector ) );
         return typeDistribution;
     }
 }

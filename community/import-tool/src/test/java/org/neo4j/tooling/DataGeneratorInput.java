@@ -25,8 +25,6 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
@@ -34,7 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
- * and then a function for generating {@link InputNode} and another for generating {@link InputRelationship}.
+ * and then a function for generating the nodes and another for generating the relationships.
  * Data can be generated in parallel and so those generator functions accepts a {@link Range} for which
  * an array of input objects are generated, everything else will be taken care of. So typical usage would be:
  *

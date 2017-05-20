@@ -23,14 +23,12 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.
  *
- * @see InputNode#id()
  * @see Header.Entry#extractor()
  */
 public enum IdType

@@ -70,9 +70,11 @@ public class BadCollector implements Collector
     }
 
     @Override
-    public void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
+    public void collectBadRelationship( Object startId, String startIdGroup, String type, Object endId,
+            String endIdGroup, Object specificValue )
     {
-        checkTolerance( BAD_RELATIONSHIPS, new RelationshipsProblemReporter( relationship, specificValue ) );
+        checkTolerance( BAD_RELATIONSHIPS, new RelationshipsProblemReporter( startId, startIdGroup,
+                type, endId, endIdGroup, specificValue ) );
     }
 
     @Override
@@ -128,12 +130,21 @@ public class BadCollector implements Collector
     private static class RelationshipsProblemReporter implements ProblemReporter
     {
         private String message;
-        private final InputRelationship relationship;
         private final Object specificValue;
+        private final Object startId;
+        private final String startIdGroup;
+        private final String type;
+        private final Object endId;
+        private final String endIdGroup;
 
-        RelationshipsProblemReporter( InputRelationship relationship, Object specificValue )
+        RelationshipsProblemReporter( Object startId, String startIdGroup, String type,
+                Object endId, String endIdGroup, Object specificValue )
         {
-            this.relationship = relationship;
+            this.startId = startId;
+            this.startIdGroup = startIdGroup;
+            this.type = type;
+            this.endId = endId;
+            this.endIdGroup = endIdGroup;
             this.specificValue = specificValue;
         }
 
@@ -153,7 +164,8 @@ public class BadCollector implements Collector
         {
             if ( message == null )
             {
-                message = format( "%s referring to missing node %s", relationship, specificValue );
+                message = format( "%s (%s)-[%s]->%s (%s) referring to missing node %s",
+                        startId, startIdGroup, type, endId, endIdGroup, specificValue );
             }
             return message;
         }

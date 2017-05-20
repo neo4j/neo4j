@@ -48,7 +48,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Com
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -792,7 +791,8 @@ public class EncodingIdMapperTest
         private int count;
 
         @Override
-        public void collectBadRelationship( InputRelationship relationship, Object specificValue )
+        public void collectBadRelationship( Object startId, String startIdGroup, String type, Object endId,
+                String endIdGroup, Object specificValue )
         {
             throw new UnsupportedOperationException();
         }

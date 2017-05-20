@@ -28,6 +28,8 @@ public interface InputEntityVisitor
 
     boolean property( String key, Object value );
 
+    boolean property( int propertyKeyId, Object value );
+
     // For nodes
     boolean id( long id );
 
@@ -56,6 +58,12 @@ public interface InputEntityVisitor
     {
         @Override
         public boolean property( String key, Object value )
+        {
+            return true;
+        }
+
+        @Override
+        public boolean property( int propertyKeyId, Object value )
         {
             return true;
         }
@@ -151,6 +159,12 @@ public interface InputEntityVisitor
         public boolean property( String key, Object value )
         {
             return actual.property( key, value );
+        }
+
+        @Override
+        public boolean property( int propertyKeyId, Object value )
+        {
+            return actual.property( propertyKeyId, value );
         }
 
         @Override

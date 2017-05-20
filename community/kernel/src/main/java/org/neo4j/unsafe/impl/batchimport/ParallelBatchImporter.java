@@ -187,7 +187,7 @@ public class ParallelBatchImporter implements BatchImporter
             neoStore.startFlushingPageCache();
             RelationshipTypeDistribution typeDistribution = DataImporter.importRelationships(
                     config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache,
-                    storeUpdateMonitor );
+                    badCollector, storeUpdateMonitor );
             neoStore.stopFlushingPageCache();
 
             // Release this potentially really big piece of cached data
@@ -299,6 +299,7 @@ public class ParallelBatchImporter implements BatchImporter
             BatchingNeoStores neoStore, RelationshipTypeDistribution typeDistribution,
             long freeMemoryForDenseNodeCache )
     {
+        System.out.println( "linking" );
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );

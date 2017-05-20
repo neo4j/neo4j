@@ -28,6 +28,9 @@ import java.util.List;
  */
 public class CachingInputEntityVisitor implements InputEntityVisitor
 {
+    public static final Object[] NO_PROPERTIES = new Object[0];
+    public static final String[] NO_LABELS = new String[0];
+
     private final InputEntityVisitor delegate;
 
     public CachingInputEntityVisitor( InputEntityVisitor delegate )
@@ -42,6 +45,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
 
     public boolean hasPropertyId;
     public long propertyId;
+    public boolean hasIntPropertyKeyIds;
     public final List<Object> properties = new ArrayList<>();
 
     public boolean hasLongId;
@@ -85,6 +89,16 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
         properties.add( key );
         properties.add( value );
         return delegate.property( key, value );
+    }
+
+    @Override
+    public boolean property( int propertyKeyId, Object value )
+    {
+        checkClear();
+        hasIntPropertyKeyIds = true;
+        properties.add( propertyKeyId );
+        properties.add( value );
+        return delegate.property( propertyKeyId, value );
     }
 
     @Override
@@ -217,6 +231,7 @@ public class CachingInputEntityVisitor implements InputEntityVisitor
         {
             end = false;
             hasPropertyId = false;
+            hasIntPropertyKeyIds = false;
             properties.clear();
             hasLongId = false;
             labels.clear();
