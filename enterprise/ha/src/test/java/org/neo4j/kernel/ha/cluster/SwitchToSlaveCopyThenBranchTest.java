@@ -77,7 +77,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
-import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
+import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;

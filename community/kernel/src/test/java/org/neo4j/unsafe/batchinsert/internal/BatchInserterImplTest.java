@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;

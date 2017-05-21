@@ -23,6 +23,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -36,6 +37,7 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -49,18 +51,20 @@ public class GraphDatabaseServiceTest
 {
     @ClassRule
     public static final DatabaseRule globalDb = new ImpermanentDatabaseRule();
+
+    private final ExpectedException exception = ExpectedException.none();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
+    private final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3-" + getClass().getName() );
+
     @Rule
-    public ExpectedException exception = ExpectedException.none();
-    @Rule
-    public OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
-    @Rule
-    public OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3-" + getClass().getName() );
+    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( exception ).around( t2 ).around( t3 );
 
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabaseService db = getTemporaryDatabase();
 
         db.shutdown();
 
@@ -75,7 +79,7 @@ public class GraphDatabaseServiceTest
     public void givenDatabaseAndStartedTxWhenShutdownThenWaitForTxToFinish() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseService db = getTemporaryDatabase();
 
         // When
         Barrier.Control barrier = new Barrier.Control();
@@ -182,7 +186,7 @@ public class GraphDatabaseServiceTest
     public void terminateNestedTransactionThrowsExceptionOnNextNestedOperationMultiThreadedVersion() throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseService db = getTemporaryDatabase();
         try
         {
             // When
@@ -224,7 +228,7 @@ public class GraphDatabaseServiceTest
             throws Exception
     {
         // Given
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseService db = getTemporaryDatabase();
         try
         {
             // When
@@ -270,7 +274,7 @@ public class GraphDatabaseServiceTest
     public void givenDatabaseAndStartedTxWhenShutdownAndStartNewTxThenBeginTxTimesOut() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabaseService db = getTemporaryDatabase();
 
         // When
         Barrier.Control barrier = new Barrier.Control();
@@ -426,4 +430,8 @@ public class GraphDatabaseServiceTest
         }
     }
 
+    private GraphDatabaseService getTemporaryDatabase()
+    {
+        return new TestGraphDatabaseFactory().newImpermanentDatabase( testDirectory.directory( "impermanent" ) );
+    }
 }

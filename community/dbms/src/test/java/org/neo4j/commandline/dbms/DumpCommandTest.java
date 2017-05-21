@@ -47,7 +47,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;

@@ -82,13 +82,25 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )
     {
         GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
+        setConfig( config, builder );
+        return builder.newGraphDatabase();
+    }
+
+    public GraphDatabaseService newImpermanentDatabase( File storeDir , Map<Setting<?>,String> config )
+    {
+        GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder(storeDir);
+        setConfig( config, builder );
+        return builder.newGraphDatabase();
+    }
+
+    private void setConfig( Map<Setting<?>,String> config, GraphDatabaseBuilder builder )
+    {
         for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
         {
             Setting<?> key = entry.getKey();
             String value = entry.getValue();
             builder.setConfig( key, value );
         }
-        return builder.newGraphDatabase();
     }
 
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()

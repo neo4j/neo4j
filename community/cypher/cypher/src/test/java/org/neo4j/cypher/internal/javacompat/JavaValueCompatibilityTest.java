@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +42,12 @@ public class JavaValueCompatibilityTest
     public void setUp() throws IOException
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
     }
 
     @Test

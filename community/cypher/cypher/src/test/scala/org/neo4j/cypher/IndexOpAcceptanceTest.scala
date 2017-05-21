@@ -58,7 +58,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
     } finally {
       graph.shutdown()
-      new File("target/test-data/impermanent-db").deleteAll()
+      new File("target/test-data/test-impermanent-db").deleteAll()
     }
   }
 
@@ -96,8 +96,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
   }
 
   private def createDbWithFailedIndex: GraphDatabaseService = {
-    val storeDir = new File("target/test-data/impermanent-db")
+    val storeDir = new File("target/test-data/test-impermanent-db")
     storeDir.deleteAll()
+    graph.shutdown()
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
     eengine = createEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
@@ -111,7 +112,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     }
     graph.shutdown()
 
-    val stream = new FileOutputStream("target/test-data/impermanent-db/schema/index/lucene/1/failure-message")
+    val stream = new FileOutputStream("target/test-data/test-impermanent-db/schema/index/lucene/1/failure-message")
     stream.write(65)
     stream.close()
 

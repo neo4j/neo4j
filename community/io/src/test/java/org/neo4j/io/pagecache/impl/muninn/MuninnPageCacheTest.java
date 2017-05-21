@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
 
 import java.io.File;
@@ -96,32 +97,22 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
         ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
+              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
-            assertTrue( cursor.next() );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            cursorTracer.reportEvents();
+            assertNotNull( cursorTracer.observe( Fault.class ) );
+            assertEquals( 1, cursorTracer.faults() );
+            assertEquals( 1, tracer.faults() );
+
+            int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
+            assertThat( clockArm, is( 1 ) );
+            assertNotNull( tracer.observe( Evict.class ) );
         }
-        cursorTracer.reportEvents();
-        assertNotNull( cursorTracer.observe( Fault.class ) );
-        assertEquals( 1, cursorTracer.faults() );
-        assertEquals( 1, tracer.faults() );
-
-        int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-        assertThat( clockArm, is( 1 ) );
-        assertNotNull( tracer.observe( Evict.class ) );
-    }
-
-    private void writeInitialDataTo( File file ) throws IOException
-    {
-        StoreChannel channel = fs.create( file );
-        ByteBuffer buf = ByteBuffer.allocate( 16 );
-        buf.putLong( x );
-        buf.putLong( y );
-        buf.flip();
-        channel.writeAll( buf );
-        channel.close();
     }
 
     @Test
@@ -132,30 +123,28 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
         ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ),
-                cursorTracerSupplier );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
+              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
-            assertTrue( cursor.next() );
-            cursor.putLong( 0L );
+
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 0L );
+            }
+            cursorTracer.reportEvents();
+            assertNotNull( cursorTracer.observe( Fault.class ) );
+            assertEquals( 1, cursorTracer.faults() );
+            assertEquals( 1, tracer.faults() );
+
+            int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
+            assertThat( clockArm, is( 1 ) );
+            assertNotNull( tracer.observe( Evict.class ) );
+
+            ByteBuffer buf = readIntoBuffer( "a" );
+            assertThat( buf.getLong(), is( 0L ) );
+            assertThat( buf.getLong(), is( y ) );
         }
-        cursorTracer.reportEvents();
-        assertNotNull( cursorTracer.observe( Fault.class ) );
-        assertEquals( 1, cursorTracer.faults() );
-        assertEquals( 1, tracer.faults() );
-
-        int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-        assertThat( clockArm, is( 1 ) );
-        assertNotNull( tracer.observe( Evict.class ) );
-
-        ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
-        channel.read( buf );
-        buf.flip();
-        assertThat( buf.getLong(), is( 0L ) );
-        assertThat( buf.getLong(), is( y ) );
     }
 
     @Test
@@ -166,30 +155,27 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
         ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ),
-                cursorTracerSupplier );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
-
-        try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
+              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
-            assertTrue( cursor.next() );
-            cursor.putLong( 0L );
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 0L );
+            }
+            cursorTracer.reportEvents();
+            assertNotNull( cursorTracer.observe( Fault.class ) );
+            assertEquals( 1, cursorTracer.faults() );
+            assertEquals( 1, tracer.faults() );
+
+            int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
+            assertThat( clockArm, is( 1 ) );
+            assertNotNull( tracer.observe( Evict.class ) );
+
+            ByteBuffer buf = readIntoBuffer( "a" );
+            assertThat( buf.getLong(), is( x ) );
+            assertThat( buf.getLong(), is( 0L ) );
         }
-        cursorTracer.reportEvents();
-        assertNotNull( cursorTracer.observe( Fault.class ) );
-        assertEquals( 1, cursorTracer.faults() );
-        assertEquals( 1, tracer.faults() );
-
-        int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
-        assertThat( clockArm, is( 1 ) );
-        assertNotNull( tracer.observe( Evict.class ) );
-
-        ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
-        channel.read( buf );
-        buf.flip();
-        assertThat( buf.getLong(), is( x ) );
-        assertThat( buf.getLong(), is( 0L ) );
     }
 
     @Test
@@ -200,35 +186,32 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( Fault.class );
         ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
 
-        MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ),
-                cursorTracerSupplier );
-        PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
+              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
-            assertTrue( cursor.next() );
-            cursor.putLong( 0L );
-            assertTrue( cursor.next() );
-            cursor.putLong( 0L );
-            assertFalse( cursor.next() );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 0L );
+                assertTrue( cursor.next() );
+                cursor.putLong( 0L );
+                assertFalse( cursor.next() );
+            }
+            cursorTracer.reportEvents();
+            assertNotNull( cursorTracer.observe( Fault.class ) );
+            assertNotNull( cursorTracer.observe( Fault.class ) );
+            assertEquals( 2, cursorTracer.faults() );
+            assertEquals( 2, tracer.faults() );
+
+            int clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
+            assertThat( clockArm, is( 2 ) );
+            assertNotNull( tracer.observe( Evict.class ) );
+            assertNotNull( tracer.observe( Evict.class ) );
+
+            ByteBuffer buf = readIntoBuffer( "a" );
+            assertThat( buf.getLong(), is( 0L ) );
+            assertThat( buf.getLong(), is( 0L ) );
         }
-        cursorTracer.reportEvents();
-        assertNotNull( cursorTracer.observe( Fault.class ) );
-        assertNotNull( cursorTracer.observe( Fault.class ) );
-        assertEquals( 2, cursorTracer.faults() );
-        assertEquals( 2, tracer.faults() );
-
-        int clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
-        assertThat( clockArm, is( 2 ) );
-        assertNotNull( tracer.observe( Evict.class ) );
-        assertNotNull( tracer.observe( Evict.class ) );
-
-        ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
-        channel.read( buf );
-        buf.flip();
-        assertThat( buf.getLong(), is( 0L ) );
-        assertThat( buf.getLong(), is( 0L ) );
     }
 
     @Test
@@ -236,41 +219,38 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
 
-        final MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL,
-                DefaultPageCursorTracerSupplier.INSTANCE );
-        final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
-
-        Future<?> task = executor.submit( () ->
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
+            Future<?> task = executor.submit( () ->
+            {
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 41 );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            } );
+            task.get();
+
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
-                cursor.putLong( 41 );
+                long value = cursor.getLong();
+                cursor.setOffset( 0 );
+                cursor.putLong( value + 1 );
             }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        } );
-        task.get();
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            long value = cursor.getLong();
-            cursor.setOffset( 0 );
-            cursor.putLong( value + 1 );
+            int clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
+            assertThat( clockArm, is( 1 ) );
+
+            ByteBuffer buf = readIntoBuffer( "a" );
+            assertThat( buf.getLong(), is( 42L ) );
+            assertThat( buf.getLong(), is( y ) );
         }
-
-        int clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
-        assertThat( clockArm, is( 1 ) );
-
-        ByteBuffer buf = ByteBuffer.allocate( 16 );
-        StoreChannel channel = fs.open( file( "a" ), "r" );
-        channel.read( buf );
-        buf.flip();
-        assertThat( buf.getLong(), is( 42L ) );
-        assertThat( buf.getLong(), is( y ) );
     }
 
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
@@ -278,6 +258,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
 
+        MutableBoolean throwException = new MutableBoolean( true );
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
         {
             @Override
@@ -288,30 +269,39 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                     @Override
                     public void writeAll( ByteBuffer src, long position ) throws IOException
                     {
-                        throw new IOException( "uh-oh..." );
+                        if ( throwException.booleanValue() )
+                        {
+                            throw new IOException( "uh-oh..." );
+                        }
+                        else
+                        {
+                            super.writeAll( src, position );
+                        }
                     }
                 };
             }
         };
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL,
-                DefaultPageCursorTracerSupplier.INSTANCE );
-        final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
-
-        // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
-        // though the eviction thread is unable to flush any dirty pages because the file system throws exceptions on
-        // all writes.
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+              PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
         {
-            for ( int i = 0; i < 1000; i++ )
+            // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
+            // though the eviction thread is unable to flush any dirty pages because the file system throws exceptions on
+            // all writes.
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
-                assertTrue( cursor.next() );
+                for ( int i = 0; i < 1000; i++ )
+                {
+                    assertTrue( cursor.next() );
+                }
+                fail( "Expected an exception at this point" );
             }
-            fail( "Expected an exception at this point" );
-        }
-        catch ( IOException ignore )
-        {
-            // Good.
+            catch ( IOException ignore )
+            {
+                // Good.
+            }
+
+            throwException.setFalse();
         }
     }
 
@@ -320,33 +310,58 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         File file = file( "a" );
         writeInitialDataTo( file );
-        MuninnPageCache pageCache = createPageCache( fs, 30, pageCachePageSize, PageCacheTracer.NULL,
-                DefaultPageCursorTracerSupplier.NULL );
-        PagedFile pf = null;
-        int i = 0;
+        try ( MuninnPageCache pageCache = createPageCache( fs, 30, pageCachePageSize, PageCacheTracer.NULL,
+                DefaultPageCursorTracerSupplier.NULL ) )
+        {
+            PagedFile pf = null;
+            int i = 0;
 
-        try
-        {
-            expectedException.expect( IllegalStateException.class );
-            for ( ; i < Integer.MAX_VALUE; i++ )
+            try
             {
-                pf = pageCache.map( file, filePageSize );
-            }
-        }
-        finally
-        {
-            for ( int j = 0; j < i; j++ )
-            {
-                try
+                expectedException.expect( IllegalStateException.class );
+                for ( ; i < Integer.MAX_VALUE; i++ )
                 {
-                    pf.close();
-                }
-                catch ( Exception e )
-                {
-                    //noinspection ThrowFromFinallyBlock
-                    throw new AssertionError( "Did not expect pf.close() to throw", e );
+                    pf = pageCache.map( file, filePageSize );
                 }
             }
+            finally
+            {
+                for ( int j = 0; j < i; j++ )
+                {
+                    try
+                    {
+                        pf.close();
+                    }
+                    catch ( Exception e )
+                    {
+                        //noinspection ThrowFromFinallyBlock
+                        throw new AssertionError( "Did not expect pf.close() to throw", e );
+                    }
+                }
+            }
         }
+    }
+
+    private void writeInitialDataTo( File file ) throws IOException
+    {
+        try ( StoreChannel channel = fs.create( file ) )
+        {
+            ByteBuffer buf = ByteBuffer.allocate( 16 );
+            buf.putLong( x );
+            buf.putLong( y );
+            buf.flip();
+            channel.writeAll( buf );
+        }
+    }
+
+    private ByteBuffer readIntoBuffer( String fileName ) throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( 16 );
+        try ( StoreChannel channel = fs.open( file( fileName ), "r" ) )
+        {
+            channel.read( buffer );
+        }
+        buffer.flip();
+        return  buffer;
     }
 }

@@ -23,10 +23,8 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -78,21 +76,14 @@ public class StorageLayerLabelTest extends StorageLayerTest
         assertEquals( labelName, readLabelName );
     }
 
-    /*
-     * This test doesn't really belong here, but OTOH it does, as it has to do with this specific
-     * store solution. It creates its own IGD to try reproduce to trigger the problem.
-     */
     @Test
     public void labels_should_not_leak_out_as_properties() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
 
         // WHEN THEN
         assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
-
-        db.shutdown();
     }
 
     @Test

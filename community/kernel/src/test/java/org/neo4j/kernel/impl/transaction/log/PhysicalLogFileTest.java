@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -54,10 +55,13 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 
 public class PhysicalLogFileTest
 {
+    private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final LifeRule life = new LifeRule( true );
+
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( life );
+
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore =
             new DeadSimpleTransactionIdStore( 5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
@@ -65,24 +69,22 @@ public class PhysicalLogFileTest
     @Test
     public void skipLogFileWithoutHeader() throws IOException
     {
-        LifeSupport life = new LifeSupport();
         FileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles physicalLogFiles = new PhysicalLogFiles( directory.directory(), "logs", fs );
-        PhysicalLogFile physicalLogFile = new PhysicalLogFile( fs, physicalLogFiles, 1000,
-                () -> 1L, logVersionRepository,
-                mock( Monitor.class ), new LogHeaderCache( 10 ) );
+        PhysicalLogFile physicalLogFile =
+                new PhysicalLogFile( fs, physicalLogFiles, 1000, () -> 1L, logVersionRepository, mock( Monitor.class ),
+                        new LogHeaderCache( 10 ) );
         life.add( physicalLogFile );
         life.start();
 
         // simulate new file without header presence
-        PhysicalLogFile logFileToSearchFrom = new PhysicalLogFile( fs, physicalLogFiles, 1000,
-                () -> 10L, logVersionRepository, mock( Monitor.class ),
-                new LogHeaderCache( 10 ) );
+        PhysicalLogFile logFileToSearchFrom =
+                new PhysicalLogFile( fs, physicalLogFiles, 1000, () -> 10L, logVersionRepository, mock( Monitor.class ),
+                        new LogHeaderCache( 10 ) );
         logVersionRepository.incrementAndGetVersion();
         fs.create( physicalLogFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
 
-        PhysicalLogicalTransactionStore.LogVersionLocator versionLocator =
-                new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
+        PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
         logFileToSearchFrom.accept( versionLocator );
 
         LogPosition logPosition = versionLocator.getLogPosition();
@@ -94,7 +96,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LifeSupport life = new LifeSupport();
         FileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore::getLastCommittedTransactionId,
@@ -116,7 +117,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LifeSupport life = new LifeSupport();
         FileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Monitor monitor = mock( Monitor.class );
@@ -125,29 +125,20 @@ public class PhysicalLogFileTest
                 new LogHeaderCache( 10 ) ) );
 
         // WHEN
-        try
-        {
-            life.start();
+        FlushablePositionAwareChannel writer = logFile.getWriter();
+        LogPositionMarker positionMarker = new LogPositionMarker();
+        writer.getCurrentPosition( positionMarker );
+        int intValue = 45;
+        long longValue = 4854587;
+        writer.putInt( intValue );
+        writer.putLong( longValue );
+        writer.prepareForFlush().flush();
 
-            FlushablePositionAwareChannel writer = logFile.getWriter();
-            LogPositionMarker positionMarker = new LogPositionMarker();
-            writer.getCurrentPosition( positionMarker );
-            int intValue = 45;
-            long longValue = 4854587;
-            writer.putInt( intValue );
-            writer.putLong( longValue );
-            writer.prepareForFlush().flush();
-
-            // THEN
-            try ( ReadableClosableChannel reader = logFile.getReader( positionMarker.newPosition() ) )
-            {
-                assertEquals( intValue, reader.getInt() );
-                assertEquals( longValue, reader.getLong() );
-            }
-        }
-        finally
+        // THEN
+        try ( ReadableClosableChannel reader = logFile.getReader( positionMarker.newPosition() ) )
         {
-            life.shutdown();
+            assertEquals( intValue, reader.getInt() );
+            assertEquals( longValue, reader.getLong() );
         }
     }
 
@@ -156,7 +147,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LifeSupport life = new LifeSupport();
         FileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
@@ -164,43 +154,35 @@ public class PhysicalLogFileTest
                 new LogHeaderCache( 10 ) ) );
 
         // WHEN
-        life.start();
-        try
-        {
-            FlushablePositionAwareChannel writer = logFile.getWriter();
-            LogPositionMarker positionMarker = new LogPositionMarker();
-            writer.getCurrentPosition( positionMarker );
-            LogPosition position1 = positionMarker.newPosition();
-            int intValue = 45;
-            long longValue = 4854587;
-            byte[] someBytes = someBytes( 40 );
-            writer.putInt( intValue );
-            writer.putLong( longValue );
-            writer.put( someBytes, someBytes.length );
-            writer.prepareForFlush().flush();
-            writer.getCurrentPosition( positionMarker );
-            LogPosition position2 = positionMarker.newPosition();
-            long longValue2 = 123456789L;
-            writer.putLong( longValue2 );
-            writer.put( someBytes, someBytes.length );
-            writer.prepareForFlush().flush();
+        FlushablePositionAwareChannel writer = logFile.getWriter();
+        LogPositionMarker positionMarker = new LogPositionMarker();
+        writer.getCurrentPosition( positionMarker );
+        LogPosition position1 = positionMarker.newPosition();
+        int intValue = 45;
+        long longValue = 4854587;
+        byte[] someBytes = someBytes( 40 );
+        writer.putInt( intValue );
+        writer.putLong( longValue );
+        writer.put( someBytes, someBytes.length );
+        writer.prepareForFlush().flush();
+        writer.getCurrentPosition( positionMarker );
+        LogPosition position2 = positionMarker.newPosition();
+        long longValue2 = 123456789L;
+        writer.putLong( longValue2 );
+        writer.put( someBytes, someBytes.length );
+        writer.prepareForFlush().flush();
 
-            // THEN
-            try ( ReadableClosableChannel reader = logFile.getReader( position1 ) )
-            {
-                assertEquals( intValue, reader.getInt() );
-                assertEquals( longValue, reader.getLong() );
-                assertArrayEquals( someBytes, readBytes( reader, 40 ) );
-            }
-            try ( ReadableClosableChannel reader = logFile.getReader( position2 ) )
-            {
-                assertEquals( longValue2, reader.getLong() );
-                assertArrayEquals( someBytes, readBytes( reader, 40 ) );
-            }
-        }
-        finally
+        // THEN
+        try ( ReadableClosableChannel reader = logFile.getReader( position1 ) )
         {
-            life.shutdown();
+            assertEquals( intValue, reader.getInt() );
+            assertEquals( longValue, reader.getLong() );
+            assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+        }
+        try ( ReadableClosableChannel reader = logFile.getReader( position2 ) )
+        {
+            assertEquals( longValue2, reader.getLong() );
+            assertArrayEquals( someBytes, readBytes( reader, 40 ) );
         }
     }
 
@@ -209,13 +191,11 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LifeSupport life = new LifeSupport();
         FileSystemAbstraction fs = fileSystemRule.get();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
                 transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),
                 new LogHeaderCache( 10 ) ) );
-        life.start();
         FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();
         writer.getCurrentPosition( mark );
@@ -237,7 +217,6 @@ public class PhysicalLogFileTest
             return true;
         }, mark.newPosition() );
         assertTrue( called.get() );
-        life.shutdown();
     }
 
     @Test

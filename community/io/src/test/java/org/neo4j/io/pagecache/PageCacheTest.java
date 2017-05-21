@@ -1739,51 +1739,50 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void writesOfDifferentUnitsMustHaveCorrectEndianess() throws Exception
     {
         configureStandardPageCache();
-        PagedFile pagedFile = pageCache.map( file( "a" ), 20 );
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), 20 ) )
         {
-            assertTrue( cursor.next() );
-            byte[] data = { 42, 43, 44, 45, 46 };
-
-            cursor.putLong( 41 );          //  0+8 = 8
-            cursor.putInt( 41 );           //  8+4 = 12
-            cursor.putShort( (short) 41 ); // 12+2 = 14
-            cursor.putByte( (byte) 41 );   // 14+1 = 15
-            cursor.putBytes( data );       // 15+5 = 20
-        }
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-
-            long a = cursor.getLong();  //  8
-            int b = cursor.getInt();    // 12
-            short c = cursor.getShort();// 14
-            byte[] data = new byte[] {
-                    cursor.getByte(),   // 15
-                    cursor.getByte(),   // 16
-                    cursor.getByte(),   // 17
-                    cursor.getByte(),   // 18
-                    cursor.getByte(),   // 19
-                    cursor.getByte()    // 20
-            };
-            cursor.setOffset( 0 );
-            cursor.putLong( 1 + a );
-            cursor.putInt( 1 + b );
-            cursor.putShort( (short) (1 + c) );
-            for ( byte d : data )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
-                d++;
-                cursor.putByte( d );
+                assertTrue( cursor.next() );
+                byte[] data = {42, 43, 44, 45, 46};
+
+                cursor.putLong( 41 );          //  0+8 = 8
+                cursor.putInt( 41 );           //  8+4 = 12
+                cursor.putShort( (short) 41 ); // 12+2 = 14
+                cursor.putByte( (byte) 41 );   // 14+1 = 15
+                cursor.putBytes( data );       // 15+5 = 20
+            }
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+
+                long a = cursor.getLong();  //  8
+                int b = cursor.getInt();    // 12
+                short c = cursor.getShort();// 14
+                byte[] data = new byte[]{cursor.getByte(),   // 15
+                        cursor.getByte(),   // 16
+                        cursor.getByte(),   // 17
+                        cursor.getByte(),   // 18
+                        cursor.getByte(),   // 19
+                        cursor.getByte()    // 20
+                };
+                cursor.setOffset( 0 );
+                cursor.putLong( 1 + a );
+                cursor.putInt( 1 + b );
+                cursor.putShort( (short) (1 + c) );
+                for ( byte d : data )
+                {
+                    d++;
+                    cursor.putByte( d );
+                }
             }
         }
 
-        pagedFile.close();
-
-        StoreChannel channel = fs.open( file( "a" ), "r" );
         ByteBuffer buf = ByteBuffer.allocate( 20 );
-        channel.read( buf );
+        try ( StoreChannel channel = fs.open( file( "a" ), "r" ) )
+        {
+            channel.read( buf );
+        }
         buf.flip();
 
         assertThat( buf.getLong(), is( 42L ) );
@@ -2067,81 +2066,83 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         int filePageSize2 = filePageSize - 3; // diff. page size just to be difficult
         long maxPageIdCursor1 = recordCount / recordsPerFilePage;
         File file2 = file( "b" );
-        OutputStream outputStream = fs.openAsOutputStream( file2, false );
         long file2sizeBytes = (maxPageIdCursor1 + 17) * filePageSize2;
-        for ( int i = 0; i < file2sizeBytes; i++ )
+        try ( OutputStream outputStream = fs.openAsOutputStream( file2, false ) )
         {
-            // We will ues the page cache to change these 'a's into 'b's.
-            outputStream.write( 'a' );
+            for ( int i = 0; i < file2sizeBytes; i++ )
+            {
+                // We will ues the page cache to change these 'a's into 'b's.
+                outputStream.write( 'a' );
+            }
+            outputStream.flush();
         }
-        outputStream.flush();
-        outputStream.close();
 
         configureStandardPageCache();
 
-        PagedFile pagedFile1 = pageCache.map( file( "a" ), filePageSize );
-        PagedFile pagedFile2 = pageCache.map( file2, filePageSize2 );
-
-        long pageId1 = 0;
-        long pageId2 = 0;
-        boolean moreWorkToDo;
-        do
+        try ( PagedFile pagedFile1 = pageCache.map( file( "a" ), filePageSize );
+              PagedFile pagedFile2 = pageCache.map( file2, filePageSize2 ) )
         {
-            boolean cursorReady1;
-            boolean cursorReady2;
-
-            try ( PageCursor cursor = pagedFile1.io( pageId1, PF_SHARED_WRITE_LOCK ) )
+            long pageId1 = 0;
+            long pageId2 = 0;
+            boolean moreWorkToDo;
+            do
             {
-                cursorReady1 = cursor.next() && cursor.getCurrentPageId() < maxPageIdCursor1;
-                if ( cursorReady1 )
-                {
-                    writeRecords( cursor );
-                    pageId1++;
-                }
-            }
+                boolean cursorReady1;
+                boolean cursorReady2;
 
-            try ( PageCursor cursor = pagedFile2.io( pageId2, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
-            {
-                cursorReady2 = cursor.next();
-                if ( cursorReady2 )
+                try ( PageCursor cursor = pagedFile1.io( pageId1, PF_SHARED_WRITE_LOCK ) )
                 {
-                    for ( int i = 0; i < filePageSize2; i++ )
+                    cursorReady1 = cursor.next() && cursor.getCurrentPageId() < maxPageIdCursor1;
+                    if ( cursorReady1 )
                     {
-                        cursor.putByte( (byte) 'b' );
+                        writeRecords( cursor );
+                        pageId1++;
                     }
-                    assertFalse( cursor.shouldRetry() );
                 }
-                pageId2++;
+
+                try ( PageCursor cursor = pagedFile2.io( pageId2, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
+                {
+                    cursorReady2 = cursor.next();
+                    if ( cursorReady2 )
+                    {
+                        for ( int i = 0; i < filePageSize2; i++ )
+                        {
+                            cursor.putByte( (byte) 'b' );
+                        }
+                        assertFalse( cursor.shouldRetry() );
+                    }
+                    pageId2++;
+                }
+
+                moreWorkToDo = cursorReady1 || cursorReady2;
             }
-
-            moreWorkToDo = cursorReady1 || cursorReady2;
+            while ( moreWorkToDo );
         }
-        while ( moreWorkToDo );
-
-        pagedFile1.close();
-        pagedFile2.close();
 
         // Verify the file contents
         assertThat( fs.getFileSize( file2 ), is( file2sizeBytes ) );
-        InputStream inputStream = fs.openAsInputStream( file2 );
-        for ( int i = 0; i < file2sizeBytes; i++ )
+        try ( InputStream inputStream = fs.openAsInputStream( file2 ) )
         {
-            int b = inputStream.read();
-            assertThat( b, is( (int) 'b' ) );
+            for ( int i = 0; i < file2sizeBytes; i++ )
+            {
+                int b = inputStream.read();
+                assertThat( b, is( (int) 'b' ) );
+            }
+            assertThat( inputStream.read(), is( -1 ) );
         }
-        assertThat( inputStream.read(), is( -1 ) );
-        inputStream.close();
 
-        StoreChannel channel = fs.open( file( "a" ), "r" );
-        ByteBuffer bufB = ByteBuffer.allocate( recordSize );
-        for ( int i = 0; i < recordCount; i++ )
+        try ( StoreChannel channel = fs.open( file( "a" ), "r" ) )
         {
-            bufA.clear();
-            channel.read( bufA );
-            bufA.flip();
-            bufB.clear();
-            generateRecordForId( i, bufB );
-            assertThat( bufB.array(), byteArray( bufA.array() ) );
+            ByteBuffer bufB = ByteBuffer.allocate( recordSize );
+            for ( int i = 0; i < recordCount; i++ )
+            {
+                bufA.clear();
+                channel.read( bufA );
+                bufA.flip();
+                bufB.clear();
+                generateRecordForId( i, bufB );
+                assertThat( bufB.array(), byteArray( bufA.array() ) );
+            }
         }
     }
 

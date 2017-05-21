@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -59,14 +60,16 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
     {
         try ( DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
+            LifeSupport lifeSupport = new LifeSupport();
             T raftLog = createRaftLog( fsa, dir.directory() );
+            lifeSupport.add( raftLog );
+            lifeSupport.start();
 
             try
             {
                 ExecutorService es = Executors.newCachedThreadPool();
 
                 Collection<Future<Long>> futures = new ArrayList<>();
-
                 futures.add( es.submit( new TimedTask( () ->
                 {
                     write( raftLog );
@@ -89,8 +92,7 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
             }
             finally
             {
-                //noinspection ThrowFromFinallyBlock
-                raftLog.shutdown();
+                lifeSupport.shutdown();
             }
         }
     }

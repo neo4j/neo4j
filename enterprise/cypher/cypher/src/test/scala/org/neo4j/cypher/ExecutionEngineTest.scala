@@ -479,8 +479,10 @@ order by a.COL1""")
   }
 
   test("createEngineWithSpecifiedParserVersion") {
-    val config = Map[Setting[_], String](GraphDatabaseSettings.cypher_parser_version ->  "2.3")
-    val db: GraphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava)
+    val db: GraphDatabaseService = new TestGraphDatabaseFactory()
+                            .newImpermanentDatabaseBuilder(new File("target/engineWithSpecifiedParser"))
+                            .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3")
+                            .newGraphDatabase()
     val engine = createEngine(db)
 
     try {
@@ -750,13 +752,14 @@ order by a.COL1""")
 
   test("read only database can process has label predicates") {
     //GIVEN
-    val engine = createReadOnlyEngine()
+    readOnlyEngine() {
+      engine =>
+        //WHEN
+        val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
 
-    //WHEN
-    val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
-
-    //THEN
-    result.toList shouldBe empty
+        //THEN
+        result.toList shouldBe empty
+    }
   }
 
   test("should use predicates in the correct place") {
@@ -1043,13 +1046,18 @@ order by a.COL1""")
     ))
   }
 
-  private def createReadOnlyEngine(): ExecutionEngine = {
+  private def readOnlyEngine()(run: ExecutionEngine => Unit) = {
     FileUtils.deleteRecursively(new File("target/readonly"))
     val old = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
     old.shutdown()
     val db = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( new File( "target/readonly" ) )
       .setConfig( GraphDatabaseSettings.read_only, "true" )
       .newGraphDatabase()
-    createEngine(db)
+    try {
+      val engine = createEngine(db)
+      run(engine)
+    } finally {
+      db.shutdown()
+    }
   }
 }

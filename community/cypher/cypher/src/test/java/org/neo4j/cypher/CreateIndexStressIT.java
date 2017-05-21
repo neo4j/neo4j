@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,6 +52,12 @@ public class CreateIndexStressIT
     };
 
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+
+    @After
+    public void tearDown()
+    {
+        executorService.shutdown();
+    }
 
     @Test
     public void shouldHandleConcurrentIndexCreationAndUsage() throws InterruptedException
@@ -88,7 +95,6 @@ public class CreateIndexStressIT
             }
             catch ( Exception e )
             {
-                e.printStackTrace();
                 hasFailed.set( true );
             }
         } );

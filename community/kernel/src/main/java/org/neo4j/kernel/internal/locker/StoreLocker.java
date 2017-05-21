@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.internal;
+package org.neo4j.kernel.internal.locker;
 
 import java.io.Closeable;
 import java.io.File;
@@ -37,10 +37,10 @@ public class StoreLocker implements Closeable
 {
     public static final String STORE_LOCK_FILENAME = "store_lock";
 
-    private final FileSystemAbstraction fileSystemAbstraction;
-    private final File storeLockFile;
+    final FileSystemAbstraction fileSystemAbstraction;
+    final File storeLockFile;
 
-    private FileLock storeLockFileLock;
+    FileLock storeLockFileLock;
     private StoreChannel storeLockFileChannel;
 
     public StoreLocker( FileSystemAbstraction fileSystemAbstraction, File storeDirectory )
@@ -94,14 +94,19 @@ public class StoreLocker implements Closeable
         }
         catch ( OverlappingFileLockException | IOException e )
         {
-            String message = "Unable to obtain lock on store lock file: " + storeLockFile;
-            throw storeLockException( message, e );
+            throw unableToObtainLockException();
         }
     }
 
-    private boolean haveLockAlready()
+    protected boolean haveLockAlready()
     {
         return storeLockFileLock != null && storeLockFileChannel != null;
+    }
+
+    StoreLockException unableToObtainLockException()
+    {
+        String message = "Unable to obtain lock on store lock file: " + storeLockFile;
+        return storeLockException( message, null );
     }
 
     private StoreLockException storeLockException( String message, Exception e )
@@ -116,13 +121,23 @@ public class StoreLocker implements Closeable
     {
         if ( storeLockFileLock != null )
         {
-            storeLockFileLock.release();
-            storeLockFileLock = null;
+            releaseLock();
         }
         if ( storeLockFileChannel != null )
         {
-            storeLockFileChannel.close();
-            storeLockFileChannel = null;
+            releaseChannel();
         }
+    }
+
+    private void releaseChannel() throws IOException
+    {
+        storeLockFileChannel.close();
+        storeLockFileChannel = null;
+    }
+
+    protected void releaseLock() throws IOException
+    {
+        storeLockFileLock.release();
+        storeLockFileLock = null;
     }
 }

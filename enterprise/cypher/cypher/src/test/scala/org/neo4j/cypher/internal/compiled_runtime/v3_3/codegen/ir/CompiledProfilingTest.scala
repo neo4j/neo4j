@@ -97,28 +97,33 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
   test("should profile hash join") {
     //given
-    val graphDb = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
-    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
-    graphDb.createNode()
-    graphDb.createNode()
-    tx.success()
-    tx.close()
+    val database = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    try {
+      val graphDb = new GraphDatabaseCypherService(database)
+      val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
+      graphDb.createNode()
+      graphDb.createNode()
+      tx.success()
+      tx.close()
 
-    val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-    val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
-    val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
-    val plan = plans.ProduceResult(List("foo"), projection)
+      val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+      val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
+      val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
+      val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
+      val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
+      val plan = plans.ProduceResult(List("foo"), projection)
 
-    // when
-    val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
-    val description = result.executionPlanDescription()
+      // when
+      val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
+      val description = result.executionPlanDescription()
 
-    // then
-    val hashJoin = single(description.find("NodeHashJoin"))
-    hashJoin.arguments should contain(DbHits(0))
-    hashJoin.arguments should contain(Rows(2))
+      // then
+      val hashJoin = single(description.find("NodeHashJoin"))
+      hashJoin.arguments should contain(DbHits(0))
+      hashJoin.arguments should contain(Rows(2))
+    } finally {
+      database.shutdown()
+    }
   }
 
   class DelegatingKernelStatisticProvider(tracer: DefaultPageCursorTracer) extends KernelStatisticProvider {

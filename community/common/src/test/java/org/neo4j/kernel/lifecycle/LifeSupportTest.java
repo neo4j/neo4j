@@ -30,10 +30,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-/**
- * Test LifeSupport lifecycle transitions
- */
 public class LifeSupportTest
 {
     @Test
@@ -103,7 +101,7 @@ public class LifeSupportTest
         }
         assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
         assertEquals( LifecycleStatus.SHUTDOWN, instance1.getStatus() );
-        assertEquals( LifecycleStatus.NONE, instance2.getStatus() );
+        assertEquals( LifecycleStatus.SHUTDOWN, instance2.getStatus() );
         assertEquals( LifecycleStatus.NONE, instance3.getStatus() );
     }
 
@@ -224,50 +222,6 @@ public class LifeSupportTest
         {
             assertEquals( shutdownThrowable, throwable.getCause() );
         }
-        assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
-        assertEquals( LifecycleStatus.SHUTDOWN, instance1.getStatus() );
-        assertEquals( LifecycleStatus.SHUTDOWN, instance2.getStatus() );
-        assertEquals( LifecycleStatus.SHUTDOWN, instance3.getStatus() );
-    }
-
-    @Test
-    public void testRestartOk()
-        throws LifecycleException
-    {
-        LifeSupport lifeSupport = newLifeSupport();
-
-        LifecycleMock instance1 = new LifecycleMock( null, null, null, null );
-        lifeSupport.add( instance1 );
-        LifecycleMock instance2 = new LifecycleMock( null, null, null, null );
-        lifeSupport.add( instance2 );
-        LifecycleMock instance3 = new LifecycleMock( null, null, null, null );
-        lifeSupport.add( instance3 );
-
-        lifeSupport.init();
-        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
-        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus() );
-        assertEquals( LifecycleStatus.STOPPED, instance2.getStatus() );
-        assertEquals( LifecycleStatus.STOPPED, instance3.getStatus() );
-
-        lifeSupport.start();
-        assertEquals( LifecycleStatus.STARTED, lifeSupport.getStatus() );
-        assertEquals( LifecycleStatus.STARTED, instance1.getStatus() );
-        assertEquals( LifecycleStatus.STARTED, instance2.getStatus() );
-        assertEquals( LifecycleStatus.STARTED, instance3.getStatus() );
-
-        lifeSupport.stop();
-        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
-        assertEquals( LifecycleStatus.STOPPED, instance1.getStatus() );
-        assertEquals( LifecycleStatus.STOPPED, instance2.getStatus() );
-        assertEquals( LifecycleStatus.STOPPED, instance3.getStatus() );
-
-        lifeSupport.start();
-        assertEquals( LifecycleStatus.STARTED, lifeSupport.getStatus() );
-        assertEquals( LifecycleStatus.STARTED, instance1.getStatus() );
-        assertEquals( LifecycleStatus.STARTED, instance2.getStatus() );
-        assertEquals( LifecycleStatus.STARTED, instance3.getStatus() );
-
-        lifeSupport.shutdown();
         assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
         assertEquals( LifecycleStatus.SHUTDOWN, instance1.getStatus() );
         assertEquals( LifecycleStatus.SHUTDOWN, instance2.getStatus() );
@@ -504,6 +458,48 @@ public class LifeSupportTest
 
     }
 
+    @Test
+    public void tryToStopComponentOnStartFailure() throws Throwable
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        Lifecycle component = mock( Lifecycle.class );
+        doThrow( new RuntimeException( "Start exceptions" ) ).when( component ).start();
+        lifeSupport.add( component );
+
+        try
+        {
+            lifeSupport.start();
+        }
+        catch ( Exception e )
+        {
+            // expected start failure
+        }
+
+        assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
+        verify( component ).stop();
+    }
+
+    @Test
+    public void tryToShutdownComponentOnStartFailure() throws Throwable
+    {
+        LifeSupport lifeSupport = newLifeSupport();
+        Lifecycle component = mock( Lifecycle.class );
+        doThrow( new RuntimeException( "Init exceptions" ) ).when( component ).init();
+        lifeSupport.add( component );
+
+        try
+        {
+            lifeSupport.init();
+        }
+        catch ( Exception e )
+        {
+            // expected start failure
+        }
+
+        assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
+        verify( component ).shutdown();
+    }
+
     public class LifecycleMock implements Lifecycle
     {
         Throwable initThrowable;
@@ -513,7 +509,7 @@ public class LifeSupportTest
 
         List<LifecycleStatus> transitions;
 
-        public LifecycleMock( Throwable initThrowable, Throwable startThrowable, Throwable stopThrowable,
+        LifecycleMock( Throwable initThrowable, Throwable startThrowable, Throwable stopThrowable,
                 Throwable shutdownThrowable )
         {
             this.initThrowable = initThrowable;
@@ -521,7 +517,7 @@ public class LifeSupportTest
             this.stopThrowable = stopThrowable;
             this.shutdownThrowable = shutdownThrowable;
 
-            transitions = new LinkedList<LifecycleStatus>();
+            transitions = new LinkedList<>();
             transitions.add( LifecycleStatus.NONE );
         }
 

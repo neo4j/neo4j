@@ -51,9 +51,10 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
-import org.neo4j.kernel.internal.StoreLocker;
-import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -166,7 +167,7 @@ public class PlatformModule
         config.setLogger( logging.getInternalLog( Config.class ) );
 
         life.add( dependencies
-                .satisfyDependency( new StoreLockerLifecycleAdapter( new StoreLocker( fileSystem, storeDir ) ) ) );
+                .satisfyDependency( new StoreLockerLifecycleAdapter( createStoreLocker() ) ) );
 
         new JvmChecker( logging.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
@@ -207,6 +208,11 @@ public class PlatformModule
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    protected StoreLocker createStoreLocker()
+    {
+        return new GlobalStoreLocker( fileSystem, storeDir );
     }
 
     protected SystemNanoClock createClock()

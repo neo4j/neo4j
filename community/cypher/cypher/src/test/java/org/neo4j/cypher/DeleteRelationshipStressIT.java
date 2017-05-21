@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +44,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 public class DeleteRelationshipStressIT
 {
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
+    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Rule
     public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
@@ -72,7 +74,11 @@ public class DeleteRelationshipStressIT
         }
     }
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+    @After
+    public void tearDown()
+    {
+        executorService.shutdown();
+    }
 
     @Test
     public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException

@@ -114,6 +114,12 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         blockUntilServerAvailable( new URL( "http", serviceHostName, servicePort, "/" ) );
     }
 
+    @After
+    public void cleanup() throws IOException
+    {
+        cleanup( graphdb );
+    }
+
     /**
      * Expect the counts to be initialized.
      */
@@ -121,7 +127,7 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
     {
         // When
-        graphdb = createDatabase( null );
+        graphdb = createDatabase();
 
         // Then, when the UDC extension successfully loads, it initializes the attempts count to 0
         assertGotSuccessWithRetry( IS_ZERO );
@@ -133,8 +139,8 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     @Test
     public void shouldLoadForEachCreatedGraphdb() throws IOException
     {
-        GraphDatabaseService graphdb1 = createDatabase( null );
-        GraphDatabaseService graphdb2 = createDatabase( null );
+        GraphDatabaseService graphdb1 = createDatabase( path.directory( "first-db" ), null );
+        GraphDatabaseService graphdb2 = createDatabase( path.directory( "second-db" ), null );
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
@@ -421,17 +427,13 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     @Test
     public void shouldOverrideSourceWithSystemProperty() throws Exception
     {
-        withSystemProperty( UdcSettings.udc_source.name(), "overridden", new Callable<Void>()
+        withSystemProperty( UdcSettings.udc_source.name(), "overridden", () ->
         {
-            @Override
-            public Void call() throws Exception
-            {
-                graphdb = createDatabase( config );
-                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-                String source = handler.getQueryMap().get( SOURCE );
-                assertEquals( "overridden", source );
-                return null;
-            }
+            graphdb = createDatabase( path.directory( "db-with-property" ), config );
+            assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+            String source = handler.getQueryMap().get( SOURCE );
+            assertEquals( "overridden", source );
+            return null;
         } );
     }
 
@@ -486,23 +488,9 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         boolean isTrue( T value );
     }
 
-    private static final Condition<Integer> IS_ZERO = new Condition<Integer>()
-    {
-        @Override
-        public boolean isTrue( Integer value )
-        {
-            return value == 0;
-        }
-    };
+    private static final Condition<Integer> IS_ZERO = value -> value == 0;
 
-    private static final Condition<Integer> IS_GREATER_THAN_ZERO = new Condition<Integer>()
-    {
-        @Override
-        public boolean isTrue( Integer value )
-        {
-            return value > 0;
-        }
-    };
+    private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
     private void assertGotSuccessWithRetry( Condition<Integer> condition ) throws Exception
     {
@@ -529,10 +517,22 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         fail();
     }
 
+    private GraphDatabaseService createDatabase() throws IOException
+    {
+        return createDatabase( null, null );
+    }
+
     private GraphDatabaseService createDatabase( Map<String,String> config ) throws IOException
     {
+        return createDatabase( null, config );
+    }
+
+    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config ) throws IOException
+    {
+        TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         GraphDatabaseBuilder graphDatabaseBuilder =
-                new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder();
+                (storeDir != null) ? factory.newImpermanentDatabaseBuilder( storeDir )
+                                   : factory.newImpermanentDatabaseBuilder();
         graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
 
         if ( config != null )
@@ -541,12 +541,6 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         }
 
         return graphDatabaseBuilder.newGraphDatabase();
-    }
-
-    @After
-    public void cleanup() throws IOException
-    {
-        cleanup( graphdb );
     }
 
     private void cleanup( GraphDatabaseService gdb ) throws IOException

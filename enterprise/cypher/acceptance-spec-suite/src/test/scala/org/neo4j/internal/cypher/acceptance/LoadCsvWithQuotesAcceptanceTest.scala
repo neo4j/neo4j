@@ -36,6 +36,10 @@ class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createZipCSVTempFileURL(f)
   )
 
+  override protected def initTest(): Unit = ()
+
+  override protected def stopTest(): Unit = ()
+
   test("import rows with messy quotes using legacy mode as default") {
     runWithConfig() { db =>
       val urls = csvUrls({

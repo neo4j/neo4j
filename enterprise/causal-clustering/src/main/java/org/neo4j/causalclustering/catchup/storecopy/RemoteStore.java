@@ -101,19 +101,9 @@ public class RemoteStore
         ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
 
         long lastTxId = BASE_TX_ID;
-        try ( Lifespan ignored = new Lifespan( txStore ) )
+        try ( Lifespan ignored = new Lifespan( txStore );
+              TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
         {
-            TransactionCursor cursor;
-            try
-            {
-                cursor = txStore.getTransactions( lastCleanTxId );
-            }
-            catch ( NoSuchTransactionException e )
-            {
-                log.info( "No transaction logs found. Will use metadata store as base for pull request." );
-                return lastCleanTxId;
-            }
-
             while ( cursor.next() )
             {
                 CommittedTransactionRepresentation tx = cursor.get();
@@ -127,6 +117,11 @@ public class RemoteStore
 
             // we don't want to pull a transaction we already have in the log, hence +1
             return lastTxId + 1;
+        }
+        catch ( NoSuchTransactionException e )
+        {
+            log.info( "No transaction logs found. Will use metadata store as base for pull request." );
+            return lastCleanTxId;
         }
     }
 

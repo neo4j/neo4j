@@ -24,17 +24,26 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
+  private var db : GraphDatabaseService = _
+
+  override protected def stopTest(): Unit = {
+    super.stopTest()
+    if (db != null) {
+      db.shutdown()
+    }
+  }
+
   test("by default when using cypher 2.3 some queries should default to COST") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
@@ -52,7 +61,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("by default when using cypher 3.1 some queries should default to COST") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
@@ -70,7 +79,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("by default when using cypher 3.3 some queries should default to COST") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
@@ -88,7 +97,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be able to set RULE as default when using cypher 2.3") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
@@ -104,7 +113,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be able to set RULE as default when using cypher 3.1") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
@@ -120,7 +129,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be able to force COST as default when using cypher 2.3") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
@@ -136,7 +145,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be able to force COST as default when using cypher 3.1") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
@@ -152,7 +161,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be able to force COST as default when using cypher 3.3") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
@@ -168,7 +177,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should work if query cache size is set to zero") {
     //given
-    val db = new TestGraphDatabaseFactory()
+    db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.query_cache_size, "0").newGraphDatabase()
 
@@ -180,15 +189,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should not refer to stale plan context in the cached execution plans") {
     // given
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    db = new TestGraphDatabaseFactory().newImpermanentDatabase()
 
     // when
     db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
     db.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
-
-    // then no exceptions have been thrown
-
-    db.shutdown()
   }
 
   private implicit class RichDb(db: GraphDatabaseCypherService) {

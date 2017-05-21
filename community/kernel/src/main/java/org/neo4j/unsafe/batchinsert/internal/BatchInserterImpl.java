@@ -150,7 +150,8 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -236,8 +237,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         StoreLogService logService = life.add( StoreLogService.inLogsDirectory( fileSystem, this.storeDir ) );
         msgLog = logService.getInternalLog( getClass() );
-        storeLocker = new StoreLocker( fileSystem, this.storeDir );
-        storeLocker.checkLock();
+        storeLocker = tryLockStore( fileSystem );
 
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
@@ -304,6 +304,28 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
+    }
+
+    private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
+    {
+        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, this.storeDir );
+        try
+        {
+            storeLocker.checkLock();
+        }
+        catch ( Exception e )
+        {
+            try
+            {
+                storeLocker.close();
+            }
+            catch ( IOException ce )
+            {
+                e.addSuppressed( ce );
+            }
+            throw e;
+        }
+        return storeLocker;
     }
 
     private Map<String, String> getDefaultParams()

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -29,14 +31,25 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class CypherLoggingTest
 {
+
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private GraphDatabaseService database;
+
+    @Before
+    public void setUp()
+    {
+        database = new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentDatabase();
+    }
+
+    @After
+    public void tearDown()
+    {
+        database.shutdown();
+    }
+
     @Test
     public void shouldNotLogQueries() throws Exception
     {
-        // given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseService database =
-                new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentDatabase();
-
         // when
         database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
         database.execute( "MATCH (n) RETURN n" );

@@ -115,6 +115,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         RecoveryProtocol recovery = createRecoveryProtocol();
         State recoveryState = recovery.run();
         String logFilename = recoveryState.segments.last().getFilename();
+        recoveryState.segments.close();
         File logFile = new File( logDirectory, logFilename );
 
         // When
@@ -141,6 +142,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         RecoveryProtocol recovery = createRecoveryProtocol();
         State recoveryState = recovery.run();
         String logFilename = recoveryState.segments.last().getFilename();
+        recoveryState.segments.close();
         File logFile = new File( logDirectory, logFilename );
 
         // When
@@ -167,6 +169,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
         RecoveryProtocol recovery = createRecoveryProtocol();
         State recoveryState = recovery.run();
         String logFilename = recoveryState.segments.last().getFilename();
+        recoveryState.segments.close();
         File logFile = new File( logDirectory, logFilename );
         StoreChannel lastFile = fsRule.get().open( logFile, "rw" );
         long currentSize = lastFile.size();
@@ -197,6 +200,7 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
             assertEquals( NewLeaderBarrier.class, raftLogEntry.content().getClass() );
             assertFalse( entryCursor.next() );
         }
+        raftLog.stop();
     }
 
     /**
@@ -218,7 +222,8 @@ public class SegmentedRaftLogPartialEntryRecoveryTest
             lastFile.truncate( currentSize );
             lastFile.close();
             recovery = createRecoveryProtocol();
-            recovery.run();
+            State state = recovery.run();
+            state.segments.close();
         }
     }
 }

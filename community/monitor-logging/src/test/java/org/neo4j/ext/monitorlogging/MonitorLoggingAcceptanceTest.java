@@ -37,12 +37,19 @@ public class MonitorLoggingAcceptanceTest
         GraphDatabaseAPI dbAPI = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
                 .newImpermanentDatabase();
 
-        Monitors monitors = dbAPI.getDependencyResolver().resolveDependency( Monitors.class );
-        AMonitor aMonitor = monitors.newMonitor( AMonitor.class );
-        aMonitor.doStuff();
+        try
+        {
+            Monitors monitors = dbAPI.getDependencyResolver().resolveDependency( Monitors.class );
+            AMonitor aMonitor = monitors.newMonitor( AMonitor.class );
+            aMonitor.doStuff();
 
-        logProvider.assertAtLeastOnce(
-                inLog( AMonitor.class ).warn( "doStuff()" )
-        );
+            logProvider.assertAtLeastOnce(
+                    inLog( AMonitor.class ).warn( "doStuff()" )
+            );
+        }
+        finally
+        {
+            dbAPI.shutdown();
+        }
     }
 }

@@ -28,7 +28,9 @@ import java.nio.file.Path;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
+import org.neo4j.kernel.internal.locker.StoreLocker;
 
 class StoreLockChecker implements Closeable
 {
@@ -39,7 +41,7 @@ class StoreLockChecker implements Closeable
     private StoreLockChecker( FileSystemAbstraction fileSystem, File storeDirectory )
     {
         this.fileSystem = fileSystem;
-        this.storeLocker = new StoreLocker( fileSystem, storeDirectory );
+        this.storeLocker = new GlobalStoreLocker( fileSystem, storeDirectory );
     }
 
     /**
@@ -58,10 +60,24 @@ class StoreLockChecker implements Closeable
         {
             if ( Files.isWritable( lockFile ) )
             {
-                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(),
-                        databaseDirectory.toFile() );
-                storeLocker.checkLock();
-                return storeLocker;
+                StoreLockChecker storeLocker = new StoreLockChecker( new DefaultFileSystemAbstraction(), databaseDirectory.toFile() );
+                try
+                {
+                    storeLocker.checkLock();
+                    return storeLocker;
+                }
+                catch ( StoreLockException le )
+                {
+                    try
+                    {
+                        storeLocker.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        le.addSuppressed( e );
+                    }
+                    throw le;
+                }
             }
             else
             {

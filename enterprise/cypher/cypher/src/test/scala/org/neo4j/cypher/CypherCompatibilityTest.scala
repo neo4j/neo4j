@@ -20,8 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
 
 import scala.collection.JavaConverters._
@@ -30,15 +30,21 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
   val QUERY = "MATCH (n:Label) RETURN n"
 
+  override protected def initTest(): Unit = ()
+
+  override protected def stopTest(): Unit = ()
+
   test("should match paths correctly with rule planner in compatiblity mode") {
-    relate(createNode(), createNode(), "T")
-
-    val query = "MATCH (n)-[r:T]->(m) RETURN count(*)"
-
-    execute(s"CYPHER 2.3 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 3.1 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 3.1 $query").columnAs[Long]("count(*)").next() shouldBe 1
+    runWithConfig() {
+      db =>
+        graph = db
+        relate(createNode(), createNode(), "T")
+        val query = "MATCH (n)-[r:T]->(m) RETURN count(*)"
+        db.execute(s"CYPHER 2.3 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
+        db.execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
+        db.execute(s"CYPHER 3.1 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
+        db.execute(s"CYPHER 3.1 $query").columnAs[Long]("count(*)").next() shouldBe 1
+    }
   }
 
   test("should be able to switch between versions") {
