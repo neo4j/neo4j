@@ -141,12 +141,12 @@ public class TxStateTransactionDataViewTest
         long noPropertyId = -1L;
         when( storeStatement.acquireSingleRelationshipCursor( 1L ) ).
                 thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, any( AssertOpen.class ) ) )
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor() );
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 2L ) ).
                 thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
-        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK, any( AssertOpen.class ) ) )
+        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( Property.stringProperty( 1, "p" ) ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
@@ -165,7 +165,7 @@ public class TxStateTransactionDataViewTest
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1L );
         when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1, -1 ) );
-        when( storeStatement.acquirePropertyCursor( -1, NO_LOCK, any( AssertOpen.class ) ) )
+        when( storeStatement.acquirePropertyCursor( -1, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor() );
 
         // When & Then
@@ -183,7 +183,7 @@ public class TxStateTransactionDataViewTest
         long noPropertyId = -1L;
         when( storeStatement.acquireSingleRelationshipCursor( 1L ) )
                 .thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, any( AssertOpen.class ) ) )
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor() );
 
         // When & Then
@@ -202,7 +202,7 @@ public class TxStateTransactionDataViewTest
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
                 asNodeCursor( 1L, propertyId, labels() ) );
         when( storeStatement
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, any( AssertOpen.class ) ) )
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -228,7 +228,7 @@ public class TxStateTransactionDataViewTest
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
                 asNodeCursor( 1L, propertyId, labels() ) );
         when( storeStatement
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, any( AssertOpen.class ) ) )
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -253,7 +253,7 @@ public class TxStateTransactionDataViewTest
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
                 .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
         when( storeStatement
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, any( AssertOpen.class ) ) )
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevValue ) );
 
         // When
@@ -279,7 +279,7 @@ public class TxStateTransactionDataViewTest
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
                 asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
         when( storeStatement
-                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, any( AssertOpen.class ) ) )
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When

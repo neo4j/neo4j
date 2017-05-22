@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -55,7 +56,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -343,9 +343,10 @@ public class IndexQueryTransactionStateTest
 
     private void mockStoreProperty()
     {
-        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ), ALWAYS_OPEN ) )
+        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( propertyKeyId, value ) ) );
-        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ), ALWAYS_OPEN ) )
+        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( propertyKeyId, value ) ) );
     }
 
