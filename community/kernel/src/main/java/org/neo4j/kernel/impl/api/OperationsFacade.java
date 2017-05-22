@@ -301,10 +301,6 @@ public class OperationsFacade
         {
             return dataRead().nodeGetProperty( statement, node.get(), propertyKeyId );
         }
-        finally
-        {
-            statement.assertOpen();
-        }
     }
 
     @Override
@@ -408,10 +404,6 @@ public class OperationsFacade
         {
             return dataRead().relationshipGetProperty( statement, relationship.get(), propertyKeyId );
         }
-        finally
-        {
-            statement.assertOpen();
-        }
     }
 
     @Override
@@ -444,10 +436,6 @@ public class OperationsFacade
         {
             return dataRead().nodeGetPropertyKeys( statement, node.get() ).iterator();
         }
-        finally
-        {
-            statement.assertOpen();
-        }
     }
 
     @Override
@@ -457,10 +445,6 @@ public class OperationsFacade
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
             return dataRead().relationshipGetPropertyKeys( statement, relationship.get() ).iterator();
-        }
-        finally
-        {
-            statement.assertOpen();
         }
     }
 

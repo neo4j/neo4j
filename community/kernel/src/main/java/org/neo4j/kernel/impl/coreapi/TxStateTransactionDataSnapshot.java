@@ -56,6 +56,8 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
+import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
+
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
  */
@@ -209,7 +211,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     {
                         Lock lock = node.get().lock();
                         try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( node.get().nextPropertyId(), lock ) )
+                                .acquirePropertyCursor( node.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
                         {
                             while ( properties.next() )
                             {
@@ -236,7 +238,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                     {
                         Lock lock = relationship.get().lock();
                         try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock ) )
+                                .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
                         {
                             while ( properties.next() )
                             {
@@ -369,7 +371,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
             Lock lock = node.get().lock();
             try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock ) )
+                    .acquireSinglePropertyCursor( node.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
             {
                 if ( properties.next() )
                 {
@@ -398,7 +400,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
             Lock lock = relationship.get().lock();
             try ( Cursor<PropertyItem> properties = storeStatement
-                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock ) )
+                    .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
             {
                 if ( properties.next() )
                 {

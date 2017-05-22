@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
@@ -100,7 +101,7 @@ public class StateHandlingStatementOperationsTest
         when( state.getStoreStatement() ).thenReturn( storeStatement );
         when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( IndexDescriptorFactory.forLabel( 0, 0 ) ) );
         when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).thenReturn( asNodeCursor( 0 ) );
-        when( inner.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) ).
+        when( inner.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) ).
                 thenReturn( asPropertyCursor() );
 
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
@@ -431,8 +432,8 @@ public class StateHandlingStatementOperationsTest
         when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
             long nodeId = (long) invocationOnMock.getArguments()[0];
-            when( storeReadLayer.nodeGetProperty( eq( storageStatement ), any( NodeItem.class ), eq( propertyKey ) ) )
-                    .thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+            when( storeReadLayer.nodeGetProperty( eq( storageStatement ), any( NodeItem.class ), eq( propertyKey ),
+                    any( AssertOpen.class ) ) ).thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
             return asNodeCursor( nodeId, nodeId + 20000 );
         } );
 
@@ -517,7 +518,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
         when( storeReadLayer.nodeGetProperty( eq( storeStatement ), any( NodeItem.class ),
-                eq( propertyKeyId ) ) ).thenReturn( propertyItemCursor );
+                eq( propertyKeyId ), any( AssertOpen.class ) ) ).thenReturn( propertyItemCursor );
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
@@ -550,7 +551,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         Cursor<PropertyItem> propertyItemCursor = propertyCursor( propertyKeyId, value );
         when( storeReadLayer.relationshipGetProperty( eq( storeStatement ), any( RelationshipItem.class ),
-                eq( propertyKeyId ) ) ).thenReturn( propertyItemCursor );
+                eq( propertyKeyId ), any( AssertOpen.class ) ) ).thenReturn( propertyItemCursor );
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN

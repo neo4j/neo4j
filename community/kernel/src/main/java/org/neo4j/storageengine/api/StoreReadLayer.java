@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -274,13 +275,16 @@ public interface StoreReadLayer
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
             IntPredicate typeIds );
 
-    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node );
+    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, AssertOpen assertOpen );
 
-    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId );
+    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+            AssertOpen assertOpen );
 
-    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship );
+    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
+            AssertOpen assertOpen );
 
-    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem, int propertyKeyId );
+    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem,
+            int propertyKeyId, AssertOpen assertOpen );
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
