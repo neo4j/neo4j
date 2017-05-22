@@ -88,6 +88,12 @@ class BooleanArrayValue extends ArrayValue
     }
 
     @Override
+    boolean equals( boolean[] x )
+    {
+        return Arrays.equals( value, x );
+    }
+
+    @Override
     boolean equals( char[] x )
     {
         return false;

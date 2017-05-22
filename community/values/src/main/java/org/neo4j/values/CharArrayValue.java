@@ -87,6 +87,12 @@ class CharArrayValue extends ArrayValue
         return false;
     }
 
+    @Override
+    boolean equals( boolean[] x )
+    {
+        return false;
+    }
+
     // TODO: should we support this?
 //    @Override
 //    boolean equals( String x )

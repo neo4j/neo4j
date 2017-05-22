@@ -43,7 +43,7 @@ final class BooleanValue extends ScalarValue
     @Override
     public boolean equals( Value other )
     {
-        return other instanceof BooleanValue && bool == ((BooleanValue) other).bool;
+        return other.equals( bool );
     }
 
     @Override

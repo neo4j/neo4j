@@ -24,6 +24,12 @@ abstract class IntegralArrayValue extends ArrayValue
     public abstract long longValue( int index );
 
     @Override
+    boolean equals( boolean[] x )
+    {
+        return false;
+    }
+
+    @Override
     boolean equals( char[] x )
     {
         return false;

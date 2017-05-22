@@ -42,6 +42,7 @@ public abstract class Value
     abstract boolean equals( double[] x );
 
     abstract boolean equals( boolean x );
+    abstract boolean equals( boolean[] x );
 
     abstract boolean equals( char x );
     abstract boolean equals( String x );

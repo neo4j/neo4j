@@ -58,6 +58,12 @@ abstract class ScalarValue extends Value
     }
 
     @Override
+    boolean equals( boolean[] x )
+    {
+        return false;
+    }
+
+    @Override
     boolean equals( char[] x )
     {
         return false;

@@ -88,6 +88,12 @@ class StringArrayValue extends ArrayValue
     }
 
     @Override
+    boolean equals( boolean[] x )
+    {
+        return false;
+    }
+
+    @Override
     boolean equals( char[] x )
     {
         return PrimitiveArrayValues.equals( x, value );

@@ -34,6 +34,8 @@ import static org.neo4j.values.Values.floatArrayValue;
 import static org.neo4j.values.Values.floatValue;
 import static org.neo4j.values.Values.intArrayValue;
 import static org.neo4j.values.Values.intValue;
+import static org.neo4j.values.Values.lazyArrayValue;
+import static org.neo4j.values.Values.lazyStringValue;
 import static org.neo4j.values.Values.longArrayValue;
 import static org.neo4j.values.Values.longValue;
 import static org.neo4j.values.Values.shortArrayValue;
@@ -84,12 +86,15 @@ public class ValuesTest
         assertEqual( doubleArrayValue( new double[]{1.0} ), doubleArrayValue( new double[]{1.0} ) );
         assertEqual( charArrayValue( new char[]{'x'} ), charArrayValue( new char[]{'x'} ) );
         assertEqual( stringArrayValue( new String[]{"hi"} ), stringArrayValue( new String[]{"hi"} ) );
-    }
 
-    @Test
-    public void shouldHandleCoercion()
-    {
-
+        assertEqual( lazyStringValue( () -> "hi" ), lazyStringValue( () -> "hi" ) );
+        assertEqual( lazyArrayValue( () -> new boolean[]{true} ), lazyArrayValue( () -> new boolean[]{true} ) );
+        assertEqual( lazyArrayValue( () -> new byte[]{1} ), lazyArrayValue( () -> new byte[]{1} ) );
+        assertEqual( lazyArrayValue( () -> new short[]{1} ), lazyArrayValue( () -> new short[]{1} ) );
+        assertEqual( lazyArrayValue( () -> new int[]{1} ), lazyArrayValue( () -> new int[]{1} ) );
+        assertEqual( lazyArrayValue( () -> new long[]{1} ), lazyArrayValue( () -> new long[]{1} ) );
+        assertEqual( lazyArrayValue( () -> new float[]{1.0f} ), lazyArrayValue( () -> new float[]{1.0f} ) );
+        assertEqual( lazyArrayValue( () -> new double[]{1.0} ), lazyArrayValue( () -> new double[]{1.0} ) );
     }
 
     private void assertEqual( Value a, Value b )

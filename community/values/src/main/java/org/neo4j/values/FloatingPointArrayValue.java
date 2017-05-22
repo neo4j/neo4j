@@ -24,6 +24,12 @@ abstract class FloatingPointArrayValue extends ArrayValue
     public abstract double doubleValue( int index );
 
     @Override
+    boolean equals( boolean[] x )
+    {
+        return false;
+    }
+
+    @Override
     boolean equals( char[] x )
     {
         return false;

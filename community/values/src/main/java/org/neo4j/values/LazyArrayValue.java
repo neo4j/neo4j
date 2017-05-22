@@ -110,6 +110,13 @@ class LazyArrayValue extends LazyValue<Object>
     }
 
     @Override
+    boolean equals( boolean[] x )
+    {
+        Object value = value();
+        return type == Type.BOOLEAN && Arrays.equals( x, (boolean[]) value );
+    }
+
+    @Override
     boolean equals( char x )
     {
         return false;
@@ -206,7 +213,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             boolean equals( Object value, Value other )
             {
-                return BooleanArrayValue.equals( (boolean[]) value, other );
+                return other.equals( (boolean[]) value );
             }
 
             @Override
