@@ -29,6 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.lang.String.format;
@@ -73,9 +74,11 @@ public class DataImporter
         System.out.println( "Importing " + title );
         AtomicLong roughEntityCountProgress = new AtomicLong();
         ExecutorService pool = Executors.newFixedThreadPool( numRunners );
+        StageControl control = new PullBasedStageControl();
         for ( int i = 0; i < numRunners; i++ )
         {
-            pool.submit( new ExhaustingEntityImporterRunnable( data, visitors.get(), roughEntityCountProgress ) );
+            pool.submit( new ExhaustingEntityImporterRunnable(
+                    control, data, visitors.get(), roughEntityCountProgress ) );
         }
         pool.shutdown();
 
@@ -88,6 +91,7 @@ public class DataImporter
             System.out.print( "\r" + fitInProgress( entities ) + " ∆" + fitInProgress( entitiesDiff ) + "/s" );
             entitiesLastReport = entities;
         }
+        control.assertHealthy();
         return roughEntityCountProgress.get();
     }
 

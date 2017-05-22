@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
@@ -30,9 +31,12 @@ class ExhaustingEntityImporterRunnable implements Runnable
     private final InputIterator data;
     private final EntityImporter visitor;
     private final AtomicLong roughEntityCountProgress;
+    private final StageControl control;
 
-    ExhaustingEntityImporterRunnable( InputIterator data, EntityImporter visitor, AtomicLong roughEntityCountProgress )
+    ExhaustingEntityImporterRunnable( StageControl control,
+            InputIterator data, EntityImporter visitor, AtomicLong roughEntityCountProgress )
     {
+        this.control = control;
         this.data = data;
         this.visitor = visitor;
         this.roughEntityCountProgress = roughEntityCountProgress;
@@ -45,6 +49,7 @@ class ExhaustingEntityImporterRunnable implements Runnable
         {
             while ( data.next( chunk ) )
             {
+                control.assertHealthy();
                 int count = 0;
                 while ( chunk.next( visitor ) )
                 {
@@ -55,6 +60,7 @@ class ExhaustingEntityImporterRunnable implements Runnable
         }
         catch ( Throwable e )
         {
+            control.panic( e );
             throw launderedException( e );
         }
         finally
