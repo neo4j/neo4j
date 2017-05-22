@@ -33,6 +33,11 @@ public abstract class Value
         throw new UnsupportedOperationException( "You forgot to implement `hashCode()` in concrete Value class!" );
     }
 
+    Value()
+    {
+        // only subclass in this package
+    }
+
     abstract boolean equals( Value other );
 
     abstract boolean equals( byte[] x );
