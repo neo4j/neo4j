@@ -29,12 +29,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -78,6 +76,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -100,7 +99,7 @@ public class ParallelBatchImporterTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
 
-    private static final int NODE_COUNT = 1_000;
+    private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIPS_PER_NODE = 5;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
     private static final int RELATIONSHIP_TYPES = 3;
@@ -249,7 +248,7 @@ public class ParallelBatchImporterTest
     {
         abstract void reset();
 
-        abstract Object nextNodeId( Random random );
+        abstract Object nextNodeId( Random random, long item );
 
         abstract ExistingId randomExisting( Random random );
 
@@ -271,18 +270,15 @@ public class ParallelBatchImporterTest
 
     private static class LongInputIdGenerator extends InputIdGenerator
     {
-        private volatile int id;
-
         @Override
         void reset()
         {
-            id = 0;
         }
 
         @Override
-        synchronized Object nextNodeId( Random random )
+        synchronized Object nextNodeId( Random random, long item )
         {
-            return (long) id++;
+            return (long) item;
         }
 
         @Override
@@ -307,29 +303,29 @@ public class ParallelBatchImporterTest
 
     private static class StringInputIdGenerator extends InputIdGenerator
     {
-        private final byte[] randomBytes = new byte[10];
-        private final List<String> strings = new ArrayList<>();
+        private final String[] strings = new String[NODE_COUNT];
 
         @Override
         void reset()
         {
-            strings.clear();
+            Arrays.fill( strings, null );
         }
 
         @Override
-        Object nextNodeId( Random random )
+        Object nextNodeId( Random random, long item )
         {
+            byte[] randomBytes = new byte[10];
             random.nextBytes( randomBytes );
             String result = UUID.nameUUIDFromBytes( randomBytes ).toString();
-            strings.add( result );
+            strings[toIntExact( item )] = result;
             return result;
         }
 
         @Override
         ExistingId randomExisting( Random random )
         {
-            int index = random.nextInt( strings.size() );
-            return new ExistingId( strings.get( index ), index );
+            int index = random.nextInt( strings.length );
+            return new ExistingId( strings[index], index );
         }
 
         @Override
@@ -539,7 +535,7 @@ public class ParallelBatchImporterTest
                 visitor.endId( endNode, endNodeGroup );
 
                 String type = idGenerator.randomType( randoms.random() );
-                if ( random.nextFloat() < 0.00005 )
+                if ( randoms.random().nextFloat() < 0.00005 )
                 {
                     // Let there be a small chance of introducing a one-off relationship
                     // with a type that no, or at least very few, other relationships have.
@@ -566,7 +562,7 @@ public class ParallelBatchImporterTest
                     return false;
                 }
 
-                Object nodeId = inputIdGenerator.nextNodeId( randoms.random() );
+                Object nodeId = inputIdGenerator.nextNodeId( randoms.random(), item );
                 Group group = groups.groupOf( item );
                 visitor.id( nodeId, group );
                 randomProperties( randoms, uniqueId( group, nodeId ), visitor );
