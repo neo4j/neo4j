@@ -116,6 +116,13 @@ class LazyStringValue extends LazyValue<String>
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        Object value = value();
+        writer.writeString( (String) value );
+    }
+
+    @Override
     public int hashCode()
     {
         return value().hashCode();

@@ -122,6 +122,17 @@ class BooleanArrayValue extends ArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.BOOLEAN );
+        for ( boolean x : value )
+        {
+            writer.writeBoolean( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "BooleanArray(%s)", Arrays.toString( value ) );

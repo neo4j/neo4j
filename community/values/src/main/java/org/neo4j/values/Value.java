@@ -21,16 +21,6 @@ package org.neo4j.values;
 
 public abstract class Value
 {
-    enum Type
-    {
-        INTEGER,
-        FLOAT,
-        BOOLEAN,
-        STRING,
-        ARRAY,
-        MAP
-    }
-
     @Override
     public boolean equals( Object other )
     {
@@ -61,6 +51,8 @@ public abstract class Value
 
     abstract boolean equals( char[] x );
     abstract boolean equals( String[] x );
+
+    abstract void writeTo( ValueWriter writer );
 
     public interface WithStringValue
     {

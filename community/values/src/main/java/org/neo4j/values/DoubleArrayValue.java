@@ -82,6 +82,17 @@ class DoubleArrayValue extends FloatingPointArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.DOUBLE );
+        for ( double x : value )
+        {
+            writer.writeFloatingPoint( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "DoubleArray(%s)", Arrays.toString( value ) );

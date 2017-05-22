@@ -59,6 +59,12 @@ final class ShortValue extends IntegralNumberValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeInteger( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Short(%d)", value );

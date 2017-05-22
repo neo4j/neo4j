@@ -141,6 +141,13 @@ class LazyArrayValue extends LazyValue<Object>
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        Object value = value();
+        type.writeTo( value, writer );
+    }
+
+    @Override
     public int hashCode()
     {
         Object myValue = value(); // value() accesses LazyValue.value, implying a read barrier ...
@@ -181,6 +188,18 @@ class LazyArrayValue extends LazyValue<Object>
             {
                 return ((int[]) array).clone();
             }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                int[] array = (int[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.INT );
+                for ( int x : array )
+                {
+                    writer.writeInteger( x );
+                }
+                writer.endArray();
+            }
         },
         LONG
         {
@@ -200,6 +219,18 @@ class LazyArrayValue extends LazyValue<Object>
             Object clone( Object array )
             {
                 return ((long[]) array).clone();
+            }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                long[] array = (long[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.LONG );
+                for ( long x : array )
+                {
+                    writer.writeInteger( x );
+                }
+                writer.endArray();
             }
         },
         BOOLEAN
@@ -221,6 +252,18 @@ class LazyArrayValue extends LazyValue<Object>
             {
                 return ((boolean[]) array).clone();
             }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                boolean[] array = (boolean[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.BOOLEAN );
+                for ( boolean x : array )
+                {
+                    writer.writeBoolean( x );
+                }
+                writer.endArray();
+            }
         },
         BYTE
         {
@@ -240,6 +283,18 @@ class LazyArrayValue extends LazyValue<Object>
             Object clone( Object array )
             {
                 return ((byte[]) array).clone();
+            }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                byte[] array = (byte[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.BYTE );
+                for ( byte x : array )
+                {
+                    writer.writeInteger( x );
+                }
+                writer.endArray();
             }
         },
         DOUBLE
@@ -261,6 +316,18 @@ class LazyArrayValue extends LazyValue<Object>
             {
                 return ((double[]) array).clone();
             }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                double[] array = (double[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.DOUBLE );
+                for ( double x : array )
+                {
+                    writer.writeFloatingPoint( x );
+                }
+                writer.endArray();
+            }
         },
         STRING
         {
@@ -280,6 +347,18 @@ class LazyArrayValue extends LazyValue<Object>
             Object clone( Object array )
             {
                 return ((String[]) array).clone();
+            }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                String[] array = (String[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.STRING );
+                for ( String x : array )
+                {
+                    writer.writeString( x );
+                }
+                writer.endArray();
             }
         },
         SHORT
@@ -301,6 +380,18 @@ class LazyArrayValue extends LazyValue<Object>
             {
                 return ((short[]) array).clone();
             }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                short[] array = (short[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.SHORT );
+                for ( short x : array )
+                {
+                    writer.writeInteger( x );
+                }
+                writer.endArray();
+            }
         },
         CHAR
         {
@@ -320,6 +411,18 @@ class LazyArrayValue extends LazyValue<Object>
             Object clone( Object array )
             {
                 return ((char[]) array).clone();
+            }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                char[] array = (char[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.CHAR );
+                for ( char x : array )
+                {
+                    writer.writeString( x );
+                }
+                writer.endArray();
             }
         },
         FLOAT
@@ -341,6 +444,18 @@ class LazyArrayValue extends LazyValue<Object>
             {
                 return ((float[]) array).clone();
             }
+
+            @Override
+            void writeTo( Object value, ValueWriter writer )
+            {
+                float[] array = (float[]) value;
+                writer.beginArray( array.length, ValueWriter.ArrayType.FLOAT );
+                for ( float x : array )
+                {
+                    writer.writeFloatingPoint( x );
+                }
+                writer.endArray();
+            }
         };
 
         abstract int hashCode( Object array );
@@ -348,6 +463,8 @@ class LazyArrayValue extends LazyValue<Object>
         abstract boolean equals( Object value, Value other );
 
         abstract Object clone( Object array );
+
+        abstract void writeTo( Object value, ValueWriter writer );
 
         public static Type from( Object array )
         {

@@ -82,6 +82,17 @@ class LongArrayValue extends IntegralArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.LONG );
+        for ( long x : value )
+        {
+            writer.writeInteger( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "LongArray(%s)", Arrays.toString( value ) );

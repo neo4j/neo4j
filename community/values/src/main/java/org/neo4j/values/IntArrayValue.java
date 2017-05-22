@@ -82,6 +82,17 @@ class IntArrayValue extends IntegralArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.INT );
+        for ( int x : value )
+        {
+            writer.writeInteger( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "IntArray(%s)", Arrays.toString( value ) );

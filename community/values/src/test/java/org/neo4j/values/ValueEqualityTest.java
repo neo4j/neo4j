@@ -53,8 +53,8 @@ public class ValueEqualityTest
                 shouldMatch( (byte) 42, (byte) 42 ),
                 shouldMatch( (byte) 42, (short) 42 ),
                 shouldNotMatch( (byte) 42, 42 + 256 ),
-                shouldMatch( (byte) 43, (int) 43 ),
-                shouldMatch( (byte) 43, (long) 43 ),
+                shouldMatch( (byte) 43, 43 ),
+                shouldMatch( (byte) 43, 43L ),
                 shouldMatch( (byte) 23, 23.0d ),
                 shouldMatch( (byte) 23, 23.0f ),
                 shouldNotMatch( (byte) 23, 23.5 ),
@@ -64,8 +64,8 @@ public class ValueEqualityTest
                 shouldMatch( (short) 11, (byte) 11 ),
                 shouldMatch( (short) 42, (short) 42 ),
                 shouldNotMatch( (short) 42, 42 + 65536 ),
-                shouldMatch( (short) 43, (int) 43 ),
-                shouldMatch( (short) 43, (long) 43 ),
+                shouldMatch( (short) 43, 43 ),
+                shouldMatch( (short) 43, 43L ),
                 shouldMatch( (short) 23, 23.0f ),
                 shouldMatch( (short) 23, 23.0d ),
                 shouldNotMatch( (short) 23, 23.5 ),
@@ -85,9 +85,9 @@ public class ValueEqualityTest
                 //long properties
                 shouldMatch( 11L, (byte) 11 ),
                 shouldMatch( 42L, (short) 42 ),
-                shouldMatch( 43L, (int) 43 ),
-                shouldMatch( 43L, (long) 43 ),
-                shouldMatch( 87L, (long) 87 ),
+                shouldMatch( 43L, 43 ),
+                shouldMatch( 43L, 43L ),
+                shouldMatch( 87L, 87L ),
                 shouldMatch( Long.MAX_VALUE, Long.MAX_VALUE ),
                 shouldMatch( 23L, 23.0 ),
                 shouldNotMatch( 23L, 23.5 ),
@@ -98,8 +98,8 @@ public class ValueEqualityTest
                 // floats goddamnit
                 shouldMatch( 11f, (byte) 11 ),
                 shouldMatch( 42f, (short) 42 ),
-                shouldMatch( 43f, (int) 43 ),
-                shouldMatch( 43f, (long) 43 ),
+                shouldMatch( 43f, 43 ),
+                shouldMatch( 43f, 43L ),
                 shouldMatch( 23f, 23.0 ),
                 shouldNotMatch( 23f, 23.5 ),
                 shouldNotMatch( 23f, 23.5f ),
@@ -109,8 +109,8 @@ public class ValueEqualityTest
                 // doubles
                 shouldMatch( 11d, (byte) 11 ),
                 shouldMatch( 42d, (short) 42 ),
-                shouldMatch( 43d, (int) 43 ),
-                shouldMatch( 43d, (long) 43 ),
+                shouldMatch( 43d, 43 ),
+                shouldMatch( 43d, 43d ),
                 shouldMatch( 23d, 23.0 ),
                 shouldNotMatch( 23d, 23.5 ),
                 shouldNotMatch( 23d, 23.5f ),
@@ -278,7 +278,6 @@ public class ValueEqualityTest
         public String toString()
         {
             return String.format( "%s %s %s", a, shouldMatch ? "==" : "!=", b );
-
         }
 
         void checkAssertion()

@@ -124,6 +124,17 @@ class CharArrayValue extends ArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.CHAR );
+        for ( char x : value )
+        {
+            writer.writeString( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "CharArray(%s)", Arrays.toString( value ) );

@@ -55,6 +55,12 @@ final class LongValue extends IntegralNumberValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeInteger( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Long(%d)", value );

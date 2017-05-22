@@ -21,6 +21,7 @@ package org.neo4j.values;
 
 public class NoValue extends Value
 {
+    @SuppressWarnings( "WeakerAccess" )
     public static NoValue NO_VALUE = new NoValue();
 
     private NoValue()
@@ -115,5 +116,11 @@ public class NoValue extends Value
     boolean equals( String[] x )
     {
         return false;
+    }
+
+    @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeNull();
     }
 }

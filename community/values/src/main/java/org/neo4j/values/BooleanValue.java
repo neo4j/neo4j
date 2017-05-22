@@ -71,6 +71,12 @@ final class BooleanValue extends ScalarValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeBoolean( bool );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Boolean('%s')", Boolean.toString( bool ) );

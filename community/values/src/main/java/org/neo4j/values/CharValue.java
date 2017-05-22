@@ -67,6 +67,12 @@ final class CharValue extends ScalarValue implements Value.WithStringValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeString( value );
+    }
+
+    @Override
     public String stringValue()
     {
         return Character.toString( value );

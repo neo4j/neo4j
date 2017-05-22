@@ -82,6 +82,17 @@ class ByteArrayValue extends IntegralArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.BYTE );
+        for ( byte x : value )
+        {
+            writer.writeInteger( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "ByteArray(%s)", Arrays.toString( value ) );

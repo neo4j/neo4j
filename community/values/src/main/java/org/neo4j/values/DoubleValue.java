@@ -55,6 +55,12 @@ final class DoubleValue extends FloatingPointNumberValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeFloatingPoint( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Double(%e)", value );

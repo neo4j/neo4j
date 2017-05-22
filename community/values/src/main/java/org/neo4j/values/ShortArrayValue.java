@@ -82,6 +82,17 @@ class ShortArrayValue extends IntegralArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.SHORT );
+        for ( short x : value )
+        {
+            writer.writeInteger( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "ShortArray(%s)", Arrays.toString( value ) );

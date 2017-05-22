@@ -117,6 +117,17 @@ class StringArrayValue extends ArrayValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.STRING );
+        for ( String x : value )
+        {
+            writer.writeString( x );
+        }
+        writer.endArray();
+    }
+
+    @Override
     public String toString()
     {
         return format( "StringArray(%s)", Arrays.toString( value ) );

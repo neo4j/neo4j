@@ -68,6 +68,12 @@ final class StringValue extends ScalarValue
     }
 
     @Override
+    void writeTo( ValueWriter writer )
+    {
+        writer.writeString( string );
+    }
+
+    @Override
     public String toString()
     {
         return format( "String(\"%s\")", string );
