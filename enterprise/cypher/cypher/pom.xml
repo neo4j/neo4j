@@ -381,11 +381,6 @@
     <!-- other -->
 
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>annotations</artifactId>
-    </dependency>
-
-    <dependency>
         <groupId>com.novus</groupId>
         <artifactId>salat-core_2.11</artifactId>
         <version>1.9.9</version>
