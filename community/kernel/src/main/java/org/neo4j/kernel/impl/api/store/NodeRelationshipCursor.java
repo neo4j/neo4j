@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
@@ -34,8 +33,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.function.Predicates.any;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -56,7 +53,7 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
     private long relationshipId;
     private long fromNodeId;
     private Direction direction;
-    private IntPredicate allowedTypes;
+    private int[] allowedTypes;
     private int groupChainIndex;
     private boolean end;
 
@@ -76,7 +73,7 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
             ReadableTransactionState state )
     {
         PrimitiveLongIterator addedNodeRelationships = addedNodeRelationships( fromNodeId, direction, null, state );
-        return init( isDense, firstRelId, fromNodeId, direction, ALWAYS_TRUE_INT, state, addedNodeRelationships );
+        return init( isDense, firstRelId, fromNodeId, direction, null, state, addedNodeRelationships );
     }
 
     public NodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
@@ -84,11 +81,11 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
     {
         PrimitiveLongIterator addedNodeRelationships =
                 addedNodeRelationships( fromNodeId, direction, allowedTypes, state );
-        return init( isDense, firstRelId, fromNodeId, direction, any( allowedTypes ), state, addedNodeRelationships );
+        return init( isDense, firstRelId, fromNodeId, direction, allowedTypes, state, addedNodeRelationships );
     }
 
     private NodeRelationshipCursor init( boolean isDense, long firstRelId, long fromNodeId, Direction direction,
-            IntPredicate allowedTypes, ReadableTransactionState state, PrimitiveLongIterator addedNodeRelationships )
+            int[] allowedTypes, ReadableTransactionState state, PrimitiveLongIterator addedNodeRelationships )
     {
         internalInitTxState( state, addedNodeRelationships );
         this.isDense = isDense;
@@ -114,11 +111,6 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
     private PrimitiveLongIterator addedNodeRelationships( long fromNodeId, Direction direction,
             int[] allowedTypes, ReadableTransactionState state )
     {
-        if ( state == null )
-        {
-            return null;
-        }
-
         return allowedTypes == null ? state.getNodeState( fromNodeId ).getAddedRelationships( direction )
                                     : state.getNodeState( fromNodeId ).getAddedRelationships( direction, allowedTypes );
     }
@@ -137,13 +129,17 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
             // to chase a used record down the line.
             try
             {
-                // Direction check
                 if ( record.inUse() )
                 {
-                    if ( direction != Direction.BOTH )
+                    // direction is checked while reading the group chain, no need to check it here again
+                    if ( !isDense )
                     {
+                        // Direction check
                         switch ( direction )
                         {
+                        case BOTH:
+                            break;
+
                         case INCOMING:
                         {
                             if ( record.getSecondNode() != fromNodeId )
@@ -167,12 +163,11 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
                         }
                     }
 
-                    // Type check
-                    if ( !allowedTypes.test( record.getType() ) )
+                    // Type check, for dense nodes it is checked while traversing the group records
+                    if ( isDense || checkType( record.getType() ) )
                     {
-                        continue;
+                        return true;
                     }
-                    return true;
                 }
             }
             finally
@@ -207,6 +202,23 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
         return false;
     }
 
+    private boolean checkType( int type )
+    {
+        if ( allowedTypes == null )
+        {
+            return true;
+        }
+
+        for ( int allowedType : allowedTypes )
+        {
+            if ( type == allowedType )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void close()
     {
@@ -220,7 +232,7 @@ public class NodeRelationshipCursor extends AbstractIteratorRelationshipCursor
         {
             // We check inUse flag here since we can actually follow pointers in unused records
             // to guard for and overcome concurrent deletes in the relationship group chain
-            if ( groupRecord.inUse() && allowedTypes.test( groupRecord.getType() ) )
+            if ( groupRecord.inUse() && checkType( groupRecord.getType() ) )
             {
                 // Go to the next chain (direction) within this group
                 while ( groupChainIndex < GROUP_CHAINS.length )
