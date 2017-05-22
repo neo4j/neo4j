@@ -49,24 +49,6 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
     }
 
     @Override
-    public String sourceDescription()
-    {
-        return "Generator";
-    }
-
-    @Override
-    public long lineNumber()
-    {
-        return 0;
-    }
-
-    @Override
-    public long position()
-    {
-        return 0;
-    }
-
-    @Override
     public InputChunk newChunk()
     {
         return new Chunk();
@@ -127,6 +109,24 @@ public abstract class GeneratingInputIterator<CHUNKSTATE> implements InputIterat
                 visitor.endOfEntity();
             }
             return result;
+        }
+
+        @Override
+        public String sourceDescription()
+        {
+            return "Generator";
+        }
+
+        @Override
+        public long lineNumber()
+        {
+            return 0;
+        }
+
+        @Override
+        public long position()
+        {
+            return 0;
         }
     }
 

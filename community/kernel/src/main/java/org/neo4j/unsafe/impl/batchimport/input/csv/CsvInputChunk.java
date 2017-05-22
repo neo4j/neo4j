@@ -238,6 +238,24 @@ public class CsvInputChunk implements InputChunk
         return true;
     }
 
+    @Override
+    public String sourceDescription()
+    {
+        return seeker.sourceDescription();
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return seeker.lineNumber();
+    }
+
+    @Override
+    public long position()
+    {
+        return seeker.position();
+    }
+
     private void decorateVisitor( InputEntityVisitor nakedVisitor )
     {
         visitor = decorator.apply( nakedVisitor );

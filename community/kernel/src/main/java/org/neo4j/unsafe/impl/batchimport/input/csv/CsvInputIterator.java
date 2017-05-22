@@ -117,24 +117,6 @@ public class CsvInputIterator extends InputIterator.Adapter
         }
     }
 
-    @Override
-    public String sourceDescription()
-    {
-        return null;
-    }
-
-    @Override
-    public long lineNumber()
-    {
-        return 0;
-    }
-
-    @Override
-    public long position()
-    {
-        return 0;
-    }
-
     private class Single
     {
         private final CharReadableChunker chunker;

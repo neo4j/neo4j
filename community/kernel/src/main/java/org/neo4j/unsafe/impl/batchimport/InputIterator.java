@@ -22,8 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.csv.reader.Readables;
-import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -31,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator extends Closeable, SourceTraceability
+public interface InputIterator extends Closeable
 {
     InputChunk newChunk();
 
@@ -39,33 +37,6 @@ public interface InputIterator extends Closeable, SourceTraceability
 
     abstract class Adapter implements InputIterator
     {
-        private final SourceTraceability defaults = new SourceTraceability.Adapter()
-        {
-            @Override
-            public String sourceDescription()
-            {
-                return Readables.EMPTY.sourceDescription();
-            }
-        };
-
-        @Override
-        public String sourceDescription()
-        {
-            return defaults.sourceDescription();
-        }
-
-        @Override
-        public long lineNumber()
-        {
-            return defaults.lineNumber();
-        }
-
-        @Override
-        public long position()
-        {
-            return defaults.position();
-        }
-
         @Override
         public void close() throws IOException
         {   // Nothing to close
@@ -85,24 +56,6 @@ public interface InputIterator extends Closeable, SourceTraceability
         public void close() throws IOException
         {
             actual.close();
-        }
-
-        @Override
-        public String sourceDescription()
-        {
-            return actual.sourceDescription();
-        }
-
-        @Override
-        public long lineNumber()
-        {
-            return actual.lineNumber();
-        }
-
-        @Override
-        public long position()
-        {
-            return actual.position();
         }
 
         @Override

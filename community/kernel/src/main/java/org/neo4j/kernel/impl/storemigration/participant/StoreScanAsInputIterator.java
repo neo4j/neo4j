@@ -54,24 +54,6 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
     }
 
     @Override
-    public String sourceDescription()
-    {
-        return traceability.sourceDescription();
-    }
-
-    @Override
-    public long lineNumber()
-    {
-        return traceability.lineNumber();
-    }
-
-    @Override
-    public long position()
-    {
-        return traceability.position();
-    }
-
-    @Override
     public InputChunk newChunk()
     {
         RecordCursor<RECORD> cursor = store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
@@ -134,6 +116,24 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
         public void close() throws IOException
         {
             cursor.close();
+        }
+
+        @Override
+        public String sourceDescription()
+        {
+            return traceability.sourceDescription();
+        }
+
+        @Override
+        public long lineNumber()
+        {
+            return traceability.lineNumber();
+        }
+
+        @Override
+        public long position()
+        {
+            return traceability.position();
         }
     }
 

@@ -22,7 +22,9 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.Closeable;
 import java.io.IOException;
 
-public interface InputChunk extends Closeable
+import org.neo4j.csv.reader.SourceTraceability;
+
+public interface InputChunk extends Closeable, SourceTraceability
 {
     InputChunk EMPTY = new InputChunk()
     {
@@ -35,6 +37,24 @@ public interface InputChunk extends Closeable
         @Override
         public void close() throws IOException
         {
+        }
+
+        @Override
+        public String sourceDescription()
+        {
+            return "<EMPTY>";
+        }
+
+        @Override
+        public long lineNumber()
+        {
+            return 0;
+        }
+
+        @Override
+        public long position()
+        {
+            return 0;
         }
     };
 
