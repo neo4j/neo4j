@@ -152,9 +152,9 @@ public class TransactionStateMachine implements StatementProcessor
                         {
                             ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
 
-                            if ( params.containsKey( "bookmark" ) )
+                            Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+                            if ( bookmark != null )
                             {
-                                final Bookmark bookmark = Bookmark.fromString( params.get( "bookmark" ).toString() );
                                 spi.awaitUpToDate( bookmark.txId() );
                                 ctx.currentResult = new BookmarkResult( bookmark );
                             }
