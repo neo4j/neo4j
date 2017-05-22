@@ -192,7 +192,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
             accept( counter );
             return String.valueOf( counter.count );
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
             return "(unable to count: " + e.getMessage() + ")";
         }
