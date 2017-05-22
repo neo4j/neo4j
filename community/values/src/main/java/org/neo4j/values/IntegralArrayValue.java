@@ -53,12 +53,12 @@ abstract class IntegralArrayValue extends ArrayValue
         if ( other instanceof IntegralArrayValue )
         {
             IntegralArrayValue that = (IntegralArrayValue) other;
-            return NumberArrayValues.numbersEqual( this, that );
+            return NumberValues.numbersEqual( this, that );
         }
         else if ( other instanceof FloatingPointArrayValue )
         {
             FloatingPointArrayValue that = (FloatingPointArrayValue) other;
-            return NumberArrayValues.numbersEqual( that, this );
+            return NumberValues.numbersEqual( that, this );
         }
         return false;
     }
@@ -69,7 +69,7 @@ abstract class IntegralArrayValue extends ArrayValue
         int result = 1;
         for ( int i = 0, len = length(); i < len; i++ )
         {
-            int elementHash = NumberValue.hash( longValue( i ) );
+            int elementHash = NumberValues.hash( longValue( i ) );
             result = 31 * result + elementHash;
         }
         return result;
@@ -80,7 +80,7 @@ abstract class IntegralArrayValue extends ArrayValue
         int result = 1;
         for ( byte value : values )
         {
-            int elementHash = NumberValue.hash( value );
+            int elementHash = NumberValues.hash( value );
             result = 31 * result + elementHash;
         }
         return result;
@@ -91,7 +91,7 @@ abstract class IntegralArrayValue extends ArrayValue
         int result = 1;
         for ( short value : values )
         {
-            int elementHash = NumberValue.hash( value );
+            int elementHash = NumberValues.hash( value );
             result = 31 * result + elementHash;
         }
         return result;
@@ -102,7 +102,7 @@ abstract class IntegralArrayValue extends ArrayValue
         int result = 1;
         for ( int value : values )
         {
-            int elementHash = NumberValue.hash( value );
+            int elementHash = NumberValues.hash( value );
             result = 31 * result + elementHash;
         }
         return result;
@@ -113,7 +113,7 @@ abstract class IntegralArrayValue extends ArrayValue
         int result = 1;
         for ( long value : values )
         {
-            int elementHash = NumberValue.hash( value );
+            int elementHash = NumberValues.hash( value );
             result = 31 * result + elementHash;
         }
         return result;

@@ -53,12 +53,12 @@ abstract class FloatingPointArrayValue extends ArrayValue
         if ( other instanceof FloatingPointArrayValue )
         {
             FloatingPointArrayValue that = (FloatingPointArrayValue) other;
-            return NumberArrayValues.numbersEqual( this, that );
+            return NumberValues.numbersEqual( this, that );
         }
         else if ( other instanceof IntegralArrayValue )
         {
             IntegralArrayValue that = (IntegralArrayValue) other;
-            return NumberArrayValues.numbersEqual( this, that );
+            return NumberValues.numbersEqual( this, that );
         }
         return false;
     }
@@ -69,7 +69,7 @@ abstract class FloatingPointArrayValue extends ArrayValue
         int result = 1;
         for ( int i = 0, len = length(); i < len; i++ )
         {
-            int elementHash = NumberValue.hash( doubleValue( i ) );
+            int elementHash = NumberValues.hash( doubleValue( i ) );
             result = 31 * result + elementHash;
         }
         return result;
@@ -80,7 +80,7 @@ abstract class FloatingPointArrayValue extends ArrayValue
         int result = 1;
         for ( float value : values )
         {
-            int elementHash = NumberValue.hash( value );
+            int elementHash = NumberValues.hash( value );
             result = 31 * result + elementHash;
         }
         return result;
@@ -91,7 +91,7 @@ abstract class FloatingPointArrayValue extends ArrayValue
         int result = 1;
         for ( double value : values )
         {
-            int elementHash = NumberValue.hash( value );
+            int elementHash = NumberValues.hash( value );
             result = 31 * result + elementHash;
         }
         return result;

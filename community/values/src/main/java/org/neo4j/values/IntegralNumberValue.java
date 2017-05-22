@@ -31,7 +31,7 @@ abstract class IntegralNumberValue extends NumberValue
     @Override
     public final int hashCode()
     {
-        return NumberValue.hash( longValue() );
+        return NumberValues.hash( longValue() );
     }
 
     @Override
@@ -51,7 +51,7 @@ abstract class IntegralNumberValue extends NumberValue
         else if ( other instanceof FloatingPointNumberValue )
         {
             FloatingPointNumberValue that = (FloatingPointNumberValue) other;
-            return NumberValue.numbersEqual( that.doubleValue(), this.longValue() );
+            return NumberValues.numbersEqual( that.doubleValue(), this.longValue() );
         }
         else
         {
