@@ -52,7 +52,7 @@ final class StringValue extends ScalarValue
     @Override
     boolean equals( char x )
     {
-        return false;
+        return string.length() == 1 && string.charAt( 0 ) == x;
     }
 
     @Override

@@ -44,7 +44,7 @@ import static org.neo4j.values.Values.stringValue;
 public class ValuesTest
 {
     @Test
-    public void shouldBeEqual()
+    public void shouldBeEqualToItself()
     {
         assertEqual( booleanValue( false ), booleanValue( false ) );
         assertEqual( byteValue( (byte)0 ), byteValue( (byte)0 ) );
@@ -84,6 +84,12 @@ public class ValuesTest
         assertEqual( doubleArrayValue( new double[]{1.0} ), doubleArrayValue( new double[]{1.0} ) );
         assertEqual( charArrayValue( new char[]{'x'} ), charArrayValue( new char[]{'x'} ) );
         assertEqual( stringArrayValue( new String[]{"hi"} ), stringArrayValue( new String[]{"hi"} ) );
+    }
+
+    @Test
+    public void shouldHandleCoercion()
+    {
+
     }
 
     private void assertEqual( Value a, Value b )
