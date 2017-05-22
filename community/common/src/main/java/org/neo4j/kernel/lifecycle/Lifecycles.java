@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.lifecycle;
 
+import java.util.Arrays;
+
 public class Lifecycles
 {
     private Lifecycles()
@@ -27,43 +29,57 @@ public class Lifecycles
 
     public static Lifecycle multiple( final Iterable<? extends Lifecycle> lifecycles )
     {
-        return new Lifecycle()
+        return new CombinedLifecycle( lifecycles );
+    }
+
+    public static Lifecycle multiple( Lifecycle... lifecycles )
+    {
+        return new CombinedLifecycle( Arrays.asList( lifecycles ) );
+    }
+
+    private static class CombinedLifecycle implements Lifecycle
+    {
+        private final Iterable<? extends Lifecycle> lifecycles;
+
+        CombinedLifecycle( Iterable<? extends Lifecycle> lifecycles )
         {
-            @Override
-            public void init() throws Throwable
-            {
-                for ( Lifecycle lifecycle : lifecycles )
-                {
-                    lifecycle.init();
-                }
-            }
+            this.lifecycles = lifecycles;
+        }
 
-            @Override
-            public void start() throws Throwable
+        @Override
+        public void init() throws Throwable
+        {
+            for ( Lifecycle lifecycle : lifecycles )
             {
-                for ( Lifecycle lifecycle : lifecycles )
-                {
-                    lifecycle.start();
-                }
+                lifecycle.init();
             }
+        }
 
-            @Override
-            public void stop() throws Throwable
+        @Override
+        public void start() throws Throwable
+        {
+            for ( Lifecycle lifecycle : lifecycles )
             {
-                for ( Lifecycle lifecycle : lifecycles )
-                {
-                    lifecycle.stop();
-                }
+                lifecycle.start();
             }
+        }
 
-            @Override
-            public void shutdown() throws Throwable
+        @Override
+        public void stop() throws Throwable
+        {
+            for ( Lifecycle lifecycle : lifecycles )
             {
-                for ( Lifecycle lifecycle : lifecycles )
-                {
-                    lifecycle.shutdown();
-                }
+                lifecycle.stop();
             }
-        };
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+            for ( Lifecycle lifecycle : lifecycles )
+            {
+                lifecycle.shutdown();
+            }
+        }
     }
 }
