@@ -106,8 +106,12 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
       case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
-        if !containsLabelPredicate(variable, labelName) ||
-           !containsPropertyPredicates(variable, properties) =>
+        if !containsLabelPredicate(variable, labelName) =>
+        SemanticError(
+          """|Cannot use index hint in this context.
+            | Must use label on node that hint is referring to.""".stripLinesAndMargins, hint.position)
+      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+        if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
             | Index hints are only supported for the following predicates in WHERE
