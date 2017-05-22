@@ -211,6 +211,7 @@ public class ImportCommandTest
                             "                          [--multiline-fields[=<true|false>]]\n" +
                             "                          [--delimiter=<delimiter-character>]\n" +
                             "                          [--array-delimiter=<array-delimiter-character>]\n" +
+                            "                          [--quote=<quotation-character>]\n" +
                             "                          [--max-memory=<max-memory-that-importer-can-use>]\n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]\n" +
                             "                          [--additional-config=<config-file-path>]\n" +
@@ -271,6 +272,10 @@ public class ImportCommandTest
                             "  --array-delimiter=<,>\n" +
                             "      Delimiter character between array elements within a value in CSV data.\n" +
                             "      [default:;]\n" +
+                            "  --quote=<quotation-character>\n" +
+                            "      Character to treat as quotation character for values in CSV data. Quotes\n" +
+                            "      can be escaped as per RFC 4180 by doubling them, for example \"\" would be\n" +
+                            "      interpreted as a literal \". You cannot escape using \\. [default:\"]\n" +
                             "  --max-memory=<max-memory-that-importer-can-use>\n" +
                             "      Maximum memory that neo4j-admin can use for various data structures and\n" +
                             "      caching to improve performance. Values can be plain numbers, like 10000000\n" +

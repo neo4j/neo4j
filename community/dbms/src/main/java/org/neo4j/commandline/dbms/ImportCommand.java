@@ -40,7 +40,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -116,6 +115,12 @@ public class ImportCommand implements AdminCommand
                     "array-delimiter-character",
                     String.valueOf( COMMAS.arrayDelimiter() ),
                     "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "quote",
+                    "quotation-character",
+                    String.valueOf( COMMAS.quotationCharacter() ),
+                    "Character to treat as quotation character for values in CSV data. "
+                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
+                            "interpreted as a literal \". You cannot escape using \\." ) )
             .withArgument( new OptionalNamedArg( "max-memory",
                     "max-memory-that-importer-can-use",
                     String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
@@ -177,6 +182,12 @@ public class ImportCommand implements AdminCommand
                     String.valueOf( COMMAS.delimiter() ),
                     String.valueOf( COMMAS.arrayDelimiter() ),
                     "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "quote",
+                    "quotation-character",
+                    String.valueOf( COMMAS.quotationCharacter() ),
+                    "Character to treat as quotation character for values in CSV data. "
+                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
+                            "interpreted as a literal \". You cannot escape using \\." ) )
             .withArgument( new OptionalNamedArg( "max-memory",
                     "max-memory-that-importer-can-use",
                     String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
