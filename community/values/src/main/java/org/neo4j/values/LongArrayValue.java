@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 class LongArrayValue extends IntegralArrayValue
 {
     private final long[] value;
@@ -77,5 +79,11 @@ class LongArrayValue extends IntegralArrayValue
     boolean equals( double[] x )
     {
         return PrimitiveArrayValues.equals( value, x );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "LongArray(%s)", Arrays.toString( value ) );
     }
 }

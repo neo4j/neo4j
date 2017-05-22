@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 class BooleanArrayValue extends ArrayValue
 {
     private final boolean[] value;
@@ -111,5 +113,11 @@ class BooleanArrayValue extends ArrayValue
     static int hash( boolean[] value )
     {
         return Arrays.hashCode( value );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "BooleanArray(%s)", Arrays.toString( value ) );
     }
 }

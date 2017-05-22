@@ -59,6 +59,11 @@ abstract class LazyValue<T> extends Value
         }
     }
 
+    protected boolean valueIsLoaded()
+    {
+        return !(value instanceof Callable<?>);
+    }
+
     /**
      * Casts the internal value to the correct type and makes it ready for returning out,
      * potentially all the way out to the user.

@@ -19,10 +19,8 @@
  */
 package org.neo4j.values;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
+import static java.lang.String.format;
+
 final class IntValue extends IntegralNumberValue
 {
     private final int value;
@@ -54,5 +52,11 @@ final class IntValue extends IntegralNumberValue
     boolean equals( String x )
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Int(%d)", value );
     }
 }

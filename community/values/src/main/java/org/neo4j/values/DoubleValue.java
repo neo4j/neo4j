@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import static java.lang.String.format;
+
 final class DoubleValue extends FloatingPointNumberValue
 {
     private final double value;
@@ -50,5 +52,11 @@ final class DoubleValue extends FloatingPointNumberValue
     boolean equals( String x )
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Double(%e)", value );
     }
 }

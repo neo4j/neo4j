@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.concurrent.Callable;
 
+import static java.lang.String.format;
+
 class LazyStringValue extends LazyValue<String>
 {
     LazyStringValue( Callable<String> producer )
@@ -116,6 +118,6 @@ class LazyStringValue extends LazyValue<String>
     @Override
     public String toString()
     {
-        return value();
+        return format( "LazyString(%s)", valueIsLoaded() ? value() : "not-loaded" );
     }
 }

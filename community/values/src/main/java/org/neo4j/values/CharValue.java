@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import static java.lang.String.format;
+
 final class CharValue extends ScalarValue implements Value.WithStringValue
 {
     final char value;
@@ -68,5 +70,11 @@ final class CharValue extends ScalarValue implements Value.WithStringValue
     public String stringValue()
     {
         return Character.toString( value );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Char('%s')", value );
     }
 }

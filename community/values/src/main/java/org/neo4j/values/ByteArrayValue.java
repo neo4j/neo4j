@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 class ByteArrayValue extends IntegralArrayValue
 {
     private final byte[] value;
@@ -77,5 +79,11 @@ class ByteArrayValue extends IntegralArrayValue
     boolean equals( double[] x )
     {
         return PrimitiveArrayValues.equals( value, x );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "ByteArray(%s)", Arrays.toString( value ) );
     }
 }

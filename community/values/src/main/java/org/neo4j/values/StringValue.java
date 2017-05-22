@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import static java.lang.String.format;
+
 final class StringValue extends ScalarValue
 {
     final String string;
@@ -27,6 +29,12 @@ final class StringValue extends ScalarValue
     {
         assert string != null;
         this.string = string;
+    }
+
+    @Override
+    public boolean equals( Object other )
+    {
+        return other != null && other instanceof Value && equals( (Value) other );
     }
 
     @Override
@@ -51,5 +59,17 @@ final class StringValue extends ScalarValue
     boolean equals( String x )
     {
         return string.equals( x );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return string.hashCode();
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "String(\"%s\")", string );
     }
 }

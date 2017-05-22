@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 class DoubleArrayValue extends FloatingPointArrayValue
 {
     private final double[] value;
@@ -77,5 +79,11 @@ class DoubleArrayValue extends FloatingPointArrayValue
     boolean equals( double[] x )
     {
         return Arrays.equals( x, value );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "DoubleArray(%s)", Arrays.toString( value ) );
     }
 }

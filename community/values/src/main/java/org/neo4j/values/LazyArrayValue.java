@@ -19,7 +19,10 @@
  */
 package org.neo4j.values;
 
+import java.util.Arrays;
 import java.util.concurrent.Callable;
+
+import static java.lang.String.format;
 
 class LazyArrayValue extends LazyValue<Object>
 {
@@ -142,6 +145,12 @@ class LazyArrayValue extends LazyValue<Object>
     {
         // this method is invoked after accessing LazyProperty.value, implying a read barrier ...
         return type.clone( value ); // ... so accessing type is safe
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "LazyArray(%s)", valueIsLoaded() ? Arrays.toString( (Object[]) value() ) : "not-loaded" );
     }
 
     private enum Type

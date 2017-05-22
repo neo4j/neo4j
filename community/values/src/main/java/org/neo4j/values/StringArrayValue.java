@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 class StringArrayValue extends ArrayValue
 {
     final String[] value;
@@ -106,5 +108,11 @@ class StringArrayValue extends ArrayValue
     public static int hash( String[] value )
     {
         return Arrays.hashCode( value );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "StringArray(%s)", Arrays.toString( value ) );
     }
 }

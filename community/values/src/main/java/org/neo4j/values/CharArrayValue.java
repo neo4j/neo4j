@@ -21,6 +21,8 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+import static java.lang.String.format;
+
 class CharArrayValue extends ArrayValue
 {
     final char[] value;
@@ -113,5 +115,11 @@ class CharArrayValue extends ArrayValue
     static int hash( char[] value )
     {
         return Arrays.hashCode( value );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "CharArray(%s)", Arrays.toString( value ) );
     }
 }
