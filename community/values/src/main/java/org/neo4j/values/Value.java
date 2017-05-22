@@ -31,6 +31,18 @@ public abstract class Value
         MAP
     }
 
+    @Override
+    public boolean equals( Object other )
+    {
+        throw new UnsupportedOperationException( "You forgot to implement `equals()` in concrete Value class!" );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        throw new UnsupportedOperationException( "You forgot to implement `hashCode()` in concrete Value class!" );
+    }
+
     abstract boolean equals( Value other );
 
     abstract boolean equals( byte[] x );
