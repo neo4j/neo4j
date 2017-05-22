@@ -25,7 +25,7 @@ case class Subtraction(lhs: CodeGenExpression, rhs: CodeGenExpression)
   extends CodeGenExpression with BinaryOperator {
 
   override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.subtract
+    structure.subtractExpression
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 

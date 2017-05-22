@@ -104,7 +104,7 @@ object Templates {
     .invoke(Expression.newInstance(typeRef[RelationshipDataExtractor]),
             MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
 
-  val CONSTRUCTOR = MethodTemplate.constructor(
+  def constructor(classHandle: ClassHandle) = MethodTemplate.constructor(
     param[TaskCloser]("closer"),
     param[QueryContext]("queryContext"),
     param[ExecutionMode]("executionMode"),
@@ -113,40 +113,45 @@ object Templates {
 
     param[util.Map[String, Object]]("params")).
     invokeSuper().
-    put(self(), typeRef[TaskCloser], "closer", load("closer")).
-    put(self(), typeRef[ReadOperations], "ro",
+    put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser])).
+    put(self(classHandle), typeRef[ReadOperations], "ro",
         cast(classOf[ReadOperations], invoke(
-          invoke(load("queryContext"), method[QueryContext, QueryTransactionalContext]("transactionalContext")),
+          invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, QueryTransactionalContext]("transactionalContext")),
           method[QueryTransactionalContext, Object]("readOperations")))).
-    put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
-    put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
-    put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).
-    put(self(), typeRef[util.Map[String, Object]], "params", load("params")).
-    put(self(), typeRef[NodeManager], "nodeManager",
+    put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode])).
+    put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
+    put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
+    put(self(classHandle), typeRef[util.Map[String, Object]], "params", load("params", typeRef[util.Map[String, Object]])).
+    put(self(classHandle), typeRef[NodeManager], "nodeManager",
         cast(typeRef[NodeManager],
-             invoke(load("queryContext"), method[QueryContext, Object]("entityAccessor")))).
+             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).
     build()
 
-  val SET_SUCCESSFUL_CLOSEABLE = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
-                                                       param[SuccessfulCloseable]("closeable")).
-    put(self(), typeRef[SuccessfulCloseable], "closeable", load("closeable")).
+  def setSuccessfulCloseable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
+                                                                               param[SuccessfulCloseable]("closeable")).
+    put(self(classHandle), typeRef[SuccessfulCloseable], "closeable", load("closeable", typeRef[SuccessfulCloseable])).
     build()
-  val SUCCESS = MethodTemplate.method(typeRef[Unit], "success").
+
+  def success(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "success").
     expression(
-      invoke(get(self(), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("success"))).
+      invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("success"))).
     build()
-  val CLOSE = MethodTemplate.method(typeRef[Unit], "close").
+
+  def close(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "close").
     expression(
-      invoke(get(self(), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("close"))).
+      invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("close"))).
     build()
-  val EXECUTION_MODE = MethodTemplate.method(typeRef[ExecutionMode], "executionMode").
-    returns(get(self(), typeRef[ExecutionMode], "executionMode")).
+
+  def executionMode(classHandle: ClassHandle) = MethodTemplate.method(typeRef[ExecutionMode], "executionMode").
+    returns(get(self(classHandle), typeRef[ExecutionMode], "executionMode")).
     build()
-  val EXECUTION_PLAN_DESCRIPTION = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
+
+  def executionPlanDescription(classHandle: ClassHandle) = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
     returns(cast( typeRef[InternalPlanDescription],
-      invoke(get(self(), typeRef[Provider[InternalPlanDescription]], "description"),
+      invoke(get(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description"),
                    method[Provider[InternalPlanDescription], Object]("get")))).
     build()
+
   val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
     returns(get(typeRef[util.List[String]], "COLUMNS")).
     build()

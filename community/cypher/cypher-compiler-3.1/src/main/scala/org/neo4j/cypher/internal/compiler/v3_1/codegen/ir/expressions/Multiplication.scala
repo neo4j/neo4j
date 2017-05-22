@@ -26,7 +26,7 @@ case class Multiplication(lhs: CodeGenExpression, rhs: CodeGenExpression)
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.multiply
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.multiplyExpression
 
   override def name: String = "multiply"
 }

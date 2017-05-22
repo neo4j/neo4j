@@ -106,7 +106,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     generator.assign(typeRef[Long], toNodeVar, toGraphDb(direction) match {
       case Direction.INCOMING => start
       case Direction.OUTGOING => end
-      case Direction.BOTH => ternary(equal(start, generator.load(fromNodeVar), typeRef[Long]), end, start)
+      case Direction.BOTH => ternary(equal(start, generator.load(fromNodeVar)), end, start)
     })
     generator.assign(typeRef[Long], relVar, invoke(generator.load(extractor), getRelationship))
   }
@@ -190,17 +190,17 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def decrementCounter(name: String) = {
     val local = locals(name)
-    generator.assign(local, subtractInts(local, constant(1)))
+    generator.assign(local, subtract(local, constant(1)))
   }
 
   override def checkCounter(name: String, comparator: Comparator, value: Int): Expression = {
     val local = locals(name)
     comparator match {
-      case Equal =>  equal(local, constant(value), typeRef[Int])
-      case LessThan => lt(local, constant(value), typeRef[Int])
-      case LessThanEqual => lte(local, constant(value), typeRef[Int])
-      case GreaterThan  => gt(local, constant(value), typeRef[Int])
-      case GreaterThanEqual  => gte(local, constant(value), typeRef[Int])
+      case Equal =>  equal(local, constant(value))
+      case LessThan => lt(local, constant(value))
+      case LessThanEqual => lte(local, constant(value))
+      case GreaterThan  => gt(local, constant(value))
+      case GreaterThanEqual  => gte(local, constant(value))
     }
   }
 
@@ -236,7 +236,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CodeGenType(CTNode, IntType) | CodeGenType(CTRelationship, IntType) =>
       ternary(
-        equal(nullValue(codeGenType), generator.load(varName), lowerType(codeGenType)),
+        equal(nullValue(codeGenType), generator.load(varName)),
         nullValue(codeGenType),
         onSuccess)
     case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
@@ -245,7 +245,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CodeGenType(CTNode, IntType) | CodeGenType(CTRelationship, IntType) =>
       ternary(
-        equal(nullValue(codeGenType), generator.load(varName), lowerType(codeGenType)),
+        equal(nullValue(codeGenType), generator.load(varName)),
         constant(null),
         onSuccess)
     case _ => ternaryOnNull(generator.load(varName), constant(null), onSuccess)
@@ -301,7 +301,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def threeValuedEqualsExpression(lhs: Expression, rhs: Expression) = invoke(Methods.ternaryEquals, lhs, rhs)
 
   override def equalityExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) =
-    if (codeGenType.isPrimitive) equal(lhs, rhs, lowerType(codeGenType))
+    if (codeGenType.isPrimitive) equal(lhs, rhs)
     else invoke(lhs, Methods.equals, rhs)
 
   override def orExpression(lhs: Expression, rhs: Expression) = or(lhs, rhs)
@@ -313,7 +313,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
 
   override def isNull(varName: String, codeGenType: CodeGenType) =
-    equal(nullValue(codeGenType), generator.load(varName), lowerType(codeGenType))
+    equal(nullValue(codeGenType), generator.load(varName))
 
   override def notNull(varName: String, codeGenType: CodeGenType) = not(isNull(varName, codeGenType))
 
@@ -375,15 +375,15 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def loadVariable(varName: String) = generator.load(varName)
 
-  override def add(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
+  override def addExpression(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
 
-  override def subtract(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
+  override def subtractExpression(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
-  override def multiply(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
+  override def multiplyExpression(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
 
-  override def divide(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
+  override def divideExpression(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
 
-  override def modulus(lhs: Expression, rhs: Expression) = math(Methods.mathMod, lhs, rhs)
+  override def modulusExpression(lhs: Expression, rhs: Expression) = math(Methods.mathMod, lhs, rhs)
 
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
@@ -472,9 +472,8 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
         pop(
           invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
                  ternary(
-                   equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL")), typeRef[Int]),
-                   constant(1),
-                   addInts(generator.load(countName), constant(1))))))
+                   equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL"))),
+                   constant(1), add(generator.load(countName), constant(1))))))
 
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
@@ -494,7 +493,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                  ternaryOnNull(generator.load(countName),
                                invoke(boxInteger,
                                       constant(1)), invoke(boxInteger,
-                                                           addInts(
+                                                           add(
                                                              invoke(generator.load(countName),
                                                                     unboxInteger),
                                                              constant(1)))))))
@@ -507,9 +506,9 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       val keyVar = keyVars.head
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
-      using(generator.whileLoop(gt(times, constant(0), typeRef[Int]))) { body =>
+      using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
-        body.assign(times, subtractInts(times, constant(1)))
+        body.assign(times, subtract(times, constant(1)))
       }
     case LongsToCountTable =>
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
@@ -527,9 +526,9 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                          constant(-1),
                          invoke(intermediate, unboxInteger)))
 
-      using(generator.whileLoop(gt(times, constant(0), typeRef[Int]))) { body =>
+      using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
-        body.assign(times, subtractInts(times, constant(1)))
+        body.assign(times, subtract(times, constant(1)))
       }
 
     case tableType@LongToListTable(structure, localVars) =>
@@ -713,7 +712,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def nodeIdSeek(nodeIdVar: String, expression: Expression)(block: MethodStructure[Expression] => Unit) = {
     generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
     using(generator.ifStatement(
-      gt(generator.load(nodeIdVar), constant(-1L), typeRef[Long]),
+      gt(generator.load(nodeIdVar), constant(-1L)),
       invoke(readOperations, nodeExists, generator.load(nodeIdVar))
     )) { ifBody =>
       block(copy(generator = ifBody))

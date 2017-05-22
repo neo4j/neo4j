@@ -227,8 +227,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         tracer = body.field(typeRef[QueryExecutionTracer], "tracer"),
         params = body.field(typeRef[util.Map[String, Object]], "params"),
         closeable = body.field(typeRef[SuccessfulCloseable], "closeable"),
-        success = body.generate(Templates.SUCCESS),
-        close = body.generate(Templates.CLOSE))
+        success = body.generate(Templates.success(body.handle())),
+        close = body.generate(Templates.close(body.handle())))
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>
