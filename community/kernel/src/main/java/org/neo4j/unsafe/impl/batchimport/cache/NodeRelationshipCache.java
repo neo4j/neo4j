@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.util.Arrays;
-
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -369,6 +368,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         {
             if ( isDense( i ) )
             {
+                System.out.println( i + " is dense" );
                 count++;
             }
         }

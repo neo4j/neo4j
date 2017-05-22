@@ -65,6 +65,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 {
                     // No change for this record, it's OK, all the processors will reach the same conclusion
                     batch[i] = null;
+                    System.out.println( Thread.currentThread().getName() + " no update for " + item.getId() );
                 }
             }
         }
@@ -76,6 +77,8 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
         long endNode = record.getSecondNode();
         boolean processFirst = startNode % processors == id;
         boolean processSecond = endNode % processors == id;
+        System.out.println( Thread.currentThread().getName() + " process " + record + " " + id + "/" + processors +
+                " " + processFirst + " " + processSecond );
         if ( !processFirst && !processSecond )
         {
             // We won't process this relationship, but we cannot return false because that means
@@ -136,11 +139,13 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
     {
         if ( !NodeType.matchesDense( nodeTypes, isDense ) )
         {
+            System.out.println( Thread.currentThread().getName() + " dense mismatch " + record );
             return false;
         }
         // Here we have a special case where we want to filter on type, but only for dense nodes
         if ( isDense && filter != null && !filter.test( record ) )
         {
+            System.out.println( Thread.currentThread().getName() + " dense filter mismatch " + record );
             return false;
         }
         return true;

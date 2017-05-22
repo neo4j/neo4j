@@ -320,6 +320,7 @@ public class ParallelBatchImporter implements BatchImporter
             PrimitiveIntSet typesToLinkThisRound = rounds.next();
             boolean thisIsTheFirstRound = round == 0;
             boolean thisIsTheOnlyRound = thisIsTheFirstRound && !rounds.hasNext();
+            System.out.println( "ROUND " + round );
 
             nodeRelationshipCache.setForwardScan( true, true/*dense*/ );
             String range = typesToLinkThisRound.size() == 1
