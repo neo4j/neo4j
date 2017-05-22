@@ -19,7 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
-import org.neo4j.scheduler.JobScheduler;
+import java.util.concurrent.ThreadFactory;
+
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -30,19 +31,14 @@ import org.neo4j.logging.LogProvider;
  */
 public class ContinuousJob extends LifecycleAdapter
 {
-    private final AbortableJob abortableJob = new AbortableJob();
-    private final JobScheduler scheduler;
-    private final JobScheduler.Group group;
-    private final Runnable task;
+    private final AbortableJob abortableJob;
     private final Log log;
+    private final Thread thread;
 
-    private JobScheduler.JobHandle jobHandle;
-
-    public ContinuousJob( JobScheduler scheduler, JobScheduler.Group group, Runnable task, LogProvider logProvider )
+    public ContinuousJob( ThreadFactory threadFactory, Runnable task, LogProvider logProvider )
     {
-        this.scheduler = scheduler;
-        this.group = group;
-        this.task = task;
+        this.abortableJob = new AbortableJob( task );
+        this.thread = threadFactory.newThread( abortableJob );
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -50,20 +46,26 @@ public class ContinuousJob extends LifecycleAdapter
     public void start() throws Throwable
     {
         abortableJob.keepRunning = true;
-        jobHandle = scheduler.schedule( group, abortableJob );
+        thread.start();
     }
 
     @Override
     public void stop() throws Throwable
     {
-        log.info( "ContinuousJob " + group.name() + " stopping" );
+        log.info( "ContinuousJob " + thread.getName() + " stopping" );
         abortableJob.keepRunning = false;
-        jobHandle.waitTermination();
+        thread.join();
     }
 
-    private class AbortableJob implements Runnable
+    private static class AbortableJob implements Runnable
     {
+        private final Runnable task;
         private volatile boolean keepRunning;
+
+        AbortableJob( Runnable task )
+        {
+            this.task = task;
+        }
 
         @Override
         public void run()
