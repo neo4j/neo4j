@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -49,7 +50,6 @@ public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
     private static final String[] allowedModes = {"database", "csv"};
-    private static final String[] allowedDelimiterCharacters = {",", "TAB", ";", "|", ":", "#"};
     private static final Arguments databaseArguments = new Arguments()
             .withArgument( new MandatoryNamedArg( "mode", "database", "Import a pre-3.0 installation." )
             {
@@ -109,10 +109,11 @@ public class ImportCommand implements AdminCommand
                     "Whether or not fields from input source can span multiple lines," +
                             " i.e. contain newline characters." ) )
             .withArgument( new OptionalNamedArg( "delimiter",
-                    allowedDelimiterCharacters,
-                    String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
+                    "delimiter-character",
+                    String.valueOf( COMMAS.delimiter() ),
+                    "Delimiter character between values in CSV data." ) )
             .withArgument( new OptionalNamedArg( "array-delimiter",
-                    allowedDelimiterCharacters,
+                    "array-delimiter-character",
                     String.valueOf( COMMAS.arrayDelimiter() ),
                     "Delimiter character between array elements within a value in CSV data." ) )
             .withArgument( new OptionalNamedArg( "max-memory",
@@ -170,10 +171,10 @@ public class ImportCommand implements AdminCommand
                     "Whether or not fields from input source can span multiple lines," +
                             " i.e. contain newline characters." ) )
             .withArgument( new OptionalNamedArg( "delimiter",
-                    allowedDelimiterCharacters,
+                    String.valueOf( COMMAS.delimiter() ),
                     String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
             .withArgument( new OptionalNamedArg( "array-delimiter",
-                    allowedDelimiterCharacters,
+                    String.valueOf( COMMAS.delimiter() ),
                     String.valueOf( COMMAS.arrayDelimiter() ),
                     "Delimiter character between array elements within a value in CSV data." ) )
             .withArgument( new OptionalNamedArg( "max-memory",

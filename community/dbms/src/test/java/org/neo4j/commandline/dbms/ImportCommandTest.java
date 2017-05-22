@@ -209,8 +209,8 @@ public class ImportCommandTest
                             "                          [--ignore-duplicate-nodes[=<true|false>]]\n" +
                             "                          [--ignore-missing-nodes[=<true|false>]]\n" +
                             "                          [--multiline-fields[=<true|false>]]\n" +
-                            "                          [--delimiter=<,|TAB|;|||:|#>]\n" +
-                            "                          [--array-delimiter=<,|TAB|;|||:|#>]\n" +
+                            "                          [--delimiter=<delimiter-character>]\n" +
+                            "                          [--array-delimiter=<array-delimiter-character>]\n" +
                             "                          [--max-memory=<max-memory-that-importer-can-use>]\n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]\n" +
                             "                          [--additional-config=<config-file-path>]\n" +
@@ -266,9 +266,9 @@ public class ImportCommandTest
                             "  --multiline-fields=<true|false>\n" +
                             "      Whether or not fields from input source can span multiple lines, i.e.\n" +
                             "      contain newline characters. [default:false]\n" +
-                            "  --delimiter=<,|TAB|;|||:|#>\n" +
+                            "  --delimiter=<,>\n" +
                             "      Delimiter character between values in CSV data. [default:,]\n" +
-                            "  --array-delimiter=<,|TAB|;|||:|#>\n" +
+                            "  --array-delimiter=<,>\n" +
                             "      Delimiter character between array elements within a value in CSV data.\n" +
                             "      [default:;]\n" +
                             "  --max-memory=<max-memory-that-importer-can-use>\n" +
