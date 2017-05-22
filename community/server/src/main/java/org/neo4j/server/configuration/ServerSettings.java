@@ -176,6 +176,10 @@ public class ServerSettings implements LoadableConfig
     @Description("Timeout for idle transactions in the REST endpoint.")
     public static final Setting<Long> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout", DURATION, "60s" );
 
+    @SuppressWarnings("unused") // accessed from the browser
+    @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple commands with semi-colon." )
+    public static final Setting<String> browser_postConnectCmd = setting( "browser.post_connect_cmd", STRING, "" );
+
     @Internal
     public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );
 
