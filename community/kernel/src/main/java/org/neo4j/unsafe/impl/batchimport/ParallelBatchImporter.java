@@ -299,7 +299,6 @@ public class ParallelBatchImporter implements BatchImporter
             BatchingNeoStores neoStore, RelationshipTypeDistribution typeDistribution,
             long freeMemoryForDenseNodeCache )
     {
-        System.out.println( "linking" );
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
@@ -320,7 +319,6 @@ public class ParallelBatchImporter implements BatchImporter
             PrimitiveIntSet typesToLinkThisRound = rounds.next();
             boolean thisIsTheFirstRound = round == 0;
             boolean thisIsTheOnlyRound = thisIsTheFirstRound && !rounds.hasNext();
-            System.out.println( "ROUND " + round );
 
             nodeRelationshipCache.setForwardScan( true, true/*dense*/ );
             String range = typesToLinkThisRound.size() == 1

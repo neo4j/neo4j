@@ -39,8 +39,6 @@ public class RelationshipLinkforwardStep extends RelationshipLinkStep
     @Override
     protected void linkStart( RelationshipRecord record )
     {
-        System.out.println( "LINKFORWARD " + record.getId() );
-
         long firstNextRel = cache.getAndPutRelationship( record.getFirstNode(),
                 record.getType(), Direction.OUTGOING, record.getId(), true );
         record.setFirstNextRel( firstNextRel );
@@ -49,7 +47,6 @@ public class RelationshipLinkforwardStep extends RelationshipLinkStep
     @Override
     protected void linkEnd( RelationshipRecord record )
     {
-        System.out.println( "LINKFORWARD " + record.getId() );
         long secondNextRel = cache.getAndPutRelationship( record.getSecondNode(),
                 record.getType(), Direction.INCOMING, record.getId(), true );
         record.setSecondNextRel( secondNextRel );
@@ -58,7 +55,6 @@ public class RelationshipLinkforwardStep extends RelationshipLinkStep
     @Override
     protected void linkLoop( RelationshipRecord record )
     {
-        System.out.println( "LINKFORWARD " + record.getId() + " loop" );
         long firstNextRel = cache.getAndPutRelationship(
                 record.getFirstNode(), record.getType(), BOTH, record.getId(), true );
         record.setFirstNextRel( firstNextRel );

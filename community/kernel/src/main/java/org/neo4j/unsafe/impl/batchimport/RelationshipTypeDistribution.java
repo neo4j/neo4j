@@ -65,7 +65,7 @@ public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDi
                 highestTypeId = max( highestTypeId, client.highestTypeId );
             }
 
-            long[] counts = new long[highestTypeId];
+            long[] counts = new long[highestTypeId + 1];
             for ( Client client : clients )
             {
                 client.addTo( counts );

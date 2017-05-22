@@ -44,8 +44,6 @@ public class RelationshipLinkbackStep extends RelationshipLinkStep
     @Override
     protected void linkStart( RelationshipRecord record )
     {
-        System.out.println( "LINKBACK " + record.getId() );
-
         int typeId = record.getType();
         long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
                 typeId, Direction.OUTGOING, record.getId(), false );
@@ -60,8 +58,6 @@ public class RelationshipLinkbackStep extends RelationshipLinkStep
     @Override
     protected void linkEnd( RelationshipRecord record )
     {
-        System.out.println( "LINKBACK " + record.getId() );
-
         int typeId = record.getType();
         long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
                 typeId, Direction.INCOMING, record.getId(), false );
@@ -76,8 +72,6 @@ public class RelationshipLinkbackStep extends RelationshipLinkStep
     @Override
     protected void linkLoop( RelationshipRecord record )
     {
-        System.out.println( "LINKBACK " + record.getId() + " loop" );
-
         int typeId = record.getType();
         long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
                 typeId, Direction.BOTH, record.getId(), false );

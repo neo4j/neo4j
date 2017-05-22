@@ -139,6 +139,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public interface Monitor
     {
+        /**
+         * Adapter for {@link Monitor}.
+         */
         class Adaptor implements Monitor
         {
             @Override

@@ -20,8 +20,10 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBaseIterator
 {
@@ -29,12 +31,12 @@ public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBase
     private IdRangeIterator batch;
     private final int batchSize;
 
-    public BatchingIdGetter( IdSequence source )
+    public BatchingIdGetter( RecordStore<? extends AbstractBaseRecord> source )
     {
-        this( source, 100 );
+        this( source, source.getRecordsPerPage() );
     }
 
-    public BatchingIdGetter( IdSequence source, int batchSize )
+    public BatchingIdGetter( RecordStore<? extends AbstractBaseRecord> source, int batchSize )
     {
         this.source = source;
         this.batchSize = batchSize;

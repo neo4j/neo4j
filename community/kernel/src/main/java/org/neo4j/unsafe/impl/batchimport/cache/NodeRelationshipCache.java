@@ -368,7 +368,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         {
             if ( isDense( i ) )
             {
-                System.out.println( i + " is dense" );
                 count++;
             }
         }
