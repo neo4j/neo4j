@@ -1429,7 +1429,6 @@ public class GBPTreeTest
                     {
                         if ( blockOnNextIO.get() )
                         {
-                            blockOnNextIO.set( false );
                             barrier.reached();
                         }
                     }
