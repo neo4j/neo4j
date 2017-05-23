@@ -66,7 +66,12 @@ public class LifecycleException
         if ( cause != null )
         {
             Throwable root = rootCause( cause );
-            message.append( " Please see the attached cause exception \"" ).append( root.getMessage() ).append( "\"." );
+            message.append( " Please see the attached cause exception \"" ).append( root.getMessage() ).append( '"' );
+            if ( root.getCause() != null )
+            {
+                message.append( " (root cause cycle detected)" );
+            }
+            message.append( '.' );
         }
 
         return message.toString();

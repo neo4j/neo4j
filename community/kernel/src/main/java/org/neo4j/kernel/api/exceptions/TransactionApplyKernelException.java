@@ -30,9 +30,4 @@ public class TransactionApplyKernelException extends KernelException
     {
         super( Status.General.UnknownError, cause, message, parameters );
     }
-
-    public TransactionApplyKernelException( String message, Object... parameters )
-    {
-        super( Status.General.UnknownError, message, parameters );
-    }
 }
