@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_3.helpers
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -30,7 +32,7 @@ class JavaConversionSupportTest extends CypherFunSuite {
     val iterator = PrimitiveLongCollections.iterator( 12l, 14l )
 
     // when
-    val result = helpers.JavaConversionSupport.asScala(iterator)
+    val result = JavaConversionSupport.asScala(iterator)
 
     // then
     List(12l, 14l) should equal(result.toList)
@@ -42,7 +44,7 @@ class JavaConversionSupportTest extends CypherFunSuite {
     val iterator = PrimitiveLongCollections.iterator( 12l, 14l )
 
     // when
-    val result = helpers.JavaConversionSupport.mapToScala(iterator){ _ + 1l }
+    val result = runtime.helpers.JavaConversionSupport.mapToScala(iterator){ _ + 1l }
 
     // then
     List(13l, 15l) should equal(result.toList)

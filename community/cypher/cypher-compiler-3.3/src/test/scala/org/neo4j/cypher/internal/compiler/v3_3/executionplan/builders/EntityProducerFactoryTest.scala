@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_3.executionplan.builders
 import java.util
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, IndexDescriptor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_3.commands._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionContext, IndexDescriptor}
 import org.neo4j.cypher.internal.frontend.v3_3.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.v3_3.QueryContextAdaptation
 import org.neo4j.graphdb.Node
 
 class EntityProducerFactoryTest extends CypherFunSuite {

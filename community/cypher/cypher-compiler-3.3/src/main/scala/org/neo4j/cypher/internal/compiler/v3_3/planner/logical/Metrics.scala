@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
 import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, _}
 
 import scala.language.implicitConversions
@@ -59,18 +59,24 @@ object Metrics {
   type LabelInfo = Map[IdName, Set[LabelName]]
 }
 
+trait ExpressionEvaluator {
+  def hasParameters(expr: Expression): Boolean
+  def isNonDeterministic(expr: Expression): Boolean
+  def evaluateExpression(expr: Expression): Option[Any]
+}
+
 case class Metrics(cost: CostModel,
                    cardinality: CardinalityModel,
                    queryGraphCardinalityModel: QueryGraphCardinalityModel)
 
 trait MetricsFactory {
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def newCostModel(): CostModel
   def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics) = {
+  def newMetrics(statistics: GraphStatistics,expressionEvaluator: ExpressionEvaluator) = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
-    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
+    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
     Metrics(newCostModel(), cardinality, queryGraphCardinalityModel)
   }
 }

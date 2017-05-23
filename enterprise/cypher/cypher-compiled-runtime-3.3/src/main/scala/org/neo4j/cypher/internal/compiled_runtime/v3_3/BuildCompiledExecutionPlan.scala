@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_3
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{QueryContext, TaskCloser, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 
-object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, CompilationState, CompilationState] {
+object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, LogicalPlanState, LogicalPlanState] {
 
   override def phase = CODE_GENERATION
 
@@ -42,7 +43,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, Compilat
 
   override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
 
-  override def process(from: CompilationState, context: CompiledRuntimeContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: CompiledRuntimeContext): LogicalPlanState = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
@@ -27,7 +28,7 @@ import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Cost, PlannerQuery, Query
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Set[(String, Seq[String])]
@@ -42,8 +43,8 @@ trait LogicalPlanningConfiguration {
 
 class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
   override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
-    parent.cardinalityModel(queryGraphCardinalityModel)
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator: CardinalityModel =
+    parent.cardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
   override def costModel() = parent.costModel()
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3
 
 import org.neo4j.cypher.internal.compatibility.v3_3.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.NewRuntimeSuccessRateMonitor
-import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
@@ -68,8 +68,8 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
         override def statistics: GraphStatistics = HardcodedGraphStatistics
       }, codeStructure = GeneratedQueryStructure)
 
-    val state = CompilationState("apa", None, CostBasedPlannerName.default,
-      maybeLogicalPlan = Some(plan), maybeSemanticTable = Some(new SemanticTable()))
+    val state = LogicalPlanState("apa", None, CostBasedPlannerName.default,
+                                 maybeLogicalPlan = Some(plan), maybeSemanticTable = Some(new SemanticTable()))
 
     // When
     BuildCompiledExecutionPlan.process(state, context)

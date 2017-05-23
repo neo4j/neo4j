@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.phases
 
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
@@ -40,7 +39,7 @@ case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) exte
   assert(acceptableTypes.contains(manifest.runtimeClass))
 
   override def check(in: AnyRef): Seq[String] = in match {
-    case state: CompilationState =>
+    case state: LogicalPlanState =>
       manifest.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")

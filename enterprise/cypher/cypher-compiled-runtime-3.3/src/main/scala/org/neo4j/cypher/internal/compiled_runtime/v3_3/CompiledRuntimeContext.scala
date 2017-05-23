@@ -24,8 +24,6 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.GeneratedQuery
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, UpdateStrategy}
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext

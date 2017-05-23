@@ -23,8 +23,8 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.v3_3.NormalMode
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite

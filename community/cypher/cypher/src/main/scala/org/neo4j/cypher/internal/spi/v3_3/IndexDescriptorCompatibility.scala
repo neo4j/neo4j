@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.spi.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.api.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
 
 trait IndexDescriptorCompatibility {
-  implicit def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
+  implicit def cypherToKernel(index: IndexDescriptor): KernelIndexDescriptor =
     IndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
-  implicit def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
+  implicit def kernelToCypher(index: KernelIndexDescriptor): IndexDescriptor =
     CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds)
 
-  implicit def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
+  implicit def cypherToKernelSchema(index: IndexDescriptor): LabelSchemaDescriptor =
     SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
 
   implicit def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =

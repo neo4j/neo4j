@@ -69,7 +69,7 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
 
   override def process(from: BaseState, context: CompilerContext): BaseState = {
     val rewrittenStatement = from.statement().endoRewrite(rewriter(context.planContext))
-    CompilationState(from).copy(maybeStatement = Some(rewrittenStatement))
+    LogicalPlanState(from).copy(maybeStatement = Some(rewrittenStatement))
   }
 
   override def postConditions: Set[Condition] = Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
@@ -82,7 +83,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def newCostModel() =
         (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
-      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
+      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
         config.cardinalityModel(queryGraphCardinalityModel)
 
       def newQueryGraphCardinalityModel(statistics: GraphStatistics) = QueryGraphCardinalityModel.default(statistics)
@@ -156,12 +157,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     //
     // cf. QueryPlanningStrategy
     //
-    private def namePatternPredicates(input: CompilationState, context: CompilerContext): CompilationState = {
+    private def namePatternPredicates(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
       val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
       input.copy(maybeStatement = Some(newStatement))
     }
 
-    private def removeApply(input: CompilationState, context: CompilerContext): CompilationState = {
+    private def removeApply(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply))
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
@@ -171,7 +172,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val metrics = metricsFactory.newMetrics(planContext.statistics)
       def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics, config = cypherCompilerConfig)
 
-      val state = CompilationState(queryString, None, IDPPlannerName)
+      val state = LogicalPlanState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
       (output.periodicCommit, logicalPlan, output.semanticTable)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.commands
 
-import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{QueryState, QueryStateHelper}

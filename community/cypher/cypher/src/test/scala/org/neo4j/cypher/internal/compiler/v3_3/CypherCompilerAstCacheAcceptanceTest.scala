@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.v3_3.{StringInfoLogger, WrappedMonitors}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.{CacheAccessor, StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer

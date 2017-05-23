@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.TokenType.PropertyKey

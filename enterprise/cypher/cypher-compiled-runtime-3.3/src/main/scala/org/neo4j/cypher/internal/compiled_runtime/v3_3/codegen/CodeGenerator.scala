@@ -22,18 +22,18 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen
 import java.time.Clock
 import java.util
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, QueryContext, TaskCloser}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{InternalExecutionResult, PlanFingerprint, Provider}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.{PlannerName, SemanticTable}
 

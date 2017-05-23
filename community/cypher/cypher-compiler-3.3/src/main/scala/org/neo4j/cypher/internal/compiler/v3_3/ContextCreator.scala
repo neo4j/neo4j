@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, MetricsFactory, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
@@ -37,13 +35,11 @@ trait ContextCreator[Context <: BaseContext] {
              debugOptions: Set[String],
              offset: Option[InputPosition],
              monitors: Monitors,
-             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-             typeConverter: RuntimeTypeConverter,
              metricsFactory: MetricsFactory,
-             queryGraphSolver: QueryGraphSolver,
              config: CypherCompilerConfiguration,
              updateStrategy: UpdateStrategy,
-             clock: Clock): Context
+             clock: Clock,
+             evaluator: ExpressionEvaluator): Context
 }
 
 object CommunityContextCreator extends ContextCreator[CompilerContext] {
@@ -54,21 +50,19 @@ object CommunityContextCreator extends ContextCreator[CompilerContext] {
                       debugOptions: Set[String],
                       offset: Option[InputPosition],
                       monitors: Monitors,
-                      createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                      typeConverter: RuntimeTypeConverter,
                       metricsFactory: MetricsFactory,
-                      queryGraphSolver: QueryGraphSolver,
                       config: CypherCompilerConfiguration,
                       updateStrategy: UpdateStrategy,
-                      clock: Clock): CompilerContext = {
+                      clock: Clock,
+                      evaluator: ExpressionEvaluator): CompilerContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics)
+      metricsFactory.newMetrics(planContext.statistics, evaluator)
 
-    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock)
+    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
+      monitors, metrics, config, updateStrategy, debugOptions, clock)
   }
 }

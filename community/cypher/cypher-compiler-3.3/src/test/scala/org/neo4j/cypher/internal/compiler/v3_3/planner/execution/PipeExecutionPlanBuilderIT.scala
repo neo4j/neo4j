@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.execution
 import java.time.Clock
 
 import org.mockito.Mockito.{atLeastOnce, verify, when}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.True

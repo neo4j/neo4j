@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{CompositeQueryExpression, ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._

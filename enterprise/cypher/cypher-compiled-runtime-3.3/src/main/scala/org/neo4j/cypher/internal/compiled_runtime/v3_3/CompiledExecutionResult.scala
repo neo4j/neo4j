@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3
 
 import java.util
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, InternalQueryStatistics, QueryContext, TaskCloser}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.GeneratedQueryExecution
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, InternalQueryStatistics, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{Provider, READ_ONLY, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 
 /**

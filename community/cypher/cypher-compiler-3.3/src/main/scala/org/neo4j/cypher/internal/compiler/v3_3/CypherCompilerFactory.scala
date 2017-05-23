@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationState, CompilerContext}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
@@ -31,40 +32,33 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{ASTRewriter, IfNoP
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
 
-class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, CompilationState, CompilationState]] {
+class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
   val monitorTag = "cypher3.3"
 
   def costBasedCompiler(config: CypherCompilerConfiguration,
                         clock: Clock,
-                        monitors: Monitors, logger: InfoLogger,
+                        monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
-                        runtimeName: Option[RuntimeName],
                         updateStrategy: Option[UpdateStrategy],
-                        typeConverter: RuntimeTypeConverter,
-                        runtimeBuilder: RuntimeBuilder[T],
                         contextCreator: ContextCreator[C]): CypherCompiler[C] = {
     val rewriter = new ASTRewriter(rewriterSequencer, IfNoParameter)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-
-    // Pick runtime based on input
-    val runtimePipeline = runtimeBuilder.create(runtimeName, config.useErrorsOverWarnings)
 
     val planner = plannerName.getOrElse(CostBasedPlannerName.default)
     val queryGraphSolver = createQueryGraphSolver(planner, monitors, config)
 
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
 
-    val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
-      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
-    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
-    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
-    val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
+//    val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
+//      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
+//    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
+//    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
+//    val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+//    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    CypherCompiler(runtimePipeline, rewriter, cache, planCacheFactory, cacheMonitor, monitors, rewriterSequencer,
-      createFingerprintReference, typeConverter, metricsFactory, queryGraphSolver, config, actualUpdateStrategy, clock,
-      contextCreator)
+    CypherCompiler( rewriter, monitors, rewriterSequencer,
+      metricsFactory, config, actualUpdateStrategy, clock, contextCreator)
   }
 
   def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors, config: CypherCompilerConfiguration): QueryGraphSolver = n match {
@@ -83,9 +77,9 @@ class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, Compilatio
       IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
   }
 
-  private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: Statement, userKey: String) {
-      log.info(s"Discarded stale query from the query cache: $userKey")
-    }
-  }
+//  private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
+//    override def cacheDiscard(key: Statement, userKey: String) {
+//      log.info(s"Discarded stale query from the query cache: $userKey")
+//    }
+//  }
 }

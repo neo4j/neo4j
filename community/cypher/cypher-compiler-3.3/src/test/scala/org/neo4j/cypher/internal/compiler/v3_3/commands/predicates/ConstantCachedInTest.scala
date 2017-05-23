@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.commands.predicates
 
-import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.commands.values
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, TokenContext}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class KeyTokenTest extends CypherFunSuite {

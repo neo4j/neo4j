@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationState, CompilerContext}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
@@ -50,12 +50,12 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
   ).rewriter)
 }
 
-trait LogicalPlanRewriter extends Phase[CompilerContext, CompilationState, CompilationState] {
+trait LogicalPlanRewriter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
   def instance(context: CompilerContext): Rewriter
 
-  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
     val rewritten = from.logicalPlan.endoRewrite(instance(context))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }

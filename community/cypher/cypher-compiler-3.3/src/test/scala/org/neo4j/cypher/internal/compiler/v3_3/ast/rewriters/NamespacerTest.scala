@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_3.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
@@ -89,7 +89,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)
-    val fromState = CompilationState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState))
+    val fromState = LogicalPlanState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState))
     val toState = Namespacer.transform(fromState, ContextHelper.create())
 
     val expectedAst = parseAndRewrite(to)

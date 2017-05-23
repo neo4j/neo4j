@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
@@ -54,7 +55,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   def costModel() = cost.orElse(parent.costModel())
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel = {
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evalutor: ExpressionEvaluator): CardinalityModel = {
     (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
       val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
         case (name: String, cardinality: Cardinality) =>
@@ -67,7 +68,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
       }
 
       val r: PartialFunction[PlannerQuery, Cardinality] = labelScanCardinality.orElse(cardinality)
-      if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel)(pq, input, semanticTable)
+      if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, evalutor)(pq, input, semanticTable)
     }
   }
 

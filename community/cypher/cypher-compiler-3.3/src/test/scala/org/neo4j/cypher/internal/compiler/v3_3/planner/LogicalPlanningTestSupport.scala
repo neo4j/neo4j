@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.{namePatternPredicatePatternElements, _}
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
@@ -63,8 +63,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
-      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
+      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
     def newCostModel() =
       SimpleMetricsFactory.newCostModel()
     def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
@@ -201,7 +201,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
-    CompilationState(input).copy(maybeStatement = Some(newStatement))
+    LogicalPlanState(input).copy(maybeStatement = Some(newStatement))
   }
 
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
@@ -217,7 +217,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = CompilationState(query, None, CostBasedPlannerName.default)
+    val state = LogicalPlanState(query, None, CostBasedPlannerName.default)
 
     val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
     val output = pipeLine.transform(state, context)

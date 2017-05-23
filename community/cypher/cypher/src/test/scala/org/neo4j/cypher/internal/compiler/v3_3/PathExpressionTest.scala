@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{NonEmpty, True}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.values.UnresolvedLabel

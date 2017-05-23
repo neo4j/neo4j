@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.commands.values.{KeyToken, TokenType}
-
 object LabelSupport extends ListSupport {
   def labelCollection(elems: String*): Seq[KeyToken] = Seq(elems.map(KeyToken.Unresolved(_, TokenType.Label)): _*)
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 

@@ -22,11 +22,8 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, ProfileMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 
 object ExecutionPlanBuilder {

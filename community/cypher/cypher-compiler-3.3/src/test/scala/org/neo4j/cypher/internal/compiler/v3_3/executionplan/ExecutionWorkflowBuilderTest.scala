@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_3.executionplan
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IdentityTypeConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CloseableResource, EagerResultIterator, QueryContext, QueryTransactionalContext, _}
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_3.planner.execution.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, QueryTransactionalContext}
+
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{CloseableResource, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}

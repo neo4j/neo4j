@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.mutation
 
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{CastSupport, ListSupport}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, ListSupport}
 
 import scala.collection.mutable
 

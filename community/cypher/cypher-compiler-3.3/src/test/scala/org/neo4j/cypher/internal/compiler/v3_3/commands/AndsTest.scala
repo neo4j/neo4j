@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.commands
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_3.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.{Ands, Not, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList

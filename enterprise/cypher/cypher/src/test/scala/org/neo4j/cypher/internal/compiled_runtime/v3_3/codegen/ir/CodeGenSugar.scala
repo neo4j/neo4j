@@ -23,6 +23,7 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
@@ -31,11 +32,11 @@ import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, NormalMode}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.spi.v3_3.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AnonymousContext

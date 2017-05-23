@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_3.RuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeName
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, PageCacheMisses, Rows}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName

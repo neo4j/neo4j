@@ -23,12 +23,15 @@ import java.util
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.internal.compiler.v3_3.executionplan.Completable
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, NormalMode, ResultRowImpl, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_3.NormalMode
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.helpers.collection.Iterators
 

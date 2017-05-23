@@ -21,10 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.mutation
 
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

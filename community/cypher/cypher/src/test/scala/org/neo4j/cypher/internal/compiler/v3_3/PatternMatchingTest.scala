@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.commands.RelatedTo
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.HasLabel

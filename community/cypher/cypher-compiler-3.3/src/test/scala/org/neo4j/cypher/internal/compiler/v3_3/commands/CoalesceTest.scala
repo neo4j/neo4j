@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.commands
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{CoalesceFunction, Expression, Literal, Null}
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.{QueryState, QueryStateHelper}
