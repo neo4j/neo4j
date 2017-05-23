@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.scenarios;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +32,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -41,20 +41,18 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureInClusterIT
 {
     private final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 1 );
-    private final VerboseTimeout timeout = VerboseTimeout.builder()
-            .withTimeout( 1000, TimeUnit.SECONDS )
-            .build();
+    private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 1000, SECONDS ).build();
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( clusterRule ).around( timeout );
     private Cluster cluster;
@@ -72,7 +70,6 @@ public class ListQueriesProcedureInClusterIT
     {
         // given
         String CORE_QUERY = "MATCH (n) SET n.number = n.number - 1";
-        String REPLICA_QUERY = "MATCH (n) RETURN n";
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatchOnCore = new CountDownLatch( 1 );
         CountDownLatch executedCoreQueryLatch = new CountDownLatch( 1 );
@@ -90,44 +87,34 @@ public class ListQueriesProcedureInClusterIT
 
         CoreGraphDatabase leaderDb = leader.database();
         Result matchAllResult = leaderDb.execute( "MATCH (n) RETURN n" );
-        assertTrue( matchAllResult.hasNext() );
+        assertTrue( "setup should have created a node", matchAllResult.hasNext() );
         matchAllResult.close();
 
-        try
-        {
-            acquireLocksAndSetupCountdownLatch( resourceLocked, listQueriesLatchOnCore, node[0] );
+        acquireLocksAndSetupCountdownLatch( resourceLocked, listQueriesLatchOnCore, node[0] );
 
-            resourceLocked.await();
+        resourceLocked.await();
 
-            //When
-            executeQueryOnReplicaAndLeader( leaderDb, CORE_QUERY, replicaDb, REPLICA_QUERY, executedCoreQueryLatch );
+        //When
+        threads.executeAndAwait(
+                executeQuery( CORE_QUERY, executedCoreQueryLatch::countDown ),/*on: */ leaderDb,
+                waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
 
-            //Then
-            try
-            {
-                Map<String,Object> coreQueryListing = getQueryListing( CORE_QUERY, leaderDb ).get();
-                Optional<Map<String,Object>> replicaQueryListing = getQueryListing( REPLICA_QUERY, replicaDb );
+        //Then
+        Optional<Map<String,Object>> coreQueryListing1 = getQueryListing( CORE_QUERY, leaderDb );
+        Optional<Map<String,Object>> replicaQueryListing = getQueryListing( CORE_QUERY, replicaDb );
+        Optional<Map<String,Object>> coreQueryListing2 = getQueryListing( CORE_QUERY, leaderDb );
 
-                assertNotNull( coreQueryListing );
-                assertThat( coreQueryListing.get( "activeLockCount" ), is( 1L ) );
-                assertFalse( replicaQueryListing.isPresent() );
+        assertTrue( "query should be visible on core", coreQueryListing1.isPresent() );
+        assertThat( coreQueryListing1.get().get( "activeLockCount" ), is( 1L ) );
+        assertFalse( "query should not be visible on replica", replicaQueryListing.isPresent() );
+        assertTrue(
+                "query should be visible on core after it being determined not present on replicas",
+                coreQueryListing2.isPresent() );
 
-                listQueriesLatchOnCore.countDown();
-                executedCoreQueryLatch.await();
+        listQueriesLatchOnCore.countDown();
+        executedCoreQueryLatch.await();
 
-                assertFalse( getQueryListing( CORE_QUERY, leaderDb ).isPresent() );
-            }
-            catch ( Exception e )
-            {
-                e.printStackTrace();
-                fail( "Couldn't countdown listqueries latch" );
-            }
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
-            fail( "Should create node and list queries" );
-        }
+        assertFalse( getQueryListing( CORE_QUERY, leaderDb ).isPresent() );
     }
 
     private void acquireLocksAndSetupCountdownLatch(
@@ -135,47 +122,32 @@ public class ListQueriesProcedureInClusterIT
     {
         threads.execute( param ->
         {
-            cluster.coreTx( ( leaderDb, secondTransaction ) ->
+            cluster.coreTx( ( leaderDb, tx ) ->
             {
-
                 //lock node
-                secondTransaction.acquireWriteLock( node );
+                tx.acquireWriteLock( node );
                 resourceLocked.countDown();
                 try
                 {
                     listQueriesLatch.await();
                 }
-                catch ( InterruptedException e1 )
+                catch ( InterruptedException e )
                 {
-                    e1.printStackTrace();
-                    fail( "failure in locking node" );
+                    throw new AssertionError( "failure in locking node", e );
                 }
             } );
             return null;
         }, null );
     }
 
-    private void executeQueryOnReplicaAndLeader(
-            CoreGraphDatabase leaderDb,
-            String CORE_QUERY,
-            ReadReplicaGraphDatabase replicaDb,
-            String REPLICA_QUERY,
-            CountDownLatch executedCoreQueryLatch )
+    private ThrowingFunction<GraphDatabaseFacade,Void,RuntimeException> executeQuery( String query, Runnable then )
     {
-        //Execute query on Leader
-        threads.execute( parameter ->
+        return db ->
         {
-            leaderDb.execute( CORE_QUERY ).close();
-            executedCoreQueryLatch.countDown();
+            db.execute( query );
+            then.run();
             return null;
-        }, null );
-
-        //Execute query on Replica
-        threads.execute( parameter ->
-        {
-            replicaDb.execute( REPLICA_QUERY ).close();
-            return null;
-        }, null );
+        };
     }
 
     private Optional<Map<String,Object>> getQueryListing( String query, GraphDatabaseFacade db )
