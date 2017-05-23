@@ -82,6 +82,10 @@ public class IndexTxStateUpdater
                 OrderedPropertyValues values = getOrderedPropertyValues( state, node, indexPropertyIds );
                 if ( changeType == LabelChangeType.ADDED_LABEL )
                 {
+                    for ( int i = 0; i < values.size(); i++ )
+                    {
+                        Validators.INDEX_VALUE_VALIDATOR.validate( values.valueAt(i) );
+                    }
                     state.writableTxState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
                 }
                 else
