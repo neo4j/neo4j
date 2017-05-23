@@ -20,11 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.ast.PrefixSeekRangeWrapper
-import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters.toCommandExpression
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{InequalitySeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.compiler.v3_3.commands.{QueryExpression, RangeQueryExpression}
-import org.neo4j.cypher.internal.compiler.v3_3.pipes._
+import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
@@ -61,11 +57,11 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
       case NodeIndexSeek(_, label, propertyKeys, valueExpr, _) =>
         val (indexMode, indexDesc) = getDescriptions(label, propertyKeys, valueExpr, unique = false, readOnly)
-        PlanDescriptionImpl(id, indexMode.name, NoChildren, Seq(indexDesc), variables)
+        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case NodeUniqueIndexSeek(_, label, propertyKeys, valueExpr, _) =>
         val (indexMode, indexDesc) = getDescriptions(label, propertyKeys, valueExpr, unique = true, readOnly)
-        PlanDescriptionImpl(id, indexMode.name, NoChildren, Seq(indexDesc), variables)
+        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(indexDesc), variables)
 
       case ProduceResult(_, _) =>
         PlanDescriptionImpl(id, "ProduceResults", NoChildren, Seq(), variables)
@@ -74,7 +70,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         SingleRowPlanDescription(id, Seq.empty, variables)
 
       case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
-        val entityByIdRhs = EntityByIdRhs(relIds.asCommandSeekArgs)
+        val entityByIdRhs = EntityByIdRhs(relIds)
         PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
 
       case _: LegacyNodeIndexSeek | _: LegacyRelationshipIndexSeek =>
@@ -189,12 +185,11 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "ProduceResults", children, Seq(), variables)
 
       case Projection(_, expr) =>
-        val expressions = LegacyExpressions(expr.mapValues(toCommandExpression))
+        val expressions = Expressions(expr)
         PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
 
       case Selection(predicates, _) =>
-        val legacyExpressions = predicates.map(e => LegacyExpression(toCommandExpression(e)))
-        PlanDescriptionImpl(id, "Filter", children, legacyExpressions, variables)
+        PlanDescriptionImpl(id, "Filter", children, predicates.map(Expression), variables)
 
       case Skip(_, count) =>
         PlanDescriptionImpl(id, name = "Skip", children, Seq(Expression(count)), variables)
@@ -367,49 +362,33 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[ast.Expression],
                               unique: Boolean,
-                              readOnly: Boolean): (IndexSeekMode, planDescription.Argument) = {
-    val commandExpression = valueExpr.map(toCommandExpression) // TODO: This should not be necessary
-    val indexMode = IndexSeekModeFactory(unique, readOnly).fromQueryExpression(commandExpression)
+                              readOnly: Boolean): (String, planDescription.Argument) = {
 
-    valueExpr match {
+    val (name, indexDesc, ) = valueExpr match {
       case e: RangeQueryExpression[_]  =>
         assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
         val propertyKey = propertyKeys.head.name
+        val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
         e.expression match {
-          case PrefixSeekRangeWrapper(range) => PrefixIndex(label.name, propertyKey, prefix)
-        }
-      case _ if unique && !readOnly => LockingUniqueIndexSeek
-      case _ if unique => UniqueIndexSeek
-      case _ => IndexSeek
-    }
-    val indexDesc = indexMode match {
-      case IndexSeekByRange | UniqueIndexSeekByRange =>
-        commandExpression match {
-          case e: RangeQueryExpression[_] =>
-            assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
-            val propertyKey = propertyKeys.head.name
-            e.expression match {
-              case PrefixSeekRangeExpression(PrefixRange(prefix)) =>
-                PrefixIndex(label.name, propertyKey, prefix)
-
-              case InequalitySeekRangeExpression(RangeLessThan(bounds)) =>
-                InequalityIndex(label.name, propertyKey, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
-
-              case InequalitySeekRangeExpression(RangeGreaterThan(bounds)) =>
-                InequalityIndex(label.name, propertyKey, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq)
-
-              case InequalitySeekRangeExpression(RangeBetween(greaterThanBounds, lessThanBounds)) =>
-                val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
-                val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
-                InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText)
-            }
-
+          case PrefixSeekRangeWrapper(range) =>
+            (name, PrefixIndex(label.name, propertyKey, range.prefix))
+          case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
+            (name, InequalityIndex(label.name, propertyKey, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq))
+          case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
+            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+            val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+            (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
           case _ =>
             throw new InternalException("This should never happen. Missing a case?")
         }
-      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKeys.map(_.name))
-      case _ => throw new InternalException("This should never happen. Missing a case?")
+      case _ =>
+        val name =
+          if (unique && readOnly) "NodeIndexSeekByRange"
+          else if (unique) "NodeUniqueIndexSeek(Locking)"
+          else "NodeIndexSeek"
+        (name, Index(label.name, propertyKeys.map(_.name)))
     }
-    (indexMode, indexDesc)
+
+    (name, indexDesc)
   }
 }

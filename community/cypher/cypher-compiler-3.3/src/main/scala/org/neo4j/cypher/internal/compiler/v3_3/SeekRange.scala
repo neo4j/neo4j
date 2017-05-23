@@ -19,15 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering
 import org.neo4j.cypher.internal.frontend.v3_3.{Bound, Bounds}
 
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
   same node and property (n.prop) during planning, esp. for generating index seek by range plans.
-
-  Seek ranges are used both during planning (in the ast), and at runtime (as a value). To achieve this
-  they are generic in the type of the actual limits used by their bounds (type parameter V).
  */
 sealed trait SeekRange[+V]
 
