@@ -41,6 +41,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static org.neo4j.csv.reader.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+
 public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
@@ -98,7 +102,33 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) );
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "multiline-fields",
+                    DEFAULT.multilineFields(),
+                    "Whether or not fields from input source can span multiple lines," +
+                            " i.e. contain newline characters." ) )
+            .withArgument( new OptionalNamedArg( "delimiter",
+                    "delimiter-character",
+                    String.valueOf( COMMAS.delimiter() ),
+                    "Delimiter character between values in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "array-delimiter",
+                    "array-delimiter-character",
+                    String.valueOf( COMMAS.arrayDelimiter() ),
+                    "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "quote",
+                    "quotation-character",
+                    String.valueOf( COMMAS.quotationCharacter() ),
+                    "Character to treat as quotation character for values in CSV data. "
+                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
+                            "interpreted as a literal \". You cannot escape using \\." ) )
+            .withArgument( new OptionalNamedArg( "max-memory",
+                    "max-memory-that-importer-can-use",
+                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
+                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
+                            "to improve performance. " +
+                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
+                            "." ) );
+
     private static final Arguments allArguments = new Arguments()
             .withDatabase()
             .withAdditionalConfig()
@@ -140,8 +170,31 @@ public class ImportCommand implements AdminCommand
             .withArgument( new OptionalBooleanArg( "ignore-duplicate-nodes", false,
                     "If duplicate nodes should be ignored during the import." ) )
             .withArgument( new OptionalBooleanArg( "ignore-missing-nodes", false,
-                    "If relationships referring to missing nodes should be ignored during the import." ) );
-
+                    "If relationships referring to missing nodes should be ignored during the import." ) )
+            .withArgument( new OptionalBooleanArg( "multiline-fields",
+                    DEFAULT.multilineFields(),
+                    "Whether or not fields from input source can span multiple lines," +
+                            " i.e. contain newline characters." ) )
+            .withArgument( new OptionalNamedArg( "delimiter",
+                    String.valueOf( COMMAS.delimiter() ),
+                    String.valueOf( COMMAS.delimiter() ), "Delimiter character between values in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "array-delimiter",
+                    String.valueOf( COMMAS.delimiter() ),
+                    String.valueOf( COMMAS.arrayDelimiter() ),
+                    "Delimiter character between array elements within a value in CSV data." ) )
+            .withArgument( new OptionalNamedArg( "quote",
+                    "quotation-character",
+                    String.valueOf( COMMAS.quotationCharacter() ),
+                    "Character to treat as quotation character for values in CSV data. "
+                            + "Quotes can be escaped as per RFC 4180 by doubling them, for example \"\" would be " +
+                            "interpreted as a literal \". You cannot escape using \\." ) )
+            .withArgument( new OptionalNamedArg( "max-memory",
+                    "max-memory-that-importer-can-use",
+                    String.valueOf( DEFAULT_MAX_MEMORY_PERCENT ) + "%",
+                    "Maximum memory that neo4j-admin can use for various data structures and caching " +
+                            "to improve performance. " +
+                            "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%" +
+                            "." ) );
     public static Arguments databaseArguments()
     {
         return databaseArguments;

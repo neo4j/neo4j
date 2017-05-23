@@ -62,6 +62,16 @@ public class CharacterConverterTest
     }
 
     @Test
+    public void shouldConvert_t_AsTab() throws Exception
+    {
+        // GIVEN
+        char expected = '\t';
+
+        // THEN
+        assertCorrectConversion( expected, "\t" );
+    }
+
+    @Test
     public void shouldConvertSpelledOut_TAB_AsTab() throws Exception
     {
         // GIVEN

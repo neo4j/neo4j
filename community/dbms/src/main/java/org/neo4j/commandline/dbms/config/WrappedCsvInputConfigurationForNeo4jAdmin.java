@@ -77,4 +77,10 @@ public class WrappedCsvInputConfigurationForNeo4jAdmin implements Configuration
     {
         return false;
     }
+
+    @Override
+    public boolean legacyStyleQuoting()
+    {
+        return false;
+    }
 }

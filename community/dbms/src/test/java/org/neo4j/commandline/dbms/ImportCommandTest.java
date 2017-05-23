@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -208,6 +208,11 @@ public class ImportCommandTest
                             "                          [--ignore-extra-columns[=<true|false>]]%n" +
                             "                          [--ignore-duplicate-nodes[=<true|false>]]%n" +
                             "                          [--ignore-missing-nodes[=<true|false>]]%n" +
+                            "                          [--multiline-fields[=<true|false>]]%n" +
+                            "                          [--delimiter=<delimiter-character>]%n" +
+                            "                          [--array-delimiter=<array-delimiter-character>]%n" +
+                            "                          [--quote=<quotation-character>]%n" +
+                            "                          [--max-memory=<max-memory-that-importer-can-use>]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -258,7 +263,23 @@ public class ImportCommandTest
                             "      If duplicate nodes should be ignored during the import. [default:false]%n" +
                             "  --ignore-missing-nodes=<true|false>%n" +
                             "      If relationships referring to missing nodes should be ignored during the%n" +
-                            "      import. [default:false]%n" ),
+                            "      import. [default:false]%n" +
+                            "  --multiline-fields=<true|false>%n" +
+                            "      Whether or not fields from input source can span multiple lines, i.e.%n" +
+                            "      contain newline characters. [default:false]%n" +
+                            "  --delimiter=<,>%n" +
+                            "      Delimiter character between values in CSV data. [default:,]%n" +
+                            "  --array-delimiter=<,>%n" +
+                            "      Delimiter character between array elements within a value in CSV data.%n" +
+                            "      [default:;]%n" +
+                            "  --quote=<quotation-character>%n" +
+                            "      Character to treat as quotation character for values in CSV data. Quotes%n" +
+                            "      can be escaped as per RFC 4180 by doubling them, for example \"\" would be%n" +
+                            "      interpreted as a literal \". You cannot escape using \\. [default:\"]%n" +
+                            "  --max-memory=<max-memory-that-importer-can-use>%n" +
+                            "      Maximum memory that neo4j-admin can use for various data structures and%n" +
+                            "      caching to improve performance. Values can be plain numbers, like 10000000%n" +
+                            "      or e.g. 20G for 20 gigabyte, or even e.g. 70%%. [default:90%%]%n"),
                     baos.toString() );
         }
     }
