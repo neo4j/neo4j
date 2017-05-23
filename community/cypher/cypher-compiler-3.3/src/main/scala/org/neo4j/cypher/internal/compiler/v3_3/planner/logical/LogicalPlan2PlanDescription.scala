@@ -364,7 +364,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
                               unique: Boolean,
                               readOnly: Boolean): (String, planDescription.Argument) = {
 
-    val (name, indexDesc, ) = valueExpr match {
+    val (name, indexDesc) = valueExpr match {
       case e: RangeQueryExpression[_]  =>
         assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
         val propertyKey = propertyKeys.head.name

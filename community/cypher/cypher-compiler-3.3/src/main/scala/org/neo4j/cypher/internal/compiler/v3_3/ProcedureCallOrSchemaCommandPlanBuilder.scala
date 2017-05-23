@@ -97,19 +97,4 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
 
     LogicalPlanState(from).withMaybeLogicalPlan(maybeLogicalPlan)
   }
-
-  implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
-    LabelId(ctx.getOrCreateLabelId(label.name))
-
-  implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =
-    PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name))
-
-  implicit private def propertiesToIds(ctx: QueryContext)(properties: List[PropertyKeyName]): List[PropertyKeyId] =
-    properties.map(property => PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name)))
-
-  private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =
-    (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name))
-
-  private def typeProp(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName) =
-    (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name))
 }
