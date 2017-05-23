@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.compiler.v3_3.ast.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.commands.ExpressionConverters.toCommandExpression
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v3_3.commands.{QueryExpression, RangeQueryExpression}
@@ -369,6 +370,18 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
                               readOnly: Boolean): (IndexSeekMode, planDescription.Argument) = {
     val commandExpression = valueExpr.map(toCommandExpression) // TODO: This should not be necessary
     val indexMode = IndexSeekModeFactory(unique, readOnly).fromQueryExpression(commandExpression)
+
+    valueExpr match {
+      case e: RangeQueryExpression[_]  =>
+        assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
+        val propertyKey = propertyKeys.head.name
+        e.expression match {
+          case PrefixSeekRangeWrapper(range) => PrefixIndex(label.name, propertyKey, prefix)
+        }
+      case _ if unique && !readOnly => LockingUniqueIndexSeek
+      case _ if unique => UniqueIndexSeek
+      case _ => IndexSeek
+    }
     val indexDesc = indexMode match {
       case IndexSeekByRange | UniqueIndexSeekByRange =>
         commandExpression match {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers._

@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_3.commands.QueryExpression
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.LazyType
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -555,7 +553,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    MergeCreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
+    MergeCreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
       pattern.endNode, pattern.properties)(solved)
   }
 

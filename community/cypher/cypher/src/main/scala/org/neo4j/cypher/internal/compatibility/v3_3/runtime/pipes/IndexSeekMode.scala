@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.graphdb.Node
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
-  def fromQueryExpression[T](qexpr: QueryExpression[T]) = qexpr match {
+  def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
     case _: RangeQueryExpression[_] if unique => UniqueIndexSeekByRange
     case _: RangeQueryExpression[_] => IndexSeekByRange
     case _ if unique && !readOnly => LockingUniqueIndexSeek

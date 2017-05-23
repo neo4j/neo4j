@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
@@ -84,7 +83,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
-        config.cardinalityModel(queryGraphCardinalityModel)
+        config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
 
       def newQueryGraphCardinalityModel(statistics: GraphStatistics) = QueryGraphCardinalityModel.default(statistics)
     }
@@ -169,8 +168,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics)
-      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics, config = cypherCompilerConfig)
+      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
+      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics, config = cypherCompilerConfig)
 
       val state = LogicalPlanState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)
@@ -179,10 +178,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
-      metricsFactory.newMetrics(config.graphStatistics).queryGraphCardinalityModel(qg, input, semanticTable)
+      metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator]).queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,

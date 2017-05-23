@@ -37,16 +37,13 @@ object ContextHelper extends MockitoSugar {
              tracer: CompilationPhaseTracer = NO_TRACING,
              notificationLogger: InternalNotificationLogger = devNullLogger,
              planContext: PlanContext = new NotImplementedPlanContext,
-             typeConverter: RuntimeTypeConverter = mock[RuntimeTypeConverter],
-             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference = _ => mock[PlanFingerprintReference],
              monitors: Monitors = mock[Monitors],
              metrics: Metrics = mock[Metrics],
-             queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
              config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              debugOptions: Set[String] = Set.empty,
              clock: Clock = Clock.systemUTC()): CompilerContext = {
-    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock)
+    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
+      monitors, metrics, config, updateStrategy, debugOptions, clock)
   }
 }

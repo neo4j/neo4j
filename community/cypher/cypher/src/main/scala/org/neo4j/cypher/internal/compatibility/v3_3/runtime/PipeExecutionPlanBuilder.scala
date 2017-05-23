@@ -369,7 +369,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))(id = id)
+        MergeCreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))(id = id)
 
       case SetLabels(_, IdName(name), labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
