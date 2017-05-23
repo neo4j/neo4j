@@ -59,7 +59,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         {
             return loaded;
         }
-        return putInBatch( key, proxy( key, loader.load( key, additionalData ), additionalData, false ) );
+        return proxy( key, loader.load( key, additionalData ), additionalData, false );
     }
 
     private RecordProxy<KEY, RECORD, ADDITIONAL> putInBatch( KEY key, DirectRecordProxy proxy )
@@ -72,7 +72,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
     @Override
     public RecordProxy<KEY, RECORD, ADDITIONAL> create( KEY key, ADDITIONAL additionalData )
     {
-        return putInBatch( key, proxy( key, loader.newUnused( key, additionalData ), additionalData, true ) );
+        return proxy( key, loader.newUnused( key, additionalData ), additionalData, true );
     }
 
     @Override
@@ -150,6 +150,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
             if ( !changed )
             {
                 changed = true;
+                putInBatch( key, this );
                 changeCounter.increment();
             }
         }
