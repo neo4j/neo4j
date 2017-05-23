@@ -127,7 +127,7 @@ public class StateOperationsAutoIndexingTest
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, any( AssertOpen.class ) ) )
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( empty() );
 
         // When
@@ -174,7 +174,7 @@ public class StateOperationsAutoIndexingTest
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, any( AssertOpen.class ) ) )
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( cursor( existingProperty ) );
 
         // When
@@ -214,12 +214,12 @@ public class StateOperationsAutoIndexingTest
         PropertyItem existingProperty = mock( PropertyItem.class );
 
         int propertyKeyId = 1;
-        when(existingProperty.propertyKeyId()).thenReturn( propertyKeyId );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when( existingProperty.propertyKeyId() ).thenReturn( propertyKeyId );
+        when( existingProperty.value() ).thenReturn( "Goodbye!" );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, any( AssertOpen.class ) ) )
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( cursor( existingProperty ) );
 
         // When
