@@ -61,7 +61,7 @@ object LogicalPlanConverter {
     case p: Sort => sortAsCodeGenPlan(p)
 
     case _ =>
-      throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
+      throw new CantCompileQueryException(s"This logicalPlan is not yet supported: $logicalPlan")
   }
 
   private def singleRowAsCodeGenPlan(singleRow: SingleRow) = new CodeGenPlan with LeafCodeGenPlan {

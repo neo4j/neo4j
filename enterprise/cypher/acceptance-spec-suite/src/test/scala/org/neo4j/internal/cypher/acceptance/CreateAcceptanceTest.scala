@@ -54,4 +54,17 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  //Not TCK material
+  test("should handle pathological create query") {
+
+    val query = "CREATE" + List.fill(500)("(:Bar)-[:FOO]->(:Baz)").mkString(", ")
+
+    val result = updateWithCostPlannerOnly(query)
+
+    assertStats(result, nodesCreated = 1000, relationshipsCreated = 500, labelsAdded = 1000)
+
+    // Should not get StackOverflowException
+    result.executionPlanDescription()
+  }
+
 }
