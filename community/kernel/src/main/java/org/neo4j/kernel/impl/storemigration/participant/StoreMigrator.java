@@ -403,11 +403,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 .deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache )
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, String versionToMigrateTo,
+            PageCache pageCache )
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
-        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fileSystem, NullLogProvider.getInstance() );
+        RecordFormats recordFormats = selectForVersion( versionToMigrateTo );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fileSystem, recordFormats,
+                NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -778,7 +781,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            rebuildCountsFromScratch( storeDir, lastTxId, versionToMigrateTo, pageCache );
         }
     }
 
