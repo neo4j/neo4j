@@ -84,12 +84,7 @@ final class DirectFloatArray extends DirectFloatingPointArray
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.FLOAT );
-        for ( float x : value )
-        {
-            writer.writeFloatingPoint( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override

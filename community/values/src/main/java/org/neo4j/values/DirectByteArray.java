@@ -84,12 +84,7 @@ final class DirectByteArray extends DirectIntegralArray
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.BYTE );
-        for ( byte x : value )
-        {
-            writer.writeInteger( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override

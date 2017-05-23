@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-final class DirectBooleanArray extends ArrayValue implements ValueGroup.VBooleanArray
+final class DirectBooleanArray extends DirectArray implements ValueGroup.VBooleanArray
 {
     private final boolean[] value;
 
@@ -130,12 +130,7 @@ final class DirectBooleanArray extends ArrayValue implements ValueGroup.VBoolean
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.BOOLEAN );
-        for ( boolean x : value )
-        {
-            writer.writeBoolean( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override

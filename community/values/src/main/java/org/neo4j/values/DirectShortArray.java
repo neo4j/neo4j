@@ -84,12 +84,7 @@ final class DirectShortArray extends DirectIntegralArray
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.SHORT );
-        for ( short x : value )
-        {
-            writer.writeInteger( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override

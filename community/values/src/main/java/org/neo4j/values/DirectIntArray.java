@@ -84,12 +84,7 @@ final class DirectIntArray extends DirectIntegralArray
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.INT );
-        for ( int x : value )
-        {
-            writer.writeInteger( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override

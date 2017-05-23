@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class DirectIntegralArray extends ArrayValue implements ValueGroup.VIntegerArray
+abstract class DirectIntegralArray extends DirectArray implements ValueGroup.VIntegerArray
 {
     @Override
     boolean equals( boolean[] x )
@@ -76,30 +76,13 @@ abstract class DirectIntegralArray extends ArrayValue implements ValueGroup.VInt
     @Override
     public int compareTo( ValueGroup.VIntegerArray other )
     {
-        int i = 0;
-        int length = length();
-        int x = length - other.length();
-
-        while ( x == 0 && i < length )
-        {
-            x = Long.compare( longValue( i ), other.longValue( i ) );
-            i++;
-        }
-        return x;
+        return NumberValues.compareIntegerArrays( this, other );
     }
 
     @Override
     public int compareTo( ValueGroup.VFloatingPointArray other )
     {
-        int i = 0;
-        int length = length();
-        int x = length - other.length();
-
-        while ( x == 0 && i < length )
-        {
-            x = NumberValues.compareLongAgainstDouble( longValue( i ), other.doubleValue( i ) );
-            i++;
-        }
-        return x;
+        return NumberValues.compareIntegerVsFloatArrays( this, other );
     }
+
 }

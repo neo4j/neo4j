@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class DirectFloatingPointArray extends ArrayValue implements ValueGroup.VFloatingPointArray
+abstract class DirectFloatingPointArray extends DirectArray implements ValueGroup.VFloatingPointArray
 {
     public abstract double doubleValue( int index );
 
@@ -77,29 +77,11 @@ abstract class DirectFloatingPointArray extends ArrayValue implements ValueGroup
 
     public int compareTo( ValueGroup.VIntegerArray other )
     {
-        int i = 0;
-        int length = length();
-        int x = length - other.length();
-
-        while ( x == 0 && i < length )
-        {
-            x = NumberValues.compareDoubleAgainstLong( doubleValue( i ), other.longValue( i ) );
-            i++;
-        }
-        return x;
+        return -NumberValues.compareIntegerVsFloatArrays( other, this );
     }
 
     public int compareTo( ValueGroup.VFloatingPointArray other )
     {
-        int i = 0;
-        int length = length();
-        int x = length - other.length();
-
-        while ( x == 0 && i < length )
-        {
-            x = Double.compare( doubleValue( i ), other.doubleValue( i ) );
-            i++;
-        }
-        return x;
+        return NumberValues.compareFloatArrays( this, other );
     }
 }

@@ -240,4 +240,46 @@ public class NumberValues
         }
         return true;
     }
+
+    public static int compareIntegerArrays( ValueGroup.VIntegerArray a, ValueGroup.VIntegerArray b )
+    {
+        int i = 0;
+        int length = a.length();
+        int x = length - b.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = Long.compare( a.longValue( i ), b.longValue( i ) );
+            i++;
+        }
+        return x;
+    }
+
+    public static int compareIntegerVsFloatArrays( ValueGroup.VIntegerArray a, ValueGroup.VFloatingPointArray b )
+    {
+        int i = 0;
+        int length = a.length();
+        int x = length - b.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = compareLongAgainstDouble( a.longValue( i ), b.doubleValue( i ) );
+            i++;
+        }
+        return x;
+    }
+
+    public static int compareFloatArrays( ValueGroup.VFloatingPointArray a, ValueGroup.VFloatingPointArray b )
+    {
+        int i = 0;
+        int length = a.length();
+        int x = length - b.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = Double.compare( a.doubleValue( i ), b.doubleValue( i ) );
+            i++;
+        }
+        return x;
+    }
 }

@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-final class DirectStringArray extends ArrayValue
+final class DirectStringArray extends DirectArray
 {
     final String[] value;
 
@@ -114,12 +114,7 @@ final class DirectStringArray extends ArrayValue
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.STRING );
-        for ( String x : value )
-        {
-            writer.writeString( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override

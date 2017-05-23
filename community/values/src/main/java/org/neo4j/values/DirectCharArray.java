@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-final class DirectCharArray extends ArrayValue
+final class DirectCharArray extends DirectArray
 {
     final char[] value;
 
