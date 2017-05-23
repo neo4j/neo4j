@@ -20,7 +20,8 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 /**
- * TODO Try to avoid String.
+ * Receives calls for extracted data from {@link InputChunk}. This callback design allows for specific methods
+ * using primitives and other optimizations, to avoid garbage.
  */
 public interface InputEntityVisitor
 {

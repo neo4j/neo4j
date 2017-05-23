@@ -24,6 +24,10 @@ import java.io.IOException;
 
 import org.neo4j.csv.reader.SourceTraceability;
 
+/**
+ * A chunk of data which an {@link InputEntityVisitor} can visit to extract data from. There may be zero or
+ * more entities in a chunk.
+ */
 public interface InputChunk extends Closeable, SourceTraceability
 {
     InputChunk EMPTY = new InputChunk()

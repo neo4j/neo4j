@@ -20,11 +20,17 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
+/**
+ * Exposes batches of ids from a {@link RecordStore} as a {@link PrimitiveLongIterator}.
+ * It makes use of {@link IdSequence#nextIdBatch(int)} (with default batch size the number of records per page)
+ * and caches that batch, exhausting it in {@link #next()} before getting next batch.
+ */
 public class BatchingIdGetter extends PrimitiveLongCollections.PrimitiveLongBaseIterator
 {
     private final IdSequence source;

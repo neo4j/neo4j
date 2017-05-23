@@ -26,6 +26,10 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
+/**
+ * Allocates its own {@link InputChunk} and loops, getting input data, importing input data into store
+ * until no more chunks are available.
+ */
 class ExhaustingEntityImporterRunnable implements Runnable
 {
     private final InputIterator data;

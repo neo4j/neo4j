@@ -29,6 +29,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
@@ -36,6 +38,20 @@ import static java.lang.String.format;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor.fitInProgress;
 
+/**
+ * Imports data from {@link Input} into a store. Unlinked entity data and property data is imported here.
+ * Linking records, except properties, with each other is not done in here.
+ *
+ * Main design goal here is low garbage generation and having as much as possible able to withstand multiple
+ * threads passing through. So each import consists of instantiating an input source reader, optimal number
+ * of threads and letting each thread:
+ * <ol>
+ * <li>Get {@link InputChunk chunk} of data and for every entity in it:</li>
+ * <li>Parse its data, filling current record with data using {@link InputEntityVisitor} callback from parsing</li>
+ * <li>Write record(s)</li>
+ * <li>Repeat until no more chunks from input.</li>
+ * </ol>
+ */
 public class DataImporter
 {
     public static class Monitor

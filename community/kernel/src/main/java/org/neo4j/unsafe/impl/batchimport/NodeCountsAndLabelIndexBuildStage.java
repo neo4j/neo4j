@@ -31,6 +31,9 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
 
+/**
+ * Counts nodes and their labels and also builds {@link LabelScanStore label index} while doing so.
+ */
 public class NodeCountsAndLabelIndexBuildStage extends Stage
 {
     public NodeCountsAndLabelIndexBuildStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore,

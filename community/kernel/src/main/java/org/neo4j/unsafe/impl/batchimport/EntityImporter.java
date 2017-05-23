@@ -31,6 +31,9 @@ import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
+/**
+ * Abstract class containing logic for importing properties for an entity (node/relationship).
+ */
 abstract class EntityImporter extends InputEntityVisitor.Adapter implements AutoCloseable
 {
     private final BatchingPropertyKeyTokenRepository propertyKeyTokenRepository;

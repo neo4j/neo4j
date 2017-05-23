@@ -23,6 +23,11 @@ import java.io.IOException;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
+/**
+ * When each logical "line" may be split up into multiple lines this {@link Chunker} can be used.
+ * It will scan through characters to find correct cut-off points between chunks, instead of jumping
+ * into a nearby location and so performance will be less than that of {@link ClosestNewLineChunker}.
+ */
 public class MultiLineAwareChunker extends CharReadableChunker
 {
     private final int fieldsPerEntry;

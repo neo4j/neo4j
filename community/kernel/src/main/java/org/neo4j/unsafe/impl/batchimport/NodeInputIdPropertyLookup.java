@@ -27,9 +27,18 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
+/**
+ * Looks up "input id" from a node. This is used when importing nodes and where the input data specifies ids
+ * using its own id name space, such as arbitrary strings. Those ids are called input ids and are converted
+ * into actual record ids during import. However there may be duplicate such input ids in the input data
+ * and the {@link EncodingIdMapper} may need to double check some input ids since it's only caching a hash
+ * of the input id in memory. The input ids are stored as properties on the nodes to be able to retrieve
+ * them for such an event. This class can look up those input id properties for arbitrary nodes.
+ */
 class NodeInputIdPropertyLookup implements LongFunction<Object>
 {
     private final NodeStore nodeStore;

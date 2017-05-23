@@ -24,6 +24,9 @@ import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
+/**
+ * Chunks up a {@link CharReadable}.
+ */
 public abstract class CharReadableChunker implements Chunker
 {
     protected final CharReadable reader;

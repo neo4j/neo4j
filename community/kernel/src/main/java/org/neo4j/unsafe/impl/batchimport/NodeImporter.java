@@ -27,9 +27,13 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
+/**
+ * Imports nodes using data from {@link InputChunk}.
+ */
 public class NodeImporter extends EntityImporter
 {
     private final BatchingLabelTokenRepository labelTokenRepository;

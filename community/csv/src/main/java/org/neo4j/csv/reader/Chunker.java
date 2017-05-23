@@ -24,9 +24,29 @@ import java.io.IOException;
 
 import org.neo4j.csv.reader.Source.Chunk;
 
+/**
+ * Takes a bigger stream of data and chunks it up into smaller chunks. The {@link Chunk chunks} are allocated
+ * explicitly and are passed into {@link #nextChunk(Chunk)} to be filled/assigned with data representing
+ * next chunk from the stream. This design allows for efficient reuse of chunks when there are multiple concurrent
+ * processors, each processing chunks of data.
+ */
 public interface Chunker extends Closeable
 {
+    /**
+     * @return a new allocated {@link Chunk} which is to be later passed into {@link #nextChunk(Chunk)}
+     * to fill it with data. When a {@link Chunk} has been fully processed then it can be passed into
+     * {@link #nextChunk(Chunk)} again to get more data.
+     */
     Chunk newChunk();
 
+    /**
+     * Fills a previously {@link #newChunk() allocated chunk} with data to be processed after completion
+     * of this call.
+     *
+     * @param chunk {@link Chunk} to fill with data.
+     * @return {@code true} if at least some amount of data was passed into the given {@link Chunk},
+     * otherwise {@code false} denoting the end of the stream.
+     * @throws IOException on I/O error.
+     */
     boolean nextChunk( Chunk chunk ) throws IOException;
 }
