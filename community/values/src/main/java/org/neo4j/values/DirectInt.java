@@ -21,11 +21,11 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class IntValue extends IntegralNumberValue
+final class DirectInt extends DirectIntegralNumber
 {
     private final int value;
 
-    IntValue( int value )
+    DirectInt( int value )
     {
         this.value = value;
     }

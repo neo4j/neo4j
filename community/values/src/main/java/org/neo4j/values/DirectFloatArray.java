@@ -23,108 +23,71 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class CharArrayValue extends ArrayValue
+final class DirectFloatArray extends DirectFloatingPointArray
 {
-    final char[] value;
+    private final float[] value;
 
-    CharArrayValue( char[] value )
+    DirectFloatArray( float[] value )
     {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    int length()
+    public int length()
     {
         return value.length;
     }
 
     @Override
-    public boolean equals( Object other )
+    public double doubleValue( int index )
     {
-        return other != null && other instanceof Value && equals( (Value) other );
-    }
-
-    @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+        return value[index];
     }
 
     @Override
     boolean equals( byte[] x )
     {
-        return false;
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     boolean equals( short[] x )
     {
-        return false;
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     boolean equals( int[] x )
     {
-        return false;
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     boolean equals( long[] x )
     {
-        return false;
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     boolean equals( float[] x )
     {
-        return false;
+        return Arrays.equals( value, x );
     }
 
     @Override
     boolean equals( double[] x )
     {
-        return false;
-    }
-
-    @Override
-    boolean equals( boolean[] x )
-    {
-        return false;
-    }
-
-    // TODO: should we support this?
-//    @Override
-//    boolean equals( String x )
-//    {
-//        return false;
-//    }
-
-    @Override
-    boolean equals( char[] x )
-    {
-        return Arrays.equals( value, x );
-    }
-
-    @Override
-    boolean equals( String[] x )
-    {
-        return PrimitiveArrayValues.equals( value, x );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return TextValues.hash( value );
+        return PrimitiveArrayValues.equals( value, x  );
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.CHAR );
-        for ( char x : value )
+        writer.beginArray( value.length, ValueWriter.ArrayType.FLOAT );
+        for ( float x : value )
         {
-            writer.writeString( x );
+            writer.writeFloatingPoint( x );
         }
         writer.endArray();
     }
@@ -132,6 +95,6 @@ class CharArrayValue extends ArrayValue
     @Override
     public String toString()
     {
-        return format( "CharArray(%s)", Arrays.toString( value ) );
+        return format( "FloatArray(%s)", Arrays.toString( value ) );
     }
 }

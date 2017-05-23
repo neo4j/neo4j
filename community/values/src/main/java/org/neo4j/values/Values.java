@@ -22,6 +22,7 @@ package org.neo4j.values;
 import java.lang.reflect.Array;
 import java.util.concurrent.Callable;
 
+@SuppressWarnings( "WeakerAccess" )
 class Values
 {
     private Values()
@@ -32,7 +33,7 @@ class Values
 
     public static Value stringValue( String value )
     {
-        return new StringValue( value );
+        return new DirectString( value );
     }
 
     public static Value lazyStringValue( Callable<String> producer )
@@ -77,87 +78,87 @@ class Values
 
     public static Value longValue( long value )
     {
-        return new LongValue( value );
+        return new DirectLong( value );
     }
 
     public static Value intValue( int value )
     {
-        return new IntValue( value );
+        return new DirectInt( value );
     }
 
     public static Value shortValue( short value )
     {
-        return new ShortValue( value );
+        return new DirectShort( value );
     }
 
     public static Value byteValue( byte value )
     {
-        return new ByteValue( value );
+        return new DirectByte( value );
     }
 
     public static Value booleanValue( boolean value )
     {
-        return new BooleanValue( value );
+        return new DirectBoolean( value );
     }
 
     public static Value charValue( char value )
     {
-        return new CharValue( value );
+        return new DirectChar( value );
     }
 
     public static Value doubleValue( double value )
     {
-        return new DoubleValue( value );
+        return new DirectDouble( value );
     }
 
     public static Value floatValue( float value )
     {
-        return new FloatValue( value );
+        return new DirectFloat( value );
     }
 
     public static Value stringArrayValue( String[] value )
     {
-        return new StringArrayValue( value );
+        return new DirectStringArray( value );
     }
 
     public static Value byteArrayValue( byte[] value )
     {
-        return new ByteArrayValue( value );
+        return new DirectByteArray( value );
     }
 
     public static Value longArrayValue( long[] value )
     {
-        return new LongArrayValue( value );
+        return new DirectLongArray( value );
     }
 
     public static Value intArrayValue( int[] value )
     {
-        return new IntArrayValue( value );
+        return new DirectIntArray( value );
     }
 
     public static Value doubleArrayValue( double[] value )
     {
-        return new DoubleArrayValue( value );
+        return new DirectDoubleArray( value );
     }
 
     public static Value floatArrayValue( float[] value )
     {
-        return new FloatArrayValue( value );
+        return new DirectFloatArray( value );
     }
 
     public static Value booleanArrayValue( boolean[] value )
     {
-        return new BooleanArrayValue( value );
+        return new DirectBooleanArray( value );
     }
 
     public static Value charArrayValue( char[] value )
     {
-        return new CharArrayValue( value );
+        return new DirectCharArray( value );
     }
 
     public static Value shortArrayValue( short[] value )
     {
-        return new ShortArrayValue( value );
+        return new DirectShortArray( value );
     }
 
     // BOXED FACTORY METHODS

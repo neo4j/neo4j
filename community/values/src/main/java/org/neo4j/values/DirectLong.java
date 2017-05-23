@@ -21,17 +21,17 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class DoubleValue extends FloatingPointNumberValue
+final class DirectLong extends DirectIntegralNumber
 {
-    private final double value;
+    private final long value;
 
-    DoubleValue( double value )
+    DirectLong( long value )
     {
         this.value = value;
     }
 
     @Override
-    public double doubleValue()
+    public long longValue()
     {
         return value;
     }
@@ -57,12 +57,12 @@ final class DoubleValue extends FloatingPointNumberValue
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.writeFloatingPoint( value );
+        writer.writeInteger( value );
     }
 
     @Override
     public String toString()
     {
-        return format( "Double(%e)", value );
+        return format( "Long(%d)", value );
     }
 }

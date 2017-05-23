@@ -19,54 +19,59 @@
  */
 package org.neo4j.values;
 
-import static java.lang.String.format;
-
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
-final class ShortValue extends IntegralNumberValue
+abstract class DirectScalar extends Value
 {
-    private final short value;
-
-    ShortValue( short value )
-    {
-        this.value = value;
-    }
-
     @Override
-    public long longValue()
-    {
-        return value;
-    }
-
-    @Override
-    boolean equals( boolean x )
+    boolean equals( byte[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( char x )
+    boolean equals( short[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String x )
+    boolean equals( int[] x )
     {
         return false;
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    boolean equals( long[] x )
     {
-        writer.writeInteger( value );
+        return false;
     }
 
     @Override
-    public String toString()
+    boolean equals( float[] x )
     {
-        return format( "Short(%d)", value );
+        return false;
+    }
+
+    @Override
+    boolean equals( double[] x )
+    {
+        return false;
+    }
+
+    @Override
+    boolean equals( boolean[] x )
+    {
+        return false;
+    }
+
+    @Override
+    boolean equals( char[] x )
+    {
+        return false;
+    }
+
+    @Override
+    boolean equals( String[] x )
+    {
+        return false;
     }
 }

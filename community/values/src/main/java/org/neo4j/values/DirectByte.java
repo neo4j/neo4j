@@ -21,26 +21,23 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class StringValue extends ScalarValue implements ValueGroup.VText
+/**
+ * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
+ * we don't extend a class that has fields.
+ */
+final class DirectByte extends DirectIntegralNumber
 {
-    final String string;
+    private final byte value;
 
-    StringValue( String string )
+    DirectByte( byte value )
     {
-        assert string != null;
-        this.string = string;
+        this.value = value;
     }
 
     @Override
-    public boolean equals( Object other )
+    public long longValue()
     {
-        return other != null && other instanceof Value && equals( (Value) other );
-    }
-
-    @Override
-    public boolean equals( Value value )
-    {
-        return value.equals( string );
+        return value;
     }
 
     @Override
@@ -52,42 +49,24 @@ final class StringValue extends ScalarValue implements ValueGroup.VText
     @Override
     boolean equals( char x )
     {
-        return string.length() == 1 && string.charAt( 0 ) == x;
+        return false;
     }
 
     @Override
     boolean equals( String x )
     {
-        return string.equals( x );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return string.hashCode();
+        return false;
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.writeString( string );
+        writer.writeInteger( value );
     }
 
     @Override
     public String toString()
     {
-        return format( "String(\"%s\")", string );
-    }
-
-    @Override
-    public int compareTo( ValueGroup.VText other )
-    {
-        return string.compareTo( other.stringValue() );
-    }
-
-    @Override
-    public String stringValue()
-    {
-        return string;
+        return format( "Byte(%d)", value );
     }
 }

@@ -23,11 +23,11 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class IntArrayValue extends IntegralArrayValue
+final class DirectByteArray extends DirectIntegralArray
 {
-    private final int[] value;
+    private final byte[] value;
 
-    IntArrayValue( int[] value )
+    DirectByteArray( byte[] value )
     {
         assert value != null;
         this.value = value;
@@ -48,19 +48,19 @@ class IntArrayValue extends IntegralArrayValue
     @Override
     boolean equals( byte[] x )
     {
-        return PrimitiveArrayValues.equals( x, value );
+        return Arrays.equals( value, x );
     }
 
     @Override
     boolean equals( short[] x )
     {
-        return PrimitiveArrayValues.equals( x, value );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     boolean equals( int[] x )
     {
-        return Arrays.equals( value, x );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
@@ -84,8 +84,8 @@ class IntArrayValue extends IntegralArrayValue
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.INT );
-        for ( int x : value )
+        writer.beginArray( value.length, ValueWriter.ArrayType.BYTE );
+        for ( byte x : value )
         {
             writer.writeInteger( x );
         }
@@ -95,6 +95,6 @@ class IntArrayValue extends IntegralArrayValue
     @Override
     public String toString()
     {
-        return format( "IntArray(%s)", Arrays.toString( value ) );
+        return format( "ByteArray(%s)", Arrays.toString( value ) );
     }
 }

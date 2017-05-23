@@ -23,11 +23,11 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class StringArrayValue extends ArrayValue
+final class DirectStringArray extends ArrayValue
 {
     final String[] value;
 
-    StringArrayValue( String[] value )
+    DirectStringArray( String[] value )
     {
         assert value != null;
         this.value = value;
@@ -128,7 +128,7 @@ class StringArrayValue extends ArrayValue
         return format( "StringArray(%s)", Arrays.toString( value ) );
     }
 
-    public int compareTo( StringArrayValue other )
+    public int compareTo( DirectStringArray other )
     {
         int i = 0;
         int x = value.length - other.value.length;

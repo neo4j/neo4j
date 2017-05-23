@@ -19,12 +19,12 @@
  */
 package org.neo4j.values;
 
-abstract class FloatingPointNumberValue extends ScalarValue implements ValueGroup.VFloatingPoint
+abstract class DirectIntegralNumber extends DirectScalar implements ValueGroup.VInteger
 {
     @Override
     public final int hashCode()
     {
-        return NumberValues.hash( doubleValue() );
+        return NumberValues.hash( longValue() );
     }
 
     @Override
@@ -36,15 +36,15 @@ abstract class FloatingPointNumberValue extends ScalarValue implements ValueGrou
     @Override
     public final boolean equals( Value other )
     {
-        if ( other instanceof FloatingPointNumberValue )
+        if ( other instanceof DirectIntegralNumber )
         {
-            FloatingPointNumberValue that = (FloatingPointNumberValue) other;
-            return this.doubleValue() == that.doubleValue();
+            DirectIntegralNumber that = (DirectIntegralNumber) other;
+            return this.longValue() == that.longValue();
         }
-        else if ( other instanceof IntegralNumberValue )
+        else if ( other instanceof DirectFloatingPointNumber )
         {
-            IntegralNumberValue that = (IntegralNumberValue) other;
-            return NumberValues.numbersEqual( this.doubleValue(), that.longValue() );
+            DirectFloatingPointNumber that = (DirectFloatingPointNumber) other;
+            return NumberValues.numbersEqual( that.doubleValue(), this.longValue() );
         }
         else
         {
@@ -54,11 +54,11 @@ abstract class FloatingPointNumberValue extends ScalarValue implements ValueGrou
 
     public int compareTo( ValueGroup.VInteger other )
     {
-        return NumberValues.compareDoubleAgainstLong( doubleValue(), other.longValue() );
+        return Long.compare( longValue(), other.longValue() );
     }
 
     public int compareTo( ValueGroup.VFloatingPoint other )
     {
-        return Double.compare( doubleValue(), other.doubleValue() );
+        return NumberValues.compareLongAgainstDouble( longValue(), other.doubleValue() );
     }
 }

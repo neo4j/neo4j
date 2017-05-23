@@ -23,11 +23,11 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class LongArrayValue extends IntegralArrayValue
+final class DirectLongArray extends DirectIntegralArray
 {
     private final long[] value;
 
-    LongArrayValue( long[] value )
+    DirectLongArray( long[] value )
     {
         assert value != null;
         this.value = value;

@@ -19,78 +19,82 @@
  */
 package org.neo4j.values;
 
+import java.util.Arrays;
+
 import static java.lang.String.format;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
-final class BooleanValue extends ScalarValue implements ValueGroup.VBoolean
+final class DirectShortArray extends DirectIntegralArray
 {
-    private final boolean bool;
+    private final short[] value;
 
-    BooleanValue( boolean bool )
+    DirectShortArray( short[] value )
     {
-        this.bool = bool;
+        assert value != null;
+        this.value = value;
     }
 
     @Override
-    public boolean equals( Object other )
+    public int length()
     {
-        return other != null && other instanceof Value && equals( (Value) other );
+        return value.length;
     }
 
     @Override
-    public boolean equals( Value other )
+    public long longValue( int index )
     {
-        return other.equals( bool );
+        return value[index];
     }
 
     @Override
-    boolean equals( boolean x )
+    boolean equals( byte[] x )
     {
-        return bool == x;
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
-    boolean equals( char x )
+    boolean equals( short[] x )
     {
-        return false;
+        return Arrays.equals( value, x );
     }
 
     @Override
-    boolean equals( String x )
+    boolean equals( int[] x )
     {
-        return false;
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    public int hashCode()
+    boolean equals( long[] x )
     {
-        return bool ? -1 : 0;
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    public boolean booleanValue()
+    boolean equals( float[] x )
     {
-        return bool;
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    public int compareTo( ValueGroup.VBoolean other )
+    boolean equals( double[] x )
     {
-        return Boolean.compare( bool, other.booleanValue() );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.writeBoolean( bool );
+        writer.beginArray( value.length, ValueWriter.ArrayType.SHORT );
+        for ( short x : value )
+        {
+            writer.writeInteger( x );
+        }
+        writer.endArray();
     }
 
     @Override
     public String toString()
     {
-        return format( "Boolean('%s')", Boolean.toString( bool ) );
+        return format( "ShortArray(%s)", Arrays.toString( value ) );
     }
 }

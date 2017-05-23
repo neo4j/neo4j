@@ -21,25 +21,23 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class CharValue extends ScalarValue implements ValueGroup.VText
+/**
+ * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
+ * we don't extend a class that has fields.
+ */
+final class DirectShort extends DirectIntegralNumber
 {
-    final char value;
+    private final short value;
 
-    CharValue( char value )
+    DirectShort( short value )
     {
         this.value = value;
     }
 
     @Override
-    public boolean equals( Object other )
+    public long longValue()
     {
-        return other != null && other instanceof Value && equals( (Value) other );
-    }
-
-    @Override
-    public boolean equals( Value other )
-    {
-        return other.equals( value );
+        return value;
     }
 
     @Override
@@ -51,42 +49,24 @@ final class CharValue extends ScalarValue implements ValueGroup.VText
     @Override
     boolean equals( char x )
     {
-        return value == x;
+        return false;
     }
 
     @Override
     boolean equals( String x )
     {
-        return x.length() == 1 && x.charAt( 0 ) == value;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return value;
+        return false;
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.writeString( value );
-    }
-
-    @Override
-    public String stringValue()
-    {
-        return Character.toString( value );
-    }
-
-    @Override
-    public int compareTo( ValueGroup.VText other )
-    {
-        return TextValues.compareCharToString( value, other.stringValue() );
+        writer.writeInteger( value );
     }
 
     @Override
     public String toString()
     {
-        return format( "Char('%s')", value );
+        return format( "Short(%d)", value );
     }
 }

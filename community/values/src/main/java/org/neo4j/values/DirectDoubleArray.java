@@ -23,11 +23,11 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class FloatArrayValue extends FloatingPointArrayValue
+final class DirectDoubleArray extends DirectFloatingPointArray
 {
-    private final float[] value;
+    private final double[] value;
 
-    FloatArrayValue( float[] value )
+    DirectDoubleArray( double[] value )
     {
         assert value != null;
         this.value = value;
@@ -72,20 +72,20 @@ class FloatArrayValue extends FloatingPointArrayValue
     @Override
     boolean equals( float[] x )
     {
-        return Arrays.equals( value, x );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     boolean equals( double[] x )
     {
-        return PrimitiveArrayValues.equals( value, x  );
+        return Arrays.equals( x, value );
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.FLOAT );
-        for ( float x : value )
+        writer.beginArray( value.length, ValueWriter.ArrayType.DOUBLE );
+        for ( double x : value )
         {
             writer.writeFloatingPoint( x );
         }
@@ -95,6 +95,6 @@ class FloatArrayValue extends FloatingPointArrayValue
     @Override
     public String toString()
     {
-        return format( "FloatArray(%s)", Arrays.toString( value ) );
+        return format( "DoubleArray(%s)", Arrays.toString( value ) );
     }
 }

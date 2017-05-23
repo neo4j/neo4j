@@ -238,7 +238,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return BooleanArrayValue.hash( (boolean[]) array );
+                return DirectBooleanArray.hash( (boolean[]) array );
             }
 
             @Override

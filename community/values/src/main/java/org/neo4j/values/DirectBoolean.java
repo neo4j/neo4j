@@ -21,25 +21,35 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class FloatValue extends FloatingPointNumberValue
+/**
+ * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
+ * we don't extend a class that has fields.
+ */
+final class DirectBoolean extends DirectScalar implements ValueGroup.VBoolean
 {
-    private final float value;
+    private final boolean bool;
 
-    FloatValue( float value )
+    DirectBoolean( boolean bool )
     {
-        this.value = value;
+        this.bool = bool;
     }
 
     @Override
-    public double doubleValue()
+    public boolean equals( Object other )
     {
-        return value;
+        return other != null && other instanceof Value && equals( (Value) other );
+    }
+
+    @Override
+    public boolean equals( Value other )
+    {
+        return other.equals( bool );
     }
 
     @Override
     boolean equals( boolean x )
     {
-        return false;
+        return bool == x;
     }
 
     @Override
@@ -55,14 +65,32 @@ final class FloatValue extends FloatingPointNumberValue
     }
 
     @Override
+    public int hashCode()
+    {
+        return bool ? -1 : 0;
+    }
+
+    @Override
+    public boolean booleanValue()
+    {
+        return bool;
+    }
+
+    @Override
+    public int compareTo( ValueGroup.VBoolean other )
+    {
+        return Boolean.compare( bool, other.booleanValue() );
+    }
+
+    @Override
     void writeTo( ValueWriter writer )
     {
-        writer.writeFloatingPoint( value );
+        writer.writeBoolean( bool );
     }
 
     @Override
     public String toString()
     {
-        return format( "Float(%e)", value );
+        return format( "Boolean('%s')", Boolean.toString( bool ) );
     }
 }

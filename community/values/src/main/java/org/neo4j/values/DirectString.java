@@ -21,23 +21,26 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
-final class ByteValue extends IntegralNumberValue
+final class DirectString extends DirectScalar implements ValueGroup.VText
 {
-    private final byte value;
+    final String string;
 
-    ByteValue( byte value )
+    DirectString( String string )
     {
-        this.value = value;
+        assert string != null;
+        this.string = string;
     }
 
     @Override
-    public long longValue()
+    public boolean equals( Object other )
     {
-        return value;
+        return other != null && other instanceof Value && equals( (Value) other );
+    }
+
+    @Override
+    public boolean equals( Value value )
+    {
+        return value.equals( string );
     }
 
     @Override
@@ -49,24 +52,42 @@ final class ByteValue extends IntegralNumberValue
     @Override
     boolean equals( char x )
     {
-        return false;
+        return string.length() == 1 && string.charAt( 0 ) == x;
     }
 
     @Override
     boolean equals( String x )
     {
-        return false;
+        return string.equals( x );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return string.hashCode();
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.writeInteger( value );
+        writer.writeString( string );
     }
 
     @Override
     public String toString()
     {
-        return format( "Byte(%d)", value );
+        return format( "String(\"%s\")", string );
+    }
+
+    @Override
+    public int compareTo( ValueGroup.VText other )
+    {
+        return string.compareTo( other.stringValue() );
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return string;
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class IntegralArrayValue extends ArrayValue implements ValueGroup.VIntegerArray
+abstract class DirectIntegralArray extends ArrayValue implements ValueGroup.VIntegerArray
 {
     @Override
     boolean equals( boolean[] x )

@@ -19,59 +19,74 @@
  */
 package org.neo4j.values;
 
-abstract class ScalarValue extends Value
+import static java.lang.String.format;
+
+final class DirectChar extends DirectScalar implements ValueGroup.VText
 {
+    final char value;
+
+    DirectChar( char value )
+    {
+        this.value = value;
+    }
+
     @Override
-    boolean equals( byte[] x )
+    public boolean equals( Object other )
+    {
+        return other != null && other instanceof Value && equals( (Value) other );
+    }
+
+    @Override
+    public boolean equals( Value other )
+    {
+        return other.equals( value );
+    }
+
+    @Override
+    boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    boolean equals( short[] x )
+    boolean equals( char x )
     {
-        return false;
+        return value == x;
     }
 
     @Override
-    boolean equals( int[] x )
+    boolean equals( String x )
     {
-        return false;
+        return x.length() == 1 && x.charAt( 0 ) == value;
     }
 
     @Override
-    boolean equals( long[] x )
+    public int hashCode()
     {
-        return false;
+        return value;
     }
 
     @Override
-    boolean equals( float[] x )
+    void writeTo( ValueWriter writer )
     {
-        return false;
+        writer.writeString( value );
     }
 
     @Override
-    boolean equals( double[] x )
+    public String stringValue()
     {
-        return false;
+        return Character.toString( value );
     }
 
     @Override
-    boolean equals( boolean[] x )
+    public int compareTo( ValueGroup.VText other )
     {
-        return false;
+        return TextValues.compareCharToString( value, other.stringValue() );
     }
 
     @Override
-    boolean equals( char[] x )
+    public String toString()
     {
-        return false;
-    }
-
-    @Override
-    boolean equals( String[] x )
-    {
-        return false;
+        return format( "Char('%s')", value );
     }
 }

@@ -23,26 +23,20 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class BooleanArrayValue extends ArrayValue implements ValueGroup.VBooleanArray
+final class DirectCharArray extends ArrayValue
 {
-    private final boolean[] value;
+    final char[] value;
 
-    BooleanArrayValue( boolean[] value )
+    DirectCharArray( char[] value )
     {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    public int length()
+    int length()
     {
         return value.length;
-    }
-
-    @Override
-    public boolean booleanValue( int offset )
-    {
-        return value[offset];
     }
 
     @Override
@@ -54,7 +48,7 @@ class BooleanArrayValue extends ArrayValue implements ValueGroup.VBooleanArray
     @Override
     public boolean equals( Value other )
     {
-        return equals( this.value, other );
+        return other.equals( value );
     }
 
     @Override
@@ -96,44 +90,41 @@ class BooleanArrayValue extends ArrayValue implements ValueGroup.VBooleanArray
     @Override
     boolean equals( boolean[] x )
     {
-        return Arrays.equals( value, x );
+        return false;
     }
+
+    // TODO: should we support this?
+//    @Override
+//    boolean equals( String x )
+//    {
+//        return false;
+//    }
 
     @Override
     boolean equals( char[] x )
     {
-        return false;
+        return Arrays.equals( value, x );
     }
 
     @Override
     boolean equals( String[] x )
     {
-        return false;
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     public int hashCode()
     {
-        return hash( value );
-    }
-
-    static boolean equals( boolean[] value, Value other )
-    {
-        return other instanceof BooleanArrayValue && Arrays.equals( value, ((BooleanArrayValue) other).value );
-    }
-
-    static int hash( boolean[] value )
-    {
-        return Arrays.hashCode( value );
+        return TextValues.hash( value );
     }
 
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.BOOLEAN );
-        for ( boolean x : value )
+        writer.beginArray( value.length, ValueWriter.ArrayType.CHAR );
+        for ( char x : value )
         {
-            writer.writeBoolean( x );
+            writer.writeString( x );
         }
         writer.endArray();
     }
@@ -141,19 +132,6 @@ class BooleanArrayValue extends ArrayValue implements ValueGroup.VBooleanArray
     @Override
     public String toString()
     {
-        return format( "BooleanArray(%s)", Arrays.toString( value ) );
-    }
-
-    public int compareTo( ValueGroup.VBooleanArray other )
-    {
-        int i = 0;
-        int x = value.length - other.length();
-
-        while ( x == 0 && i < value.length )
-        {
-            x = Boolean.compare( value[i], other.booleanValue( i ) );
-            i++;
-        }
-        return x;
+        return format( "CharArray(%s)", Arrays.toString( value ) );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class FloatingPointArrayValue extends ArrayValue implements ValueGroup.VFloatingPointArray
+abstract class DirectFloatingPointArray extends ArrayValue implements ValueGroup.VFloatingPointArray
 {
     public abstract double doubleValue( int index );
 

@@ -23,11 +23,11 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class ShortArrayValue extends IntegralArrayValue
+final class DirectIntArray extends DirectIntegralArray
 {
-    private final short[] value;
+    private final int[] value;
 
-    ShortArrayValue( short[] value )
+    DirectIntArray( int[] value )
     {
         assert value != null;
         this.value = value;
@@ -54,13 +54,13 @@ class ShortArrayValue extends IntegralArrayValue
     @Override
     boolean equals( short[] x )
     {
-        return Arrays.equals( value, x );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     boolean equals( int[] x )
     {
-        return PrimitiveArrayValues.equals( value, x );
+        return Arrays.equals( value, x );
     }
 
     @Override
@@ -84,8 +84,8 @@ class ShortArrayValue extends IntegralArrayValue
     @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.SHORT );
-        for ( short x : value )
+        writer.beginArray( value.length, ValueWriter.ArrayType.INT );
+        for ( int x : value )
         {
             writer.writeInteger( x );
         }
@@ -95,6 +95,6 @@ class ShortArrayValue extends IntegralArrayValue
     @Override
     public String toString()
     {
-        return format( "ShortArray(%s)", Arrays.toString( value ) );
+        return format( "IntArray(%s)", Arrays.toString( value ) );
     }
 }

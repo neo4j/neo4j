@@ -51,22 +51,22 @@ class ValueComparator implements Comparator<Value>
                 return x;
 
             case BOOLEAN:
-                return ((BooleanValue) o1).compareTo( (BooleanValue) o2 );
+                return ((DirectBoolean) o1).compareTo( (DirectBoolean) o2 );
 
             case NUMBER:
                 return compareScalarNumbers( o1, o2 );
 
             case STRING:
-                return ((StringValue) o1).compareTo( (StringValue) o2 );
+                return ((DirectString) o1).compareTo( (DirectString) o2 );
 
             case BOOLEAN_ARR:
-                return ((BooleanArrayValue) o1).compareTo( (BooleanArrayValue) o2 );
+                return ((DirectBooleanArray) o1).compareTo( (DirectBooleanArray) o2 );
 
             case NUMBER_ARR:
                 return compareNumberArrays( o1, o2 );
 
             case STRING_ARR:
-                return ((StringArrayValue) o1).compareTo( (StringArrayValue) o2 );
+                return ((DirectStringArray) o1).compareTo( (DirectStringArray) o2 );
 
             default:
                 throw new UnsupportedOperationException( format( "Unknown semantic type '%s'", semType1 ) );
@@ -81,7 +81,7 @@ class ValueComparator implements Comparator<Value>
         {
             return Values.SemanticType.NO_VALUE;
         }
-        if ( value instanceof StringValue )
+        if ( value instanceof DirectString )
         {
             return Values.SemanticType.STRING;
         }
@@ -89,19 +89,19 @@ class ValueComparator implements Comparator<Value>
         {
             return Values.SemanticType.NUMBER;
         }
-        if ( value instanceof BooleanValue )
+        if ( value instanceof DirectBoolean )
         {
             return Values.SemanticType.BOOLEAN;
         }
-        if ( value instanceof StringArrayValue )
+        if ( value instanceof DirectStringArray )
         {
             return Values.SemanticType.STRING_ARR;
         }
-        if ( value instanceof IntegralArrayValue || value instanceof FloatingPointArrayValue )
+        if ( value instanceof DirectIntegralArray || value instanceof DirectFloatingPointArray )
         {
             return Values.SemanticType.NUMBER_ARR;
         }
-        if ( value instanceof BooleanArrayValue )
+        if ( value instanceof DirectBooleanArray )
         {
             return Values.SemanticType.BOOLEAN_ARR;
         }
@@ -112,51 +112,51 @@ class ValueComparator implements Comparator<Value>
 
     private int compareScalarNumbers( Value o1, Value o2 )
     {
-        boolean isInt1 = o1 instanceof IntegralNumberValue;
-        boolean isInt2 = o2 instanceof IntegralNumberValue;
+        boolean isInt1 = o1 instanceof DirectIntegralNumber;
+        boolean isInt2 = o2 instanceof DirectIntegralNumber;
         if ( isInt1 )
         {
             if ( isInt2 )
             {
-                return ((IntegralNumberValue) o1).compareTo( (IntegralNumberValue) o2 );
+                return ((DirectIntegralNumber) o1).compareTo( (DirectIntegralNumber) o2 );
             }
             else
             {
-                return ((IntegralNumberValue) o1).compareTo( (FloatingPointNumberValue) o2 );
+                return ((DirectIntegralNumber) o1).compareTo( (DirectFloatingPointNumber) o2 );
             }
         }
         if ( isInt2 )
         {
-            return ((FloatingPointNumberValue) o1).compareTo( (IntegralNumberValue) o2 );
+            return ((DirectFloatingPointNumber) o1).compareTo( (DirectIntegralNumber) o2 );
         }
         else
         {
-            return ((FloatingPointNumberValue) o1).compareTo( (FloatingPointNumberValue) o2 );
+            return ((DirectFloatingPointNumber) o1).compareTo( (DirectFloatingPointNumber) o2 );
         }
     }
 
     private int compareNumberArrays( Value o1, Value o2 )
     {
-        boolean isInt1 = o1 instanceof IntegralArrayValue;
-        boolean isInt2 = o2 instanceof IntegralArrayValue;
+        boolean isInt1 = o1 instanceof DirectIntegralArray;
+        boolean isInt2 = o2 instanceof DirectIntegralArray;
         if ( isInt1 )
         {
             if ( isInt2 )
             {
-                return ((IntegralArrayValue) o1).compareTo( (IntegralArrayValue) o2 );
+                return ((DirectIntegralArray) o1).compareTo( (DirectIntegralArray) o2 );
             }
             else
             {
-                return ((IntegralArrayValue) o1).compareTo( (FloatingPointArrayValue) o2 );
+                return ((DirectIntegralArray) o1).compareTo( (DirectFloatingPointArray) o2 );
             }
         }
         if ( isInt2 )
         {
-            return ((FloatingPointArrayValue) o1).compareTo( (IntegralArrayValue) o2 );
+            return ((DirectFloatingPointArray) o1).compareTo( (DirectIntegralArray) o2 );
         }
         else
         {
-            return ((FloatingPointArrayValue) o1).compareTo( (FloatingPointArrayValue) o2 );
+            return ((DirectFloatingPointArray) o1).compareTo( (DirectFloatingPointArray) o2 );
         }
     }
 
