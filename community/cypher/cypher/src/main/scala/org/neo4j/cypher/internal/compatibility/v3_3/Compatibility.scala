@@ -104,7 +104,7 @@ trait Compatibility[PLANCONTEXT <: CompilerContext,
         (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
 
-        //Context use for db communication during planning
+        //Context used for db communication during planning
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
         val planCompilerContext = planContextCreator.create(tracer, notificationLogger, planContext,                                                   syntacticQuery.queryText,

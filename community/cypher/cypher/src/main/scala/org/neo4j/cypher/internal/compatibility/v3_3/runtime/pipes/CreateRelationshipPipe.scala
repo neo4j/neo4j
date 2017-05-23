@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsMap, ListSupport}
 import org.neo4j.cypher.internal.compiler.v3_3.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id

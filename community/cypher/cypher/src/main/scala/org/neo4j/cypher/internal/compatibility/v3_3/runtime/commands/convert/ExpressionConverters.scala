@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.compiler.v3_3.ast._
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.{Many, One, Zero, ZeroOneOrMany}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.DesugaredMapProjection
@@ -438,6 +441,21 @@ object ExpressionConverters {
     val dependencies = e.step.dependencies.map(_.name)
 
     ProjectedPath(dependencies, projector)
+  }
+
+  def toCommandSeekArgs(seek: SeekableArgs): SeekArgs = seek match {
+    case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(expr))
+    case ManySeekableArgs(expr) => expr match {
+      case coll: ListLiteral =>
+        ZeroOneOrMany(coll.expressions) match {
+          case Zero => SeekArgs.empty
+          case One(value) => SingleSeekArg(toCommandExpression(value))
+          case Many(_) => ManySeekArgs(toCommandExpression(coll))
+        }
+
+      case _ =>
+        ManySeekArgs(toCommandExpression(expr))
+    }
   }
 }
 

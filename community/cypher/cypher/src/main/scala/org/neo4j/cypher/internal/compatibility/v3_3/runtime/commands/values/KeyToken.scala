@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.spi.{QueryContext, TokenContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 /*

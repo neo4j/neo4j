@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.phases
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}

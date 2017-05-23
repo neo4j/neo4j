@@ -22,12 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.EntityProducerFactory
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.StatementConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{True, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -196,13 +200,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
 
       case NodeByIdSeek(IdName(ident), nodeIdExpr, _) =>
-        NodeByIdSeekPipe(ident, nodeIdExpr.asCommandSeekArgs)(id = id)
+        NodeByIdSeekPipe(ident, toCommandSeekArgs(nodeIdExpr))(id = id)
 
       case DirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-        DirectedRelationshipByIdSeekPipe(ident, relIdExpr.asCommandSeekArgs, toNode, fromNode)(id = id)
+        DirectedRelationshipByIdSeekPipe(ident, toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
 
       case UndirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-        UndirectedRelationshipByIdSeekPipe(ident, relIdExpr.asCommandSeekArgs, toNode, fromNode)(id = id)
+        UndirectedRelationshipByIdSeekPipe(ident, toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
 
       case NodeIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -263,7 +267,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         LockNodesPipe(source, nodesToLock.map(_.name))()
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
-        val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        val foo: Seq[Predicate] = predicates.map(buildPredicate)
+        val bar: Option[Predicate] = foo.reduceOption(_ andWith _)
+        val baz: Object = bar.getOrElse(True())
+        val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
