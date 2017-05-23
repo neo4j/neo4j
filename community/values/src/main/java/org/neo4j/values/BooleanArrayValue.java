@@ -137,4 +137,17 @@ class BooleanArrayValue extends ArrayValue
     {
         return format( "BooleanArray(%s)", Arrays.toString( value ) );
     }
+
+    public int compareTo( BooleanArrayValue other )
+    {
+        int i = 0;
+        int x = value.length - other.value.length;
+
+        while ( x == 0 && i < value.length )
+        {
+            x = Boolean.compare( value[i], other.value[i] );
+            i++;
+        }
+        return x;
+    }
 }

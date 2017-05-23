@@ -118,4 +118,32 @@ abstract class IntegralArrayValue extends ArrayValue
         }
         return result;
     }
+
+    public int compareTo( IntegralArrayValue other )
+    {
+        int i = 0;
+        int length = length();
+        int x = length - other.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = Long.compare( longValue( i ), other.longValue( i ) );
+            i++;
+        }
+        return x;
+    }
+
+    public int compareTo( FloatingPointArrayValue other )
+    {
+        int i = 0;
+        int length = length();
+        int x = length - other.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = NumberValues.compareLongAgainstDouble( longValue( i ), other.doubleValue( i ) );
+            i++;
+        }
+        return x;
+    }
 }

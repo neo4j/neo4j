@@ -132,4 +132,17 @@ class StringArrayValue extends ArrayValue
     {
         return format( "StringArray(%s)", Arrays.toString( value ) );
     }
+
+    public int compareTo( StringArrayValue other )
+    {
+        int i = 0;
+        int x = value.length - other.value.length;
+
+        while ( x == 0 && i < value.length )
+        {
+            x = value[i].compareTo( other.value[i] );
+            i++;
+        }
+        return x;
+    }
 }

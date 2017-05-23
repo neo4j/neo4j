@@ -236,16 +236,13 @@ class Values
         {
             return shortArrayValue( ((short[]) value).clone() );
         }
-        // otherwise fail
         if ( value == null )
         {
-            throw new IllegalArgumentException( "[null] is not a supported property value" );
+            return NoValue.NO_VALUE;
         }
-        else
-        {
-            throw new IllegalArgumentException(
+        // otherwise fail
+        throw new IllegalArgumentException(
                     String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
-        }
     }
 
     private static Value arrayValue( Object[] value )
@@ -302,5 +299,16 @@ class Values
             Array.set( target, i, value[i] );
         }
         return target;
+    }
+
+    enum SemanticType
+    {
+        NO_VALUE,
+        BOOLEAN,
+        NUMBER,
+        STRING,
+        BOOLEAN_ARR,
+        NUMBER_ARR,
+        STRING_ARR
     }
 }

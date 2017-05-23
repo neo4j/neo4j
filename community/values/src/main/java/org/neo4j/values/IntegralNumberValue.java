@@ -58,4 +58,14 @@ abstract class IntegralNumberValue extends NumberValue
             return false;
         }
     }
+
+    public int compareTo( IntegralNumberValue other )
+    {
+        return Long.compare( longValue(), other.longValue() );
+    }
+
+    public int compareTo( NumberValue other )
+    {
+        return NumberValues.compareLongAgainstDouble( longValue(), other.doubleValue() );
+    }
 }

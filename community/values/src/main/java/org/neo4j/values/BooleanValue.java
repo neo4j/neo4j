@@ -70,6 +70,16 @@ final class BooleanValue extends ScalarValue
         return bool ? -1 : 0;
     }
 
+    public boolean booleanValue()
+    {
+        return bool;
+    }
+
+    public int compareTo( BooleanValue other )
+    {
+        return Boolean.compare( bool, other.bool );
+    }
+
     @Override
     void writeTo( ValueWriter writer )
     {

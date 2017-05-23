@@ -78,4 +78,9 @@ final class StringValue extends ScalarValue
     {
         return format( "String(\"%s\")", string );
     }
+
+    public int compareTo( StringValue other )
+    {
+        return string.compareTo( other.string );
+    }
 }

@@ -51,4 +51,14 @@ abstract class FloatingPointNumberValue extends NumberValue
             return false;
         }
     }
+
+    public int compareTo( IntegralNumberValue other )
+    {
+        return NumberValues.compareDoubleAgainstLong( doubleValue(), other.longValue() );
+    }
+
+    public int compareTo( NumberValue other )
+    {
+        return Double.compare( doubleValue(), other.doubleValue() );
+    }
 }
