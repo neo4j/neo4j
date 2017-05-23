@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyBatchIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -147,7 +148,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LabelScanStore labelScanStore;
     private final DefaultSchemaIndexProviderMap schemaIndexProviderMap;
     private final LegacyIndexApplierLookup legacyIndexApplierLookup;
-    private final Runnable schemaStateChangeCallback;
+    private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
@@ -181,7 +182,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
-            Runnable schemaStateChangeCallback,
+            SchemaState schemaState,
             ConstraintSemantics constraintSemantics,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
@@ -198,7 +199,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.schemaState = schemaState;
         this.scheduler = scheduler;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
@@ -225,10 +226,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() ), logProvider,
-                    indexingServiceMonitor, schemaStateChangeCallback );
+                    indexingServiceMonitor, this.schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
-            cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
+            cacheAccess = new BridgingCacheAccess( schemaCache, schemaState,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
             storeStatementSupplier = storeStatementSupplier( neoStores );
@@ -311,15 +312,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter );
 
             // Visit transaction state and populate these record state objects
-            TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
-                    schemaStateChangeCallback, schemaStorage, constraintSemantics, schemaIndexProviderMap );
+            TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
+                    schemaStorage, constraintSemantics, schemaIndexProviderMap );
             CountsRecordState countsRecordState = new CountsRecordState();
-            txStateVisitor = constraintSemantics.decorateTxStateVisitor(
-                    storeLayer,
-                    txState,
-                    txStateVisitor );
-            txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storeLayer, storageStatement, txState, countsRecordState );
+            txStateVisitor = constraintSemantics.decorateTxStateVisitor( storeLayer, txState, txStateVisitor );
+            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storeLayer, storageStatement, txState,
+                    countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );

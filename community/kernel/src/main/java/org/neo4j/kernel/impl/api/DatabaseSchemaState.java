@@ -33,20 +33,21 @@ import org.neo4j.logging.LogProvider;
  * Schema state is transient state that should be invalidated when the schema changes.
  * Examples of things stored in schema state is execution plans for cypher.
  */
-public class KernelSchemaStateStore implements UpdateableSchemaState
+public class DatabaseSchemaState implements SchemaState
 {
     private Map<Object, Object> state;
 
     private final Log log;
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
 
-    public KernelSchemaStateStore( LogProvider logProvider )
+    public DatabaseSchemaState( LogProvider logProvider )
     {
         this.state = new HashMap<>(  );
         this.log = logProvider.getLog( getClass() );
     }
 
     @SuppressWarnings( "unchecked" )
+    @Override
     public <K, V> V get( K key )
     {
         lock.readLock().lock();
@@ -93,6 +94,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public void replace( Map<Object,Object> replacement )
     {
         lock.writeLock().lock();
@@ -106,6 +108,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public <K, V> void apply( Map<K,V> updates )
     {
         lock.writeLock().lock();
@@ -119,6 +122,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public void clear()
     {
         lock.writeLock().lock();
