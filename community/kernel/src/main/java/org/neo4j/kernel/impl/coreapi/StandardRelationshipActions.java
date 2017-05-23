@@ -65,9 +65,9 @@ public class StandardRelationshipActions implements RelationshipActions
     @Override
     public RelationshipType getRelationshipTypeById( int type )
     {
-        try
+        try ( Statement statement = statement() )
         {
-            return RelationshipType.withName( statement().readOperations().relationshipTypeGetName( type ) );
+            return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( type ) );
         }
         catch ( RelationshipTypeIdNotFoundKernelException e )
         {
