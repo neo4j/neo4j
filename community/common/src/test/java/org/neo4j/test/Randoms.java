@@ -155,11 +155,16 @@ public class Randoms
             {
                 switch ( bit )
                 {
-                case CS_LOWERCASE_LETTERS: return (char) intBetween( 'a', 'z' );
-                case CS_UPPERCASE_LETTERS: return (char) intBetween( 'A', 'Z' );
-                case CS_DIGITS: return (char) intBetween( '0', '9' );
-                case CS_SYMBOLS: return symbol();
-                default: throw new IllegalArgumentException( "Unknown character set " + bit );
+                case CS_LOWERCASE_LETTERS:
+                    return (char) intBetween( 'a', 'z' );
+                case CS_UPPERCASE_LETTERS:
+                    return (char) intBetween( 'A', 'Z' );
+                case CS_DIGITS:
+                    return (char) intBetween( '0', '9' );
+                case CS_SYMBOLS:
+                    return symbol();
+                default:
+                    throw new IllegalArgumentException( "Unknown character set " + bit );
                 }
             }
         }
@@ -209,6 +214,28 @@ public class Randoms
     public <T> T among( T[] among )
     {
         return among[random.nextInt( among.length )];
+    }
+
+    public Number numberPropertyValue()
+    {
+        int type = random.nextInt( 6 );
+        switch ( type )
+        {
+        case 0:
+            return (byte) random.nextInt();
+        case 1:
+            return (short) random.nextInt();
+        case 2:
+            return random.nextInt();
+        case 3:
+            return random.nextLong();
+        case 4:
+            return random.nextFloat();
+        case 5:
+            return random.nextDouble();
+        default:
+            throw new IllegalArgumentException( "Unknown value type " + type );
+        }
     }
 
     public Object propertyValue()

@@ -42,6 +42,9 @@ public interface CleanupJob extends Runnable
      */
     Exception getCause();
 
+    /**
+     * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
+     */
     CleanupJob CLEAN = new CleanupJob()
     {
         @Override

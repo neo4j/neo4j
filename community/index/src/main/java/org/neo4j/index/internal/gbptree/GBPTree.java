@@ -203,7 +203,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    static final Header.Reader NO_HEADER = ( cursor, length ) ->
+    public static final Header.Reader NO_HEADER = ( cursor, length ) ->
     {
     };
 
@@ -409,7 +409,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 close();
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
                 t.addSuppressed( e );
             }
@@ -946,7 +946,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     // Utility method
-    void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
+    /**
+     * Prints the contents of the tree to System.out.
+     *
+     * @param printValues whether or not to print values in the leaf nodes.
+     * @param printPosition whether or not to print position for each key.
+     * @param printState whether or not to print the tree state.
+     * @throws IOException on I/O error.
+     */
+    public void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {

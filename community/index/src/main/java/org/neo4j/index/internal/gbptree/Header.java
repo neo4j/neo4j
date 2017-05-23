@@ -38,7 +38,6 @@ public class Header
         /**
          * Writes header data into {@code to} with previous valid header data found in {@code from} of {@code length}
          * bytes in size.
-         *
          * @param from {@link PageCursor} positioned at the header data written in the previous check point.
          * @param length size in bytes of the previous header data.
          * @param to {@link PageCursor} to write new header into.

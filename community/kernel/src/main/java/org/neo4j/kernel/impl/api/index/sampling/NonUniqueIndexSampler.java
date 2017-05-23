@@ -40,4 +40,27 @@ public interface NonUniqueIndexSampler
     IndexSample result();
 
     IndexSample result( int numDocs );
+
+    abstract class Adapter implements NonUniqueIndexSampler
+    {
+        @Override
+        public void include( String value )
+        {   // no-op
+        }
+
+        @Override
+        public void include( String value, long increment )
+        {   // no-op
+        }
+
+        @Override
+        public void exclude( String value )
+        {   // no-op
+        }
+
+        @Override
+        public void exclude( String value, long decrement )
+        {   // no-op
+        }
+    }
 }
