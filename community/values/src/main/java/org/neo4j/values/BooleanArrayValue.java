@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-class BooleanArrayValue extends ArrayValue
+class BooleanArrayValue extends ArrayValue implements ValueGroup.VBooleanArray
 {
     private final boolean[] value;
 
@@ -34,9 +34,15 @@ class BooleanArrayValue extends ArrayValue
     }
 
     @Override
-    int length()
+    public int length()
     {
         return value.length;
+    }
+
+    @Override
+    public boolean booleanValue( int offset )
+    {
+        return value[offset];
     }
 
     @Override
@@ -138,14 +144,14 @@ class BooleanArrayValue extends ArrayValue
         return format( "BooleanArray(%s)", Arrays.toString( value ) );
     }
 
-    public int compareTo( BooleanArrayValue other )
+    public int compareTo( ValueGroup.VBooleanArray other )
     {
         int i = 0;
-        int x = value.length - other.value.length;
+        int x = value.length - other.length();
 
         while ( x == 0 && i < value.length )
         {
-            x = Boolean.compare( value[i], other.value[i] );
+            x = Boolean.compare( value[i], other.booleanValue( i ) );
             i++;
         }
         return x;

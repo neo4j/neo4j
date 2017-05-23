@@ -23,6 +23,7 @@ import java.util.Comparator;
 
 import static java.lang.String.format;
 
+// TODO: redo with ValueGroup instead of SemanticType
 class ValueComparator implements Comparator<Value>
 {
     private final Comparator<Values.SemanticType> semanticTypeComparator;
@@ -84,7 +85,7 @@ class ValueComparator implements Comparator<Value>
         {
             return Values.SemanticType.STRING;
         }
-        if ( value instanceof NumberValue )
+        if ( value instanceof ValueGroup.VNumber )
         {
             return Values.SemanticType.NUMBER;
         }

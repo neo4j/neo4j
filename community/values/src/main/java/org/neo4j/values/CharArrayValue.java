@@ -115,12 +115,7 @@ class CharArrayValue extends ArrayValue
     @Override
     public int hashCode()
     {
-        return hash( value );
-    }
-
-    static int hash( char[] value )
-    {
-        return Arrays.hashCode( value );
+        return TextValues.hash( value );
     }
 
     @Override

@@ -108,12 +108,7 @@ class StringArrayValue extends ArrayValue
     @Override
     public int hashCode()
     {
-        return hash( value );
-    }
-
-    public static int hash( String[] value )
-    {
-        return Arrays.hashCode( value );
+        return TextValues.hash( value );
     }
 
     @Override

@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class FloatingPointArrayValue extends ArrayValue
+abstract class FloatingPointArrayValue extends ArrayValue implements ValueGroup.VFloatingPointArray
 {
     public abstract double doubleValue( int index );
 
@@ -50,14 +50,14 @@ abstract class FloatingPointArrayValue extends ArrayValue
     @Override
     final boolean equals( Value other )
     {
-        if ( other instanceof FloatingPointArrayValue )
+        if ( other instanceof ValueGroup.VFloatingPointArray )
         {
-            FloatingPointArrayValue that = (FloatingPointArrayValue) other;
+            ValueGroup.VFloatingPointArray that = (ValueGroup.VFloatingPointArray) other;
             return NumberValues.numbersEqual( this, that );
         }
-        else if ( other instanceof IntegralArrayValue )
+        else if ( other instanceof ValueGroup.VIntegerArray )
         {
-            IntegralArrayValue that = (IntegralArrayValue) other;
+            ValueGroup.VIntegerArray that = (ValueGroup.VIntegerArray) other;
             return NumberValues.numbersEqual( this, that );
         }
         return false;
@@ -75,29 +75,7 @@ abstract class FloatingPointArrayValue extends ArrayValue
         return result;
     }
 
-    static int hash( float[] values )
-    {
-        int result = 1;
-        for ( float value : values )
-        {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
-        }
-        return result;
-    }
-
-    static int hash( double[] values )
-    {
-        int result = 1;
-        for ( double value : values )
-        {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
-        }
-        return result;
-    }
-
-    public int compareTo( IntegralArrayValue other )
+    public int compareTo( ValueGroup.VIntegerArray other )
     {
         int i = 0;
         int length = length();
@@ -111,7 +89,7 @@ abstract class FloatingPointArrayValue extends ArrayValue
         return x;
     }
 
-    public int compareTo( FloatingPointArrayValue other )
+    public int compareTo( ValueGroup.VFloatingPointArray other )
     {
         int i = 0;
         int length = length();

@@ -19,15 +19,8 @@
  */
 package org.neo4j.values;
 
-abstract class IntegralNumberValue extends NumberValue
+abstract class IntegralNumberValue extends ScalarValue implements ValueGroup.VInteger
 {
-    abstract long longValue();
-
-    public double doubleValue()
-    {
-        return (double) longValue();
-    }
-
     @Override
     public final int hashCode()
     {
@@ -59,12 +52,12 @@ abstract class IntegralNumberValue extends NumberValue
         }
     }
 
-    public int compareTo( IntegralNumberValue other )
+    public int compareTo( ValueGroup.VInteger other )
     {
         return Long.compare( longValue(), other.longValue() );
     }
 
-    public int compareTo( NumberValue other )
+    public int compareTo( ValueGroup.VFloatingPoint other )
     {
         return NumberValues.compareLongAgainstDouble( longValue(), other.doubleValue() );
     }

@@ -21,7 +21,7 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class StringValue extends ScalarValue
+final class StringValue extends ScalarValue implements ValueGroup.VText
 {
     final String string;
 
@@ -79,8 +79,15 @@ final class StringValue extends ScalarValue
         return format( "String(\"%s\")", string );
     }
 
-    public int compareTo( StringValue other )
+    @Override
+    public int compareTo( ValueGroup.VText other )
     {
-        return string.compareTo( other.string );
+        return string.compareTo( other.stringValue() );
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return string;
     }
 }

@@ -19,7 +19,36 @@
  */
 package org.neo4j.values;
 
-public abstract class NumberValue extends ScalarValue
+import java.util.Arrays;
+
+public class TextValues
 {
-    abstract double doubleValue();
+    private TextValues()
+    {
+    }
+
+    public static int compareCharToString( char c, String s )
+    {
+        int length = s.length();
+        int x = length == 0 ? 1 : 0;
+        if ( x == 0 )
+        {
+            x = Character.compare( c, s.charAt( 0 ) );
+            if ( x == 0 && length > 1 )
+            {
+                x = -1;
+            }
+        }
+        return x;
+    }
+
+    public static int hash( char[] value )
+    {
+        return Arrays.hashCode( value );
+    }
+
+    public static int hash( String[] value )
+    {
+        return Arrays.hashCode( value );
+    }
 }

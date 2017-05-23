@@ -25,7 +25,7 @@ import static java.lang.String.format;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class BooleanValue extends ScalarValue
+final class BooleanValue extends ScalarValue implements ValueGroup.VBoolean
 {
     private final boolean bool;
 
@@ -70,14 +70,16 @@ final class BooleanValue extends ScalarValue
         return bool ? -1 : 0;
     }
 
+    @Override
     public boolean booleanValue()
     {
         return bool;
     }
 
-    public int compareTo( BooleanValue other )
+    @Override
+    public int compareTo( ValueGroup.VBoolean other )
     {
-        return Boolean.compare( bool, other.bool );
+        return Boolean.compare( bool, other.booleanValue() );
     }
 
     @Override

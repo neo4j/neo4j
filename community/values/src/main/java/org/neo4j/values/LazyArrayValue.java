@@ -174,7 +174,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return IntegralArrayValue.hash( (int[]) array );
+                return NumberValues.hash( (int[]) array );
             }
 
             @Override
@@ -206,7 +206,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return IntegralArrayValue.hash( (long[]) array );
+                return NumberValues.hash( (long[]) array );
             }
 
             @Override
@@ -270,7 +270,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return IntegralArrayValue.hash( (byte[]) array );
+                return NumberValues.hash( (byte[]) array );
             }
 
             @Override
@@ -302,7 +302,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return FloatingPointArrayValue.hash( (double[]) array );
+                return NumberValues.hash( (double[]) array );
             }
 
             @Override
@@ -334,7 +334,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return StringArrayValue.hash( (String[]) array );
+                return TextValues.hash( (String[]) array );
             }
 
             @Override
@@ -366,7 +366,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return IntegralArrayValue.hash( (short[]) array );
+                return NumberValues.hash( (short[]) array );
             }
 
             @Override
@@ -398,7 +398,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return CharArrayValue.hash( (char[]) array );
+                return TextValues.hash( (char[]) array );
             }
 
             @Override
@@ -430,7 +430,7 @@ class LazyArrayValue extends LazyValue<Object>
             @Override
             int hashCode( Object array )
             {
-                return FloatingPointArrayValue.hash( (float[]) array );
+                return NumberValues.hash( (float[]) array );
             }
 
             @Override

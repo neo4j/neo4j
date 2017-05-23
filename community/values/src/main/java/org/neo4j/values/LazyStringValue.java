@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
 
-class LazyStringValue extends LazyValue<String>
+class LazyStringValue extends LazyValue<String> implements ValueGroup.VText
 {
     LazyStringValue( Callable<String> producer )
     {
@@ -132,5 +132,17 @@ class LazyStringValue extends LazyValue<String>
     public String toString()
     {
         return format( "LazyString(%s)", valueIsLoaded() ? value() : "not-loaded" );
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return value();
+    }
+
+    @Override
+    public int compareTo( ValueGroup.VText other )
+    {
+        return value().compareTo( other.stringValue() );
     }
 }

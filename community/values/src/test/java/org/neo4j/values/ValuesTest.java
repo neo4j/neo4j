@@ -95,6 +95,19 @@ public class ValuesTest
         assertEqual( lazyArrayValue( () -> new long[]{1} ), lazyArrayValue( () -> new long[]{1} ) );
         assertEqual( lazyArrayValue( () -> new float[]{1.0f} ), lazyArrayValue( () -> new float[]{1.0f} ) );
         assertEqual( lazyArrayValue( () -> new double[]{1.0} ), lazyArrayValue( () -> new double[]{1.0} ) );
+        assertEqual( lazyArrayValue( () -> new char[]{'a'} ), lazyArrayValue( () -> new char[]{'a'} ) );
+        assertEqual( lazyArrayValue( () -> new String[]{"hi"} ), lazyArrayValue( () -> new String[]{"hi"} ) );
+
+        assertEqual( stringValue( "hi" ), lazyStringValue( () -> "hi" ) );
+        assertEqual( booleanArrayValue( new boolean[]{true} ), lazyArrayValue( () -> new boolean[]{true} ) );
+        assertEqual( byteArrayValue( new byte[]{1} ), lazyArrayValue( () -> new byte[]{1} ) );
+        assertEqual( shortArrayValue( new short[]{1} ), lazyArrayValue( () -> new short[]{1} ) );
+        assertEqual( intArrayValue( new int[]{1} ), lazyArrayValue( () -> new int[]{1} ) );
+        assertEqual( longArrayValue( new long[]{1} ), lazyArrayValue( () -> new long[]{1} ) );
+        assertEqual( floatArrayValue( new float[]{1.0f} ), lazyArrayValue( () -> new float[]{1.0f} ) );
+        assertEqual( doubleArrayValue( new double[]{1.0} ), lazyArrayValue( () -> new double[]{1.0} ) );
+        assertEqual( charArrayValue( new char[]{'a'} ), lazyArrayValue( () -> new char[]{'a'} ) );
+        assertEqual( stringArrayValue( new String[]{"hi"} ), lazyArrayValue( () -> new String[]{"hi"} ) );
     }
 
     private void assertEqual( Value a, Value b )

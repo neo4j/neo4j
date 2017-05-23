@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class FloatingPointNumberValue extends NumberValue
+abstract class FloatingPointNumberValue extends ScalarValue implements ValueGroup.VFloatingPoint
 {
     @Override
     public final int hashCode()
@@ -52,12 +52,12 @@ abstract class FloatingPointNumberValue extends NumberValue
         }
     }
 
-    public int compareTo( IntegralNumberValue other )
+    public int compareTo( ValueGroup.VInteger other )
     {
         return NumberValues.compareDoubleAgainstLong( doubleValue(), other.longValue() );
     }
 
-    public int compareTo( NumberValue other )
+    public int compareTo( ValueGroup.VFloatingPoint other )
     {
         return Double.compare( doubleValue(), other.doubleValue() );
     }

@@ -46,6 +46,72 @@ public class NumberValues
         return (int)(bits ^ (bits >>> 32));
     }
 
+    public static int hash( byte[] values )
+    {
+        int result = 1;
+        for ( byte value : values )
+        {
+            int elementHash = NumberValues.hash( value );
+            result = 31 * result + elementHash;
+        }
+        return result;
+    }
+
+    public static int hash( short[] values )
+    {
+        int result = 1;
+        for ( short value : values )
+        {
+            int elementHash = NumberValues.hash( value );
+            result = 31 * result + elementHash;
+        }
+        return result;
+    }
+
+    public static int hash( int[] values )
+    {
+        int result = 1;
+        for ( int value : values )
+        {
+            int elementHash = NumberValues.hash( value );
+            result = 31 * result + elementHash;
+        }
+        return result;
+    }
+
+    public static int hash( long[] values )
+    {
+        int result = 1;
+        for ( long value : values )
+        {
+            int elementHash = NumberValues.hash( value );
+            result = 31 * result + elementHash;
+        }
+        return result;
+    }
+
+    public static int hash( float[] values )
+    {
+        int result = 1;
+        for ( float value : values )
+        {
+            int elementHash = NumberValues.hash( value );
+            result = 31 * result + elementHash;
+        }
+        return result;
+    }
+
+    public static int hash( double[] values )
+    {
+        int result = 1;
+        for ( double value : values )
+        {
+            int elementHash = NumberValues.hash( value );
+            result = 31 * result + elementHash;
+        }
+        return result;
+    }
+
     public static boolean numbersEqual( double fpn, long in )
     {
         if ( in < 0 )
@@ -124,7 +190,7 @@ public class NumberValues
         return value - 1;
     }
 
-    public static boolean numbersEqual( IntegralArrayValue lhs, IntegralArrayValue rhs )
+    public static boolean numbersEqual( ValueGroup.VIntegerArray lhs, ValueGroup.VIntegerArray rhs )
     {
         int length = lhs.length();
         if ( length != rhs.length() )
@@ -141,7 +207,7 @@ public class NumberValues
         return true;
     }
 
-    public static boolean numbersEqual( FloatingPointArrayValue lhs, FloatingPointArrayValue rhs )
+    public static boolean numbersEqual( ValueGroup.VFloatingPointArray lhs, ValueGroup.VFloatingPointArray rhs )
     {
         int length = lhs.length();
         if ( length != rhs.length() )
@@ -158,7 +224,7 @@ public class NumberValues
         return true;
     }
 
-    public static boolean numbersEqual( FloatingPointArrayValue fps, IntegralArrayValue ins )
+    public static boolean numbersEqual( ValueGroup.VFloatingPointArray fps, ValueGroup.VIntegerArray ins )
     {
         int length = ins.length();
         if ( length != fps.length() )

@@ -21,7 +21,7 @@ package org.neo4j.values;
 
 import static java.lang.String.format;
 
-final class CharValue extends ScalarValue implements Value.WithStringValue
+final class CharValue extends ScalarValue implements ValueGroup.VText
 {
     final char value;
 
@@ -76,6 +76,12 @@ final class CharValue extends ScalarValue implements Value.WithStringValue
     public String stringValue()
     {
         return Character.toString( value );
+    }
+
+    @Override
+    public int compareTo( ValueGroup.VText other )
+    {
+        return TextValues.compareCharToString( value, other.stringValue() );
     }
 
     @Override

@@ -19,10 +19,8 @@
  */
 package org.neo4j.values;
 
-abstract class IntegralArrayValue extends ArrayValue
+abstract class IntegralArrayValue extends ArrayValue implements ValueGroup.VIntegerArray
 {
-    public abstract long longValue( int index );
-
     @Override
     boolean equals( boolean[] x )
     {
@@ -50,14 +48,14 @@ abstract class IntegralArrayValue extends ArrayValue
     @Override
     final boolean equals( Value other )
     {
-        if ( other instanceof IntegralArrayValue )
+        if ( other instanceof ValueGroup.VIntegerArray )
         {
-            IntegralArrayValue that = (IntegralArrayValue) other;
+            ValueGroup.VIntegerArray that = (ValueGroup.VIntegerArray) other;
             return NumberValues.numbersEqual( this, that );
         }
-        else if ( other instanceof FloatingPointArrayValue )
+        else if ( other instanceof ValueGroup.VFloatingPointArray )
         {
-            FloatingPointArrayValue that = (FloatingPointArrayValue) other;
+            ValueGroup.VFloatingPointArray that = (ValueGroup.VFloatingPointArray) other;
             return NumberValues.numbersEqual( that, this );
         }
         return false;
@@ -75,51 +73,8 @@ abstract class IntegralArrayValue extends ArrayValue
         return result;
     }
 
-    static int hash( byte[] values )
-    {
-        int result = 1;
-        for ( byte value : values )
-        {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
-        }
-        return result;
-    }
-
-    static int hash( short[] values )
-    {
-        int result = 1;
-        for ( short value : values )
-        {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
-        }
-        return result;
-    }
-
-    static int hash( int[] values )
-    {
-        int result = 1;
-        for ( int value : values )
-        {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
-        }
-        return result;
-    }
-
-    static int hash( long[] values )
-    {
-        int result = 1;
-        for ( long value : values )
-        {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
-        }
-        return result;
-    }
-
-    public int compareTo( IntegralArrayValue other )
+    @Override
+    public int compareTo( ValueGroup.VIntegerArray other )
     {
         int i = 0;
         int length = length();
@@ -133,7 +88,8 @@ abstract class IntegralArrayValue extends ArrayValue
         return x;
     }
 
-    public int compareTo( FloatingPointArrayValue other )
+    @Override
+    public int compareTo( ValueGroup.VFloatingPointArray other )
     {
         int i = 0;
         int length = length();
