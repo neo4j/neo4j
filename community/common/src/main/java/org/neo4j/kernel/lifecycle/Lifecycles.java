@@ -34,7 +34,7 @@ public class Lifecycles
 
     public static Lifecycle multiple( Lifecycle... lifecycles )
     {
-        return new CombinedLifecycle( Arrays.asList( lifecycles ) );
+        return multiple( Arrays.asList( lifecycles ) );
     }
 
     private static class CombinedLifecycle implements Lifecycle
