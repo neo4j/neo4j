@@ -20,6 +20,7 @@
 package org.neo4j.values;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 
 @SuppressWarnings( "WeakerAccess" )
 public class NumberValues
@@ -110,6 +111,11 @@ public class NumberValues
             result = 31 * result + elementHash;
         }
         return result;
+    }
+
+    public static int hash( boolean[] value )
+    {
+        return Arrays.hashCode( value );
     }
 
     public static boolean numbersEqual( double fpn, long in )
@@ -278,6 +284,20 @@ public class NumberValues
         while ( x == 0 && i < length )
         {
             x = Double.compare( a.doubleValue( i ), b.doubleValue( i ) );
+            i++;
+        }
+        return x;
+    }
+
+    public static int compareBooleanArrays( ValueGroup.VBooleanArray a, ValueGroup.VBooleanArray b )
+    {
+        int i = 0;
+        int length = a.length();
+        int x = length - b.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = Boolean.compare( a.booleanValue( i ), b.booleanValue( i ) );
             i++;
         }
         return x;

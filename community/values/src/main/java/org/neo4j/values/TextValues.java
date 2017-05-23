@@ -42,6 +42,20 @@ public class TextValues
         return x;
     }
 
+    public static int compareTextArrays( ValueGroup.VTextArray a, ValueGroup.VTextArray b )
+    {
+        int i = 0;
+        int length = a.length();
+        int x = length - b.length();
+
+        while ( x == 0 && i < length )
+        {
+            x = a.stringValue( i ).compareTo( b.stringValue( i ) );
+            i++;
+        }
+        return x;
+    }
+
     public static int hash( char[] value )
     {
         return Arrays.hashCode( value );

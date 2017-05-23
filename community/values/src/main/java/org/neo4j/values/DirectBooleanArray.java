@@ -54,7 +54,7 @@ final class DirectBooleanArray extends DirectArray implements ValueGroup.VBoolea
     @Override
     public boolean equals( Value other )
     {
-        return equals( this.value, other );
+        return other.equals( this.value );
     }
 
     @Override
@@ -114,17 +114,7 @@ final class DirectBooleanArray extends DirectArray implements ValueGroup.VBoolea
     @Override
     public int hashCode()
     {
-        return hash( value );
-    }
-
-    static boolean equals( boolean[] value, Value other )
-    {
-        return other instanceof DirectBooleanArray && Arrays.equals( value, ((DirectBooleanArray) other).value );
-    }
-
-    static int hash( boolean[] value )
-    {
-        return Arrays.hashCode( value );
+        return NumberValues.hash( value );
     }
 
     @Override
@@ -141,14 +131,6 @@ final class DirectBooleanArray extends DirectArray implements ValueGroup.VBoolea
 
     public int compareTo( ValueGroup.VBooleanArray other )
     {
-        int i = 0;
-        int x = value.length - other.length();
-
-        while ( x == 0 && i < value.length )
-        {
-            x = Boolean.compare( value[i], other.booleanValue( i ) );
-            i++;
-        }
-        return x;
+        return NumberValues.compareBooleanArrays( this, other );
     }
 }

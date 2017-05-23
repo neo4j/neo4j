@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-final class DirectCharArray extends DirectArray
+final class DirectCharArray extends DirectArray implements ValueGroup.VTextArray
 {
     final char[] value;
 
@@ -31,12 +31,6 @@ final class DirectCharArray extends DirectArray
     {
         assert value != null;
         this.value = value;
-    }
-
-    @Override
-    int length()
-    {
-        return value.length;
     }
 
     @Override
@@ -119,14 +113,27 @@ final class DirectCharArray extends DirectArray
     }
 
     @Override
+    public int compareTo( ValueGroup.VTextArray other )
+    {
+        return TextValues.compareTextArrays( this, other );
+    }
+
+    @Override
+    public int length()
+    {
+        return value.length;
+    }
+
+    @Override
+    public String stringValue( int offset )
+    {
+        return Character.toString( value[offset] );
+    }
+
+    @Override
     void writeTo( ValueWriter writer )
     {
-        writer.beginArray( value.length, ValueWriter.ArrayType.CHAR );
-        for ( char x : value )
-        {
-            writer.writeString( x );
-        }
-        writer.endArray();
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override
