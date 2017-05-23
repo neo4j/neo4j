@@ -135,6 +135,8 @@ public class CsvInputIterator extends InputIterator.Adapter
             char[] firstLineBuffer = Readables.extractFirstLineFrom( stream );
             ChunkImpl firstChunk = new ChunkImpl( firstLineBuffer );
             firstChunk.initialize( firstLineBuffer.length, stream.sourceDescription() );
+            // We still need to keep this "firstSeeker" and return the first thing we do because maybe the header
+            // isn't extracted from the first line, the first line may just be the first data line.
             firstSeeker = seeker( firstChunk );
             header = headerFactory.create( firstSeeker, config, idType, groups );
 
