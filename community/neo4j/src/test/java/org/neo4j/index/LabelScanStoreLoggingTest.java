@@ -22,20 +22,37 @@ package org.neo4j.index;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -49,17 +66,17 @@ public class LabelScanStoreLoggingTest
     public void noLuceneLabelScanStoreMonitorMessages() throws Throwable
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        GraphDatabaseService database = new TestGraphDatabaseFactory()
-                        .setInternalLogProvider( logProvider )
-                        .newEmbeddedDatabase( testDirectory.directory() );
+        GraphDatabaseService database = newEmbeddedGraphDatabaseWithOnDemandScheduler( logProvider );
         try
         {
-
-            NativeLabelScanStore labelScanStore = resolveDependency( (GraphDatabaseAPI) database, NativeLabelScanStore.class);
+            NativeLabelScanStore labelScanStore = resolveDependency( database, NativeLabelScanStore.class);
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector =
-                    resolveDependency( (GraphDatabaseAPI) database, RecoveryCleanupWorkCollector.class );
+                    resolveDependency( database, RecoveryCleanupWorkCollector.class );
             performSomeWrites( labelScanStore );
             restartAll( recoveryCleanupWorkCollector, labelScanStore );
+            OnDemandJobScheduler jobScheduler = getOnDemandScheduler( database );
+            jobScheduler.runJob();
+
             logProvider.assertNoLogCallContaining( LuceneLabelScanStore.class.getName() );
             logProvider.assertContainsLogCallContaining( NativeLabelScanStore.class.getName() );
             logProvider.assertContainsMessageContaining(
@@ -75,6 +92,7 @@ public class LabelScanStoreLoggingTest
     public void noNativeLabelScanStoreMonitorMessages() throws Throwable
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                 .setInternalLogProvider( logProvider )
                 .newEmbeddedDatabaseBuilder( testDirectory.directory() )
@@ -82,7 +100,7 @@ public class LabelScanStoreLoggingTest
                 .newGraphDatabase();
         try
         {
-            LuceneLabelScanStore labelScanStore = resolveDependency( (GraphDatabaseAPI) database, LuceneLabelScanStore.class);
+            LuceneLabelScanStore labelScanStore = resolveDependency( database, LuceneLabelScanStore.class);
             performSomeWrites( labelScanStore );
             restartAll( labelScanStore );
             logProvider.assertNoLogCallContaining( NativeLabelScanStore.class.getName() );
@@ -94,12 +112,19 @@ public class LabelScanStoreLoggingTest
         }
     }
 
-    private void restartAll( Lifecycle...  lifecycles ) throws Throwable
+    private OnDemandJobScheduler getOnDemandScheduler( GraphDatabaseService database )
     {
-        stopAll( lifecycles );
-        shutdownAll( lifecycles );
-        initAll( lifecycles );
-        startAll( lifecycles );
+        return (OnDemandJobScheduler) resolveDependency( database, JobScheduler.class );
+    }
+
+    private static void restartAll( Lifecycle... lifecycles ) throws Throwable
+    {
+        Lifecycle combinedLifecycle = Lifecycles.multiple( lifecycles );
+        combinedLifecycle.stop();
+        combinedLifecycle.shutdown();
+
+        combinedLifecycle.init();
+        combinedLifecycle.start();
     }
 
     private void performSomeWrites( LabelScanStore labelScanStore ) throws IOException
@@ -110,41 +135,47 @@ public class LabelScanStoreLoggingTest
         }
     }
 
-    private void stopAll( Lifecycle... lifecycles ) throws Throwable
+    private static <T> T resolveDependency( GraphDatabaseService database, Class<T> clazz )
     {
-        for ( Lifecycle lifecycle : lifecycles )
-        {
-            lifecycle.stop();
-        }
-    }
-
-    private void shutdownAll( Lifecycle... lifecycles ) throws Throwable
-    {
-        for ( Lifecycle lifecycle : lifecycles )
-        {
-            lifecycle.shutdown();
-        }
-    }
-
-    private void initAll( Lifecycle... lifecycles ) throws Throwable
-    {
-        for ( Lifecycle lifecycle : lifecycles )
-        {
-            lifecycle.init();
-        }
-    }
-
-    private void startAll( Lifecycle... lifecycles ) throws Throwable
-    {
-        for ( Lifecycle lifecycle : lifecycles )
-        {
-            lifecycle.start();
-        }
-    }
-
-    private static <T> T resolveDependency( GraphDatabaseAPI database, Class<T> clazz )
-    {
-        DependencyResolver resolver = database.getDependencyResolver();
+        DependencyResolver resolver = ((GraphDatabaseAPI) database).getDependencyResolver();
         return resolver.resolveDependency( clazz );
+    }
+
+    private GraphDatabaseService newEmbeddedGraphDatabaseWithOnDemandScheduler( LogProvider logProvider )
+    {
+        GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
+        graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+        {
+            @Override
+            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                    GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
+                {
+                    @Override
+                    protected JobScheduler createJobScheduler()
+                    {
+                        return new TestScheduler();
+                    }
+
+                    @Override
+                    protected LogService createLogService( LogProvider userLogProvider )
+                    {
+                        return new SimpleLogService( logProvider, logProvider );
+                    }
+                };
+            }
+        }.newFacade( testDirectory.graphDbDir(), Config.embeddedDefaults(),
+                graphDatabaseFactoryState.databaseDependencies() );
+    }
+
+    private static class TestScheduler extends OnDemandJobScheduler
+    {
+        @Override
+        public ThreadFactory threadFactory( Group group )
+        {
+            return new NamedThreadFactory( "test", true );
+        }
     }
 }

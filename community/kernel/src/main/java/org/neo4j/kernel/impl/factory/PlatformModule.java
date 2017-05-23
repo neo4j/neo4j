@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
@@ -286,7 +286,7 @@ public class PlatformModule
         return life.add( logService );
     }
 
-    protected Neo4jJobScheduler createJobScheduler()
+    protected JobScheduler createJobScheduler()
     {
         return new Neo4jJobScheduler();
     }
