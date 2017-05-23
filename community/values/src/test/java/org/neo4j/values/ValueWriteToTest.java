@@ -70,31 +70,31 @@ public class ValueWriteToTest
                 shouldWrite( new boolean[]{true, false}, beginArray( 2, BOOLEAN), true, false, endArray() ),
 
                 // lazy array properties
-                shouldWrite( Values.lazyArrayValue( () -> new byte[]{1,2,3} ),
+                shouldWrite( Values.lazyByteArray( () -> new byte[]{1,2,3} ),
                         beginArray( 3, BYTE ), (byte)1, (byte)2, (byte) 3, endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new short[]{1,2,3} ),
+                shouldWrite( Values.lazyShortArray( () -> new short[]{1,2,3} ),
                         beginArray( 3, SHORT ), (short)1, (short)2, (short)3, endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new int[]{1,2,3} ),
+                shouldWrite( Values.lazyIntArray( () -> new int[]{1,2,3} ),
                         beginArray( 3, INT ), 1, 2, 3, endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new long[]{1,2,3} ),
+                shouldWrite( Values.lazyLongArray( () -> new long[]{1,2,3} ),
                         beginArray( 3, LONG ), 1L, 2L, 3L, endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new float[]{1,2,3} ),
+                shouldWrite( Values.lazyFloatArray( () -> new float[]{1,2,3} ),
                         beginArray( 3, FLOAT ), 1.0f, 2.0f, 3.0f, endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new double[]{1,2,3} ),
+                shouldWrite( Values.lazyDoubleArray( () -> new double[]{1,2,3} ),
                         beginArray( 3, DOUBLE ), 1.0, 2.0, 3.0, endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new char[]{'a','b'} ),
+                shouldWrite( Values.lazyCharArray( () -> new char[]{'a','b'} ),
                         beginArray( 2, CHAR ), 'a', 'b', endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new String[]{"a","b"} ),
+                shouldWrite( Values.lazyStringArray( () -> new String[]{"a","b"} ),
                         beginArray( 2, STRING ), "a", "b", endArray() ),
 
-                shouldWrite( Values.lazyArrayValue( () -> new boolean[]{true, false} ),
+                shouldWrite( Values.lazyBooleanArray( () -> new boolean[]{true, false} ),
                         beginArray( 2, BOOLEAN), true, false, endArray() ),
 
                 // lazy string property
@@ -142,7 +142,7 @@ public class ValueWriteToTest
             return String.format( "%s should write %s", value, Arrays.toString( expected ) );
         }
 
-        public void verifyWriteTo()
+        void verifyWriteTo()
         {
             BufferValueWriter writer = new BufferValueWriter();
             value.writeTo( writer );

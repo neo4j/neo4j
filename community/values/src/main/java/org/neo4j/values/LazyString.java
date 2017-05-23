@@ -23,9 +23,9 @@ import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
 
-class LazyStringValue extends LazyValue<String> implements ValueGroup.VText
+class LazyString extends LazyValue<String> implements ValueGroup.VText
 {
-    LazyStringValue( Callable<String> producer )
+    LazyString( Callable<String> producer )
     {
         super( producer );
     }
@@ -39,7 +39,7 @@ class LazyStringValue extends LazyValue<String> implements ValueGroup.VText
     @Override
     public boolean equals( Value value )
     {
-        return value.equals( value() );
+        return value.equals( getOrLoad() );
     }
 
     @Override
@@ -99,7 +99,7 @@ class LazyStringValue extends LazyValue<String> implements ValueGroup.VText
     @Override
     boolean equals( String x )
     {
-        return value().equals( x );
+        return getOrLoad().equals( x );
     }
 
     @Override
@@ -118,31 +118,30 @@ class LazyStringValue extends LazyValue<String> implements ValueGroup.VText
     @Override
     void writeTo( ValueWriter writer )
     {
-        Object value = value();
-        writer.writeString( (String) value );
+        writer.writeString( getOrLoad() );
     }
 
     @Override
     public int hashCode()
     {
-        return value().hashCode();
+        return getOrLoad().hashCode();
     }
 
     @Override
     public String toString()
     {
-        return format( "LazyString(%s)", valueIsLoaded() ? value() : "not-loaded" );
+        return format( "LazyString(%s)", valueIsLoaded() ? getOrLoad() : "not-loaded" );
     }
 
     @Override
     public String stringValue()
     {
-        return value();
+        return getOrLoad();
     }
 
     @Override
     public int compareTo( ValueGroup.VText other )
     {
-        return value().compareTo( other.stringValue() );
+        return getOrLoad().compareTo( other.stringValue() );
     }
 }

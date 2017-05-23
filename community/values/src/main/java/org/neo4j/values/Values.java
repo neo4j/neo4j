@@ -38,12 +38,52 @@ class Values
 
     public static Value lazyStringValue( Callable<String> producer )
     {
-        return new LazyStringValue( producer );
+        return new LazyString( producer );
     }
 
-    public static Value lazyArrayValue( Callable<Object> producer )
+    public static Value lazyByteArray( Callable<byte[]> producer )
     {
-        return new LazyArrayValue( producer );
+        return new LazyByteArray( producer );
+    }
+
+    public static Value lazyShortArray( Callable<short[]> producer )
+    {
+        return new LazyShortArray( producer );
+    }
+
+    public static Value lazyIntArray( Callable<int[]> producer )
+    {
+        return new LazyIntArray( producer );
+    }
+
+    public static Value lazyLongArray( Callable<long[]> producer )
+    {
+        return new LazyLongArray( producer );
+    }
+
+    public static Value lazyFloatArray( Callable<float[]> producer )
+    {
+        return new LazyFloatArray( producer );
+    }
+
+    public static Value lazyDoubleArray( Callable<double[]> producer )
+    {
+        return new LazyDoubleArray( producer );
+    }
+
+    public static Value lazyCharArray( Callable<char[]> producer )
+    {
+        return new LazyCharArray( producer );
+    }
+
+    public static Value lazyStringArray( Callable<String[]> producer )
+    {
+        return new LazyStringArray( producer );
+    }
+
+    public static Value lazyBooleanArray( Callable<boolean[]> producer )
+    {
+        return new LazyBooleanArray( producer );
     }
 
     public static Value numberValue( Number number )

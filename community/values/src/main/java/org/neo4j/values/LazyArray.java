@@ -21,50 +21,28 @@ package org.neo4j.values;
 
 import java.util.concurrent.Callable;
 
-abstract class LazyValue<T> extends Value
+abstract class LazyArray<T> extends LazyValue<T>
 {
-    private volatile Object value;
-
-    LazyValue( Callable<? extends T> producer )
+    LazyArray( Callable<? extends T> producer )
     {
-        this.value = producer;
+        super( producer );
     }
 
-    /**
-     * Get or loads the value.
-     */
-    final T getOrLoad()
+    @Override
+    boolean equals( boolean x )
     {
-        Object value = this.value;
-        if ( value instanceof Callable<?> )
-        {
-            synchronized ( this )
-            {
-                value = this.value;
-                if ( value instanceof Callable<?> )
-                {
-                    this.value = value = produceValue();
-                }
-            }
-        }
-        //noinspection unchecked
-        return (T) value;
+        return false;
     }
 
-    private Object produceValue()
+    @Override
+    boolean equals( char x )
     {
-        try
-        {
-            return ((Callable<?>) value).call();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return false;
     }
 
-    boolean valueIsLoaded()
+    @Override
+    boolean equals( String x )
     {
-        return !(value instanceof Callable<?>);
+        return false;
     }
 }

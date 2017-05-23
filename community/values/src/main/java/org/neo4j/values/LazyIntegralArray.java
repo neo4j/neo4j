@@ -21,50 +21,40 @@ package org.neo4j.values;
 
 import java.util.concurrent.Callable;
 
-abstract class LazyValue<T> extends Value
+abstract class LazyIntegralArray<T> extends LazyArray<T> implements ValueGroup.VIntegerArray
 {
-    private volatile Object value;
-
-    LazyValue( Callable<? extends T> producer )
+    LazyIntegralArray( Callable<? extends T> producer )
     {
-        this.value = producer;
+        super( producer );
     }
 
-    /**
-     * Get or loads the value.
-     */
-    final T getOrLoad()
+    @Override
+    boolean equals( char[] x )
     {
-        Object value = this.value;
-        if ( value instanceof Callable<?> )
-        {
-            synchronized ( this )
-            {
-                value = this.value;
-                if ( value instanceof Callable<?> )
-                {
-                    this.value = value = produceValue();
-                }
-            }
-        }
-        //noinspection unchecked
-        return (T) value;
+        return false;
     }
 
-    private Object produceValue()
+    @Override
+    boolean equals( String[] x )
     {
-        try
-        {
-            return ((Callable<?>) value).call();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return false;
     }
 
-    boolean valueIsLoaded()
+    @Override
+    boolean equals( boolean[] x )
     {
-        return !(value instanceof Callable<?>);
+        return false;
+    }
+
+    @Override
+    public int compareTo( ValueGroup.VIntegerArray other )
+    {
+        return NumberValues.compareIntegerArrays( this, other );
+    }
+
+    @Override
+    public int compareTo( ValueGroup.VFloatingPointArray other )
+    {
+        return NumberValues.compareIntegerVsFloatArrays( this, other );
     }
 }
