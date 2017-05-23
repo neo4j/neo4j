@@ -25,7 +25,37 @@ public class ValueGroup
     {
     }
 
-    interface VNumber
+    enum Id
+    {
+        NO_VALUE( -1 ),
+        TEXT( 0 ),
+        BOOLEAN( 1 ),
+        INTEGER( 2 ),
+        FLOAT( 2 ),
+        INTEGER_ARRAY( 3 ),
+        FLOAT_ARRAY( 3 ),
+        TEXT_ARRAY( 4 ),
+        BOOLEAN_ARRAY( 5 );
+
+        private final int comparabilityGroup;
+
+        Id( int comparabilityGroup )
+        {
+            this.comparabilityGroup = comparabilityGroup;
+        }
+
+        public int comparabilityGroup()
+        {
+            return comparabilityGroup;
+        }
+    }
+
+    interface WithId
+    {
+        Id valueGroupId();
+    }
+
+    interface VNumber extends WithId
     {
         int compareTo( VInteger other );
 
@@ -35,28 +65,48 @@ public class ValueGroup
     interface VInteger extends VNumber
     {
         long longValue();
+
+        default Id valueGroupId()
+        {
+            return Id.INTEGER;
+        }
     }
 
     interface VFloatingPoint extends VNumber
     {
         double doubleValue();
+
+        default Id valueGroupId()
+        {
+            return Id.FLOAT;
+        }
     }
 
-    interface VBoolean
+    interface VBoolean extends WithId
     {
         boolean booleanValue();
+
+        default Id valueGroupId()
+        {
+            return Id.BOOLEAN;
+        }
 
         int compareTo( VBoolean other );
     }
 
-    interface VText
+    interface VText extends WithId
     {
         String stringValue();
+
+        default Id valueGroupId()
+        {
+            return Id.TEXT;
+        }
 
         int compareTo( VText other );
     }
 
-    interface VNumberArray
+    interface VNumberArray extends WithId
     {
         int length();
 
@@ -68,27 +118,47 @@ public class ValueGroup
     interface VIntegerArray extends VNumberArray
     {
         long longValue( int offset );
+
+        default Id valueGroupId()
+        {
+            return Id.INTEGER_ARRAY;
+        }
     }
 
     interface VFloatingPointArray extends VNumberArray
     {
         double doubleValue( int offset );
+
+        default Id valueGroupId()
+        {
+            return Id.FLOAT_ARRAY;
+        }
     }
 
-    interface VBooleanArray
+    interface VBooleanArray extends WithId
     {
         int length();
 
         boolean booleanValue( int offset );
 
+        default Id valueGroupId()
+        {
+            return Id.BOOLEAN_ARRAY;
+        }
+
         int compareTo( VBooleanArray other );
     }
 
-    interface VTextArray
+    interface VTextArray extends WithId
     {
         int length();
 
         String stringValue( int offset );
+
+        default Id valueGroupId()
+        {
+            return Id.TEXT_ARRAY;
+        }
 
         int compareTo( VTextArray other );
     }

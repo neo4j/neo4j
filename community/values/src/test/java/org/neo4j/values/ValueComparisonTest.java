@@ -33,9 +33,10 @@ public class ValueComparisonTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    ValueComparator comparator = new ValueComparator( Values.SemanticType::compareTo );
+    private ValueComparator comparator = new ValueComparator(
+            Comparator.comparingInt( ValueGroup.Id::comparabilityGroup ) );
 
-    Object[] objs = new Object[]{
+    private Object[] objs = new Object[]{
             // OTHER
             null,
 

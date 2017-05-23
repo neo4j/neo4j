@@ -123,4 +123,10 @@ public class NoValue extends Value
     {
         writer.writeNull();
     }
+
+    @Override
+    public ValueGroup.Id valueGroupId()
+    {
+        return ValueGroup.Id.NO_VALUE;
+    }
 }

@@ -23,140 +23,124 @@ import java.util.Comparator;
 
 import static java.lang.String.format;
 
-// TODO: redo with ValueGroup instead of SemanticType
 class ValueComparator implements Comparator<Value>
 {
-    private final Comparator<Values.SemanticType> semanticTypeComparator;
+    private final Comparator<ValueGroup.Id> valueGroupComparator;
 
-    ValueComparator( Comparator<Values.SemanticType> semanticTypeComparator )
+    ValueComparator( Comparator<ValueGroup.Id> valueGroupComparator )
     {
-        this.semanticTypeComparator = semanticTypeComparator;
+        this.valueGroupComparator = valueGroupComparator;
     }
 
     @Override
-    public int compare( Value o1, Value o2 )
+    public int compare( Value v1, Value v2 )
     {
-        assert o1 != null && o2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
+        assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
-        Values.SemanticType semType1 = semanticType( o1 );
-        Values.SemanticType semType2 = semanticType( o2 );
+        ValueGroup.Id id1 = v1.valueGroupId();
+        ValueGroup.Id id2 = v2.valueGroupId();
 
-        int x = semanticTypeComparator.compare( semType1, semType2 );
+        int x = valueGroupComparator.compare( id1, id2 );
 
         if ( x == 0 )
         {
-            switch ( semType1 )
+            switch ( id1 )
             {
             case NO_VALUE:
                 return x;
 
+            case INTEGER:
+                return compareNumberScalar( (ValueGroup.VInteger)v1, v2 );
+
+            case FLOAT:
+                return compareNumberScalar( (ValueGroup.VFloatingPoint)v1, v2 );
+
+            case TEXT:
+                return ((ValueGroup.VText) v1).compareTo( (ValueGroup.VText) v2 );
+
             case BOOLEAN:
-                return ((DirectBoolean) o1).compareTo( (DirectBoolean) o2 );
+                return ((ValueGroup.VBoolean) v1).compareTo( (ValueGroup.VBoolean) v2 );
 
-            case NUMBER:
-                return compareScalarNumbers( o1, o2 );
+            case INTEGER_ARRAY:
+                return compareNumberArray( (ValueGroup.VIntegerArray)v1, v2 );
 
-            case STRING:
-                return ((DirectString) o1).compareTo( (DirectString) o2 );
+            case FLOAT_ARRAY:
+                return compareNumberArray( (ValueGroup.VFloatingPointArray)v1, v2 );
 
-            case BOOLEAN_ARR:
-                return ((DirectBooleanArray) o1).compareTo( (DirectBooleanArray) o2 );
+            case TEXT_ARRAY:
+                return ((ValueGroup.VTextArray) v1).compareTo( (ValueGroup.VTextArray) v2 );
 
-            case NUMBER_ARR:
-                return compareNumberArrays( o1, o2 );
-
-            case STRING_ARR:
-                return ((DirectStringArray) o1).compareTo( (DirectStringArray) o2 );
+            case BOOLEAN_ARRAY:
+                return ((ValueGroup.VBooleanArray) v1).compareTo( (ValueGroup.VBooleanArray) v2 );
 
             default:
-                throw new UnsupportedOperationException( format( "Unknown semantic type '%s'", semType1 ) );
+                throw new UnsupportedOperationException( format( "Unknown ValueGroup id '%s'", id1 ) );
             }
         }
         return x;
     }
 
-    private Values.SemanticType semanticType( Value value )
+    private int compareNumberScalar( ValueGroup.VInteger v1, Value v2 )
     {
-        if ( value instanceof NoValue )
+        switch ( v2.valueGroupId() )
         {
-            return Values.SemanticType.NO_VALUE;
-        }
-        if ( value instanceof DirectString )
-        {
-            return Values.SemanticType.STRING;
-        }
-        if ( value instanceof ValueGroup.VNumber )
-        {
-            return Values.SemanticType.NUMBER;
-        }
-        if ( value instanceof DirectBoolean )
-        {
-            return Values.SemanticType.BOOLEAN;
-        }
-        if ( value instanceof DirectStringArray )
-        {
-            return Values.SemanticType.STRING_ARR;
-        }
-        if ( value instanceof DirectIntegralArray || value instanceof DirectFloatingPointArray )
-        {
-            return Values.SemanticType.NUMBER_ARR;
-        }
-        if ( value instanceof DirectBooleanArray )
-        {
-            return Values.SemanticType.BOOLEAN_ARR;
-        }
+        case INTEGER:
+            return v1.compareTo( (ValueGroup.VInteger)v2 );
 
-        throw new UnsupportedOperationException(
-                format( "Semantic type for value class '%s' is not defined", value.getClass().getName() ) );
-    }
+        case FLOAT:
+            return v1.compareTo( (ValueGroup.VFloatingPoint)v2 );
 
-    private int compareScalarNumbers( Value o1, Value o2 )
-    {
-        boolean isInt1 = o1 instanceof DirectIntegralNumber;
-        boolean isInt2 = o2 instanceof DirectIntegralNumber;
-        if ( isInt1 )
-        {
-            if ( isInt2 )
-            {
-                return ((DirectIntegralNumber) o1).compareTo( (DirectIntegralNumber) o2 );
-            }
-            else
-            {
-                return ((DirectIntegralNumber) o1).compareTo( (DirectFloatingPointNumber) o2 );
-            }
-        }
-        if ( isInt2 )
-        {
-            return ((DirectFloatingPointNumber) o1).compareTo( (DirectIntegralNumber) o2 );
-        }
-        else
-        {
-            return ((DirectFloatingPointNumber) o1).compareTo( (DirectFloatingPointNumber) o2 );
+        default:
+            throw new UnsupportedOperationException( format(
+                    "Cannot compare values of type %s with type %s", ValueGroup.Id.INTEGER, v2.valueGroupId() ) );
         }
     }
 
-    private int compareNumberArrays( Value o1, Value o2 )
+    private int compareNumberScalar( ValueGroup.VFloatingPoint v1, Value v2 )
     {
-        boolean isInt1 = o1 instanceof DirectIntegralArray;
-        boolean isInt2 = o2 instanceof DirectIntegralArray;
-        if ( isInt1 )
+        switch ( v2.valueGroupId() )
         {
-            if ( isInt2 )
-            {
-                return ((DirectIntegralArray) o1).compareTo( (DirectIntegralArray) o2 );
-            }
-            else
-            {
-                return ((DirectIntegralArray) o1).compareTo( (DirectFloatingPointArray) o2 );
-            }
+        case INTEGER:
+            return v1.compareTo( (ValueGroup.VInteger)v2 );
+
+        case FLOAT:
+            return v1.compareTo( (ValueGroup.VFloatingPoint)v2 );
+
+        default:
+            throw new UnsupportedOperationException( format(
+                    "Cannot compare values of type %s with type %s", ValueGroup.Id.FLOAT, v2.valueGroupId() ) );
         }
-        if ( isInt2 )
+    }
+
+    private int compareNumberArray( ValueGroup.VIntegerArray v1, Value v2 )
+    {
+        switch ( v2.valueGroupId() )
         {
-            return ((DirectFloatingPointArray) o1).compareTo( (DirectIntegralArray) o2 );
+        case INTEGER:
+            return v1.compareTo( (ValueGroup.VIntegerArray)v2 );
+
+        case FLOAT:
+            return v1.compareTo( (ValueGroup.VFloatingPointArray)v2 );
+
+        default:
+            throw new UnsupportedOperationException( format(
+                    "Cannot compare values of type %s with type %s", ValueGroup.Id.INTEGER, v2.valueGroupId() ) );
         }
-        else
+    }
+
+    private int compareNumberArray( ValueGroup.VFloatingPointArray v1, Value v2 )
+    {
+        switch ( v2.valueGroupId() )
         {
-            return ((DirectFloatingPointArray) o1).compareTo( (DirectFloatingPointArray) o2 );
+        case INTEGER:
+            return v1.compareTo( (ValueGroup.VIntegerArray)v2 );
+
+        case FLOAT:
+            return v1.compareTo( (ValueGroup.VFloatingPointArray)v2 );
+
+        default:
+            throw new UnsupportedOperationException( format(
+                    "Cannot compare values of type %s with type %s", ValueGroup.Id.FLOAT, v2.valueGroupId() ) );
         }
     }
 
@@ -164,5 +148,11 @@ class ValueComparator implements Comparator<Value>
     public boolean equals( Object obj )
     {
         return obj != null && obj instanceof ValueComparator;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 1;
     }
 }
