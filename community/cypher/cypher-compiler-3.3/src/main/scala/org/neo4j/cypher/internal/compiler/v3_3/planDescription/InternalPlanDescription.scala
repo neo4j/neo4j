@@ -207,6 +207,7 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
     var dbHits: Option[Long] = None
     var pageCacheHits: Option[Long] = None
     var pageCacheMisses: Option[Long] = None
+    var pageCacheHitRatio: Option[Double] = None
     var time: Option[Long] = None
     var rows: Option[Long] = None
 
@@ -216,12 +217,15 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
           case DbHits(v) => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
           case PageCacheHits(v) => pageCacheHits = Some(pageCacheHits.map(_ + v).getOrElse(v)); false
           case PageCacheMisses(v) => pageCacheMisses = Some(pageCacheMisses.map(_ + v).getOrElse(v)); false
+          case PageCacheHitRatio(v) => pageCacheHitRatio = Some(pageCacheHitRatio.map(_ + v).getOrElse(v)); false
           case Time(v) => time = Some(time.map(_ + v).getOrElse(v)); false
           case Rows(v) => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
           case _ => true
         }
         acc ++ args
-    }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++ pageCacheHits.map(PageCacheHits.apply) ++ pageCacheMisses.map(PageCacheMisses.apply) ++ time.map(Time.apply) ++ rows.map(Rows.apply)
+    }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++ pageCacheHits.map(PageCacheHits.apply) ++
+      pageCacheMisses.map(PageCacheMisses.apply) ++ pageCacheHitRatio.map(PageCacheHitRatio.apply) ++
+      time.map(Time.apply) ++ rows.map(Rows.apply)
   }
 
   override def find(name: String): Seq[InternalPlanDescription] = similar.last.find(name)

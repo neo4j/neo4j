@@ -36,6 +36,11 @@ public class ProfilingTracer implements QueryExecutionTracer
         long rows();
         long pageCacheHits();
         long pageCacheMisses();
+        default double pageCacheHitRatio()
+        {
+            double hits = pageCacheHits();
+            return hits / (hits + pageCacheMisses());
+        }
     }
 
     public interface Clock

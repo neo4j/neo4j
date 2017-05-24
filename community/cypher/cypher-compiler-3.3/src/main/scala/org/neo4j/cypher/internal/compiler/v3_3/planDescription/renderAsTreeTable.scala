@@ -136,8 +136,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case DbHits(count) => mapping(HITS, Right(count.toString))
     case PageCacheHits(count) => mapping(PAGE_CACHE_HITS, Right(count.toString))
     case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, Right(count.toString))
-    case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)))
     case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, Right("%.4f".format(ratio)))
+    case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)))
     case _ => None
   }.toMap + (
     OTHER -> Left(other(description)))

@@ -45,6 +45,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
@@ -186,7 +187,7 @@ public class CypherAdapterStreamTest
                 "pageCacheHitRatio", 4.0 / 7
         );
 
-        assertThat( meta.get( "profile" ), equalTo( expectedProfile ));
+        assertMapEqualsWithDelta( (Map<String,Object>)meta.get( "profile" ), expectedProfile, 0.0001 );
     }
 
     @Test
@@ -247,6 +248,31 @@ public class CypherAdapterStreamTest
             }
         } );
         return meta;
+    }
+
+    private static void assertMapEqualsWithDelta( Map<String,Object> a, Map<String,Object> b, double delta )
+    {
+        assertThat( "Map should have same size", a.size(), equalTo(b.size()) );
+        for ( Map.Entry<String,Object> entry : a.entrySet() )
+        {
+            String key = entry.getKey();
+            assertThat( "Missing key", b.get( key ) != null );
+            Object aValue = entry.getValue();
+            Object bValue = b.get( key );
+            if ( aValue instanceof Map )
+            {
+                assertThat( "Value mismatch", bValue instanceof Map );
+                assertMapEqualsWithDelta( (Map<String,Object>)aValue, (Map<String,Object>)bValue, delta);
+            }
+            else if ( aValue instanceof Double )
+            {
+                assertThat( "Value mismatch", (double)aValue, closeTo( (double)bValue, delta ) );
+            }
+            else
+            {
+                assertThat( "Value mismatch", aValue, equalTo( bValue ) );
+            }
+        }
     }
 
     private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final long dbHits,

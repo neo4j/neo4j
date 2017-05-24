@@ -161,7 +161,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     @Override
     public double hitRatio()
     {
-        return ((double) hits()) / (hits() + faults());
+        double hits = hits();
+        return hits / (hits + faults());
     }
 
     @Override
