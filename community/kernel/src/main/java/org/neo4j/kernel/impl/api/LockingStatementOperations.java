@@ -24,6 +24,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -62,7 +63,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class LockingStatementOperations implements
@@ -184,9 +184,9 @@ public class LockingStatementOperations implements
     @Override
     public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
     {
-        acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.indexesGetAll( state );
+        return Iterators.consumableIterator( schemaReadDelegate.indexesGetAll( state ),
+                indexDescriptor -> sharedLabelLock( state, indexDescriptor.schema().getLabelId() ) );
     }
 
     @Override
@@ -390,9 +390,12 @@ public class LockingStatementOperations implements
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll( KernelStatement state )
     {
-        acquireSharedSchemaLock( state );
         state.assertOpen();
-        return schemaReadDelegate.constraintsGetAll( state );
+        return Iterators.consumableIterator( schemaReadDelegate.constraintsGetAll( state ), constraintDescriptor ->
+        {
+            SchemaDescriptor schema = constraintDescriptor.schema();
+            acquireShared( state, schema.resourceType(), schema.resourceId() );
+        } );
     }
 
     @Override
@@ -410,19 +413,6 @@ public class LockingStatementOperations implements
             throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException,
             InvalidTransactionTypeKernelException
     {
-        // TODO (BBC, 22/11/13):
-        // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
-        // the schema lock to ensure that our view of constraints is consistent.
-        //
-        // We would like this locking to be done naturally when ConstraintEnforcingEntityOperations calls
-        // SchemaReadOperations#constraintsGetForLabel, but the SchemaReadOperations object that
-        // ConstraintEnforcingEntityOperations has a reference to does not lock because of the way the cake is
-        // constructed.
-        //
-        // It would be cleaner if the schema and data cakes were separated so that the SchemaReadOperations object used
-        // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
-        acquireSharedSchemaLock( state );
-
         acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
         return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
@@ -554,11 +544,11 @@ public class LockingStatementOperations implements
         statement.locks().optimistic().acquireExclusive( statement.lockTracer(), resource, resourceId );
     }
 
-    private void acquireSharedSchemaLock( KernelStatement state )
-    {
-        if ( !SCHEMA_WRITES_DISABLE )
-        {
-            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-        }
-    }
+//    private void acquireSharedSchemaLock( KernelStatement state )
+//    {
+//        if ( !SCHEMA_WRITES_DISABLE )
+//        {
+//            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+//        }
+//    }
 }

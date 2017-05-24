@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -217,6 +218,19 @@ public abstract class Iterators
                 return first.hasNext() == other.hasNext();
             }
         }
+    }
+
+    public static <T> Iterator<T> consumableIterator( Iterator<T> iterator, Consumer<T> consumer )
+    {
+        return new IteratorWrapper<T,T>( iterator )
+        {
+            @Override
+            protected T underlyingObjectToObject( T object )
+            {
+                consumer.accept( object );
+                return object;
+            }
+        };
     }
 
     private static <T> T assertNotNull( Iterator<T> iterator, T result )

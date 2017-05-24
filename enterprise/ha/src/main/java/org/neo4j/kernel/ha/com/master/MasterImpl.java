@@ -40,7 +40,6 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
@@ -200,21 +199,21 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
-    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction, Locks
-            .Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
+    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction, Locks.Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
-        if ( locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) )
-        {
+        //TODO: why do we need it?
+//        if ( locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) )
+//        {
             long txId = spi.applyPreparedTransaction( preparedTransaction );
             return spi.packTransactionObligationResponse( context, txId );
-        }
-        else
-        {
-            throw new TransactionFailureException( Status.Schema.SchemaModifiedConcurrently,
-                    "Failed to commit, because another transaction is making " +
-                            "schema changes. Slave commits are disallowed while schema changes are being committed. " +
-                            "Retrying the transaction should yield a successful result." );
-        }
+//        }
+//        else
+//        {
+//            throw new TransactionFailureException( Status.Schema.SchemaModifiedConcurrently,
+//                    "Failed to commit, because another transaction is making " +
+//                            "schema changes. Slave commits are disallowed while schema changes are being committed. " +
+//                            "Retrying the transaction should yield a successful result." );
+//        }
     }
 
     @Override
