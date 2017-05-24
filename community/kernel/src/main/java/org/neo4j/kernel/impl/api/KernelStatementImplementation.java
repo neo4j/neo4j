@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
@@ -70,7 +70,7 @@ import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 public class KernelStatementImplementation implements KernelStatement
 {
     private final TxStateHolder txStateHolder;
-    private final SchemaResources schemaResources;
+    private final StorageStatement storeStatement;
     private final AccessCapability accessCapability;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
@@ -82,14 +82,14 @@ public class KernelStatementImplementation implements KernelStatement
 
     public KernelStatementImplementation( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
-                            SchemaResources schemaResources,
+                            StorageStatement storeStatement,
                             Procedures procedures,
                             AccessCapability accessCapability,
                             LockTracer systemLockTracer )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
-        this.schemaResources = schemaResources;
+        this.storeStatement = storeStatement;
         this.accessCapability = accessCapability;
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
@@ -224,7 +224,10 @@ public class KernelStatementImplementation implements KernelStatement
 
     public final void acquire()
     {
-        referenceCount++;
+        if ( referenceCount++ == 0 )
+        {
+            storeStatement.acquire();
+        }
     }
 
     final boolean isAcquired()
@@ -267,15 +270,15 @@ public class KernelStatementImplementation implements KernelStatement
     }
 
     @Override
-    public SchemaResources schemaResources()
+    public StorageStatement storageStatement()
     {
-        return schemaResources;
+        return storeStatement;
     }
 
     private void cleanupResources()
     {
         // closing is done by KTI
-        schemaResources.close();
+        storeStatement.release();
         executingQueryList = ExecutingQueryList.EMPTY;
     }
 

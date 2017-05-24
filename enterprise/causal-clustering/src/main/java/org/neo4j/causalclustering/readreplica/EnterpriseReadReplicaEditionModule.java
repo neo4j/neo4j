@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.store.EnterpriseBatchingProgressionFactory;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
@@ -164,6 +165,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
+
+        storageStatementFactory = StoreStatement::new;
 
         progressionFactory = dependencies.satisfyDependency( new EnterpriseBatchingProgressionFactory() );
 

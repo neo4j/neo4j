@@ -144,25 +144,25 @@ public class StateHandlingStatementOperations
     @Override
     public BatchingLongProgression parallelNodeScanProgression( KernelStatement statement )
     {
-        return storeLayer.parallelNodeScanProgression();
+        return storeLayer.parallelNodeScanProgression( statement.storageStatement() );
     }
 
     @Override
     public Cursor<NodeItem> nodeGetCursor( KernelStatement statement, BatchingLongProgression progression )
     {
-        return storeLayer.nodeGetCursor( progression, statement.readableTxState() );
+        return storeLayer.nodeGetCursor( statement.storageStatement(), progression, statement.readableTxState() );
     }
 
     @Override
     public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
     {
-        return storeLayer.nodeGetAllCursor( statement.readableTxState() );
+        return storeLayer.nodeGetAllCursor( statement.storageStatement(), statement.readableTxState() );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
     {
-        Cursor<NodeItem> node = storeLayer.nodeGetSingleCursor( nodeId, statement.readableTxState() );
+        Cursor<NodeItem> node = nodeCursor( statement, nodeId );
         if ( !node.next() )
         {
             node.close();
@@ -171,12 +171,16 @@ public class StateHandlingStatementOperations
         return node;
     }
 
+    private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
+    {
+        return storeLayer.nodeGetSingleCursor( statement.storageStatement(), nodeId, statement.readableTxState() );
+    }
+
     @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relationshipId )
             throws EntityNotFoundException
     {
-        Cursor<RelationshipItem> relationship =
-                storeLayer.relationshipGetSingleCursor( relationshipId, statement.readableTxState() );
+        Cursor<RelationshipItem> relationship = relationshipCursor( statement, relationshipId );
         if ( !relationship.next() )
         {
             relationship.close();
@@ -185,11 +189,17 @@ public class StateHandlingStatementOperations
         return relationship;
     }
 
+    private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
+    {
+        ReadableTransactionState state = statement.readableTxState();
+        return storeLayer.relationshipCursor( statement.storageStatement(), relationshipId, state );
+    }
+
     @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         ReadableTransactionState state = statement.readableTxState();
-        return storeLayer.relationshipsGetAllCursor( state );
+        return storeLayer.relationshipsGetAllCursor( statement.storageStatement(), state );
     }
 
     @Override
@@ -197,7 +207,7 @@ public class StateHandlingStatementOperations
             Direction direction )
     {
         ReadableTransactionState state = statement.readableTxState();
-        return storeLayer.nodeGetRelationships( node, direction, state );
+        return storeLayer.nodeGetRelationships( statement.storageStatement(), node, direction, state );
     }
 
     @Override
@@ -205,14 +215,14 @@ public class StateHandlingStatementOperations
             int[] relTypes )
     {
         ReadableTransactionState state = statement.readableTxState();
-        return storeLayer.nodeGetRelationships( node, direction, relTypes, state );
+        return storeLayer.nodeGetRelationships( statement.storageStatement(), node, direction, relTypes, state );
     }
 
     @Override
     public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
     {
         NodeState nodeState = statement.readableTxState().getNodeState( node.id() );
-        return storeLayer.nodeGetProperties( node, nodeState );
+        return storeLayer.nodeGetProperties( statement.storageStatement(), node, nodeState );
     }
 
     @Override
@@ -260,14 +270,14 @@ public class StateHandlingStatementOperations
     private Cursor<PropertyItem> nodeGetPropertyCursor( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
         NodeState nodeState = statement.readableTxState().getNodeState( node.id() );
-        return storeLayer.nodeGetProperty( node, propertyKeyId, nodeState );
+        return storeLayer.nodeGetProperty( statement.storageStatement(), node, propertyKeyId, nodeState );
     }
 
     @Override
     public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship )
     {
         RelationshipState relationshipState = statement.readableTxState().getRelationshipState( relationship.id() );
-        return storeLayer.relationshipGetProperties( relationship, relationshipState );
+        return storeLayer.relationshipGetProperties( statement.storageStatement(), relationship, relationshipState );
     }
 
     @Override
@@ -318,7 +328,8 @@ public class StateHandlingStatementOperations
             RelationshipItem relationship, int propertyKeyId )
     {
         RelationshipState relationshipState = statement.readableTxState().getRelationshipState( relationship.id() );
-        return storeLayer.relationshipGetProperty( relationship, propertyKeyId, relationshipState );
+        return storeLayer.relationshipGetProperty( statement.storageStatement(), relationship, propertyKeyId,
+                relationshipState );
     }
 
     // </Cursors>
@@ -445,7 +456,7 @@ public class StateHandlingStatementOperations
     @Override
     public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
     {
-        PrimitiveLongIterator source = storeLayer.nodesGetForLabel( state.schemaResources(), labelId );
+        PrimitiveLongIterator source = storeLayer.nodesGetForLabel( state.storageStatement(), labelId );
         PrimitiveLongIterator wLabelChanges =
                 state.readableTxState().nodesWithLabelChanged( labelId ).augment( source );
         return state.readableTxState().addedAndRemovedNodes().augmentWithRemovals( wLabelChanges );
@@ -678,7 +689,7 @@ public class StateHandlingStatementOperations
             IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = storeLayer.indexGetFreshReader( statement.schemaResources(), index );
+        IndexReader reader = storeLayer.indexGetFreshReader( statement.storageStatement(), index );
 
         /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
          * since subsequent filtering will happen outside, but at the same time have the ability to
@@ -696,7 +707,7 @@ public class StateHandlingStatementOperations
     public PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index,
             IndexQuery... predicates ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = storeLayer.indexGetReader( statement.schemaResources(), index );
+        IndexReader reader = storeLayer.indexGetReader( statement.storageStatement(), index );
         PrimitiveLongIterator committed = reader.query( predicates );
         PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, statement, committed, predicates );
 
@@ -776,7 +787,7 @@ public class StateHandlingStatementOperations
     public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        IndexReader reader = storeLayer.indexGetReader( statement.schemaResources(), index );
+        IndexReader reader = storeLayer.indexGetReader( statement.storageStatement(), index );
         return reader.countIndexedNodes( nodeId, value );
     }
 
@@ -1048,7 +1059,8 @@ public class StateHandlingStatementOperations
             try
             {
                 statement.readableTxState().accept(
-                        new TransactionCountingStateVisitor( EMPTY, storeLayer, statement.readableTxState(), counts ) );
+                        new TransactionCountingStateVisitor( EMPTY, storeLayer, statement.storageStatement(),
+                                statement.readableTxState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -1078,7 +1090,8 @@ public class StateHandlingStatementOperations
             try
             {
                 statement.readableTxState().accept(
-                        new TransactionCountingStateVisitor( EMPTY, storeLayer, statement.readableTxState(), counts ) );
+                        new TransactionCountingStateVisitor( EMPTY, storeLayer, statement.storageStatement(),
+                                statement.readableTxState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
@@ -1398,7 +1411,8 @@ public class StateHandlingStatementOperations
             long relId, final String key, final Object value )
             throws LegacyIndexNotFoundKernelException, EntityNotFoundException
     {
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipGetSingleCursor( relId, statement.readableTxState() ) )
+        try ( Cursor<RelationshipItem> cursor = storeLayer
+                .relationshipCursor( statement.storageStatement(), relId, statement.readableTxState() ) )
         {
             // Apparently it is OK if the relationship does not exist
             if ( cursor.next() )
@@ -1415,7 +1429,8 @@ public class StateHandlingStatementOperations
             long relId, final String key ) throws EntityNotFoundException, LegacyIndexNotFoundKernelException
     {
 
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipGetSingleCursor( relId, statement.readableTxState() ) )
+        try ( Cursor<RelationshipItem> cursor = storeLayer
+                .relationshipCursor( statement.storageStatement(), relId, statement.readableTxState() ) )
         {
             // Apparently it is OK if the relationship does not exist
             if ( cursor.next() )
@@ -1431,7 +1446,8 @@ public class StateHandlingStatementOperations
     public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName,
             long relId ) throws LegacyIndexNotFoundKernelException, EntityNotFoundException
     {
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipGetSingleCursor( relId, statement.readableTxState() ) )
+        try ( Cursor<RelationshipItem> cursor = storeLayer
+                .relationshipCursor( statement.storageStatement(), relId, statement.readableTxState() ) )
         {
             if ( cursor.next() )
             {
@@ -1550,7 +1566,7 @@ public class StateHandlingStatementOperations
 
         // Augment with types stored on disk, minus any types where all rels of that type are deleted
         // in current tx.
-        types.addAll( filter( storeLayer.relationshipTypes( node ).iterator(),
+        types.addAll( filter( storeLayer.relationshipTypes( statement.storageStatement(), node ).iterator(),
                 ( current ) -> !types.contains( current ) && degree( statement, node, Direction.BOTH, current ) > 0 ) );
 
         return types;
@@ -1560,13 +1576,13 @@ public class StateHandlingStatementOperations
     public int degree( KernelStatement statement, NodeItem node, Direction direction )
     {
         ReadableTransactionState state = statement.readableTxState();
-        return storeLayer.countDegrees( node, direction, state );
+        return storeLayer.countDegrees( statement.storageStatement(), node, direction, state );
     }
 
     @Override
     public int degree( KernelStatement statement, NodeItem node, Direction direction, int relType )
     {
         ReadableTransactionState state = statement.readableTxState();
-        return storeLayer.countDegrees( node, direction, relType, state );
+        return storeLayer.countDegrees( statement.storageStatement(), node, direction, relType, state );
     }
 }

@@ -58,10 +58,8 @@ import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.store.GlobalCursorPools;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
-import org.neo4j.kernel.impl.api.store.StoreSchemaResources;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -111,12 +109,12 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -161,7 +159,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
+    private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
+    private final StorageStatementFactory storageStatementFactory;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -169,7 +169,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
-    private final GlobalCursorPools cursorsPool;
 
     public RecordStorageEngine(
             File storeDir,
@@ -185,6 +184,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RelationshipTypeTokenHolder relationshipTypeTokens,
             Runnable schemaStateChangeCallback,
             ConstraintSemantics constraintSemantics,
+            StorageStatementFactory storageStatementFactory,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
             LockService lockService,
@@ -208,6 +208,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
+        this.storageStatementFactory = storageStatementFactory;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
         this.idController = createStorageIdController( idGeneratorFactory, eligibleForReuse,
@@ -234,10 +235,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
-            cursorsPool = createCursorPool();
-            Supplier<SchemaResources> schemaResourcesSupplier = createSchemaResources();
-            storeLayer = new StorageLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
-                    neoStores, indexingService, schemaResourcesSupplier, schemaCache, cursorsPool, progressionFactory );
+            storeStatementSupplier = storeStatementSupplier( neoStores );
+            storeLayer = new StorageLayer(
+                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    schemaStorage, neoStores, indexingService,
+                    storeStatementSupplier, schemaCache, progressionFactory );
 
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
 
@@ -264,19 +266,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private Supplier<SchemaResources> createSchemaResources()
-    {
-        Supplier<IndexReaderFactory> indexReaderFactorySupplier =
-                () -> new IndexReaderFactory.Caching( indexingService );
-        return () -> new StoreSchemaResources( indexReaderFactorySupplier, labelScanStore::newReader );
-    }
-
-    private GlobalCursorPools createCursorPool()
-    {
-        return new GlobalCursorPools( neoStores, takePropertyReadLocks ? this.lockService :
-                                                 NO_LOCK_SERVICE );
-    }
-
     private IdController createStorageIdController( IdGeneratorFactory idGeneratorFactory,
             IdReuseEligibility eligibleForReuse,
             IdTypeConfigurationProvider idTypeConfigurationProvider,
@@ -286,6 +275,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                new BufferedIdController( idGeneratorFactory, transactionsSnapshotSupplier,
                        eligibleForReuse, idTypeConfigurationProvider, scheduler ) :
                new DefaultIdController( idGeneratorFactory );
+    }
+
+    private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
+    {
+        Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
+        LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
+
+        return () -> storageStatementFactory.create( neoStores, indexReaderFactory, labelScanStore::newReader,
+                lockService );
     }
 
     @Override
@@ -305,7 +303,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void createCommands(
             Collection<StorageCommand> commands,
             ReadableTransactionState txState,
-            SchemaResources schemaResources,
+            StorageStatement storageStatement,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
@@ -325,8 +323,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     storeLayer,
                     txState,
                     txStateVisitor );
-            txStateVisitor =
-                    new TransactionCountingStateVisitor( txStateVisitor, storeLayer, txState, countsRecordState );
+            txStateVisitor = new TransactionCountingStateVisitor(
+                    txStateVisitor, storeLayer, storageStatement, txState, countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );
@@ -471,7 +469,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         labelScanStore.shutdown();
         indexingService.shutdown();
-        cursorsPool.dispose();
         neoStores.close();
     }
 
