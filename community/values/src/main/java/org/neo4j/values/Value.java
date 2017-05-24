@@ -19,43 +19,28 @@
  */
 package org.neo4j.values;
 
-public abstract class Value implements ValueGroup.WithId
+public interface Value extends ValueGroup.WithId
 {
-    @Override
-    public boolean equals( Object other )
-    {
-        throw new UnsupportedOperationException( "You forgot to implement `equals()` in concrete Value class!" );
-    }
+    boolean equals( Value other );
 
-    @Override
-    public int hashCode()
-    {
-        throw new UnsupportedOperationException( "You forgot to implement `hashCode()` in concrete Value class!" );
-    }
+    boolean equals( byte[] x );
+    boolean equals( short[] x );
+    boolean equals( int[] x );
+    boolean equals( long[] x );
 
-    Value()
-    {
-        // only subclass in this package
-    }
+    boolean equals( float[] x );
+    boolean equals( double[] x );
 
-    abstract boolean equals( Value other );
+    boolean equals( boolean x );
+    boolean equals( boolean[] x );
 
-    abstract boolean equals( byte[] x );
-    abstract boolean equals( short[] x );
-    abstract boolean equals( int[] x );
-    abstract boolean equals( long[] x );
+    boolean equals( char x );
+    boolean equals( String x );
 
-    abstract boolean equals( float[] x );
-    abstract boolean equals( double[] x );
+    boolean equals( char[] x );
+    boolean equals( String[] x );
 
-    abstract boolean equals( boolean x );
-    abstract boolean equals( boolean[] x );
+    void writeTo( ValueWriter writer );
 
-    abstract boolean equals( char x );
-    abstract boolean equals( String x );
-
-    abstract boolean equals( char[] x );
-    abstract boolean equals( String[] x );
-
-    abstract void writeTo( ValueWriter writer );
+    Object asPublic();
 }

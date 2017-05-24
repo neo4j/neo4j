@@ -41,27 +41,33 @@ final class DirectByte extends DirectIntegralNumber
     }
 
     @Override
-    boolean equals( boolean x )
+    public boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    boolean equals( char x )
+    public boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String x )
+    public boolean equals( String x )
     {
         return false;
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         writer.writeInteger( value );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return value;
     }
 
     @Override

@@ -47,19 +47,19 @@ final class DirectBoolean extends DirectScalar implements ValueGroup.VBoolean
     }
 
     @Override
-    boolean equals( boolean x )
+    public boolean equals( boolean x )
     {
         return bool == x;
     }
 
     @Override
-    boolean equals( char x )
+    public boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String x )
+    public boolean equals( String x )
     {
         return false;
     }
@@ -83,9 +83,15 @@ final class DirectBoolean extends DirectScalar implements ValueGroup.VBoolean
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         writer.writeBoolean( bool );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return bool;
     }
 
     @Override

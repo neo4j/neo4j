@@ -22,7 +22,7 @@ package org.neo4j.values;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-public class LazyShortArray extends LazyIntegralArray<short[]>
+final class LazyShortArray extends LazyIntegralArray<short[]>
 {
     LazyShortArray( Callable<short[]> producer )
     {
@@ -42,51 +42,57 @@ public class LazyShortArray extends LazyIntegralArray<short[]>
     }
 
     @Override
-    boolean equals( Value other )
+    public boolean equals( Value other )
     {
         return other.equals( getOrLoad() );
     }
 
     @Override
-    boolean equals( byte[] x )
+    public boolean equals( byte[] x )
     {
         return PrimitiveArrayValues.equals( x, getOrLoad() );
     }
 
     @Override
-    boolean equals( short[] x )
+    public boolean equals( short[] x )
     {
         return Arrays.equals( getOrLoad(), x );
     }
 
     @Override
-    boolean equals( int[] x )
+    public boolean equals( int[] x )
     {
         return PrimitiveArrayValues.equals( getOrLoad(), x );
     }
 
     @Override
-    boolean equals( long[] x )
+    public boolean equals( long[] x )
     {
         return PrimitiveArrayValues.equals( getOrLoad(), x );
     }
 
     @Override
-    boolean equals( float[] x )
+    public boolean equals( float[] x )
     {
         return PrimitiveArrayValues.equals( getOrLoad(), x );
     }
 
     @Override
-    boolean equals( double[] x )
+    public boolean equals( double[] x )
     {
         return PrimitiveArrayValues.equals( getOrLoad(), x );
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         PrimitiveArrayWriting.writeTo( writer, getOrLoad() );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return getOrLoad().clone();
     }
 
     @Override

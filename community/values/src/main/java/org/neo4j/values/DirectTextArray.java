@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class DirectScalar extends ValueImpl
+abstract class DirectTextArray extends DirectArray implements ValueGroup.VTextArray
 {
     @Override
     public boolean equals( byte[] x )
@@ -63,15 +63,4 @@ abstract class DirectScalar extends ValueImpl
         return false;
     }
 
-    @Override
-    public boolean equals( char[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String[] x )
-    {
-        return false;
-    }
 }

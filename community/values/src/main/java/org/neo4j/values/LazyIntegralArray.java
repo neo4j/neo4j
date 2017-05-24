@@ -29,19 +29,19 @@ abstract class LazyIntegralArray<T> extends LazyArray<T> implements ValueGroup.V
     }
 
     @Override
-    boolean equals( char[] x )
+    public boolean equals( char[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String[] x )
+    public boolean equals( String[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( boolean[] x )
+    public boolean equals( boolean[] x )
     {
         return false;
     }

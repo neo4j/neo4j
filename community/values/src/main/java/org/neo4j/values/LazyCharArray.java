@@ -22,7 +22,7 @@ package org.neo4j.values;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-public class LazyCharArray extends LazyTextArray<char[]>
+final class LazyCharArray extends LazyTextArray<char[]>
 {
     LazyCharArray( Callable<char[]> producer )
     {
@@ -42,19 +42,19 @@ public class LazyCharArray extends LazyTextArray<char[]>
     }
 
     @Override
-    boolean equals( Value other )
+    public boolean equals( Value other )
     {
         return other.equals( getOrLoad() );
     }
 
     @Override
-    boolean equals( char[] x )
+    public boolean equals( char[] x )
     {
         return Arrays.equals( getOrLoad(), x );
     }
 
     @Override
-    boolean equals( String[] x )
+    public boolean equals( String[] x )
     {
         return PrimitiveArrayValues.equals( getOrLoad(), x );
     }
@@ -66,9 +66,15 @@ public class LazyCharArray extends LazyTextArray<char[]>
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         PrimitiveArrayWriting.writeTo( writer, getOrLoad() );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return getOrLoad().clone();
     }
 
     @Override

@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 
 import static java.lang.String.format;
 
-class LazyString extends LazyValue<String> implements ValueGroup.VText
+final class LazyString extends LazyValue<String> implements ValueGroup.VText
 {
     LazyString( Callable<String> producer )
     {
@@ -43,82 +43,88 @@ class LazyString extends LazyValue<String> implements ValueGroup.VText
     }
 
     @Override
-    boolean equals( byte[] x )
+    public boolean equals( byte[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( short[] x )
+    public boolean equals( short[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( int[] x )
+    public boolean equals( int[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( long[] x )
+    public boolean equals( long[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( float[] x )
+    public boolean equals( float[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( double[] x )
+    public boolean equals( double[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( boolean x )
+    public boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    boolean equals( boolean[] x )
+    public boolean equals( boolean[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( char x )
+    public boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String x )
+    public boolean equals( String x )
     {
         return getOrLoad().equals( x );
     }
 
     @Override
-    boolean equals( char[] x )
+    public boolean equals( char[] x )
     {
         // TODO: do we want to support this?
         return false;
     }
 
     @Override
-    boolean equals( String[] x )
+    public boolean equals( String[] x )
     {
         return false;
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         writer.writeString( getOrLoad() );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return getOrLoad();
     }
 
     @Override

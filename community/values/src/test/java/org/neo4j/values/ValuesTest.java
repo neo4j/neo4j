@@ -22,17 +22,17 @@ package org.neo4j.values;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.values.Values.booleanArrayValue;
+import static org.neo4j.values.Values.booleanArray;
 import static org.neo4j.values.Values.booleanValue;
-import static org.neo4j.values.Values.byteArrayValue;
+import static org.neo4j.values.Values.byteArray;
 import static org.neo4j.values.Values.byteValue;
-import static org.neo4j.values.Values.charArrayValue;
+import static org.neo4j.values.Values.charArray;
 import static org.neo4j.values.Values.charValue;
-import static org.neo4j.values.Values.doubleArrayValue;
+import static org.neo4j.values.Values.doubleArray;
 import static org.neo4j.values.Values.doubleValue;
-import static org.neo4j.values.Values.floatArrayValue;
+import static org.neo4j.values.Values.floatArray;
 import static org.neo4j.values.Values.floatValue;
-import static org.neo4j.values.Values.intArrayValue;
+import static org.neo4j.values.Values.intArray;
 import static org.neo4j.values.Values.intValue;
 import static org.neo4j.values.Values.lazyBooleanArray;
 import static org.neo4j.values.Values.lazyByteArray;
@@ -44,11 +44,11 @@ import static org.neo4j.values.Values.lazyLongArray;
 import static org.neo4j.values.Values.lazyShortArray;
 import static org.neo4j.values.Values.lazyStringArray;
 import static org.neo4j.values.Values.lazyStringValue;
-import static org.neo4j.values.Values.longArrayValue;
+import static org.neo4j.values.Values.longArray;
 import static org.neo4j.values.Values.longValue;
-import static org.neo4j.values.Values.shortArrayValue;
+import static org.neo4j.values.Values.shortArray;
 import static org.neo4j.values.Values.shortValue;
-import static org.neo4j.values.Values.stringArrayValue;
+import static org.neo4j.values.Values.stringArray;
 import static org.neo4j.values.Values.stringValue;
 
 public class ValuesTest
@@ -75,25 +75,25 @@ public class ValuesTest
         assertEqual( charValue( 'x' ), charValue( 'x' ) );
         assertEqual( stringValue( "hi" ), stringValue( "hi" ) );
 
-        assertEqual( booleanArrayValue( new boolean[]{} ), booleanArrayValue( new boolean[]{} ) );
-        assertEqual( byteArrayValue( new byte[]{} ), byteArrayValue( new byte[]{} ) );
-        assertEqual( shortArrayValue( new short[]{} ), shortArrayValue( new short[]{} ) );
-        assertEqual( intArrayValue( new int[]{} ), intArrayValue( new int[]{} ) );
-        assertEqual( longArrayValue( new long[]{} ), longArrayValue( new long[]{} ) );
-        assertEqual( floatArrayValue( new float[]{} ), floatArrayValue( new float[]{} ) );
-        assertEqual( doubleArrayValue( new double[]{} ), doubleArrayValue( new double[]{} ) );
-        assertEqual( charArrayValue( new char[]{} ), charArrayValue( new char[]{} ) );
-        assertEqual( stringArrayValue( new String[]{} ), stringArrayValue( new String[]{} ) );
+        assertEqual( booleanArray( new boolean[]{} ), booleanArray( new boolean[]{} ) );
+        assertEqual( byteArray( new byte[]{} ), byteArray( new byte[]{} ) );
+        assertEqual( shortArray( new short[]{} ), shortArray( new short[]{} ) );
+        assertEqual( intArray( new int[]{} ), intArray( new int[]{} ) );
+        assertEqual( longArray( new long[]{} ), longArray( new long[]{} ) );
+        assertEqual( floatArray( new float[]{} ), floatArray( new float[]{} ) );
+        assertEqual( doubleArray( new double[]{} ), doubleArray( new double[]{} ) );
+        assertEqual( charArray( new char[]{} ), charArray( new char[]{} ) );
+        assertEqual( stringArray( new String[]{} ), stringArray( new String[]{} ) );
 
-        assertEqual( booleanArrayValue( new boolean[]{true} ), booleanArrayValue( new boolean[]{true} ) );
-        assertEqual( byteArrayValue( new byte[]{1} ), byteArrayValue( new byte[]{1} ) );
-        assertEqual( shortArrayValue( new short[]{1} ), shortArrayValue( new short[]{1} ) );
-        assertEqual( intArrayValue( new int[]{1} ), intArrayValue( new int[]{1} ) );
-        assertEqual( longArrayValue( new long[]{1} ), longArrayValue( new long[]{1} ) );
-        assertEqual( floatArrayValue( new float[]{1.0f} ), floatArrayValue( new float[]{1.0f} ) );
-        assertEqual( doubleArrayValue( new double[]{1.0} ), doubleArrayValue( new double[]{1.0} ) );
-        assertEqual( charArrayValue( new char[]{'x'} ), charArrayValue( new char[]{'x'} ) );
-        assertEqual( stringArrayValue( new String[]{"hi"} ), stringArrayValue( new String[]{"hi"} ) );
+        assertEqual( booleanArray( new boolean[]{true} ), booleanArray( new boolean[]{true} ) );
+        assertEqual( byteArray( new byte[]{1} ), byteArray( new byte[]{1} ) );
+        assertEqual( shortArray( new short[]{1} ), shortArray( new short[]{1} ) );
+        assertEqual( intArray( new int[]{1} ), intArray( new int[]{1} ) );
+        assertEqual( longArray( new long[]{1} ), longArray( new long[]{1} ) );
+        assertEqual( floatArray( new float[]{1.0f} ), floatArray( new float[]{1.0f} ) );
+        assertEqual( doubleArray( new double[]{1.0} ), doubleArray( new double[]{1.0} ) );
+        assertEqual( charArray( new char[]{'x'} ), charArray( new char[]{'x'} ) );
+        assertEqual( stringArray( new String[]{"hi"} ), stringArray( new String[]{"hi"} ) );
 
         assertEqual( lazyStringValue( () -> "hi" ), lazyStringValue( () -> "hi" ) );
         assertEqual( lazyBooleanArray( () -> new boolean[]{true} ), lazyBooleanArray( () -> new boolean[]{true} ) );
@@ -107,15 +107,15 @@ public class ValuesTest
         assertEqual( lazyStringArray( () -> new String[]{"hi"} ), lazyStringArray( () -> new String[]{"hi"} ) );
 
         assertEqual( stringValue( "hi" ), lazyStringValue( () -> "hi" ) );
-        assertEqual( booleanArrayValue( new boolean[]{true} ), lazyBooleanArray( () -> new boolean[]{true} ) );
-        assertEqual( byteArrayValue( new byte[]{1} ), lazyByteArray( () -> new byte[]{1} ) );
-        assertEqual( shortArrayValue( new short[]{1} ), lazyShortArray( () -> new short[]{1} ) );
-        assertEqual( intArrayValue( new int[]{1} ), lazyIntArray( () -> new int[]{1} ) );
-        assertEqual( longArrayValue( new long[]{1} ), lazyLongArray( () -> new long[]{1} ) );
-        assertEqual( floatArrayValue( new float[]{1.0f} ), lazyFloatArray( () -> new float[]{1.0f} ) );
-        assertEqual( doubleArrayValue( new double[]{1.0} ), lazyDoubleArray( () -> new double[]{1.0} ) );
-        assertEqual( charArrayValue( new char[]{'a'} ), lazyCharArray( () -> new char[]{'a'} ) );
-        assertEqual( stringArrayValue( new String[]{"hi"} ), lazyStringArray( () -> new String[]{"hi"} ) );
+        assertEqual( booleanArray( new boolean[]{true} ), lazyBooleanArray( () -> new boolean[]{true} ) );
+        assertEqual( byteArray( new byte[]{1} ), lazyByteArray( () -> new byte[]{1} ) );
+        assertEqual( shortArray( new short[]{1} ), lazyShortArray( () -> new short[]{1} ) );
+        assertEqual( intArray( new int[]{1} ), lazyIntArray( () -> new int[]{1} ) );
+        assertEqual( longArray( new long[]{1} ), lazyLongArray( () -> new long[]{1} ) );
+        assertEqual( floatArray( new float[]{1.0f} ), lazyFloatArray( () -> new float[]{1.0f} ) );
+        assertEqual( doubleArray( new double[]{1.0} ), lazyDoubleArray( () -> new double[]{1.0} ) );
+        assertEqual( charArray( new char[]{'a'} ), lazyCharArray( () -> new char[]{'a'} ) );
+        assertEqual( stringArray( new String[]{"hi"} ), lazyStringArray( () -> new String[]{"hi"} ) );
     }
 
     private void assertEqual( Value a, Value b )

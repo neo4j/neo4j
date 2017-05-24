@@ -21,7 +21,7 @@ package org.neo4j.values;
 
 import java.util.concurrent.Callable;
 
-abstract class LazyValue<T> extends Value
+abstract class LazyValue<T> extends ValueImpl
 {
     private volatile Object value;
 

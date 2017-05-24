@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import static java.lang.String.format;
 
-final class DirectStringArray extends DirectArray implements ValueGroup.VTextArray
+final class DirectStringArray extends DirectTextArray
 {
     final String[] value;
 
@@ -58,55 +58,13 @@ final class DirectStringArray extends DirectArray implements ValueGroup.VTextArr
     }
 
     @Override
-    boolean equals( byte[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( short[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( int[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( long[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( float[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( double[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( boolean[] x )
-    {
-        return false;
-    }
-
-    @Override
-    boolean equals( char[] x )
+    public boolean equals( char[] x )
     {
         return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
-    boolean equals( String[] x )
+    public boolean equals( String[] x )
     {
         return Arrays.equals( value, x );
     }
@@ -118,9 +76,15 @@ final class DirectStringArray extends DirectArray implements ValueGroup.VTextArr
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         PrimitiveArrayWriting.writeTo( writer, value );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return value.clone();
     }
 
     @Override

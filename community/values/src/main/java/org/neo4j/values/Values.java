@@ -23,13 +23,18 @@ import java.lang.reflect.Array;
 import java.util.concurrent.Callable;
 
 @SuppressWarnings( "WeakerAccess" )
-class Values
+public class Values
 {
     private Values()
     {
     }
 
     // DIRECT FACTORY METHODS
+
+    public static Value noValue()
+    {
+        return NoValue.NO_VALUE;
+    }
 
     public static Value stringValue( String value )
     {
@@ -156,54 +161,54 @@ class Values
         return new DirectFloat( value );
     }
 
-    public static Value stringArrayValue( String[] value )
+    public static Value stringArray( String[] value )
     {
         return new DirectStringArray( value );
     }
 
-    public static Value byteArrayValue( byte[] value )
+    public static Value byteArray( byte[] value )
     {
         return new DirectByteArray( value );
     }
 
-    public static Value longArrayValue( long[] value )
+    public static Value longArray( long[] value )
     {
         return new DirectLongArray( value );
     }
 
-    public static Value intArrayValue( int[] value )
+    public static Value intArray( int[] value )
     {
         return new DirectIntArray( value );
     }
 
-    public static Value doubleArrayValue( double[] value )
+    public static Value doubleArray( double[] value )
     {
         return new DirectDoubleArray( value );
     }
 
-    public static Value floatArrayValue( float[] value )
+    public static Value floatArray( float[] value )
     {
         return new DirectFloatArray( value );
     }
 
-    public static Value booleanArrayValue( boolean[] value )
+    public static Value booleanArray( boolean[] value )
     {
         return new DirectBooleanArray( value );
     }
 
-    public static Value charArrayValue( char[] value )
+    public static Value charArray( char[] value )
     {
         return new DirectCharArray( value );
     }
 
-    public static Value shortArrayValue( short[] value )
+    public static Value shortArray( short[] value )
     {
         return new DirectShortArray( value );
     }
 
     // BOXED FACTORY METHODS
 
-    static Value of( Object value )
+    public static Value of( Object value )
     {
         if ( value instanceof String )
         {
@@ -247,35 +252,35 @@ class Values
         }
         if ( value instanceof byte[] )
         {
-            return byteArrayValue( ((byte[]) value).clone() );
+            return byteArray( ((byte[]) value).clone() );
         }
         if ( value instanceof long[] )
         {
-            return longArrayValue( ((long[]) value).clone() );
+            return longArray( ((long[]) value).clone() );
         }
         if ( value instanceof int[] )
         {
-            return intArrayValue( ((int[]) value).clone() );
+            return intArray( ((int[]) value).clone() );
         }
         if ( value instanceof double[] )
         {
-            return doubleArrayValue( ((double[]) value).clone() );
+            return doubleArray( ((double[]) value).clone() );
         }
         if ( value instanceof float[] )
         {
-            return floatArrayValue( ((float[]) value).clone() );
+            return floatArray( ((float[]) value).clone() );
         }
         if ( value instanceof boolean[] )
         {
-            return booleanArrayValue( ((boolean[]) value).clone() );
+            return booleanArray( ((boolean[]) value).clone() );
         }
         if ( value instanceof char[] )
         {
-            return charArrayValue( ((char[]) value).clone() );
+            return charArray( ((char[]) value).clone() );
         }
         if ( value instanceof short[] )
         {
-            return shortArrayValue( ((short[]) value).clone() );
+            return shortArray( ((short[]) value).clone() );
         }
         if ( value == null )
         {
@@ -290,39 +295,39 @@ class Values
     {
         if ( value instanceof String[] )
         {
-            return stringArrayValue( copy( value, new String[value.length] ) );
+            return stringArray( copy( value, new String[value.length] ) );
         }
         if ( value instanceof Byte[] )
         {
-            return byteArrayValue( copy( value, new byte[value.length] ) );
+            return byteArray( copy( value, new byte[value.length] ) );
         }
         if ( value instanceof Long[] )
         {
-            return longArrayValue( copy( value, new long[value.length] ) );
+            return longArray( copy( value, new long[value.length] ) );
         }
         if ( value instanceof Integer[] )
         {
-            return intArrayValue( copy( value, new int[value.length] ) );
+            return intArray( copy( value, new int[value.length] ) );
         }
         if ( value instanceof Double[] )
         {
-            return doubleArrayValue( copy( value, new double[value.length] ) );
+            return doubleArray( copy( value, new double[value.length] ) );
         }
         if ( value instanceof Float[] )
         {
-            return floatArrayValue( copy( value, new float[value.length] ) );
+            return floatArray( copy( value, new float[value.length] ) );
         }
         if ( value instanceof Boolean[] )
         {
-            return booleanArrayValue( copy( value, new boolean[value.length] ) );
+            return booleanArray( copy( value, new boolean[value.length] ) );
         }
         if ( value instanceof Character[] )
         {
-            return charArrayValue( copy( value, new char[value.length] ) );
+            return charArray( copy( value, new char[value.length] ) );
         }
         if ( value instanceof Short[] )
         {
-            return shortArrayValue( copy( value, new short[value.length] ) );
+            return shortArray( copy( value, new short[value.length] ) );
         }
         throw new IllegalArgumentException(
                 String.format( "%s[] is not a supported property value type",
@@ -340,16 +345,5 @@ class Values
             Array.set( target, i, value[i] );
         }
         return target;
-    }
-
-    enum SemanticType
-    {
-        NO_VALUE,
-        BOOLEAN,
-        NUMBER,
-        STRING,
-        BOOLEAN_ARR,
-        NUMBER_ARR,
-        STRING_ARR
     }
 }

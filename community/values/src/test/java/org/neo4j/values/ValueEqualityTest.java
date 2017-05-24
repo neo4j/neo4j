@@ -233,32 +233,32 @@ public class ValueEqualityTest
 
     public static Test shouldMatch( int[] propertyValue, Object value )
     {
-        return new Test( Values.intArrayValue( propertyValue ), value, true );
+        return new Test( Values.intArray( propertyValue ), value, true );
     }
 
     public static Test shouldNotMatch( int[] propertyValue, Object value )
     {
-        return new Test( Values.intArrayValue( propertyValue ), value, false );
+        return new Test( Values.intArray( propertyValue ), value, false );
     }
 
     public static Test shouldMatch( char[] propertyValue, Object value )
     {
-        return new Test( Values.charArrayValue( propertyValue ), value, true );
+        return new Test( Values.charArray( propertyValue ), value, true );
     }
 
     public static Test shouldNotMatch( char[] propertyValue, Object value )
     {
-        return new Test( Values.charArrayValue( propertyValue ), value, false );
+        return new Test( Values.charArray( propertyValue ), value, false );
     }
 
     public static Test shouldMatch( String[] propertyValue, Object value )
     {
-        return new Test( Values.stringArrayValue( propertyValue ), value, true );
+        return new Test( Values.stringArray( propertyValue ), value, true );
     }
 
     public static Test shouldNotMatch( String[] propertyValue, Object value )
     {
-        return new Test( Values.stringArrayValue( propertyValue ), value, false );
+        return new Test( Values.stringArray( propertyValue ), value, false );
     }
 
     private static class Test

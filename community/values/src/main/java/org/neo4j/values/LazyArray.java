@@ -29,19 +29,19 @@ abstract class LazyArray<T> extends LazyValue<T>
     }
 
     @Override
-    boolean equals( boolean x )
+    public boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    boolean equals( char x )
+    public boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String x )
+    public boolean equals( String x )
     {
         return false;
     }

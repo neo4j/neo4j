@@ -42,55 +42,55 @@ final class LazyBooleanArray extends LazyArray<boolean[]> implements ValueGroup.
     }
 
     @Override
-    boolean equals( byte[] x )
+    public boolean equals( byte[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( short[] x )
+    public boolean equals( short[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( int[] x )
+    public boolean equals( int[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( long[] x )
+    public boolean equals( long[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( float[] x )
+    public boolean equals( float[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( double[] x )
+    public boolean equals( double[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( boolean[] x )
+    public boolean equals( boolean[] x )
     {
         return Arrays.equals( getOrLoad(), x );
     }
 
     @Override
-    boolean equals( char[] x )
+    public boolean equals( char[] x )
     {
         return false;
     }
 
     @Override
-    boolean equals( String[] x )
+    public boolean equals( String[] x )
     {
         return false;
     }
@@ -102,9 +102,15 @@ final class LazyBooleanArray extends LazyArray<boolean[]> implements ValueGroup.
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         PrimitiveArrayWriting.writeTo( writer, getOrLoad() );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return getOrLoad().clone();
     }
 
     @Override

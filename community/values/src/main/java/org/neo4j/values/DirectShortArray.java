@@ -46,45 +46,51 @@ final class DirectShortArray extends DirectIntegralArray
     }
 
     @Override
-    boolean equals( byte[] x )
+    public boolean equals( byte[] x )
     {
         return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
-    boolean equals( short[] x )
+    public boolean equals( short[] x )
     {
         return Arrays.equals( value, x );
     }
 
     @Override
-    boolean equals( int[] x )
+    public boolean equals( int[] x )
     {
         return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    boolean equals( long[] x )
+    public boolean equals( long[] x )
     {
         return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    boolean equals( float[] x )
+    public boolean equals( float[] x )
     {
         return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    boolean equals( double[] x )
+    public boolean equals( double[] x )
     {
         return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
-    void writeTo( ValueWriter writer )
+    public void writeTo( ValueWriter writer )
     {
         PrimitiveArrayWriting.writeTo( writer, value );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return value.clone();
     }
 
     @Override
