@@ -31,7 +31,7 @@ case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
   def symbolTableDependencies = expr.symbolTableDependencies
 
-  override def rewrite(f: (Expression) => Expression): Expression = copy(f(expr), typ)
+  override def rewrite(f: (Expression) => Expression): Expression = f(CoerceTo(expr.rewrite(f), typ))
 
   override def arguments: Seq[Expression] = Seq(expr)
 }

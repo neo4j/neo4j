@@ -21,8 +21,76 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  test("pattern comprehension nested in pattern comprehension") {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
+    val tag     = createLabeledNode("Tag")
+    val content = createLabeledNode("Content")
+    val user    = createLabeledNode(Map("name" -> "Michael Hunger"), "User")
+    relate(content, tag, "TAGGED")
+    relate(user, content, "CREATED")
+
+    val query =
+      """
+        |MATCH (Tag:Tag)
+        |RETURN
+        |[ x IN test.nodeList() | x
+        |  {
+        |    tagged :
+        |      [ (x)<-[:TAGGED]-(x_tagged:Content)  | x_tagged
+        |        {
+        |          owner :
+        |            head(
+        |              [ (x_tagged)<-[:CREATED]-(x_tagged_owner:User)  | x_tagged_owner
+        |                {
+        |                  .name
+        |                }
+        |              ]
+        |            )
+        |        }
+        |      ]
+        |  }
+        | ][0..5] AS related
+      """.stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.toList should equal(
+      List(Map("related" -> List(Map("tagged" -> Vector(Map("owner" -> Map("name" -> "Michael Hunger"))))))))
+  }
+
+  test("pattern comprehension nested in function call") {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
+
+    val n1 = createLabeledNode("Tweet")
+    val n2 = createLabeledNode("User")
+    relate(n2, n1, "POSTED")
+
+    val query = """MATCH(t:Tweet) WITH t LIMIT 1
+               |WITH collect(t) AS tweets
+               |RETURN test.toSet([ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ]) AS users""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.toList should equal(List(Map("users" -> List(List(n2)))))
+  }
+
+  test("pattern comprehension outside function call") {
+    graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
+
+    val n1 = createLabeledNode("Tweet")
+    val n2 = createLabeledNode("User")
+    relate(n2, n1, "POSTED")
+
+    val query = """MATCH(t:Tweet) WITH t LIMIT 1
+                  |WITH collect(t) AS tweets
+                  |WITH [ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ] AS pattern
+                  |RETURN test.toSet(pattern) AS users""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.toList should equal(List(Map("users" -> List(List(n2)))))
+  }
 
   test("with named path") {
     val n1 = createLabeledNode("Start")
@@ -291,7 +359,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     executeWithCostPlannerAndInterpretedRuntimeOnly(query).toList //does not throw
   }
 
-  test("pattern comprehension play nice with OPTIOAL MATCH") {
+  test("pattern comprehension play nice with OPTIONAL MATCH") {
     val p1 = createLabeledNode(Map("name" -> "Tom Cruise"), "Person")
     val p2 = createLabeledNode(Map("name" -> "Ron Howard"), "Person")
     val p3 = createLabeledNode(Map("name" -> "Keanu Reeves"), "Person")

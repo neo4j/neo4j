@@ -29,6 +29,17 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
+
+  // WARNING: MUTABILITY IN IMMUTABLE CLASSES ...
+  private var _owningPipe: Option[Pipe] = None
+
+  def owningPipe: Pipe = _owningPipe.get
+
+  def registerOwningPipe(pipe: Pipe): Unit = visit {
+    case x:Expression => x._owningPipe = Some(pipe)
+  }
+  // ... TREAD WITH CAUTION
+
   def rewrite(f: Expression => Expression): Expression
 
   def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
@@ -52,15 +63,6 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
-
-  private var _owningPipe: Option[Pipe] = None
-
-  def owningPipe: Pipe = _owningPipe.get
-
-  def registerOwningPipe(pipe: Pipe): Unit = rewrite( expr => {
-    expr._owningPipe = Some(pipe)
-    expr
-  })
 
   override def toString = this match {
     case p: Product => scala.runtime.ScalaRunTime._toString(p)
