@@ -25,6 +25,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
+import org.neo4j.expirable.Expirable;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -35,7 +36,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class DatabaseSchemaState implements SchemaState
 {
-    private Map<Object, Object> state;
+    private Map<Object,Expirable> state;
 
     private final Log log;
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
@@ -75,7 +76,7 @@ public class DatabaseSchemaState implements SchemaState
                 if ( lockedValue == null )
                 {
                     V newValue = creator.apply( key );
-                    state.put( key, newValue );
+                    state.put( key, (Expirable) newValue );
                     return newValue;
                 }
                 else
@@ -95,12 +96,12 @@ public class DatabaseSchemaState implements SchemaState
     }
 
     @Override
-    public void replace( Map<Object,Object> replacement )
+    public <K, V> void replace( Map<K,V> replacement )
     {
         lock.writeLock().lock();
         try
         {
-            state = replacement;
+            state = (Map<Object,Expirable>) replacement;
         }
         finally
         {
@@ -114,7 +115,7 @@ public class DatabaseSchemaState implements SchemaState
         lock.writeLock().lock();
         try
         {
-            state.putAll( updates );
+            state.putAll( (Map<?,? extends Expirable>) updates );
         }
         finally
         {
@@ -128,6 +129,7 @@ public class DatabaseSchemaState implements SchemaState
         lock.writeLock().lock();
         try
         {
+            state.values().forEach( Expirable::expire );
             state.clear();
         }
         finally

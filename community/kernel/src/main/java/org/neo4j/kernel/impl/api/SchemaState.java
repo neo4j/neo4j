@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.api;
 import java.util.Map;
 import java.util.function.Function;
 
+//TODO class level generics
 public interface SchemaState
 {
     <K, V> V get( K key );
 
     <K, V> V getOrCreate( K key, Function<K, V> creator );
 
-    void replace( Map<Object, Object> updates );
+    <K, V> void replace( Map<K, V> updates );
 
     <K, V> void apply( Map<K, V> updates );
 

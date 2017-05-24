@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.expirable.Expirable;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -55,31 +56,31 @@ public class KernelSchemaStateFlushingTest
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
     {
         // given
-        String before = commitToSchemaState( "test", "before" );
+        ExpirableContainer before = commitToSchemaState( "test", ExpirableContainer.of("before") );
 
         // then
-        assertEquals( "before", before );
+        assertEquals( "before", before.getValue() );
 
         // given
-        String after = commitToSchemaState( "test", "after" );
+        ExpirableContainer after = commitToSchemaState( "test", ExpirableContainer.of( "after" ) );
 
         // then
-        assertEquals( "before", after );
+        assertEquals( "before", after.getValue() );
     }
 
     @Test
     public void shouldInvalidateSchemaStateOnCreateIndex() throws Exception
     {
         // given
-        commitToSchemaState( "test", "before" );
+        commitToSchemaState( "test", ExpirableContainer.of("before") );
 
         awaitIndexOnline( createIndex(), "test" );
 
         // when
-        String after = commitToSchemaState( "test", "after" );
+        ExpirableContainer after = commitToSchemaState( "test", ExpirableContainer.of("after") );
 
         // then
-        assertEquals( "after", after );
+        assertEquals( "after", after.getValue() );
     }
 
     @Test
@@ -89,30 +90,30 @@ public class KernelSchemaStateFlushingTest
 
         awaitIndexOnline( descriptor, "test" );
 
-        commitToSchemaState( "test", "before" );
+        commitToSchemaState( "test", ExpirableContainer.of("before") );
 
         dropIndex( descriptor );
 
         // when
-        String after = commitToSchemaState( "test", "after" );
+        ExpirableContainer after = commitToSchemaState( "test", ExpirableContainer.of( "after" ) );
 
         // then
-        assertEquals( "after", after );
+        assertEquals( "after", after.getValue() );
     }
 
     @Test
     public void shouldInvalidateSchemaStateOnCreateConstraint() throws Exception
     {
         // given
-        commitToSchemaState( "test", "before" );
+        commitToSchemaState( "test", ExpirableContainer.of( "before" ) );
 
         createConstraint();
 
         // when
-        String after = commitToSchemaState( "test", "after" );
+        ExpirableContainer after = commitToSchemaState( "test", ExpirableContainer.of( "after" ) );
 
         // then
-        assertEquals( "after", after );
+        assertEquals( "after", after.getValue() );
     }
 
     @Test
@@ -121,15 +122,15 @@ public class KernelSchemaStateFlushingTest
         // given
         ConstraintDescriptor descriptor = createConstraint();
 
-        commitToSchemaState( "test", "before" );
+        commitToSchemaState( "test", ExpirableContainer.of( "before" ) );
 
         dropConstraint( descriptor );
 
         // when
-        String after = commitToSchemaState( "test", "after" );
+        ExpirableContainer after = commitToSchemaState( "test", ExpirableContainer.of( "after" ) );
 
         // then
-        assertEquals( "after", after );
+        assertEquals( "after", after.getValue() );
     }
 
     private ConstraintDescriptor createConstraint() throws KernelException
@@ -202,17 +203,17 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private String commitToSchemaState( String key, String value ) throws TransactionFailureException
+    private <V extends Expirable> V commitToSchemaState( String key, V value ) throws TransactionFailureException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
         {
-            String result = getOrCreateFromState( transaction, key, value );
+            V result = getOrCreateFromState( transaction, key, value );
             transaction.success();
             return result;
         }
     }
 
-    private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
+    private <V extends Expirable> V getOrCreateFromState( KernelTransaction tx, String key, final V value )
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -231,5 +232,39 @@ public class KernelSchemaStateFlushingTest
     public void after()
     {
         db.shutdown();
+    }
+
+    private static class ExpirableContainer implements Expirable
+    {
+
+        private String value;
+        private boolean expired;
+
+        static ExpirableContainer of( String value )
+        {
+            return new ExpirableContainer( value );
+        }
+
+        private ExpirableContainer( String value )
+        {
+            this.value = value;
+        }
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public void expire()
+        {
+            expired = true;
+        }
+
+        @Override
+        public boolean isExpired()
+        {
+            return expired;
+        }
     }
 }

@@ -41,6 +41,5 @@ public interface SchemaStateOperations
     /**
      * Flush the schema state.
      */
-    //TODO:remove?
     void schemaStateFlush( KernelStatement state );
 }

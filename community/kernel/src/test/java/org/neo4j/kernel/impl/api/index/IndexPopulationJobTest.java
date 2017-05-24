@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.expirable.Expirable;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -171,7 +172,8 @@ public class IndexPopulationJobTest
         // GIVEN
         String value = "Taylor";
         createNode( map( name, value ), FIRST );
-        stateHolder.apply( MapUtil.stringMap( "key", "original_value" ) );
+        Map<String,SimpleExpirable> map = MapUtil.entry( "key", new SimpleExpirable() ).create();
+        stateHolder.apply( map );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
 
@@ -444,6 +446,23 @@ public class IndexPopulationJobTest
         public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
         {
             // no-op
+        }
+    }
+
+    private static class SimpleExpirable implements Expirable
+    {
+        volatile boolean expired;
+
+        @Override
+        public void expire()
+        {
+            expired = true;
+        }
+
+        @Override
+        public boolean isExpired()
+        {
+            return expired;
         }
     }
 

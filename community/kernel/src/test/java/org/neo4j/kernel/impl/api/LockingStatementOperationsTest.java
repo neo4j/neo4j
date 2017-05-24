@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.neo4j.expirable.Expirable;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -335,7 +336,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
     {
         // given
-        Function<Object,Object> creator = from -> null;
+        Function<Object,Expirable> creator = from -> null;
 
         // when
         lockingOps.schemaStateGetOrCreate( state, null, creator );

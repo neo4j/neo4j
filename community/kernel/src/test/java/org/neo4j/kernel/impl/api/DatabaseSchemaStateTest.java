@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
+
+import org.neo4j.expirable.Expirable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -34,7 +37,7 @@ public class DatabaseSchemaStateTest
     public void should_apply_updates_correctly()
     {
         // GIVEN
-        stateStore.apply( MapUtil.stringMap( "key", "created_value" ) );
+        stateStore.apply( map( "key", ExpirableStringContainer.of( "created_value" ) ) );
 
         // WHEN
         String result = stateStore.get( "key" );
@@ -47,7 +50,7 @@ public class DatabaseSchemaStateTest
     public void should_flush()
     {
         // GIVEN
-        stateStore.apply( MapUtil.stringMap( "key", "created_value" ) );
+        stateStore.apply( map( "key", ExpirableStringContainer.of( "created_value" ) ) );
 
         // WHEN
         stateStore.clear();
@@ -69,5 +72,44 @@ public class DatabaseSchemaStateTest
     public void before()
     {
         this.stateStore = new DatabaseSchemaState( logProvider );
+    }
+
+    private static Map<String,Expirable> map( String key, Expirable value )
+    {
+        return MapUtil.entry( key, value ).create();
+    }
+
+    private static class ExpirableStringContainer implements Expirable
+    {
+
+        private String value;
+        private boolean expired;
+
+        static ExpirableStringContainer of( String value )
+        {
+            return new ExpirableStringContainer( value );
+        }
+
+        private ExpirableStringContainer( String value )
+        {
+            this.value = value;
+        }
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public void expire()
+        {
+            expired = true;
+        }
+
+        @Override
+        public boolean isExpired()
+        {
+            return expired;
+        }
     }
 }

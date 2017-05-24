@@ -154,7 +154,6 @@ public class LockingStatementOperations implements
     @Override
     public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K,V> creator )
     {
-        acquireSharedSchemaLock( state );
         state.assertOpen();
         return schemaStateDelegate.schemaStateGetOrCreate( state, key, creator );
     }
@@ -162,7 +161,6 @@ public class LockingStatementOperations implements
     @Override
     public void schemaStateFlush( KernelStatement state )
     {
-        acquireSharedSchemaLock( state );
         state.assertOpen();
         schemaStateDelegate.schemaStateFlush( state );
     }
@@ -561,18 +559,6 @@ public class LockingStatementOperations implements
         if ( !SCHEMA_WRITES_DISABLE )
         {
             state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-        }
-    }
-
-    private void acquireExclusiveSchemaLock( KernelStatement state )
-    {
-        if ( SCHEMA_WRITES_DISABLE )
-        {
-            throw new IllegalStateException( "Schema modifications have been disabled via feature toggle" );
-        }
-        else
-        {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
         }
     }
 }

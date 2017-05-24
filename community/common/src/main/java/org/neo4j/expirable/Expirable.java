@@ -17,21 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.expirable;
 
-import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.query.QueryPlanInfo
+public interface Expirable
+{
+    void expire();
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
-
-trait ExecutionPlan extends QueryPlanInfo {
-
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult
-
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
-
+    boolean isExpired();
 }

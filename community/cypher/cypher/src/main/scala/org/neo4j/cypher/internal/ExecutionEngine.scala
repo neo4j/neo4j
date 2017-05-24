@@ -28,10 +28,12 @@ import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
+import org.neo4j.expirable.Expirable
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.api.query.QueryPlanInfo
 import org.neo4j.kernel.api.security.AccessMode
-import org.neo4j.kernel.api.{KernelAPI, ReadOperations}
+import org.neo4j.kernel.api.{KernelAPI, KernelTransaction, ReadOperations}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -153,29 +155,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         // NOTE: This will force read access mode if the current transaction did not have it
         val revertable = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
 
-        val ((plan: ExecutionPlan, extractedParameters), touched) = try {
-          // fetch plan cache
-          val cache = getOrCreateFromSchemaState(tc.readOperations, {
-            cacheMonitor.cacheFlushDetected(tc.statement)
-            val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-            new QueryCache(cacheAccessor, lruCache)
-          })
+        val ((plan: ExecutionPlan, extractedParameters:Map[String, Any]), touched:Boolean) = planQuery(queryText, phaseTracer, preParsedQuery, cacheKey, tc, revertable)
 
-          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
-          def producePlan() = {
-            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-            parsedQuery.plan(tc, phaseTracer)
-          }
-
-          cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
-        }
-        catch {
-          case (t: Throwable) =>
-            tc.close(success = false)
-            throw t
-        } finally {
-          revertable.close()
-        }
 
         if (touched) {
           tc.close(success = true)
@@ -192,11 +173,61 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
 
-  private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {
+  private def planQuery(queryText: String, phaseTracer: CompilationTracer.QueryCompilationEvent,
+                        preParsedQuery: PreParsedQuery, cacheKey: String, tc: TransactionalContextWrapper,
+                        revertable: KernelTransaction.Revertable) : ((ExecutionPlan, Map[String, Any]), Boolean) = {
+    try {
+//       fetch plan cache
+      var replan = false
+      var planMapPair : (ExecutionPlan, Map[String, Any]) = null
+      var touched : Boolean = false
+      do {
+        val cache = getOrCreateFromSchemaState(tc.readOperations, {
+          cacheMonitor.cacheFlushDetected(tc.statement)
+          val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+          new QueryCache(cacheAccessor, lruCache)
+        })
+
+        def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
+
+        def producePlan() = {
+          val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+          parsedQuery.plan(tc, phaseTracer)
+        }
+
+        val cachedValue = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+        planMapPair = cachedValue._1
+        touched = cachedValue._2
+        startQueryExecution(tc.readOperations, planMapPair._1)
+        replan = cache.isExpired
+        if (replan) {
+          stopQueryExecution(tc.readOperations, planMapPair._1)
+        }
+      } while (replan)
+      (planMapPair, touched)
+    }
+    catch {
+      case (t: Throwable) =>
+        tc.close(success = false)
+        throw t
+    } finally {
+      revertable.close()
+    }
+  }
+
+  private def getOrCreateFromSchemaState[V <: Expirable](operations: ReadOperations, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }
     operations.schemaStateGetOrCreate(this, javaCreator)
+  }
+
+  private def startQueryExecution(operations: ReadOperations, plan: QueryPlanInfo) = {
+    operations.startQuery(plan)
+  }
+
+  private def stopQueryExecution(operations: ReadOperations, plan: QueryPlanInfo) = {
+    operations.stopQuery(plan)
   }
 
   def prettify(query: String): String = Prettifier(query)

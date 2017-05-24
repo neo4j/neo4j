@@ -31,7 +31,9 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
@@ -75,6 +77,10 @@ import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.IndexUsage;
+import org.neo4j.kernel.api.query.PlannerInfo;
+import org.neo4j.kernel.api.query.QueryPlanInfo;
+import org.neo4j.kernel.api.query.SchemaIndexUsage;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
@@ -102,6 +108,7 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -807,6 +814,35 @@ public class OperationsFacade
     // </TokenWrite>
 
     // <SchemaState>
+
+    @Override
+    public void startQuery( QueryPlanInfo planInfo )
+    {
+        PlannerInfo plannerInfo = planInfo.plannerInfo();
+        Iterable<IndexUsage> indexUsages =
+                Iterables.filter( Predicates.instanceOf( SchemaIndexUsage.class ), plannerInfo.indexes() );
+        for ( IndexUsage index : indexUsages )
+        {
+            String label = ((SchemaIndexUsage) index).getLabel();
+            int i = labelGetForName( label );
+            acquireShared( ResourceTypes.LABEL, i );
+        }
+    }
+
+    @Override
+    public void stopQuery( QueryPlanInfo planInfo )
+    {
+        PlannerInfo plannerInfo = planInfo.plannerInfo();
+        Iterable<IndexUsage> indexUsages =
+                Iterables.filter( Predicates.instanceOf( SchemaIndexUsage.class ), plannerInfo.indexes() );
+        for ( IndexUsage index : indexUsages )
+        {
+            String label = ((SchemaIndexUsage) index).getLabel();
+            int i = labelGetForName( label );
+            releaseShared( ResourceTypes.LABEL, i );
+        }
+    }
+
     @Override
     public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
     {
