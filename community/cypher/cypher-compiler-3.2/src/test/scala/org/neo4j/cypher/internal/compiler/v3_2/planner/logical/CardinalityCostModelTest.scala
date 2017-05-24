@@ -93,9 +93,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     CardinalityCostModel(lazyPlan, pleaseLazy) should be < CardinalityCostModel(eagerPlan, pleaseLazy)
   }
 
-  //TODO this is ignore since the fix introduced regressions
-  //see https://github.com/neo4j/neo4j/pull/9383
-  ignore("multiple property expressions are counted for in cost") {
+  test("multiple property expressions are counted for in cost") {
     val cardinality = 10.0
     val card10 = solvedWithEstimation(cardinality)
     val plan =
@@ -107,4 +105,5 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val costForArgument = cardinality *   .1
     CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
   }
+
 }
