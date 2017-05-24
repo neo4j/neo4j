@@ -112,6 +112,25 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result should useOperationWith("NodeIndexScan", ":User(prop)")
   }
 
+  test("Should allow AND and OR with index equality") {
+    graph.createIndex("User", "prop")
+    graph.createIndex("User", "prop2")
+    val u1 = createLabeledNode(Map("prop" -> 1,"prop2" -> 1), "User")
+    val u2 = createLabeledNode(Map("prop" -> 11,"prop2" -> 11), "User")
+    for (i <- 13 to 100) createLabeledNode(Map("prop" -> i,"prop2" -> i), "User")
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop = 1 AND c.prop2 = 1)
+        |OR (c.prop = 11 AND c.prop2 = 11))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    val expected = List(Map("c" -> u2), Map("c" -> u1))
+    result should (useIndex(":User(prop)", ":User(prop2)") and evaluateTo(expected))
+  }
+
   test("should not forget predicates") {
     setUpDatabaseForTests()
 
