@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{IdempotentResult, Operations, QualifiedName, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, ResourceManager}
+import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
@@ -64,7 +64,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with IndexDescriptorCompatibility {
 
   override type EntityAccessor = NodeManager
-  override val resources = new ResourceManager
+
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
   override lazy val entityAccessor: NodeManager =
@@ -133,7 +133,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case Some(typeIds) =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor, resources)
+    new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]) = {

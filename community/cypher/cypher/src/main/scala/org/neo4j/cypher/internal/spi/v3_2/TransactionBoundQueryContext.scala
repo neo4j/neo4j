@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_2.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{IdempotentResult, Operations, QualifiedName, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_2._
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, ResourceManager}
+import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
@@ -60,20 +60,15 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
-
-
 final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with IndexDescriptorCompatibility {
 
-
-  class WhenYouGetACompilationErrorOnTheUseOfThisClassYouShouldRemoveTheClassAndAddOverrideToTheFieldDeclaredAsResourceManager extends ResourceManager
-
   override type EntityAccessor = NodeManager
-  val resources: WhenYouGetACompilationErrorOnTheUseOfThisClassYouShouldRemoveTheClassAndAddOverrideToTheFieldDeclaredAsResourceManager = new WhenYouGetACompilationErrorOnTheUseOfThisClassYouShouldRemoveTheClassAndAddOverrideToTheFieldDeclaredAsResourceManager
+
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
-
-  override lazy val entityAccessor = transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  override lazy val entityAccessor: NodeManager =
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (transactionalContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -138,7 +133,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case Some(typeIds) =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
     }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor, new ResourceManager)
+    new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]) = {

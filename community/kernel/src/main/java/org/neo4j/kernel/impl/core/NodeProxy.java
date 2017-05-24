@@ -54,7 +54,6 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -140,8 +139,10 @@ public class NodeProxy implements Node
             Statement statement = actions.statement();
             try
             {
-                RelationshipIterator iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
-                return new RelationshipConversion( actions, statement, iterator );
+                RelationshipConversion result = new RelationshipConversion( actions );
+                result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
+                result.statement = statement;
+                return result;
             }
             catch ( EntityNotFoundException e )
             {
@@ -181,9 +182,11 @@ public class NodeProxy implements Node
             Statement statement = actions.statement();
             try
             {
-                RelationshipIterator iterator =
-                        statement.readOperations().nodeGetRelationships( nodeId, direction, typeIds );
-                return new RelationshipConversion( actions, statement, iterator );
+                RelationshipConversion result = new RelationshipConversion( actions );
+                result.iterator = statement.readOperations().nodeGetRelationships(
+                        nodeId, direction, typeIds );
+                result.statement = statement;
+                return result;
             }
             catch ( EntityNotFoundException e )
             {
