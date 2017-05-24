@@ -20,11 +20,10 @@
 package org.neo4j.values;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 final class LazyLongArray extends LazyIntegralArray<long[]>
 {
-    LazyLongArray( Callable<long[]> producer )
+    LazyLongArray( Values.ValueLoader<long[]> producer )
     {
         super( producer );
     }

@@ -19,11 +19,9 @@
  */
 package org.neo4j.values;
 
-import java.util.concurrent.Callable;
-
 abstract class LazyFloatingPointArray<T> extends LazyArray<T> implements ValueGroup.VFloatingPointArray
 {
-    LazyFloatingPointArray( Callable<? extends T> producer )
+    LazyFloatingPointArray( Values.ValueLoader<? extends T> producer )
     {
         super( producer );
     }

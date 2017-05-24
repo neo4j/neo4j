@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class DirectArray extends ValueImpl
+abstract class DirectArray extends Value
 {
     abstract int length();
 

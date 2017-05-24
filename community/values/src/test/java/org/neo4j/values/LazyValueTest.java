@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.util.concurrent.Callable;
 
+import org.neo4j.values.Values.ValueLoader;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -67,14 +69,14 @@ public class LazyValueTest
         assertThat( value.getOrLoad(), equalTo( new int[]{1, 2, 3} ) );
     }
 
-    private static <T> Callable<T> value( final T value )
+    private static <T> ValueLoader<T> value( final T value )
     {
-        return new Callable<T>()
+        return new ValueLoader<T>()
         {
             boolean called;
 
             @Override
-            public T call() throws Exception
+            public T load() throws Values.ValueLoadException
             {
                 assertFalse( "Already called for value: " + value, called );
                 called = true;

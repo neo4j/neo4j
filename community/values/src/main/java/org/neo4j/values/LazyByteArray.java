@@ -20,11 +20,10 @@
 package org.neo4j.values;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 final class LazyByteArray extends LazyIntegralArray<byte[]>
 {
-    LazyByteArray( Callable<byte[]> producer )
+    LazyByteArray( Values.ValueLoader<byte[]> producer )
     {
         super( producer );
     }

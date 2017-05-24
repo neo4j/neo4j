@@ -90,7 +90,7 @@ final class DirectLongArray extends DirectIntegralArray
     @Override
     public Object asPublic()
     {
-        return value;
+        return value.clone();
     }
 
     @Override

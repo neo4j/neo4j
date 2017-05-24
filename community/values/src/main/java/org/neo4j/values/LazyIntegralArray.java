@@ -19,11 +19,9 @@
  */
 package org.neo4j.values;
 
-import java.util.concurrent.Callable;
-
 abstract class LazyIntegralArray<T> extends LazyArray<T> implements ValueGroup.VIntegerArray
 {
-    LazyIntegralArray( Callable<? extends T> producer )
+    LazyIntegralArray( Values.ValueLoader<? extends T> producer )
     {
         super( producer );
     }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.values;
 
-import java.util.concurrent.Callable;
-
 import static java.lang.String.format;
 
 final class LazyString extends LazyValue<String> implements ValueGroup.VText
 {
-    LazyString( Callable<String> producer )
+    LazyString( Values.ValueLoader<String> producer )
     {
         super( producer );
     }

@@ -20,11 +20,10 @@
 package org.neo4j.values;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 final class LazyCharArray extends LazyTextArray<char[]>
 {
-    LazyCharArray( Callable<char[]> producer )
+    LazyCharArray( Values.ValueLoader<char[]> producer )
     {
         super( producer );
     }

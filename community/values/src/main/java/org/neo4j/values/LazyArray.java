@@ -19,11 +19,9 @@
  */
 package org.neo4j.values;
 
-import java.util.concurrent.Callable;
-
 abstract class LazyArray<T> extends LazyValue<T>
 {
-    LazyArray( Callable<? extends T> producer )
+    LazyArray( Values.ValueLoader<? extends T> producer )
     {
         super( producer );
     }

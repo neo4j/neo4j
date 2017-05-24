@@ -19,28 +19,41 @@
  */
 package org.neo4j.values;
 
-public interface Value extends ValueGroup.WithId
+public abstract class Value implements ValueGroup.WithId
 {
-    boolean equals( Value other );
+    @Override
+    public abstract boolean equals( Object other );
 
-    boolean equals( byte[] x );
-    boolean equals( short[] x );
-    boolean equals( int[] x );
-    boolean equals( long[] x );
+    @Override
+    public abstract int hashCode();
 
-    boolean equals( float[] x );
-    boolean equals( double[] x );
+    public abstract boolean equals( Value other );
 
-    boolean equals( boolean x );
-    boolean equals( boolean[] x );
+    public abstract boolean equals( byte[] x );
 
-    boolean equals( char x );
-    boolean equals( String x );
+    public abstract boolean equals( short[] x );
 
-    boolean equals( char[] x );
-    boolean equals( String[] x );
+    public abstract boolean equals( int[] x );
 
-    void writeTo( ValueWriter writer );
+    public abstract boolean equals( long[] x );
 
-    Object asPublic();
+    public abstract boolean equals( float[] x );
+
+    public abstract boolean equals( double[] x );
+
+    public abstract boolean equals( boolean x );
+
+    public abstract boolean equals( boolean[] x );
+
+    public abstract boolean equals( char x );
+
+    public abstract boolean equals( String x );
+
+    public abstract boolean equals( char[] x );
+
+    public abstract boolean equals( String[] x );
+
+    public abstract void writeTo( ValueWriter writer );
+
+    public abstract Object asPublic();
 }

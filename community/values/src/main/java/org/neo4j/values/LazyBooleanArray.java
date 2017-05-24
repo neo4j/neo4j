@@ -20,11 +20,10 @@
 package org.neo4j.values;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 final class LazyBooleanArray extends LazyArray<boolean[]> implements ValueGroup.VBooleanArray
 {
-    LazyBooleanArray( Callable<boolean[]> producer )
+    LazyBooleanArray( Values.ValueLoader<boolean[]> producer )
     {
         super( producer );
     }

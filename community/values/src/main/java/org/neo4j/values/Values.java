@@ -20,7 +20,6 @@
 package org.neo4j.values;
 
 import java.lang.reflect.Array;
-import java.util.concurrent.Callable;
 
 @SuppressWarnings( "WeakerAccess" )
 public class Values
@@ -29,64 +28,70 @@ public class Values
     {
     }
 
+    interface ValueLoader<T>
+    {
+        T load() throws ValueLoadException;
+    }
+
+    class ValueLoadException extends RuntimeException
+    {
+    }
+
     // DIRECT FACTORY METHODS
 
-    public static Value noValue()
-    {
-        return NoValue.NO_VALUE;
-    }
+    public static Value NO_VALUE = NoValue.NO_VALUE;
 
     public static Value stringValue( String value )
     {
         return new DirectString( value );
     }
 
-    public static Value lazyStringValue( Callable<String> producer )
+    public static Value lazyStringValue( ValueLoader<String> producer )
     {
         return new LazyString( producer );
     }
 
-    public static Value lazyByteArray( Callable<byte[]> producer )
+    public static Value lazyByteArray( ValueLoader<byte[]> producer )
     {
         return new LazyByteArray( producer );
     }
 
-    public static Value lazyShortArray( Callable<short[]> producer )
+    public static Value lazyShortArray( ValueLoader<short[]> producer )
     {
         return new LazyShortArray( producer );
     }
 
-    public static Value lazyIntArray( Callable<int[]> producer )
+    public static Value lazyIntArray( ValueLoader<int[]> producer )
     {
         return new LazyIntArray( producer );
     }
 
-    public static Value lazyLongArray( Callable<long[]> producer )
+    public static Value lazyLongArray( ValueLoader<long[]> producer )
     {
         return new LazyLongArray( producer );
     }
 
-    public static Value lazyFloatArray( Callable<float[]> producer )
+    public static Value lazyFloatArray( ValueLoader<float[]> producer )
     {
         return new LazyFloatArray( producer );
     }
 
-    public static Value lazyDoubleArray( Callable<double[]> producer )
+    public static Value lazyDoubleArray( ValueLoader<double[]> producer )
     {
         return new LazyDoubleArray( producer );
     }
 
-    public static Value lazyCharArray( Callable<char[]> producer )
+    public static Value lazyCharArray( ValueLoader<char[]> producer )
     {
         return new LazyCharArray( producer );
     }
 
-    public static Value lazyStringArray( Callable<String[]> producer )
+    public static Value lazyStringArray( ValueLoader<String[]> producer )
     {
         return new LazyStringArray( producer );
     }
 
-    public static Value lazyBooleanArray( Callable<boolean[]> producer )
+    public static Value lazyBooleanArray( ValueLoader<boolean[]> producer )
     {
         return new LazyBooleanArray( producer );
     }

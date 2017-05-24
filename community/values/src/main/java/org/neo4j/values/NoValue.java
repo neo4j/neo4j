@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-final class NoValue extends ValueImpl
+final class NoValue extends Value
 {
     @SuppressWarnings( "WeakerAccess" )
     public static NoValue NO_VALUE = new NoValue();

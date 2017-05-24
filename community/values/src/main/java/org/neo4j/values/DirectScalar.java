@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract class DirectScalar extends ValueImpl
+abstract class DirectScalar extends Value
 {
     @Override
     public boolean equals( byte[] x )

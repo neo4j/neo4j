@@ -20,11 +20,10 @@
 package org.neo4j.values;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 final class LazyDoubleArray extends LazyFloatingPointArray<double[]>
 {
-    LazyDoubleArray( Callable<double[]> producer )
+    LazyDoubleArray( Values.ValueLoader<double[]> producer )
     {
         super( producer );
     }

@@ -20,11 +20,10 @@
 package org.neo4j.values;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
 
 final class LazyShortArray extends LazyIntegralArray<short[]>
 {
-    LazyShortArray( Callable<short[]> producer )
+    LazyShortArray( Values.ValueLoader<short[]> producer )
     {
         super( producer );
     }

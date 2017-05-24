@@ -19,11 +19,9 @@
  */
 package org.neo4j.values;
 
-import java.util.concurrent.Callable;
-
 abstract class LazyTextArray<T> extends LazyArray<T> implements ValueGroup.VTextArray
 {
-    LazyTextArray( Callable<? extends T> producer )
+    LazyTextArray( Values.ValueLoader<? extends T> producer )
     {
         super( producer );
     }

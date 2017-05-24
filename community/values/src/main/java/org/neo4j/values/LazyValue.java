@@ -21,11 +21,13 @@ package org.neo4j.values;
 
 import java.util.concurrent.Callable;
 
-abstract class LazyValue<T> extends ValueImpl
+import org.neo4j.values.Values.ValueLoader;
+
+abstract class LazyValue<T> extends Value
 {
     private volatile Object value;
 
-    LazyValue( Callable<? extends T> producer )
+    LazyValue( ValueLoader<? extends T> producer )
     {
         this.value = producer;
     }
@@ -35,32 +37,25 @@ abstract class LazyValue<T> extends ValueImpl
      */
     final T getOrLoad()
     {
-        Object value = this.value;
-        if ( value instanceof Callable<?> )
+        Object maybeValue = this.value;
+        if ( maybeValue instanceof ValueLoader<?> )
         {
             synchronized ( this )
             {
-                value = this.value;
-                if ( value instanceof Callable<?> )
+                maybeValue = this.value;
+                if ( maybeValue instanceof ValueLoader<?> )
                 {
-                    this.value = value = produceValue();
+                    this.value = produceValue();
                 }
             }
         }
         //noinspection unchecked
-        return (T) value;
+        return (T) this.value;
     }
 
     private Object produceValue()
     {
-        try
-        {
-            return ((Callable<?>) value).call();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return ((ValueLoader<?>) value).load();
     }
 
     boolean valueIsLoaded()
