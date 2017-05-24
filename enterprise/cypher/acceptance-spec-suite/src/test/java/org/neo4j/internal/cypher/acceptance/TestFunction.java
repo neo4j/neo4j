@@ -36,7 +36,7 @@ public class TestFunction
     public GraphDatabaseService db;
 
     @UserFunction( "test.toSet" )
-    public List<Object> toSet(@Name("values") List<Object> list)
+    public List<Object> toSet( @Name( "values" ) List<Object> list )
     {
         return new ArrayList<>( new LinkedHashSet<>( list ) );
     }
