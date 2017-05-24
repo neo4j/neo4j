@@ -80,7 +80,7 @@ public class StoreSingleRelationshipCursorTest
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
-            cursor.init( RELATIONSHIP_ID );
+            cursor.init( RELATIONSHIP_ID, null );
             assertTrue( cursor.next() );
             assertEquals( RELATIONSHIP_ID, cursor.get().id() );
         }
@@ -95,7 +95,7 @@ public class StoreSingleRelationshipCursorTest
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
-            cursor.init( RELATIONSHIP_ID );
+            cursor.init( RELATIONSHIP_ID, null );
             assertFalse( cursor.next() );
         }
     }

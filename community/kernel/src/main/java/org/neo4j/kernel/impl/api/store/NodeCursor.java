@@ -19,113 +19,145 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Iterator;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-/**
- * Base cursor for nodes.
- */
-public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
+public class NodeCursor implements NodeItem, Cursor<NodeItem>
 {
     private final NodeRecord nodeRecord;
-    private final Consumer<StoreSingleNodeCursor> instanceCache;
-
-    private final LockService lockService;
+    private final Consumer<NodeCursor> instanceCache;
     private final RecordCursors recordCursors;
+    private final LockService lockService;
 
-    private long nodeId = StatementConstants.NO_SUCH_NODE;
+    private Progression progression;
+    private ReadableTransactionState state;
+    private boolean fetched;
     private long[] labels;
+    private Iterator<Long> added;
 
-    StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
-            RecordCursors recordCursors, LockService lockService )
+    NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, RecordCursors recordCursors,
+            LockService lockService )
     {
         this.nodeRecord = nodeRecord;
+        this.instanceCache = instanceCache;
         this.recordCursors = recordCursors;
         this.lockService = lockService;
-        this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId )
+    public Cursor<NodeItem> init( Progression progression, ReadableTransactionState state )
     {
-        this.nodeId = nodeId;
-        return this;
-    }
-
-    @Override
-    public NodeItem get()
-    {
+        this.progression = progression;
+        this.state = state;
+        this.added = state != null && progression.mode() == APPEND
+                     ? state.addedAndRemovedNodes().getAdded().iterator()
+                     : null;
         return this;
     }
 
     @Override
     public boolean next()
     {
+        return fetched = fetchNext();
+    }
+
+    private boolean fetchNext()
+    {
         labels = null;
-        if ( nodeId != StatementConstants.NO_SUCH_NODE )
+        long id;
+        while ( (id = progression.nextId()) >= 0 )
         {
-            try
+            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) &&
+                    recordCursors.node().next( id, nodeRecord, RecordLoad.CHECK ) )
             {
-                return recordCursors.node().next( nodeId, nodeRecord, CHECK );
+                return true;
             }
-            finally
+
+            if ( state != null && progression.mode() == FETCH && state.nodeIsAddedInThisTx( id ) )
             {
-                nodeId = StatementConstants.NO_SUCH_NODE;
+                recordFromTxState( id );
+                return true;
             }
         }
 
+        if ( added != null && added.hasNext() )
+        {
+            recordFromTxState( added.next() );
+            return true;
+        }
+
         return false;
+    }
+
+    private void recordFromTxState( long id )
+    {
+        nodeRecord.clear();
+        nodeRecord.setId( id );
     }
 
     @Override
     public void close()
     {
         labels = null;
-        nodeRecord.clear();
+        added = null;
+        state = null;
         instanceCache.accept( this );
     }
 
     @Override
-    public long id()
+    public NodeItem get()
     {
-        return nodeRecord.getId();
+        if ( fetched )
+        {
+            return this;
+        }
+
+        throw new IllegalStateException( "Nothing available" );
     }
 
     @Override
     public PrimitiveIntSet labels()
     {
-        ensureLabels();
-        return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
-    }
-
-    private void ensureLabels()
-    {
-        if ( labels == null )
-        {
-            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
-        }
+        PrimitiveIntSet labels = asSet( loadedLabels(), IoPrimitiveUtils::safeCastLongToInt );
+        return state != null ? state.augmentLabels( labels, state.getNodeState( id() ) ) : labels;
     }
 
     @Override
     public boolean hasLabel( int labelId )
     {
-        ensureLabels();
-        for ( long label : labels )
+        NodeState nodeState = state == null ? null : state.getNodeState( id() );
+        if ( state != null && nodeState.labelDiffSets().getRemoved().contains( labelId ) )
+        {
+            return false;
+        }
+
+        if ( state != null && nodeState.labelDiffSets().getAdded().contains( labelId ) )
+        {
+            return true;
+        }
+
+        for ( long label : loadedLabels() )
         {
             if ( safeCastLongToInt( label ) == labelId )
             {
@@ -133,6 +165,21 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
             }
         }
         return false;
+    }
+
+    private long[] loadedLabels()
+    {
+        if ( labels == null )
+        {
+            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
+        }
+        return labels;
+    }
+
+    @Override
+    public long id()
+    {
+        return nodeRecord.getId();
     }
 
     @Override
@@ -162,6 +209,11 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
 
     @Override
     public Lock lock()
+    {
+        return state != null && state.nodeIsAddedInThisTx( id() ) ? NO_LOCK : acquireLock();
+    }
+
+    private Lock acquireLock()
     {
         Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
         if ( lockService != NO_LOCK_SERVICE )

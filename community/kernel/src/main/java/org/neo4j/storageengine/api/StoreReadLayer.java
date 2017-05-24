@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -39,11 +38,15 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Abstraction for reading committed data from {@link StorageEngine store}.
@@ -165,6 +168,12 @@ public interface StoreReadLayer
      */
     String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
+    IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
+    IndexReader indexGetFreshReader( StorageStatement storeStatement, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
     /**
      * @param labelName name of label.
      * @return token id of label.
@@ -269,18 +278,31 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
-    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction );
+    Cursor<NodeItem> nodeGetAllCursor( StorageStatement storeStatement, TransactionState state );
+
+    Cursor<NodeItem> nodeCursor( StorageStatement storeStatement, long nodeId, ReadableTransactionState state );
+
+    Cursor<RelationshipItem> relationshipCursor( StorageStatement storeStatement, long relationshipId,
+            ReadableTransactionState state );
+
+    Cursor<RelationshipItem> relationshipsGetAllCursor( StorageStatement storeStatement, ReadableTransactionState state );
 
     Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
-            IntPredicate typeIds );
+            ReadableTransactionState state );
 
-    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node );
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
+            int[] relTypes, ReadableTransactionState state );
 
-    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId );
+    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, PropertyContainerState state );
 
-    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship );
+    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+            PropertyContainerState state );
 
-    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem, int propertyKeyId );
+    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
+            PropertyContainerState state );
+
+    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem,
+            int propertyKeyId, PropertyContainerState state );
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that

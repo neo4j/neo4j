@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -29,16 +30,20 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Base cursor for relationships.
  */
-public abstract class StoreAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem
+public abstract class StoreAbstractRelationshipCursor
+        implements RelationshipVisitor<RuntimeException>, Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
     final RecordCursor<RelationshipRecord> relationshipRecordCursor;
     private final LockService lockService;
+    protected boolean fetched;
+
     StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
             LockService lockService )
     {
@@ -48,50 +53,73 @@ public abstract class StoreAbstractRelationshipCursor implements Cursor<Relation
     }
 
     @Override
-    public RelationshipItem get()
+    public final RelationshipItem get()
     {
+        if ( !fetched )
+        {
+            throw new IllegalStateException();
+        }
+
         return this;
     }
 
     @Override
-    public long id()
+    public final boolean next()
+    {
+        return fetched = fetchNext();
+    }
+
+    protected abstract boolean fetchNext();
+
+    @Override
+    public final long id()
     {
         return relationshipRecord.getId();
     }
 
     @Override
-    public int type()
+    public final int type()
     {
         return relationshipRecord.getType();
     }
 
     @Override
-    public long startNode()
+    public final long startNode()
     {
         return relationshipRecord.getFirstNode();
     }
 
     @Override
-    public long endNode()
+    public final long endNode()
     {
         return relationshipRecord.getSecondNode();
     }
 
     @Override
-    public long otherNode( long nodeId )
+    public final long otherNode( long nodeId )
     {
         return relationshipRecord.getFirstNode() == nodeId ?
                relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
     @Override
-    public long nextPropertyId()
+    public final void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+    {
+        relationshipRecord.setId( relId );
+        relationshipRecord.setType( type );
+        relationshipRecord.setFirstNode( startNode );
+        relationshipRecord.setSecondNode( endNode );
+        relationshipRecord.setNextProp( NO_NEXT_PROPERTY.longValue() );
+    }
+
+    @Override
+    public final long nextPropertyId()
     {
         return relationshipRecord.getNextProp();
     }
 
     @Override
-    public Lock lock()
+    public final Lock lock()
     {
         Lock lock = lockService.acquireRelationshipLock( relationshipRecord.getId(), LockService.LockType.READ_LOCK );
         if ( lockService != NO_LOCK_SERVICE )
@@ -120,5 +148,11 @@ public abstract class StoreAbstractRelationshipCursor implements Cursor<Relation
             }
         }
         return lock;
+    }
+
+    @Override
+    public void close()
+    {
+        fetched = false;
     }
 }
