@@ -152,6 +152,8 @@ public class EncodingIdMapper implements IdMapper
 
     private final Monitor monitor;
 
+    private int numberOfCollisions;
+
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
             Monitor monitor, TrackerFactory trackerFactory )
     {
@@ -188,13 +190,13 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public void put( Object inputId, long id, Group group )
+    public void put( Object inputId, long nodeId, Group group )
     {
         // Encode and add the input id
         long eId = encode( inputId );
-        dataCache.set( id, eId );
-        groupCache.setShort( id, 0, safeCastLongToShort( group.id() ) );
-        candidateHighestSetIndex.offer( id );
+        dataCache.set( nodeId, eId );
+        groupCache.setShort( nodeId, 0, safeCastLongToShort( group.id() ) );
+        candidateHighestSetIndex.offer( nodeId );
     }
 
     private long encode( Object inputId )
@@ -235,18 +237,10 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
                     processorsForSorting, progress, comparator ).run();
 
-            int numberOfCollisions = detectAndMarkCollisions( progress, inputIdLookup );
+            numberOfCollisions = detectAndMarkCollisions( progress, inputIdLookup );
             if ( numberOfCollisions > 0 )
             {
-                collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
-                collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
-
-                // Detect input id duplicates within the same group, with source information, line number and the works
-                detectDuplicateInputIds( numberOfCollisions, collector, progress );
-
-                // We won't be needing these anymore
-                collisionSourceDataCache = null;
-                collisionTrackerCache = null;
+                buildCollisionInfo( numberOfCollisions, inputIdLookup, collector, progress );
             }
         }
         catch ( InterruptedException e )
@@ -416,24 +410,62 @@ public class EncodingIdMapper implements IdMapper
         }
 
         dataCache.set( nodeId, setCollision( eId ) );
-
-        Object id = inputIdLookup.apply( nodeId );
-        long eIdFromInputId = encode( id );
-        long eIdWithoutCollisionBit = clearCollision( eId );
-        assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
-                "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
-                "%d when put, but was now encoded into %d",
-                id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
-        int collisionIndex = collisionValues.size();
-        collisionValues.add( id );
-        collisionNodeIdCache.set( collisionIndex, nodeId );
-        // The base of our sorting this time is going to be node id, so register that in the radix
-        radix.registerRadixOf( eIdWithoutCollisionBit );
-
         return true;
     }
 
-    private void detectDuplicateInputIds( int numberOfCollisions,
+    private void buildCollisionInfo( int numberOfCollisions, LongFunction<Object> inputIdLookup,
+            Collector collector, ProgressListener progress ) throws InterruptedException
+    {
+        progress.started( "RESOLVE (" + numberOfCollisions + " collisions)" );
+        Radix radix = radixFactory.newInstance();
+//        List<String> sourceDescriptions = new ArrayList<>();
+//        String lastSourceDescription = null;
+        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
+        collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
+        for ( long nodeId = 0; nodeId <= highestSetIndex; )
+        {
+            long j = 0;
+            for ( ; j < COUNTING_BATCH_SIZE && nodeId <= highestSetIndex; j++, nodeId++ )
+            {
+                long eId = dataCache.get( nodeId );
+                if ( isCollision( eId ) )
+                {
+                    // Store this collision input id for matching later in get()
+                    Object id = inputIdLookup.apply( nodeId );
+                    long eIdFromInputId = encode( id );
+                    long eIdWithoutCollisionBit = clearCollision( eId );
+                    assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
+                            "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
+                            "%d when put, but was now encoded into %d",
+                            id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
+                    int collisionIndex = collisionValues.size();
+                    collisionValues.add( id );
+                    collisionNodeIdCache.set( collisionIndex, nodeId );
+                    // The base of our sorting this time is going to be node id, so register that in the radix
+                    radix.registerRadixOf( eIdWithoutCollisionBit );
+//                    String currentSourceDescription = ids.sourceDescription();
+//                    if ( lastSourceDescription == null || !currentSourceDescription.equals( lastSourceDescription ) )
+//                    {
+//                        sourceDescriptions.add( currentSourceDescription );
+//                        lastSourceDescription = currentSourceDescription;
+//                    }
+//                    collisionSourceDataCache.set( collisionIndex,
+//                            encodeSourceInformation( sourceDescriptions.size() - 1, ids.lineNumber() ) );
+                }
+            }
+            progress.add( j );
+        }
+        progress.done();
+
+        // Detect input id duplicates within the same group, with source information, line number and the works
+        detectDuplicateInputIds( radix, numberOfCollisions, collector, progress );
+
+        // We won't be needing these anymore
+        collisionSourceDataCache = null;
+        collisionTrackerCache = null;
+    }
+
+    private void detectDuplicateInputIds( Radix radix, int numberOfCollisions,
             Collector collector, ProgressListener progress ) throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
@@ -482,14 +514,11 @@ public class EncodingIdMapper implements IdMapper
             }
         };
 
-        Radix radix = radixFactory.newInstance();
-        updateRadix( collisionNodeIdCache, radix, numberOfCollisions - 1 );
-
         new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions - 1,
                 collisionTrackerCache, processorsForSorting, progress, duplicateComparator ).run();
 
         // Here we have a populated C
-        // We want to detect duplicate input ids within the
+        // We want to detect duplicate input ids within it
         long previousEid = 0;
         int previousGroupId = -1;
         SourceInformation source = new SourceInformation();
@@ -622,15 +651,15 @@ public class EncodingIdMapper implements IdMapper
         return clearCollision( dataCache.get( trackerCache.get( index ) ) );
     }
 
-    private long findIndex( LongArray array, long value )
+    private long findCollisionIndex( long value )
     {
         // can't be done on unsorted data
         long low = 0 + 0;
-        long high = highestSetIndex;
+        long high = numberOfCollisions - 1;
         while ( low <= high )
         {
             long mid = (low + high) / 2;
-            long midValue = array.get( mid );
+            long midValue = collisionNodeIdCache.get( mid );
             switch ( unsignedDifference( midValue, value ) )
             {
             case EQ: return mid;
@@ -677,7 +706,7 @@ public class EncodingIdMapper implements IdMapper
                 if ( isCollision( eId ) )
                 {   // We found a data value for our group, but there are collisions within this group.
                     // We need to consult the collision cache and original input id
-                    int collisionIndex = safeCastLongToInt( findIndex( collisionNodeIdCache, dataIndex ) );
+                    int collisionIndex = safeCastLongToInt( findCollisionIndex( dataIndex ) );
                     Object value = collisionValues.get( collisionIndex );
                     if ( inputId.equals( value ) )
                     {

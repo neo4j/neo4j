@@ -56,7 +56,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -253,11 +252,6 @@ public class EncodingIdMapperTest
 
         // WHEN
         ProgressListener progress = mock( ProgressListener.class );
-        doAnswer( invocation ->
-        {
-            System.out.println( invocation.getArgumentAt( 0, String.class ) );
-            return null;
-        } ).when( progress ).started( anyString() );
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, progress );
 
@@ -266,9 +260,9 @@ public class EncodingIdMapperTest
         verify( monitor ).numberOfCollisions( 2 );
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
-        // 7 times since SPLIT+SORT+DETECT+SPLIT+SORT,DEDUPLICATE
-        verify( progress, times( 6 ) ).started( anyString() );
-        verify( progress, times( 6 ) ).done();
+        // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
+        verify( progress, times( 7 ) ).started( anyString() );
+        verify( progress, times( 7 ) ).done();
     }
 
     @Test
