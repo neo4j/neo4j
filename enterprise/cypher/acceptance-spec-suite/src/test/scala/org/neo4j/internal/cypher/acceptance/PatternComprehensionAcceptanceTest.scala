@@ -56,7 +56,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
         | ][0..5] AS related
       """.stripMargin
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toList should equal(
       List(Map("related" -> List(Map("tagged" -> Vector(Map("owner" -> Map("name" -> "Michael Hunger"))))))))
   }
@@ -72,7 +72,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
                |WITH collect(t) AS tweets
                |RETURN test.toSet([ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ]) AS users""".stripMargin
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toList should equal(List(Map("users" -> List(List(n2)))))
   }
 
@@ -88,7 +88,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
                   |WITH [ tweet IN tweets | [ (tweet)<-[:POSTED]-(user) | user] ] AS pattern
                   |RETURN test.toSet(pattern) AS users""".stripMargin
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toList should equal(List(Map("users" -> List(List(n2)))))
   }
 
