@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -58,6 +61,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -126,7 +130,15 @@ public class RecordStorageEngineTest
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
-        verify( databaseHealth ).panic( applicationError );
+        ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass( Exception.class );
+        verify( databaseHealth ).panic( captor.capture() );
+        Throwable exception = captor.getValue();
+        if ( exception instanceof KernelException )
+        {
+            assertThat( ((KernelException) exception).status(), is( Status.General.UnknownError ) );
+            exception = exception.getCause();
+        }
+        assertThat( exception, is( applicationError ) );
     }
 
     @Test( timeout = 30_000 )
