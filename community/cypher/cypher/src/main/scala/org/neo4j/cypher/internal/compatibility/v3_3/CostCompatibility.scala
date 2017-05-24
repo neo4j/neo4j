@@ -22,12 +22,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -79,5 +82,11 @@ case class CostCompatibility[PC <: CompilerContext,
 
   override val queryCacheSize: Int = config.queryCacheSize
 
+  override val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+
+  protected val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+
+  protected val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan] = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
+  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
 
 }

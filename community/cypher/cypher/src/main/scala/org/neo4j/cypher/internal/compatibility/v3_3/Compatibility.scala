@@ -76,24 +76,25 @@ trait Compatibility[PC <: CompilerContext,
   protected def maybePlannerName: Option[CostBasedPlannerName]
   protected def maybeRuntimeName: Option[RuntimeName]
   protected def maybeUpdateStrategy: Option[UpdateStrategy]
+  protected def executionMonitor: QueryExecutionMonitor
+  protected def cacheMonitor: AstCacheMonitor
+  protected val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_3]
+
   private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-  val createExecPlan: Transformer[RC, LogicalPlanState, CompilationState] = {
+  private lazy val createExecPlan: Transformer[RC, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
         runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan])
       )
   }
 
-  implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_3](config.queryCacheSize)
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger
-    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
-    val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cacheAccessor = new MonitoringCacheAccessor[Statement, ExecutionPlan_v3_3](cacheMonitor)
-    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_3](config.queryCacheSize)
+
     val preparedSyntacticQueryForV_3_2 =
       Try(compiler.parseQuery(preParsedQuery.statement,
                               preParsedQuery.rawStatement,
@@ -146,8 +147,7 @@ trait Compatibility[PC <: CompilerContext,
     runtimeContextCreator(planCompilerContext, RuntimeSpecificContext(typeConversions, createFingerprintReference))
   }
 
-
-  private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
+  protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: Statement, userKey: String) {
       log.info(s"Discarded stale query from the query cache: $userKey")
     }
@@ -181,6 +181,7 @@ trait Compatibility[PC <: CompilerContext,
         case CypherExecutionMode.normal => NormalMode
       }
       exceptionHandler.runSafely {
+        implicit val m = executionMonitor
         val innerParams = typeConversions.asPrivateMap(params)
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(

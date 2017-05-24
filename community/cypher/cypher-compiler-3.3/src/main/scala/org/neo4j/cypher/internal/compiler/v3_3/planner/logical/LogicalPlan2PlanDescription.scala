@@ -374,11 +374,14 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
             (name, PrefixIndex(label.name, propertyKey, range.prefix))
           case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq))
+          case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
+            (name, InequalityIndex(label.name, propertyKey, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
             val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
             val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
-          case _ =>
+          case e =>
+            println(e)
             throw new InternalException("This should never happen. Missing a case?")
         }
       case _ =>

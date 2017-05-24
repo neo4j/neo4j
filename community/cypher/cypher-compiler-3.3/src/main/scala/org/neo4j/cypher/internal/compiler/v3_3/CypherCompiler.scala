@@ -41,22 +41,6 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                                                       updateStrategy: UpdateStrategy,
                                                       clock: Clock,
                                                       contextCreation: ContextCreator[Context]) {
-  def planQuery(queryText: String,
-                planContext: PlanContext,
-                notificationLogger: InternalNotificationLogger,
-                queryGraphSolver: QueryGraphSolver,
-                expressionEvaluator: ExpressionEvaluator,
-                plannerName: String = "",
-                debugOptions: Set[String] = Set.empty,
-                offset: Option[InputPosition] = None): LogicalPlanState = {
-    val state = parseQuery(queryText, queryText, notificationLogger, plannerName, debugOptions, None, CompilationPhaseTracer.NO_TRACING)
-    val context: Context = contextCreation.create(CompilationPhaseTracer.NO_TRACING, notificationLogger, planContext, state.queryText,
-                                                        debugOptions, state.startPosition, monitors, metricsFactory,
-                                                   queryGraphSolver,
-                                                   config, updateStrategy, clock, expressionEvaluator)
-    planPreparedQuery(normalizeQuery(state,context), context)
-  }
-
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState,

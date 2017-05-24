@@ -28,6 +28,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
   // pure syntax errors -- not sure if TCK material?
 
+  test("foo") {
+    execute("RETURN 42")
+  }
+
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",

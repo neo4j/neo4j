@@ -122,7 +122,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Runti
       }
     }
 
-    new CompilationState(LogicalPlanState(from), maybeExecutionPlan)
+    new CompilationState(from, maybeExecutionPlan)
   }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =

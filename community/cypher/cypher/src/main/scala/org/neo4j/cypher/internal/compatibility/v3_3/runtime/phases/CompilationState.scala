@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, PlannerName, SemanticState, SemanticTable}
 
 class CompilationState(ls: LogicalPlanState,
-                           val maybeExecutionPlan: Option[ExecutionPlan] = None) extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics, ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan, ls.maybePeriodicCommit, ls.accumulatedConditions) {
+                           val maybeExecutionPlan: Option[ExecutionPlan] = None)
+  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics,
+                           ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
+                           ls.maybePeriodicCommit, ls.accumulatedConditions) {
 
 //  override def queryText: String = ls.queryText
 //

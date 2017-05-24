@@ -28,14 +28,6 @@ import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 import scala.reflect.ClassTag
 
 case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
-  private val acceptableTypes: Set[Class[_]] = Set(
-    classOf[Statement],
-    classOf[SemanticState],
-    classOf[UnionQuery],
-    classOf[LogicalPlan]
-  )
-
-  assert(acceptableTypes.contains(manifest.runtimeClass))
 
   override def check(in: AnyRef): Seq[String] = in match {
     case state: LogicalPlanState =>
