@@ -40,6 +40,11 @@ class TransactionCommitment implements Commitment
         this.transactionIdStore = transactionIdStore;
     }
 
+    public LogPosition logPosition()
+    {
+        return logPosition;
+    }
+
     @Override
     public void publishAsCommitted()
     {

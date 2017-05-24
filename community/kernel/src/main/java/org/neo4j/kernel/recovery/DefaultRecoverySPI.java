@@ -130,6 +130,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
             long txId = transaction.getCommitEntry().getTxId();
             TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
             tx.commitment( NO_COMMITMENT, txId );
+            tx.logPosition( transaction.getStartEntry().getStartPosition() );
             transactionsToApply.queue( tx );
             return false;
         }

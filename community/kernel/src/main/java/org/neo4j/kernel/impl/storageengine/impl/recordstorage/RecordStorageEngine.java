@@ -33,6 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -358,8 +359,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
         catch ( Throwable cause )
         {
-            databaseHealth.panic( cause );
-            throw cause;
+            TransactionApplyKernelException kernelException =
+                    new TransactionApplyKernelException( cause, "Failed to apply transaction: %s", batch );
+            databaseHealth.panic( kernelException );
+            throw kernelException;
         }
     }
 
