@@ -60,7 +60,7 @@ angular.module('neo4jApp.services')
             "Every graph starts with the first node."
           ],
           disconnected: [
-            "Disconnected from Neo4j. Please check if the cord is unplugged."
+            "Disconnected from Neo4j. Have you tried turning it off and on again?"
           ],
           callToAction: [
             {
