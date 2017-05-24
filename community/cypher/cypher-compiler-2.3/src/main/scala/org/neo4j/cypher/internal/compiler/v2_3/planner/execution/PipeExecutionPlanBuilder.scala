@@ -181,8 +181,11 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case Limit(lhs, count) =>
           LimitPipe(buildPipe(lhs), buildExpression(count))()
 
+        case SortedLimit(lhs, SignedDecimalIntegerLiteral("1"), sortItems) =>
+          Top1Pipe(buildPipe(lhs), sortItems.map(_.asCommandSortItem).toList)()
+
         case SortedLimit(lhs, exp, sortItems) =>
-          TopPipe(buildPipe(lhs), sortItems.map(_.asCommandSortItem).toList, toCommandExpression(exp))()
+          TopNPipe(buildPipe(lhs), sortItems.map(_.asCommandSortItem).toList, toCommandExpression(exp))()
 
         // TODO: Maybe we shouldn't encode distinct as an empty aggregation.
         case Aggregation(Projection(source, expressions), groupingExpressions, aggregatingExpressions)
