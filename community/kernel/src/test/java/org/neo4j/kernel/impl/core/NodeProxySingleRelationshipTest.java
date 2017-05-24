@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -153,11 +155,6 @@ public class NodeProxySingleRelationshipTest
                     {
                         visitor.visit( relId, 2, 1, 10 * relId + 2 );
                         return false;
-                    }
-
-                    @Override
-                    public void close()
-                    {
                     }
                 } );
         return nodeImpl;

@@ -24,7 +24,8 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-public class AllRelationshipIterator extends HighIdAwareIterator<RelationshipStore> implements RelationshipIterator
+public class AllRelationshipIterator extends HighIdAwareIterator<RelationshipStore>
+    implements RelationshipIterator
 {
     private final RelationshipRecord record;
 
@@ -63,11 +64,5 @@ public class AllRelationshipIterator extends HighIdAwareIterator<RelationshipSto
             }
         }
         return false;
-    }
-
-    @Override
-    public void close()
-    {
-        // nothing to close
     }
 }

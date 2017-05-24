@@ -1875,19 +1875,17 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator {
 
-    private val inner = longs.toIterator
-
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
       val rel = relMap(relationshipId)
       visitor.visit(relationshipId, -1, rel.from.getId, rel.to.getId)
       false
     }
 
+    val inner = longs.toIterator
+
     override def next(): Long = inner.next()
 
     override def hasNext: Boolean = inner.hasNext
-
-    override def close(): Unit = ()
   }
 
   private def getNodesFromResult(plan: InternalExecutionResult, columns: String*) = {
