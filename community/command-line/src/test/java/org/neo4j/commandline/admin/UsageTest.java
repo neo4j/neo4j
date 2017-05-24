@@ -19,15 +19,15 @@
  */
 package org.neo4j.commandline.admin;
 
+import java.util.Collections;
+import java.util.function.Consumer;
+import javax.annotation.Nonnull;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.Collections;
-import java.util.function.Consumer;
-import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -50,16 +50,21 @@ public class UsageTest
     public void shouldPrintUsageForACommand() throws Exception
     {
         // given
-        AdminCommand.Provider commandProvier = mockCommand( "bam", "A summary", AdminCommandSection.general() );
-        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{commandProvier};
+        AdminCommand.Provider commandProvider = mockCommand( "bam", "A summary", AdminCommandSection.general() );
+        AdminCommand.Provider[] commands = new AdminCommand.Provider[]{commandProvider};
         final Usage usage = new Usage( "neo4j-admin", new CannedLocator( commands ) );
 
         // when
-        usage.printUsageForCommand( commandProvier, out );
+        usage.printUsageForCommand( commandProvider, out );
 
         // then
         InOrder ordered = inOrder( out );
         ordered.verify( out ).accept( "usage: neo4j-admin bam " );
+        ordered.verify( out ).accept( "" );
+        ordered.verify( out ).accept( "environment variables:" );
+        ordered.verify( out ).accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
+        ordered.verify( out ).accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
+        ordered.verify( out ).accept( "    NEO4J_HOME    Neo4j home directory." );
         ordered.verify( out ).accept( "" );
         ordered.verify( out ).accept( "description" );
     }
