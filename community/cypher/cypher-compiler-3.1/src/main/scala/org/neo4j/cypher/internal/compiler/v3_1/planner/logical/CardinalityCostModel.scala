@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{HasLabels, Property}
 
 object CardinalityCostModel extends CostModel {
-  def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
+  def VERBOSE: Boolean = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
   private val PROBE_BUILD_COST: CostPerRow = 3.1
@@ -43,15 +43,16 @@ object CardinalityCostModel extends CostModel {
     => 1.0
 
     // Filtering on labels and properties
-    case Selection(predicates, _) =>
-      val noOfStoreAccesses = predicates.treeCount {
-        case _: Property | _: HasLabels => true
-        case _ => false
-      }
-      if (noOfStoreAccesses > 0)
-        CostPerRow(noOfStoreAccesses)
-      else
-        DEFAULT_COST_PER_ROW
+    //TODO this is really incorrect, it should use `treeCount` or `treeExists`
+    //not `scala.collection.IterableLike.exists`however making that change introduced regressions maybe cause as the
+    //code is written now we will rarely match and all selections will fallback to default cardinality (0.1) when
+    // introducing the change it also increased the cost an order of magnitude. This is mostly speculation at this
+    // point, however it needs to be investigated more before _fixing_ this again.
+    case Selection(predicates, _) if predicates.exists {
+      case _: Property | _: HasLabels => true
+      case _ => false
+    }
+    => 1.0
 
     case _: AllNodesScan
     => 1.2
