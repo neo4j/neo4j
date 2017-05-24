@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_3.{Geometry, Point}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, IsMap}
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext

@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.commands.{ShortestPath, SingleNode, SortItem}
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Variable
-import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.True
-import org.neo4j.cypher.internal.compiler.v3_3.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPath, SingleNode, SortItem}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._

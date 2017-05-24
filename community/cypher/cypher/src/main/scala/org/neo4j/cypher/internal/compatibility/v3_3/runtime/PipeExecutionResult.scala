@@ -25,9 +25,7 @@ import java.util
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly

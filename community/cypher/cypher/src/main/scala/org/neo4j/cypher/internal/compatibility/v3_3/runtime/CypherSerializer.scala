@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, IsMap}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

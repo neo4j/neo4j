@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException}
 import org.neo4j.graphdb.Node

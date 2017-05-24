@@ -85,7 +85,7 @@ object ExpressionConverters {
             commands.predicates.PropertyExists(toCommandExpression(property.map), PropertyKey(property.propertyKey.name))
           case expression: ast.PatternExpression =>
             toCommandPredicate(expression)
-          case expression: NestedPipeExpression =>
+          case expression: pipes.NestedPipeExpression =>
             toCommandPredicate(expression)
           case e: ast.ContainerIndex=>
             commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))

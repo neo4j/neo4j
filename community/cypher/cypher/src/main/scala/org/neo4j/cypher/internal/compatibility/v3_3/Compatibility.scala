@@ -50,9 +50,9 @@ import org.neo4j.logging.Log
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-trait Compatibility[PLANCONTEXT <: CompilerContext,
-                    RUNTIMECONTEXT <: RuntimeContext,
-                    T <: Transformer[RUNTIMECONTEXT, LogicalPlanState, CompilationState]] {
+trait Compatibility[PC <: CompilerContext,
+                    RC <: RuntimeContext,
+                    T <: Transformer[RC, LogicalPlanState, CompilationState]] {
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
@@ -65,31 +65,32 @@ trait Compatibility[PLANCONTEXT <: CompilerContext,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_3.CypherCompiler[PLANCONTEXT]
+  protected val compiler: v3_3.CypherCompiler[PC]
   protected def clock: Clock
   protected def monitors: Monitors
   protected def config: CypherCompilerConfiguration
   protected def logger: InfoLogger
   protected def runtimeBuilder: RuntimeBuilder[T]
-  protected def planContextCreator: ContextCreator[PLANCONTEXT]
-  protected def runtimeContextCreator: (PLANCONTEXT, RuntimeSpecificContext) => RUNTIMECONTEXT
+  protected def planContextCreator: ContextCreator[PC]
+  protected def runtimeContextCreator: (PC, RuntimeSpecificContext) => RC
   protected def maybePlannerName: Option[CostBasedPlannerName]
   protected def maybeRuntimeName: Option[RuntimeName]
   protected def maybeUpdateStrategy: Option[UpdateStrategy]
-  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
+  private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-
-  val createExecPlan: Transformer[RUNTIMECONTEXT, LogicalPlanState, CompilationState] =
-      ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
+  val createExecPlan: Transformer[RC, LogicalPlanState, CompilationState] = {
+    ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
-        runtimeBuilder.create(None, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan])
+        runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan])
       )
+  }
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger
+    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cacheAccessor = new MonitoringCacheAccessor[Statement, ExecutionPlan_v3_3](cacheMonitor)
     val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_3](config.queryCacheSize)
@@ -107,11 +108,12 @@ trait Compatibility[PLANCONTEXT <: CompilerContext,
         //Context used for db communication during planning
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
-        val planCompilerContext = planContextCreator.create(tracer, notificationLogger, planContext,                                                   syntacticQuery.queryText,
-                                                  preParsedQuery.debugOptions, Some(preParsedQuery.offset),
-                                                  monitors, CachedMetricsFactory(SimpleMetricsFactory), config,
-                                                  maybeUpdateStrategy.getOrElse(defaultUpdateStrategy), clock,
-                                                  simpleExpressionEvaluator)
+        val planCompilerContext = planContextCreator.create(tracer, notificationLogger, planContext,
+                                                            syntacticQuery.queryText, preParsedQuery.debugOptions,
+                                                            Some(preParsedQuery.offset), monitors,
+                                                            CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
+                                                            config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+                                                            clock, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, planCompilerContext)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
@@ -138,29 +140,10 @@ trait Compatibility[PLANCONTEXT <: CompilerContext,
     }
   }
 
-  private def runtimeCompilerContext(planCompilerContext: PLANCONTEXT) = {
+  private def runtimeCompilerContext(planCompilerContext: PC) = {
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
       new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
-    val queryGraphSolver = createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
-    runtimeContextCreator(planCompilerContext, RuntimeSpecificContext(typeConversions, createFingerprintReference, queryGraphSolver))
-  }
-
-
-  def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors,
-                             config: CypherCompilerConfiguration): QueryGraphSolver = n match {
-    case IDPPlannerName =>
-      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-      val solverConfig = new ConfigurableIDPSolverConfig(
-        maxTableSize = config.idpMaxTableSize,
-        iterationDurationLimit = config.idpIterationDuration
-      )
-      val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-
-    case DPPlannerName =>
-      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-      val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+    runtimeContextCreator(planCompilerContext, RuntimeSpecificContext(typeConversions, createFingerprintReference))
   }
 
 
@@ -221,6 +204,25 @@ trait Compatibility[PLANCONTEXT <: CompilerContext,
         case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
       }.asJava)
     }
+  }
+}
+
+object Compatibility {
+  def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors,
+                             config: CypherCompilerConfiguration): QueryGraphSolver = n match {
+    case IDPPlannerName =>
+      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+      val solverConfig = new ConfigurableIDPSolverConfig(
+        maxTableSize = config.idpMaxTableSize,
+        iterationDurationLimit = config.idpIterationDuration
+      )
+      val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
+      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+
+    case DPPlannerName =>
+      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+      val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
+      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
   }
 }
 

@@ -70,7 +70,7 @@ object BuildInterpretedExecutionPlan extends Phase[RuntimeContext, LogicalPlanSt
       override def plannedIndexUsage: Seq[IndexUsage] = logicalPlan.indexUsage
     }
 
-    CompilationState(logicalPlanState = from, maybeExecutionPlan = Some(execPlan))
+    new CompilationState(from, Some(execPlan))
   }
 
   private def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {

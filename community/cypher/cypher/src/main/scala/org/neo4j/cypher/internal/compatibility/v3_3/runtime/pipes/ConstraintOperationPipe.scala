@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.commands._
-import org.neo4j.cypher.internal.compiler.v3_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
                              (val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {

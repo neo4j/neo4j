@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.spi
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}

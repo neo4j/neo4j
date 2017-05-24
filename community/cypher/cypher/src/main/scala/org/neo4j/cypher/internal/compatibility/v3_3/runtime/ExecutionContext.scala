@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.MutableMaps
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.MutableMaps
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.{Iterator, immutable}

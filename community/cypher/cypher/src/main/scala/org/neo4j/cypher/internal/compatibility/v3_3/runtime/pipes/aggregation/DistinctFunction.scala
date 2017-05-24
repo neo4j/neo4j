@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   private val seen = scala.collection.mutable.Set[Equivalent]()

@@ -43,7 +43,7 @@ trait LogicalPlanningConfiguration {
 
 class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
   override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator: CardinalityModel =
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
     parent.cardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
   override def costModel() = parent.costModel()
   override def graphStatistics = parent.graphStatistics

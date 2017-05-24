@@ -36,6 +36,7 @@ trait ContextCreator[Context <: BaseContext] {
              offset: Option[InputPosition],
              monitors: Monitors,
              metricsFactory: MetricsFactory,
+             queryGraphSolver: QueryGraphSolver,
              config: CypherCompilerConfiguration,
              updateStrategy: UpdateStrategy,
              clock: Clock,
@@ -51,6 +52,7 @@ object CommunityContextCreator extends ContextCreator[CompilerContext] {
                       offset: Option[InputPosition],
                       monitors: Monitors,
                       metricsFactory: MetricsFactory,
+                      queryGraphSolver: QueryGraphSolver,
                       config: CypherCompilerConfiguration,
                       updateStrategy: UpdateStrategy,
                       clock: Clock,
@@ -63,6 +65,6 @@ object CommunityContextCreator extends ContextCreator[CompilerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator)
 
     new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, updateStrategy, debugOptions, clock)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
   }
 }

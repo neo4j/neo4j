@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.SemanticTableHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport

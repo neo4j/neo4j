@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.commands.RelatedTo
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.builders.PatternGraphBuilder
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.matching.PatternMatchingBuilder
-import org.neo4j.cypher.internal.compiler.v3_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.PatternGraphBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternMatchingBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 

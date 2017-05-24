@@ -25,32 +25,32 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, PlannerName, SemanticState, SemanticTable}
 
-case class CompilationState(logicalPlanState: LogicalPlanState,
-                            maybeExecutionPlan: Option[ExecutionPlan] = None) extends BaseState {
+class CompilationState(ls: LogicalPlanState,
+                           val maybeExecutionPlan: Option[ExecutionPlan] = None) extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics, ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan, ls.maybePeriodicCommit, ls.accumulatedConditions) {
 
-  override def queryText: String = logicalPlanState.queryText
+//  override def queryText: String = ls.queryText
+//
+//  override def startPosition: Option[InputPosition] = ls.startPosition
+//
+//  override def plannerName: PlannerName = ls.plannerName
+//
+//  override def maybeStatement: Option[Statement] = ls.maybeStatement
+//
+//  override def maybeSemantics: Option[SemanticState] = ls.maybeSemantics
+//
+//  override def maybeExtractedParams: Option[Map[String, Any]] = ls.maybeExtractedParams
+//
+//  override def maybeSemanticTable: Option[SemanticTable] = ls.maybeSemanticTable
+//
+//  override def accumulatedConditions: Set[Condition] = ls.accumulatedConditions
+//
+//  override def withStatement(s: Statement): BaseState = copy(ls = ls.withStatement(s))
+//
+//  override def withSemanticTable(s: SemanticTable): BaseState = copy(ls = ls.withSemanticTable(s))
+//
+//  override def withSemanticState(s: SemanticState): BaseState = copy(ls = ls.withSemanticState(s))
+//
+//  override def withParams(p: Map[String, Any]): BaseState = copy(ls = ls.withParams(p))
 
-  override def startPosition: Option[InputPosition] = logicalPlanState.startPosition
-
-  override def plannerName: PlannerName = logicalPlanState.plannerName
-
-  override def maybeStatement: Option[Statement] = logicalPlanState.maybeStatement
-
-  override def maybeSemantics: Option[SemanticState] = logicalPlanState.maybeSemantics
-
-  override def maybeExtractedParams: Option[Map[String, Any]] = logicalPlanState.maybeExtractedParams
-
-  override def maybeSemanticTable: Option[SemanticTable] = logicalPlanState.maybeSemanticTable
-
-  override def accumulatedConditions: Set[Condition] = logicalPlanState.accumulatedConditions
-
-  override def withStatement(s: Statement): BaseState = copy(logicalPlanState = logicalPlanState.withStatement(s))
-
-  override def withSemanticTable(s: SemanticTable): BaseState = copy(logicalPlanState = logicalPlanState.withSemanticTable(s))
-
-  override def withSemanticState(s: SemanticState): BaseState = copy(logicalPlanState = logicalPlanState.withSemanticState(s))
-
-  override def withParams(p: Map[String, Any]): BaseState = copy(logicalPlanState = logicalPlanState.withParams(p))
-
-  def withMaybeExecutionPlan(e: Option[ExecutionPlan]): CompilationState = copy(maybeExecutionPlan = e)
+  def withMaybeExecutionPlan(e: Option[ExecutionPlan]): CompilationState = new CompilationState(ls, e)
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._

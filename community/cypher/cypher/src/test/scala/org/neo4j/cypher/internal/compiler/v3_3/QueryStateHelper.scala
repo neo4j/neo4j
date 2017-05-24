@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper, UpdateCountingQueryContext}
 import org.neo4j.kernel.GraphDatabaseQueryService

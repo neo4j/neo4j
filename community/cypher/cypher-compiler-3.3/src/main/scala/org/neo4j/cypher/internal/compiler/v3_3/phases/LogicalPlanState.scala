@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.phases
 
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition}

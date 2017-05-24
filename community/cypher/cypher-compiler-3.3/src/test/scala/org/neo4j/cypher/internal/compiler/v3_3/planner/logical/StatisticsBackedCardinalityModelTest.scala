@@ -117,7 +117,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
   }
 
   def produceCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
-    new StatisticsBackedCardinalityModel(in)
+    new StatisticsBackedCardinalityModel(in, mock[ExpressionEvaluator])
 
   def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)

@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.spi.UserFunctionSignature
+import org.neo4j.cypher.internal.compiler.v3_3.spi.UserFunctionSignature
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {

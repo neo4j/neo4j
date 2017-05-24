@@ -39,6 +39,13 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   var labelCardinality: Map[String, Cardinality] = Map.empty
   var statistics = null
   var qg: QueryGraph = null
+  var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
+    override def evaluateExpression(expr: Expression): Option[Any] = ???
+
+    override def isNonDeterministic(expr: Expression): Boolean = ???
+
+    override def hasParameters(expr: Expression): Boolean = ???
+  }
 
   var indexes: Set[(String, Seq[String])] = Set.empty
   var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
@@ -85,4 +92,5 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   def graphStatistics: GraphStatistics =
     Option(statistics).getOrElse(parent.graphStatistics)
+
 }

@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.AggregationExpression
-import org.neo4j.cypher.internal.compiler.v3_3.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 import scala.collection.mutable.{Map => MutableMap}

@@ -19,13 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, Operations}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsMap
-import org.neo4j.cypher.internal.compiler.v3_3.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.compiler.v3_3.spi.Operations
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsMap}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}

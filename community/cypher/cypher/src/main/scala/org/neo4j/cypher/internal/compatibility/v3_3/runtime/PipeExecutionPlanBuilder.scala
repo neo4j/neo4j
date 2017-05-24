@@ -23,15 +23,14 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.StatementConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.StatementConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{True, _}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
@@ -532,7 +531,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     private val instance = bottomUp(Rewriter.lift {
       case expr@compilerAst.NestedPlanExpression(patternPlan, expression) =>
         val pipe = recurse(patternPlan)
-        val result = compilerAst.NestedPipeExpression(pipe, expression)(expr.position)
+        val result = NestedPipeExpression(pipe, expression)(expr.position)
         result
     })
 

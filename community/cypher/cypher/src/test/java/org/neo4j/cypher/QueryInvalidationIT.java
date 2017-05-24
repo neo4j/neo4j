@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.cypher.internal.compiler.v3_3.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.compatibility.v3_3.CypherCacheHitMonitor;
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Query;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;

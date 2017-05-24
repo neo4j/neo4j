@@ -32,8 +32,7 @@ case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) exte
     classOf[Statement],
     classOf[SemanticState],
     classOf[UnionQuery],
-    classOf[LogicalPlan],
-    classOf[ExecutionPlan]
+    classOf[LogicalPlan]
   )
 
   assert(acceptableTypes.contains(manifest.runtimeClass))
@@ -45,7 +44,6 @@ case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) exte
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
         case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
         case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
-        case x if classOf[ExecutionPlan] == x && state.maybeExecutionPlan.isEmpty => Seq("Execution plan missing")
         case _ => Seq.empty
       }
     case x => throw new IllegalArgumentException(s"Unknown state: $x")

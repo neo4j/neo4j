@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.{namePatternPredicatePatternElements, _}
-import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
@@ -73,25 +71,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedQueryGraph = mock[QueryGraph]
 
-  def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
-    val context = mock[PipeExecutionBuilderContext]
-    val cardinality = new Metrics.CardinalityModel {
-      def apply(pq: PlannerQuery, ignored: QueryGraphSolverInput, ignoredAsWell: SemanticTable) = pq match {
-        case PlannerQuery.empty => Cardinality(1)
-        case _ => Cardinality(104999.99999)
-      }
-    }
-    when(context.cardinality).thenReturn(cardinality)
-    val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
-
-    when(context.semanticTable).thenReturn(semanticTable)
-
-    context
-  }
-
   def newMetricsFactory = SimpleMetricsFactory
 
-  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats)
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats, mock[ExpressionEvaluator])
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 

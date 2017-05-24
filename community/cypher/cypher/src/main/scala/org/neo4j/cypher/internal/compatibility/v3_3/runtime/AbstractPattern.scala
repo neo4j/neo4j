@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{AstNode, SingleNode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_3.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{AstNode, SingleNode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SyntaxException}
 

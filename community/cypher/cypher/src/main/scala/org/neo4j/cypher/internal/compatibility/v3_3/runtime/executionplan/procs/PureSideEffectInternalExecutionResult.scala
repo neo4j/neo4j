@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 import java.io.PrintWriter
 import java.util
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, InternalQueryStatistics}
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext

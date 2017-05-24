@@ -176,7 +176,7 @@ object RewindableExecutionResult {
         case v2_3.planDescription.InternalPlanDescription.Arguments.DbHits(value) => Arguments.DbHits(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.Expression(_) => Arguments.Expression(null)
-        case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression(_) => Arguments.LegacyExpression(null)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression(_) => Arguments.Expression(null)
         case v2_3.planDescription.InternalPlanDescription.Arguments.UpdateActionName(value) => Arguments.UpdateActionName(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
         case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyIndex(value) => Arguments.LegacyIndex(value)
@@ -297,7 +297,7 @@ object RewindableExecutionResult {
         case Arguments3_1.DbHits(value) => Arguments.DbHits(value)
         case Arguments3_1.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
         case Arguments3_1.Expression(_) => Arguments.Expression(null)
-        case Arguments3_1.LegacyExpression(_) => Arguments.LegacyExpression(null)
+        case Arguments3_1.LegacyExpression(_) => Arguments.Expression(null)
         case Arguments3_1.UpdateActionName(value) => Arguments.UpdateActionName(value)
         case Arguments3_1.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
         case Arguments3_1.LegacyIndex(value) => Arguments.LegacyIndex(value)
@@ -326,7 +326,7 @@ object RewindableExecutionResult {
         case Arguments3_1.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, List(label.map(_.name)))
         case Arguments3_1.CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) => Arguments
           .CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.names, endLabel.map(_.name))
-        case Arguments3_1.LegacyExpressions(expressions) => Arguments.LegacyExpressions(
+        case Arguments3_1.LegacyExpressions(expressions) => Arguments.Expressions(
           expressions.mapValues( _ => null ) )
         case Arguments3_1.Signature(procedureName, _, results) =>
           val procName = QualifiedName(procedureName.namespace, procedureName.name)
@@ -445,7 +445,7 @@ object RewindableExecutionResult {
         case Arguments3_2.DbHits(value) => Arguments.DbHits(value)
         case Arguments3_2.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
         case Arguments3_2.Expression(_) => Arguments.Expression(null)
-        case Arguments3_2.LegacyExpression(_) => Arguments.LegacyExpression(null)
+        case Arguments3_2.LegacyExpression(_) => Arguments.Expression(null)
         case Arguments3_2.UpdateActionName(value) => Arguments.UpdateActionName(value)
         case Arguments3_2.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
         case Arguments3_2.LegacyIndex(value) => Arguments.LegacyIndex(value)
@@ -474,7 +474,7 @@ object RewindableExecutionResult {
         case Arguments3_2.CountNodesExpression(ident, label) => Arguments.CountNodesExpression(ident, List(label))
         case Arguments3_2.CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) => Arguments
           .CountRelationshipsExpression(ident, startLabel, typeNames, endLabel)
-        case Arguments3_2.LegacyExpressions(expressions) => Arguments.LegacyExpressions(
+        case Arguments3_2.LegacyExpressions(expressions) => Arguments.Expressions(
           expressions.mapValues( _ => null ) )
         case Arguments3_2.Signature(procedureName, _, results) =>
           val procName = QualifiedName(procedureName.namespace, procedureName.name)

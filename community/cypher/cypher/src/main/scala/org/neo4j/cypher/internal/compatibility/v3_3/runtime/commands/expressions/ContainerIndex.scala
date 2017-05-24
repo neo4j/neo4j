@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, IsMap, ListSupport}
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, ListSupport}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)

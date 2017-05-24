@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsMap
+import org.neo4j.cypher.internal.compiler.v3_3.Points
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {

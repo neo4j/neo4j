@@ -23,14 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 /**
@@ -123,7 +122,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Runti
       }
     }
 
-    CompilationState(LogicalPlanState(from)).withMaybeExecutionPlan(maybeExecutionPlan)
+    new CompilationState(LogicalPlanState(from), maybeExecutionPlan)
   }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =

@@ -24,14 +24,15 @@ import java.time.Clock
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IdentityTypeConverter
-import org.neo4j.cypher.internal.compatibility.v3_3.{StringInfoLogger, WrappedMonitors}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IdentityTypeConverter, simpleExpressionEvaluator}
+import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, StringInfoLogger, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.logging.NullLog
 
@@ -93,33 +94,39 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   private def runQuery(query: String) = {
     graph.inTx {
-      compiler.planQuery(query, planContext, logger, IDPPlannerName.name)
+      val tracer =CompilationPhaseTracer.NO_TRACING
+      val parsed = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
+      val queryGraphSolver = Compatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
+      val context = CommunityContextCreator.create(tracer, logger, planContext, parsed.queryText, Set.empty, None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy,  Clock.systemUTC(),
+                                     simpleExpressionEvaluator)
+
+      val normalized = compiler.normalizeQuery(parsed, context)
+      compiler.planPreparedQuery(normalized, context)
     }
   }
-
+  private val configuration = CypherCompilerConfiguration(
+    queryCacheSize = 128,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000L,
+    useErrorsOverWarnings = false,
+    idpMaxTableSize = 128,
+    idpIterationDuration = 1000,
+    errorIfShortestPathFallbackUsedAtRuntime = false,
+    errorIfShortestPathHasCommonNodesAtRuntime = true,
+    legacyCsvQuoteEscaping = false,
+    nonIndexedLabelWarningThreshold = 10000L
+  )
+  private val monitors = WrappedMonitors(kernelMonitors)
+  private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private def createCompiler(): CypherCompiler[CompilerContext] = {
+
     new CypherCompilerFactory().costBasedCompiler(
-      CypherCompilerConfiguration(
-        queryCacheSize = 128,
-        statsDivergenceThreshold = 0.5,
-        queryPlanTTL = 1000L,
-        useErrorsOverWarnings = false,
-        idpMaxTableSize = 128,
-        idpIterationDuration = 1000,
-        errorIfShortestPathFallbackUsedAtRuntime = false,
-        errorIfShortestPathHasCommonNodesAtRuntime = true,
-        legacyCsvQuoteEscaping = false,
-        nonIndexedLabelWarningThreshold = 10000L
-      ),
+      configuration,
       Clock.systemUTC(),
-      WrappedMonitors(kernelMonitors),
-      new StringInfoLogger(NullLog.getInstance),
-      plannerName = None,
-      runtimeName = None,
-      updateStrategy = None,
+      monitors,
       rewriterSequencer = RewriterStepSequencer.newValidating,
-      runtimeBuilder = CommunityRuntimeBuilder,
-      typeConverter = IdentityTypeConverter,
+      plannerName = None,
+      updateStrategy = None,
       contextCreator = CommunityContextCreator
     )
   }

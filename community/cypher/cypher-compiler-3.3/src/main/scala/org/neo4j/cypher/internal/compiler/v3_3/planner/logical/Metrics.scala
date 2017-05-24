@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
@@ -31,14 +30,19 @@ import scala.language.implicitConversions
 
 object Metrics {
 
+  import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
+
   object QueryGraphSolverInput {
+
     def empty = QueryGraphSolverInput(Map.empty, Cardinality(1), strictness = None)
   }
 
-  case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality, strictness: Option[StrictnessMode]) {
+  case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality,
+                                   strictness: Option[StrictnessMode]) {
+
     def recurse(fromPlan: LogicalPlan): QueryGraphSolverInput = {
       val newCardinalityInput = fromPlan.solved.estimatedCardinality
-      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
+      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo) (_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }
 

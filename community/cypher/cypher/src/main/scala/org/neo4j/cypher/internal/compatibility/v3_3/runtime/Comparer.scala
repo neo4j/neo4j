@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.CypherOrdering
 import org.neo4j.cypher.internal.compiler.v3_3.common.CypherOrderability
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.graphdb.{Node, Relationship}
 

@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.test_helpers
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
@@ -40,10 +38,11 @@ object ContextHelper extends MockitoSugar {
              monitors: Monitors = mock[Monitors],
              metrics: Metrics = mock[Metrics],
              config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
+              queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              debugOptions: Set[String] = Set.empty,
              clock: Clock = Clock.systemUTC()): CompilerContext = {
     new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, updateStrategy, debugOptions, clock)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
   }
 }

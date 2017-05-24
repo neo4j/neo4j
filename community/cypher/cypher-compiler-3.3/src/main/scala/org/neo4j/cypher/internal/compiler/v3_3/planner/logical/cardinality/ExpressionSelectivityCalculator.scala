@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality
 import java.math
 import java.math.RoundingMode
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics._
-import org.neo4j.cypher.internal.compiler.v3_3.PrefixRange
+import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, IdName, Selections, Selectivity}

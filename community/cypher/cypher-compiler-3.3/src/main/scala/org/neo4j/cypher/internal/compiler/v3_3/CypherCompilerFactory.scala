@@ -40,42 +40,8 @@ class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPla
                         contextCreator: ContextCreator[C]): CypherCompiler[C] = {
     val rewriter = new ASTRewriter(rewriterSequencer, IfNoParameter)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-
-    val planner = plannerName.getOrElse(CostBasedPlannerName.default)
-    val queryGraphSolver = createQueryGraphSolver(planner, monitors, config)
-
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-
-//    val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
-//      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
-//    val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan](config.queryCacheSize)
-//    monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
-//    val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-//    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
-
     CypherCompiler( rewriter, monitors, rewriterSequencer,
       metricsFactory, config, actualUpdateStrategy, clock, contextCreator)
   }
-
-  def createQueryGraphSolver(n: CostBasedPlannerName, monitors: Monitors, config: CypherCompilerConfiguration): QueryGraphSolver = n match {
-    case IDPPlannerName =>
-      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-      val solverConfig = new ConfigurableIDPSolverConfig(
-        maxTableSize = config.idpMaxTableSize,
-        iterationDurationLimit = config.idpIterationDuration
-      )
-      val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-
-    case DPPlannerName =>
-      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-      val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-      IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-  }
-
-//  private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-//    override def cacheDiscard(key: Statement, userKey: String) {
-//      log.info(s"Discarded stale query from the query cache: $userKey")
-//    }
-//  }
 }

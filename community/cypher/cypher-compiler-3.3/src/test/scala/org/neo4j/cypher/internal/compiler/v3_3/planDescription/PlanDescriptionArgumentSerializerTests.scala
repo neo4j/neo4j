@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.{Literal, NestedPlanExpression}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Argument => LPArgument}
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{DummyExpression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTList, CTNode, CTString, CTBoolean}
+import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  private val pos = DummyPosition(0)
 
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]
@@ -51,13 +54,15 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
   test("serialize nested plan expression") {
     val argument: LogicalPlan = LPArgument(Set.empty)(solved)(Map.empty)
-    val nested = NestedPlanExpression(argument)
+    val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
-    serialize(LegacyExpression(nested)) should equal("NestedPlanExpression(Argument)")
+    val nested = NestedPlanExpression(argument, expression)(pos)
+
+    serialize(Expression(nested)) should equal("NestedPlanExpression(Argument)")
   }
 
   test("projection should show multiple expressions") {
-    serialize(LegacyExpressions(Map("1" -> Literal(42), "2" -> Literal(56)))) should equal(
+    serialize(Expressions(Map("1" -> SignedDecimalIntegerLiteral("42")(pos), "2" -> SignedDecimalIntegerLiteral("56")(pos)))) should equal(
       "{1 : Literal(42), 2 : Literal(56)}")
   }
 }

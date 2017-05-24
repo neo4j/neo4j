@@ -37,25 +37,25 @@ class RuntimeContext(override val exceptionCreator: (String, InputPosition) => C
                      override val monitors: Monitors,
                      override val metrics: Metrics,
                      override val config: CypherCompilerConfiguration,
+                     override val queryGraphSolver: QueryGraphSolver,
                      override val updateStrategy: UpdateStrategy,
                      override val debugOptions: Set[String],
                      override val clock: Clock,
                      val typeConverter: RuntimeTypeConverter,
-                     val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                     val queryGraphSolver: QueryGraphSolver)
+                     val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
-                          config, updateStrategy, debugOptions, clock)
+                          config, queryGraphSolver, updateStrategy, debugOptions, clock)
 
 object RuntimeContext {
   def apply(context: CompilerContext, data: RuntimeSpecificContext) =
     new RuntimeContext(context.exceptionCreator, context.tracer, context.notificationLogger, context.planContext,
-                       context.monitors, context.metrics, context.config, context.updateStrategy, context.debugOptions,
-                       context.clock, data.typeConverter, data.createFingerprintReference, data.queryGraphSolver)
+                       context.monitors, context.metrics, context.config, context.queryGraphSolver,
+                       context.updateStrategy, context.debugOptions, context.clock, data.typeConverter,
+                       data.createFingerprintReference)
 }
 
 case class RuntimeSpecificContext(typeConverter: RuntimeTypeConverter,
-                                  createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                                  queryGraphSolver: QueryGraphSolver)
+                                  createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
 
 

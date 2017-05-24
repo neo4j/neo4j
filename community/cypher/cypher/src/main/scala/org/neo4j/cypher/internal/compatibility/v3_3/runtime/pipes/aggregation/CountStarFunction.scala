@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 class CountStarFunction extends AggregationFunction {
   var count:Long = 0

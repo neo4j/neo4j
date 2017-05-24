@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, SemanticDirection}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 
 case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection) extends NullInNullOutExpression(node) {

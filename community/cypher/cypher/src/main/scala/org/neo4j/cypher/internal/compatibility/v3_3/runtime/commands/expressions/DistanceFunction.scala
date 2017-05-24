@@ -23,7 +23,7 @@ import java.lang.Math._
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, Geometry, Point}
+import org.neo4j.cypher.internal.compiler.v3_3.{CRS, Geometry, Point}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
