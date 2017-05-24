@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.io.IOException;
-
 class GBPTreeCleanupJob implements CleanupJob
 {
     private final CrashGenerationCleaner crashGenerationCleaner;
@@ -66,7 +64,7 @@ class GBPTreeCleanupJob implements CleanupJob
             crashGenerationCleaner.clean();
             needed = false;
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             failure = e;
         }

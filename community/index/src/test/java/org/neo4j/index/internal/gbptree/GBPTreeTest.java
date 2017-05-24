@@ -920,6 +920,56 @@ public class GBPTreeTest
         }
     }
 
+    @Test
+    public void checkpointMustRecognizeFailedCleaning() throws Exception
+    {
+        // given
+        makeDirty();
+        RuntimeException cleanupException = new RuntimeException( "Fail cleaning job" );
+        CleanJobControlledMonitor cleanupMonitor = new CleanJobControlledMonitor()
+        {
+            @Override
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+                    long durationMillis )
+            {
+                super.cleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+                throw cleanupException;
+            }
+        };
+        ControlledRecoveryCleanupWorkCollector collector = new ControlledRecoveryCleanupWorkCollector();
+
+        // when
+        try ( GBPTree<MutableLong,MutableLong> index = index()
+                .with( cleanupMonitor )
+                .with( collector )
+                .build() )
+        {
+            index.writer().close(); // Changes since last checkpoint
+
+            Future<?> cleanup = executor.submit( throwing( collector::start ) );
+            shouldWait( cleanup );
+
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            shouldWait( checkpoint );
+
+            cleanupMonitor.barrier.release();
+            cleanup.get();
+
+            // then
+            try
+            {
+                checkpoint.get();
+                fail( "Expected checkpoint to fail because of failed cleaning job" );
+            }
+            catch ( ExecutionException e )
+            {
+                assertThat( e.getMessage(), allOf( containsString( "cleaning" ), containsString( "failed" ) ) );
+            }
+        }
+    }
+
+    // todo checkpointMustRecognizeFailedCleaning
+
     /* Insertion and read tests */
 
     @Test

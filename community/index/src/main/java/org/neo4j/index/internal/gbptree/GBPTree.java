@@ -750,8 +750,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
-        assertRecoveryCleanSuccessful();
-
         if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
         {
             // No changes has happened since last checkpoint was called, no need to do another checkpoint
@@ -767,6 +765,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         lock.writerAndCleanerLock();
         try
         {
+            assertRecoveryCleanSuccessful();
             // Flush dirty pages since that last flush above. This should be a very small set of pages
             // and should be rather fast. In here writers are blocked and we want to minimize this
             // windows of time as much as possible, that's why there's an initial flush outside this lock.
