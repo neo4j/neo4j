@@ -31,18 +31,19 @@ import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen._
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions._
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 

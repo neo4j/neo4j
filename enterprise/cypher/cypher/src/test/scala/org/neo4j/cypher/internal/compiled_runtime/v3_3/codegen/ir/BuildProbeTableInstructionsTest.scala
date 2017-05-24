@@ -25,8 +25,9 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, JoinTableMethod, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.{CodeGenContext, JoinTableMethod, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir._
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
@@ -185,7 +186,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     //just put one node in the actual result
     val resultVar = probeVars.head
 
-    val acceptVisitor = AcceptVisitor("visitorOp", Map(resultRowKey -> expressions.NodeProjection(resultVar)))
+    val acceptVisitor = AcceptVisitor("visitorOp", Map(resultRowKey -> NodeProjection(resultVar)))
 
     val probeTheTable = GetMatchesFromProbeTable(keys = probeVars,
                                                  code = buildInstruction.joinData,

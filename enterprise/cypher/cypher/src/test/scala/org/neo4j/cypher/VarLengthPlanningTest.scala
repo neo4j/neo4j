@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands.NoneInList
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.graphdb.Direction._
 import org.neo4j.graphdb.{Direction, Node}
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -135,7 +133,8 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
       val plan: InternalPlanDescription = result.executionPlanDescription()
       val res = plan.find("Filter").exists { p =>
         p.arguments.exists {
-          case LegacyExpression(NoneInList(_, _, _)) => true
+          //TODO LegacyExpressions are no more!!!
+          //case LegacyExpression(NoneInList(_, _, _)) => true
           case _ => false
         }
       }

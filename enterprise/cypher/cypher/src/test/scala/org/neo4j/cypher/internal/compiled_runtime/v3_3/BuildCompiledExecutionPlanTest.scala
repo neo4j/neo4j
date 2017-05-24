@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_3
 
 import org.neo4j.cypher.internal.compatibility.v3_3.WrappedMonitors
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.NewRuntimeSuccessRateMonitor
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.BuildCompiledExecutionPlan
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
@@ -62,7 +63,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   }
 
   private def process(monitors: WrappedMonitors, plan: LogicalPlan) = {
-    val context = CompiledRuntimeContextHelper.create(
+    val context = codegen.CompiledRuntimeContextHelper.create(
       monitors = monitors,
       planContext = new NotImplementedPlanContext {
         override def statistics: GraphStatistics = HardcodedGraphStatistics

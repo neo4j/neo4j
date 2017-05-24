@@ -44,7 +44,6 @@
         <module>acceptance-spec-suite</module>
         <module>compatibility-spec-suite</module>
         <module>cypher</module>
-        <module>cypher-compiled-runtime-3.3</module>
       </modules>
     </profile>
   </profiles>

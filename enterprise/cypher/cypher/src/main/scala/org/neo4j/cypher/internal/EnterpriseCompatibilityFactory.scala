@@ -19,9 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v3_3.CostCompatibility
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.CompiledRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{RuntimeBuilder, RuntimeSpecificContext}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2, _}
 import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Transformer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -41,14 +46,23 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
   override def create(spec: PlannerSpec_v3_2, config: CypherCompilerConfiguration): v3_2.Compatibility[_] =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3.Compatibility[_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): Compatibility[_,_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) => inner.create(spec, config)
 
       case (_, CypherRuntime.compiled) | (_, CypherRuntime.default) =>
-        val contextCreator = new EnterpriseContextCreator(GeneratedQueryStructure)
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog
-        (getClass), spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder, contextCreator)
+        val contextCreator: ContextCreator[CompiledRuntimeContext] = new EnterpriseContextCreator(GeneratedQueryStructure)
+        val builder: RuntimeBuilder[Transformer[CompiledRuntimeContext, LogicalPlanState, CompilationState]]= EnterpriseRuntimeBuilder
+
+        val apply = (c: CompilerContext, data: RuntimeSpecificContext) =>  {
+          new CompiledRuntimeContext(c.exceptionCreator, c.tracer, c.notificationLogger, c.planContext, c.monitors,
+                                     c.metrics, c.queryGraphSolver, c.config, c.updateStrategy, c.debugOptions, c.clock,
+                                     data.typeConverter, data.createFingerprintReference, GeneratedQueryStructure)
+        }
+
+        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),
+                          spec.planner, spec.runtime, spec.updateStrategy, builder, contextCreator,
+                          apply)
 
       case _ => inner.create(spec, config)
     }

@@ -23,20 +23,22 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.Instruction
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.{CompiledExecutionResult, CompiledPlan}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{Namer, _}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.{CompiledExecutionResult, CompiledPlan}
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, NormalMode}
+import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AnonymousContext
@@ -74,7 +76,7 @@ trait CodeGenSugar extends MockitoSugar {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
       val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
-        "no query text exists for this test", Collections.emptyMap()))
+                                                                                       "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan.executionResultBuilder(queryContext, mode, tracer(mode, queryContext), Map.empty, new TaskCloser)
       tx.success()
@@ -126,7 +128,7 @@ trait CodeGenSugar extends MockitoSugar {
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
     val generated = clazz.execute(taskCloser, queryContext,
-      executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
+                                  executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
     new CompiledExecutionResult(taskCloser, queryContext, generated, provider)
   }
 

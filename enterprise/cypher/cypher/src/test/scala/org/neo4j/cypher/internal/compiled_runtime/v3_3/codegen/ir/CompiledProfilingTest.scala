@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.Variable
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.{AcceptVisitor, ScanAllNodes, WhileLoop}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProfileMode
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.Variable
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
@@ -35,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api._
@@ -50,7 +52,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id2 = new Id()
 
     val variable = Variable("name", CodeGenType.primitiveNode)
-    val projectNode = expressions.NodeProjection(variable)
+    val projectNode = NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable,
       ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
       Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))

@@ -24,10 +24,11 @@ import java.util
 import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{QueryExecutionEvent, QueryExecutionTracer}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.QueryExecutionEvent
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor, NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations

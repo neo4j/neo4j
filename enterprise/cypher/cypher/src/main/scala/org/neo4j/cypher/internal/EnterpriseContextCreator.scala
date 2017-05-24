@@ -21,17 +21,14 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.CompiledRuntimeContext
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi.CodeStructure
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.executionplan.GeneratedQuery
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, MetricsFactory, QueryGraphSolver}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.CompiledRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.CodeStructure
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQuery
 
 class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery]) extends ContextCreator[CompiledRuntimeContext] {
   override def create(tracer: CompilationPhaseTracer,
@@ -41,21 +38,20 @@ class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery]) ext
                       debugOptions: Set[String],
                       offset: Option[InputPosition],
                       monitors: Monitors,
-                      createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                      typeConverter: RuntimeTypeConverter,
                       metricsFactory: MetricsFactory,
                       queryGraphSolver: QueryGraphSolver,
                       config: CypherCompilerConfiguration,
                       updateStrategy: UpdateStrategy,
-                      clock: Clock): CompiledRuntimeContext = {
+                      clock: Clock,
+                      evaluator: ExpressionEvaluator): CompiledRuntimeContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics)
+      metricsFactory.newMetrics(planContext.statistics, evaluator)
 
-    new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
-      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, codeStructure)
+    new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
+      monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, null, null, codeStructure )
   }
 }
