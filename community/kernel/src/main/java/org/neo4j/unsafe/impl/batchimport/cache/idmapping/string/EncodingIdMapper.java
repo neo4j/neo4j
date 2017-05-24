@@ -119,6 +119,7 @@ public class EncodingIdMapper implements IdMapper
     // the long value representing the length of the id.
     private static final long GAP_VALUE = 0;
 
+    private final Factory<Radix> radixFactory;
     private final NumberArrayFactory cacheFactory;
     private final TrackerFactory trackerFactory;
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
@@ -162,6 +163,7 @@ public class EncodingIdMapper implements IdMapper
             Monitor monitor, TrackerFactory trackerFactory, int chunkSize, int processorsForSorting,
             Comparator comparator )
     {
+        this.radixFactory = radixFactory;
         this.monitor = monitor;
         this.cacheFactory = cacheFactory;
         this.trackerFactory = trackerFactory;
@@ -225,8 +227,7 @@ public class EncodingIdMapper implements IdMapper
     public void prepare( LongFunction<Object> inputIdLookup, Collector collector, ProgressListener progress )
     {
         highestSetIndex = candidateHighestSetIndex.get();
-        updateRadix();
-
+        updateRadix( dataCache, radix, highestSetIndex );
         trackerCache = trackerFactory.create( cacheFactory, highestSetIndex + 1 );
 
         try
@@ -241,7 +242,7 @@ public class EncodingIdMapper implements IdMapper
                 collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
 
                 // Detect input id duplicates within the same group, with source information, line number and the works
-                detectDuplicateInputIds( radix, numberOfCollisions, collector, progress );
+                detectDuplicateInputIds( numberOfCollisions, collector, progress );
 
                 // We won't be needing these anymore
                 collisionSourceDataCache = null;
@@ -258,11 +259,11 @@ public class EncodingIdMapper implements IdMapper
         readyForUse = true;
     }
 
-    private void updateRadix()
+    private static void updateRadix( LongArray values, Radix radix, long highestSetIndex )
     {
         for ( long dataIndex = 0; dataIndex <= highestSetIndex; dataIndex++ )
         {
-            radix.registerRadixOf( dataCache.get( dataIndex ) );
+            radix.registerRadixOf( values.get( dataIndex ) );
         }
     }
 
@@ -432,7 +433,7 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
-    private void detectDuplicateInputIds( Radix radix, int numberOfCollisions,
+    private void detectDuplicateInputIds( int numberOfCollisions,
             Collector collector, ProgressListener progress ) throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
@@ -480,6 +481,9 @@ public class EncodingIdMapper implements IdMapper
                 return dataCache.get( nodeId );
             }
         };
+
+        Radix radix = radixFactory.newInstance();
+        updateRadix( collisionNodeIdCache, radix, numberOfCollisions - 1 );
 
         new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions - 1,
                 collisionTrackerCache, processorsForSorting, progress, duplicateComparator ).run();

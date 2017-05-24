@@ -49,11 +49,14 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -208,37 +211,31 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
     }
 
-//    @Test
-//    public void shouldIncludeSourceLocationsOfCollisions() throws Exception
-//    {
-//        // GIVEN
-//        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
-//        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
-//        InputIterable<Object> ids = wrap( "source", idList );
-//
-//        Group group = new Group.Adapter( GLOBAL.id(), "global" );
-//        try ( ResourceIterator<Object> iterator = ids.iterator() )
-//        {
-//            for ( int i = 0; iterator.hasNext(); i++ )
-//            {
-//                mapper.put( iterator.next(), i, group );
-//            }
-//        }
-//
-//        // WHEN
-//        try
-//        {
-//            mapper.prepare( ids, badCollector( new ByteArrayOutputStream(), 0 ), NONE );
-//            fail( "Should have failed" );
-//        }
-//        catch ( DuplicateInputIdException e )
-//        {
-//            // THEN
-//            assertThat( e.getMessage(), containsString( "10" ) );
-//            assertThat( e.getMessage(), containsString( "source:1" ) );
-//            assertThat( e.getMessage(), containsString( "source:3" ) );
-//        }
-//    }
+    @Test
+    public void shouldIncludeSourceLocationsOfCollisions() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
+        LongFunction<Object> values = values( "10", "9", "10" );
+        for ( int i = 0; i < 3; i++ )
+        {
+            mapper.put( values.apply( i ), i, GLOBAL );
+        }
+
+        // WHEN
+        try
+        {
+            mapper.prepare( values, mock( Collector.class ), NONE );
+            fail( "Should have failed" );
+        }
+        catch ( DuplicateInputIdException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "10" ) );
+            assertThat( e.getMessage(), containsString( "source:1" ) );
+            assertThat( e.getMessage(), containsString( "source:3" ) );
+        }
+    }
 
     @Test
     public void shouldCopeWithCollisionsBasedOnDifferentInputIds() throws Exception
@@ -256,6 +253,11 @@ public class EncodingIdMapperTest
 
         // WHEN
         ProgressListener progress = mock( ProgressListener.class );
+        doAnswer( invocation ->
+        {
+            System.out.println( invocation.getArgumentAt( 0, String.class ) );
+            return null;
+        } ).when( progress ).started( anyString() );
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, progress );
 
@@ -264,9 +266,9 @@ public class EncodingIdMapperTest
         verify( monitor ).numberOfCollisions( 2 );
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
-        // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
-        verify( progress, times( 7 ) ).started( anyString() );
-        verify( progress, times( 7 ) ).done();
+        // 7 times since SPLIT+SORT+DETECT+SPLIT+SORT,DEDUPLICATE
+        verify( progress, times( 6 ) ).started( anyString() );
+        verify( progress, times( 6 ) ).done();
     }
 
     @Test
@@ -410,15 +412,13 @@ public class EncodingIdMapperTest
             {
                 // Change group every <idsPerGroup> id
                 int i = toIntExact( nodeId );
-                if ( i % idsPerGroup == 0 )
+                int groupId = i / idsPerGroup;
+                if ( groupId == groups )
                 {
-                    int groupId = i / idsPerGroup;
-                    if ( groupId == groups )
-                    {
-                        return null;
-                    }
-                    group.set( new Group.Adapter( groupId, "Group " + groupId ) );
+                    return null;
                 }
+                group.set( new Group.Adapter( groupId, "Group " + groupId ) );
+
                 // Let the first 10% in each group be accidental collisions with each other
                 // i.e. all first 10% in each group collides with all other first 10% in each group
                 if ( i % idsPerGroup < 2 )
