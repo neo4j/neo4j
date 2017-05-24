@@ -27,8 +27,10 @@ import java.util.Map;
  */
 public class Groups
 {
+    static final int LOWEST_NONGLOBAL_ID = 1;
+
     private final Map<String,Group> byName = new HashMap<>();
-    private int nextId = 1;
+    private int nextId = LOWEST_NONGLOBAL_ID;
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.

@@ -163,7 +163,7 @@ public class DataFactories
                     if ( (spec.name == null && spec.type == null) ||
                          (spec.type != null && spec.type.equals( Type.IGNORE.name() )) )
                     {
-                        columns.add( new Header.Entry( null, Type.IGNORE, null, null ) );
+                        columns.add( new Header.Entry( null, Type.IGNORE, Group.GLOBAL, null ) );
                     }
                     else
                     {

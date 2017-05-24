@@ -149,6 +149,7 @@ public class CsvInputBatchImportIT
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
             node.labels( randomLabels( random ) );
+            nodes.add( node );
         }
         return nodes;
     }
@@ -210,8 +211,8 @@ public class CsvInputBatchImportIT
             for ( CachingInputEntityVisitor node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                println( writer, node.id() + "," + node.properties()[1] +
-                        (csvLabels != null && csvLabels.length() > 0 ? "," + csvLabels : "") );
+                println( writer, node.id() + "," + node.properties()[1] + "," +
+                        (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
             }
         }
         return file;

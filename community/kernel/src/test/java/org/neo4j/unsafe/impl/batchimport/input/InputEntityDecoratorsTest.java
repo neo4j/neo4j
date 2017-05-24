@@ -27,15 +27,13 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anyString;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.decorators;
@@ -50,13 +48,13 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String defaultType = "TYPE";
-        InputEntityVisitor relationship = spy( defaultRelationshipType( defaultType ).apply( entity ) );
+        InputEntityVisitor relationship = defaultRelationshipType( defaultType ).apply( entity );
 
         // WHEN
         relationship( relationship, "source", 1, 0, NO_PROPERTIES, null, "start", "end", null, null );
 
         // THEN
-        verify( relationship ).type( defaultType );
+        assertEquals( defaultType, entity.stringType );
     }
 
     @Test
@@ -72,7 +70,7 @@ public class InputEntityDecoratorsTest
                 "start", "end", customType, null );
 
         // THEN
-        verify( relationship ).type( customType );
+        assertEquals( customType, entity.stringType );
     }
 
     @Test
@@ -89,8 +87,8 @@ public class InputEntityDecoratorsTest
                 "start", "end", null, typeId );
 
         // THEN
-        verify( relationship, times( 0 ) ).type( anyString() );
-        verify( relationship, times( 1 ) ).type( typeId );
+        assertTrue( entity.hasIntType );
+        assertEquals( typeId, entity.intType );
     }
 
     @Test
@@ -98,13 +96,13 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        CachingInputEntityVisitor node = new CachingInputEntityVisitor( additiveLabels( toAdd ).apply( entity ) );
+        InputEntityVisitor node = additiveLabels( toAdd ).apply( entity );
 
         // WHEN
-        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, null, null );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, NO_LABELS, null );
 
         // THEN
-        assertArrayEquals( toAdd, node.labels() );
+        assertArrayEquals( toAdd, entity.labels() );
     }
 
     @Test
@@ -112,14 +110,14 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        CachingInputEntityVisitor node = new CachingInputEntityVisitor( additiveLabels( toAdd ).apply( entity ) );
+        InputEntityVisitor node = additiveLabels( toAdd ).apply( entity );
 
         // WHEN
         String[] nodeLabels = new String[] {"SomeOther"};
         node( node, "source", 1, 0, "id", NO_PROPERTIES, null, nodeLabels, null );
 
         // THEN
-        assertEquals( asSet( ArrayUtil.union( toAdd, nodeLabels ) ), asSet( node.labels() ) );
+        assertEquals( asSet( ArrayUtil.union( toAdd, nodeLabels ) ), asSet( entity.labels() ) );
     }
 
     @Test
@@ -127,15 +125,15 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        CachingInputEntityVisitor node = new CachingInputEntityVisitor( additiveLabels( toAdd ).apply( entity ) );
+        InputEntityVisitor node = additiveLabels( toAdd ).apply( entity );
 
         // WHEN
         long labelField = 123L;
         node( node, "source", 1, 0, "id", NO_PROPERTIES, null, null, labelField );
 
         // THEN
-        assertNull( node.labels() );
-        assertEquals( labelField, node.labelField );
+        assertEquals( 0, entity.labels().length );
+        assertEquals( labelField, entity.labelField );
     }
 
     @Test
@@ -185,7 +183,7 @@ public class InputEntityDecoratorsTest
         {
             entity.type( typeId );
         }
-        else
+        else if ( type != null )
         {
             entity.type( type );
         }

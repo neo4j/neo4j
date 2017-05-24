@@ -96,12 +96,15 @@ public class InputEntityDecorators
         @Override
         public void endOfEntity()
         {
-            for ( int i = 0; i < seenLabels.length; i++ )
+            if ( !seenLabelField )
             {
-                if ( !seenLabels[i] )
+                for ( int i = 0; i < seenLabels.length; i++ )
                 {
-                    transport[0] = labelNamesToAdd[i];
-                    super.labels( transport );
+                    if ( !seenLabels[i] )
+                    {
+                        transport[0] = labelNamesToAdd[i];
+                        super.labels( transport );
+                    }
                 }
             }
 
@@ -132,7 +135,10 @@ public class InputEntityDecorators
         @Override
         public boolean type( String type )
         {
-            hasType = true;
+            if ( type != null )
+            {
+                hasType = true;
+            }
             return super.type( type );
         }
 

@@ -111,7 +111,7 @@ public class Header implements Cloneable
         {
             return (name != null ? name : "") +
                    ":" + (type == Type.PROPERTY ? extractor.toString().toLowerCase() : type.name()) +
-                   (group != null ? "(" + group + ")" : "");
+                   (group != null ? group : "");
         }
 
         public Extractor<?> extractor()
