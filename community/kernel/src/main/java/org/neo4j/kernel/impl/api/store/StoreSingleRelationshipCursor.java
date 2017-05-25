@@ -33,20 +33,20 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 /**
  * Cursor for a single relationship.
  */
-public class SingleRelationshipCursor extends AbstractRelationshipCursor
+public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCursor
 {
-    private final Consumer<SingleRelationshipCursor> consumer;
+    private final Consumer<StoreSingleRelationshipCursor> consumer;
     private long relationshipId = NO_SUCH_RELATIONSHIP;
     private ReadableTransactionState state;
 
-    SingleRelationshipCursor( RelationshipStore relationshipStore,
-            Consumer<SingleRelationshipCursor> consumer, LockService lockService )
+    StoreSingleRelationshipCursor( RelationshipStore relationshipStore,
+            Consumer<StoreSingleRelationshipCursor> consumer, LockService lockService )
     {
         super( relationshipStore, lockService );
         this.consumer = consumer;
     }
 
-    public SingleRelationshipCursor init( long relId, ReadableTransactionState state )
+    public StoreSingleRelationshipCursor init( long relId, ReadableTransactionState state )
     {
         this.relationshipId = relId;
         this.state = state;
@@ -91,7 +91,6 @@ public class SingleRelationshipCursor extends AbstractRelationshipCursor
     public void close()
     {
         super.close();
-        state = null;
         relationshipId = NO_SUCH_RELATIONSHIP;
         consumer.accept( this );
     }

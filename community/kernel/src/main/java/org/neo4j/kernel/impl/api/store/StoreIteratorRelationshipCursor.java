@@ -32,20 +32,20 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 /**
  * Cursor for iterating a set of relationships.
  */
-public class IteratorRelationshipCursor extends AbstractIteratorRelationshipCursor
+public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelationshipCursor
 {
-    private final Consumer<IteratorRelationshipCursor> instanceCache;
+    private final Consumer<StoreIteratorRelationshipCursor> instanceCache;
     private PrimitiveLongIterator iterator;
 
-    IteratorRelationshipCursor( RelationshipStore relationshipStore,
-            Consumer<IteratorRelationshipCursor> instanceCache,
+    StoreIteratorRelationshipCursor( RelationshipStore relationshipStore,
+            Consumer<StoreIteratorRelationshipCursor> instanceCache,
             LockService lockService )
     {
         super( relationshipStore, lockService );
         this.instanceCache = instanceCache;
     }
 
-    public IteratorRelationshipCursor init( PrimitiveLongIterator iterator, ReadableTransactionState state )
+    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator, ReadableTransactionState state )
     {
         internalInitTxState( state, addedRelationships( state ) );
         this.iterator = iterator;

@@ -33,21 +33,21 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 /**
  * Cursor for all properties on a node or relationship.
  */
-public class PropertyCursor extends AbstractPropertyCursor
+public class StorePropertyCursor extends StoreAbstractPropertyCursor
 {
-    private final Consumer<PropertyCursor> consumer;
+    private final Consumer<StorePropertyCursor> instanceCache;
 
     private Iterator<StorageProperty> storagePropertyIterator;
 
-    public PropertyCursor( PropertyStore propertyStore, Consumer<PropertyCursor> consumer )
+    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
     {
         super( propertyStore );
-        this.consumer = consumer;
+        this.instanceCache = instanceCache;
     }
 
-    public PropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
+    public StorePropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
     {
-        storagePropertyIterator = state.addedProperties();
+        storagePropertyIterator = state == null ? null : state.addedProperties();
         initialize( ALWAYS_TRUE_INT, firstPropertyId, lock, state );
         return this;
     }
@@ -61,9 +61,13 @@ public class PropertyCursor extends AbstractPropertyCursor
     @Override
     protected DefinedProperty nextAdded()
     {
-        if ( storagePropertyIterator.hasNext() )
+        if ( storagePropertyIterator != null )
         {
-            return (DefinedProperty) storagePropertyIterator.next();
+            if ( storagePropertyIterator.hasNext() )
+            {
+                return (DefinedProperty) storagePropertyIterator.next();
+            }
+            storagePropertyIterator = null;
         }
         return null;
     }
@@ -71,6 +75,6 @@ public class PropertyCursor extends AbstractPropertyCursor
     @Override
     protected void doClose()
     {
-        consumer.accept( this );
+        instanceCache.accept( this );
     }
 }

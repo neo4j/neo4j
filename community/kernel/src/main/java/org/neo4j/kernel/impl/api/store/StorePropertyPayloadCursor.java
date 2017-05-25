@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  * During initialization the raw property block {@code long}s are read from
  * the given property record.
  */
-class PropertyPayloadCursor implements Disposable
+class StorePropertyPayloadCursor implements Disposable
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
@@ -72,7 +72,7 @@ class PropertyPayloadCursor implements Disposable
     private IntPredicate propertyKeyIds;
     private boolean exhausted;
 
-    PropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
+    StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
         this.record = stringStore.newRecord();
         this.stringStore = stringStore;

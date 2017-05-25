@@ -26,18 +26,18 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
-public class SinglePropertyCursor extends AbstractPropertyCursor
+public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
 {
-    private final Consumer<SinglePropertyCursor> consumer;
+    private final Consumer<StoreSinglePropertyCursor> instanceCache;
     private int propertyKeyId;
 
-    SinglePropertyCursor( PropertyStore propertyStore, Consumer<SinglePropertyCursor> consumer )
+    StoreSinglePropertyCursor( PropertyStore propertyStore, Consumer<StoreSinglePropertyCursor> instanceCache )
     {
         super( propertyStore  );
-        this.consumer = consumer;
+        this.instanceCache = instanceCache;
     }
 
-    public SinglePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock,
+    public StoreSinglePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock,
             PropertyContainerState state )
     {
         this.propertyKeyId = propertyKeyId;
@@ -67,6 +67,6 @@ public class SinglePropertyCursor extends AbstractPropertyCursor
     @Override
     protected void doClose()
     {
-        consumer.accept( this );
+        instanceCache.accept( this );
     }
 }

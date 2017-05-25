@@ -38,14 +38,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-public class IteratorRelationshipCursorTest
+public class StoreIteratorRelationshipCursorTest
 {
     private static final long RELATIONSHIP_ID = 1L;
 
     @Test
     public void retrieveUsedRelationship() throws Exception
     {
-        try ( IteratorRelationshipCursor cursor = createRelationshipCursor( true ) )
+        try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( true ) )
         {
             cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), ReadableTransactionState.EMPTY );
             assertTrue( cursor.next() );
@@ -56,7 +56,7 @@ public class IteratorRelationshipCursorTest
     @Test
     public void retrieveUnusedRelationship() throws IOException
     {
-        try ( IteratorRelationshipCursor cursor = createRelationshipCursor( false ) )
+        try ( StoreIteratorRelationshipCursor cursor = createRelationshipCursor( false ) )
         {
             cursor.init( PrimitiveLongCollections.iterator( RELATIONSHIP_ID ), ReadableTransactionState.EMPTY );
             assertFalse( cursor.next() );
@@ -66,7 +66,7 @@ public class IteratorRelationshipCursorTest
     @Test
     public void shouldCloseThePageCursorWhenDisposed() throws IOException
     {
-        IteratorRelationshipCursor cursor = createRelationshipCursor( false );
+        StoreIteratorRelationshipCursor cursor = createRelationshipCursor( false );
         cursor.close();
         cursor.dispose();
 
@@ -75,7 +75,7 @@ public class IteratorRelationshipCursorTest
 
     private final PageCursor pageCursor = mock( PageCursor.class );
 
-    private IteratorRelationshipCursor createRelationshipCursor( boolean relationshipInUse ) throws IOException
+    private StoreIteratorRelationshipCursor createRelationshipCursor( boolean relationshipInUse ) throws IOException
     {
         final RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
         RelationshipStore relationshipStore = mock( RelationshipStore.class );
@@ -87,10 +87,10 @@ public class IteratorRelationshipCursorTest
             relationshipRecord.setId( RELATIONSHIP_ID );
             return relationshipRecord;
         });
-        return new IteratorRelationshipCursor( relationshipStore, this::noCache, NO_LOCK_SERVICE );
+        return new StoreIteratorRelationshipCursor( relationshipStore, this::noCache, NO_LOCK_SERVICE );
     }
 
-    private void noCache( IteratorRelationshipCursor c )
+    private void noCache( StoreIteratorRelationshipCursor c )
     {
 
     }

@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -57,8 +58,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.kernel.impl.api.store.PropertyPayloadCursorTest.Param.paramArg;
-import static org.neo4j.kernel.impl.api.store.PropertyPayloadCursorTest.Params.params;
+import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
+import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.BOOL;
 import static org.neo4j.kernel.impl.store.PropertyType.BYTE;
@@ -74,7 +75,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.STRING;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @RunWith( Enclosed.class )
-public class PropertyPayloadCursorTest
+public class StorePropertyPayloadCursorTest
 {
     public static class BasicContract
     {
@@ -82,8 +83,8 @@ public class PropertyPayloadCursorTest
         public void nextShouldAlwaysReturnFalseWhenNotInitialized()
         {
             @SuppressWarnings( "unchecked" )
-            PropertyPayloadCursor cursor =
-                    new PropertyPayloadCursor( mock( DynamicStringStore.class ), mock( DynamicArrayStore.class ) );
+            StorePropertyPayloadCursor cursor =
+                    new StorePropertyPayloadCursor( mock( DynamicStringStore.class ), mock( DynamicArrayStore.class ) );
 
             assertFalse( cursor.next() );
 
@@ -94,7 +95,7 @@ public class PropertyPayloadCursorTest
         @Test
         public void nextShouldAlwaysReturnFalseWhenClosed()
         {
-            PropertyPayloadCursor cursor = allProperties( params( paramArg( 42, "cat-dog", STRING ) ) );
+            StorePropertyPayloadCursor cursor = allProperties( params( paramArg( 42, "cat-dog", STRING ) ) );
 
             assertTrue( cursor.next() );
 
@@ -109,7 +110,7 @@ public class PropertyPayloadCursorTest
         public void shouldBeOkToCloseAnUnusedCursor()
         {
             // Given
-            PropertyPayloadCursor cursor = allProperties( params( paramArg( 42, "cat-dog", STRING ) ) );
+            StorePropertyPayloadCursor cursor = allProperties( params( paramArg( 42, "cat-dog", STRING ) ) );
 
             // When
             cursor.close();
@@ -122,7 +123,7 @@ public class PropertyPayloadCursorTest
         public void shouldBeOkToClosePartiallyExhaustedCursor()
         {
             // Given
-            PropertyPayloadCursor cursor =
+            StorePropertyPayloadCursor cursor =
                     allProperties( params( paramArg( 42, 1, INT ), paramArg( 55, 2, INT ),
                             paramArg( 73, 3L, LONG ) ) );
 
@@ -140,7 +141,7 @@ public class PropertyPayloadCursorTest
         public void shouldBeOkToCloseExhaustedCursor()
         {
             // Given
-            PropertyPayloadCursor cursor =
+            StorePropertyPayloadCursor cursor =
                     allProperties( params(paramArg( 42, 1, INT ), paramArg( 55, 2, INT ),
                             paramArg( 73, 3L, INT ) ) );
 
@@ -159,7 +160,7 @@ public class PropertyPayloadCursorTest
         public void shouldBePossibleToCallCloseOnEmptyCursor()
         {
             // Given
-            PropertyPayloadCursor cursor = allProperties( params() );
+            StorePropertyPayloadCursor cursor = allProperties( params() );
 
             // When
             cursor.close();
@@ -172,7 +173,7 @@ public class PropertyPayloadCursorTest
         public void shouldBePossibleToCallNextOnEmptyCursor()
         {
             // Given
-            PropertyPayloadCursor cursor = allProperties( params() );
+            StorePropertyPayloadCursor cursor = allProperties( params() );
 
             // When
             assertFalse( cursor.next() );
@@ -190,7 +191,7 @@ public class PropertyPayloadCursorTest
 
             Param[] params = {paramArg( 42, RandomStringUtils.randomAlphanumeric( 5000 ), STRING ),
                     paramArg( 55, RandomStringUtils.randomAlphanumeric( 10000 ).getBytes(), ARRAY )};
-            PropertyPayloadCursor cursor =
+            StorePropertyPayloadCursor cursor =
                     createCursor( ALWAYS_TRUE_INT, dynamicStringStore, dynamicArrayStore, params );
 
             // When
@@ -210,7 +211,7 @@ public class PropertyPayloadCursorTest
         @Test
         public void nextMultipleInvocations()
         {
-            PropertyPayloadCursor cursor = allProperties( params() );
+            StorePropertyPayloadCursor cursor = allProperties( params() );
 
             assertFalse( cursor.next() );
             assertFalse( cursor.next() );
@@ -228,7 +229,7 @@ public class PropertyPayloadCursorTest
             DynamicArrayStore arrayStore = mock( DynamicArrayStore.class );
             PageCursor arrayCursor = mock( PageCursor.class );
             when( arrayStore.newPageCursor() ).thenReturn( arrayCursor );
-            PropertyPayloadCursor cursor = createCursor( ALWAYS_TRUE_INT, stringStore, arrayStore, new Param[0] );
+            StorePropertyPayloadCursor cursor = createCursor( ALWAYS_TRUE_INT, stringStore, arrayStore, new Param[0] );
             cursor.close();
 
             // when
@@ -429,7 +430,7 @@ public class PropertyPayloadCursorTest
         public void shouldReturnCorrectValues()
         {
             // Given
-            PropertyPayloadCursor cursor = allProperties( parameters );
+            StorePropertyPayloadCursor cursor = allProperties( parameters );
 
             for ( Param param : parameters )
             {
@@ -450,7 +451,7 @@ public class PropertyPayloadCursorTest
             int[] keyIds = {42, 55, 73, 99};
             for ( int keyId : keyIds )
             {
-                PropertyPayloadCursor cursor = singleProperty( keyId, parameters );
+                StorePropertyPayloadCursor cursor = singleProperty( keyId, parameters );
 
                 for ( Param param : Iterables.filter( ( param ) -> param.keyId == keyId, parameters ) )
                 {
@@ -470,7 +471,7 @@ public class PropertyPayloadCursorTest
         public void shouldReturnNothingForNonExistentPropertyKeyId()
         {
             // Given
-            PropertyPayloadCursor cursor = singleProperty( 21, parameters );
+            StorePropertyPayloadCursor cursor = singleProperty( 21, parameters );
             // When/Then
             assertFalse( cursor.next() );
         }
@@ -483,24 +484,24 @@ public class PropertyPayloadCursorTest
         assertObjectOrArrayEquals( param.value, value );
     }
 
-    private static PropertyPayloadCursor allProperties( Params input )
+    private static StorePropertyPayloadCursor allProperties( Params input )
     {
         DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
         DynamicArrayStore dynamicArrayStore = mock( DynamicArrayStore.class );
         return createCursor( ALWAYS_TRUE_INT, dynamicStringStore, dynamicArrayStore, input.params );
     }
 
-    private static PropertyPayloadCursor singleProperty( int keyId, Params input )
+    private static StorePropertyPayloadCursor singleProperty( int keyId, Params input )
     {
         DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
         DynamicArrayStore dynamicArrayStore = mock( DynamicArrayStore.class );
         return createCursor( k -> k == keyId, dynamicStringStore, dynamicArrayStore, input.params );
     }
 
-    private static PropertyPayloadCursor createCursor( IntPredicate allPropertyKeyIds,
+    private static StorePropertyPayloadCursor createCursor( IntPredicate allPropertyKeyIds,
             DynamicStringStore dynamicStringStore, DynamicArrayStore dynamicArrayStore, Param[] params )
     {
-        PropertyPayloadCursor cursor = new PropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
+        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
         long[] blocks = asBlocks( params );
         cursor.init( allPropertyKeyIds, blocks, blocks.length );
         return cursor;

@@ -123,7 +123,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         labels = null;
         added = null;
         progression = null;
-        stateView = null;
         batch.nothing();
         instanceCache.accept( this );
     }

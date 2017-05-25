@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 /**
  * Base cursor for relationships.
  */
-public abstract class AbstractRelationshipCursor
+public abstract class StoreAbstractRelationshipCursor
         implements RelationshipVisitor<RuntimeException>, RelationshipItem, Cursor<RelationshipItem>, Disposable
 {
     protected final RelationshipRecord relationshipRecord;
@@ -46,7 +46,7 @@ public abstract class AbstractRelationshipCursor
     private final LockService lockService;
     protected boolean fetched;
 
-    AbstractRelationshipCursor( RelationshipStore relationshipStore, LockService lockService )
+    StoreAbstractRelationshipCursor( RelationshipStore relationshipStore, LockService lockService )
     {
         this.relationshipStore = relationshipStore;
         this.relationshipRecord = relationshipStore.newRecord();

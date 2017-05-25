@@ -28,13 +28,13 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
-public abstract class AbstractIteratorRelationshipCursor extends AbstractRelationshipCursor
+public abstract class StoreAbstractIteratorRelationshipCursor extends StoreAbstractRelationshipCursor
 {
     private ReadableTransactionState state;
     private PrimitiveLongIterator addedRelationshipIterator;
     private boolean fromStore;
 
-    AbstractIteratorRelationshipCursor( RelationshipStore relationshipStore, LockService lockService )
+    StoreAbstractIteratorRelationshipCursor( RelationshipStore relationshipStore, LockService lockService )
     {
         super( relationshipStore, lockService );
     }

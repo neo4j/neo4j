@@ -35,9 +35,9 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public abstract class AbstractPropertyCursor implements PropertyItem, Cursor<PropertyItem>, Disposable
+public abstract class StoreAbstractPropertyCursor implements PropertyItem, Cursor<PropertyItem>, Disposable
 {
-    private final PropertyPayloadCursor payload;
+    protected final StorePropertyPayloadCursor payload;
     private final PageCursor cursor;
     private final PropertyRecord record;
     private final PropertyStore propertyStore;
@@ -50,12 +50,12 @@ public abstract class AbstractPropertyCursor implements PropertyItem, Cursor<Pro
     private Lock lock;
     protected PropertyContainerState state;
 
-    AbstractPropertyCursor( PropertyStore propertyStore )
+    StoreAbstractPropertyCursor( PropertyStore propertyStore )
     {
         this.cursor = propertyStore.newPageCursor();
         this.propertyStore = propertyStore;
         this.record = propertyStore.newRecord();
-        this.payload = new PropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
+        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
     }
 
     protected final void initialize( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock,
@@ -115,7 +115,7 @@ public abstract class AbstractPropertyCursor implements PropertyItem, Cursor<Pro
     private boolean payloadHasNext()
     {
         boolean next = payload.next();
-        while ( next )
+        while ( next && state != null )
         {
             int propertyKeyId = payload.propertyKeyId();
             if ( !state.isPropertyRemoved( propertyKeyId ) )
@@ -126,7 +126,7 @@ public abstract class AbstractPropertyCursor implements PropertyItem, Cursor<Pro
             }
             next = payload.next();
         }
-        return false;
+        return next;
     }
 
     protected abstract boolean loadNextFromDisk();
@@ -166,7 +166,6 @@ public abstract class AbstractPropertyCursor implements PropertyItem, Cursor<Pro
             payload.close();
             propertyKeyIds = null;
             property = null;
-            state = null;
             nextPropertyId = NO_SUCH_PROPERTY;
             doClose();
         }
