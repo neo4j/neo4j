@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -83,7 +84,9 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
@@ -588,7 +591,15 @@ public class StorageLayer implements StoreReadLayer
         PrimitiveIntSet set = intSet();
         if ( node.isDense() )
         {
-            statement.acquireRelationshipGroupCursor( node.nextGroupId() ).forAll( group -> set.add( group.type() ) );
+            RelationshipGroupRecord groupRecord = relationshipGroupStore.newRecord();
+            RecordCursor<RelationshipGroupRecord> cursor = statement.recordCursors().relationshipGroup();
+            for ( long id = node.nextGroupId(); id != NO_NEXT_RELATIONSHIP.intValue(); id = groupRecord.getNext() )
+            {
+                if ( cursor.next( id, groupRecord, FORCE ) )
+                {
+                    set.add( groupRecord.getType() );
+                }
+            }
         }
         else
         {

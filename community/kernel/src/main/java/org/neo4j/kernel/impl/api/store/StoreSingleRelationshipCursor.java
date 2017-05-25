@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 

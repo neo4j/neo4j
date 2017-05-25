@@ -47,7 +47,7 @@ class StoreRecordCursor<RECORD extends AbstractBaseRecord> implements RecordCurs
     {
         try
         {
-            return next( currentId );
+            return next( currentId, record, mode );
         }
         finally
         {
@@ -62,6 +62,12 @@ class StoreRecordCursor<RECORD extends AbstractBaseRecord> implements RecordCurs
 
     @Override
     public boolean next( long id )
+    {
+        return next( id, record, mode );
+    }
+
+    @Override
+    public boolean next( long id, RECORD record, RecordLoad mode )
     {
         assert pageCursor != null : "Not initialized";
         if ( NULL_REFERENCE.is( id ) )

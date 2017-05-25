@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.storageengine.api.RelationshipGroupItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -62,11 +62,11 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
-    private final InstanceCache<RelationshipGroupCursor> relationshipGroupCursorCache;
     private final InstanceCache<DegreeVisitable> degreeVisitableCache;
     private final NeoStores neoStores;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanStore;
+    private final RecordCursors recordCursors;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -80,6 +80,7 @@ public class StoreStatement implements StorageStatement
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
+        this.recordCursors = new RecordCursors( neoStores );
 
         nodeCursor = new InstanceCache<NodeCursor>()
         {
@@ -137,14 +138,6 @@ public class StoreStatement implements StorageStatement
             {
                 return new DegreeVisitable( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(),
                         this );
-            }
-        };
-        relationshipGroupCursorCache = new InstanceCache<RelationshipGroupCursor>()
-        {
-            @Override
-            protected RelationshipGroupCursor create()
-            {
-                return new RelationshipGroupCursor( neoStores.getRelationshipGroupStore(), this );
             }
         };
     }
@@ -209,15 +202,9 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<RelationshipGroupItem> acquireRelationshipGroupCursor( long relationshipGroupId )
+    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long groupId )
     {
-        return relationshipGroupCursorCache.get().init( relationshipGroupId );
-    }
-
-    @Override
-    public DegreeVisitor.Visitable acquireDenseNodeDegreeCounter( long nodeId, long relationshipGroupId )
-    {
-        return degreeVisitableCache.get().init( nodeId, relationshipGroupId );
+        return degreeVisitableCache.get().init( nodeId, groupId );
     }
 
     @Override
@@ -240,8 +227,8 @@ public class StoreStatement implements StorageStatement
         nodeRelationshipsCursor.close();
         propertyCursorCache.close();
         singlePropertyCursorCache.close();
-        relationshipGroupCursorCache.close();
         degreeVisitableCache.close();
+        recordCursors.close();
         closed = true;
     }
 
@@ -282,6 +269,12 @@ public class StoreStatement implements StorageStatement
     public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory().newUnCachedReader( descriptor );
+    }
+
+    @Override
+    public RecordCursors recordCursors()
+    {
+        return recordCursors;
     }
 
     public static <RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore<RECORD,?>> RECORD read( long id,
