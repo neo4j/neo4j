@@ -26,12 +26,14 @@ public class TestDegreeItem
     private final int type;
     private final long outgoing;
     private final long incoming;
+    private final long loop;
 
-    TestDegreeItem( int type, long outgoing, long incoming )
+    TestDegreeItem( int type, long outgoing, long incoming, long loop )
     {
         this.type = type;
         this.outgoing = outgoing;
         this.incoming = incoming;
+        this.loop = loop;
     }
 
     public int type()
@@ -49,6 +51,11 @@ public class TestDegreeItem
         return incoming;
     }
 
+    public long loop()
+    {
+        return loop;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -61,18 +68,19 @@ public class TestDegreeItem
             return false;
         }
         TestDegreeItem that = (TestDegreeItem) o;
-        return type == that.type && outgoing == that.outgoing && incoming == that.incoming;
+        return type == that.type && outgoing == that.outgoing && incoming == that.incoming && loop == that.loop;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( type, outgoing, incoming );
+        return Objects.hash( type, outgoing, incoming, loop );
     }
 
     @Override
     public String toString()
     {
-        return "TestDegreeItem{" + "type=" + type + ", outgoing=" + outgoing + ", incoming=" + incoming + '}';
+        return "TestDegreeItem{" + "type=" + type + ", outgoing=" + outgoing + ", incoming=" + incoming + ", loop=" +
+                loop + '}';
     }
 }

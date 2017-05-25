@@ -131,20 +131,20 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService, monitors );
         SystemNanoClock clock = Clocks.nanoClock();
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                idConfigurationProvider, logService, mock( JobScheduler.class, RETURNS_MOCKS ),
-                mock( TokenNameLookup.class ), dependencyResolverForNoIndexProvider( labelScanStoreProvider ),
-                mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
-                mock( RelationshipTypeTokenHolder.class ), locksFactory, mock( SchemaWriteGuard.class ),
-                mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs,
-                mock( TransactionMonitor.class ), databaseHealth, mock( PhysicalLogFile.Monitor.class ),
-                TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), null,
+                idConfigurationProvider,
+                logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
+                dependencyResolverForNoIndexProvider( labelScanStoreProvider ), mock( PropertyKeyTokenHolder.class ),
+                mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
+                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
+                fs, mock( TransactionMonitor.class ), databaseHealth,
+                mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
+                new StartupStatisticsProvider(), null,
                 new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
-                new StandardConstraintSemantics(), StoreStatement::new, monitors,
+                new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock( Procedures.class ),
                 IOLimiter.unlimited(), new AvailabilityGuard( clock, NullLog.getInstance() ), clock, new CanWrite(),
                 new StoreCopyCheckPointMutex(),
                 GroupingRecoveryCleanupWorkCollector.IMMEDIATE );
-
         return dataSource;
     }
 

@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StorageStatementFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
@@ -102,8 +101,6 @@ public abstract class EditionModule
     public SchemaWriteGuard schemaWriteGuard;
 
     public ConstraintSemantics constraintSemantics;
-
-    public StorageStatementFactory storageStatementFactory;
 
     public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 

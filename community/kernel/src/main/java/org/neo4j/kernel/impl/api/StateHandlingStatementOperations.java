@@ -1653,14 +1653,30 @@ public class StateHandlingStatementOperations
     @Override
     public int degree( KernelStatement statement, NodeItem node, Direction direction )
     {
-        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return storeLayer.countDegrees( statement.getStoreStatement(), node, direction, state );
+        int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
+                     ? 0
+                     : visitDegrees( statement, node, new CountingDegreeVisitor( direction, node.isDense() ) ).count();
+
+        return statement.hasTxStateWithChanges()
+                ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree )
+                : degree;
     }
 
     @Override
     public int degree( KernelStatement statement, NodeItem node, Direction direction, int relType )
     {
-        ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return storeLayer.countDegrees( statement.getStoreStatement(), node, direction, relType, state );
+        int degree = statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( node.id() )
+                     ? 0
+                     : visitDegrees( statement, node, new CountingDegreeVisitor( direction, relType, node.isDense() ) ).count();
+
+        return statement.hasTxStateWithChanges()
+               ? statement.txState().getNodeState( node.id() ).augmentDegree( direction, degree, relType )
+               : degree;
+    }
+
+    private <T extends DegreeVisitor> T visitDegrees( KernelStatement statement, NodeItem node, T visitor )
+    {
+        storeLayer.degrees( statement.getStoreStatement(), node, visitor );
+        return visitor;
     }
 }

@@ -58,8 +58,9 @@ import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
+import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -160,7 +161,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
-    private final StorageStatementFactory storageStatementFactory;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -183,7 +183,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RelationshipTypeTokenHolder relationshipTypeTokens,
             Runnable schemaStateChangeCallback,
             ConstraintSemantics constraintSemantics,
-            StorageStatementFactory storageStatementFactory,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
             LockService lockService,
@@ -206,7 +205,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
-        this.storageStatementFactory = storageStatementFactory;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
         this.idController = createStorageIdController( idGeneratorFactory, eligibleForReuse,
@@ -280,8 +278,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
         LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
-        return () -> storageStatementFactory.create( neoStores, indexReaderFactory, labelScanStore::newReader,
-                lockService );
+        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService );
     }
 
     @Override
