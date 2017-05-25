@@ -19,41 +19,42 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Objects;
+import org.neo4j.storageengine.api.DegreeItem;
 
-public class TestDegreeItem
+public class TestDegreeItem implements DegreeItem
 {
     private final int type;
     private final long outgoing;
     private final long incoming;
-    private final long loop;
 
-    TestDegreeItem( int type, long outgoing, long incoming, long loop )
+    public TestDegreeItem( DegreeItem item )
+    {
+        this( item.type(), item.outgoing(), item.incoming() );
+    }
+
+    public TestDegreeItem( int type, long outgoing, long incoming )
     {
         this.type = type;
         this.outgoing = outgoing;
         this.incoming = incoming;
-        this.loop = loop;
     }
 
+    @Override
     public int type()
     {
         return type;
     }
 
+    @Override
     public long outgoing()
     {
         return outgoing;
     }
 
+    @Override
     public long incoming()
     {
         return incoming;
-    }
-
-    public long loop()
-    {
-        return loop;
     }
 
     @Override
@@ -68,19 +69,22 @@ public class TestDegreeItem
             return false;
         }
         TestDegreeItem that = (TestDegreeItem) o;
-        return type == that.type && outgoing == that.outgoing && incoming == that.incoming && loop == that.loop;
+        return type == that.type && outgoing == that.outgoing && incoming == that.incoming;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( type, outgoing, incoming, loop );
+        return 31 * (31 * type + (int) (outgoing ^ (outgoing >>> 32))) + (int) (incoming ^ (incoming >>> 32));
     }
 
     @Override
     public String toString()
     {
-        return "TestDegreeItem{" + "type=" + type + ", outgoing=" + outgoing + ", incoming=" + incoming + ", loop=" +
-                loop + '}';
+        return "TestDegreeItem{" +
+               "type=" + type +
+               ", outgoing=" + outgoing +
+               ", incoming=" + incoming +
+               '}';
     }
 }

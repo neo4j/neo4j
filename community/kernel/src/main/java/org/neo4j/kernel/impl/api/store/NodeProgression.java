@@ -21,8 +21,13 @@ package org.neo4j.kernel.impl.api.store;
 
 public interface NodeProgression
 {
+    enum Mode
+    {
+        APPEND,
+        FETCH
+    }
 
     long nextId();
 
-    TransactionStateAccessMode mode();
+    Mode mode();
 }

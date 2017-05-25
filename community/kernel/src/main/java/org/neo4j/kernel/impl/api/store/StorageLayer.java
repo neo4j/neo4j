@@ -84,6 +84,8 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
+import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -610,16 +612,39 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public void degrees( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
+    public void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
     {
-        if ( node.isDense() )
+        if ( nodeItem.isDense() )
         {
-            statement.acquireDenseNodeDegreeCounter( node.id(), node.nextGroupId() ).once( visitor );
+            visitDenseNode( statement, nodeItem, visitor );
         }
         else
         {
-            visitNode( statement, node, visitor );
+            visitNode( statement, nodeItem, visitor );
         }
+    }
+
+    private IndexRule indexRule( IndexDescriptor index )
+    {
+        for ( IndexRule rule : schemaCache.indexRules() )
+        {
+            if ( rule.getIndexDescriptor().equals( index ) )
+            {
+                return rule;
+            }
+        }
+
+        return schemaStorage.indexGetForSchema( index );
+    }
+
+    @Override
+    public int degreeRelationshipsInGroup( StorageStatement storeStatement, long nodeId, long groupId,
+            Direction direction, Integer relType )
+    {
+        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
+        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
+        return countRelationshipsInGroup( groupId, direction, relType, nodeId, relationshipRecord,
+                relationshipGroupRecord, storeStatement.recordCursors() );
     }
 
     @Override
@@ -628,30 +653,61 @@ public class StorageLayer implements StoreReadLayer
         return schemaCache.getOrCreateDependantState( type, factory, this );
     }
 
-    private void visitNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
+    private void visitNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, null ) )
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, nodeItem, BOTH, null ) )
         {
-            boolean keepGoing = true;
-            while ( keepGoing && relationships.next() )
+            while ( relationships.next() )
             {
                 RelationshipItem rel = relationships.get();
                 int type = rel.type();
-                switch ( directionOf( node.id(), rel.id(), rel.startNode(), rel.endNode() ) )
+                switch ( directionOf( nodeItem.id(), rel.id(), rel.startNode(), rel.endNode() ) )
                 {
                 case OUTGOING:
-                    keepGoing = visitor.visitDegree( type, 1, 0, 0 );
+                    visitor.visitDegree( type, 1, 0 );
                     break;
                 case INCOMING:
-                    keepGoing = visitor.visitDegree( type, 0, 1, 0 );
+                    visitor.visitDegree( type, 0, 1 );
                     break;
                 case BOTH:
-                    keepGoing = visitor.visitDegree( type, 0, 0, 1 );
+                    visitor.visitDegree( type, 1, 1 );
                     break;
                 default:
                     throw new IllegalStateException( "You found the missing direction!" );
                 }
             }
+        }
+    }
+
+    private void visitDenseNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
+    {
+        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
+        RecordCursor<RelationshipGroupRecord> relationshipGroupCursor = statement.recordCursors().relationshipGroup();
+        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
+        RecordCursor<RelationshipRecord> relationshipCursor = statement.recordCursors().relationship();
+
+        long groupId = nodeItem.nextGroupId();
+        while ( groupId != NO_NEXT_RELATIONSHIP.longValue() )
+        {
+            relationshipGroupCursor.next( groupId, relationshipGroupRecord, FORCE );
+            if ( relationshipGroupRecord.inUse() )
+            {
+                int type = relationshipGroupRecord.getType();
+
+                long firstLoop = relationshipGroupRecord.getFirstLoop();
+                long firstOut = relationshipGroupRecord.getFirstOut();
+                long firstIn = relationshipGroupRecord.getFirstIn();
+
+                long loop = countByFirstPrevPointer( firstLoop, relationshipCursor, nodeItem.id(), relationshipRecord );
+                long outgoing =
+                        countByFirstPrevPointer( firstOut, relationshipCursor, nodeItem.id(), relationshipRecord ) +
+                                loop;
+                long incoming =
+                        countByFirstPrevPointer( firstIn, relationshipCursor, nodeItem.id(), relationshipRecord ) +
+                                loop;
+                visitor.visitDegree( type, outgoing, incoming );
+            }
+            groupId = relationshipGroupRecord.getNext();
         }
     }
 
@@ -668,19 +724,6 @@ public class StorageLayer implements StoreReadLayer
         throw new InvalidRecordException(
                 "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +
                         " with startNode:" + startNode + " and endNode:" + endNode );
-    }
-
-    private IndexRule indexRule( IndexDescriptor index )
-    {
-        for ( IndexRule rule : schemaCache.indexRules() )
-        {
-            if ( rule.getIndexDescriptor().equals( index ) )
-            {
-                return rule;
-            }
-        }
-
-        return schemaStorage.indexGetForSchema( index );
     }
 
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )

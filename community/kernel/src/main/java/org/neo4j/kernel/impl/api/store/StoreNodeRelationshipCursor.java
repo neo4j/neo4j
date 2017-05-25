@@ -231,34 +231,41 @@ public class StoreNodeRelationshipCursor extends StoreAbstractIteratorRelationsh
 
     private long nextChainStart()
     {
-        while ( !end )
+        try
         {
-            // We check inUse flag here since we can actually follow pointers in unused records
-            // to guard for and overcome concurrent deletes in the relationship group chain
-            if ( groupRecord.inUse() && allowedTypes.test( groupRecord.getType() ) )
+            while ( !end )
             {
-                // Go to the next chain (direction) within this group
-                while ( groupChainIndex < GROUP_CHAINS.length )
+                // We check inUse flag here since we can actually follow pointers in unused records
+                // to guard for and overcome concurrent deletes in the relationship group chain
+                if ( groupRecord.inUse() && allowedTypes.test( groupRecord.getType() ) )
                 {
-                    GroupChain groupChain = GROUP_CHAINS[groupChainIndex++];
-                    long chainStart = groupChain.chainStart( groupRecord );
-                    if ( !NULL_REFERENCE.is( chainStart ) &&
-                            (direction == Direction.BOTH || groupChain.matchesDirection( direction )) )
+                    // Go to the next chain (direction) within this group
+                    while ( groupChainIndex < GROUP_CHAINS.length )
                     {
-                        return chainStart;
+                        GroupChain groupChain = GROUP_CHAINS[groupChainIndex++];
+                        long chainStart = groupChain.chainStart( groupRecord );
+                        if ( !NULL_REFERENCE.is( chainStart )
+                             && (direction == Direction.BOTH || groupChain.matchesDirection( direction )) )
+                        {
+                            return chainStart;
+                        }
                     }
                 }
+                // Go to the next group
+                if ( !NULL_REFERENCE.is( groupRecord.getNext() ) )
+                {
+                    readGroupRecord( groupRecord.getNext() );
+                }
+                else
+                {
+                    end = true;
+                }
+                groupChainIndex = 0;
             }
-            // Go to the next group
-            if ( !NULL_REFERENCE.is( groupRecord.getNext() ) )
-            {
-                readGroupRecord( groupRecord.getNext() );
-            }
-            else
-            {
-                end = true;
-            }
-            groupChainIndex = 0;
+        }
+        catch ( InvalidRecordException e )
+        {
+            // Ignore - next line will ensure we're finished anyway
         }
         return NULL_REFERENCE.intValue();
     }

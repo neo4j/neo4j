@@ -31,10 +31,12 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  */
 public class RecordCursors implements AutoCloseable
 {
+    private final RecordCursor<RelationshipRecord> relationship;
     private final RecordCursor<RelationshipGroupRecord> relationshipGroup;
 
     public RecordCursors( NeoStores neoStores )
     {
+        relationship = newCursor( neoStores.getRelationshipStore() );
         relationshipGroup = newCursor( neoStores.getRelationshipGroupStore() );
     }
 
@@ -46,7 +48,12 @@ public class RecordCursors implements AutoCloseable
     @Override
     public void close()
     {
-        IOUtils.closeAll( RuntimeException.class, relationshipGroup );
+        IOUtils.closeAll( RuntimeException.class, relationship, relationshipGroup );
+    }
+
+    public RecordCursor<RelationshipRecord> relationship()
+    {
+        return relationship;
     }
 
     public RecordCursor<RelationshipGroupRecord> relationshipGroup()
