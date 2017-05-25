@@ -473,7 +473,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     {
         StoreSingleNodeCursor cursor = new StoreSingleNodeCursor( new NodeRecord( -1 ), mock( Consumer.class ),
                 new RecordCursors( resolveNeoStores() ), NO_LOCK_SERVICE );
-        cursor.init( nodeId, null );
+        cursor.init( nodeId );
         assertTrue( cursor.next() );
         return cursor;
     }

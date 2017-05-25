@@ -91,7 +91,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     {
         try ( StorageStatement statement = disk.newStatement() )
         {
-            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id, null ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
             {
                 return node.next();
             }
@@ -102,7 +102,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     {
         try ( StorageStatement statement = disk.newStatement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id, null ) )
+            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id ) )
             {
                 return relationship.next();
             }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -78,19 +79,15 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.storageengine.api.Direction.BOTH;
-import static org.neo4j.storageengine.api.Direction.INCOMING;
-import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
 /**
  * Default implementation of StoreReadLayer. Delegates to NeoStores and indexes.
@@ -405,49 +402,45 @@ public class StorageLayer implements StoreReadLayer
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem,
-            Direction direction, ReadableTransactionState state )
+            Direction direction )
     {
-        return nodeGetRelationships( statement, nodeItem, direction, null, state );
+        return nodeGetRelationships( statement, nodeItem, direction, ALWAYS_TRUE_INT );
     }
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem node,
-            Direction direction, int[] relTypes, ReadableTransactionState state )
+            Direction direction, IntPredicate relTypes )
     {
         return statement.acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
-                relTypes, state );
+                relTypes );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node,
-            PropertyContainerState state )
+    public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquirePropertyCursor( node.nextPropertyId(), lock, state );
+        return statement.acquirePropertyCursor( node.nextPropertyId(), lock );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
-            PropertyContainerState state )
+    public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, state );
+        return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
-            PropertyContainerState state )
+    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock, state );
+        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship,
-            int propertyKeyId, PropertyContainerState state )
+    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship, int propertyKeyId )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, state );
+        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock );
     }
 
     @Override
@@ -563,7 +556,7 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            nodeGetRelationships( statement, node, BOTH, null )
+            nodeGetRelationships( statement, node, Direction.BOTH )
                     .forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
@@ -613,7 +606,7 @@ public class StorageLayer implements StoreReadLayer
 
     private void visitNode( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, nodeItem, BOTH, null ) )
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, nodeItem, Direction.BOTH ) )
         {
             while ( relationships.next() )
             {
@@ -673,11 +666,11 @@ public class StorageLayer implements StoreReadLayer
     {
         if ( startNode == nodeId )
         {
-            return endNode == nodeId ? BOTH : OUTGOING;
+            return endNode == nodeId ? Direction.BOTH : Direction.OUTGOING;
         }
         if ( endNode == nodeId )
         {
-            return INCOMING;
+            return Direction.INCOMING;
         }
         throw new InvalidRecordException(
                 "Node " + nodeId + " neither start nor end node of relationship " + relationshipId +

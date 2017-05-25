@@ -21,53 +21,50 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
-public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
+/**
+ * Cursor for a specific property on a node or relationship.
+ */
+public class StoreSinglePropertyCursor extends StorePropertyCursor
 {
-    private final Consumer<StoreSinglePropertyCursor> instanceCache;
-    private int propertyKeyId;
+    private int propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
 
-    StoreSinglePropertyCursor( RecordCursors cursors, Consumer<StoreSinglePropertyCursor> instanceCache )
+    public StoreSinglePropertyCursor( RecordCursors cursors, Consumer<StoreSinglePropertyCursor> instanceCache )
     {
-        super( cursors  );
-        this.instanceCache = instanceCache;
+        super( cursors, (Consumer) instanceCache );
     }
 
-    public StoreSinglePropertyCursor init( int propertyKeyId, long firstPropertyId, Lock lock,
-            PropertyContainerState state )
+    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock )
     {
+        super.init( firstPropertyId, lock );
         this.propertyKeyId = propertyKeyId;
-        initialize( key -> key == propertyKeyId, firstPropertyId, lock, state );
         return this;
     }
 
     @Override
-    protected boolean loadNextFromDisk()
+    public boolean next()
     {
-        // no if we have already fetched the property
-        if ( fetched )
+        try
         {
+            if ( propertyKeyId != StatementConstants.NO_SUCH_PROPERTY_KEY )
+            {
+                while ( super.next() )
+                {
+                    if ( get().propertyKeyId() == this.propertyKeyId )
+                    {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
-
-        // go to disk either if there is no state
-        // or if there is a state such state does not contain the keyId we are looking for
-        return state == null || state.getAddedProperty( propertyKeyId ) == null;
-    }
-
-    @Override
-    protected DefinedProperty nextAdded()
-    {
-        return !fetched && state != null ? (DefinedProperty) state.getAddedProperty( propertyKeyId ) : null;
-    }
-
-    @Override
-    protected void doClose()
-    {
-        instanceCache.accept( this );
+        finally
+        {
+            this.propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
+        }
     }
 }

@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
@@ -36,8 +33,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCursor
 {
     private final InstanceCache<StoreSingleRelationshipCursor> instanceCache;
-    private long relationshipId = NO_SUCH_RELATIONSHIP;
-    private ReadableTransactionState state;
+    private long relationshipId = StatementConstants.NO_SUCH_RELATIONSHIP;
 
     StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
             InstanceCache<StoreSingleRelationshipCursor> instanceCache, RecordCursors cursors, LockService lockService )
@@ -46,52 +42,33 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleRelationshipCursor init( long relId, ReadableTransactionState state )
+    public StoreSingleRelationshipCursor init( long relId )
     {
         this.relationshipId = relId;
-        this.state = state;
         return this;
     }
 
     @Override
-    protected boolean fetchNext()
+    public boolean next()
     {
-        if ( fetched || isDeletedInTx() || (!loadNextRecord() && !fetchFromTxState()) )
+        if ( relationshipId != StatementConstants.NO_SUCH_RELATIONSHIP )
         {
-            visit( NO_SUCH_RELATIONSHIP, NO_SUCH_RELATIONSHIP_TYPE, NO_SUCH_NODE, NO_SUCH_NODE );
-            relationshipId = NO_SUCH_RELATIONSHIP;
-            return false;
+            try
+            {
+                return relationshipRecordCursor.next( relationshipId, relationshipRecord, CHECK );
+            }
+            finally
+            {
+                relationshipId = StatementConstants.NO_SUCH_RELATIONSHIP;
+            }
         }
 
-        return true;
-    }
-
-    private boolean isDeletedInTx()
-    {
-        return state != null && state.relationshipIsDeletedInThisTx( relationshipId );
-    }
-
-    private boolean loadNextRecord()
-    {
-        return relationshipId != NO_SUCH_RELATIONSHIP &&
-                relationshipRecordCursor.next( relationshipId, relationshipRecord, CHECK );
-    }
-
-    private boolean fetchFromTxState()
-    {
-        boolean found = state != null && state.relationshipIsAddedInThisTx( relationshipId );
-        if ( found )
-        {
-            state.relationshipVisit( relationshipId, this );
-        }
-        return found;
+        return false;
     }
 
     @Override
     public void close()
     {
-        super.close();
-        relationshipId = NO_SUCH_RELATIONSHIP;
         instanceCache.accept( this );
     }
 }

@@ -19,64 +19,106 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.PropertyItem;
 
-import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Cursor for all properties on a node or relationship.
  */
-public class StorePropertyCursor extends StoreAbstractPropertyCursor
+public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 {
     private final Consumer<StorePropertyCursor> instanceCache;
+    private final StorePropertyPayloadCursor payload;
+    private final RecordCursor<PropertyRecord> recordCursor;
 
-    private boolean fromDisk;
-    private Iterator<StorageProperty> storagePropertyIterator;
+    private Lock lock;
 
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
-        super( cursors  );
         this.instanceCache = instanceCache;
+        this.payload = new StorePropertyPayloadCursor( cursors.propertyString(), cursors.propertyArray() );
+        this.recordCursor = cursors.property();
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock lock, PropertyContainerState state )
+    public StorePropertyCursor init( long firstPropertyId, Lock readLock )
     {
-        storagePropertyIterator = state == null ? null : state.addedProperties();
-        initialize( ALWAYS_TRUE_INT, firstPropertyId, lock, state );
+        recordCursor.placeAt( firstPropertyId, FORCE );
+        payload.clear();
+        lock = readLock;
         return this;
     }
 
     @Override
-    protected boolean loadNextFromDisk()
+    public boolean next()
     {
-        return true;
-    }
-
-    @Override
-    protected DefinedProperty nextAdded()
-    {
-        if ( storagePropertyIterator != null )
+        // Are there more properties to return for this current record we're at?
+        if ( payload.next() )
         {
-            if ( storagePropertyIterator.hasNext() )
-            {
-                return (DefinedProperty) storagePropertyIterator.next();
-            }
-            storagePropertyIterator = null;
+            return true;
         }
-        return null;
+
+        // No, OK continue down the chain and hunt for more...
+        while ( true )
+        {
+            if ( recordCursor.next() )
+            {
+                // All good, we can get values off of this record
+                PropertyRecord propertyRecord = recordCursor.get();
+                payload.init( propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
+                if ( payload.next() )
+                {
+                    return true;
+                }
+            }
+            else if ( Record.NO_NEXT_PROPERTY.is( recordCursor.get().getNextProp() ) )
+            {
+                // No more records in this chain, i.e. no more properties.
+                return false;
+            }
+
+            // Sort of alright, this record isn't in use, but could just be due to concurrent delete.
+            // Continue to next record in the chain and try there.
+        }
     }
 
     @Override
-    protected void doClose()
+    public int propertyKeyId()
     {
-        fromDisk = false;
-        instanceCache.accept( this );
+        return payload.propertyKeyId();
+    }
+
+    @Override
+    public Object value()
+    {
+        return payload.value();
+    }
+
+    @Override
+    public PropertyItem get()
+    {
+        return this;
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            payload.clear();
+            instanceCache.accept( this );
+        }
+        finally
+        {
+            lock.release();
+        }
     }
 }

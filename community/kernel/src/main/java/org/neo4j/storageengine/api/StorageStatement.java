@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.function.IntPredicate;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -26,8 +28,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * A statement for accessing data from a {@link StoreReadLayer}. Most data about the entities of a graph
@@ -71,10 +71,9 @@ public interface StorageStatement extends AutoCloseable
      * to place the cursor over the first item and then more calls to move the cursor through the selection.
      *
      * @param nodeId id of node to get cursor for.
-     * @param state the transaction state or null if there are no changes.
      * @return a {@link Cursor} over {@link NodeItem} for the given {@code nodeId}.
      */
-    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state );
+    Cursor<NodeItem> acquireSingleNodeCursor( long nodeId );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
@@ -83,10 +82,9 @@ public interface StorageStatement extends AutoCloseable
      * through the selection.
      *
      * @param relationshipId id of relationship to get cursor for.
-     * @param state the transaction state or null if there are no changes.
      * @return a {@link Cursor} over {@link RelationshipItem} for the given {@code relationshipId}.
      */
-    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId, ReadableTransactionState state );
+    Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relationshipId );
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
@@ -98,28 +96,25 @@ public interface StorageStatement extends AutoCloseable
      * @param nodeId the id of the node where to start traversing the relationships
      * @param relationshipId the id of the first relationship in the chain
      * @param direction the direction of the relationship wrt the node
-     * @param relTypes the allowed types (it allows all types if null)
-     * @param state the transaction state or null if there are no changes.
+     * @param relTypeFilter the allowed types (it allows all types if unspecified)
      * @return a {@link Cursor} over {@link RelationshipItem} for traversing the relationships associated to the node.
      */
-    Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
-            Direction direction, int[] relTypes, ReadableTransactionState state );
+    Cursor<RelationshipItem> acquireNodeRelationshipCursor(  boolean isDense, long nodeId, long relationshipId,
+            Direction direction, IntPredicate relTypeFilter );
 
     /**
-     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
-     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
-     * will have to be made to place the cursor over the first item and then more calls to move the cursor
-     * through the selection.
-     *
-     * @param state the transaction state or null if there are no changes.
-     * @return a {@link Cursor} over all stored relationships.
-     */
-    Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state );
+     -     * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link RelationshipItem} for selected
+     -     * relationships. No relationship is selected when this method returns, a call to {@link Cursor#next()}
+     -     * will have to be made to place the cursor over the first item and then more calls to move the cursor
+     -     * through the selection.
+     -     *
+     -     * @return a {@link Cursor} over all stored relationships.
+     -     */
+    Cursor<RelationshipItem> relationshipsGetAllCursor();
 
-    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock, PropertyContainerState state );
+    Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock shortLivedReadLock );
 
-    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock,
-            PropertyContainerState state );
+    Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock shortLivedReadLock );
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

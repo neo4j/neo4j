@@ -211,7 +211,7 @@ class PropertyExistenceEnforcer
             }
 
             PrimitiveIntSet labelIds;
-            try ( Cursor<NodeItem> node = storeStatement().acquireSingleNodeCursor( nodeId, txState ) )
+            try ( Cursor<NodeItem> node = node( nodeId ) )
             {
                 if ( node.next() )
                 {
@@ -247,8 +247,7 @@ class PropertyExistenceEnforcer
 
             int relationshipType;
             int[] required;
-            try ( Cursor<RelationshipItem> relationship = storeStatement()
-                    .acquireSingleRelationshipCursor( id, txState ) )
+            try ( Cursor<RelationshipItem> relationship = relationship( id ) )
             {
                 if ( relationship.next() )
                 {
@@ -282,17 +281,30 @@ class PropertyExistenceEnforcer
             }
         }
 
+        private Cursor<NodeItem> node( long id )
+        {
+            Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
+            return txState.augmentSingleNodeCursor( cursor, id );
+        }
+
+        private Cursor<RelationshipItem> relationship( long id )
+        {
+            Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
+            return txState.augmentSingleRelationshipCursor( cursor, id );
+        }
+
         private Cursor<PropertyItem> properties( NodeItem node )
         {
             Lock lock = node.lock();
-            return storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock, txState.getNodeState( node.id() ) );
+            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
+            return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
         }
 
         private Cursor<PropertyItem> properties( RelationshipItem relationship )
         {
             Lock lock = relationship.lock();
-            return storeStatement().acquirePropertyCursor( relationship.nextPropertyId(),
-                    lock, txState.getRelationshipState( relationship.id() ) );
+            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
+            return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
         }
 
         private StorageStatement storeStatement()

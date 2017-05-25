@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -42,8 +42,6 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Statement for store layer. This allows for acquisition of cursors on the store data.
@@ -58,8 +56,8 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
-    private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
+    private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
@@ -120,20 +118,21 @@ public class StoreStatement implements StorageStatement
                         relationshipGroupStore.newRecord(), this, recordCursors, lockService );
             }
         };
-        propertyCursorCache = new InstanceCache<StorePropertyCursor>()
-        {
-            @Override
-            protected StorePropertyCursor create()
-            {
-                return new StorePropertyCursor( recordCursors, this );
-            }
-        };
+
         singlePropertyCursorCache = new InstanceCache<StoreSinglePropertyCursor>()
         {
             @Override
             protected StoreSinglePropertyCursor create()
             {
                 return new StoreSinglePropertyCursor( recordCursors, this );
+            }
+        };
+        propertyCursorCache = new InstanceCache<StorePropertyCursor>()
+        {
+            @Override
+            protected StorePropertyCursor create()
+            {
+                return new StorePropertyCursor( recordCursors, this );
             }
         };
     }
@@ -147,47 +146,44 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state )
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
     {
         neoStores.assertOpen();
-        return singleNodeCursor.get().init( nodeId, state );
+        return singleNodeCursor.get().init( nodeId );
     }
 
     @Override
-    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId, ReadableTransactionState state )
+    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
     {
         neoStores.assertOpen();
-        return singleRelationshipCursor.get().init( relId, state );
+        return singleRelationshipCursor.get().init( relId );
     }
 
     @Override
     public Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean isDense, long nodeId, long relationshipId,
-            Direction direction, int[] relTypes, ReadableTransactionState state )
+            Direction direction, IntPredicate relTypeFilter )
     {
         neoStores.assertOpen();
-        return relTypes == null
-               ? nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, state )
-               : nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, relTypes, state );
+        return nodeRelationshipsCursor.get().init( isDense, relationshipId, nodeId, direction, relTypeFilter );
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state )
+    public Cursor<RelationshipItem> relationshipsGetAllCursor()
     {
         neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ), state );
+        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ) );
     }
 
     @Override
-    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock, PropertyContainerState state )
+    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock )
     {
-        return propertyCursorCache.get().init( propertyId, lock, state );
+        return propertyCursorCache.get().init( propertyId, lock );
     }
 
     @Override
-    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock,
-            PropertyContainerState state )
+    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock )
     {
-        return singlePropertyCursorCache.get().init( propertyKeyId, propertyId, lock, state );
+        return singlePropertyCursorCache.get().init( propertyId, propertyKeyId, lock );
     }
 
     @Override
