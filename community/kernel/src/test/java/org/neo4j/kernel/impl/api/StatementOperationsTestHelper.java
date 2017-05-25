@@ -79,7 +79,8 @@ public abstract class StatementOperationsTestHelper
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+            when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) )
+                    .thenReturn( PrimitiveLongCollections.emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
             when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
             when( state.storageStatement() ).thenReturn( storageStatement );
