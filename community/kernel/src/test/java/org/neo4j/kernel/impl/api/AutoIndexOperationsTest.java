@@ -24,18 +24,17 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.values.Values;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 
 public class AutoIndexOperationsTest
@@ -82,8 +81,8 @@ public class AutoIndexOperationsTest
         int value2 = 2;
         index.startAutoIndexingProperty( indexedPropertyName );
         index.startAutoIndexingProperty( indexedPropertyName2 );
-        index.propertyAdded( ops, nodeId, Property.intProperty( indexedProperty, value1 ) );
-        index.propertyAdded( ops, nodeId, Property.intProperty( indexedProperty2, value2 ) );
+        index.propertyAdded( ops, nodeId, indexedProperty, Values.of( value1 ) );
+        index.propertyAdded( ops, nodeId, indexedProperty2, Values.of( value2 ) );
 
         // When
         reset( ops );
@@ -100,7 +99,7 @@ public class AutoIndexOperationsTest
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
-        index.propertyAdded( ops, 11, property( nonIndexedProperty, "Hello!" ) );
+        index.propertyAdded( ops, 11, nonIndexedProperty, Values.of( "Hello!" ) );
 
         // Then
         verifyZeroInteractions( ops );
@@ -113,7 +112,7 @@ public class AutoIndexOperationsTest
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
-        index.propertyChanged( ops, 11, property( nonIndexedProperty, "Goodbye!" ), property( nonIndexedProperty, "Hello!" ) );
+        index.propertyChanged( ops, 11, nonIndexedProperty, Values.of( "Goodbye!" ), Values.of( "Hello!" ) );
 
         // Then
         verifyZeroInteractions( ops );

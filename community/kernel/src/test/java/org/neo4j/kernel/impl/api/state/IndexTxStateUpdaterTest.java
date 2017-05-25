@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.values.Values;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -49,7 +50,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
@@ -161,10 +161,9 @@ public class IndexTxStateUpdaterTest
     public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyAdd( state, node, property( unIndexedPropId, "whAt" ) );
-        indexTxUpdater.onPropertyRemove( state, node, property( unIndexedPropId, "whAt" ) );
-        indexTxUpdater.onPropertyChange( state, node,
-                property( unIndexedPropId, "whAt" ), property( unIndexedPropId, "whAt2" ) );
+        indexTxUpdater.onPropertyAdd( state, node, unIndexedPropId, Values.of( "whAt" ) );
+        indexTxUpdater.onPropertyRemove( state, node, unIndexedPropId, Values.of( "whAt" ) );
+        indexTxUpdater.onPropertyChange( state, node, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
 
         // THEN
         verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
@@ -174,7 +173,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyAdd( state, node, property( newPropId, "newHi" ) );
+        indexTxUpdater.onPropertyAdd( state, node, newPropId, Values.of( "newHi" ) );
 
         // THEN
         verifyIndexUpdate( indexOn2_new.schema(), node.id(), null, values( "newHi" ) );
@@ -186,7 +185,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyRemove( state, node, property( propId2, "hi2" ) );
+        indexTxUpdater.onPropertyRemove( state, node, propId2, Values.of( "hi2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), null );
@@ -198,8 +197,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( state, node,
-                property( propId2, "hi2" ), property( propId2, "new2" ) );
+        indexTxUpdater.onPropertyChange( state, node, propId2, Values.of( "hi2" ), Values.of( "new2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), values( "new2" ) );

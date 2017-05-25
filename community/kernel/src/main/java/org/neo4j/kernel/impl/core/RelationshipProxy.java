@@ -43,13 +43,13 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 
@@ -399,7 +399,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            statement.dataWriteOperations().relationshipSetProperty( getId(), Property.property( propertyKeyId, value ) );
+            statement.dataWriteOperations().relationshipSetProperty( getId(), propertyKeyId, Values.of( value ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -433,7 +433,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).value( null );
+            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).asPublic();
         }
         catch ( EntityNotFoundException e )
         {

@@ -32,12 +32,13 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.schema.IndexQuery.exact;
@@ -80,7 +81,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
-        String value = "value";
+        Value value = Values.of( "value" );
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
@@ -98,8 +99,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
-        String value = "value";
-        createNodeWithValue( "other_" + value );
+        Value value = Values.of( "value" );
+        createNodeWithValue( Values.of( "other_" + value ) );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
@@ -115,8 +116,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
-        String value1 = "value1";
-        String value2 = "value2";
+        Value value1 = Values.of( "value1" );
+        Value value2 = Values.of( "value2" );
         long nodeId = createNodeWithValues( value1, value2 );
 
         // when looking for it
@@ -135,9 +136,9 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
-        String value1 = "value1";
-        String value2 = "value2";
-        createNodeWithValues( "other_" + value1, "other_" + value2 );
+        Value value1 = Values.of( "value1" );
+        Value value2 = Values.of( "value2" );
+        createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
@@ -171,14 +172,14 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         final DoubleLatch latch = new DoubleLatch();
 
         final IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
-        final String value = "value";
+        final Value value = Values.of( "value" );
 
         DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
         long nodeId = dataStatement.nodeCreate();
         dataStatement.nodeAddLabel( nodeId, labelId );
 
         // This adds the node to the unique index and should take an index write lock
-        dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyId1, value ) );
+        dataStatement.nodeSetProperty( nodeId, propertyId1, value );
 
         Runnable runnableForThread2 = () ->
         {
@@ -224,23 +225,23 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         return StatementConstants.NO_SUCH_NODE == foundId;
     }
 
-    private long createNodeWithValue( String value ) throws KernelException
+    private long createNodeWithValue( Value value ) throws KernelException
     {
         DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
         long nodeId = dataStatement.nodeCreate();
         dataStatement.nodeAddLabel( nodeId, labelId );
-        dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyId1, value ) );
+        dataStatement.nodeSetProperty( nodeId, propertyId1, value );
         commit();
         return nodeId;
     }
 
-    private long createNodeWithValues( String value1, String value2 ) throws KernelException
+    private long createNodeWithValues( Value value1, Value value2 ) throws KernelException
     {
         DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
         long nodeId = dataStatement.nodeCreate();
         dataStatement.nodeAddLabel( nodeId, labelId );
-        dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyId1, value1 ) );
-        dataStatement.nodeSetProperty( nodeId, Property.stringProperty( propertyId2, value2 ) );
+        dataStatement.nodeSetProperty( nodeId, propertyId1, value1 );
+        dataStatement.nodeSetProperty( nodeId, propertyId2, value2 );
         commit();
         return nodeId;
     }

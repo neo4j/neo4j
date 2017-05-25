@@ -72,8 +72,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -112,6 +110,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
@@ -875,31 +874,31 @@ public class OperationsFacade
     }
 
     @Override
-    public Property nodeSetProperty( long nodeId, DefinedProperty property )
+    public Value nodeSetProperty( long nodeId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException,
                    InvalidTransactionTypeKernelException, ConstraintValidationException
     {
         statement.assertOpen();
-        return dataWrite().nodeSetProperty( statement, nodeId, property );
+        return dataWrite().nodeSetProperty( statement, nodeId, propertyKeyId, value );
     }
 
     @Override
-    public Property relationshipSetProperty( long relationshipId, DefinedProperty property )
+    public Value relationshipSetProperty( long relationshipId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
-        return dataWrite().relationshipSetProperty( statement, relationshipId, property );
+        return dataWrite().relationshipSetProperty( statement, relationshipId, propertyKeyId, value );
     }
 
     @Override
-    public Property graphSetProperty( DefinedProperty property )
+    public Value graphSetProperty( int propertyKeyId, Value value )
     {
         statement.assertOpen();
-        return dataWrite().graphSetProperty( statement, property );
+        return dataWrite().graphSetProperty( statement, propertyKeyId, value );
     }
 
     @Override
-    public Property nodeRemoveProperty( long nodeId, int propertyKeyId )
+    public Value nodeRemoveProperty( long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
@@ -907,7 +906,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Property relationshipRemoveProperty( long relationshipId, int propertyKeyId )
+    public Value relationshipRemoveProperty( long relationshipId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
@@ -915,7 +914,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Property graphRemoveProperty( int propertyKeyId )
+    public Value graphRemoveProperty( int propertyKeyId )
     {
         statement.assertOpen();
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );

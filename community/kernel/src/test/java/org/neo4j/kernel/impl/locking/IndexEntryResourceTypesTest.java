@@ -28,6 +28,8 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -38,7 +40,7 @@ public class IndexEntryResourceTypesTest
 
     public static final int labelId = 1;
     public static final int propertyId = 2;
-    public static final String value = "value";
+    public static final Value value = Values.of( "value" );
 
     @Test
     public void shouldProduceBackwardsCompatibleId()

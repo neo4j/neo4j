@@ -57,11 +57,12 @@ import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
@@ -126,9 +127,9 @@ public class IndexWorkSyncTransactionApplicationStressIT
         }
     }
 
-    private static Object propertyValue( int id, int progress )
+    private static Value propertyValue( int id, int progress )
     {
-        return id + "_" + progress;
+        return Values.of( id + "_" + progress );
     }
 
     private static TransactionToApply tx( Collection<StorageCommand> commands )
@@ -192,7 +193,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             long nodeId = nodeIds.nextId();
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
-            txState.nodeDoAddProperty( nodeId, property( descriptor.getPropertyId(), propertyValue( id, progress ) ) );
+            txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             Collection<StorageCommand> commands = new ArrayList<>();
             try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
             {
@@ -210,7 +211,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 {
                     tx.transactionRepresentation().accept( visitor.clear() );
 
-                    Object propertyValue = propertyValue( id, base + i );
+                    Value propertyValue = propertyValue( id, base + i );
                     IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyId(), propertyValue );
                     PrimitiveLongIterator hits = reader.query( query );
                     assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue,

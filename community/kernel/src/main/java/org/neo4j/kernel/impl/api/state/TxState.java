@@ -35,8 +35,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
@@ -69,6 +67,8 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -586,73 +586,70 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoAddProperty( long nodeId, DefinedProperty newProperty )
+    public void nodeDoAddProperty( long nodeId, int newPropertyKeyId, Value value )
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
-        nodeState.addProperty( newProperty );
-        nodePropertyChanges().addProperty( nodeId, newProperty.propertyKeyId(), newProperty.value() );
+        nodeState.addProperty( newPropertyKeyId, value );
+        nodePropertyChanges().addProperty( nodeId, newPropertyKeyId, value );
         dataChanged();
     }
 
     @Override
-    public void nodeDoChangeProperty( long nodeId, DefinedProperty replacedProperty, DefinedProperty newProperty )
+    public void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value replacedValue, Value newValue )
     {
-        getOrCreateNodeState( nodeId ).changeProperty( newProperty );
-        nodePropertyChanges().changeProperty( nodeId, replacedProperty.propertyKeyId(),
-                replacedProperty.value(), newProperty.value() );
+        getOrCreateNodeState( nodeId ).changeProperty( propertyKeyId, newValue );
+        nodePropertyChanges().changeProperty( nodeId, propertyKeyId, replacedValue, newValue );
         dataChanged();
     }
 
     @Override
-    public void relationshipDoReplaceProperty( long relationshipId,
-            Property replacedProperty,
-            DefinedProperty newProperty )
+    public void relationshipDoReplaceProperty( long relationshipId, int propertyKeyId, Value replacedValue,
+            Value newValue )
     {
-        if ( replacedProperty.isDefined() )
+        if ( replacedValue != Values.NO_VALUE )
         {
-            getOrCreateRelationshipState( relationshipId ).changeProperty( newProperty );
+            getOrCreateRelationshipState( relationshipId ).changeProperty( propertyKeyId, newValue );
         }
         else
         {
-            getOrCreateRelationshipState( relationshipId ).addProperty( newProperty );
+            getOrCreateRelationshipState( relationshipId ).addProperty( propertyKeyId, newValue );
         }
         dataChanged();
     }
 
     @Override
-    public void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty )
+    public void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue )
     {
-        if ( replacedProperty.isDefined() )
+        if ( replacedValue != Values.NO_VALUE )
         {
-            getOrCreateGraphState().changeProperty( newProperty );
+            getOrCreateGraphState().changeProperty( propertyKeyId, newValue );
         }
         else
         {
-            getOrCreateGraphState().addProperty( newProperty );
+            getOrCreateGraphState().addProperty( propertyKeyId, newValue );
         }
         dataChanged();
     }
 
     @Override
-    public void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty )
+    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue )
     {
-        getOrCreateNodeState( nodeId ).removeProperty( removedProperty );
-        nodePropertyChanges().removeProperty( nodeId, removedProperty.propertyKeyId(),
-                removedProperty.value() );
+        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId, removedValue );
+        nodePropertyChanges().removeProperty( nodeId, propertyKeyId, removedValue );
         dataChanged();
     }
 
     @Override
-    public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
+    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId, Value removedValue )
     {
-        getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty );
+        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId, removedValue );
         dataChanged();
     }
 
     @Override
-    public void graphDoRemoveProperty( DefinedProperty removedProperty )
+    public void graphDoRemoveProperty( int propertyKeyId, Value removedValue )
     {
-        getOrCreateGraphState().removeProperty( removedProperty );
+        getOrCreateGraphState().removeProperty( propertyKeyId, removedValue );
         dataChanged();
     }
 

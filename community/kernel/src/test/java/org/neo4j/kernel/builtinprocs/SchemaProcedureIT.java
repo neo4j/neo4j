@@ -34,10 +34,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -77,7 +77,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         int propertyIdName = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
         int propertyIdAge = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "age" );
         statement.dataWriteOperations()
-                .nodeSetProperty( nodeId, DefinedProperty.stringProperty( propertyIdName, "Emil" ) );
+                .nodeSetProperty( nodeId, propertyIdName, Values.of( "Emil" ) );
         commit();
 
         SchemaWriteOperations schemaOps = schemaWriteOperationsInNewTransaction();

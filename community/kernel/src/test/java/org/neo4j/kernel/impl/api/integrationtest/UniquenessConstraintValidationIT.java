@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,7 +41,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
@@ -59,8 +58,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         long node = createLabeledNode( statement, "Label1" );
         try
         {
-            statement.dataWriteOperations().nodeSetProperty( node, property(
-                    statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" ), "value1" ) );
+            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
+            statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( "value1" ) );
 
             fail( "should have thrown exception" );
         }
@@ -89,9 +88,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // a new node with the same constraint is added, with a value not equal but which would be mapped to the same double
         propertyValue++;
         // note how propertyValue is definitely not equal to propertyValue++ but they do equal if they are cast to double
-        DefinedProperty prop =
-                property( statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" ), propertyValue );
-        statement.dataWriteOperations().nodeSetProperty( node, prop );
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
+        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( propertyValue ) );
 
         // Then
         // the commit should still succeed
@@ -201,8 +199,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
         // when
-        int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-        statement.dataWriteOperations().nodeSetProperty( node, property( key, "value2" ) );
+        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
+        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( "value2" ) );
         createLabeledNode( statement, "Label1", "key1", "value1" );
         commit();
     }
@@ -240,7 +238,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         // when
         int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-        statement.dataWriteOperations().nodeSetProperty( node, property( key, "value1" ) );
+        statement.dataWriteOperations().nodeSetProperty( node, key, Values.of( "value1" ) );
 
         // then should not throw exception
     }
@@ -306,7 +304,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( statement, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, 1 ) ), equalTo( ourNode ) );
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ), equalTo( ourNode ) );
     }
 
     @Test
@@ -332,7 +330,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( statement, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, 1 ) ), equalTo( ourNode ));
+        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ), equalTo( ourNode ));
     }
 
     private TokenNameLookup tokenLookup( Statement statement )
@@ -352,7 +350,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     {
         long node = statement.dataWriteOperations().nodeCreate();
         int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-        statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, value ) );
+        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( value ) );
         return node;
     }
 
@@ -361,7 +359,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     {
         long node = createLabeledNode( statement, label );
         int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-        statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, value ) );
+        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( value ) );
         return node;
     }
 
@@ -375,7 +373,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             node = statement.dataWriteOperations().nodeCreate();
             statement.dataWriteOperations().nodeAddLabel( node, label );
             int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-            statement.dataWriteOperations().nodeSetProperty( node, property( key, propertyValue ) );
+            statement.dataWriteOperations().nodeSetProperty( node, key, Values.of( propertyValue ) );
             commit();
         }
         createConstraint( labelName, propertyKey );

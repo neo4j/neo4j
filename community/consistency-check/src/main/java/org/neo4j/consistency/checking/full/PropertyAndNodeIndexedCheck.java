@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 
@@ -223,7 +224,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         IndexQuery[] query = new IndexQuery[propertyValues.length];
         for ( int i = 0; i < query.length; i++ )
         {
-            query[i] = IndexQuery.exact( schema.getPropertyIds()[i], propertyValues[i] );
+            query[i] = IndexQuery.exact( schema.getPropertyIds()[i], Values.of( propertyValues[i] ) );
         }
         return query;
     }

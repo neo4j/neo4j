@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.Matchers.instanceOf;
@@ -139,12 +139,12 @@ public class UniquenessConstraintCreationIT
         long node1 = statement.dataWriteOperations().nodeCreate();
 
         statement.dataWriteOperations().nodeAddLabel( node1, foo );
-        statement.dataWriteOperations().nodeSetProperty( node1, Property.stringProperty( name, "foo" ) );
+        statement.dataWriteOperations().nodeSetProperty( node1, name, Values.of( "foo" ) );
 
         long node2 = statement.dataWriteOperations().nodeCreate();
         statement.dataWriteOperations().nodeAddLabel( node2, foo );
 
-        statement.dataWriteOperations().nodeSetProperty( node2, Property.stringProperty( name, "foo" ) );
+        statement.dataWriteOperations().nodeSetProperty( node2, name, Values.of( "foo" ) );
         commit();
 
         // when

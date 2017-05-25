@@ -24,9 +24,8 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.values.Value;
 
 public interface EntityWriteOperations
 {
@@ -66,24 +65,24 @@ public interface EntityWriteOperations
      */
     boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+    Value nodeSetProperty( KernelStatement state, long nodeId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException,
                    InvalidTransactionTypeKernelException, ConstraintValidationException;
 
-    Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
+    Value relationshipSetProperty( KernelStatement state, long relationshipId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property graphSetProperty( KernelStatement state, DefinedProperty property );
+    Value graphSetProperty( KernelStatement state, int propertyKeyId, Value value );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+    Value nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+    Value relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property graphRemoveProperty( KernelStatement state, int propertyKeyId );
+    Value graphRemoveProperty( KernelStatement state, int propertyKeyId );
 }

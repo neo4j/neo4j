@@ -40,7 +40,6 @@ import static org.neo4j.kernel.api.schema.IndexQuery.stringContains;
 import static org.neo4j.kernel.api.schema.IndexQuery.stringPrefix;
 import static org.neo4j.kernel.api.schema.IndexQuery.stringSuffix;
 
-
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +

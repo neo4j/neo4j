@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -58,6 +57,8 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.emptyIterator;
 import static org.junit.Assert.assertEquals;
@@ -522,14 +523,15 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
-        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
-        operations.nodeSetProperty( kernelStatement, nodeId, newProperty );
+        Value newValue = Values.of( value );
+        operations.nodeSetProperty( kernelStatement, nodeId, propertyKeyId, newValue );
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
-        verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( nodeId ),
-                eq( Property.stringProperty( propertyKeyId, value ) ), eq( newProperty ) );
+        verify( autoIndexOps ).propertyChanged(
+                any( DataWriteOperations.class ), eq( nodeId ),
+                eq( propertyKeyId ), eq( Values.of( value ) ), eq( newValue ) );
     }
 
     @Test
@@ -555,14 +557,15 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
-        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
-        operations.relationshipSetProperty( kernelStatement, relationshipId, newProperty );
+        Value newValue = Values.of( value );
+        operations.relationshipSetProperty( kernelStatement, relationshipId, propertyKeyId, newValue );
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
-        verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( relationshipId ),
-                eq( newProperty ), eq( newProperty ) );
+        verify( autoIndexOps ).propertyChanged(
+                any( DataWriteOperations.class ), eq( relationshipId ),
+                eq( propertyKeyId ), eq( newValue ), eq( newValue ) );
     }
 
     @Test
@@ -578,8 +581,8 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations operations = newTxStateOps( inner );
 
         // WHEN
-        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
-        operations.graphSetProperty( kernelStatement, newProperty );
+        Value newValue = Values.of( value );
+        operations.graphSetProperty( kernelStatement, propertyKeyId, newValue );
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );

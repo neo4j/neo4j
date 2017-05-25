@@ -52,11 +52,11 @@ import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
@@ -274,7 +274,7 @@ public class NodeProxy implements Node
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
+                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value ) );
             }
             catch ( ConstraintValidationException e )
             {
@@ -313,7 +313,7 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
+            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).asPublic();
         }
         catch ( EntityNotFoundException e )
         {

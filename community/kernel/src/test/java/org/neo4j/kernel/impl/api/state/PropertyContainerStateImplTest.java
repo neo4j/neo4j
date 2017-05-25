@@ -24,7 +24,10 @@ import org.junit.Test;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.test.Property;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -39,9 +42,9 @@ public class PropertyContainerStateImplTest
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
-        state.addProperty( stringProperty( 1, "Hello" ) );
-        state.addProperty( stringProperty( 2, "Hello" ) );
-        state.removeProperty( stringProperty( 1, "Hello" ) );
+        state.addProperty( 1, Values.of( "Hello" ) );
+        state.addProperty( 2, Values.of( "Hello" ) );
+        state.removeProperty( 1, Values.of( "Hello" ) );
 
         // When
         Iterator<StorageProperty> added = state.addedProperties();
@@ -56,9 +59,9 @@ public class PropertyContainerStateImplTest
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
-        state.addProperty( stringProperty( 1, "Hello" ) );
-        state.addProperty( stringProperty( 1, "WAT" ) );
-        state.addProperty( stringProperty( 2, "Hello" ) );
+        state.addProperty( 1, Values.of( "Hello" ) );
+        state.addProperty( 1, Values.of( "WAT" ) );
+        state.addProperty( 2, Values.of( "Hello" ) );
 
         // When
         Iterator<StorageProperty> added = state.addedProperties();
@@ -75,8 +78,8 @@ public class PropertyContainerStateImplTest
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
 
         // When
-        state.removeProperty( stringProperty( 4, "a value" ) );
-        state.addProperty( stringProperty( 4, "another value" ) );
+        state.removeProperty( 4, Values.of( "a value" ) );
+        state.addProperty( 4, Values.of( "another value" ) );
 
         // Then
         assertThat( Iterators.asList( state.changedProperties() ),

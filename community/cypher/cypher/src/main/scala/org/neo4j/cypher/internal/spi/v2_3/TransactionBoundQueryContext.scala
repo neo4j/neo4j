@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.values.Values
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
@@ -130,7 +131,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScalaENFXSafe(
-      tc.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, value)))(nodeOps.getById)
+      tc.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(nodeOps.getById)
 
   def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 
@@ -250,7 +251,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
 
   override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
-    val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.propertyId, value))
+    val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.propertyId, Values.of(value)))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -325,7 +326,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
-      tc.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      tc.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
     }
@@ -395,7 +396,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
-      tc.statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
+      tc.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
       case _: exceptions.EntityNotFoundException => //ignore
     }

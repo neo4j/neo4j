@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.values.Value;
 
 /**
  * Abstract interface for accessing legacy auto indexing facilities for a given type of entity (nodes or relationships)
@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.properties.Property;
  */
 public interface AutoIndexOperations
 {
-    void propertyAdded( DataWriteOperations ops, long entityId, Property property ) throws AutoIndexingKernelException;
-    void propertyChanged( DataWriteOperations ops, long entityId, Property oldProperty, Property newProperty )
+    void propertyAdded( DataWriteOperations ops, long entityId, int propertyKeyId, Value value ) throws AutoIndexingKernelException;
+    void propertyChanged( DataWriteOperations ops, long entityId, int propertyKeyId, Value oldValue, Value newValue )
         throws AutoIndexingKernelException;
     void propertyRemoved( DataWriteOperations ops, long entityId, int propertyKey )
         throws AutoIndexingKernelException;
@@ -60,14 +60,15 @@ public interface AutoIndexOperations
     AutoIndexOperations UNSUPPORTED = new AutoIndexOperations()
     {
         @Override
-        public void propertyAdded( DataWriteOperations ops, long entityId, Property property ) throws AutoIndexingKernelException
+        public void propertyAdded( DataWriteOperations ops, long entityId, int propertyKeyId, Value value )
+                throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void propertyChanged( DataWriteOperations ops, long entityId, Property oldProperty,
-                Property newProperty ) throws AutoIndexingKernelException
+        public void propertyChanged( DataWriteOperations ops, long entityId, int propertyKeyId, Value oldValue,
+                Value newValue ) throws AutoIndexingKernelException
         {
             throw new UnsupportedOperationException();
         }

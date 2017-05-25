@@ -39,8 +39,6 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
@@ -59,6 +57,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.Value;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -416,7 +415,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+    public Value nodeSetProperty( KernelStatement state, long nodeId, int propertyKeyId, Value value )
             throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException,
             InvalidTransactionTypeKernelException
     {
@@ -435,11 +434,11 @@ public class LockingStatementOperations implements
 
         acquireExclusiveNodeLock( state, nodeId );
         state.assertOpen();
-        return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
+        return entityWriteDelegate.nodeSetProperty( state, nodeId, propertyKeyId, value );
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+    public Value nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         acquireExclusiveNodeLock( state, nodeId );
@@ -448,19 +447,17 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state,
-            long relationshipId,
-            DefinedProperty property ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+    public Value relationshipSetProperty( KernelStatement state, long relationshipId, int propertyKeyId, Value value )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
-        return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
+        return entityWriteDelegate.relationshipSetProperty( state, relationshipId, propertyKeyId, value );
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state,
-            long relationshipId,
-            int propertyKeyId ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+    public Value relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         acquireExclusiveRelationshipLock( state, relationshipId );
         state.assertOpen();
@@ -468,15 +465,15 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Property graphSetProperty( KernelStatement state, DefinedProperty property )
+    public Value graphSetProperty( KernelStatement state, int propertyKeyId, Value value )
     {
         state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         state.assertOpen();
-        return entityWriteDelegate.graphSetProperty( state, property );
+        return entityWriteDelegate.graphSetProperty( state, propertyKeyId, value );
     }
 
     @Override
-    public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
+    public Value graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
         state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         state.assertOpen();

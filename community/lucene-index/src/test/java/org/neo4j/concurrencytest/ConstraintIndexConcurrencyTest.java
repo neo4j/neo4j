@@ -39,11 +39,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.properties.Property.property;
 
 public class ConstraintIndexConcurrencyTest
 {
@@ -100,7 +101,7 @@ public class ConstraintIndexConcurrencyTest
             statement.dataWriteOperations().nodeAddLabel( node, labelId );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( node, property( propertyKeyId, conflictingValue ) );
+                statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) );
 
                 fail( "exception expected" );
             }

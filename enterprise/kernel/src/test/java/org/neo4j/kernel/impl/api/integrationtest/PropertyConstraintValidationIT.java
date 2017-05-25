@@ -43,16 +43,16 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.assertion.Assert;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodeKeyConstraintValidationIT;
@@ -162,7 +162,7 @@ public class PropertyConstraintValidationIT
         {
             long node = statement.dataWriteOperations().nodeCreate();
             int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().nodeSetProperty( node, property( propertyKey, value ) );
+            statement.dataWriteOperations().nodeSetProperty( node, propertyKey, Values.of( value ) );
             return node;
         }
 
@@ -171,7 +171,7 @@ public class PropertyConstraintValidationIT
         {
             long node = createEntity( statement, type );
             int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().nodeSetProperty( node, property( propertyKey, value ) );
+            statement.dataWriteOperations().nodeSetProperty( node, propertyKey, Values.of( value ) );
             return node;
         }
 
@@ -183,7 +183,7 @@ public class PropertyConstraintValidationIT
             long node = statement.dataWriteOperations().nodeCreate();
             statement.dataWriteOperations().nodeAddLabel( node, label );
             int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().nodeSetProperty( node, property( propertyKey, value ) );
+            statement.dataWriteOperations().nodeSetProperty( node, propertyKey, Values.of( value ) );
             commit();
 
             createConstraint( type, property );
@@ -192,9 +192,9 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        void setProperty( DataWriteOperations writeOps, long entityId, DefinedProperty property ) throws Exception
+        void setProperty( DataWriteOperations writeOps, long entityId, int propertyKeyId, Value value ) throws Exception
         {
-            writeOps.nodeSetProperty( entityId, property );
+            writeOps.nodeSetProperty( entityId, propertyKeyId, value );
         }
 
         @Override
@@ -248,7 +248,7 @@ public class PropertyConstraintValidationIT
             long relationship = statement.dataWriteOperations().relationshipCreate( relType, start, end );
 
             int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().relationshipSetProperty( relationship, property( propertyKey, value ) );
+            statement.dataWriteOperations().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
             return relationship;
         }
 
@@ -257,7 +257,7 @@ public class PropertyConstraintValidationIT
         {
             long relationship = createEntity( statement, type );
             int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().relationshipSetProperty( relationship, property( propertyKey, value ) );
+            statement.dataWriteOperations().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
             return relationship;
         }
 
@@ -270,7 +270,7 @@ public class PropertyConstraintValidationIT
             long end = statement.dataWriteOperations().nodeCreate();
             long relationship = statement.dataWriteOperations().relationshipCreate( relType, start, end );
             int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().relationshipSetProperty( relationship, property( propertyKey, value ) );
+            statement.dataWriteOperations().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
             commit();
 
             createConstraint( type, property );
@@ -279,9 +279,9 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        void setProperty( DataWriteOperations writeOps, long entityId, DefinedProperty property ) throws Exception
+        void setProperty( DataWriteOperations writeOps, long entityId, int propertyKeyId, Value value ) throws Exception
         {
-            writeOps.relationshipSetProperty( entityId, property );
+            writeOps.relationshipSetProperty( entityId, propertyKeyId, value );
         }
 
         @Override
@@ -313,7 +313,7 @@ public class PropertyConstraintValidationIT
 
         abstract long createConstraintAndEntity( String type, String property, String value ) throws Exception;
 
-        abstract void setProperty( DataWriteOperations writeOps, long entityId, DefinedProperty property )
+        abstract void setProperty( DataWriteOperations writeOps, long entityId, int propertyKeyId, Value value )
                 throws Exception;
 
         abstract void removeProperty( DataWriteOperations writeOps, long entityId, int propertyKey ) throws Exception;
@@ -386,7 +386,7 @@ public class PropertyConstraintValidationIT
             int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
             //remove and put back
             removeProperty( statement.dataWriteOperations(), entity, key );
-            setProperty( statement.dataWriteOperations(), entity, property( key, "value2" ) );
+            setProperty( statement.dataWriteOperations(), entity, key, Values.of( "value2" ) );
 
             commit();
         }
@@ -401,7 +401,7 @@ public class PropertyConstraintValidationIT
 
             // when
             int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-            setProperty( statement.dataWriteOperations(), entity, property( key, "value1" ) );
+            setProperty( statement.dataWriteOperations(), entity, key, Values.of( "value1" ) );
 
             // then should not throw exception
         }

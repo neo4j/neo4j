@@ -90,6 +90,8 @@ import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertArrayEquals;
@@ -315,11 +317,11 @@ public class NeoStoresTest
 
         if ( oldProperty == NO_SUCH_PROPERTY )
         {
-            transaction.nodeDoAddProperty( nodeId, property );
+            transaction.nodeDoAddProperty( nodeId, key, Values.of( value ) );
         }
         else
         {
-            transaction.nodeDoChangeProperty( nodeId, oldProperty, property );
+            transaction.nodeDoChangeProperty( nodeId, key, Values.of( oldProperty.value() ), Values.of( value ) );
         }
         return property;
     }
@@ -327,21 +329,21 @@ public class NeoStoresTest
     private DefinedProperty relAddProperty( long relationshipId, int key, Object value )
     {
         DefinedProperty property = Property.property( key, value );
-        Property oldProperty = Property.noRelationshipProperty( relationshipId, key );
+        Value oldValue = Values.NO_VALUE;
         try ( StorageStatement statement = storeLayer.newStatement();
                 Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
         {
             if ( cursor.next() )
             {
-                Property fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
+                DefinedProperty fetched = getProperty( key, statement, cursor.get().nextPropertyId() );
                 if ( fetched != null )
                 {
-                    oldProperty = fetched;
+                    oldValue = Values.of( fetched.value() );
                 }
             }
         }
 
-        transaction.relationshipDoReplaceProperty( relationshipId, oldProperty, property );
+        transaction.relationshipDoReplaceProperty( relationshipId, key, oldValue, Values.of( value ) );
         return property;
     }
 
@@ -503,7 +505,7 @@ public class NeoStoresTest
         initializeStores( storeDir, stringMap() );
         startTx();
         DefinedProperty prop2 = nodeAddProperty( nodeId, prop.propertyKeyId(), 5 );
-        transaction.nodeDoRemoveProperty( nodeId, prop2 );
+        transaction.nodeDoRemoveProperty( nodeId, prop2.propertyKeyId(), Values.of( prop2.value() ) );
         transaction.nodeDoDelete( nodeId );
         commitTx();
         ds.stop();
@@ -1313,7 +1315,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value() );
-                transaction.relationshipDoRemoveProperty( rel, prop3 );
+                transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId(), Values.of( prop3.value() ) );
             }
             else
             {
@@ -1374,7 +1376,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value() );
-                transaction.relationshipDoRemoveProperty( rel, prop3 );
+                transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId(), Values.of( prop3.value() ) );
             }
             else
             {
@@ -1440,7 +1442,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value() );
-                transaction.nodeDoRemoveProperty( node, prop3 );
+                transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId(), Values.of( prop3.value() ) );
             }
             else
             {
@@ -1486,7 +1488,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value() );
-                transaction.nodeDoRemoveProperty( node, prop3 );
+                transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId(), Values.of( prop3.value() ) );
             }
             else
             {

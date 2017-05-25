@@ -35,9 +35,9 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 
@@ -139,7 +139,7 @@ public class GraphPropertiesProxy implements GraphProperties
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().graphSetProperty( Property.property( propertyKeyId, value ) );
+                statement.dataWriteOperations().graphSetProperty( propertyKeyId, Values.of( value ) );
             }
             catch ( IllegalArgumentException e )
             {
@@ -164,7 +164,7 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().graphRemoveProperty( propertyKeyId ).value( null );
+            return statement.dataWriteOperations().graphRemoveProperty( propertyKeyId ).asPublic();
         }
         catch ( IllegalTokenNameException e )
         {

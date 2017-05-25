@@ -31,6 +31,8 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.PropertyValueComparison;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 public abstract class IndexQuery implements Predicate<Object>
 {
@@ -203,12 +205,12 @@ public abstract class IndexQuery implements Predicate<Object>
 
     public static final class ExactPredicate extends IndexQuery
     {
-        private final DefinedProperty exactValue;
+        private final Value exactValue;
 
         ExactPredicate( int propertyKeyId, Object value )
         {
             super( propertyKeyId );
-            this.exactValue = Property.property( propertyKeyId, value );
+            this.exactValue = value instanceof Value ? (Value)value : Values.of( value );
         }
 
         @Override
@@ -220,12 +222,12 @@ public abstract class IndexQuery implements Predicate<Object>
         @Override
         public boolean test( Object value )
         {
-            return exactValue.valueEquals( value );
+            return exactValue.equals( Values.of( value ) );
         }
 
         public Object value()
         {
-            return exactValue.value();
+            return exactValue.asPublic();
         }
     }
 

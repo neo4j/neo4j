@@ -155,7 +155,7 @@ public class DatabaseIndexAccessorTest
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
         assertEquals( asSet( nodeId ),
-                PrimitiveLongCollections.toSet( reader.query( IndexQuery.exact( PROP_ID, value ) ) ) );
+                PrimitiveLongCollections.toSet( reader.query( exact( PROP_ID, value ) ) ) );
         reader.close();
     }
 
