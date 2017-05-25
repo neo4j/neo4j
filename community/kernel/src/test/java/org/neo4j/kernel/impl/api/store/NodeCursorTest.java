@@ -28,6 +28,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.function.LongFunction;
 
@@ -42,7 +43,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
+import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.RepeatRule;
 
@@ -60,7 +61,6 @@ import static org.neo4j.kernel.impl.api.store.NodeCursorTest.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
-import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 @RunWith( Theories.class )
 public class NodeCursorTest
@@ -228,7 +228,7 @@ public class NodeCursorTest
     {
         MutableBoolean called = new MutableBoolean();
         NodeCursor cursor = new NodeCursor( nodeStore, c -> called.setTrue(), NO_LOCK_SERVICE );
-        cursor.init( mock( BatchingLongProgression.class ), mock( NodeTransactionStateView.class ) );
+        cursor.init( mock( NodeProgression.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
@@ -239,7 +239,7 @@ public class NodeCursorTest
     public void shouldCloseThePageCursorWhenDisposed()
     {
         NodeCursor cursor = new NodeCursor( nodeStore, c -> {}, NO_LOCK_SERVICE );
-        cursor.init( mock( BatchingLongProgression.class ), mock( NodeTransactionStateView.class ) );
+        cursor.init( mock( NodeProgression.class ) );
 
         cursor.close();
         cursor.dispose();
@@ -530,12 +530,12 @@ public class NodeCursorTest
             {
                 state = op.prepare( nodeStore, pageCursor, nodeRecord, state );
             }
-            return cursor.init( createProgression( ops, mode ), state == null ? EMPTY : state );
+            return cursor.init( createProgression( ops, mode, state ) );
         }
 
-        private BatchingLongProgression createProgression( Operation[] ops, Mode mode )
+        private NodeProgression createProgression( Operation[] ops, Mode mode, TxState state )
         {
-            return new BatchingLongProgression()
+            return new NodeProgression()
             {
                 private int i;
 
@@ -556,17 +556,28 @@ public class NodeCursorTest
                 }
 
                 @Override
-                public boolean appendAdded()
+                public Iterator<Long> addedNodes()
                 {
-                    return mode == APPEND;
+                    return mode == APPEND && state != null ? state.addedAndRemovedNodes().getAdded().iterator() : null;
                 }
 
                 @Override
-                public boolean fetchAdded()
+                public boolean fetchFromTxState( long id )
                 {
-                    return mode == FETCH;
+                    return mode == FETCH && state != null && state.nodeIsAddedInThisTx( id );
                 }
 
+                @Override
+                public boolean fetchFromDisk( long id )
+                {
+                    return state == null || !state.nodeIsDeletedInThisTx( id );
+                }
+
+                @Override
+                public NodeState nodeState( long id )
+                {
+                    return state == null ? NodeState.EMPTY : state.getNodeState( id );
+                }
             };
         }
 

@@ -195,7 +195,7 @@ public class ConstraintIndexCreator
             // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
-            ((KernelStatement) statement).writableTxState().indexDoDrop( descriptor );
+            ((KernelStatement) statement).txState().indexDoDrop( descriptor );
             transaction.success();
         }
     }
@@ -276,7 +276,7 @@ public class ConstraintIndexCreator
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
             IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( schema );
-            ((KernelStatement) statement).writableTxState().indexRuleDoAdd( index );
+            ((KernelStatement) statement).txState().indexRuleDoAdd( index );
             transaction.success();
             return index;
         }

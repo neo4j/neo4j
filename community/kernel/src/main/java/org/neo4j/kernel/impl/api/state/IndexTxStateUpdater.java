@@ -86,11 +86,11 @@ public class IndexTxStateUpdater
                     {
                         Validators.INDEX_VALUE_VALIDATOR.validate( values.valueAt(i) );
                     }
-                    state.writableTxState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
                 }
                 else
                 {
-                    state.writableTxState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
                 }
             }
         }
@@ -98,7 +98,7 @@ public class IndexTxStateUpdater
 
     private boolean noSchemaChangedInTx( KernelStatement state )
     {
-        return !(state.readableTxState().hasChanges() && !state.readableTxState().hasDataChanges());
+        return !(state.txState().hasChanges() && !state.txState().hasDataChanges());
     }
 
     // PROPERTY CHANGES
@@ -115,7 +115,7 @@ public class IndexTxStateUpdater
                     Validators.INDEX_VALUE_VALIDATOR.validate( after.value() );
                     OrderedPropertyValues values =
                             getOrderedPropertyValues( state, node, after, index.schema().getPropertyIds() );
-                    state.writableTxState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
                 } );
     }
 
@@ -130,7 +130,7 @@ public class IndexTxStateUpdater
                 {
                     OrderedPropertyValues values =
                             getOrderedPropertyValues( state, node, before, index.schema().getPropertyIds() );
-                    state.writableTxState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
                 });
     }
 
@@ -164,7 +164,7 @@ public class IndexTxStateUpdater
                             valuesAfter[i] = value;
                         }
                     }
-                    state.writableTxState().indexDoUpdateEntry( index.schema(), node.id(),
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(),
                             OrderedPropertyValues.ofUndefined( valuesBefore ), OrderedPropertyValues.ofUndefined( valuesAfter ) );
                 });
     }

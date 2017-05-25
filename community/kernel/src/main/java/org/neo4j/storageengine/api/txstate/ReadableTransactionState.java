@@ -21,8 +21,9 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.OrderedPropertyValues;
@@ -31,13 +32,15 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageProperty;
 
 /**
  * This interface contains the methods for reading transaction state from the transaction state.
  * The implementation of these methods should be free of any side effects (such as initialising lazy state).
  */
-public interface ReadableTransactionState extends NodeTransactionStateView
+public interface ReadableTransactionState
 {
     void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 
@@ -49,6 +52,11 @@ public interface ReadableTransactionState extends NodeTransactionStateView
      * Returns all nodes that, in this tx, have had labelId removed.
      */
     ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
+
+    /**
+     * Returns nodes that have been added and removed in this tx.
+     */
+    ReadableDiffSets<Long> addedAndRemovedNodes();
 
     /**
      * Returns rels that have been added and removed in this tx.
@@ -70,6 +78,10 @@ public interface ReadableTransactionState extends NodeTransactionStateView
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
     Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original );
+
+    boolean nodeIsAddedInThisTx( long nodeId );
+
+    boolean nodeIsDeletedInThisTx( long nodeId );
 
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
@@ -114,6 +126,8 @@ public interface ReadableTransactionState extends NodeTransactionStateView
 
     ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
+    NodeState getNodeState( long id );
+
     RelationshipState getRelationshipState( long id );
 
     /**
@@ -126,196 +140,4 @@ public interface ReadableTransactionState extends NodeTransactionStateView
      * The same applies to schema changes, such as creating and dropping indexes and constraints.
      */
     boolean hasDataChanges();
-
-    ReadableTransactionState EMPTY = new ReadableTransactionState()
-    {
-        @Override
-        public void accept( TxStateVisitor visitor )
-                throws ConstraintValidationException, CreateConstraintFailureException
-        {
-
-        }
-
-        @Override
-        public boolean hasChanges()
-        {
-            return false;
-        }
-
-        @Override
-        public ReadableDiffSets<Long> nodesWithLabelChanged( int labelId )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<Long> addedAndRemovedNodes()
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships()
-        {
-            return ReadableRelationshipDiffSets.Empty.instance();
-        }
-
-        @Override
-        public Iterable<NodeState> modifiedNodes()
-        {
-            return Iterables.empty();
-        }
-
-        @Override
-        public Iterable<RelationshipState> modifiedRelationships()
-        {
-            return Iterables.empty();
-        }
-
-        @Override
-        public boolean relationshipIsAddedInThisTx( long relationshipId )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean relationshipIsDeletedInThisTx( long relationshipId )
-        {
-            return false;
-        }
-
-        @Override
-        public Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original )
-        {
-            return original;
-        }
-
-        @Override
-        public boolean nodeIsAddedInThisTx( long nodeId )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean nodeIsDeletedInThisTx( long nodeId )
-        {
-            return false;
-        }
-
-        @Override
-        public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
-        {
-            return committed;
-        }
-
-        @Override
-        public RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed )
-        {
-            return committed;
-        }
-
-        @Override
-        public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
-        {
-            return false;
-        }
-
-        @Override
-        public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<IndexDescriptor> indexChanges()
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public Iterable<IndexDescriptor> constraintIndexesCreatedInTx()
-        {
-            return Iterables.empty();
-        }
-
-        @Override
-        public ReadableDiffSets<ConstraintDescriptor> constraintsChanges()
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForLabel( int labelId )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public Long indexCreatedForConstraint( ConstraintDescriptor constraint )
-        {
-            return null;
-        }
-
-        @Override
-        public ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, OrderedPropertyValues values )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index, Number lower,
-                boolean includeLower, Number upper, boolean includeUpper )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index, String lower,
-                boolean includeLower, String upper, boolean includeUpper )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix )
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public NodeState getNodeState( long id )
-        {
-            return NodeState.EMPTY;
-        }
-
-        @Override
-        public RelationshipState getRelationshipState( long id )
-        {
-            return RelationshipState.EMPTY;
-        }
-
-        @Override
-        public boolean hasDataChanges()
-        {
-            return false;
-        }
-    };
 }

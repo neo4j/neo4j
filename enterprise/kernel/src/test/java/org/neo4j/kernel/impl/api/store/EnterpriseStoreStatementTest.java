@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
@@ -45,7 +45,6 @@ import static java.util.Collections.disjoint;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 public class EnterpriseStoreStatementTest
 {
@@ -63,13 +62,13 @@ public class EnterpriseStoreStatementTest
         int nodes = randomNodes( neoStores.getNodeStore() );
         createNodes( db, nodes );
 
-        Set<Long> expected = singleThreadExecution( neoStores, EMPTY );
+        Set<Long> expected = singleThreadExecution( neoStores, null );
 
         int threads = random.nextInt( 2, 6 );
         ExecutorService executorService = Executors.newCachedThreadPool();
         try
         {
-            Set<Long> parallelResult = parallelExecution( neoStores, executorService, threads, EMPTY );
+            Set<Long> parallelResult = parallelExecution( neoStores, executorService, threads, null );
             assertEquals( expected, parallelResult );
         }
         finally
@@ -106,7 +105,7 @@ public class EnterpriseStoreStatementTest
     }
 
     private Set<Long> parallelExecution( NeoStores neoStores, ExecutorService executorService, int threads,
-            NodeTransactionStateView stateView ) throws Throwable
+            ReadableTransactionState state ) throws Throwable
     {
         EnterpriseStoreStatement[] localStatements = new EnterpriseStoreStatement[threads];
         for ( int i = 0; i < threads; i++ )
@@ -114,7 +113,7 @@ public class EnterpriseStoreStatementTest
             localStatements[i] = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         }
         // use any of the local statements to build the shared progression
-        BatchingLongProgression progression = localStatements[0].parallelNodeScanProgression();
+        NodeProgression progression = localStatements[0].parallelNodeScanProgression( state );
 
         @SuppressWarnings( "unchecked" )
         Future<Set<Long>>[] futures = new Future[threads];
@@ -124,7 +123,7 @@ public class EnterpriseStoreStatementTest
             futures[i] = executorService.submit( () ->
             {
                 HashSet<Long> ids = new HashSet<>();
-                try ( Cursor<NodeItem> cursor = localStatements[id].acquireNodeCursor( progression, stateView ) )
+                try ( Cursor<NodeItem> cursor = localStatements[id].acquireNodeCursor( progression ) )
                 {
                     while ( cursor.next() )
                     {
@@ -161,12 +160,12 @@ public class EnterpriseStoreStatementTest
         return parallelResult;
     }
 
-    private Set<Long> singleThreadExecution( NeoStores neoStores, NodeTransactionStateView stateView )
+    private Set<Long> singleThreadExecution( NeoStores neoStores, ReadableTransactionState state )
     {
         Set<Long> expected = new HashSet<>();
         EnterpriseStoreStatement statement = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         try ( Cursor<NodeItem> cursor = statement
-                .acquireNodeCursor( new AllNodeProgression( neoStores.getNodeStore() ), stateView ) )
+                .acquireNodeCursor( new AllNodeProgression( neoStores.getNodeStore(), state ) ) )
         {
             while ( cursor.next() )
             {
@@ -214,5 +213,9 @@ public class EnterpriseStoreStatementTest
             tx.success();
             return nodeId;
         }
+    }
+
+    private void noCache( NodeCursor c )
+    {
     }
 }

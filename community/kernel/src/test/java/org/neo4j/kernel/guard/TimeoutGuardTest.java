@@ -67,7 +67,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
 
         check( timeoutGuard, kernelStatement, overtime, message );
 
-        KernelTransaction transaction = kernelStatement.transaction();
+        KernelTransactionImplementation transaction = kernelStatement.getTransaction();
         assertSame( Status.Transaction.TransactionTimedOut, transaction.getReasonIfTerminated().get() );
 
         logProvider.assertContainsMessageContaining( message );
@@ -86,7 +86,7 @@ public class TimeoutGuardTest extends KernelTransactionTestBase
 
         timeoutGuard.check( kernelStatement );
 
-        KernelTransaction transaction = kernelStatement.transaction();
+        KernelTransactionImplementation transaction = kernelStatement.getTransaction();
         assertFalse( transaction.getReasonIfTerminated().isPresent() );
 
         logProvider.assertNoLoggingOccurred();

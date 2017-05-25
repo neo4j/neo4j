@@ -526,7 +526,7 @@ public class LockingStatementOperations implements
 
     private void acquireExclusiveNodeLock( KernelStatement state, long nodeId )
     {
-        if ( !state.readableTxState().nodeIsAddedInThisTx( nodeId ) )
+        if ( !state.hasTxStateWithChanges() || !state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
             state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeId );
         }
@@ -534,7 +534,7 @@ public class LockingStatementOperations implements
 
     private void acquireExclusiveRelationshipLock( KernelStatement state, long relationshipId )
     {
-        if ( !state.readableTxState().relationshipIsAddedInThisTx( relationshipId ) )
+        if ( !state.hasTxStateWithChanges() || !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
             state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
         }

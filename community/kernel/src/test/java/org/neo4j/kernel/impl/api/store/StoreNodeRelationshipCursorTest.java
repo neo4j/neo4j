@@ -60,7 +60,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -84,7 +83,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
-import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 @RunWith( Parameterized.class )
 public class StoreNodeRelationshipCursorTest
@@ -146,13 +144,13 @@ public class StoreNodeRelationshipCursorTest
 
         try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
-            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, EMPTY );
+            cursor.init( dense, 1L, FIRST_OWNING_NODE, direction, null );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, EMPTY );
+            cursor.init( dense, 2, FIRST_OWNING_NODE, direction, null );
             assertTrue( cursor.next() );
 
-            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, EMPTY );
+            cursor.init( dense, 3, FIRST_OWNING_NODE, direction, null );
             assertTrue( cursor.next() );
         }
     }
@@ -164,7 +162,7 @@ public class StoreNodeRelationshipCursorTest
         long expectedNodeId = 1;
         try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, EMPTY );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, null );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.get().id() );
@@ -182,7 +180,7 @@ public class StoreNodeRelationshipCursorTest
         int relationshipIndex = 0;
         try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
-            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, EMPTY );
+            cursor.init( dense, 1, FIRST_OWNING_NODE, direction, null );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
@@ -201,7 +199,7 @@ public class StoreNodeRelationshipCursorTest
         try ( StoreNodeRelationshipCursor cursor = nodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, EMPTY );
+            cursor.init( dense, NO_NEXT_RELATIONSHIP.intValue(), FIRST_OWNING_NODE, direction, null );
 
             // THEN
             assertFalse( cursor.next() );

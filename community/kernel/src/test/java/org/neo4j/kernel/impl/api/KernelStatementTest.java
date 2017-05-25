@@ -47,9 +47,8 @@ public class KernelStatementTest
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.Terminated ) );
         when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
-        KernelStatementImplementation statement =
-                new KernelStatementImplementation( transaction, null, mock( StorageStatement.class ), null,
-                        new CanWrite(), LockTracer.NONE );
+        KernelStatement statement = new KernelStatement( transaction, null, mock( StorageStatement.class ), null, new CanWrite(),
+                LockTracer.NONE );
         statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
@@ -60,9 +59,8 @@ public class KernelStatementTest
     {
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
-        KernelStatementImplementation statement =
-                new KernelStatementImplementation( mock( KernelTransactionImplementation.class ), null, storeStatement,
-                        new Procedures(), new CanWrite(), LockTracer.NONE );
+        KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
+                null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE );
         statement.acquire();
 
         // when
@@ -80,7 +78,7 @@ public class KernelStatementTest
         StorageStatement storeStatement = mock( StorageStatement.class );
         AccessCapability accessCapability = mock( AccessCapability.class );
         Procedures procedures = mock( Procedures.class );
-        KernelStatement statement = new KernelStatementImplementation( transaction, txStateHolder,
+        KernelStatement statement = new KernelStatement( transaction, txStateHolder,
                 storeStatement, procedures, accessCapability, LockTracer.NONE );
 
         statement.assertOpen();

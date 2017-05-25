@@ -19,27 +19,38 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-class ParallelAllNodeProgression implements BatchingLongProgression
+import static java.lang.Math.max;
+
+class ParallelAllNodeProgression implements NodeProgression
 {
     private final NodeStore nodeStore;
-    private final AtomicLong nextPageId;
+    private final ReadableTransactionState state;
+    private final int recordsPerPage;
+    private final int numberOfReservedLowIds;
     private final long lastPageId;
 
+    private final AtomicLong nextPageId = new AtomicLong();
     private final AtomicBoolean done = new AtomicBoolean();
     private final AtomicBoolean append = new AtomicBoolean( true );
 
-    ParallelAllNodeProgression( NodeStore nodeStore )
+    ParallelAllNodeProgression( NodeStore nodeStore, ReadableTransactionState state )
     {
         this.nodeStore = nodeStore;
-        // start from the page containing the first non reserved id
-        this.nextPageId = new AtomicLong( nodeStore.pageIdForRecord( nodeStore.getNumberOfReservedLowIds() ) );
+        this.state = state;
+        recordsPerPage = nodeStore.getRecordsPerPage();
+        numberOfReservedLowIds = nodeStore.getNumberOfReservedLowIds();
         // last page to process is the one containing the highest id in use
-        this.lastPageId = nodeStore.pageIdForRecord( nodeStore.getHighestPossibleIdInUse() );
+        lastPageId = nodeStore.getHighestPossibleIdInUse() / recordsPerPage;
+        // start from the page containing the first non reserved id
+        nextPageId.set( numberOfReservedLowIds / recordsPerPage );
     }
 
     @Override
@@ -56,14 +67,14 @@ class ParallelAllNodeProgression implements BatchingLongProgression
             long pageId = nextPageId.getAndIncrement();
             if ( pageId < lastPageId )
             {
-                long first = nodeStore.firstRecordOnPage( pageId );
-                long last = nodeStore.firstRecordOnPage( pageId + 1 ) - 1;
+                long first = firstIdOnPage( pageId );
+                long last = firstIdOnPage( pageId + 1 ) - 1;
                 batch.init( first, last );
                 return true;
             }
             else if ( !done.get() && done.compareAndSet( false, true ) )
             {
-                long first = nodeStore.firstRecordOnPage( lastPageId );
+                long first = firstIdOnPage( lastPageId );
                 long last = nodeStore.getHighestPossibleIdInUse();
                 batch.init( first, last );
                 return true;
@@ -71,15 +82,36 @@ class ParallelAllNodeProgression implements BatchingLongProgression
         }
     }
 
-    @Override
-    public boolean appendAdded()
+    private long firstIdOnPage( long pageId )
     {
-        return append.compareAndSet( true, false );
+        return max( numberOfReservedLowIds, pageId * recordsPerPage );
     }
 
     @Override
-    public boolean fetchAdded()
+    public Iterator<Long> addedNodes()
+    {
+        if ( state != null && append.get() && append.compareAndSet( true, false  ) )
+        {
+            return state.addedAndRemovedNodes().getAdded().iterator();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean fetchFromTxState( long id )
     {
         return false;
+    }
+
+    @Override
+    public boolean fetchFromDisk( long id )
+    {
+        return state == null || !state.nodeIsDeletedInThisTx( id );
+    }
+
+    @Override
+    public NodeState nodeState( long id )
+    {
+        return state == null ? NodeState.EMPTY : state.getNodeState( id );
     }
 }

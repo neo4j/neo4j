@@ -32,8 +32,8 @@ public class SingleNodeProgressionTest
     {
         // given
         long nodeId = 42L;
-        SingleNodeProgression progression = new SingleNodeProgression( nodeId );
-        Batch batch = new Batch();
+        SingleNodeProgression progression = new SingleNodeProgression( nodeId, null );
+        NodeProgression.Batch batch = new NodeProgression.Batch();
 
         // when / then
         assertTrue( progression.nextBatch( batch ) );

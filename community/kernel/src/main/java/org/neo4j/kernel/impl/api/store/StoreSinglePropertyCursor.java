@@ -54,14 +54,15 @@ public class StoreSinglePropertyCursor extends StoreAbstractPropertyCursor
             return false;
         }
 
-        // go to disk if the state does not contain the keyId we are looking for
-        return state.getAddedProperty( propertyKeyId ) == null;
+        // go to disk either if there is no state
+        // or if there is a state such state does not contain the keyId we are looking for
+        return state == null || state.getAddedProperty( propertyKeyId ) == null;
     }
 
     @Override
     protected DefinedProperty nextAdded()
     {
-        return !fetched ? (DefinedProperty) state.getAddedProperty( propertyKeyId ) : null;
+        return !fetched && state != null ? (DefinedProperty) state.getAddedProperty( propertyKeyId ) : null;
     }
 
     @Override

@@ -21,20 +21,24 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.store.NodeStore;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class AllNodeProgressionTest
 {
     private final int start = 1;
     private final long end = 42L;
     private final NodeStore nodeStore = mock( NodeStore.class );
-    private final Batch batch = new Batch();
+    private final NodeProgression.Batch batch = new NodeProgression.Batch();
 
     {
         when( nodeStore.getNumberOfReservedLowIds() ).thenReturn( start );
@@ -46,14 +50,14 @@ public class AllNodeProgressionTest
     public void shouldReturnABatchFromLowReservedIdsToHighIdPossibleInUse() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
 
         // when
         boolean hasNext = progression.nextBatch( batch );
 
         // then
         assertTrue( hasNext );
-        checkBatch( start, end );
+        checkBatch( start, end, progression );
 
         assertNoMoreValueInBatchAndProgression( progression );
     }
@@ -62,15 +66,15 @@ public class AllNodeProgressionTest
     public void shouldCheckIfTheHighIdHasChangedAndIssueAnExtraBatchWithTheRemainingElements() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
         assertTrue( progression.nextBatch( batch ) );
-        checkBatch( start, end );
+        checkBatch( start, end, progression );
 
         // when / then
         long movedEnd = end + 10;
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( movedEnd );
         assertTrue( progression.nextBatch( batch ) );
-        checkBatch( end + 1, movedEnd );
+        checkBatch( end + 1, movedEnd, progression );
 
         assertNoMoreValueInBatchAndProgression( progression );
     }
@@ -79,9 +83,9 @@ public class AllNodeProgressionTest
     public void shouldNeverReturnNewBatchesIfTheProgressionHasReturnFalseToSignalTermination() throws Throwable
     {
         // given
-        AllNodeProgression progression = new AllNodeProgression( nodeStore );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
         assertTrue( progression.nextBatch( batch ) );
-        checkBatch( start, end );
+        checkBatch( start, end, progression );
 
         assertNoMoreValueInBatchAndProgression( progression );
 
@@ -91,12 +95,61 @@ public class AllNodeProgressionTest
         assertNoMoreValueInBatchAndProgression( progression );
     }
 
-    private void checkBatch( long start, long end )
+    @Test
+    public void shouldReturnNoAddedNodesIfNoTransactionStateIsGiven() throws Throwable
+    {
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, null );
+        assertNull( progression.addedNodes() );
+    }
+
+    @Test
+    public void shouldReturnAddedNodesFromTheTxState() throws Throwable
+    {
+        TxState txState = new TxState();
+        long id = 42;
+        txState.nodeDoCreate( id );
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, txState );
+        assertEquals( singletonList( id ), asList( progression.addedNodes() ) );
+    }
+
+    @Test
+    public void shouldMarkTheDeletedNodesAsNonFetchableFromDisk() throws Throwable
+    {
+        TxState txState = new TxState();
+        for ( long i = start; i <= end; i++ )
+        {
+            if ( i % 3 == 0 )
+            {
+                txState.nodeDoDelete( i );
+            }
+        }
+
+        // given
+        AllNodeProgression progression = new AllNodeProgression( nodeStore, txState );
+
+        // when
+        boolean hasNext = progression.nextBatch( batch );
+
+        // then
+        assertTrue( hasNext );
+
+        for ( long i = start; i <= end; i++ )
+        {
+            assertTrue( batch.hasNext() );
+            assertEquals( i, batch.next() );
+            assertEquals( i % 3 != 0, progression.fetchFromDisk( i ) );
+        }
+
+        assertNoMoreValueInBatchAndProgression( progression );
+    }
+
+    private void checkBatch( long start, long end, NodeProgression progression )
     {
         for ( long i = start; i <= end; i++ )
         {
             assertTrue( batch.hasNext() );
             assertEquals( i, batch.next() );
+            assertTrue( progression.fetchFromDisk( i ) );
         }
     }
 

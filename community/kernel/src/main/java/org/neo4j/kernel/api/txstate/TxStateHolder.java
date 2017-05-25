@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.storageengine.api.txstate.WritableTransactionState;
-
 public interface TxStateHolder
 {
-    ReadableTransactionState readableTxState();
-    WritableTransactionState writableTxState();
+    TransactionState txState();
     LegacyIndexTransactionState legacyIndexTxState();
+    boolean hasTxStateWithChanges();
 }

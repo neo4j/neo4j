@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -83,15 +82,14 @@ public abstract class StatementOperationsTestHelper
                     .thenReturn( PrimitiveLongCollections.emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
             when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
-            when( state.storageStatement() ).thenReturn( storageStatement );
+            when( state.getStoreStatement() ).thenReturn( storageStatement );
         }
         catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )
         {
             throw new Error( e );
         }
-        when( state.readableTxState() )
-                .thenAnswer( invocation -> txState.hasChanges() ? txState : ReadableTransactionState.EMPTY );
-        when( state.writableTxState() ).thenReturn( txState );
+        when( state.txState() ).thenReturn( txState );
+        when( state.hasTxStateWithChanges() ).thenAnswer( invocation -> txState.hasChanges() );
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
         return state;

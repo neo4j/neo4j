@@ -967,8 +967,22 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         when( executionResult.columns() ).thenReturn( new ArrayList<>( keys ) );
 
         final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
-        when( executionResult.hasNext() ).thenAnswer( invocation -> inner.hasNext() );
-        when( executionResult.next() ).thenAnswer( invocation -> inner.next() );
+        when( executionResult.hasNext() ).thenAnswer( new Answer<Boolean>()
+        {
+            @Override
+            public Boolean answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return inner.hasNext();
+            }
+        } );
+        when( executionResult.next() ).thenAnswer( new Answer<Map<String,Object>>()
+        {
+            @Override
+            public Map<String, Object> answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return inner.next();
+            }
+        } );
 
         when( executionResult.getQueryExecutionType() )
                 .thenReturn( null != planDescription
@@ -985,19 +999,23 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         return executionResult;
     }
 
-    @SuppressWarnings( "unchecked" )
     private static void mockAccept( Result mock )
     {
-        doAnswer( invocation ->
+        doAnswer( new Answer<Void>()
         {
-            Result result = (Result) invocation.getMock();
-            Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
-            while ( result.hasNext() )
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
             {
-                visitor.visit( new MapRow( result.next() ) );
+                Result result = (Result) invocation.getMock();
+                Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
+                while ( result.hasNext() )
+                {
+                    visitor.visit( new MapRow( result.next() ) );
+                }
+                return null;
             }
-            return null;
-        } ).when( mock ).accept( any( Result.ResultVisitor.class ) );
+        } ).when( mock )
+           .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,

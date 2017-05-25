@@ -465,7 +465,7 @@ public class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        public long pageIdForRecord( long id )
+        protected long pageIdForRecord( long id )
         {
             Long override = nextPageId.poll();
             return override != null ? override : super.pageIdForRecord( id );

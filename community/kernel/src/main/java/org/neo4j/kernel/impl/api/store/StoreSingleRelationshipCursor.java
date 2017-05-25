@@ -67,7 +67,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
 
     private boolean isDeletedInTx()
     {
-        return state.relationshipIsDeletedInThisTx( relationshipId );
+        return state != null && state.relationshipIsDeletedInThisTx( relationshipId );
     }
 
     private boolean loadNextRecord()
@@ -78,7 +78,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
 
     private boolean fetchFromTxState()
     {
-        boolean found = state.relationshipIsAddedInThisTx( relationshipId );
+        boolean found = state != null && state.relationshipIsAddedInThisTx( relationshipId );
         if ( found )
         {
             state.relationshipVisit( relationshipId, this );

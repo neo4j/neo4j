@@ -54,7 +54,7 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractIteratorRelati
 
     private PrimitiveLongIterator addedRelationships( ReadableTransactionState state )
     {
-        return toPrimitiveIterator( state.addedAndRemovedRelationships().getAdded().iterator() );
+        return state == null ? null : toPrimitiveIterator( state.addedAndRemovedRelationships().getAdded().iterator() );
     }
 
     @Override

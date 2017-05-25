@@ -58,10 +58,10 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static java.util.Collections.emptyIterator;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -69,7 +69,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -94,12 +93,14 @@ public class StateHandlingStatementOperationsTest
     @Test
     public void shouldNeverDelegateWrites() throws Exception
     {
-        KernelStatement state = mockedState( new TxState() );
+        KernelStatement state = mockedState();
+
+        when( state.txState() ).thenReturn( new TxState() );
         when( inner.indexesGetForLabel( 0 ) ).thenReturn( iterator( IndexDescriptorFactory.forLabel( 0, 0 ) ) );
         when( inner.nodeCursor( any( StorageStatement.class ), anyLong(), any( ReadableTransactionState.class ) ) )
                 .thenReturn( asNodeCursor( 0 ) );
-        when( inner.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ),
-                any( PropertyContainerState.class ) ) ).thenReturn( asPropertyCursor() );
+        when( inner.nodeGetProperties( any( StorageStatement.class ), any( NodeItem.class ), eq( null ) ) ).
+                thenReturn( asPropertyCursor() );
 
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
@@ -111,8 +112,7 @@ public class StateHandlingStatementOperationsTest
         ctx.nodeRemoveLabel( state, 0, 0 );
 
         // one for add and one for remove
-        verify( inner, times( 2 ) )
-                .nodeCursor( any( StorageStatement.class ), eq( 0L ), any( ReadableTransactionState.class ) );
+        verify( inner, times( 2 ) ).nodeCursor( any( StorageStatement.class ), eq( 0L ), eq( null ) );
     }
 
     @Test
@@ -214,8 +214,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForScan( index ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -245,8 +245,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForSeek( index, OrderedPropertyValues.ofUndefined( "value" ) ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -275,8 +275,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -305,8 +305,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -335,8 +335,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForScan( index ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -365,8 +365,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForScan( index ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -401,8 +401,8 @@ public class StateHandlingStatementOperationsTest
 
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -442,8 +442,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
-        when( statement.readableTxState() ).thenReturn( txState );
-        when( statement.writableTxState() ).thenReturn( txState );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
         when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
@@ -472,7 +472,6 @@ public class StateHandlingStatementOperationsTest
     public void indexQueryClosesIndexReader() throws Exception
     {
         KernelStatement kernelStatement = mock( KernelStatement.class );
-        when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
         IndexReader indexReader = mock( IndexReader.class );
         when( indexReader.query( any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
@@ -498,7 +497,6 @@ public class StateHandlingStatementOperationsTest
         String value = "The value";
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
         Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId );
         when( storeReadLayer
                 .nodeCursor( any( StorageStatement.class ), eq( nodeId ), any( ReadableTransactionState.class ) ) )
@@ -517,6 +515,7 @@ public class StateHandlingStatementOperationsTest
         operations.nodeSetProperty( kernelStatement, nodeId, newProperty );
 
         // THEN
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
         verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( nodeId ),
                 eq( Property.stringProperty( propertyKeyId, value ) ), eq( newProperty ) );
@@ -530,9 +529,6 @@ public class StateHandlingStatementOperationsTest
         long relationshipId = 0;
         String value = "The value";
         KernelStatement kernelStatement = mock( KernelStatement.class );
-        when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
-        WritableTransactionState writableTransactionState = mock( WritableTransactionState.class );
-        when( kernelStatement.writableTxState() ).thenReturn( writableTransactionState );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId );
         when( storeReadLayer.relationshipCursor( any( StorageStatement.class ), eq( relationshipId ),
@@ -551,7 +547,7 @@ public class StateHandlingStatementOperationsTest
         operations.relationshipSetProperty( kernelStatement, relationshipId, newProperty );
 
         // THEN
-        verifyZeroInteractions( writableTransactionState );
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
         verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( relationshipId ),
                 eq( newProperty ), eq( newProperty ) );
@@ -564,11 +560,8 @@ public class StateHandlingStatementOperationsTest
         int propertyKeyId = 5;
         String value = "The value";
         KernelStatement kernelStatement = mock( KernelStatement.class );
-        when( kernelStatement.readableTxState() ).thenReturn( ReadableTransactionState.EMPTY );
-        WritableTransactionState writableTransactionState = mock( WritableTransactionState.class );
-        when( kernelStatement.writableTxState() ).thenReturn( writableTransactionState );
         StoreStatement storeStatement = mock( StoreStatement.class );
-        when( kernelStatement.storageStatement() ).thenReturn( storeStatement );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
         when( inner.graphGetAllProperties() ).thenReturn( iterator( Property.stringProperty( propertyKeyId, value ) ) );
         StateHandlingStatementOperations operations = newTxStateOps( inner );
 
@@ -577,7 +570,7 @@ public class StateHandlingStatementOperationsTest
         operations.graphSetProperty( kernelStatement, newProperty );
 
         // THEN
-        verifyZeroInteractions( writableTransactionState );
+        assertFalse( kernelStatement.hasTxStateWithChanges() );
     }
 
     private Cursor<NodeItem> nodeCursorWithProperty( long propertyKeyId )

@@ -125,7 +125,8 @@ public class OperationsFacade
     private final Procedures procedures;
     private StatementOperationParts operations;
 
-    OperationsFacade( KernelTransaction tx, KernelStatement statement, Procedures procedures )
+    OperationsFacade( KernelTransaction tx, KernelStatement statement,
+                      Procedures procedures )
     {
         this.tx = tx;
         this.statement = statement;
@@ -144,7 +145,7 @@ public class OperationsFacade
 
     final KeyWriteOperations tokenWrite()
     {
-        statement.assertAllowsTokenCreates();
+        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return operations.keyWriteOperations();
     }
 
@@ -1322,7 +1323,7 @@ public class OperationsFacade
     public void setMetaData( Map<String,Object> data )
     {
         statement.assertOpen();
-        statement.transaction().setUserMetaData( data );
+        statement.getTransaction().setMetaData( data );
     }
 
     @Override
@@ -1528,7 +1529,7 @@ public class OperationsFacade
     @Override
     public PageCursorTracer getPageCursorTracer()
     {
-        return statement.pageCursorTracer();
+        return statement.getPageCursorTracer();
     }
     // </Procedures>
 }

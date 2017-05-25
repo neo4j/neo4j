@@ -306,13 +306,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordSize = determineRecordSize();
     }
 
-    public long firstRecordOnPage( long pageId )
-    {
-        return RecordPageLocationCalculator
-                .firstRecordOnPage( pageId, storeFile.pageSize(), recordSize, getNumberOfReservedLowIds() );
-    }
-
-    public long pageIdForRecord( long id )
+    protected long pageIdForRecord( long id )
     {
         return RecordPageLocationCalculator.pageIdForRecord( id, storeFile.pageSize(), recordSize );
     }
