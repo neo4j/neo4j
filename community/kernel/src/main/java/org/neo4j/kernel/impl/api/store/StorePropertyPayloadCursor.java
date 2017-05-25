@@ -71,7 +71,7 @@ class StorePropertyPayloadCursor
 
     private long[] data;
     private int position = INITIAL_POSITION;
-    private int numberOfBlocks = 0;
+    private int numberOfBlocks;
     private boolean exhausted;
 
     StorePropertyPayloadCursor( RecordCursor<DynamicRecord> stringRecordCursor,
