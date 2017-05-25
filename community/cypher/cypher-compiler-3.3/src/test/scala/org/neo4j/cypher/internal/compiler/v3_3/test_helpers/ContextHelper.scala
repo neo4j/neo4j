@@ -38,7 +38,7 @@ object ContextHelper extends MockitoSugar {
              monitors: Monitors = mock[Monitors],
              metrics: Metrics = mock[Metrics],
              config: CypherCompilerConfiguration = mock[CypherCompilerConfiguration],
-              queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
+             queryGraphSolver: QueryGraphSolver = mock[QueryGraphSolver],
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              debugOptions: Set[String] = Set.empty,
              clock: Clock = Clock.systemUTC()): CompilerContext = {

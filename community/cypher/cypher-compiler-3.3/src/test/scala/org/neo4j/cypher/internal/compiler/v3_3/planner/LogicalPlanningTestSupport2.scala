@@ -169,12 +169,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
-      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics, config = cypherCompilerConfig)
+      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
+                                         config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
 
       val state = LogicalPlanState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
-      (output.periodicCommit, logicalPlan, output.semanticTable)
+      (output.periodicCommit, logicalPlan, output.semanticTable())
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
