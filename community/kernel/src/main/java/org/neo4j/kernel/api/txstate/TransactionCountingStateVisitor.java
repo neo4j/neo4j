@@ -24,11 +24,11 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
-import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
+import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -39,6 +39,7 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
+    private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
     private final StoreReadLayer storeLayer;
     private final StorageStatement statement;
     private final CountsRecordState counts;
@@ -93,15 +94,14 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     @Override
     public void visitDeletedRelationship( long id )
     {
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipCursor( statement, id, null ) )
+        try
         {
-            if ( !cursor.next() )
-            {
-                throw new IllegalStateException( "Relationship being deleted should exist along with its nodes." );
-            }
-
-            RelationshipItem relationship = cursor.get();
-            updateRelationshipCount( relationship.startNode(), relationship.type(), relationship.endNode(), -1 );
+            storeLayer.relationshipVisit( id, edge );
+            updateRelationshipCount( edge.startNode(), edge.type(), edge.endNode(), -1 );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes.", e );
         }
         super.visitDeletedRelationship( id );
     }

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
@@ -51,7 +50,7 @@ public class StubCursors
         NodeItem[] nodeItems = new NodeItem[nodeIds.length];
         for ( int i = 0; i < nodeIds.length; i++ )
         {
-            nodeItems[i] = asNode( nodeIds[i], -1, emptySet() );
+            nodeItems[i] = new StubNodeItem( nodeIds[i], -1, emptySet() );
         }
         return cursor( nodeItems );
     }
@@ -68,70 +67,74 @@ public class StubCursors
 
     public static Cursor<NodeItem> asNodeCursor( long nodeId, PrimitiveIntSet labels )
     {
-        return asNodeCursor(nodeId, -1, labels );
+        return cursor( new StubNodeItem( nodeId, -1, labels ) );
     }
 
     public static Cursor<NodeItem> asNodeCursor( long nodeId, long propertyId, PrimitiveIntSet labels )
     {
-        return cursor( asNode( nodeId, propertyId, labels ) );
+        return cursor( new StubNodeItem( nodeId, propertyId, labels ) );
     }
 
-    public static NodeItem asNode( long nodeId )
+    private static class StubNodeItem implements NodeItem
     {
-        return asNode( nodeId, -1, PrimitiveIntCollections.emptySet() );
-    }
-    public static NodeItem asNode( long nodeId, long propertyId, PrimitiveIntSet labels  )
-    {
-        return new NodeItem()
+        private final long nodeId;
+        private final long propertyId;
+        private final PrimitiveIntSet labels;
+
+        private StubNodeItem( long nodeId, long propertyId, PrimitiveIntSet labels )
         {
-            @Override
-            public long id()
-            {
-                return nodeId;
-            }
+            this.nodeId = nodeId;
+            this.propertyId = propertyId;
+            this.labels = labels;
+        }
 
-            @Override
-            public boolean hasLabel( int labelId )
-            {
-                return labels.contains( labelId );
-            }
+        @Override
+        public long id()
+        {
+            return nodeId;
+        }
 
-            @Override
-            public long nextGroupId()
-            {
-                throw new UnsupportedOperationException( "not supported" );
-            }
+        @Override
+        public boolean hasLabel( int labelId )
+        {
+            return labels.contains( labelId );
+        }
 
-            @Override
-            public long nextRelationshipId()
-            {
-                throw new UnsupportedOperationException( "not supported" );
-            }
+        @Override
+        public long nextGroupId()
+        {
+            throw new UnsupportedOperationException( "not supported" );
+        }
 
-            @Override
-            public long nextPropertyId()
-            {
-                return propertyId;
-            }
+        @Override
+        public long nextRelationshipId()
+        {
+            throw new UnsupportedOperationException( "not supported" );
+        }
 
-            @Override
-            public Lock lock()
-            {
-                return NO_LOCK;
-            }
+        @Override
+        public long nextPropertyId()
+        {
+            return propertyId;
+        }
 
-            @Override
-            public PrimitiveIntSet labels()
-            {
-                return labels;
-            }
+        @Override
+        public Lock lock()
+        {
+            return NO_LOCK;
+        }
 
-            @Override
-            public boolean isDense()
-            {
-                throw new UnsupportedOperationException(  );
-            }
-        };
+        @Override
+        public PrimitiveIntSet labels()
+        {
+            return labels;
+        }
+
+        @Override
+        public boolean isDense()
+        {
+            throw new UnsupportedOperationException(  );
+        }
     }
 
     public static RelationshipItem relationship( long id, int type, long start, long end )
@@ -199,13 +202,7 @@ public class StubCursors
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
             final long startNode, final long endNode, long propertyId )
     {
-        return cursor( asRelationship( relId, type, startNode, endNode, propertyId ) );
-    }
-
-    public static RelationshipItem asRelationship( final long relId, final int type, final long startNode,
-            final long endNode, final long propertyId )
-    {
-        return new RelationshipItem()
+        return cursor( new RelationshipItem()
         {
             @Override
             public long id()
@@ -248,7 +245,7 @@ public class StubCursors
             {
                 return NO_LOCK;
             }
-        };
+        } );
     }
 
     public static PrimitiveIntSet labels( final int... labels )

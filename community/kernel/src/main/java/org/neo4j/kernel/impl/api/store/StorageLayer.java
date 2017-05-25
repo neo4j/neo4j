@@ -30,6 +30,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -54,15 +56,19 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -77,6 +83,7 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.Primitive.intSet;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
@@ -94,6 +101,7 @@ public class StorageLayer implements StoreReadLayer
     private final IndexingService indexService;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
@@ -112,6 +120,7 @@ public class StorageLayer implements StoreReadLayer
         this.statementProvider = storeStatementSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
+        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
@@ -378,6 +387,19 @@ public class StorageLayer implements StoreReadLayer
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName )
     {
         return relationshipTokenHolder.getOrCreateId( relationshipTypeName );
+    }
+
+    @Override
+    public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
+            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
+    {
+        // TODO Please don't create a record for this, it's ridiculous
+        RelationshipRecord record = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), CHECK );
+        if ( !record.inUse() )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+        }
+        relationshipVisitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
     }
 
     @Override

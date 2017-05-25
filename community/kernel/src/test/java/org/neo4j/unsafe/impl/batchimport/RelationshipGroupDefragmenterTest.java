@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
 
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -209,48 +209,48 @@ public class RelationshipGroupDefragmenterTest
         RecordStore<RelationshipGroupRecord> store = stores.getRelationshipGroupStore();
         long firstId = store.getNumberOfReservedLowIds();
         long groupCount = store.getHighId() - firstId;
-        final RelationshipGroupRecord groupRecord = store.newRecord();
+        RelationshipGroupRecord groupRecord = store.newRecord();
+        RecordCursor<RelationshipGroupRecord> groupCursor =
+                store.newRecordCursor( groupRecord ).acquire( firstId, CHECK );
         long highGroupId = store.getHighId();
         long currentNodeId = -1;
         int currentTypeId = -1;
         int newGroupCount = 0;
         int currentGroupLength = 0;
-        try ( PageCursor groupCursor = store.newPageCursor() )
+        for ( long id = firstId; id < highGroupId; id++, newGroupCount++ )
         {
-            for ( long id = firstId; id < highGroupId; id++, newGroupCount++ )
+            if ( !groupCursor.next( id ) )
             {
-                if ( !store.readRecord( id, groupRecord, CHECK, groupCursor ).inUse() )
-                {
-                    // This will be the case if we have double record units, just assert that fact
-                    assertTrue( units > 1 );
-                    assertTrue( currentGroupLength > 0 );
-                    currentGroupLength--;
-                    continue;
-                }
-
-                long nodeId = groupRecord.getOwningNode();
-                assertTrue(
-                        "Expected a group for node >= " + currentNodeId + ", but was " + nodeId + " in " + groupRecord,
-                        nodeId >= currentNodeId );
-                if ( nodeId != currentNodeId )
-                {
-                    currentNodeId = nodeId;
-                    currentTypeId = -1;
-                    if ( units > 1 )
-                    {
-                        assertEquals( 0, currentGroupLength );
-                    }
-                    currentGroupLength = 0;
-                }
-                currentGroupLength++;
-
-                assertTrue( "Expected this group to have a next of current + " + units + " OR NULL, " + "but was " +
-                        groupRecord.toString(), groupRecord.getNext() == groupRecord.getId() + 1 ||
-                        groupRecord.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() );
-                assertTrue( "Expected " + groupRecord + " to have type > " + currentTypeId,
-                        groupRecord.getType() > currentTypeId );
-                currentTypeId = groupRecord.getType();
+                // This will be the case if we have double record units, just assert that fact
+                assertTrue( units > 1 );
+                assertTrue( currentGroupLength > 0 );
+                currentGroupLength--;
+                continue;
             }
+
+            long nodeId = groupRecord.getOwningNode();
+            assertTrue(
+                    "Expected a group for node >= " + currentNodeId + ", but was " + nodeId + " in " + groupRecord,
+                    nodeId >= currentNodeId );
+            if ( nodeId != currentNodeId )
+            {
+                currentNodeId = nodeId;
+                currentTypeId = -1;
+                if ( units > 1 )
+                {
+                    assertEquals( 0, currentGroupLength );
+                }
+                currentGroupLength = 0;
+            }
+            currentGroupLength++;
+
+            assertTrue( "Expected this group to have a next of current + " + units + " OR NULL, " +
+                    "but was " + groupRecord.toString(),
+                    groupRecord.getNext() == groupRecord.getId() + 1 ||
+                    groupRecord.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() );
+            assertTrue( "Expected " + groupRecord + " to have type > " + currentTypeId,
+                    groupRecord.getType() > currentTypeId );
+            currentTypeId = groupRecord.getType();
         }
         assertEquals( groupCount, newGroupCount );
     }

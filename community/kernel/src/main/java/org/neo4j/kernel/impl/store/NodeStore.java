@@ -107,6 +107,14 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL ) );
     }
 
+    public static void ensureHeavy( NodeRecord node, RecordCursor<DynamicRecord> dynamicLabelCursor )
+    {
+        long firstDynamicLabelId = NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() );
+        dynamicLabelCursor.placeAt( firstDynamicLabelId, RecordLoad.NORMAL );
+        List<DynamicRecord> dynamicLabelRecords = dynamicLabelCursor.getAll();
+        node.setLabelField( node.getLabelField(), dynamicLabelRecords );
+    }
+
     @Override
     public void updateRecord( NodeRecord record )
     {

@@ -27,10 +27,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -46,7 +46,6 @@ import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -180,16 +179,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             return;
         }
 
-        DynamicRecord dynamicRecord = dynamicStore.newRecord();
-        long id = block.getSingleValueLong();
-        try ( PageCursor cursor = dynamicStore.newPageCursor() )
+        try ( Cursor<DynamicRecord> dynamicRecords = dynamicStore.newRecordCursor( dynamicStore.newRecord() )
+                .acquire( block.getSingleValueLong(), NORMAL ) )
         {
-            while ( !NULL_REFERENCE.is( id ) )
+            while ( dynamicRecords.next() )
             {
-                dynamicStore.readRecord( id, dynamicRecord, NORMAL, cursor );
-                dynamicRecord.setType( type.intValue() );
-                block.addValueRecord( dynamicRecord.clone() );
-                id = dynamicStore.getNextRecordReference( dynamicRecord );
+                dynamicRecords.get().setType( type.intValue() );
+                block.addValueRecord( dynamicRecords.get().clone() );
             }
         }
     }

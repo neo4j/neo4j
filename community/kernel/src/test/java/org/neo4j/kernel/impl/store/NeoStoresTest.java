@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -396,16 +397,13 @@ public class NeoStoresTest
                 transaction.relationshipDoDelete( relId, type, startNode, endNode );
         if ( !transaction.relationshipVisit( id, visitor ) )
         {
-            try ( Cursor<RelationshipItem> cursor = storeLayer
-                    .relationshipCursor( storeLayer.newStatement(), id, null ) )
+            try
             {
-                if ( !cursor.next() )
-                {
-                    throw new RuntimeException( "relationship with id " + id + " not found" );
-                }
-
-                RelationshipItem relationship = cursor.get();
-                visitor.visit( id, relationship.type(), relationship.startNode(), relationship.endNode() );
+                storeLayer.relationshipVisit( id, visitor );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new RuntimeException( e );
             }
         }
     }
@@ -1194,17 +1192,22 @@ public class NeoStoresTest
     private void assertRelationshipData( long rel, final long firstNode, final long secondNode,
             final int relType )
     {
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipCursor( storeLayer.newStatement(), rel, null ) )
+        try
         {
-            if ( !cursor.next() )
+            storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
             {
-                throw new RuntimeException( "relationship with id " + rel + " not found" );
-            }
-
-            RelationshipItem relationship = cursor.get();
-            assertEquals( firstNode, relationship.startNode() );
-            assertEquals( secondNode, relationship.endNode() );
-            assertEquals( relType, relationship.type() );
+                @Override
+                public void visit( long relId, int type, long startNode, long endNode )
+                {
+                    assertEquals( firstNode, startNode );
+                    assertEquals( secondNode, endNode );
+                    assertEquals( relType, type );
+                }
+            } );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -38,21 +38,22 @@ abstract class StoreScanAsInputIterable<INPUT extends InputEntity,RECORD extends
         implements InputIterable<INPUT>
 {
     private final RecordStore<RECORD> store;
+    private final RecordCursor<RECORD> cursor;
     private final StoreSourceTraceability traceability;
 
     StoreScanAsInputIterable( RecordStore<RECORD> store )
     {
         this.store = store;
+        this.cursor = store.newRecordCursor( store.newRecord() );
         this.traceability = new StoreSourceTraceability( store.toString(), store.getRecordSize() );
     }
 
     @Override
     public InputIterator<INPUT> iterator()
     {
+        cursor.acquire( 0, CHECK );
         return new InputIterator.Adapter<INPUT>()
         {
-            private final RECORD record = store.newRecord();
-            private final PageCursor cursor = store.newPageCursor();
             private final long highId = store.getHighId();
             private long id;
 
@@ -85,8 +86,9 @@ abstract class StoreScanAsInputIterable<INPUT extends InputEntity,RECORD extends
             {
                 while ( id < highId )
                 {
-                    if ( store.readRecord( id++, record, CHECK, cursor ).inUse() )
+                    if ( cursor.next( id++ ) )
                     {
+                        RECORD record = cursor.get();
                         traceability.atId( record.getId() );
                         return inputEntityOf( record );
                     }

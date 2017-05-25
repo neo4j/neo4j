@@ -20,13 +20,12 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -38,8 +37,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
     private final NodeStore nodeStore;
-    private final NodeRecord record;
-    private final PageCursor cursor;
     private final PrimitiveLongIterator nodeIds;
     private final LabelScanWriter labelScanWriter;
 
@@ -48,8 +45,6 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     {
         super( control, "DEDUP", config );
         this.nodeStore = nodeStore;
-        this.record = nodeStore.newRecord();
-        this.cursor = nodeStore.newPageCursor();
         this.nodeIds = nodeIds;
         this.labelScanWriter = labelScanStore.newWriter();
     }
@@ -57,10 +52,12 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     @Override
     protected void process() throws IOException
     {
+        NodeRecord record = nodeStore.newRecord();
+        RecordCursor<NodeRecord> cursor = nodeStore.newRecordCursor( record ).acquire( 0, NORMAL );
         while ( nodeIds.hasNext() )
         {
             long duplicateNodeId = nodeIds.next();
-            nodeStore.readRecord( duplicateNodeId, record, NORMAL, cursor );
+            cursor.next( duplicateNodeId );
             long[] labels = NodeLabelsField.get( record, nodeStore );
             record.setInUse( false );
             nodeStore.updateRecord( record );
@@ -74,7 +71,6 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     @Override
     public void close() throws Exception
     {
-        cursor.close();
         labelScanWriter.close();
         super.close();
     }

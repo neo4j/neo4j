@@ -466,6 +466,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement,
+            long relId, RelationshipVisitor<EXCEPTION> visitor )
+            throws EntityNotFoundException, EXCEPTION
+    {
+        entityReadOperations.relationshipVisit( statement, relId, visitor );
+    }
+
+    @Override
     public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
     {
         return entityReadOperations.nodeGetAllCursor( statement );

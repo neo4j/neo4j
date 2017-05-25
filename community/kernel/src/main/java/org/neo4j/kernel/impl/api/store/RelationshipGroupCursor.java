@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.RelationshipGroupItem;
 
+import static org.neo4j.kernel.impl.api.store.StoreStatement.read;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class RelationshipGroupCursor implements RelationshipGroupItem, Cursor<RelationshipGroupItem>, Disposable
@@ -73,7 +74,7 @@ public class RelationshipGroupCursor implements RelationshipGroupItem, Cursor<Re
             }
 
             RelationshipGroupRecord record =
-                    relationshipGroupStore.readRecord( relationshipGroupId, relationshipGroupRecord, FORCE, cursor );
+                    read( relationshipGroupId, relationshipGroupStore, relationshipGroupRecord, FORCE, cursor );
             relationshipGroupId = record.getNext();
             if ( record.inUse() )
             {

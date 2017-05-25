@@ -47,6 +47,7 @@ import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -194,17 +195,6 @@ public class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
-    @Test
-    public void readRecordMustThrowOnPageOverflow() throws Exception
-    {
-        verifyExceptionOnOutOfBoundsAccess( () ->
-        {
-            try ( PageCursor cursor = store.newPageCursor() )
-            {
-                store.readRecord( 5, new IntRecord( 5 ), NORMAL, cursor );
-            }
-        } );
-    }
 
     @Test
     public void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode() throws Exception
@@ -214,30 +204,10 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void readRecordMustNotThrowOnPageOverflowWithCheckLoadMode() throws Exception
-    {
-        prepareStoreForOutOfBoundsAccess();
-        try ( PageCursor cursor = store.newPageCursor() )
-        {
-            store.readRecord( 5, new IntRecord( 5 ), CHECK, cursor );
-        }
-    }
-
-    @Test
     public void getRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
-    }
-
-    @Test
-    public void readRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
-    {
-        prepareStoreForOutOfBoundsAccess();
-        try ( PageCursor pageCursor = store.newPageCursor() )
-        {
-            store.readRecord( 5, new IntRecord( 5 ), FORCE, pageCursor );
-        }
     }
 
     @Test
@@ -251,33 +221,12 @@ public class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
-    @Test
-    public void readRecordMustThrowOnCursorError() throws Exception
-    {
-        verifyExceptionOnCursorError( () ->
-        {
-            try ( PageCursor cursor = store.newPageCursor() )
-            {
-                store.readRecord( 5, new IntRecord( 5 ), NORMAL, cursor );
-            }
-        } );
-    }
 
     @Test
     public void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
     {
         prepareStoreForCursorError();
         store.getRecord( 5, new IntRecord( 5 ), CHECK );
-    }
-
-    @Test
-    public void readRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
-    {
-        prepareStoreForCursorError();
-        try ( PageCursor cursor = store.newPageCursor() )
-        {
-            store.readRecord( 5, new IntRecord( 5 ), CHECK, cursor );
-        }
     }
 
     @Test
@@ -288,13 +237,73 @@ public class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    public void readRecordMustNotThrowOnCursorErrorWithForceLoadMode() throws Exception
+    public void recordCursorNextMustThrowOnPageOverflow() throws Exception
     {
-        prepareStoreForCursorError();
-        try ( PageCursor cursor = store.newPageCursor() )
+        verifyExceptionOnOutOfBoundsAccess( () ->
         {
-            store.readRecord( 5, new IntRecord( 5 ), FORCE, cursor );
-        }
+            try ( RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 0 ) ).acquire( 5, NORMAL ) )
+            {
+                cursor.next();
+            }
+        } );
+    }
+
+    @Test
+    public void pageCursorErrorsMustNotLingerInRecordCursor() throws Exception
+    {
+        createStore();
+        RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 1 ) ).acquire( 1, FORCE );
+        cursorErrorOnRecord = 1;
+        // This will encounter a decoding error, which is ignored because FORCE
+        assertTrue( cursor.next() );
+        // Then this should not fail because of the previous decoding error, even though we stay on the same page
+        assertTrue( cursor.next( 2 ) );
+    }
+
+    @Test
+    public void shouldReadTheCorrectRecordWhenGivenAnExplicitIdAndNotUseTheCurrentIdPointer() throws Exception
+    {
+        createStore();
+        IntRecord record42 = new IntRecord( 42 );
+        record42.value = 0x42;
+        store.updateRecord( record42 );
+        IntRecord record43 = new IntRecord( 43 );
+        record43.value = 0x43;
+        store.updateRecord( record43 );
+
+        RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 1 ) ).acquire( 42, FORCE );
+
+        // we need to read record 43 not 42!
+        assertTrue( cursor.next( 43 ) );
+        assertEquals( record43, cursor.get() );
+
+        // next with id does not affect the old pointer either, so 42 is read now
+        assertTrue( cursor.next() );
+        assertEquals( record42, cursor.get() );
+    }
+
+    @Test
+    public void shouldJumpAroundPageIds() throws Exception
+    {
+        createStore();
+        IntRecord record42 = new IntRecord( 42 );
+        record42.value = 0x42;
+        store.updateRecord( record42 );
+
+        int idOnAnotherPage = 43 + (2 * store.getRecordsPerPage() );
+        IntRecord record43 = new IntRecord( idOnAnotherPage );
+        record43.value = 0x43;
+        store.updateRecord( record43 );
+
+        RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 1 ) ).acquire( 42, FORCE );
+
+        // we need to read record 43 not 42!
+        assertTrue( cursor.next( idOnAnotherPage ) );
+        assertEquals( record43, cursor.get() );
+
+        // next with id does not affect the old pointer either, so 42 is read now
+        assertTrue( cursor.next() );
+        assertEquals( record42, cursor.get() );
     }
 
     @Test

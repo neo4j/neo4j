@@ -82,12 +82,12 @@ public class StoreIteratorRelationshipCursorTest
         RelationshipStore relationshipStore = mock( RelationshipStore.class );
         when( relationshipStore.newRecord() ).thenReturn( relationshipRecord );
         when( relationshipStore.newPageCursor() ).thenReturn( pageCursor );
-        when( relationshipStore.readRecord( RELATIONSHIP_ID, relationshipRecord, CHECK, pageCursor ) ).thenAnswer( i ->
+        doAnswer( invocationOnMock ->
         {
             relationshipRecord.setInUse( relationshipInUse );
             relationshipRecord.setId( RELATIONSHIP_ID );
-            return relationshipRecord;
-        });
+            return null;
+        } ).when( relationshipStore ).readIntoRecord( RELATIONSHIP_ID, relationshipRecord, CHECK, pageCursor );
         return new StoreIteratorRelationshipCursor( relationshipStore, new TestCursorCache(), NO_LOCK_SERVICE );
     }
 

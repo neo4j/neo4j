@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.io.IOException;
 import java.util.function.IntPredicate;
 
 import org.neo4j.cursor.Cursor;
@@ -27,6 +28,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -85,23 +87,20 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
             }
 
             // No, OK continue down the chain and hunt for more...
-            if ( Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
+            PropertyRecord propertyRecord = readRecord();
+            nextPropertyId = propertyRecord.getNextProp();
+            if ( propertyRecord.inUse() )
+            {
+                payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
+                if ( payloadHasNext() )
+                {
+                    return true;
+                }
+            }
+            else if ( Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
             {
                 // No more records in this chain, i.e. no more properties.
                 doneTraversingTheChain = true;
-            }
-            else
-            {
-                PropertyRecord propertyRecord = propertyStore.readRecord( nextPropertyId, record, FORCE, cursor );
-                nextPropertyId = propertyRecord.getNextProp();
-                if ( propertyRecord.inUse() )
-                {
-                    payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
-                    if ( payloadHasNext() )
-                    {
-                        return true;
-                    }
-                }
             }
 
             // Sort of alright, this record isn't in use, but could just be due to concurrent delete.
@@ -110,6 +109,23 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
 
         assert property == null;
         return (property = nextAdded()) != null;
+    }
+
+    private PropertyRecord readRecord()
+    {
+        try
+        {
+            record.clear();
+            if ( !Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
+            {
+                propertyStore.readIntoRecord( nextPropertyId, record, FORCE, cursor );
+            }
+            return record;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     private boolean payloadHasNext()

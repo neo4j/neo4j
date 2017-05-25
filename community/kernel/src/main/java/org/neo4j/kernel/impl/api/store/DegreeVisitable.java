@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.kernel.impl.api.store.StoreStatement.read;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -73,7 +74,7 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
         boolean keepGoing = true;
         while ( keepGoing && groupId != NO_NEXT_RELATIONSHIP.longValue() )
         {
-            RelationshipGroupRecord record = groupStore.readRecord( groupId, groupRecord, FORCE, groupCursor );
+            RelationshipGroupRecord record = read( groupId, groupStore, groupRecord, FORCE, groupCursor );
             if ( record.inUse() )
             {
                 int type = record.getType();
@@ -93,7 +94,7 @@ public class DegreeVisitable implements DegreeVisitor.Visitable, Disposable
             return 0;
         }
         RelationshipRecord record =
-                relationshipStore.readRecord( relationshipId, relationshipRecord, FORCE, relationshipCursor );
+                read( relationshipId, relationshipStore, relationshipRecord, FORCE, relationshipCursor );
         if ( record.getFirstNode() == nodeId )
         {
             return record.getFirstPrevRel();

@@ -417,12 +417,12 @@ public class TestTransactionEvents
             for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
             {
                 String key = entry.key();
-                Object value = entry.previouslyCommittedValue();
+                Object value = entry.previouslyCommitedValue();
                 nodeProps.put( key, value );
             }
             for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
             {
-                relProps.put( entry.key(), entry.previouslyCommittedValue() );
+                relProps.put( entry.key(), entry.previouslyCommitedValue() );
             }
         }
 

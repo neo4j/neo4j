@@ -258,6 +258,16 @@ public interface StoreReadLayer
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
 
     /**
+     * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
+     *
+     * @param relationshipId the id of the relationship to access.
+     * @param relationshipVisitor {@link RelationshipVisitor} which will see the relationship data.
+     * @throws EntityNotFoundException if no relationship exists by the given {@code relationshipId}.
+     */
+    <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
+            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
+
+    /**
      * @return ids of all stored nodes.
      */
     PrimitiveLongIterator nodesGetAll();

@@ -62,24 +62,28 @@ public class RelationshipCreateDeleteLockOrderingIT
         // a bunch of deleters
         for ( int i = 0; i < 30; i++ )
         {
-            race.addContestant( () ->
+            race.addContestant( new Runnable()
             {
-                try ( Transaction tx = db.beginTx() )
+                @Override
+                public void run()
                 {
-                    Node node = random.nextBoolean() ? a : b;
-                    for ( Relationship relationship : node.getRelationships() )
+                    try ( Transaction tx = db.beginTx() )
                     {
-                        try
+                        Node node = random.nextBoolean() ? a : b;
+                        for ( Relationship relationship : node.getRelationships() )
                         {
-                            relationship.delete();
+                            try
+                            {
+                                relationship.delete();
+                            }
+                            catch ( NotFoundException e )
+                            {
+                                // This is OK and expected since there are multiple threads deleting
+                                assertTrue( e.getMessage().contains( "already deleted" ) );
+                            }
                         }
-                        catch ( NotFoundException e )
-                        {
-                            // This is OK and expected since there are multiple threads deleting
-                            assertTrue( e.getMessage().contains( "already deleted" ) );
-                        }
+                        tx.success();
                     }
-                    tx.success();
                 }
             } );
         }
@@ -87,15 +91,19 @@ public class RelationshipCreateDeleteLockOrderingIT
         // a bunch of creators
         for ( int i = 0; i < 30; i++ )
         {
-            race.addContestant( () ->
+            race.addContestant( new Runnable()
             {
-                try ( Transaction tx = db.beginTx() )
+                @Override
+                public void run()
                 {
-                    boolean order = random.nextBoolean();
-                    Node start = order ? a : b;
-                    Node end = order ? b : a;
-                    start.createRelationshipTo( end, MyRelTypes.TEST );
-                    tx.success();
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        boolean order = random.nextBoolean();
+                        Node start = order ? a : b;
+                        Node end = order ? b : a;
+                        start.createRelationshipTo( end, MyRelTypes.TEST );
+                        tx.success();
+                    }
                 }
             } );
         }
