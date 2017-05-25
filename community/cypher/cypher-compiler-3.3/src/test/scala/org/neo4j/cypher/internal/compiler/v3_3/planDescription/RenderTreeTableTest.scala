@@ -519,7 +519,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |""".stripMargin )
   }
 
-  test("show hasProp with variable and property") {
+  test("show exists with variable and property") {
     val arguments = Seq(
       Rows( 42 ),
       DbHits( 33 ),
@@ -531,7 +531,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       """+----------+----------------+------+---------+-----------+-----------------+
         || Operator | Estimated Rows | Rows | DB Hits | Variables | Other           |
         |+----------+----------------+------+---------+-----------+-----------------+
-        || +NAME    |              1 |   42 |      33 | n         | hasProp(x.prop) |
+        || +NAME    |              1 |   42 |      33 | n         | exists(x.prop) |
         |+----------+----------------+------+---------+-----------+-----------------+
         |""".stripMargin )
   }

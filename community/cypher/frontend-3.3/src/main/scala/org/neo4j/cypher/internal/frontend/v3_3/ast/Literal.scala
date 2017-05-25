@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 sealed trait Literal extends Expression {
   def value: AnyRef
   def asCanonicalStringVal: String
+  override def toString: String = asCanonicalStringVal
 }
 
 sealed trait NumberLiteral extends Literal {

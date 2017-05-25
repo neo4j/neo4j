@@ -53,9 +53,21 @@ import scala.util.Try
 trait Compatibility[PC <: CompilerContext,
                     RC <: RuntimeContext,
                     T <: Transformer[RC, LogicalPlanState, CompilationState]] {
-  val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
+  val clock: Clock
+  val monitors: Monitors
+  val config: CypherCompilerConfiguration
+  val logger: InfoLogger
+  val runtimeBuilder: RuntimeBuilder[T]
+  val planContextCreator: ContextCreator[PC]
+  val runtimeContextCreator: (PC, RuntimeSpecificContext) => RC
+  val maybePlannerName: Option[CostBasedPlannerName]
+  val maybeRuntimeName: Option[RuntimeName]
+  val maybeUpdateStrategy: Option[UpdateStrategy]
+  val executionMonitor: QueryExecutionMonitor
+  val cacheMonitor: AstCacheMonitor
+  val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_3]
   val monitorTag = "cypher3.3"
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
@@ -66,31 +78,19 @@ trait Compatibility[PC <: CompilerContext,
   }
 
   protected val compiler: v3_3.CypherCompiler[PC]
-  protected def clock: Clock
-  protected def monitors: Monitors
-  protected def config: CypherCompilerConfiguration
-  protected def logger: InfoLogger
-  protected def runtimeBuilder: RuntimeBuilder[T]
-  protected def planContextCreator: ContextCreator[PC]
-  protected def runtimeContextCreator: (PC, RuntimeSpecificContext) => RC
-  protected def maybePlannerName: Option[CostBasedPlannerName]
-  protected def maybeRuntimeName: Option[RuntimeName]
-  protected def maybeUpdateStrategy: Option[UpdateStrategy]
-  protected def executionMonitor: QueryExecutionMonitor
-  protected def cacheMonitor: AstCacheMonitor
-  protected val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_3]
 
   private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-  private lazy val createExecPlan: Transformer[RC, LogicalPlanState, CompilationState] = {
+  def createExecPlan: Transformer[RC, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
         runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan])
       )
   }
 
-  val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_3](config.queryCacheSize)
+  private val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_3](config.queryCacheSize)
 
+  implicit val m = executionMonitor
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger
@@ -181,7 +181,6 @@ trait Compatibility[PC <: CompilerContext,
         case CypherExecutionMode.normal => NormalMode
       }
       exceptionHandler.runSafely {
-        implicit val m = executionMonitor
         val innerParams = typeConversions.asPrivateMap(params)
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(

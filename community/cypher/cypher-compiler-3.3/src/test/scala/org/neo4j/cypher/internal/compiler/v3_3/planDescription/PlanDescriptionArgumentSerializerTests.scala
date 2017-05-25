@@ -63,6 +63,6 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
   test("projection should show multiple expressions") {
     serialize(Expressions(Map("1" -> SignedDecimalIntegerLiteral("42")(pos), "2" -> SignedDecimalIntegerLiteral("56")(pos)))) should equal(
-      "{1 : Literal(42), 2 : Literal(56)}")
+      "{1 : 42, 2 : 56}")
   }
 }

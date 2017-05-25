@@ -30,4 +30,6 @@ case class Property(map: Expression, propertyKey: PropertyKeyName)(val position:
     map.semanticCheck(ctx) chain
       map.expectType(CTMap.covariant | CTAny.invariant) chain
       super.semanticCheck(ctx)
+
+  override def toString = s"$map.$propertyKey"
 }

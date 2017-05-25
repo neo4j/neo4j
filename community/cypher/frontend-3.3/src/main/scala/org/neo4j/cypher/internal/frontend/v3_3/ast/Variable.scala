@@ -53,6 +53,8 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
   def bumpId = copy()(position.bumped())
 
   def asAlias = AliasedReturnItem(this.copyId, this.copyId)(this.position)
+
+  override def toString: String = name
 }
 
 object Variable {
