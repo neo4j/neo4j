@@ -19,54 +19,46 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.util.function.IntPredicate;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Disposable;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public abstract class StoreAbstractPropertyCursor implements PropertyItem, Cursor<PropertyItem>, Disposable
 {
     protected final StorePropertyPayloadCursor payload;
-    private final PageCursor cursor;
-    private final PropertyRecord record;
-    private final PropertyStore propertyStore;
+    private final RecordCursor<PropertyRecord> recordCursor;
 
     protected boolean fetched;
     private boolean doneTraversingTheChain;
     private DefinedProperty property;
     private IntPredicate propertyKeyIds;
-    private long nextPropertyId;
     private Lock lock;
     protected PropertyContainerState state;
 
-    StoreAbstractPropertyCursor( PropertyStore propertyStore )
+    StoreAbstractPropertyCursor( RecordCursors cursors )
     {
-        this.cursor = propertyStore.newPageCursor();
-        this.propertyStore = propertyStore;
-        this.record = propertyStore.newRecord();
-        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
+        this.payload = new StorePropertyPayloadCursor( cursors.propertyString(), cursors.propertyArray() );
+        this.recordCursor = cursors.property();
     }
 
     protected final void initialize( IntPredicate propertyKeyIds, long firstPropertyId, Lock lock,
             PropertyContainerState state )
     {
         this.propertyKeyIds = propertyKeyIds;
-        this.nextPropertyId = firstPropertyId;
         this.lock = lock;
         this.state = state;
+        recordCursor.placeAt( firstPropertyId, FORCE );
     }
 
     @Override
@@ -87,17 +79,16 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
             }
 
             // No, OK continue down the chain and hunt for more...
-            PropertyRecord propertyRecord = readRecord();
-            nextPropertyId = propertyRecord.getNextProp();
-            if ( propertyRecord.inUse() )
+            if ( recordCursor.next() )
             {
+                PropertyRecord propertyRecord = recordCursor.get();
                 payload.init( propertyKeyIds, propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
                 if ( payloadHasNext() )
                 {
                     return true;
                 }
             }
-            else if ( Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
+            else if ( Record.NO_NEXT_PROPERTY.is( recordCursor.get().getNextProp() ) )
             {
                 // No more records in this chain, i.e. no more properties.
                 doneTraversingTheChain = true;
@@ -109,23 +100,6 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
 
         assert property == null;
         return (property = nextAdded()) != null;
-    }
-
-    private PropertyRecord readRecord()
-    {
-        try
-        {
-            record.clear();
-            if ( !Record.NO_NEXT_PROPERTY.is( nextPropertyId ) )
-            {
-                propertyStore.readIntoRecord( nextPropertyId, record, FORCE, cursor );
-            }
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 
     private boolean payloadHasNext()
@@ -182,7 +156,6 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
             payload.close();
             propertyKeyIds = null;
             property = null;
-            nextPropertyId = NO_SUCH_PROPERTY;
             doClose();
         }
         finally
@@ -197,7 +170,5 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
     @Override
     public void dispose()
     {
-        cursor.close();
-        payload.dispose();
     }
 }

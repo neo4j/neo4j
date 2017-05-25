@@ -69,6 +69,8 @@ public class RecordCursorsTest
         verify( recordCursors.relationship() ).close();
         verify( recordCursors.relationshipGroup() ).close();
         verify( recordCursors.property() ).close();
+        verify( recordCursors.propertyString() ).close();
+        verify( recordCursors.propertyArray() ).close();
     }
 
     private static RecordCursors newRecordCursorsWithMockedNeoStores()

@@ -19,20 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.IntPredicate;
 
-import org.neo4j.function.Disposable;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -50,7 +44,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
  * During initialization the raw property block {@code long}s are read from
  * the given property record.
  */
-class StorePropertyPayloadCursor implements Disposable
+class StorePropertyPayloadCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
@@ -61,11 +55,8 @@ class StorePropertyPayloadCursor implements Disposable
      */
     private final ByteBuffer cachedBuffer = ByteBuffer.allocate( INTERNAL_BYTE_ARRAY_SIZE );
 
-    private final DynamicRecord record;
-    private final PageCursor stringCursor;
-    private final DynamicStringStore stringStore;
-    private final PageCursor arrayCursor;
-    private final DynamicArrayStore arrayStore;
+    private final RecordCursor<DynamicRecord> stringRecordCursor;
+    private final RecordCursor<DynamicRecord> arrayRecordCursor;
     private ByteBuffer buffer = cachedBuffer;
 
     private long[] blocks;
@@ -74,13 +65,11 @@ class StorePropertyPayloadCursor implements Disposable
     private IntPredicate propertyKeyIds;
     private boolean exhausted;
 
-    StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
+    StorePropertyPayloadCursor( RecordCursor<DynamicRecord> stringRecordCursor,
+            RecordCursor<DynamicRecord> arrayRecordCursor )
     {
-        this.record = stringStore.newRecord();
-        this.stringStore = stringStore;
-        this.stringCursor = stringStore.newPageCursor();
-        this.arrayStore = arrayStore;
-        this.arrayCursor = arrayStore.newPageCursor();
+        this.stringRecordCursor = stringRecordCursor;
+        this.arrayRecordCursor = arrayRecordCursor;
     }
 
     void init( IntPredicate propertyKeyIds, long[] blocks, int numberOfBlocks )
@@ -174,7 +163,7 @@ class StorePropertyPayloadCursor implements Disposable
             return LongerShortString.decode( blocks, position, currentBlocksUsed() );
         case STRING:
         {
-            readFromStore( stringStore, stringCursor );
+            readFromStore( stringRecordCursor );
             buffer.flip();
             return UTF8.decode( buffer.array(), 0, buffer.limit() );
         }
@@ -182,7 +171,7 @@ class StorePropertyPayloadCursor implements Disposable
             return ShortArray.decode( valueAsBits() );
         case ARRAY:
         {
-            readFromStore( arrayStore, arrayCursor );
+            readFromStore( arrayRecordCursor );
             buffer.flip();
             return readArrayFromBuffer( buffer );
         }
@@ -212,14 +201,16 @@ class StorePropertyPayloadCursor implements Disposable
         return bits;
     }
 
-    private void readFromStore( CommonAbstractStore<DynamicRecord,?> store, PageCursor cursor )
+    private void readFromStore( RecordCursor<DynamicRecord> cursor )
     {
         buffer.clear();
-        long blockId = PropertyBlock.fetchLong( currentHeader() );
-        do
+        long startBlockId = PropertyBlock.fetchLong( currentHeader() );
+        cursor.placeAt( startBlockId, FORCE );
+        while ( true )
         {
-            readRecord( store, cursor, blockId );
-            byte[] data = record.getData();
+            cursor.next();
+            DynamicRecord dynamicRecord = cursor.get();
+            byte[] data = dynamicRecord.getData();
             if ( buffer.remaining() < data.length )
             {
                 buffer.flip();
@@ -228,21 +219,10 @@ class StorePropertyPayloadCursor implements Disposable
                 buffer = newBuffer;
             }
             buffer.put( data, 0, data.length );
-            blockId = record.getNextBlock();
-        }
-        while ( !Record.NULL_REFERENCE.is( blockId ) );
-    }
-
-    private void readRecord( CommonAbstractStore<DynamicRecord,?> store, PageCursor cursor, long blockId )
-    {
-        try
-        {
-            record.clear();
-            store.readIntoRecord( blockId, record, FORCE, cursor );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
+            if ( Record.NULL_REFERENCE.is( dynamicRecord.getNextBlock() ) )
+            {
+                break;
+            }
         }
     }
 
@@ -311,12 +291,5 @@ class StorePropertyPayloadCursor implements Disposable
         {
             buffer.order( ByteOrder.LITTLE_ENDIAN );
         }
-    }
-
-    @Override
-    public void dispose()
-    {
-        stringCursor.close();
-        arrayCursor.close();
     }
 }

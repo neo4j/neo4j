@@ -79,11 +79,10 @@ public class NodeCursorTest
     private final PageCursor pageCursor = mock( PageCursor.class );
     {
         when( nodeStore.newPageCursor() ).thenReturn( pageCursor );
-        when( nodeStore.newRecord() ).thenReturn( nodeRecord );
     }
 
     // cursor is shared since it is designed to be reusable
-    private final NodeCursor reusableCursor = new NodeCursor( nodeStore, i -> {}, NO_LOCK_SERVICE );
+    private final NodeCursor reusableCursor = new NodeCursor( nodeRecord, i -> {}, nodeStore, NO_LOCK_SERVICE );
 
     @SuppressWarnings( "unchecked" )
     @DataPoints
@@ -222,7 +221,8 @@ public class NodeCursorTest
     public void shouldCallTheConsumerOnClose()
     {
         MutableBoolean called = new MutableBoolean();
-        NodeCursor cursor = new NodeCursor( nodeStore, c -> called.setTrue(), NO_LOCK_SERVICE );
+        NodeCursor cursor =
+                new NodeCursor( nodeRecord, c -> called.setTrue(), nodeStore, NO_LOCK_SERVICE );
         cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
@@ -233,7 +233,8 @@ public class NodeCursorTest
     @Test
     public void shouldCloseThePageCursorWhenDisposed()
     {
-        NodeCursor cursor = new NodeCursor( nodeStore, c -> {}, NO_LOCK_SERVICE );
+        NodeCursor cursor =
+                new NodeCursor( nodeRecord, c -> {}, nodeStore, NO_LOCK_SERVICE );
         cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
 
         cursor.close();

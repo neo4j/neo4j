@@ -26,7 +26,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -35,13 +34,13 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -53,7 +52,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,7 +82,7 @@ public class StorePropertyPayloadCursorTest
         {
             @SuppressWarnings( "unchecked" )
             StorePropertyPayloadCursor cursor =
-                    new StorePropertyPayloadCursor( mock( DynamicStringStore.class ), mock( DynamicArrayStore.class ) );
+                    new StorePropertyPayloadCursor( mock( RecordCursor.class ), mock( RecordCursor.class ) );
 
             assertFalse( cursor.next() );
 
@@ -183,7 +181,7 @@ public class StorePropertyPayloadCursorTest
         }
 
         @Test
-        public void shouldUseDynamicStringAndArrayStoresThroughDifferentCursors() throws Throwable
+        public void shouldUseDynamicStringAndArrayStoresThroughDifferentCursors()
         {
             // Given
             DynamicStringStore dynamicStringStore = newDynamicStoreMock( DynamicStringStore.class );
@@ -204,8 +202,8 @@ public class StorePropertyPayloadCursorTest
             assertFalse( cursor.next() );
 
             // Then
-            verify( dynamicStringStore ).newPageCursor();
-            verify( dynamicArrayStore ).newPageCursor();
+            verify( dynamicStringStore ).newRecordCursor( any( DynamicRecord.class ) );
+            verify( dynamicArrayStore ).newRecordCursor( any( DynamicRecord.class ) );
         }
 
         @Test
@@ -219,26 +217,6 @@ public class StorePropertyPayloadCursorTest
             assertFalse( cursor.next() );
         }
 
-        @Test
-        public void shouldClosePageCursorWhenDisposed()
-        {
-            // given
-            DynamicStringStore stringStore = mock( DynamicStringStore.class );
-            PageCursor stringCursor = mock( PageCursor.class );
-            when( stringStore.newPageCursor() ).thenReturn( stringCursor );
-            DynamicArrayStore arrayStore = mock( DynamicArrayStore.class );
-            PageCursor arrayCursor = mock( PageCursor.class );
-            when( arrayStore.newPageCursor() ).thenReturn( arrayCursor );
-            StorePropertyPayloadCursor cursor = createCursor( ALWAYS_TRUE_INT, stringStore, arrayStore, new Param[0] );
-            cursor.close();
-
-            // when
-            cursor.dispose();
-
-            // then
-            verify( stringCursor ).close();
-            verify( arrayCursor ).close();
-        }
     }
 
     @RunWith( Parameterized.class )
@@ -498,12 +476,16 @@ public class StorePropertyPayloadCursorTest
         return createCursor( k -> k == keyId, dynamicStringStore, dynamicArrayStore, input.params );
     }
 
-    private static StorePropertyPayloadCursor createCursor( IntPredicate allPropertyKeyIds,
-            DynamicStringStore dynamicStringStore, DynamicArrayStore dynamicArrayStore, Param[] params )
+    private static StorePropertyPayloadCursor createCursor( IntPredicate allPropertyKeyIds, DynamicStringStore
+            dynamicStringStore,
+            DynamicArrayStore dynamicArrayStore, Param[] params )
     {
-        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
+        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor(
+                dynamicStringStore.newRecordCursor( null ), dynamicArrayStore.newRecordCursor( null ) );
+
         long[] blocks = asBlocks( params );
         cursor.init( allPropertyKeyIds, blocks, blocks.length );
+
         return cursor;
     }
 
@@ -527,18 +509,18 @@ public class StorePropertyPayloadCursorTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz ) throws IOException
+    private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz )
     {
+        RecordCursor<DynamicRecord> recordCursor = mock( RecordCursor.class );
+        when( recordCursor.next() ).thenReturn( true ).thenReturn( false );
+        DynamicRecord dynamicRecord = new DynamicRecord( 42 );
+        dynamicRecord.setData( new byte[]{1, 1, 1, 1, 1} );
+        when( recordCursor.get() ).thenReturn( dynamicRecord );
+        when( recordCursor.acquire( anyLong(), any( RecordLoad.class ) ) ).thenReturn( recordCursor );
+
         S store = mock( clazz );
-        when( store.newRecord() ).thenReturn( new DynamicRecord( DynamicRecord.NO_ID ) );
-        doAnswer( invocationOnMock ->
-        {
-            DynamicRecord record = (DynamicRecord) invocationOnMock.getArguments()[1];
-            record.setId( 42 );
-            record.setData( new byte[]{1, 1, 1, 1, 1} );
-            return null;
-        } ).when( store ).readIntoRecord( anyLong(), any( DynamicRecord.class ), any( RecordLoad.class ),
-                any( PageCursor.class ) );
+        when( store.newRecordCursor( any( DynamicRecord.class ) ) ).thenReturn( recordCursor );
+
         return store;
     }
 

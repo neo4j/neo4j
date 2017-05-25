@@ -38,13 +38,14 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.test.MockedNeoStores;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -65,11 +67,13 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @RunWith( Enclosed.class )
 public class StorePropertyCursorTest
@@ -224,26 +228,32 @@ public class StorePropertyCursorTest
         return parameter instanceof BigProperty ? ((BigProperty)parameter).value() : parameter;
     }
 
-    public static class CloseDisposeTest
+    public static class ErrorTest
     {
-        private final PropertyStore propertyStore = mock( PropertyStore.class );
-        private final DynamicStringStore stringStore = mock( DynamicStringStore.class );
-        private final DynamicArrayStore arrayStore = mock( DynamicArrayStore.class );
+        private final NeoStores neoStores = MockedNeoStores.basicMockedNeoStores();
+        private final PropertyStore propertyStore = neoStores.getPropertyStore();
+        @SuppressWarnings( "unchecked" )
+        private final Consumer<StorePropertyCursor> cache = mock( Consumer.class );
+
         {
-            when( stringStore.newRecord() ).thenReturn( mock( DynamicRecord.class ) );
-            when( propertyStore.getStringStore() ).thenReturn( stringStore );
-            when( arrayStore.newRecord() ).thenReturn( mock( DynamicRecord.class ) );
-            when( propertyStore.getArrayStore() ).thenReturn( arrayStore );
+            RecordCursor<PropertyRecord> recordCursor = MockedNeoStores.mockedRecordCursor();
+            try
+            {
+                when( recordCursor.next() ).thenReturn( true );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            when( recordCursor.get() ).thenReturn( new PropertyRecord( 42 ) );
+            when( propertyStore.newRecordCursor( any( PropertyRecord.class ) ) ).thenReturn( recordCursor );
         }
 
         @Test
         public void shouldReturnTheCursorToTheCacheOnClose() throws Throwable
         {
             // given
-            @SuppressWarnings( "unchecked" )
-            Consumer<StorePropertyCursor> cache = mock( Consumer.class );
-
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, cache );
+            StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
             storePropertyCursor.init( 0, NO_LOCK, null );
 
             // when
@@ -251,27 +261,6 @@ public class StorePropertyCursorTest
 
             // then
             verify( cache, times( 1 ) ).accept( storePropertyCursor );
-        }
-
-        @Test
-        public void shouldClosePageCursorsOnDispose() throws Throwable
-        {
-            // given
-            PageCursor propertyCursor = mock( PageCursor.class );
-            when( propertyStore.newPageCursor() ).thenReturn( propertyCursor );
-            PageCursor stringCursor = mock( PageCursor.class );
-            when( stringStore.newPageCursor() ).thenReturn( stringCursor );
-            PageCursor arrayCursor = mock( PageCursor.class );
-            when( arrayStore.newPageCursor() ).thenReturn( arrayCursor );
-            StorePropertyCursor storePropertyCursor = new StorePropertyCursor( propertyStore, c -> {} );
-
-            // when
-            storePropertyCursor.dispose();
-
-            // then
-            verify( propertyCursor ).close();
-            verify( stringCursor ).close();
-            verify( arrayCursor ).close();
         }
     }
 
@@ -764,7 +753,29 @@ public class StorePropertyCursorTest
 
     private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore )
     {
-        return new StorePropertyCursor( propertyStore, ignored -> {} );
+        return newStorePropertyCursor( propertyStore, ignored -> {} );
+    }
+
+    private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore,
+            Consumer<StorePropertyCursor> cache )
+    {
+        RecordCursor<PropertyRecord> propertyRecordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
+        propertyRecordCursor.acquire( 0, NORMAL );
+
+        DynamicStringStore stringStore = propertyStore.getStringStore();
+        RecordCursor<DynamicRecord> dynamicStringCursor = stringStore.newRecordCursor( stringStore.nextRecord() );
+        dynamicStringCursor.acquire( 0, NORMAL );
+
+        DynamicArrayStore arrayStore = propertyStore.getArrayStore();
+        RecordCursor<DynamicRecord> dynamicArrayCursor = arrayStore.newRecordCursor( arrayStore.nextRecord() );
+        dynamicArrayCursor.acquire( 0, NORMAL );
+
+        RecordCursors cursors = mock( RecordCursors.class );
+        when( cursors.property() ).thenReturn( propertyRecordCursor );
+        when( cursors.propertyString() ).thenReturn( dynamicStringCursor );
+        when( cursors.propertyArray() ).thenReturn( dynamicArrayCursor );
+
+        return new StorePropertyCursor( cursors, cache );
     }
 
     private static List<PropertyRecord> createPropertyChain( PropertyStore store, int keyId,
