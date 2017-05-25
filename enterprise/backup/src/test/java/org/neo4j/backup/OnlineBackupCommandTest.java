@@ -19,6 +19,14 @@
  */
 package org.neo4j.backup;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -27,14 +35,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -53,6 +53,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.backup.OnlineBackupCommand.MAX_OLD_BACKUPS;
 import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_ERROR;
 import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_INCONSISTENT;
@@ -625,6 +627,13 @@ public class OnlineBackupCommandTest
                             "                          [--cc-indexes[=<true|false>]]%n" +
                             "                          [--cc-label-scan-store[=<true|false>]]%n" +
                             "                          [--cc-property-owners[=<true|false>]]%n" +
+                            "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup%n" +
                             "service must have been configured on the server beforehand.%n" +
