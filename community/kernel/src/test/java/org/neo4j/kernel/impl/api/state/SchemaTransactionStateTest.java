@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,12 +42,10 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.api.store.SingleNodeProgression;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -242,15 +243,27 @@ public class SchemaTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( labelId1 ) ).then( invocation -> emptyIterator() );
-        when( store.indexesGetForLabel( labelId2 ) ).then( invocation -> emptyIterator() );
-        when( store.indexesGetAll() ).then( invocation -> emptyIterator() );
+        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
 
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
-        storeStatement = mock( StoreStatement.class );
+        storeStatement = mock(StoreStatement.class);
         when( state.getStoreStatement() ).thenReturn( storeStatement );
+    }
+
+    private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
+    {
+        return new Answer<Iterator<T>>()
+        {
+            @Override
+            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return values.iterator();
+            }
+        };
     }
 
     private static class Labels
@@ -275,13 +288,18 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( storeStatement.acquireNodeCursor( new SingleNodeProgression( nodeLabels.nodeId, null ) ) )
+            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId, null ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {
 
-                Collection<Long> nodes = allLabels.computeIfAbsent( label, k -> new ArrayList<>() );
+                Collection<Long> nodes = allLabels.get( label );
+                if ( nodes == null )
+                {
+                    nodes = new ArrayList<>();
+                    allLabels.put( label, nodes );
+                }
                 nodes.add( nodeLabels.nodeId );
             }
         }
@@ -289,7 +307,7 @@ public class SchemaTransactionStateTest
         for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
             when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
-                    .then( invocation -> entry.getValue().iterator() );
+                    .then( asAnswer( entry.getValue() ) );
         }
     }
 

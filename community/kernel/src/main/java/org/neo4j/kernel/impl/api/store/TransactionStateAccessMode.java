@@ -19,29 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class SingleNodeProgressionTest
+public enum TransactionStateAccessMode
 {
-    @Test
-    public void shouldReturnOnlyTheGivenNodeId() throws Throwable
-    {
-        // given
-        long nodeId = 42L;
-        SingleNodeProgression progression = new SingleNodeProgression( nodeId, null );
-        NodeProgression.Batch batch = new NodeProgression.Batch();
-
-        // when / then
-        assertTrue( progression.nextBatch( batch ) );
-        assertTrue( batch.hasNext() );
-        assertEquals( nodeId, batch.next() );
-
-        assertFalse( batch.hasNext() );
-        assertFalse( progression.nextBatch( batch ) );
-        assertFalse( batch.hasNext() );
-    }
+    APPEND,
+    FETCH
 }

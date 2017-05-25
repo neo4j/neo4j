@@ -19,61 +19,33 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
-
-import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import org.neo4j.kernel.api.StatementConstants;
 
 public class SingleNodeProgression implements NodeProgression
 {
-    private final ReadableTransactionState state;
     private long nodeId;
 
-    public SingleNodeProgression( long nodeId, ReadableTransactionState state )
+    SingleNodeProgression( long nodeId )
     {
-        this.state = state;
         this.nodeId = nodeId;
     }
 
     @Override
-    public boolean nextBatch( Batch batch )
+    public long nextId()
     {
-        if ( nodeId != NO_SUCH_NODE )
+        try
         {
-            batch.init( nodeId, nodeId );
-            nodeId = NO_SUCH_NODE;
-            return true;
+            return nodeId;
         }
-        else
+        finally
         {
-            batch.nothing();
-            return false;
+            nodeId = StatementConstants.NO_SUCH_NODE;
         }
     }
 
     @Override
-    public Iterator<Long> addedNodes()
+    public TransactionStateAccessMode mode()
     {
-        return null;
-    }
-
-    @Override
-    public boolean fetchFromTxState( long id )
-    {
-        return state != null && state.nodeIsAddedInThisTx( id );
-    }
-
-    @Override
-    public boolean fetchFromDisk( long id )
-    {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
-    }
-
-    @Override
-    public NodeState nodeState( long id )
-    {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
+        return TransactionStateAccessMode.FETCH;
     }
 }

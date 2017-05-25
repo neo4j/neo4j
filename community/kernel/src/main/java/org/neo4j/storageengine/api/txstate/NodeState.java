@@ -19,15 +19,12 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.Direction;
-import org.neo4j.storageengine.api.StorageProperty;
 
 import static java.util.Collections.emptyIterator;
 
@@ -50,8 +47,6 @@ public interface NodeState extends PropertyContainerState
 
     ReadableDiffSets<Integer> labelDiffSets();
 
-    PrimitiveIntSet augmentLabels( PrimitiveIntSet labels );
-
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );
@@ -65,120 +60,5 @@ public interface NodeState extends PropertyContainerState
     PrimitiveLongIterator getAddedRelationships( Direction direction );
 
     PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes );
-
-    NodeState EMPTY = new NodeState()
-    {
-        @Override
-        public Iterator<StorageProperty> addedProperties()
-        {
-            return emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> changedProperties()
-        {
-            return emptyIterator();
-        }
-
-        @Override
-        public Iterator<Integer> removedProperties()
-        {
-            return emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> addedAndChangedProperties()
-        {
-            return emptyIterator();
-        }
-
-        @Override
-        public Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator )
-        {
-            return iterator;
-        }
-
-        @Override
-        public void accept( PropertyContainerState.Visitor visitor ) throws ConstraintValidationException
-        {
-        }
-
-        @Override
-        public ReadableDiffSets<Integer> labelDiffSets()
-        {
-            return ReadableDiffSets.Empty.instance();
-        }
-
-        @Override
-        public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels )
-        {
-            return labels;
-        }
-
-        @Override
-        public int augmentDegree( Direction direction, int degree )
-        {
-            return degree;
-        }
-
-        @Override
-        public int augmentDegree( Direction direction, int degree, int typeId )
-        {
-            return degree;
-        }
-
-        @Override
-        public void accept( NodeState.Visitor visitor )
-        {
-        }
-
-        @Override
-        public PrimitiveIntSet relationshipTypes()
-        {
-            return Primitive.intSet();
-        }
-
-        @Override
-        public long getId()
-        {
-            throw new UnsupportedOperationException( "id not defined" );
-        }
-
-        @Override
-        public boolean hasChanges()
-        {
-            return false;
-        }
-
-        @Override
-        public StorageProperty getChangedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
-        public StorageProperty getAddedProperty( int propertyKeyId )
-        {
-            return null;
-        }
-
-        @Override
-        public boolean isPropertyRemoved( int propertyKeyId )
-        {
-            return false;
-        }
-
-        @Override
-        public PrimitiveLongIterator getAddedRelationships( Direction direction )
-        {
-            return null;
-        }
-
-        @Override
-        public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
-        {
-            return null;
-        }
-    };
 
 }

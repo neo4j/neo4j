@@ -27,8 +27,8 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.function.LongFunction;
 
@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.test.rule.RepeatRule;
 
@@ -51,13 +50,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeCursorTest.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeCursorTest.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.APPEND;
+import static org.neo4j.kernel.impl.api.store.TransactionStateAccessMode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inlinedLabelsLongRepresentation;
@@ -65,12 +65,6 @@ import static org.neo4j.kernel.impl.transaction.state.NodeLabelsFieldTest.inline
 @RunWith( Theories.class )
 public class NodeCursorTest
 {
-    enum Mode
-    {
-        APPEND,
-        FETCH
-    }
-
     /*
      * each test is gonna run twice to make sure we reuse cursor correctly
      */
@@ -228,7 +222,7 @@ public class NodeCursorTest
     {
         MutableBoolean called = new MutableBoolean();
         NodeCursor cursor = new NodeCursor( nodeStore, c -> called.setTrue(), NO_LOCK_SERVICE );
-        cursor.init( mock( NodeProgression.class ) );
+        cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
         assertFalse( called.booleanValue() );
 
         cursor.close();
@@ -239,7 +233,7 @@ public class NodeCursorTest
     public void shouldCloseThePageCursorWhenDisposed()
     {
         NodeCursor cursor = new NodeCursor( nodeStore, c -> {}, NO_LOCK_SERVICE );
-        cursor.init( mock( NodeProgression.class ) );
+        cursor.init( mock( NodeProgression.class ), mock( ReadableTransactionState.class ) );
 
         cursor.close();
         cursor.dispose();
@@ -457,7 +451,7 @@ public class NodeCursorTest
             public PrimitiveIntSet labels()
             {
                 PrimitiveIntSet labels = asSet( labelIds, IoPrimitiveUtils::safeCastLongToInt );
-                return state == null ? labels : state.getNodeState( id ).augmentLabels( labels );
+                return state == null ? labels : state.augmentLabels( labels, state.getNodeState( id ) );
             }
 
             @Override
@@ -512,12 +506,12 @@ public class NodeCursorTest
 
     private static class TestRun
     {
-        private final Mode mode;
+        private final TransactionStateAccessMode mode;
         private final Operation[] ops;
 
         private TxState state;
 
-        private TestRun( Mode mode, Operation[] ops )
+        private TestRun( TransactionStateAccessMode mode, Operation[] ops )
         {
             this.mode = mode;
             this.ops = ops;
@@ -530,53 +524,33 @@ public class NodeCursorTest
             {
                 state = op.prepare( nodeStore, pageCursor, nodeRecord, state );
             }
-            return cursor.init( createProgression( ops, mode, state ) );
+            return cursor.init( createProgression( ops, mode ), state );
         }
 
-        private NodeProgression createProgression( Operation[] ops, Mode mode, TxState state )
+        private NodeProgression createProgression( Operation[] ops, TransactionStateAccessMode mode )
         {
             return new NodeProgression()
             {
                 private int i;
 
                 @Override
-                public boolean nextBatch( Batch batch )
+                public long nextId()
                 {
                     while ( i < ops.length )
                     {
                         Operation op = ops[i++];
                         if ( op.fromDisk() || mode == FETCH )
                         {
-                            batch.init( op.id(), op.id() );
-                            return true;
+                            return op.id();
                         }
                     }
-                    batch.nothing();
-                    return false;
+                    return -1L;
                 }
 
                 @Override
-                public Iterator<Long> addedNodes()
+                public TransactionStateAccessMode mode()
                 {
-                    return mode == APPEND && state != null ? state.addedAndRemovedNodes().getAdded().iterator() : null;
-                }
-
-                @Override
-                public boolean fetchFromTxState( long id )
-                {
-                    return mode == FETCH && state != null && state.nodeIsAddedInThisTx( id );
-                }
-
-                @Override
-                public boolean fetchFromDisk( long id )
-                {
-                    return state == null || !state.nodeIsDeletedInThisTx( id );
-                }
-
-                @Override
-                public NodeState nodeState( long id )
-                {
-                    return state == null ? NodeState.EMPTY : state.getNodeState( id );
+                    return mode;
                 }
             };
         }

@@ -19,71 +19,31 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Iterator;
-
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 public class AllNodeProgression implements NodeProgression
 {
-    private final NodeStore nodeStore;
-    private final ReadableTransactionState state;
+    private final AllIdIterator allIdIterator;
 
-    private long start;
-    private boolean done;
-
-    AllNodeProgression( NodeStore nodeStore, ReadableTransactionState state )
+    AllNodeProgression( NodeStore nodeStore )
     {
-        this.nodeStore = nodeStore;
-        this.state = state;
-        this.start = nodeStore.getNumberOfReservedLowIds();
+        allIdIterator = new AllIdIterator( nodeStore );
     }
 
     @Override
-    public boolean nextBatch( Batch batch )
+    public long nextId()
     {
-        while ( true )
+        if ( allIdIterator.hasNext() )
         {
-            if ( done )
-            {
-                batch.nothing();
-                return false;
-            }
-
-            long highId = nodeStore.getHighestPossibleIdInUse();
-            if ( start <= highId )
-            {
-                batch.init( start, highId );
-                start = highId + 1;
-                return true;
-            }
-
-            done = true;
+            return allIdIterator.next();
         }
+        return StatementConstants.NO_SUCH_NODE;
     }
 
     @Override
-    public Iterator<Long> addedNodes()
+    public TransactionStateAccessMode mode()
     {
-        return state == null ? null : state.addedAndRemovedNodes().getAdded().iterator();
-    }
-
-    @Override
-    public boolean fetchFromTxState( long id )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean fetchFromDisk( long id )
-    {
-        return state == null || !state.nodeIsDeletedInThisTx( id );
-    }
-
-    @Override
-    public NodeState nodeState( long id )
-    {
-        return state == null ? NodeState.EMPTY : state.getNodeState( id );
+        return TransactionStateAccessMode.APPEND;
     }
 }

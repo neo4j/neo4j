@@ -49,7 +49,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public class StoreStatement implements StorageStatement
 {
-    protected final InstanceCache<NodeCursor> nodeCursor;
+    private final InstanceCache<NodeCursor> nodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
@@ -151,22 +151,17 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public NodeProgression parallelNodeScanProgression( ReadableTransactionState state )
+    public Cursor<NodeItem> acquireNodeCursor( ReadableTransactionState state )
     {
-        throw unsupportedOperation();
-    }
-
-    private UnsupportedOperationException unsupportedOperation()
-    {
-        return new UnsupportedOperationException( "This operation is not supported in community edition but only in " +
-                "enterprise edition" );
+        neoStores.assertOpen();
+        return nodeCursor.get().init( new AllNodeProgression( neoStores.getNodeStore() ), state );
     }
 
     @Override
-    public Cursor<NodeItem> acquireNodeCursor( NodeProgression nodeProgression  )
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId, ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return nodeCursor.get().init( nodeProgression );
+        return nodeCursor.get().init( new SingleNodeProgression( nodeId ), state );
     }
 
     @Override
