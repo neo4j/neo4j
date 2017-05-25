@@ -25,14 +25,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SingleNodeFetchTest
+public class SingleNodeProgressionTest
 {
     @Test
     public void shouldReturnOnlyTheGivenNodeId() throws Throwable
     {
         // given
         long nodeId = 42L;
-        SingleNodeFetch progression = new SingleNodeFetch( nodeId );
+        SingleNodeProgression progression = new SingleNodeProgression( nodeId );
         Batch batch = new Batch();
 
         // when / then

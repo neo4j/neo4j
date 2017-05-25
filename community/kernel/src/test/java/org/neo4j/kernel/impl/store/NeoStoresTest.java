@@ -57,7 +57,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.SingleNodeFetch;
+import org.neo4j.kernel.impl.api.store.SingleNodeProgression;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -302,7 +302,7 @@ public class NeoStoresTest
         DefinedProperty property = Property.property( key, value );
         DefinedProperty oldProperty = NO_SUCH_PROPERTY;
         try ( StorageStatement statement = storeLayer.newStatement();
-                Cursor<NodeItem> cursor = statement.acquireNodeCursor( new SingleNodeFetch( nodeId ), EMPTY ) )
+                Cursor<NodeItem> cursor = statement.acquireNodeCursor( new SingleNodeProgression( nodeId ), EMPTY ) )
         {
             if ( cursor.next() )
             {
@@ -1032,7 +1032,7 @@ public class NeoStoresTest
         int count = 0;
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
                 Cursor<NodeItem> nodeCursor = statement.storageStatement()
-                        .acquireNodeCursor( new SingleNodeFetch( node ), EMPTY ) )
+                        .acquireNodeCursor( new SingleNodeProgression( node ), EMPTY ) )
         {
             nodeCursor.next();
 
@@ -1117,7 +1117,7 @@ public class NeoStoresTest
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
                 Cursor<NodeItem> nodeCursor = statement.storageStatement()
-                        .acquireNodeCursor( new SingleNodeFetch( node ), EMPTY ) )
+                        .acquireNodeCursor( new SingleNodeProgression( node ), EMPTY ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
@@ -1153,7 +1153,7 @@ public class NeoStoresTest
     {
         try ( StorageStatement statement = storeLayer.newStatement() )
         {
-            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeFetch( nodeId ), EMPTY ) )
+            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeProgression( nodeId ), EMPTY ) )
             {
                 return node.next();
             }
@@ -1411,7 +1411,7 @@ public class NeoStoresTest
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
                 Cursor<NodeItem> nodeCursor = statement.storageStatement()
-                        .acquireNodeCursor( new SingleNodeFetch( node ), EMPTY ) )
+                        .acquireNodeCursor( new SingleNodeProgression( node ), EMPTY ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
@@ -1535,7 +1535,7 @@ public class NeoStoresTest
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
                 Cursor<NodeItem> nodeCursor = statement.storageStatement()
-                        .acquireNodeCursor( new SingleNodeFetch( nodeId ), EMPTY ) )
+                        .acquireNodeCursor( new SingleNodeProgression( nodeId ), EMPTY ) )
         {
             assertTrue( nodeCursor.next() );
             NodeItem nodeItem = nodeCursor.get();

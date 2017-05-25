@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -92,7 +93,7 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
     {
         try ( StorageStatement statement = disk.newStatement() )
         {
-            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeFetch( id ), EMPTY ) )
+            try ( Cursor<NodeItem> node = statement.acquireNodeCursor( new SingleNodeProgression( id ), EMPTY ) )
             {
                 return node.next();
             }

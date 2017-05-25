@@ -19,27 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.BatchingLongProgression;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
-
-public class CommunityBatchingProgressionFactory implements BatchingProgressionFactory
+public interface BatchingLongProgression
 {
-    @Override
-    public BatchingLongProgression singleNodeFetch( long nodeId )
-    {
-        return new SingleNodeFetch( nodeId );
-    }
+    boolean nextBatch( Batch batch );
 
-    @Override
-    public BatchingLongProgression allNodeScan( NodeStore nodeStore )
-    {
-        return new AllNodeScan( nodeStore );
-    }
+    boolean appendAdded();
 
-    @Override
-    public BatchingLongProgression parallelAllNodeScan( NodeStore nodeStore )
-    {
-        throw new UnsupportedOperationException( "Parallel All Node Scan is not available in Neo4j Community Edition" );
-    }
+    boolean fetchAdded();
 }

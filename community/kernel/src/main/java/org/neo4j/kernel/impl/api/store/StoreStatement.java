@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.util.InstanceCache;
-import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -51,7 +50,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  */
 public class StoreStatement implements StorageStatement
 {
-    private final InstanceCache<NodeCursor> nodeCursor;
+    protected final InstanceCache<NodeCursor> nodeCursor;
     private final InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private final InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipsCursor;
@@ -62,7 +61,6 @@ public class StoreStatement implements StorageStatement
     private final NeoStores neoStores;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final Supplier<LabelScanReader> labelScanStore;
-    private final LockService lockService;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -76,7 +74,6 @@ public class StoreStatement implements StorageStatement
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
-        this.lockService = lockService;
 
         nodeCursor = new InstanceCache<NodeCursor>()
         {
@@ -155,11 +152,15 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<NodeItem> acquireNewNodeCursor( BatchingLongProgression progression,
-            NodeTransactionStateView stateView )
+    public BatchingLongProgression parallelNodeScanProgression()
     {
-        return new NodeCursor( neoStores.getNodeStore(), InstanceCache::noCache, lockService )
-                .init( progression, stateView );
+        throw unsupportedOperation();
+    }
+
+    private UnsupportedOperationException unsupportedOperation()
+    {
+        return new UnsupportedOperationException( "This operation is not supported in community edition but only in " +
+                "enterprise edition" );
     }
 
     @Override

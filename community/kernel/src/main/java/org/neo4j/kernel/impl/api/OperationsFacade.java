@@ -105,7 +105,6 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -553,20 +552,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return dataRead().nodeCursorById( statement, nodeId );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeGeCursor( BatchingLongProgression progression )
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetCursor( statement, progression );
-    }
-
-    @Override
-    public BatchingLongProgression parallelNodeScan()
-    {
-        statement.assertOpen();
-        return dataRead().parallelNodeScanProgression( statement );
     }
 
     @Override

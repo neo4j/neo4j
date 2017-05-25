@@ -61,8 +61,6 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.BatchingLongProgression;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -103,12 +101,10 @@ public class StorageLayer implements StoreReadLayer
     private final PropertyLoader propertyLoader;
     private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
-    private final BatchingProgressionFactory progressionFactory;
 
     public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache,
-            BatchingProgressionFactory progressionFactory )
+            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -121,7 +117,6 @@ public class StorageLayer implements StoreReadLayer
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
-        this.progressionFactory = progressionFactory;
     }
 
     @Override
@@ -400,29 +395,15 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public BatchingLongProgression parallelNodeScanProgression( StorageStatement statement )
-    {
-        return progressionFactory.parallelAllNodeScan( nodeStore );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeGetCursor( StorageStatement statement, BatchingLongProgression progression,
-            NodeTransactionStateView stateView )
-    {
-        return statement.acquireNewNodeCursor( progression, stateView );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( progressionFactory.allNodeScan( nodeStore ), stateView );
+        return statement.acquireNodeCursor( new AllNodeProgression( nodeStore ), stateView );
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetSingleCursor( StorageStatement statement, long nodeId,
-            NodeTransactionStateView stateView )
+    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, NodeTransactionStateView stateView )
     {
-        return statement.acquireNodeCursor( progressionFactory.singleNodeFetch( nodeId ), stateView );
+        return statement.acquireNodeCursor( new SingleNodeProgression( nodeId ), stateView );
     }
 
     @Override

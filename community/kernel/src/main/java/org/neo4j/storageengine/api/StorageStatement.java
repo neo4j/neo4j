@@ -23,6 +23,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.store.NodeDegreeCounter;
+import org.neo4j.kernel.impl.api.store.BatchingLongProgression;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -66,8 +67,7 @@ public interface StorageStatement extends AutoCloseable
     @Override
     void close();
 
-    // FIXME: this is a temporary workaround until we have a way to cache cursors thread safely in the transaction
-    Cursor<NodeItem> acquireNewNodeCursor( BatchingLongProgression progression, NodeTransactionStateView stateView );
+    BatchingLongProgression parallelNodeScanProgression();
 
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.

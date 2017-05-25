@@ -76,7 +76,7 @@ public class StateOperationsAutoIndexingTest
     {
         // Given
         when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( mock( NodeItem.class ) ) );
 
         // When
@@ -109,7 +109,7 @@ public class StateOperationsAutoIndexingTest
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( node ) );
         when( storeLayer
                 .nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( property.propertyKeyId() ),
@@ -156,7 +156,7 @@ public class StateOperationsAutoIndexingTest
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( node ) );
         when( storeLayer
                 .nodeGetProperty( any( StorageStatement.class ), any( NodeItem.class ), eq( property.propertyKeyId() ),
@@ -209,7 +209,7 @@ public class StateOperationsAutoIndexingTest
                 .thenReturn( cursor( existingProperty ) );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
         when( storeLayer
-                .nodeGetSingleCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
+                .nodeCursor( any( StorageStatement.class ), eq( 1337L ), any( ReadableTransactionState.class ) ) )
                 .thenReturn( cursor( node ) );
 
         // When

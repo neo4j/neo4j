@@ -111,7 +111,6 @@ import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -195,8 +194,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
-            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
-            BatchingProgressionFactory progressionFactory )
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
@@ -239,7 +237,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             storeLayer = new StorageLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
-                    storeStatementSupplier, schemaCache, progressionFactory );
+                    storeStatementSupplier, schemaCache );
 
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
 

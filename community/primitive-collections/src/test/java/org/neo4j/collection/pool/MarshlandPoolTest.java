@@ -76,7 +76,7 @@ public class MarshlandPoolTest
     }
 
     @Test
-    public void shouldReleaseAllSlotsOnDisposeAll() throws Exception
+    public void shouldReleaseAllSlotsOnClose() throws Exception
     {
         // Given
         Pool<Object> delegatePool = mock( Pool.class );
@@ -88,7 +88,7 @@ public class MarshlandPoolTest
         pool.release( first );
 
         // When
-        pool.disposeAll();
+        pool.close();
 
         // Then
         verify( delegatePool, times( 1 ) ).acquire();

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
@@ -194,7 +196,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( Cursor<NodeItem> node = store.nodeGetSingleCursor( storeStatement, nodeId, EMPTY ) )
+                try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeId, EMPTY ) )
                 {
                     if ( node.next() )
                     {
@@ -355,7 +357,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( Cursor<NodeItem> node = store.nodeGetSingleCursor( storeStatement, nodeState.getId(), EMPTY ) )
+        try ( Cursor<NodeItem> node = store.nodeCursor( storeStatement, nodeState.getId(), EMPTY ) )
         {
             if ( !node.next() )
             {

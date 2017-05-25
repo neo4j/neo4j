@@ -254,7 +254,7 @@ public class ForsetiLockManager implements Locks
     private static class ForsetiClientFlyweightPool extends LinkedQueuePool<ForsetiClient>
     {
         /** Client id counter **/
-        private final AtomicInteger clientIds = new AtomicInteger();
+        private final AtomicInteger clientIds = new AtomicInteger( 0 );
 
         /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
         // TODO we could use a synchronised SimpleBitSet instead, since we know that we only care about reusing a
@@ -270,7 +270,7 @@ public class ForsetiLockManager implements Locks
         ForsetiClientFlyweightPool( Config config, Clock clock, ConcurrentMap<Long,Lock>[] lockMaps,
                 WaitStrategy<AcquireLockTimeoutException>[] waitStrategies )
         {
-            super( 128 );
+            super( 128, null );
             this.config = config;
             this.clock = clock;
             this.lockMaps = lockMaps;

@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -216,7 +215,7 @@ public class RecordStorageEngineRule extends ExternalResource
                     constraintSemantics, storageStatementFactory, scheduler, tokenNameLookup, lockService,
                     indexProvider, indexingServiceMonitor, databaseHealth, labelScanStoreProvider,
                     legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                    transactionsSnapshotSupplier, new CommunityBatchingProgressionFactory() );
+                    transactionsSnapshotSupplier );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

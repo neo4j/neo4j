@@ -19,14 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.storageengine.api.BatchingLongProgression;
+import java.util.function.Supplier;
 
-public class EnterpriseBatchingProgressionFactory extends CommunityBatchingProgressionFactory
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
+
+public class EnterpriseStoreStatement extends StoreStatement
 {
-    @Override
-    public BatchingLongProgression parallelAllNodeScan( NodeStore nodeStore )
+    private final NodeStore nodeStore;
+
+    public EnterpriseStoreStatement( NeoStores neoStores, Supplier<IndexReaderFactory> indexReaderFactory,
+            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService )
     {
-        return new ParallelAllNodeScan( nodeStore );
+        super( neoStores, indexReaderFactory, labelScanReaderSupplier, lockService );
+        this.nodeStore = neoStores.getNodeStore();
+    }
+
+    @Override
+    public BatchingLongProgression parallelNodeScanProgression()
+    {
+        return new ParallelAllNodeProgression(  nodeStore );
     }
 }

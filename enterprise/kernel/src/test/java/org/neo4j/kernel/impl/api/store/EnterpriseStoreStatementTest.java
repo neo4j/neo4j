@@ -36,8 +36,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.BatchingLongProgression;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
@@ -49,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
-public class StoreParallelNodeScanIntegrationTest
+public class EnterpriseStoreStatementTest
 {
     @Rule
     public final EnterpriseDatabaseRule databaseRule = new EnterpriseDatabaseRule();
@@ -60,25 +58,23 @@ public class StoreParallelNodeScanIntegrationTest
     public void parallelScanShouldProvideTheSameResultAsANormalScan() throws Throwable
     {
         GraphDatabaseAPI db = databaseRule.getGraphDatabaseAPI();
-        BatchingProgressionFactory progressionFactory =
-                db.getDependencyResolver().resolveDependency( BatchingProgressionFactory.class );
         NeoStores neoStores =
                 db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         int nodes = randomNodes( neoStores.getNodeStore() );
         createNodes( db, nodes );
 
-        Set<Long> expected = singleThreadExecution( neoStores, progressionFactory, EMPTY );
+        Set<Long> expected = singleThreadExecution( neoStores, EMPTY );
 
         int threads = random.nextInt( 2, 6 );
-        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executorService = Executors.newCachedThreadPool();
         try
         {
-            Set<Long> parallelResult = parallelExecution( neoStores, executor, threads, progressionFactory, EMPTY );
+            Set<Long> parallelResult = parallelExecution( neoStores, executorService, threads, EMPTY );
             assertEquals( expected, parallelResult );
         }
         finally
         {
-            executor.shutdown();
+            executorService.shutdown();
         }
     }
 
@@ -87,8 +83,6 @@ public class StoreParallelNodeScanIntegrationTest
             throws Throwable
     {
         GraphDatabaseAPI db = databaseRule.getGraphDatabaseAPI();
-        BatchingProgressionFactory progressionFactory =
-                db.getDependencyResolver().resolveDependency( BatchingProgressionFactory.class );
         NeoStores neoStores =
                 db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         int nodes = randomNodes( neoStores.getNodeStore() );
@@ -96,31 +90,31 @@ public class StoreParallelNodeScanIntegrationTest
 
         TxState txState = crateTxStateWithRandomAddedAndDeletedNodes( nodes, lastNodeId );
 
-        Set<Long> expected = singleThreadExecution( neoStores, progressionFactory, txState );
+        Set<Long> expected = singleThreadExecution( neoStores, txState );
 
-        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executorService = Executors.newCachedThreadPool();
         try
         {
             int threads = random.nextInt( 2, 6 );
-            Set<Long> parallelResult = parallelExecution( neoStores, executor, threads, progressionFactory, txState );
+            Set<Long> parallelResult = parallelExecution( neoStores, executorService, threads, txState );
             assertEquals( expected, parallelResult );
         }
         finally
         {
-            executor.shutdown();
+            executorService.shutdown();
         }
     }
 
     private Set<Long> parallelExecution( NeoStores neoStores, ExecutorService executorService, int threads,
-            BatchingProgressionFactory progressionFactory, NodeTransactionStateView stateView ) throws Throwable
+            NodeTransactionStateView stateView ) throws Throwable
     {
-        StoreStatement[] localStatements = new StoreStatement[threads];
+        EnterpriseStoreStatement[] localStatements = new EnterpriseStoreStatement[threads];
         for ( int i = 0; i < threads; i++ )
         {
-            localStatements[i] = new StoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
+            localStatements[i] = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         }
         // use any of the local statements to build the shared progression
-        BatchingLongProgression progression = progressionFactory.parallelAllNodeScan( neoStores.getNodeStore() );
+        BatchingLongProgression progression = localStatements[0].parallelNodeScanProgression();
 
         @SuppressWarnings( "unchecked" )
         Future<Set<Long>>[] futures = new Future[threads];
@@ -167,13 +161,12 @@ public class StoreParallelNodeScanIntegrationTest
         return parallelResult;
     }
 
-    private Set<Long> singleThreadExecution( NeoStores neoStores, BatchingProgressionFactory progressionFactory,
-            NodeTransactionStateView stateView )
+    private Set<Long> singleThreadExecution( NeoStores neoStores, NodeTransactionStateView stateView )
     {
         Set<Long> expected = new HashSet<>();
-        StoreStatement statement = new StoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
+        EnterpriseStoreStatement statement = new EnterpriseStoreStatement( neoStores, null, null, NO_LOCK_SERVICE );
         try ( Cursor<NodeItem> cursor = statement
-                .acquireNodeCursor( progressionFactory.allNodeScan( neoStores.getNodeStore() ), stateView ) )
+                .acquireNodeCursor( new AllNodeProgression( neoStores.getNodeStore() ), stateView ) )
         {
             while ( cursor.next() )
             {

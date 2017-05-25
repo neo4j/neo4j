@@ -89,7 +89,6 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
@@ -142,18 +141,6 @@ public class StateHandlingStatementOperations
     // <Cursors>
 
     @Override
-    public BatchingLongProgression parallelNodeScanProgression( KernelStatement statement )
-    {
-        return storeLayer.parallelNodeScanProgression( statement.storageStatement() );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeGetCursor( KernelStatement statement, BatchingLongProgression progression )
-    {
-        return storeLayer.nodeGetCursor( statement.storageStatement(), progression, statement.readableTxState() );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
     {
         return storeLayer.nodeGetAllCursor( statement.storageStatement(), statement.readableTxState() );
@@ -173,7 +160,7 @@ public class StateHandlingStatementOperations
 
     private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
-        return storeLayer.nodeGetSingleCursor( statement.storageStatement(), nodeId, statement.readableTxState() );
+        return storeLayer.nodeCursor( statement.storageStatement(), nodeId, statement.readableTxState() );
     }
 
     @Override
