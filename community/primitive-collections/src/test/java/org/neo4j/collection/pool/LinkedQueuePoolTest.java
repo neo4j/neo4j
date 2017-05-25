@@ -387,13 +387,13 @@ public class LinkedQueuePoolTest
 
     private static class FakeClock implements LongSupplier
     {
+        private long time;
+
         @Override
         public long getAsLong()
         {
             return time;
         }
-
-        private long time = 0;
 
         public void forward( long amount, TimeUnit timeUnit )
         {
