@@ -17,25 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import java.util.function.Supplier;
+
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
-/**
- * A mechanism to augment and monitor transactions before and after commit/rollback.
- */
-public interface TransactionHook<OUTCOME extends TransactionHook.Outcome>
+@FunctionalInterface
+public interface StorageStatementFactory
 {
-    interface Outcome
-    {
-        boolean isSuccessful();
-        Throwable failure();
-    }
-
-    OUTCOME beforeCommit( ReadableTransactionState state, KernelTransaction transaction,
-            StoreReadLayer storeReadLayer, StorageStatement statement );
-    void afterCommit( ReadableTransactionState state, KernelTransaction transaction, OUTCOME outcome );
-    void afterRollback( ReadableTransactionState state, KernelTransaction transaction, OUTCOME outcome );
+    StorageStatement create( NeoStores neoStores, Supplier<IndexReaderFactory> indexReaderFactory,
+            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService );
 }

@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -79,11 +79,10 @@ public abstract class StatementOperationsTestHelper
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) )
-                    .thenReturn( PrimitiveLongCollections.emptyIterator() );
-            SchemaResources schemaResources = mock( SchemaResources.class );
-            when( schemaResources.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
-            when( state.schemaResources() ).thenReturn( schemaResources );
+            when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+            StorageStatement storageStatement = mock( StorageStatement.class );
+            when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
+            when( state.storageStatement() ).thenReturn( storageStatement );
         }
         catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )
         {

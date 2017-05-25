@@ -27,11 +27,13 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -87,11 +89,15 @@ public class StoreIteratorRelationshipCursorTest
             relationshipRecord.setId( RELATIONSHIP_ID );
             return relationshipRecord;
         });
-        return new StoreIteratorRelationshipCursor( relationshipStore, this::noCache, NO_LOCK_SERVICE );
+        return new StoreIteratorRelationshipCursor( relationshipStore, new TestCursorCache(), NO_LOCK_SERVICE );
     }
 
-    private void noCache( StoreIteratorRelationshipCursor c )
+    private class TestCursorCache extends InstanceCache<StoreIteratorRelationshipCursor>
     {
-
+        @Override
+        protected StoreIteratorRelationshipCursor create()
+        {
+            return null;
+        }
     }
 }
