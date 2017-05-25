@@ -113,6 +113,7 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
@@ -213,12 +214,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final SchemaStore schemaStore;
     private final NeoStoreIndexStoreView indexStoreView;
 
     private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
     private final long maxNodeId;
+    private final RecordCursors cursors;
 
     public BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
@@ -264,7 +267,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         propertyStore = neoStores.getPropertyStore();
-        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        relationshipGroupStore = neoStores.getRelationshipGroupStore();
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
 
@@ -304,6 +307,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
+        cursors = new RecordCursors( neoStores );
     }
 
     private StoreLocker tryLockStore( FileSystemAbstraction fileSystem )
@@ -924,7 +928,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<Long>( neoStores, nodeId )
+        return new BatchRelationshipIterable<Long>( neoStores, nodeId, cursors )
         {
             @Override
             protected Long nextFrom( long relId, int type, long startNode, long endNode )
@@ -938,7 +942,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<BatchRelationship>( neoStores, nodeId )
+        return new BatchRelationshipIterable<BatchRelationship>( neoStores, nodeId, cursors )
         {
             @Override
             protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
@@ -992,6 +996,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
         finally
         {
+            cursors.close();
             neoStores.close();
 
             try

@@ -19,18 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Disposable;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -44,17 +40,16 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 public abstract class StoreAbstractRelationshipCursor
         implements RelationshipVisitor<RuntimeException>, RelationshipItem, Cursor<RelationshipItem>, Disposable
 {
-    private final RelationshipRecord relationshipRecord;
-    private final PageCursor cursor;
-    private final RelationshipStore relationshipStore;
+    protected final RelationshipRecord relationshipRecord;
+    final RecordCursor<RelationshipRecord> relationshipRecordCursor;
     private final LockService lockService;
     protected boolean fetched;
 
-    StoreAbstractRelationshipCursor( RelationshipStore relationshipStore, LockService lockService )
+    StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors,
+            LockService lockService )
     {
-        this.relationshipStore = relationshipStore;
-        this.relationshipRecord = relationshipStore.newRecord();
-        this.cursor = relationshipStore.newPageCursor();
+        this.relationshipRecordCursor = cursors.relationship();
+        this.relationshipRecord = relationshipRecord;
         this.lockService = lockService;
     }
 
@@ -123,20 +118,6 @@ public abstract class StoreAbstractRelationshipCursor
         return relationshipRecord.getNextProp();
     }
 
-    RelationshipRecord readRecord( long id, RecordLoad mode )
-    {
-        try
-        {
-            relationshipRecord.clear();
-            relationshipStore.readIntoRecord( id, relationshipRecord, mode, cursor );
-            return relationshipRecord;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
     @Override
     public final Lock lock()
     {
@@ -146,16 +127,15 @@ public abstract class StoreAbstractRelationshipCursor
             boolean success = false;
             try
             {
-                RelationshipRecord record = readRecord( relationshipRecord.getId(), FORCE );
                 // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
-                if ( !record.inUse() )
+                if ( !relationshipRecordCursor.next( relationshipRecord.getId(), relationshipRecord, FORCE ) )
                 {
-                    // So it looks like the relationship has been deleted. The current behavior of
-                    // RelationshipStore#fillRecord w/ FORCE is to only set the inUse field on loading an unused record.
-                    // This should (and will) change to be more of a centralized behavior by the stores. Anyway,
-                    // setting this pointer to the primitive equivalent of null the property cursor will just look
-                    // empty from the outside and the releasing of the lock will be done as usual.
-                    record.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+                    // So it looks like the node has been deleted. The current behavior of RelationshipStore#fillRecord
+                    // w/ FORCE is to only set the inUse field on loading an unused record. This should (and will)
+                    // change to be more of a centralized behavior by the stores. Anyway, setting this pointer
+                    // to the primitive equivalent of null the property cursor will just look empty from the
+                    // outside and the releasing of the lock will be done as usual.
+                    relationshipRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
                 }
                 success = true;
             }
@@ -179,6 +159,5 @@ public abstract class StoreAbstractRelationshipCursor
     @Override
     public void dispose()
     {
-        cursor.close();
     }
 }

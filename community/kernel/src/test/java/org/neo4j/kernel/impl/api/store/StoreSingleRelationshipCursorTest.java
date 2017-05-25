@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -113,9 +114,8 @@ public class StoreSingleRelationshipCursorTest
 
     private StoreSingleRelationshipCursor createRelationshipCursor()
     {
-        @SuppressWarnings( "unchecked" )
         InstanceCache<StoreSingleRelationshipCursor> instanceCache = mock(InstanceCache.class);
-        return new StoreSingleRelationshipCursor( neoStores.getRelationshipStore(), instanceCache,
-                LockService.NO_LOCK_SERVICE );
+        return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ), instanceCache,
+                new RecordCursors( neoStores ), LockService.NO_LOCK_SERVICE );
     }
 }

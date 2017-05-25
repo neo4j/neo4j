@@ -28,7 +28,11 @@ import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
@@ -56,9 +60,12 @@ public class StoreStatement implements StorageStatement
     private final InstanceCache<StorePropertyCursor> propertyCursorCache;
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursorCache;
     private final NeoStores neoStores;
+    private final NodeStore nodeStore;
+    private final RelationshipStore relationshipStore;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
-    private final Supplier<LabelScanReader> labelScanStore;
     private final RecordCursors recordCursors;
+    private final Supplier<LabelScanReader> labelScanStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -72,6 +79,9 @@ public class StoreStatement implements StorageStatement
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
+        this.nodeStore = neoStores.getNodeStore();
+        this.relationshipStore = neoStores.getRelationshipStore();
+        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.recordCursors = new RecordCursors( neoStores );
 
         nodeCursor = new InstanceCache<NodeCursor>()
@@ -79,7 +89,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected NodeCursor create()
             {
-                return new NodeCursor( neoStores.getNodeStore(), this, lockService );
+                return new NodeCursor( nodeStore, this, lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -87,7 +97,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleRelationshipCursor create()
             {
-                return new StoreSingleRelationshipCursor( neoStores.getRelationshipStore(), this, lockService );
+                return new StoreSingleRelationshipCursor( relationshipStore.newRecord(), this, recordCursors,
+                        lockService );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -95,7 +106,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreIteratorRelationshipCursor create()
             {
-                return new StoreIteratorRelationshipCursor( neoStores.getRelationshipStore(), this, lockService );
+                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(), this, recordCursors,
+                        lockService );
             }
         };
         nodeRelationshipsCursor = new InstanceCache<StoreNodeRelationshipCursor>()
@@ -103,8 +115,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreNodeRelationshipCursor create()
             {
-                return new StoreNodeRelationshipCursor( neoStores.getRelationshipStore(),
-                        neoStores.getRelationshipGroupStore(), this, lockService );
+                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
+                        relationshipGroupStore.newRecord(), this, recordCursors, lockService );
             }
         };
         propertyCursorCache = new InstanceCache<StorePropertyCursor>()
@@ -137,7 +149,7 @@ public class StoreStatement implements StorageStatement
     public Cursor<NodeItem> acquireNodeCursor( ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return nodeCursor.get().init( new AllNodeProgression( neoStores.getNodeStore() ), state );
+        return nodeCursor.get().init( new AllNodeProgression( nodeStore ), state );
     }
 
     @Override
@@ -168,7 +180,7 @@ public class StoreStatement implements StorageStatement
     public Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state )
     {
         neoStores.assertOpen();
-        return iteratorRelationshipCursor.get().init( new AllIdIterator( neoStores.getRelationshipStore() ), state );
+        return iteratorRelationshipCursor.get().init( new AllIdIterator( relationshipStore ), state );
     }
 
     @Override
