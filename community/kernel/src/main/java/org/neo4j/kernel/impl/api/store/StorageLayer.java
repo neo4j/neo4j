@@ -76,7 +76,6 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -263,20 +262,6 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        return statement.getIndexReader( index );
-    }
-
-    @Override
-    public IndexReader indexGetFreshReader( StorageStatement statement, IndexDescriptor index )
-            throws IndexNotFoundKernelException
-    {
-        return statement.getFreshIndexReader( index );
-    }
-
-    @Override
     public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.constraintsForSchema( descriptor );
@@ -416,26 +401,6 @@ public class StorageLayer implements StoreReadLayer
     public RelationshipIterator relationshipsGetAll()
     {
         return new AllRelationshipIterator( relationshipStore );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId, ReadableTransactionState state )
-    {
-        return statement.acquireSingleNodeCursor( nodeId, state );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( StorageStatement statement, long relationshipId,
-            ReadableTransactionState state )
-    {
-        return statement.acquireSingleRelationshipCursor( relationshipId, state );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor( StorageStatement statement,
-            ReadableTransactionState state )
-    {
-        return statement.relationshipsGetAllCursor( state );
     }
 
     @Override

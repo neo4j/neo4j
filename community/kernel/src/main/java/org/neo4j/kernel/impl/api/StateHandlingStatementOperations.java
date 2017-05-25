@@ -120,6 +120,7 @@ import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeTyp
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.storageengine.api.NodeItem.transientNode;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class StateHandlingStatementOperations
@@ -159,7 +160,7 @@ public class StateHandlingStatementOperations
     private Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId )
     {
         TransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return storeLayer.nodeCursor( statement.getStoreStatement(), nodeId, state );
+        return statement.getStoreStatement().acquireSingleNodeCursor( nodeId, state );
     }
 
     @Override
@@ -178,20 +179,26 @@ public class StateHandlingStatementOperations
     private Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relationshipId )
     {
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return storeLayer.relationshipCursor( statement.getStoreStatement(), relationshipId, state );
+        return statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId, state );
     }
 
     @Override
     public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
     {
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return storeLayer.relationshipsGetAllCursor( statement.getStoreStatement(), state );
+        return statement.getStoreStatement().relationshipsGetAllCursor( state );
     }
 
     @Override
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node,
             Direction direction )
     {
+        final long id = node.id();
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( id ) )
+        {
+            node = transientNode( id );
+        }
+
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
         return storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, state );
     }
@@ -200,6 +207,11 @@ public class StateHandlingStatementOperations
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
             int[] relTypes )
     {
+        final long id = node.id();
+        if ( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( id ) )
+        {
+            node = transientNode( id );
+        }
         ReadableTransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
         return storeLayer.nodeGetRelationships( statement.getStoreStatement(), node, direction, relTypes, state );
     }
@@ -721,11 +733,11 @@ public class StateHandlingStatementOperations
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index,
-            IndexQuery.ExactPredicate... query )
+    public long nodeGetFromUniqueIndexSeek(
+            KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = storeLayer.indexGetFreshReader( statement.getStoreStatement(), index );
+        IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
 
         /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
          * since subsequent filtering will happen outside, but at the same time have the ability to
@@ -733,36 +745,37 @@ public class StateHandlingStatementOperations
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, statement, committed, query );
+        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, query );
         PrimitiveLongIterator changesFiltered =
-                filterIndexStateChangesForSeek( statement, exactMatches, index, OrderedPropertyValues.of( query ) );
+                filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( query ) );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
     @Override
-    public PrimitiveLongIterator indexQuery( KernelStatement statement, IndexDescriptor index,
-            IndexQuery... predicates ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    public PrimitiveLongIterator indexQuery( KernelStatement state, IndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = storeLayer.indexGetReader( statement.getStoreStatement(), index );
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongIterator committed = reader.query( predicates );
-        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, statement, committed, predicates );
+        PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, predicates );
 
         IndexQuery firstPredicate = predicates[0];
         switch ( firstPredicate.type() )
         {
         case exact:
             IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
-            return filterIndexStateChangesForSeek( statement, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
+            return filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
         case stringSuffix:
         case stringContains:
         case exists:
-            return filterIndexStateChangesForScan( statement, exactMatches, index );
+            return filterIndexStateChangesForScan( state, exactMatches, index );
 
         case rangeNumeric:
         {
             assertSinglePredicate( predicates );
             IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByNumber( statement, index, numPred.from(),
+            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
                     numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
         }
         case rangeString:
@@ -770,14 +783,14 @@ public class StateHandlingStatementOperations
             assertSinglePredicate( predicates );
             IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) firstPredicate;
             return filterIndexStateChangesForRangeSeekByString(
-                    statement, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
+                    state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
                     strPred.toInclusive(), committed );
         }
         case stringPrefix:
         {
             assertSinglePredicate( predicates );
             IndexQuery.StringPrefixPredicate strPred = (IndexQuery.StringPrefixPredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByPrefix( statement, index, strPred.prefix(), committed );
+            return filterIndexStateChangesForRangeSeekByPrefix( state, index, strPred.prefix(), committed );
         }
         default:
             throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
@@ -823,7 +836,7 @@ public class StateHandlingStatementOperations
     public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        IndexReader reader = storeLayer.indexGetReader( statement.getStoreStatement(), index );
+        IndexReader reader = statement.getStoreStatement().getIndexReader( index );
         return reader.countIndexedNodes( nodeId, value );
     }
 

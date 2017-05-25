@@ -41,11 +41,13 @@ public abstract class StoreAbstractIteratorRelationshipCursor extends StoreAbstr
         super( relationshipRecord, cursors, lockService );
     }
 
-    void internalInitTxState( ReadableTransactionState state, PrimitiveLongIterator addedRelationshipIterator )
+    protected StoreAbstractIteratorRelationshipCursor internalInitTxState( ReadableTransactionState state,
+            PrimitiveLongIterator addedRelationshipIterator )
     {
         this.state = state;
         this.addedRelationshipIterator = addedRelationshipIterator;
         this.fromStore = true;
+        return this;
     }
 
     @Override

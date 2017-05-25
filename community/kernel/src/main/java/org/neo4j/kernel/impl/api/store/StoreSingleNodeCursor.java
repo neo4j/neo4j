@@ -192,7 +192,7 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     @Override
     public boolean isDense()
     {
-        return state != null && state.nodeIsAddedInThisTx( nodeId )  ? false : nodeRecord.isDense();
+        return nodeRecord.isDense();
     }
 
     @Override
