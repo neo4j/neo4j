@@ -21,7 +21,6 @@ package org.neo4j.kernel.api;
 
 import java.util.Optional;
 
-import org.neo4j.function.Disposable;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -77,7 +76,7 @@ import org.neo4j.kernel.impl.api.Kernel;
  * }
  * </pre>
  */
-public interface KernelTransaction extends AutoCloseable, Disposable
+public interface KernelTransaction extends AutoCloseable
 {
     enum Type
     {

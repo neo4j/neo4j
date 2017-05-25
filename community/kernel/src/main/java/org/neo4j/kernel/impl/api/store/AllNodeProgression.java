@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.NodeStore;
 
-public class AllNodeProgression implements NodeProgression
+public class AllNodeProgression implements Progression
 {
     private final AllIdIterator allIdIterator;
 

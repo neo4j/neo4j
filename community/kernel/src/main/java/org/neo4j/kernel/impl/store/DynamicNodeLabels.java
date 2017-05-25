@@ -64,6 +64,15 @@ public class DynamicNodeLabels implements NodeLabels
         return getDynamicLabelsArray( node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore() );
     }
 
+    public static long[] get( NodeRecord node, RecordCursor<DynamicRecord> dynamicLabelCursor )
+    {
+        if ( node.isLight() )
+        {
+            NodeStore.ensureHeavy( node, dynamicLabelCursor );
+        }
+        return getDynamicLabelsArrayFromHeavyRecords( node.getUsedDynamicLabelRecords() );
+    }
+
     @Override
     public long[] getIfLoaded()
     {

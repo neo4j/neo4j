@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.IntPredicate;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Disposable;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -34,7 +33,7 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public abstract class StoreAbstractPropertyCursor implements PropertyItem, Cursor<PropertyItem>, Disposable
+public abstract class StoreAbstractPropertyCursor implements Cursor<PropertyItem>, PropertyItem
 {
     protected final StorePropertyPayloadCursor payload;
     private final RecordCursor<PropertyRecord> recordCursor;
@@ -166,9 +165,4 @@ public abstract class StoreAbstractPropertyCursor implements PropertyItem, Curso
     }
 
     protected abstract void doClose();
-
-    @Override
-    public void dispose()
-    {
-    }
 }

@@ -138,10 +138,4 @@ public class StubKernelTransaction implements KernelTransaction
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
-
-    @Override
-    public void dispose()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
 }

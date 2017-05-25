@@ -19,59 +19,54 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Disposable;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.APPEND;
-import static org.neo4j.kernel.impl.api.store.NodeProgression.Mode.FETCH;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.APPEND;
+import static org.neo4j.kernel.impl.api.store.Progression.Mode.FETCH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
+public class NodeCursor implements NodeItem, Cursor<NodeItem>
 {
     private final NodeRecord nodeRecord;
     private final Consumer<NodeCursor> instanceCache;
-    private final NodeStore nodeStore;
+    private final RecordCursors recordCursors;
     private final LockService lockService;
 
-    private NodeProgression progression;
+    private Progression progression;
     private ReadableTransactionState state;
     private boolean fetched;
     private long[] labels;
     private Iterator<Long> added;
-    private PageCursor pageCursor;
 
-    NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, NodeStore nodeStore,
+    NodeCursor( NodeRecord nodeRecord, Consumer<NodeCursor> instanceCache, RecordCursors recordCursors,
             LockService lockService )
     {
-        this.pageCursor = nodeStore.newPageCursor();
         this.nodeRecord = nodeRecord;
         this.instanceCache = instanceCache;
-        this.nodeStore = nodeStore;
+        this.recordCursors = recordCursors;
         this.lockService = lockService;
     }
 
-    public Cursor<NodeItem> init( NodeProgression progression, ReadableTransactionState state )
+    public Cursor<NodeItem> init( Progression progression, ReadableTransactionState state )
     {
         this.progression = progression;
         this.state = state;
@@ -93,7 +88,8 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         long id;
         while ( (id = progression.nextId()) >= 0 )
         {
-            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) && readNodeRecord( id ) )
+            if ( (state == null || !state.nodeIsDeletedInThisTx( id )) &&
+                    recordCursors.node().next( id, nodeRecord, RecordLoad.CHECK ) )
             {
                 return true;
             }
@@ -114,20 +110,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         return false;
     }
 
-    private boolean readNodeRecord( long id )
-    {
-        try
-        {
-            nodeRecord.clear();
-            nodeStore.readIntoRecord( id, nodeRecord, CHECK, pageCursor );
-            return nodeRecord.inUse();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
     private void recordFromTxState( long id )
     {
         nodeRecord.clear();
@@ -141,13 +123,6 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
         added = null;
         state = null;
         instanceCache.accept( this );
-    }
-
-    @Override
-    public void dispose()
-    {
-        pageCursor.close();
-        pageCursor = null;
     }
 
     @Override
@@ -196,7 +171,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
     {
         if ( labels == null )
         {
-            labels = NodeLabelsField.get( nodeRecord, nodeStore );
+            labels = NodeLabelsField.get( nodeRecord, recordCursors.label() );
         }
         return labels;
     }
@@ -247,7 +222,7 @@ public class NodeCursor implements NodeItem, Cursor<NodeItem>, Disposable
             try
             {
                 // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
-                if ( !readNodeRecord( nodeRecord.getId() ) )
+                if ( !recordCursors.node().next( nodeRecord.getId(), nodeRecord, CHECK ) )
                 {
                     // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
                     // is to only set the inUse field on loading an unused record. This should (and will)

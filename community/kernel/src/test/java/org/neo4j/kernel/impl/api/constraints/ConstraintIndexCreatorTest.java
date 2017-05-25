@@ -464,11 +464,6 @@ public class ConstraintIndexCreatorTest
             {
                 return timeout;
             }
-
-            @Override
-            public void dispose()
-            {
-            }
         }
     }
 }

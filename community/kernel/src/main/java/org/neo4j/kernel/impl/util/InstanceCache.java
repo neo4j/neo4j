@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.util;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Disposable;
-
 /**
  * Caches single instances. This is meant to be used within a single thread, where
  * the usage pattern is such that it is likely that at any given time only one T is needed, but at times
@@ -31,7 +29,7 @@ import org.neo4j.function.Disposable;
  *
  * @param <T>
  */
-public abstract class InstanceCache<T extends Disposable> implements Supplier<T>, Consumer<T>, AutoCloseable
+public abstract class InstanceCache<T> implements Supplier<T>, Consumer<T>
 {
     private T instance;
 
@@ -40,7 +38,7 @@ public abstract class InstanceCache<T extends Disposable> implements Supplier<T>
     {
         if ( instance == null )
         {
-            return create();
+            instance = create();
         }
 
         try
@@ -53,27 +51,11 @@ public abstract class InstanceCache<T extends Disposable> implements Supplier<T>
         }
     }
 
-    protected abstract T create();
-
     @Override
     public void accept( T instance )
     {
-        if ( this.instance == null )
-        {
-            this.instance = instance;
-        }
-        else
-        {
-            instance.dispose();
-        }
+        this.instance = instance;
     }
 
-    @Override
-    public void close()
-    {
-        if ( instance != null )
-        {
-            instance.dispose();
-        }
-    }
+    protected abstract T create();
 }
