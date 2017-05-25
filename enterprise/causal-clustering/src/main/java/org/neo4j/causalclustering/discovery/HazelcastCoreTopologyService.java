@@ -19,6 +19,12 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -30,12 +36,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -75,10 +75,13 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
-    private HazelcastInstance hazelcastInstance;
+    private volatile HazelcastInstance hazelcastInstance;
     private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+
+    private Thread startingThread;
+    private volatile boolean stopped;
 
     HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
             LogProvider userLogProvider )
@@ -100,18 +103,40 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public boolean setClusterId( ClusterId clusterId )
+    public boolean setClusterId( ClusterId clusterId ) throws InterruptedException
     {
+        waitOnHazelcastInstanceCreation();
         return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId );
     }
 
     @Override
     public void start() throws Throwable
     {
-        log.info( "Cluster discovery service started" );
-        hazelcastInstance = createHazelcastInstance();
-        membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-        refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, this::refreshTopology );
+        /*
+         * We will start hazelcast in its own thread. Hazelcast blocks until the minimum cluster size is available
+         * and during that block it ignores interrupts. This blocks the whole startup process and since it is the
+         * main thread that controls lifecycle and the main thread is not daemon, it will block ignoring signals
+         * and any shutdown attempts. The solution is to start hazelcast instance creation in its own thread which
+         * we set as daemon. All subsequent uses of hazelcastInstance in this class will still block on it being
+         * available (see waitOnHazelcastInstanceCreation() ) but they do so while checking for interrupt and
+         * exiting if one happens. This provides us with a way to exit before hazelcastInstance creation completes.
+         */
+        startingThread = new Thread( () ->
+        {
+            log.info( "Cluster discovery service starting" );
+            hazelcastInstance = createHazelcastInstance();
+            // We may be interrupted by the stop method after hazelcast returns. This is courtesy and not really necessary
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                return;
+            }
+            membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
+            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, HazelcastCoreTopologyService.this::refreshTopology );
+            log.info( "Cluster discovery service started" );
+        } );
+        startingThread.setDaemon( true );
+        startingThread.setName( "HC Starting Thread" );
+        startingThread.start();
     }
 
     @Override
@@ -120,16 +145,27 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         log.info( String.format( "HazelcastCoreTopologyService stopping and unbinding from %s",
                 config.get( CausalClusteringSettings.discovery_listen_address ) ) );
 
-        scheduler.cancelAndWaitTermination( refreshJob );
+        // Interrupt the starting thread. Not really necessary, just cleaner exit
+        startingThread.interrupt();
+        // Flag to notify waiters
+        stopped = true;
 
-        try
+        if ( refreshJob != null )
         {
-            hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
-            hazelcastInstance.getLifecycleService().terminate();
+            scheduler.cancelAndWaitTermination( refreshJob );
         }
-        catch ( Throwable e )
+
+        if ( hazelcastInstance != null && membershipRegistrationId != null )
         {
-            log.warn( "Failed to stop Hazelcast", e );
+            try
+            {
+                hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
+                hazelcastInstance.getLifecycleService().terminate();
+            }
+            catch ( Throwable e )
+            {
+                log.warn( "Failed to stop Hazelcast", e );
+            }
         }
     }
 
@@ -247,15 +283,16 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         return Optional.ofNullable( catchupAddressMap.get( memberId ) );
     }
 
-    private synchronized void refreshTopology()
+    private synchronized void refreshTopology() throws InterruptedException
     {
         refreshCoreTopology();
         refreshReadReplicaTopology();
         catchupAddressMap = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
     }
 
-    private void refreshCoreTopology()
+    private void refreshCoreTopology() throws InterruptedException
     {
+        waitOnHazelcastInstanceCreation();
         CoreTopology newCoreTopology = getCoreTopology( hazelcastInstance, config, log );
         TopologyDifference difference = coreTopology.difference( newCoreTopology );
         if ( difference.hasChanges() )
@@ -268,8 +305,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     }
 
-    private void refreshReadReplicaTopology()
+    private void refreshReadReplicaTopology() throws InterruptedException
     {
+        waitOnHazelcastInstanceCreation();
         ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
 
         TopologyDifference difference = readReplicaTopology.difference( newReadReplicaTopology );
@@ -281,20 +319,47 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.readReplicaTopology = newReadReplicaTopology;
     }
 
+    /*
+     * Waits for hazelcastInstance to be set. It also checks for the stopped flag which is probably not really
+     * necessary. Nevertheless, since hazelcastInstance is created and set by a separate thread to avoid blocking
+     * ( see start() ), all accesses to it must be guarded by this method.
+     */
+    private void waitOnHazelcastInstanceCreation() throws InterruptedException
+    {
+        while ( hazelcastInstance == null && !stopped )
+        {
+            Thread.sleep( 200 );
+        }
+    }
+
     private class OurMembershipListener implements MembershipListener
     {
         @Override
         public void memberAdded( MembershipEvent membershipEvent )
         {
             log.info( "Core member added %s", membershipEvent );
-            refreshTopology();
+            try
+            {
+                refreshTopology();
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
             log.info( "Core member removed %s", membershipEvent );
-            refreshTopology();
+            try
+            {
+                refreshTopology();
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         @Override
