@@ -244,13 +244,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
-    {
-        guard.check( statement );
-        return entityReadDelegate.nodeGetAllCursor( statement );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
     {
         guard.check( statement );

@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -417,12 +416,6 @@ public class StorageLayer implements StoreReadLayer
     public RelationshipIterator relationshipsGetAll()
     {
         return new AllRelationshipIterator( relationshipStore );
-    }
-
-    @Override
-    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, TransactionState state )
-    {
-        return statement.acquireNodeCursor( state );
     }
 
     @Override

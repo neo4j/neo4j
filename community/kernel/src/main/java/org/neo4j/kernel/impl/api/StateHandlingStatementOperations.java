@@ -145,13 +145,6 @@ public class StateHandlingStatementOperations
     // <Cursors>
 
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor( KernelStatement statement )
-    {
-        TransactionState state = statement.hasTxStateWithChanges() ? statement.txState() : null;
-        return storeLayer.nodeGetAllCursor( statement.getStoreStatement(), state );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
     {
         Cursor<NodeItem> node = nodeCursor( statement, nodeId );

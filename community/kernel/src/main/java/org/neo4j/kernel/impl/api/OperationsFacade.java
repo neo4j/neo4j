@@ -550,13 +550,6 @@ public class OperationsFacade
 
     // <DataReadCursors>
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor()
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetAllCursor( statement );
-    }
-
-    @Override
     public Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();

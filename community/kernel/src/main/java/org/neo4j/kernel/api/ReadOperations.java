@@ -211,8 +211,6 @@ public interface ReadOperations
     //== CURSOR ACCESS OPERATIONS ===============
     //===========================================
 
-    Cursor<NodeItem> nodeGetAllCursor();
-
     Cursor<NodeItem> nodeCursorById( long nodeId ) throws EntityNotFoundException;
 
     Cursor<RelationshipItem> relationshipCursorById( long relId ) throws EntityNotFoundException;
