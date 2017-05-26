@@ -174,7 +174,7 @@ public class StateOperationsAutoIndexingTest
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, AssertOpen.ALWAYS_OPEN ) )
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, stmt ) )
                 .thenReturn( cursor( existingProperty ) );
 
         // When
@@ -219,7 +219,7 @@ public class StateOperationsAutoIndexingTest
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
-        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, AssertOpen.ALWAYS_OPEN ) )
+        when( storeLayer.relationshipGetProperty( storeStmt, relationship, propertyKeyId, stmt ) )
                 .thenReturn( cursor( existingProperty ) );
 
         // When
