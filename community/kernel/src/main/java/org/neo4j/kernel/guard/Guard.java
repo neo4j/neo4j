@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.guard;
 
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 
@@ -29,6 +28,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
  */
 public interface Guard
 {
-    void check( KernelTransaction transaction );
+    void check( KernelTransactionImplementation transaction );
     void check( KernelStatement statement );
 }

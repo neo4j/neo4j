@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.kernel.api.KernelAPI;
@@ -46,13 +45,13 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -103,7 +102,7 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).writableTxState() ).indexRuleDoAdd( eq( index ) );
+        verify( kernel.statements.get( 0 ).txState() ).indexRuleDoAdd( eq( index ) );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetForSchema( state, descriptor );
@@ -147,14 +146,14 @@ public class ConstraintIndexCreatorTest
                             "ASSERT label[123].property[456] IS UNIQUE.", e.getMessage() );
         }
         assertEquals( 2, kernel.statements.size() );
-        WritableTransactionState tx1 = kernel.statements.get( 0 ).writableTxState();
+        TransactionState tx1 = kernel.statements.get( 0 ).txState();
         IndexDescriptor newIndex = IndexDescriptorFactory.uniqueForLabel( 123, 456 );
         verify( tx1 ).indexRuleDoAdd( newIndex );
         verifyNoMoreInteractions( tx1 );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetForSchema( state, descriptor );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
-        WritableTransactionState tx2 = kernel.statements.get( 1 ).writableTxState();
+        TransactionState tx2 = kernel.statements.get( 1 ).txState();
         verify( tx2 ).indexDoDrop( newIndex );
         verifyNoMoreInteractions( tx2 );
     }
@@ -175,7 +174,7 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 1, kernel.statements.size() );
-        verify( kernel.statements.get( 0 ).writableTxState() ).indexDoDrop( index );
+        verify( kernel.statements.get( 0 ).txState() ).indexDoDrop( index );
         verifyZeroInteractions( indexingService );
     }
 
@@ -464,23 +463,6 @@ public class ConstraintIndexCreatorTest
             public long timeout()
             {
                 return timeout;
-            }
-
-            @Override
-            public void setUserMetaData( Map<String,Object> data )
-            {
-
-            }
-
-            @Override
-            public Map<String,Object> getUserMetaData()
-            {
-                return null;
-            }
-
-            @Override
-            public void dispose()
-            {
             }
         }
     }

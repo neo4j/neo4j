@@ -24,6 +24,8 @@ import java.lang.ref.WeakReference;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.function.Factory;
+
 import static java.util.Collections.newSetFromMap;
 
 /**
@@ -65,6 +67,11 @@ public class MarshlandPool<T> implements Pool<T>
             newSetFromMap( new ConcurrentHashMap<LocalSlotReference, Boolean>() );
     private final ReferenceQueue<LocalSlot<T>> objectsFromDeadThreads = new ReferenceQueue<>();
 
+    public MarshlandPool( Factory<T> objectFactory )
+    {
+        this( new LinkedQueuePool<>( 4, objectFactory ) );
+    }
+
     public MarshlandPool( Pool<T> delegatePool )
     {
         this.pool = delegatePool;
@@ -84,7 +91,6 @@ public class MarshlandPool<T> implements Pool<T>
         }
 
         // Try the reference queue, containing objects from dead threads
-        @SuppressWarnings( "unchecked" )
         LocalSlotReference<T> slotReference = (LocalSlotReference) objectsFromDeadThreads.poll();
         if ( slotReference != null && slotReference.object != null )
         {
@@ -106,9 +112,10 @@ public class MarshlandPool<T> implements Pool<T>
         {
             localSlot.set( obj );
         }
+
+        // Fall back to the delegate pool
         else
         {
-            // Fall back to the delegate pool
             pool.release( obj );
         }
     }
@@ -116,7 +123,6 @@ public class MarshlandPool<T> implements Pool<T>
     /**
      * Dispose of all objects in this pool, releasing them back to the delegate pool
      */
-    @SuppressWarnings( "unchecked" )
     public void disposeAll()
     {
         for ( LocalSlotReference slotReference : slotReferences )
@@ -143,6 +149,11 @@ public class MarshlandPool<T> implements Pool<T>
                 pool.release( instance );
             }
         }
+    }
+
+    public void close()
+    {
+        disposeAll();
     }
 
     /**

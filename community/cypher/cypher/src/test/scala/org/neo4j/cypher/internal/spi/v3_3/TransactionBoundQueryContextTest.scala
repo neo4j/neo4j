@@ -35,14 +35,14 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.api.security.{AnonymousContext, SecurityContext}
-import org.neo4j.kernel.impl.api.{KernelStatementImplementation, KernelTransactionImplementation, StatementOperationParts}
+import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.CanWrite
 import org.neo4j.kernel.impl.locking.LockTracer
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
-import org.neo4j.storageengine.api.SchemaResources
+import org.neo4j.storageengine.api.StorageStatement
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -51,7 +51,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   var graph: GraphDatabaseCypherService = null
   var outerTx: InternalTransaction = null
-  var statement: KernelStatementImplementation = null
+  var statement: KernelStatement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
   val locker = mock[PropertyContainerLocker]
 
@@ -61,9 +61,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
-    val storeStatement = mock[SchemaResources]
+    val storeStatement = mock[StorageStatement]
     val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
-    statement = new KernelStatementImplementation(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE)
+    statement = new KernelStatement(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE)
     statement.initialize(null, operations, PageCursorTracerSupplier.NULL.get())
     statement.acquire()
   }

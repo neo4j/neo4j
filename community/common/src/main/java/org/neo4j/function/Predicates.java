@@ -271,4 +271,19 @@ public class Predicates
     }
 
     public static IntPredicate ALWAYS_TRUE_INT = v -> true;
+
+    public static IntPredicate any( int[] values )
+    {
+        return v ->
+        {
+            for ( int value : values )
+            {
+                if ( v == value )
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 /**
@@ -31,21 +32,4 @@ public interface RelationshipState extends PropertyContainerState
     long getId();
 
     <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
-
-    RelationshipState EMPTY = new EmptyRelationshipState();
-
-    class EmptyRelationshipState extends EmptyPropertyContainerState implements RelationshipState
-    {
-        @Override
-        public long getId()
-        {
-            throw new UnsupportedOperationException( "id" + " not defined" );
-        }
-
-        @Override
-        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
-        {
-            return false;
-        }
-    }
 }

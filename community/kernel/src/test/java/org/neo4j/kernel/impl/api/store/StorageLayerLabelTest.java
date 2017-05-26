@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
@@ -28,10 +29,8 @@ import org.neo4j.graphdb.Transaction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 
@@ -58,8 +57,8 @@ public class StorageLayerLabelTest extends StorageLayerTest
         }
 
         // THEN
-        disk.nodeGetSingleCursor( nodeId, EMPTY )
-                .forAll( node -> assertEquals( asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
+        disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll(
+                node -> assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
     }
 
     @Test
@@ -96,8 +95,8 @@ public class StorageLayerLabelTest extends StorageLayerTest
         int labelId2 = disk.labelGetForName( label2.name() );
 
         // WHEN
-        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.schemaResources(), labelId1 );
-        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.schemaResources(), labelId2 );
+        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
+        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), PrimitiveLongCollections.toSet( nodesForLabel1 ) );

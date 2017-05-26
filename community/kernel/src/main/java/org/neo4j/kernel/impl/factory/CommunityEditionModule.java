@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.store.CommunityBatchingProgressionFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -69,7 +68,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.storageengine.api.BatchingProgressionFactory;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -127,8 +125,6 @@ public class CommunityEditionModule extends EditionModule
 
         constraintSemantics = createSchemaRuleVerifier();
 
-        progressionFactory = platformModule.dependencies.satisfyDependency( createProgressionFactory() );
-
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         ioLimiter = IOLimiter.unlimited();
@@ -140,11 +136,6 @@ public class CommunityEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         dependencies.satisfyDependency( createSessionTracker() );
-    }
-
-    protected BatchingProgressionFactory createProgressionFactory()
-    {
-        return new CommunityBatchingProgressionFactory();
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

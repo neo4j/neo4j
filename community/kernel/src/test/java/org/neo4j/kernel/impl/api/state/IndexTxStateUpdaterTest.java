@@ -84,8 +84,7 @@ public class IndexTxStateUpdaterTest
     {
         state = mock( KernelStatement.class );
         txState = mock( TransactionState.class );
-        when( state.readableTxState() ).thenReturn( txState );
-        when( state.writableTxState() ).thenReturn( txState );
+        when( state.txState() ).thenReturn( txState );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
@@ -218,4 +217,5 @@ public class IndexTxStateUpdaterTest
     {
         verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId), eq( before ), eq( after ) );
     }
+
 }

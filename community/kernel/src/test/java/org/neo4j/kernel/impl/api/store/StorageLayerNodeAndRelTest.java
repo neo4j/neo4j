@@ -25,12 +25,12 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.storageengine.api.txstate.ReadableTransactionState.EMPTY;
 
 /**
  * Test reading committed node and relationships from disk.
@@ -89,17 +89,23 @@ public class StorageLayerNodeAndRelTest extends StorageLayerTest
 
     private boolean nodeExists( long id )
     {
-        try ( Cursor<NodeItem> node = disk.nodeGetSingleCursor( id, EMPTY ) )
+        try ( StorageStatement statement = disk.newStatement() )
         {
-            return node.next();
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
+            {
+                return node.next();
+            }
         }
     }
 
     private boolean relationshipExists( long id )
     {
-        try ( Cursor<RelationshipItem> relationship = disk.relationshipGetSingleCursor( id, EMPTY ) )
+        try ( StorageStatement statement = disk.newStatement() )
         {
-            return relationship.next();
+            try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id ) )
+            {
+                return relationship.next();
+            }
         }
     }
 }

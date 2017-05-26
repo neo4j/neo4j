@@ -25,10 +25,12 @@ import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
+import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -38,15 +40,18 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
 public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
+    private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
     private final StoreReadLayer storeLayer;
+    private final StorageStatement statement;
     private final CountsRecordState counts;
     private final ReadableTransactionState txState;
 
-    public TransactionCountingStateVisitor( TxStateVisitor next, StoreReadLayer storeLayer,
+    public TransactionCountingStateVisitor( TxStateVisitor next, StoreReadLayer storeLayer, StorageStatement statement,
             ReadableTransactionState txState, CountsRecordState counts )
     {
         super( next );
         this.storeLayer = storeLayer;
+        this.statement = statement;
         this.txState = txState;
         this.counts = counts;
     }
@@ -62,8 +67,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitDeletedNode( long id )
     {
         counts.incrementNodeCount( ANY_LABEL, -1 );
-        storeLayer.nodeGetSingleCursor( id, ReadableTransactionState.EMPTY )
-                .forAll( this::decrementCountForLabelsAndRelationships );
+        statement.acquireSingleNodeCursor( id ).forAll( this::decrementCountForLabelsAndRelationships );
         super.visitDeletedNode( id );
     }
 
@@ -76,7 +80,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             return false;
         } );
 
-        storeLayer.degrees( node,
+        storeLayer.degrees( statement, node,
                 ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
     }
 
@@ -91,15 +95,14 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     @Override
     public void visitDeletedRelationship( long id )
     {
-        try ( Cursor<RelationshipItem> cursor = storeLayer.relationshipGetSingleCursor( id, ReadableTransactionState.EMPTY ) )
+        try
         {
-            if ( !cursor.next() )
-            {
-                throw new IllegalStateException( "Relationship being deleted should exist along with its nodes." );
-            }
-
-            RelationshipItem relationship = cursor.get();
-            updateRelationshipCount( relationship.startNode(), relationship.type(), relationship.endNode(), -1 );
+            storeLayer.relationshipVisit( id, edge );
+            updateRelationshipCount( edge.startNode(), edge.type(), edge.endNode(), -1 );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes.", e );
         }
         super.visitDeletedRelationship( id );
     }
@@ -121,8 +124,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
             }
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
-            storeLayer.nodeGetSingleCursor( id, ReadableTransactionState.EMPTY )
-                    .forAll( node -> storeLayer.degrees( node, ( type, out, in ) ->
+            statement.acquireSingleNodeCursor( id )
+                    .forAll( node -> storeLayer.degrees( statement, node, ( type, out, in ) ->
                     {
                         added.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
                         removed.forEach( label -> updateRelationshipsCountsFromDegrees( type, label, -out, -in ) );
@@ -131,31 +134,37 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         super.visitNodeLabelChanges( id, added, removed );
     }
 
-    private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long out, long in )
+    private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long outgoing,
+            long incoming )
     {
-        labels.visitKeys( label -> updateRelationshipsCountsFromDegrees( type, label, out, in ) );
+        labels.visitKeys( ( label ) -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
     }
 
-    private boolean updateRelationshipsCountsFromDegrees( int type, int label, long out, long in )
+    private boolean updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
     {
         // untyped
-        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, out );
-        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, in );
+        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
+        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming );
         // typed
-        counts.incrementRelationshipCount( label, type, ANY_LABEL, out );
-        counts.incrementRelationshipCount( ANY_LABEL, type, label, in );
+        counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
+        counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
         return false;
     }
 
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
     {
         updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
-        visitLabels( startNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0) );
+        visitLabels( startNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0 ) );
         visitLabels( endNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
     }
 
     private void visitLabels( long nodeId, PrimitiveIntVisitor<RuntimeException> visitor )
     {
-        storeLayer.nodeGetSingleCursor( nodeId, txState ).forAll( node -> node.labels().visitKeys( visitor ) );
+        nodeCursor( statement, nodeId ).forAll( node -> node.labels().visitKeys( visitor ) );
+    }
+
+    private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )
+    {
+        return txState.augmentSingleNodeCursor( statement.acquireSingleNodeCursor( nodeId ), nodeId );
     }
 }

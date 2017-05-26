@@ -21,11 +21,13 @@ package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -38,20 +40,20 @@ import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.storageengine.api.txstate.NodeTransactionStateView;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Abstraction for reading committed data from {@link StorageEngine store}.
  */
 public interface StoreReadLayer
 {
-    SchemaResources schemaResources();
+    /**
+     * @return new {@link StorageStatement}, which can be used after a call to {@link StorageStatement#acquire()}.
+     */
+    StorageStatement newStatement();
 
     /**
      * @param labelId label to list indexes for.
@@ -127,7 +129,7 @@ public interface StoreReadLayer
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
 
-    PrimitiveLongIterator nodesGetForLabel( SchemaResources statement, int labelId );
+    PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId );
 
     /**
      * Looks for a stored index by given {@code descriptor}
@@ -162,11 +164,6 @@ public interface StoreReadLayer
      * @throws IndexNotFoundKernelException if index not found.
      */
     String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    IndexReader indexGetReader( SchemaResources schemaResources, IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    IndexReader indexGetFreshReader( SchemaResources schemaResources, IndexDescriptor index )
-            throws IndexNotFoundKernelException;
 
     /**
      * @param labelName name of label.
@@ -252,6 +249,16 @@ public interface StoreReadLayer
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
 
     /**
+     * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
+     *
+     * @param relationshipId the id of the relationship to access.
+     * @param relationshipVisitor {@link RelationshipVisitor} which will see the relationship data.
+     * @throws EntityNotFoundException if no relationship exists by the given {@code relationshipId}.
+     */
+    <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
+            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
+
+    /**
      * @return ids of all stored nodes.
      */
     PrimitiveLongIterator nodesGetAll();
@@ -262,32 +269,18 @@ public interface StoreReadLayer
      */
     RelationshipIterator relationshipsGetAll();
 
-    BatchingLongProgression parallelNodeScanProgression();
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction );
 
-    Cursor<NodeItem> nodeGetCursor( BatchingLongProgression progression, NodeTransactionStateView stateView );
+    Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem, Direction direction,
+            IntPredicate typeIds );
 
-    Cursor<NodeItem> nodeGetAllCursor( NodeTransactionStateView stateView );
+    Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node );
 
-    Cursor<NodeItem> nodeGetSingleCursor( long nodeId, NodeTransactionStateView stateView );
+    Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId );
 
-    Cursor<RelationshipItem> relationshipGetSingleCursor( long relationshipId, ReadableTransactionState state );
+    Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship );
 
-    Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state );
-
-    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction,
-            ReadableTransactionState state );
-
-    Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction, int[] relTypes,
-            ReadableTransactionState state );
-
-    Cursor<PropertyItem> nodeGetProperties( NodeItem node, PropertyContainerState state );
-
-    Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId, PropertyContainerState state );
-
-    Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship, PropertyContainerState state );
-
-    Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationshipItem, int propertyKeyId,
-            PropertyContainerState state );
+    Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationshipItem, int propertyKeyId );
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -380,13 +373,12 @@ public interface StoreReadLayer
 
     boolean nodeExists( long id );
 
-    PrimitiveIntSet relationshipTypes( NodeItem node );
+    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
 
-    void degrees( NodeItem nodeItem, DegreeVisitor visitor );
+    void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
 
-    int countDegrees( NodeItem node, Direction direction, ReadableTransactionState state );
-
-    int countDegrees( NodeItem node, Direction direction, int relType, ReadableTransactionState state );
+    int degreeRelationshipsInGroup( StorageStatement storeStatement, long id, long groupId, Direction direction,
+            Integer relType );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StoreReadLayer, T> factory );
 }

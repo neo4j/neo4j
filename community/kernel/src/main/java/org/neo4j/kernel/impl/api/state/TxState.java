@@ -25,11 +25,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -45,10 +47,19 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSingleNodeCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -59,6 +70,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
@@ -150,8 +162,59 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
 
+    private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
+    private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
+    private InstanceCache<TxSingleRelationshipCursor> singleRelationshipCursor;
+    private InstanceCache<TxAllPropertyCursor> propertyCursor;
+    private InstanceCache<TxSinglePropertyCursor> singlePropertyCursor;
+
     private boolean hasChanges;
     private boolean hasDataChanges;
+
+    public TxState()
+    {
+        singleNodeCursor = new InstanceCache<TxSingleNodeCursor>()
+        {
+            @Override
+            protected TxSingleNodeCursor create()
+            {
+                return new TxSingleNodeCursor( TxState.this, this );
+            }
+        };
+        propertyCursor = new InstanceCache<TxAllPropertyCursor>()
+        {
+            @Override
+            protected TxAllPropertyCursor create()
+            {
+                return new TxAllPropertyCursor( (Consumer) this );
+            }
+        };
+        singlePropertyCursor = new InstanceCache<TxSinglePropertyCursor>()
+        {
+            @Override
+            protected TxSinglePropertyCursor create()
+            {
+                return new TxSinglePropertyCursor( (Consumer) this );
+            }
+        };
+        singleRelationshipCursor = new InstanceCache<TxSingleRelationshipCursor>()
+        {
+            @Override
+            protected TxSingleRelationshipCursor create()
+            {
+                return new TxSingleRelationshipCursor( TxState.this, this );
+            }
+        };
+
+        iteratorRelationshipCursor = new InstanceCache<TxIteratorRelationshipCursor>()
+        {
+            @Override
+            protected TxIteratorRelationshipCursor create()
+            {
+                return new TxIteratorRelationshipCursor( TxState.this, this );
+            }
+        };
+    }
 
     @Override
     public void accept( final TxStateVisitor visitor )
@@ -372,6 +435,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.getOrCreate( this, labelId ).getOrCreateNodeDiffSets();
     }
 
+    @Override
+    public ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
+    {
+        return NODE_STATE.get( this, nodeId ).labelDiffSets();
+    }
+
     private DiffSets<Integer> getOrCreateNodeStateLabelDiffSets( long nodeId )
     {
         return getOrCreateNodeState( nodeId ).getOrCreateLabelDiffSets();
@@ -466,6 +535,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
         return nodesDeletedInTx != null && nodesDeletedInTx.contains( nodeId );
+    }
+
+    @Override
+    public boolean nodeModifiedInThisTx( long nodeId )
+    {
+        return nodeIsAddedInThisTx( nodeId ) || nodeIsDeletedInThisTx( nodeId ) || hasNodeState( nodeId );
     }
 
     @Override
@@ -643,6 +718,75 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
+    {
+        return hasChanges ? singleNodeCursor.get().init( cursor, nodeId ) : cursor;
+    }
+
+    @Override
+    public Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState )
+    {
+        return propertyContainerState.hasChanges() ?
+                propertyCursor.get().init( cursor, propertyContainerState ) : cursor;
+    }
+
+    @Override
+    public Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState, int propertyKeyId )
+    {
+        return propertyContainerState.hasChanges() ?
+                singlePropertyCursor.get().init( cursor, propertyContainerState, propertyKeyId ) : cursor;
+    }
+
+    @Override
+    public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels, NodeState nodeState )
+    {
+        ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
+        if ( !labelDiffSets.isEmpty() )
+        {
+            labelDiffSets.getRemoved().forEach( labels::remove );
+            labelDiffSets.getAdded().forEach( labels::add );
+        }
+        return labels;
+    }
+
+    @Override
+    public Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor,
+            long relationshipId )
+    {
+        return hasChanges ? singleRelationshipCursor.get().init( cursor, relationshipId ) : cursor;
+    }
+
+    @Override
+    public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
+            NodeState nodeState,
+            Direction direction )
+    {
+        return nodeState.hasChanges()
+               ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) )
+               : cursor;
+    }
+    @Override
+    public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
+            NodeState nodeState,
+            Direction direction,
+            int[] relTypes )
+    {
+        return nodeState.hasChanges()
+               ? iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction, relTypes ) )
+               : cursor;
+    }
+
+    @Override
+    public Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor )
+    {
+        return hasChanges && relationships != null && !relationships.isEmpty()
+               ? iteratorRelationshipCursor.get().init( cursor, toPrimitiveIterator( relationships.getAdded().iterator() ) )
+               : cursor;
+    }
+
+    @Override
     public ReadableDiffSets<Long> nodesWithLabelChanged( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).nodeDiffSets();
@@ -706,6 +850,24 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             nodes = new DiffSets<>();
         }
         return nodes;
+    }
+
+    @Override
+    public int augmentNodeDegree( long nodeId, int degree, Direction direction )
+    {
+        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree );
+    }
+
+    @Override
+    public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
+    {
+        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree, typeId );
+    }
+
+    @Override
+    public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
+    {
+        return NODE_STATE.get( this, nodeId ).relationshipTypes();
     }
 
     @Override

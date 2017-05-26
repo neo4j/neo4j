@@ -51,12 +51,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
             // singleton
         }
 
-        @SuppressWarnings( "unchecked" )
-        public static <T> ReadableRelationshipDiffSets<T> instance()
-        {
-            return (ReadableRelationshipDiffSets<T>) INSTANCE;
-        }
-
         @Override
         public boolean isAdded( T elem )
         {

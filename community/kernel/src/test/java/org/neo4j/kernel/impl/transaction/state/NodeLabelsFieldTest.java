@@ -494,7 +494,7 @@ public class NodeLabelsFieldTest
         return 0x8000000000L | Iterables.first( records ).getId();
     }
 
-    public static long inlinedLabelsLongRepresentation( long... labelIds )
+    private long inlinedLabelsLongRepresentation( long... labelIds )
     {
         long header = (long) labelIds.length << 36;
         byte bitsPerLabel = (byte) (36 / labelIds.length);

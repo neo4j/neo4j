@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static java.lang.Math.max;
-
 /**
  * Calculates page ids and offset based on record ids.
  */
@@ -28,20 +26,6 @@ public class RecordPageLocationCalculator
 {
     private RecordPageLocationCalculator()
     {
-    }
-
-    /**
-     * Calculates the id of the first record of a page.
-     *
-     * @param pageId page id
-     * @param pageSize size of each page
-     * @param recordSize size of each record
-     * @param numberOfReservedLowIds reserved low ids
-     * @return the id of the first record on the page with the given pageId or the the first non-reserved record id.
-     */
-    public static long firstRecordOnPage( long pageId, int pageSize, int recordSize, int numberOfReservedLowIds )
-    {
-        return max( numberOfReservedLowIds, pageId * (pageSize / recordSize) );
     }
 
     /**

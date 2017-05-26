@@ -25,8 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.time.FakeClock;
+import java.util.function.LongSupplier;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -39,9 +38,9 @@ public class LinkedQueuePoolTest
     {
         FakeClock clock = new FakeClock();
 
-        CheckStrategy timeStrategy = new TimeoutCheckStrategy( 100, clock );
+        LinkedQueuePool.CheckStrategy timeStrategy = new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock );
 
-        while ( clock.millis() <= 100 )
+        while ( clock.getAsLong() <= 100 )
         {
             assertFalse( timeStrategy.shouldCheck() );
             clock.forward( 10, TimeUnit.MILLISECONDS );
@@ -301,15 +300,8 @@ public class LinkedQueuePoolTest
 
     private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
-        return new LinkedQueuePool<Object>( minSize,
-                new TimeoutCheckStrategy( 100, clock ), stateMonitor )
-        {
-            @Override
-            protected Object create()
-            {
-                return new Object();
-            }
-        };
+        return new LinkedQueuePool<>( minSize, Object::new,
+            new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
     private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
@@ -347,7 +339,7 @@ public class LinkedQueuePoolTest
         }
     }
 
-    private class StatefulMonitor implements LinkedQueuePoolMonitor<Object>
+    private class StatefulMonitor implements LinkedQueuePool.Monitor<Object>
     {
         public AtomicInteger currentPeakSize = new AtomicInteger( -1 );
         public AtomicInteger targetSize = new AtomicInteger( -1 );
@@ -383,6 +375,22 @@ public class LinkedQueuePoolTest
         public void disposed( Object Object )
         {
             this.disposed.incrementAndGet();
+        }
+    }
+
+    private static class FakeClock implements LongSupplier
+    {
+        private long time;
+
+        @Override
+        public long getAsLong()
+        {
+            return time;
+        }
+
+        public void forward( long amount, TimeUnit timeUnit )
+        {
+            time = time + timeUnit.toMillis( amount );
         }
     }
 }

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheRule;
@@ -194,7 +194,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, property( descriptor.getPropertyId(), propertyValue( id, progress ) ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            try ( SchemaResources statement = storageEngine.storeReadLayer().schemaResources() )
+            try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
             {
                 storageEngine.createCommands( commands, txState, statement, null, 0 );
             }

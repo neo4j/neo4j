@@ -59,6 +59,13 @@ public class NodeLabelsField
                 : InlineNodeLabels.get( node );
     }
 
+    public static long[] get( NodeRecord node, RecordCursor<DynamicRecord> dynamicLabelCursor )
+    {
+        return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
+               ? DynamicNodeLabels.get( node, dynamicLabelCursor )
+               : InlineNodeLabels.get( node );
+    }
+
     public static boolean fieldPointsToDynamicRecordOfLabels( long labelField )
     {
         return (labelField & 0x8000000000L) != 0;

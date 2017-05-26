@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.kernel.api.KernelTransaction;
@@ -111,18 +110,6 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public void setUserMetaData( Map<String,Object> data )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public Map<String,Object> getUserMetaData()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public void registerCloseListener( CloseListener listener )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -148,12 +135,6 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Revertable overrideWith( SecurityContext context )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void dispose()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

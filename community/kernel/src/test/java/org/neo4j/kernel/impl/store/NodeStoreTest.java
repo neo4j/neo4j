@@ -370,6 +370,24 @@ public class NodeStoreTest
         verify( idGenerator ).freeId( 10L );
     }
 
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void ensureHeavy() throws IOException
+    {
+        long[] labels = LongStream.range( 1, 1000 ).toArray();
+        NodeRecord node = new NodeRecord( 5 );
+        node.setLabelField( 10, Collections.emptyList() );
+        Collection<DynamicRecord> dynamicLabelRecords = DynamicNodeLabels.putSorted( node, labels,
+                mock( NodeStore.class ), new StandaloneDynamicRecordAllocator() );
+        assertThat( dynamicLabelRecords, not( empty() ) );
+        RecordCursor<DynamicRecord> dynamicLabelCursor = mock( RecordCursor.class );
+        when( dynamicLabelCursor.getAll() ).thenReturn( Iterables.asList( dynamicLabelRecords ) );
+
+        NodeStore.ensureHeavy( node, dynamicLabelCursor );
+
+        assertEquals( dynamicLabelRecords, node.getDynamicLabelRecords() );
+    }
+
     private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException
     {
         return newNodeStore( fs, pageCacheRule.getPageCache( fs ) );

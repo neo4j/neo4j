@@ -25,12 +25,12 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Reads records from a {@link RecordStore} and sends batches of those records downstream.
@@ -81,13 +81,12 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         RECORD record = store.newRecord();
         RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
         int i = 0;
-        try ( PageCursor cursor = store.newPageCursor() )
+        try ( RecordCursor cursor = store.newRecordCursor( record ).acquire( id, RecordLoad.CHECK ) )
         {
             boolean hasNext = true;
             while ( hasNext )
             {
-                store.readRecord( id, record, CHECK, cursor );
-                if ( record.inUse() && !IdValidator.isReservedId( record.getId() ) && (filter == null || filter.test( record )) )
+                if ( cursor.next( id ) && !IdValidator.isReservedId( record.getId() ) && (filter == null || filter.test( record )) )
                 {
                     batch[i++] = (RECORD) record.clone();
                 }

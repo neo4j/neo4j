@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -95,9 +96,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      */
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
+    // This is the factory that actually builds brand-new instances.
+    private final Factory<KernelTransactionImplementation> factory = new KernelTransactionImplementationFactory( allTransactions );
     // Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
     private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool =
-            new GlobalKernelTransactionPool( allTransactions );
+            new GlobalKernelTransactionPool( allTransactions, factory );
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
 
@@ -286,6 +289,17 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         return new KernelTransactionImplementationHandle( tx );
     }
 
+    /**
+     * Get all transactions
+     * * <p>
+     * <b>Note:</b> this method is package-private for testing <b>only</b>.
+     * @return set of all kernel transaction
+     */
+    Set<KernelTransactionImplementation> getAllTransactions()
+    {
+        return allTransactions;
+    }
+
     private void assertRunning()
     {
         if ( availabilityGuard.isShutdown() )
@@ -307,18 +321,17 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         }
     }
 
-    private class GlobalKernelTransactionPool extends LinkedQueuePool<KernelTransactionImplementation>
+    private class KernelTransactionImplementationFactory implements Factory<KernelTransactionImplementation>
     {
         private Set<KernelTransactionImplementation> transactions;
 
-        GlobalKernelTransactionPool( Set<KernelTransactionImplementation> transactions )
+        KernelTransactionImplementationFactory( Set<KernelTransactionImplementation> transactions )
         {
-            super( 8 );
             this.transactions = transactions;
         }
 
         @Override
-        protected KernelTransactionImplementation create()
+        public KernelTransactionImplementation newInstance()
         {
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks,
@@ -328,6 +341,18 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             storageEngine, accessCapability );
             this.transactions.add( tx );
             return tx;
+        }
+    }
+
+    private class GlobalKernelTransactionPool extends LinkedQueuePool<KernelTransactionImplementation>
+    {
+        private Set<KernelTransactionImplementation> transactions;
+
+        GlobalKernelTransactionPool( Set<KernelTransactionImplementation> transactions,
+                Factory<KernelTransactionImplementation> factory )
+        {
+            super( 8, factory );
+            this.transactions = transactions;
         }
 
         @Override

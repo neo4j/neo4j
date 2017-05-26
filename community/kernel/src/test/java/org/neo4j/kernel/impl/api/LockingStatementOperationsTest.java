@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.RelationshipData;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -56,10 +56,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.SchemaResources;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.storageengine.api.txstate.WritableTransactionState;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -67,6 +64,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -75,7 +73,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
-import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
@@ -89,9 +86,8 @@ public class LockingStatementOperationsTest
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
-    private final KernelStatementImplementation state =
-            new KernelStatementImplementation( transaction, new SimpleTxStateHolder( txState ),
-                    mock( SchemaResources.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
+    private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
+            mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
     private final SchemaStateOperations schemaStateOps;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -425,13 +421,14 @@ public class LockingStatementOperationsTest
 
         {
             // and GIVEN
-            when( entityReadOps.relationshipCursorById( any( KernelStatement.class ), anyLong() ) )
-                    .thenAnswer( invocationOnMock ->
-                    {
-                        Cursor<RelationshipItem> cursor = asRelationshipCursor( relationshipId, 0, lowId, highId, -1 );
-                        cursor.next();
-                        return cursor;
-                    } );
+            doAnswer( invocation ->
+            {
+                RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                visitor.visit( relationshipId, 0, lowId, highId );
+                return null;
+            } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
+                    any( RelationshipVisitor.class ) );
 
             // WHEN
             lockingOps.relationshipDelete( state, relationshipId );
@@ -447,13 +444,14 @@ public class LockingStatementOperationsTest
 
         {
             // and GIVEN
-            when( entityReadOps.relationshipCursorById( any( KernelStatement.class ), anyLong() ) )
-                    .thenAnswer( invocationOnMock ->
-                    {
-                        Cursor<RelationshipItem> cursor = asRelationshipCursor( relationshipId, 0, highId, lowId, -1 );
-                        cursor.next();
-                        return cursor;
-                    } );
+            doAnswer( invocation ->
+            {
+                RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                visitor.visit( relationshipId, 0, highId, lowId );
+                return null;
+            } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
+                    any( RelationshipVisitor.class ) );
 
             // WHEN
             lockingOps.relationshipDelete( state, relationshipId );
@@ -535,13 +533,7 @@ public class LockingStatementOperationsTest
         }
 
         @Override
-        public ReadableTransactionState readableTxState()
-        {
-            return txState;
-        }
-
-        @Override
-        public WritableTransactionState writableTxState()
+        public TransactionState txState()
         {
             return txState;
         }
@@ -550,6 +542,12 @@ public class LockingStatementOperationsTest
         public LegacyIndexTransactionState legacyIndexTxState()
         {
             return null;
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return txState.hasChanges();
         }
     }
 }
