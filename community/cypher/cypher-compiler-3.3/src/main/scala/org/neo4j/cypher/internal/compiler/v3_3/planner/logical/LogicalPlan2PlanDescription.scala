@@ -380,13 +380,11 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
             val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
             val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
-          case e =>
-            println(e)
-            throw new InternalException("This should never happen. Missing a case?")
+          case _ => throw new InternalException("This should never happen. Missing a case?")
         }
       case _ =>
         val name =
-          if (unique && readOnly) "NodeIndexSeekByRange"
+          if (unique && readOnly) "NodeUniqueIndexSeek"
           else if (unique) "NodeUniqueIndexSeek(Locking)"
           else "NodeIndexSeek"
         (name, Index(label.name, propertyKeys.map(_.name)))

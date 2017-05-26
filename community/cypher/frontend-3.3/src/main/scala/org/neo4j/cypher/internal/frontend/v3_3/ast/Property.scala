@@ -31,5 +31,5 @@ case class Property(map: Expression, propertyKey: PropertyKeyName)(val position:
       map.expectType(CTMap.covariant | CTAny.invariant) chain
       super.semanticCheck(ctx)
 
-  override def toString = s"$map.$propertyKey"
+  override def asCanonicalStringVal = s"${map.asCanonicalStringVal}.${propertyKey.asCanonicalStringVal}"
 }

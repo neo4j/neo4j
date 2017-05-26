@@ -82,8 +82,8 @@ case class CostCompatibility[PC <: CompilerContext,
 
   override val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  protected val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+  override val cacheMonitor: AstCacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
 
-  protected val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan] = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
+  override val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan] = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
 }

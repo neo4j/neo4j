@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Rand, Timestamp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation, LabelName, Parameter}
 import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, _}
 
 import scala.language.implicitConversions
@@ -64,8 +65,19 @@ object Metrics {
 }
 
 trait ExpressionEvaluator {
-  def hasParameters(expr: Expression): Boolean
-  def isNonDeterministic(expr: Expression): Boolean
+
+  def hasParameters(expr: Expression): Boolean = expr.inputs.exists {
+    case (Parameter(_, _), _) => true
+    case _ => false
+  }
+
+  def isNonDeterministic(expr: Expression): Boolean =
+    expr.inputs.exists {
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => true
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Timestamp => true
+      case _ => false
+    }
+
   def evaluateExpression(expr: Expression): Option[Any]
 }
 

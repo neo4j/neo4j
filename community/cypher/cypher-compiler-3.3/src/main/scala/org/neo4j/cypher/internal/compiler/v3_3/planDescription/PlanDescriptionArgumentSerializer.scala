@@ -32,8 +32,8 @@ object PlanDescriptionArgumentSerializer {
 
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
-      case Expression(expr) => removeGeneratedNames(expr.toString)
-      case Expressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
+      case Expression(expr) => if (expr == null) "" else removeGeneratedNames(expr.asCanonicalStringVal)
+      case Expressions(expressions) => expressions.map({ case (k, v) => s"$k : ${v.asCanonicalStringVal}" }).mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case LegacyIndex(index) => index

@@ -73,7 +73,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMetricsFactory = SimpleMetricsFactory
 
-  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats, mock[ExpressionEvaluator])
+  def newExpressionEvaluator = new ExpressionEvaluator {
+    override def evaluateExpression(expr: Expression): Option[Any] = None
+  }
+
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
+    newMetricsFactory.newMetrics(stats, newExpressionEvaluator)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 

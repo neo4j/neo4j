@@ -33,5 +33,5 @@ case class HasLabels(expression: Expression, labels: Seq[LabelName])(val positio
     expression.expectType(CTNode.covariant) chain
     super.semanticCheck(ctx)
 
-  override def toString = s"$expression${labels.mkString(":", ":", "")}"
+  override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
 }

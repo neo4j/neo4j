@@ -54,7 +54,7 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
 
   def asAlias = AliasedReturnItem(this.copyId, this.copyId)(this.position)
 
-  override def toString: String = name
+  override def asCanonicalStringVal: String = name
 }
 
 object Variable {

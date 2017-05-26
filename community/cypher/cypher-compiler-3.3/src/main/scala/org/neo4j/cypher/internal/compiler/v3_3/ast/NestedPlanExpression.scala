@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, Se
 case class NestedPlanExpression(plan: LogicalPlan, projection: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
-  override def toString: String = {
+  override def asCanonicalStringVal: String = {
     val planDescription = plan.flatten.map(_.getClass.getSimpleName).mkString("-")
     s"NestedPlanExpression($planDescription)"
   }

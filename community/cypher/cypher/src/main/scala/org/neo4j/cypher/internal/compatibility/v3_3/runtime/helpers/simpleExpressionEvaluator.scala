@@ -31,19 +31,6 @@ import scala.collection.mutable
 
 object simpleExpressionEvaluator extends ExpressionEvaluator {
 
-  def hasParameters(expr: Expression): Boolean =
-    expr.inputs.exists {
-      case (Parameter(_, _), _) => true
-      case _ => false
-    }
-
-  def isNonDeterministic(expr: Expression): Boolean =
-    expr.inputs.exists {
-      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => true
-      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Timestamp => true
-      case _ => false
-    }
-
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
     val commandExpr = ExpressionConverters.toCommandExpression(expr)

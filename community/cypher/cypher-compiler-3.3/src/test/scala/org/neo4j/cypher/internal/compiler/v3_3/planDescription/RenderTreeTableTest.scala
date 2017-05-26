@@ -528,11 +528,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
     val plan = PlanDescriptionImpl( new Id, "NAME", NoChildren, arguments, Set( "n") )
     renderAsTreeTable(plan) should equal(
-      """+----------+----------------+------+---------+-----------+-----------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other           |
-        |+----------+----------------+------+---------+-----------+-----------------+
+      """+----------+----------------+------+---------+-----------+----------------+
+        || Operator | Estimated Rows | Rows | DB Hits | Variables | Other          |
+        |+----------+----------------+------+---------+-----------+----------------+
         || +NAME    |              1 |   42 |      33 | n         | exists(x.prop) |
-        |+----------+----------------+------+---------+-----------+-----------------+
+        |+----------+----------------+------+---------+-----------+----------------+
         |""".stripMargin )
   }
 
