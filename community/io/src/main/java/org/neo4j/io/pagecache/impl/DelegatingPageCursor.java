@@ -183,7 +183,7 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId )
+    public PageCursor openLinkedCursor( long pageId ) throws IOException
     {
         return delegate.openLinkedCursor( pageId );
     }

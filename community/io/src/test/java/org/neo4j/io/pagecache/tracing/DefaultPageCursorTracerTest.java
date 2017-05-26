@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -41,7 +42,7 @@ public class DefaultPageCursorTracerTest
     {
         cacheTracer = new DefaultPageCacheTracer();
         pageCursorTracer = createTracer();
-        swapper = new DummyPageSwapper( "filename" );
+        swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ) );
     }
 
     @Test

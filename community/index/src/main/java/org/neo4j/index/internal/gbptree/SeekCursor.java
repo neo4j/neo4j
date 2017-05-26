@@ -1059,7 +1059,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         cursor.close();
     }

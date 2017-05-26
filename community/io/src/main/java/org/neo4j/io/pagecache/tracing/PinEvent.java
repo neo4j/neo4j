@@ -30,7 +30,7 @@ public interface PinEvent
     PinEvent NULL = new PinEvent()
     {
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
 
@@ -54,7 +54,7 @@ public interface PinEvent
     /**
      * The id of the cache page that holds the file page we pinned.
      */
-    void setCachePageId( int cachePageId );
+    void setCachePageId( long cachePageId );
 
     /**
      * The page we want to pin is not in memory, so being a page fault to load it in.

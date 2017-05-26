@@ -36,5 +36,5 @@ public interface FlushEventOpportunity
     /**
      * Begin flushing the given page.
      */
-    FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper );
+    FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper );
 }

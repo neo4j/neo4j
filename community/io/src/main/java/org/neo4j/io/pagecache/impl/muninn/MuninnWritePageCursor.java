@@ -39,15 +39,38 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     protected void unpinCurrentPage()
     {
-        if ( page != null )
+        if ( pinnedPageRef != 0 )
         {
-            // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
-            // flushed
-            page.markAsDirty();
             pinEvent.done();
-            unlockPage( page );
+            // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
+            // flushed. Unlocking the write-locked page will mark it as dirty for us.
+            if ( eagerFlush )
+            {
+                eagerlyFlushAndUnlockPage();
+            }
+            else
+            {
+                pagedFile.unlockWrite( pinnedPageRef );
+            }
         }
         clearPageState();
+    }
+
+    private void eagerlyFlushAndUnlockPage()
+    {
+        long flushStamp = pagedFile.unlockWriteAndTryTakeFlushLock( pinnedPageRef );
+        if ( flushStamp != 0 )
+        {
+            boolean success = false;
+            try
+            {
+                success = pagedFile.flushLockedPage( pinnedPageRef, currentPageId );
+            }
+            finally
+            {
+                pagedFile.unlockFlush( pinnedPageRef, flushStamp, success );
+            }
+        }
     }
 
     @Override
@@ -77,21 +100,21 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected boolean tryLockPage( MuninnPage page )
+    protected boolean tryLockPage( long pageRef )
     {
-        return page.tryWriteLock();
+        return pagedFile.tryWriteLock( pageRef );
     }
 
     @Override
-    protected void unlockPage( MuninnPage page )
+    protected void unlockPage( long pageRef )
     {
-        page.unlockWrite();
+        pagedFile.unlockWrite( pageRef );
     }
 
     @Override
-    protected void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
+    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
     {
-        reset( page );
+        reset( pageRef );
         // Check if we've been racing with unmapping. We want to do this before
         // we make any changes to the contents of the page, because once all
         // files have been unmapped, the page cache can be closed. And when
@@ -100,13 +123,13 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
-        page.incrementUsage();
+        pagedFile.incrementUsage( pageRef );
     }
 
     @Override
-    protected void convertPageFaultLock( MuninnPage page )
+    protected void convertPageFaultLock( long pageRef )
     {
-        page.unlockExclusiveAndTakeWriteLock();
+        pagedFile.unlockExclusiveAndTakeWriteLock( pageRef );
     }
 
     @Override

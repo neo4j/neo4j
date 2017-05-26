@@ -17,26 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.io.pagecache.impl.muninn;
 
-/**
- * A page in the page cache. Always represents a concrete page in memory, and may
- * represent a particular page in a file, if that file-page has been swapped into the
- * page.
- */
-public interface Page
+import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+
+class StubPageFaultEvent implements PageFaultEvent
 {
-    /**
-     * Get the size of the cache page in bytes.
-     * <p>
-     * Don't access memory beyond address() + size().
-     */
-    int size();
+    long bytesRead;
+    long cachePageId;
 
-    /**
-     * Get the memory address of the beginning of the page.
-     * <p>
-     * Don't access memory beyond address() + size().
-     */
-    long address();
+    @Override
+    public void addBytesRead( long bytes )
+    {
+        bytesRead += bytes;
+    }
+
+    @Override
+    public void setCachePageId( long cachePageId )
+    {
+        this.cachePageId = cachePageId;
+    }
+
+    @Override
+    public void done()
+    {
+    }
+
+    @Override
+    public void done( Throwable throwable )
+    {
+    }
+
+    @Override
+    public EvictionEvent beginEviction()
+    {
+        return EvictionEvent.NULL;
+    }
 }

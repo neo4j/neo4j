@@ -22,15 +22,15 @@ package org.neo4j.unsafe.impl.internal.dragons;
 /**
  * The memory manager is simple: it only allocates memory, until it itself is finalizable and frees it all in one go.
  *
- * The memory is allocated in large segments, and the memory returned by the memory manager is page aligned, and plays
- * well with transparent huge pages and other operating system optimisations.
+ * The memory is allocated in large segments, called "grabs", and the memory returned by the memory manager is page
+ * aligned, and plays well with transparent huge pages and other operating system optimisations.
  *
  * The memory manager assumes that the memory claimed from it is evenly divisible in units of pages.
  */
 public final class MemoryManager
 {
     /**
-     * The amount of memory, in bytes, to grab in each Slab.
+     * The amount of memory, in bytes, to grab in each Grab.
      */
     private static final long GRAB_SIZE = FeatureToggles.getInteger( MemoryManager.class, "GRAB_SIZE", 512 * 1024 ); // 512 KiB
 
@@ -40,7 +40,7 @@ public final class MemoryManager
     private long memoryReserve;
     private final long alignment;
 
-    private Slab slabs;
+    private Grab grabs;
 
     /**
      * Create a new MemoryManager that will allocate the given amount of memory, to pointers that are aligned to the
@@ -51,8 +51,24 @@ public final class MemoryManager
      */
     public MemoryManager( long expectedMaxMemory, long alignment )
     {
+        if ( alignment == 0 )
+        {
+            throw new IllegalArgumentException( "Alignment cannot be zero" );
+        }
         this.memoryReserve = expectedMaxMemory;
         this.alignment = alignment;
+    }
+
+    public synchronized long sumUsedMemory()
+    {
+        long sum = 0;
+        Grab grab = grabs;
+        while ( grab != null )
+        {
+            sum += grab.nextAlignedPointer - grab.address;
+            grab = grab.next;
+        }
+        return sum;
     }
 
     /**
@@ -62,33 +78,49 @@ public final class MemoryManager
      */
     public synchronized long allocateAligned( long bytes )
     {
-        if ( slabs == null || !slabs.canAllocate( bytes ) )
+        if ( bytes > GRAB_SIZE )
         {
-            long slabGrab = Math.min( GRAB_SIZE, memoryReserve );
-            if ( slabGrab < bytes )
+            // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
+            Grab nextGrab = grabs == null ? null : grabs.next;
+            Grab allocationGrab = new Grab( nextGrab, bytes, alignment );
+            if ( !allocationGrab.canAllocate( bytes ) )
             {
-                slabGrab = bytes;
-                Slab slab = new Slab( slabs, slabGrab, alignment );
-                if ( slab.canAllocate( bytes ) )
-                {
-                    memoryReserve -= slabGrab;
-                    slabs = slab;
-                    return slabs.allocate( bytes );
-                }
-                slab.free();
-                slabGrab = bytes + alignment;
+                allocationGrab.free();
+                allocationGrab = new Grab( nextGrab, bytes + alignment, alignment );
             }
-            memoryReserve -= slabGrab;
-            slabs = new Slab( slabs, slabGrab, alignment );
+            long allocation = allocationGrab.allocate( bytes );
+            grabs = grabs == null ? allocationGrab : grabs.setNext( allocationGrab );
+            memoryReserve -= bytes;
+            return allocation;
         }
-        return slabs.allocate( bytes );
+
+        if ( grabs == null || !grabs.canAllocate( bytes ) )
+        {
+            long desiredGrabSize = Math.min( GRAB_SIZE, memoryReserve );
+            if ( desiredGrabSize < bytes )
+            {
+                desiredGrabSize = bytes;
+                Grab grab = new Grab( grabs, desiredGrabSize, alignment );
+                if ( grab.canAllocate( bytes ) )
+                {
+                    memoryReserve -= desiredGrabSize;
+                    grabs = grab;
+                    return grabs.allocate( bytes );
+                }
+                grab.free();
+                desiredGrabSize = bytes + alignment;
+            }
+            memoryReserve -= desiredGrabSize;
+            grabs = new Grab( grabs, desiredGrabSize, alignment );
+        }
+        return grabs.allocate( bytes );
     }
 
     @Override
     protected synchronized void finalize() throws Throwable
     {
         super.finalize();
-        Slab current = slabs;
+        Grab current = grabs;
 
         while ( current != null )
         {
@@ -97,15 +129,15 @@ public final class MemoryManager
         }
     }
 
-    private static class Slab
+    private static class Grab
     {
-        public final Slab next;
+        public final Grab next;
         private final long address;
         private final long limit;
         private final long alignMask;
         private long nextAlignedPointer;
 
-        Slab( Slab next, long size, long alignment )
+        Grab( Grab next, long size, long alignment )
         {
             this.next = next;
             this.address = UnsafeUtil.allocateMemory( size );
@@ -113,6 +145,15 @@ public final class MemoryManager
             this.alignMask = alignment - 1;
 
             nextAlignedPointer = nextAligned( address );
+        }
+
+        Grab( Grab next, long address, long limit, long alignMask, long nextAlignedPointer )
+        {
+            this.next = next;
+            this.address = address;
+            this.limit = limit;
+            this.alignMask = alignMask;
+            this.nextAlignedPointer = nextAlignedPointer;
         }
 
         private long nextAligned( long pointer )
@@ -124,21 +165,35 @@ public final class MemoryManager
             return (pointer + alignMask) & ~alignMask;
         }
 
-        public long allocate( long bytes )
+        long allocate( long bytes )
         {
             long allocation = nextAlignedPointer;
             nextAlignedPointer = nextAligned( nextAlignedPointer + bytes );
             return allocation;
         }
 
-        public void free()
+        void free()
         {
             UnsafeUtil.free( address );
         }
 
-        public boolean canAllocate( long bytes )
+        boolean canAllocate( long bytes )
         {
             return nextAlignedPointer + bytes <= limit;
+        }
+
+        Grab setNext( Grab grab )
+        {
+            return new Grab( grab, address, limit, alignMask, nextAlignedPointer );
+        }
+
+        @Override
+        public String toString()
+        {
+            long size = limit - address;
+            long reserve = nextAlignedPointer > limit ? 0 : limit - nextAlignedPointer;
+            double use = (1.0 - reserve / ((double) size)) * 100.0;
+            return String.format( "Grab[size = %d bytes, reserve = %d bytes, use = %5.2f %%]", size, reserve, use );
         }
     }
 }

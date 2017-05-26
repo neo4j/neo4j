@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
 
 import static org.hamcrest.Matchers.is;
@@ -39,7 +40,7 @@ public class DefaultPageCacheTracerTest
     public void setUp()
     {
         tracer = new DefaultPageCacheTracer();
-        swapper = new DummyPageSwapper( "filename" );
+        swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ) );
     }
 
     @Test

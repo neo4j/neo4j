@@ -53,7 +53,13 @@ public class MetricsTestHelper
 
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
-            String[] headers = reader.readLine().split( "," );
+            String s;
+            do
+            {
+                s = reader.readLine();
+            }
+            while ( s == null );
+            String[] headers = s.split( "," );
             assertThat( headers.length, is( 2 ) );
             assertThat( headers[TIME_STAMP], is( "t" ) );
             assertThat( headers[METRICS_VALUE], is( "value" ) );

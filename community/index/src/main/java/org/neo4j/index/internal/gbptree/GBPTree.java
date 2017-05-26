@@ -548,8 +548,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
             PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
+            checkOutOfBounds( cursor );
             do
             {
+                // Clear any out-of-bounds from prior attempts
+                cursor.checkAndClearBoundsFlag();
                 // Place the previous state cursor after state data
                 TreeState.read( previousCursor );
                 // Read length of previous header

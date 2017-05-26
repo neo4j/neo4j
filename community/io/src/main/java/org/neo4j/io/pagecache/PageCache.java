@@ -107,7 +107,7 @@ public interface PageCache extends AutoCloseable
     /**
      * The max number of cached pages.
      **/
-    int maxCachedPages();
+    long maxCachedPages();
 
     /**
      * Get the {@link FileSystemAbstraction} that represents the filesystem where the paged files reside.

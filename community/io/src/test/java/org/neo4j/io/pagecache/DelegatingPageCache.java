@@ -58,7 +58,7 @@ public class DelegatingPageCache implements PageCache
         delegate.close();
     }
 
-    public int maxCachedPages()
+    public long maxCachedPages()
     {
         return delegate.maxCachedPages();
     }

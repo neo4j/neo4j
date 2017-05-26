@@ -19,7 +19,6 @@
  */
 package org.neo4j.metrics;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -200,7 +199,7 @@ public class MetricsKernelExtensionFactoryIT
         // wait for the file to be written before shutting down the cluster
         File metricFile = metricsCsv( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION );
 
-        long result = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
+        long result = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= 0 );
 
         // THEN
         assertThat( result, greaterThanOrEqualTo( 0L ) );

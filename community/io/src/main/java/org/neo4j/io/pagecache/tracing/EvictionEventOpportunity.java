@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.io.pagecache.tracing;
 
-import org.neo4j.io.pagecache.Page;
-import org.neo4j.io.pagecache.PageEvictionCallback;
-
-final class MuninnPageEvictionCallback implements PageEvictionCallback
+/**
+ * Interface for any event that in turn presents the opportunity to evict a page.
+ */
+public interface EvictionEventOpportunity
 {
-    private final MuninnPagedFile file;
-
-    MuninnPageEvictionCallback( MuninnPagedFile file )
-    {
-        this.file = file;
-    }
-
-    @Override
-    public void onEvict( long filePageId, Page page )
-    {
-        MuninnPage removed = file.evictPage( filePageId );
-        assert removed == page :
-                "Removed unexpected page when cleaning up translation table for filePageId " + filePageId + ". " +
-                        "Evicted " + page + " but removed " + removed + " from the translation table.";
-    }
+    /**
+     * Begin an eviction event.
+     */
+    EvictionEvent beginEviction();
 }

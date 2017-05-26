@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.metrics.source.db.PageCacheMetrics;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -45,6 +44,13 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_EVICTIONS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_EVICTION_EXCEPTIONS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_FLUSHES;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_HITS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_PAGE_FAULTS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_PINS;
+import static org.neo4j.metrics.source.db.PageCacheMetrics.PC_UNPINS;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class PageCacheMetricsIT
@@ -87,15 +93,13 @@ public class PageCacheMetricsIT
             ResourceIterator<Node> nodes = database.findNodes( testLabel );
             Assert.assertEquals( 1, nodes.stream().count() );
         }
-        assertMetrics( "Page cache pins should be included in metrics report.", PageCacheMetrics.PC_PINS, greaterThan( 0L ) );
-        assertMetrics( "Page cache unpins should be included in metrics report.", PageCacheMetrics.PC_UNPINS, greaterThan( 0L ) );
-        assertMetrics( "Page cache evictions should be included in metrics report.", PageCacheMetrics.PC_EVICTIONS, equalTo( 0L ) );
-        assertMetrics( "Page cache page faults should be included in metrics report.", PageCacheMetrics.PC_PAGE_FAULTS, greaterThan( 0L ) );
-        assertMetrics( "Page cache hits should be included in metrics report.", PageCacheMetrics.PC_HITS, greaterThan( 0L ) );
-        assertMetrics( "Page cache flushes should be included in metrics report.",
-                PageCacheMetrics.PC_FLUSHES, greaterThanOrEqualTo( 0L ) );
-        assertMetrics( "Page cache exceptions should be included in metrics report.",
-                PageCacheMetrics.PC_EVICTION_EXCEPTIONS, equalTo( 0L ) );
+        assertMetrics( "Metrics report should include page cache pins", PC_PINS, greaterThan( 0L ) );
+        assertMetrics( "Metrics report should include page cache unpins", PC_UNPINS, greaterThan( 0L ) );
+        assertMetrics( "Metrics report should include page cache evictions", PC_EVICTIONS, greaterThanOrEqualTo( 0L ) );
+        assertMetrics( "Metrics report should include page cache page faults", PC_PAGE_FAULTS, greaterThan( 0L ) );
+        assertMetrics( "Metrics report should include page cache hits", PC_HITS, greaterThan( 0L ) );
+        assertMetrics( "Metrics report should include page cache flushes", PC_FLUSHES, greaterThanOrEqualTo( 0L ) );
+        assertMetrics( "Metrics report should include page cache exceptions", PC_EVICTION_EXCEPTIONS, equalTo( 0L ) );
     }
 
     private void assertMetrics( String message, String metricName, Matcher<Long> matcher ) throws Exception

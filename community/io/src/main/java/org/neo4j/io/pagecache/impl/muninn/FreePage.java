@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * A free page in the MuninnPageCache.freelist.
  *
@@ -26,18 +28,29 @@ package org.neo4j.io.pagecache.impl.muninn;
  */
 final class FreePage
 {
-    final MuninnPage page;
+    final long pageRef;
     int count;
-    FreePage next;
+    Object next;
 
-    FreePage( MuninnPage page )
+    FreePage( long pageRef )
     {
-        this.page = page;
+        this.pageRef = pageRef;
     }
 
-    void setNext( FreePage next )
+    void setNext( Object next )
     {
         this.next = next;
-        this.count = next == null ? 1 : 1 + next.count;
+        if ( next == null )
+        {
+            count = 1;
+        }
+        else if ( next.getClass() == AtomicInteger.class )
+        {
+            count = 1 + ((AtomicInteger) next).get();
+        }
+        else
+        {
+            this.count = 1 + ((FreePage) next).count;
+        }
     }
 }

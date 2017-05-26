@@ -51,7 +51,7 @@ public abstract class RecordFormat
 
     public final void writeRecord( Record record, StoreChannel channel ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( getRecordSize() );
+        ByteBuffer buffer = ByteBuffer.allocate( getRecordSize() );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         write( record, cursor );
         channel.writeAll( buffer );

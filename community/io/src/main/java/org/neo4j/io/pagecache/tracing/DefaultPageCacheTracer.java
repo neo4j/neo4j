@@ -95,7 +95,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public void setCachePageId( long cachePageId )
         {
         }
 

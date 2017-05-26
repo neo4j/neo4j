@@ -60,8 +60,8 @@ public class ConfiguringPageCacheFactoryTest
     {
         // Given
         final int pageSize = 8192;
-        final int maxPages = 60;
-        Config config = Config.embeddedDefaults( stringMap( pagecache_memory.name(), Integer.toString( pageSize * maxPages ) ) );
+        final long maxPages = 60;
+        Config config = Config.embeddedDefaults( stringMap( pagecache_memory.name(), Long.toString( pageSize * maxPages ) ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(

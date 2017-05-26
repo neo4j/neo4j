@@ -37,7 +37,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.StoreFileChannelUnwrapper;
-import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -226,14 +225,12 @@ public class SingleFilePageSwapper implements PageSwapper
         return (int) (filePageId >>> channelStripeShift) & channelStripeMask;
     }
 
-    private int swapIn( StoreChannel channel, Page page, long fileOffset, int filePageSize ) throws IOException
+    private int swapIn( StoreChannel channel, long bufferAddress, int bufferSize, long fileOffset, int filePageSize ) throws IOException
     {
-        int cachePageSize = page.size();
-        long address = page.address();
         int readTotal = 0;
         try
         {
-            ByteBuffer bufferProxy = proxy( address, filePageSize );
+            ByteBuffer bufferProxy = proxy( bufferAddress, filePageSize );
             int read;
             do
             {
@@ -242,10 +239,10 @@ public class SingleFilePageSwapper implements PageSwapper
             while ( read != -1 && (readTotal += read) < filePageSize );
 
             // Zero-fill the rest.
-            assert readTotal >= 0 && filePageSize <= cachePageSize && readTotal <= filePageSize :
-                    format( "pointer = %h, readTotal = %s, length = %s, page size = %s", address, readTotal,
-                            filePageSize, cachePageSize );
-            UnsafeUtil.setMemory( address + readTotal, filePageSize - readTotal, MuninnPageCache.ZERO_BYTE );
+            assert readTotal >= 0 && filePageSize <= bufferSize && readTotal <= filePageSize : format(
+                    "pointer = %h, readTotal = %s, length = %s, page size = %s",
+                    bufferAddress, readTotal, filePageSize, bufferSize );
+            UnsafeUtil.setMemory( bufferAddress + readTotal, filePageSize - readTotal, MuninnPageCache.ZERO_BYTE );
             return readTotal;
         }
         catch ( IOException e )
@@ -261,12 +258,11 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int swapOut( Page page, long fileOffset, StoreChannel channel ) throws IOException
+    private int swapOut( long bufferAddress, long fileOffset, StoreChannel channel ) throws IOException
     {
-        long address = page.address();
         try
         {
-            ByteBuffer bufferProxy = proxy( address, filePageSize );
+            ByteBuffer bufferProxy = proxy( bufferAddress, filePageSize );
             channel.writeAll( bufferProxy, fileOffset );
         }
         catch ( IOException e )
@@ -280,24 +276,24 @@ public class SingleFilePageSwapper implements PageSwapper
         return filePageSize;
     }
 
-    private void clear( Page page )
+    private void clear( long bufferAddress, int bufferSize )
     {
-        UnsafeUtil.setMemory( page.address(), page.size(), MuninnPageCache.ZERO_BYTE );
+        UnsafeUtil.setMemory( bufferAddress, bufferSize, MuninnPageCache.ZERO_BYTE );
     }
 
     @Override
-    public long read( long filePageId, Page page ) throws IOException
+    public long read( long filePageId, long bufferAddress, int bufferSize ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
         try
         {
             if ( fileOffset < getCurrentFileSize() )
             {
-                return swapIn( channel( filePageId ), page, fileOffset, filePageSize );
+                return swapIn( channel( filePageId ), bufferAddress, bufferSize, fileOffset, filePageSize );
             }
             else
             {
-                clear( page );
+                clear( bufferAddress, bufferSize );
             }
         }
         catch ( ClosedChannelException e )
@@ -308,7 +304,7 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            long bytesRead = read( filePageId, page );
+            long bytesRead = read( filePageId, bufferAddress, bufferSize );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -319,13 +315,13 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
     {
         if ( positionLockGetter != null && hasPositionLock )
         {
             try
             {
-                return readPositionedVectoredToFileChannel( startFilePageId, pages, arrayOffset, length );
+                return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
             }
             catch ( IOException ioe )
             {
@@ -337,22 +333,22 @@ public class SingleFilePageSwapper implements PageSwapper
                 // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
             }
         }
-        return readPositionedVectoredFallback( startFilePageId, pages, arrayOffset, length );
+        return readPositionedVectoredFallback( startFilePageId, bufferAddresses, bufferSize, arrayOffset, length );
     }
 
     private long readPositionedVectoredToFileChannel(
-            long startFilePageId, Page[] pages, int arrayOffset, int length ) throws Exception
+            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws Exception
     {
         long fileOffset = pageIdToPosition( startFilePageId );
         FileChannel channel = unwrappedChannel( startFilePageId );
-        ByteBuffer[] srcs = convertToByteBuffers( pages, arrayOffset, length );
+        ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
         long bytesRead = lockPositionReadVector(
                 startFilePageId, channel, fileOffset, srcs );
         if ( bytesRead == -1 )
         {
-            for ( Page page : pages )
+            for ( long address : bufferAddresses )
             {
-                UnsafeUtil.setMemory( page.address(), filePageSize, MuninnPageCache.ZERO_BYTE );
+                UnsafeUtil.setMemory( address, filePageSize, MuninnPageCache.ZERO_BYTE );
             }
             return 0;
         }
@@ -363,9 +359,8 @@ public class SingleFilePageSwapper implements PageSwapper
             int pagesNeedingZeroing = length - pagesRead;
             for ( int i = 0; i < pagesNeedingZeroing; i++ )
             {
-                Page page = pages[arrayOffset + pagesRead + i];
+                long address = bufferAddresses[arrayOffset + pagesRead + i];
                 long bytesToZero = filePageSize;
-                long address = page.address();
                 if ( i == 0 )
                 {
                     address += bytesReadIntoLastReadPage;
@@ -415,25 +410,26 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     private int readPositionedVectoredFallback(
-            long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+            long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
     {
         int bytes = 0;
         for ( int i = 0; i < length; i++ )
         {
-            bytes += read( startFilePageId + i, pages[arrayOffset + i] );
+            long address = bufferAddresses[arrayOffset + i];
+            bytes += read( startFilePageId + i, address, bufferSize );
         }
         return bytes;
     }
 
     @Override
-    public long write( long filePageId, Page page ) throws IOException
+    public long write( long filePageId, long bufferAddress ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + filePageSize );
         try
         {
             StoreChannel channel = channel( filePageId );
-            return swapOut( page, fileOffset, channel );
+            return swapOut( bufferAddress, fileOffset, channel );
         }
         catch ( ClosedChannelException e )
         {
@@ -443,7 +439,7 @@ public class SingleFilePageSwapper implements PageSwapper
             tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
-            long bytesWritten = write( filePageId, page );
+            long bytesWritten = write( filePageId, bufferAddress );
             if ( interrupted )
             {
                 Thread.currentThread().interrupt();
@@ -453,13 +449,13 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public long write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
         if ( positionLockGetter != null && hasPositionLock )
         {
             try
             {
-                return writePositionedVectoredToFileChannel( startFilePageId, pages, arrayOffset, length );
+                return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, arrayOffset, length );
             }
             catch ( IOException ioe )
             {
@@ -471,26 +467,26 @@ public class SingleFilePageSwapper implements PageSwapper
                 // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
             }
         }
-        return writePositionVectoredFallback( startFilePageId, pages, arrayOffset, length );
+        return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
     }
 
     private long writePositionedVectoredToFileChannel(
-            long startFilePageId, Page[] pages, int arrayOffset, int length ) throws Exception
+            long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws Exception
     {
         long fileOffset = pageIdToPosition( startFilePageId );
         increaseFileSizeTo( fileOffset + (((long) filePageSize) * length) );
         FileChannel channel = unwrappedChannel( startFilePageId );
-        ByteBuffer[] srcs = convertToByteBuffers( pages, arrayOffset, length );
+        ByteBuffer[] srcs = convertToByteBuffers( bufferAddresses, arrayOffset, length );
         return lockPositionWriteVector( startFilePageId, channel, fileOffset, srcs );
     }
 
-    private ByteBuffer[] convertToByteBuffers( Page[] pages, int arrayOffset, int length ) throws Exception
+    private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int arrayOffset, int length ) throws Exception
     {
         ByteBuffer[] buffers = new ByteBuffer[length];
         for ( int i = 0; i < length; i++ )
         {
-            Page page = pages[arrayOffset + i];
-            buffers[i] = UnsafeUtil.newDirectByteBuffer( page.address(), filePageSize );
+            long address = bufferAddresses[arrayOffset + i];
+            buffers[i] = UnsafeUtil.newDirectByteBuffer( address, filePageSize );
         }
         return buffers;
     }
@@ -550,24 +546,25 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    private int writePositionVectoredFallback( long startFilePageId, Page[] pages, int arrayOffset, int length )
+    private int writePositionVectoredFallback( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
             throws IOException
     {
         int bytes = 0;
         for ( int i = 0; i < length; i++ )
         {
-            bytes += write( startFilePageId + i, pages[arrayOffset + i] );
+            long address = bufferAddresses[arrayOffset + i];
+            bytes += write( startFilePageId + i, address );
         }
         return bytes;
     }
 
     @Override
-    public void evicted( long filePageId, Page page )
+    public void evicted( long filePageId )
     {
         PageEvictionCallback callback = this.onEviction;
         if ( callback != null )
         {
-            callback.onEvict( filePageId, page );
+            callback.onEvict( filePageId );
         }
     }
 

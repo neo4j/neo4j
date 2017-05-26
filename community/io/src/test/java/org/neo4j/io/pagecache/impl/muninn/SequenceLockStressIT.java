@@ -20,12 +20,14 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -34,10 +36,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class SequenceLockStressIT
 {
-    private static final ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
+    private static final ExecutorService executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
 
     @AfterClass
     public static void shutDownExecutor()
@@ -48,7 +51,14 @@ public class SequenceLockStressIT
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
-    private SequenceLock lock = new SequenceLock();
+    private long lockAddr;
+
+    @Before
+    public void allocateLock()
+    {
+        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
+        UnsafeUtil.putLong( lockAddr, 0 );
+    }
 
     @RepeatRule.Repeat( times = 20 )
     @Test
@@ -86,14 +96,14 @@ public class SequenceLockStressIT
                     ThreadLocalRandom rng = ThreadLocalRandom.current();
                     int[] record = data[rng.nextInt( data.length )];
 
-                    long stamp = lock.tryOptimisticReadLock();
+                    long stamp = OffHeapPageLock.tryOptimisticReadLock( lockAddr );
                     int value = record[0];
                     boolean consistent = true;
                     for ( int i : record )
                     {
                         consistent &= i == value;
                     }
-                    if ( lock.validateReadLock( stamp ) && !consistent )
+                    if ( OffHeapPageLock.validateReadLock( lockAddr, stamp ) && !consistent )
                     {
                         throw new AssertionError( "inconsistent read" );
                     }
@@ -104,6 +114,7 @@ public class SequenceLockStressIT
         Worker writer = new Worker()
         {
             private volatile long unused;
+
             @Override
             protected void doWork()
             {
@@ -115,7 +126,7 @@ public class SequenceLockStressIT
 
                 while ( !stop.get() )
                 {
-                    if ( lock.tryWriteLock() )
+                    if ( OffHeapPageLock.tryWriteLock( lockAddr ) )
                     {
                         int[] record = data[id];
                         for ( int i = 0; i < record.length; i++ )
@@ -126,7 +137,7 @@ public class SequenceLockStressIT
                                 unused = rng.nextLong();
                             }
                         }
-                        lock.unlockWrite();
+                        OffHeapPageLock.unlockWrite( lockAddr );
                     }
 
                     for ( int j = 0; j < bigSpin; j++ )
@@ -140,6 +151,7 @@ public class SequenceLockStressIT
         Worker exclusive = new Worker()
         {
             private volatile long unused;
+
             @Override
             protected void doWork()
             {
@@ -147,7 +159,7 @@ public class SequenceLockStressIT
                 int spin = rng.nextInt( 20, 2000 );
                 while ( !stop.get() )
                 {
-                    while ( !lock.tryExclusiveLock() )
+                    while ( !OffHeapPageLock.tryExclusiveLock( lockAddr ) )
                     {
                     }
                     long sumA = 0;
@@ -165,16 +177,17 @@ public class SequenceLockStressIT
                     }
                     for ( int[] record : data )
                     {
-                        for ( int value : record  )
+                        for ( int value : record )
                         {
                             sumB += value;
                         }
-                        Arrays.fill(record, 0);
+                        Arrays.fill( record, 0 );
                     }
-                    lock.unlockExclusive();
+                    OffHeapPageLock.unlockExclusive( lockAddr );
                     if ( sumA != sumB )
                     {
-                        throw new AssertionError( "Inconsistent exclusive lock. 'Sum A' = " + sumA + ", 'Sum B' = " + sumB );
+                        throw new AssertionError(
+                                "Inconsistent exclusive lock. 'Sum A' = " + sumA + ", 'Sum B' = " + sumB );
                     }
                 }
             }
@@ -213,12 +226,44 @@ public class SequenceLockStressIT
     @Test
     public void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
     {
-        SequenceLockTest test = new SequenceLockTest();
         for ( int i = 0; i < 30000; i++ )
         {
-            test.unlockExclusiveAndTakeWriteLockMustBeAtomic();
-            test.lock = new SequenceLock();
+            unlockExclusiveAndTakeWriteLockMustBeAtomic();
+            OffHeapPageLock.unlockWrite( lockAddr );
+        }
+    }
+
+    public void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
+    {
+        int threads = Runtime.getRuntime().availableProcessors() - 1;
+        CountDownLatch start = new CountDownLatch( threads );
+        AtomicBoolean stop = new AtomicBoolean();
+        OffHeapPageLock.tryExclusiveLock( lockAddr );
+        Runnable runnable = () ->
+        {
+            while ( !stop.get() )
+            {
+                if ( OffHeapPageLock.tryExclusiveLock( lockAddr ) )
+                {
+                    OffHeapPageLock.unlockExclusive( lockAddr );
+                    throw new RuntimeException( "I should not have gotten that lock" );
+                }
+                start.countDown();
+            }
+        };
+
+        List<Future<?>> futures = new ArrayList<>();
+        for ( int i = 0; i < threads; i++ )
+        {
+            futures.add( executor.submit( runnable ) );
         }
 
+        start.await();
+        OffHeapPageLock.unlockExclusiveAndTakeWriteLock( lockAddr );
+        stop.set( true );
+        for ( Future<?> future : futures )
+        {
+            future.get(); // Assert that this does not throw
+        }
     }
 }

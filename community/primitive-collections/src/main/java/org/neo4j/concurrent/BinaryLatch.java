@@ -25,14 +25,14 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * This class is similar in many ways to a CountDownLatch(1).
- *
+ * <p>
  * The main difference is that instances of this specialized latch implementation are much quicker to allocate and
  * construct. Each instance also takes up less memory on the heap, and enqueueing wait nodes on the latch is faster.
- *
+ * <p>
  * There are two reasons why this class is faster to construct: 1. it performs no volatile write during its
  * construction, and 2. it does not need to allocate an internal Sync object, like CountDownLatch does.
  */
-public final class BinaryLatch
+public class BinaryLatch
 {
     private static class Node
     {
@@ -85,7 +85,7 @@ public final class BinaryLatch
 
     /**
      * Wait for the latch to be released, blocking the current thread if necessary.
-     *
+     * <p>
      * This method returns immediately if the latch has already been released.
      */
     public void await()

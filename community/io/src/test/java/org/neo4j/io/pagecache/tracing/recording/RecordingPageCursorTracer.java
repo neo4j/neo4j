@@ -113,7 +113,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             private boolean hit = true;
 
             @Override
-            public void setCachePageId( int cachePageId )
+            public void setCachePageId( long cachePageId )
             {
             }
 
@@ -146,7 +146,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
                     }
 
                     @Override
-                    public void setCachePageId( int cachePageId )
+                    public void setCachePageId( long cachePageId )
                     {
                     }
                 };

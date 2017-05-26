@@ -41,6 +41,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -79,6 +80,10 @@ public class TestCrashWithRebuildSlow
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
+
+        // Make sure all of our changes are actually written to the files, since any background flushing could
+        // mess up the check-sums in non-deterministic ways
+        db.getDependencyResolver().resolveDependency( PageCache.class ).flushAndForce();
 
         long checksumBefore = fs.get().checksum();
         long checksumBefore2 = fs.get().checksum();
