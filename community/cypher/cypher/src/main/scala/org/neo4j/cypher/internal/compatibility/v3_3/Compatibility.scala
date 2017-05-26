@@ -65,7 +65,6 @@ trait Compatibility[PC <: CompilerContext,
   val maybePlannerName: Option[CostBasedPlannerName]
   val maybeRuntimeName: Option[RuntimeName]
   val maybeUpdateStrategy: Option[UpdateStrategy]
-  val executionMonitor: QueryExecutionMonitor
   val cacheMonitor: AstCacheMonitor
   val cacheAccessor: MonitoringCacheAccessor[Statement, ExecutionPlan_v3_3]
   val monitorTag = "cypher3.3"
@@ -90,7 +89,7 @@ trait Compatibility[PC <: CompilerContext,
 
   private val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_3](config.queryCacheSize)
 
-  implicit val m = executionMonitor
+  implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger

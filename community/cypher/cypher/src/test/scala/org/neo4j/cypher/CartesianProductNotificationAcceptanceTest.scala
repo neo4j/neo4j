@@ -116,7 +116,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000L
   )
-  private val monitors = WrappedMonitors(kernelMonitors)
+  private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private def createCompiler(): CypherCompiler[CompilerContext] = {
 
