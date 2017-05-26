@@ -4,7 +4,8 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.11-SNAPSHOT</version>
+    <version>3.0.10-SNAPSHOT</version>
+
     <relativePath>../..</relativePath>
   </parent>
 
@@ -14,20 +15,21 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>2.3.11-SNAPSHOT</version>
+  <version>3.0.10-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them
-      into a downloadable installer.</description>
+    into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/packaging/standalone</url>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <modules>
     <module>standalone-community</module>
-    <module>standalone-advanced</module>
     <module>standalone-enterprise</module>
   </modules>
 
@@ -40,29 +42,12 @@
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>${project.version}</neo4j.version>
-    <windows-wrapper.version>5</windows-wrapper.version>
-    <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
 
-    <!-- conf/neo4j-server.properties filter properties -->
-    <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
-    <org.neo4j.server.webserver.http.enabled>true</org.neo4j.server.webserver.http.enabled>
-    <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
+    <!-- conf/neo4j.conf filter properties -->
+    <default.http.port>7474</default.http.port>
+    <default.https.port>7473</default.https.port>
 
-    <org.neo4j.server.webserver.https.enabled>true</org.neo4j.server.webserver.https.enabled>
-    <org.neo4j.webserver.https.port>7473</org.neo4j.webserver.https.port>
-
-    <dbms.security.tls_certificate_file>conf/ssl/snakeoil.cert</dbms.security.tls_certificate_file>
-    <dbms.security.tls_key_file>conf/ssl/snakeoil.key</dbms.security.tls_key_file>
-    <org.neo4j.server.webserver.https.keystore.location>data/keystore</org.neo4j.server.webserver.https.keystore.location>
-    <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
-    <org.neo4j.server.bundledir>system/lib</org.neo4j.server.bundledir>
-    <dbms.security.require_auth>true</dbms.security.require_auth>
-    <dbms.browser.remote_content_hostname_whitelist>http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost</dbms.browser.remote_content_hostname_whitelist>
-    <dbms.security.allow_outgoing_browser_connections>true</dbms.security.allow_outgoing_browser_connections>
-
-    <!-- Additional configuration to append to neo4j-server.properties -->
-    <feature-config.bolt></feature-config.bolt>
-    <config.neo4j-server.additional>${feature-config.bolt}</config.neo4j-server.additional>
+    <org.neo4j.webservice.packages>org.neo4j.rest.web</org.neo4j.webservice.packages>
 
     <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
     <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
@@ -77,17 +62,17 @@
       <name>GNU Affero General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
       <comments>The software ("Software") developed and owned by Network Engine for
-Objects in Lund AB (referred to in this notice as "Neo Technology") is
-licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
-third parties and that license is included below.
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+        third parties and that license is included below.
 
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-LICENSE Version 3 and you may use the Software solely pursuant to the
-terms of the relevant Commercial Agreement.
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+        LICENSE Version 3 and you may use the Software solely pursuant to the
+        terms of the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
@@ -109,25 +94,6 @@ terms of the relevant Commercial Agreement.
           <execution>
             <id>get-javadoc-sources</id>
             <phase>none</phase>
-          </execution>
-          <execution>
-            <id>unpack-upgrade</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                  <groupId>org.neo4j.doc</groupId>
-                  <artifactId>neo4j-manual</artifactId>
-                  <version>${neo4j.version}</version>
-                  <classifier>upgrade</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/upgrade</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
-                  <excludes>META-INF/**</excludes>
-                 </artifactItem>
-               </artifactItems>
-             </configuration>
           </execution>
         </executions>
       </plugin>
@@ -157,7 +123,7 @@ terms of the relevant Commercial Agreement.
         </executions>
       </plugin>
 
-       <plugin>
+      <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>licensing-maven-plugin</artifactId>
         <configuration>
@@ -165,7 +131,7 @@ terms of the relevant Commercial Agreement.
           <failIfMissing>true</failIfMissing>
           <plainTextReport>true</plainTextReport>
           <prependText>notice-agpl-prefix.txt</prependText>
-          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
         </configuration>
         <executions>
           <execution>
@@ -265,6 +231,27 @@ terms of the relevant Commercial Agreement.
         </dependencies>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shell-script-tests</id>
+            <phase>test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <inherited>false</inherited>
+            <configuration>
+              <executable>./run-tests.sh</executable>
+              <workingDirectory>src/tests/shell-scripts</workingDirectory>
+              <arguments>
+                <argument>--verbose</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -295,56 +282,58 @@ terms of the relevant Commercial Agreement.
 
   <dependencies>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>windows-service-wrapper</artifactId>
-      <version>${windows-wrapper.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>static-web</classifier>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-import-tool</artifactId>
       <version>${neo4j.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>manpages</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>manpagesenterprise</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>upgrade</classifier>
-      <type>zip</type>
     </dependency>
   </dependencies>
 
   <profiles>
     <profile>
-      <id>feature-bolt</id>
+      <id>freeze</id>
       <activation>
         <activeByDefault>false</activeByDefault>
-        <property> <name>feature.bolt</name> </property>
+        <property>
+          <name>freeze</name>
+        </property>
       </activation>
-      <properties>
-        <feature-config.bolt># Enable Bolt, for alpha testing and preview
-xx.bolt.enabled=true</feature-config.bolt>
-      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>ease-maven-plugin</artifactId>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <executions>
+              <execution>
+                <id>freeze-artifacts</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>disable-shell-script-tests</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>shell-script-tests</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
-
 </project>
-

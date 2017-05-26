@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.3.11-SNAPSHOT</version>
+    <version>3.0.10-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>enterprise-build</artifactId>
-  <version>2.3.11-SNAPSHOT</version>
+  <version>3.0.10-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Build</name>
   <packaging>pom</packaging>
@@ -25,7 +25,7 @@
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-	<url>https://github.com/neo4j/neo4j/tree/master/enterprise</url>
+    <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
   <modules>
@@ -38,7 +38,8 @@
     <module>metrics</module>
     <module>neo4j-enterprise</module>
     <module>server-enterprise</module>
-    <module>enterprise-performance-tests</module>
+    <module>neo4j-harness-enterprise</module>
+    <module>management</module>
     <module>deferred-locks</module>
   </modules>
 
@@ -61,6 +62,71 @@ terms of the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
+
+  <profiles>
+    <profile>
+      <id>freeze</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>freeze</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>ease-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>aggregate-artifacts</id>
+                <goals>
+                  <goal>aggregate</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>org.neo4j:*</include>
+                    <include>org.neo4j.app:*</include>
+                    <include>org.neo4j.test:*</include>
+                  </includes>
+                  <excludes>
+                    <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-2.3</exclude>
+                  </excludes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>freeze-artifacts</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.app</groupId>
+          <artifactId>neo4j-server-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.test</groupId>
+          <artifactId>neo4j-harness-enterprise</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-deferred-locks</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 
 </project>
 
