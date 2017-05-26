@@ -28,6 +28,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.test.Race;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class GBPTreeLockTest
@@ -116,6 +121,108 @@ public class GBPTreeLockTest
 
         lock.writerAndCleanerUnlock();
         assertUU();
+    }
+
+    @Test
+    public void test_race_ULvsUL() throws Throwable
+    {
+        assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock );
+    }
+
+    @Test
+    public void test_race_ULvsLU() throws Throwable
+    {
+        assertBothSucceeds( lock::cleanerLock, lock::writerLock );
+    }
+
+    @Test
+    public void test_race_ULvsLL() throws Throwable
+    {
+        assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock );
+    }
+
+    @Test
+    public void test_race_LUvsLU() throws Throwable
+    {
+        assertOnlyOneSucceeds( lock::writerLock, lock::writerLock );
+    }
+
+    @Test
+    public void test_race_LUvsLL() throws Throwable
+    {
+        assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock );
+    }
+
+    @Test
+    public void test_race_LLvsLL() throws Throwable
+    {
+        assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock );
+    }
+
+    private void assertOnlyOneSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
+    {
+        assertUU();
+        Race race = new Race();
+        LockContestant c1 = new LockContestant( lockAction1 );
+        LockContestant c2 = new LockContestant( lockAction2 );
+
+        // when
+        race.addContestant( c1 );
+        race.addContestant( c2 );
+        try
+        {
+            race.go( 10, TimeUnit.MILLISECONDS );
+            fail( "One of the contestants should be blocked" );
+        }
+        catch ( TimeoutException throwable )
+        {
+            // This is fine. We expect one of the contestants to block
+        }
+
+        // then
+        assertNotEquals( c1.lockAcquired, c2.lockAcquired );
+        assertNotEquals( c1.blocked, c2.blocked );
+    }
+
+    private void assertBothSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
+    {
+        assertUU();
+        Race race = new Race();
+        LockContestant c1 = new LockContestant( lockAction1 );
+        LockContestant c2 = new LockContestant( lockAction2 );
+
+        // when
+        race.addContestant( c1 );
+        race.addContestant( c2 );
+
+        race.go( 10, TimeUnit.MILLISECONDS );
+
+        // then
+        assertTrue( c1.lockAcquired );
+        assertTrue( c2.lockAcquired );
+        assertFalse( c1.blocked );
+        assertFalse( c2.blocked );
+    }
+
+    private class LockContestant implements Runnable
+    {
+        private final Runnable lockAction;
+        private boolean lockAcquired;
+        private boolean blocked;
+
+        LockContestant( Runnable lockAction )
+        {
+            this.lockAction = lockAction;
+        }
+
+        @Override
+        public void run()
+        {
+            blocked = true;
+            lockAction.run();
+            lockAcquired = true;
+            blocked = false;
+        }
     }
 
     private void assertThrow( Runnable unlock )
