@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceException;
@@ -296,14 +297,16 @@ class PropertyExistenceEnforcer
         private Cursor<PropertyItem> properties( NodeItem node )
         {
             Lock lock = node.lock();
-            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock );
+            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock,
+                    AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
         }
 
         private Cursor<PropertyItem> properties( RelationshipItem relationship )
         {
             Lock lock = relationship.lock();
-            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock );
+            Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock,
+                    AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );
         }
 

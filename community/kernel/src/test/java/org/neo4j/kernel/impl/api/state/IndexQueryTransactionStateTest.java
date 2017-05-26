@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -342,9 +343,10 @@ public class IndexQueryTransactionStateTest
 
     private void mockStoreProperty()
     {
-        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ) ) )
+        when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( propertyKeyId, value ) ) );
-        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ) ) )
+        when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ),
+                any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( propertyKeyId, value ) ) );
     }
 

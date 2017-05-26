@@ -35,6 +35,7 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
  * Test read access to committed properties.
@@ -102,7 +103,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
 
                 Lock lock = node.get().lock();
                 try ( Cursor<PropertyItem> props = statement
-                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock ) )
+                        .acquireSinglePropertyCursor( node.get().nextPropertyId(), propKey, lock, ALWAYS_OPEN ) )
                 {
                     if ( props.next() )
                     {

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -102,11 +103,12 @@ public class TxStateTransactionDataViewTest
 
         when( storeStatement.acquireSingleNodeCursor( 2L ) ).thenReturn( asNodeCursor( 2L, 20L, labels( 15 ) ) );
 
-        when( storeStatement.acquirePropertyCursor( eq( 20L ), any( Lock.class ) ) )
+        when( storeStatement.acquirePropertyCursor( eq( 20L ), any( Lock.class ), any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor( stringProperty( 1, "p" ) ) );
 
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn( asNodeCursor( 1L, 21L, labels() ) );
-        when( storeStatement.acquirePropertyCursor( eq( 21L ), any( Lock.class ) ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquirePropertyCursor( eq( 21L ), any( Lock.class ), any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor() );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
         when( ops.labelGetName( 15 ) ).thenReturn( "label" );
@@ -139,11 +141,12 @@ public class TxStateTransactionDataViewTest
         long noPropertyId = -1L;
         when( storeStatement.acquireSingleRelationshipCursor( 1L ) ).
                 thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
+                .thenReturn( asPropertyCursor() );
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 2L ) ).
                 thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
-        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK ) )
+        when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( Property.stringProperty( 1, "p" ) ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
@@ -162,7 +165,8 @@ public class TxStateTransactionDataViewTest
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1L );
         when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1, -1 ) );
-        when( storeStatement.acquirePropertyCursor( -1, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquirePropertyCursor( -1, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
+                .thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( node ), equalTo( true ) );
@@ -179,7 +183,8 @@ public class TxStateTransactionDataViewTest
         long noPropertyId = -1L;
         when( storeStatement.acquireSingleRelationshipCursor( 1L ) )
                 .thenReturn( asRelationshipCursor( 1L, 1, 1L, 2L, noPropertyId ) );
-        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK ) ).thenReturn( asPropertyCursor() );
+        when( storeStatement.acquirePropertyCursor( noPropertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
+                .thenReturn( asPropertyCursor() );
 
         // When & Then
         assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
@@ -196,7 +201,8 @@ public class TxStateTransactionDataViewTest
         long propertyId = 20L;
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
                 asNodeCursor( 1L, propertyId, labels() ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -221,7 +227,8 @@ public class TxStateTransactionDataViewTest
         long propertyId = 20L;
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
                 asNodeCursor( 1L, propertyId, labels() ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
@@ -245,7 +252,8 @@ public class TxStateTransactionDataViewTest
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
                 .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevValue ) );
 
         // When
@@ -270,7 +278,8 @@ public class TxStateTransactionDataViewTest
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
                 asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
-        when( storeStatement.acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK ) )
+        when( storeStatement
+                .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
                 .thenReturn( asPropertyCursor( prevProp ) );
 
         // When
