@@ -102,6 +102,17 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
  */
 public class ImportTool
 {
+    private static final String INPUT_FILES_DESCRIPTION =
+            "Multiple files will be logically seen as one big file " +
+            "from the perspective of the importer. " +
+            "The first line must contain the header. " +
+            "Multiple data sources like these can be specified in one import, " +
+            "where each data source has its own header. " +
+            "Note that file groups must be enclosed in quotation marks. " +
+            "Each file can be a regular expression and will then include all matching files. " +
+            "The file matching is done with number awareness such that e.g. files:" +
+            "'File1Part_001.csv', 'File12Part_003' will be ordered in that order for a pattern like: 'File.*'";
+
     private static final String UNLIMITED = "true";
 
     enum Options
@@ -114,22 +125,12 @@ public class ImportTool
                 "Database name to import into. " + "Must not contain existing database.", true ),
         NODE_DATA( "nodes", null,
                 "[:Label1:Label2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
-                "Node CSV header and data. Multiple files will be logically seen as one big file "
-                        + "from the perspective of the importer. "
-                        + "The first line must contain the header. "
-                        + "Multiple data sources like these can be specified in one import, "
-                        + "where each data source has its own header. "
-                        + "Note that file groups must be enclosed in quotation marks.",
+                "Node CSV header and data. " + INPUT_FILES_DESCRIPTION,
                         true, true ),
         RELATIONSHIP_DATA( "relationships", null,
                 "[:RELATIONSHIP_TYPE] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
                 MULTI_FILE_DELIMITER + "...\"",
-                "Relationship CSV header and data. Multiple files will be logically seen as one big file "
-                        + "from the perspective of the importer. "
-                        + "The first line must contain the header. "
-                        + "Multiple data sources like these can be specified in one import, "
-                        + "where each data source has its own header. "
-                        + "Note that file groups must be enclosed in quotation marks.",
+                "Relationship CSV header and data. " + INPUT_FILES_DESCRIPTION,
                         true, true ),
         DELIMITER( "delimiter", null,
                 "<delimiter-character>",
