@@ -136,7 +136,7 @@ abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void closeLinks( MuninnPageCursor cursor ) throws IOException
+    private void closeLinks( MuninnPageCursor cursor )
     {
         while ( cursor != null && cursor.pagedFile != null )
         {
