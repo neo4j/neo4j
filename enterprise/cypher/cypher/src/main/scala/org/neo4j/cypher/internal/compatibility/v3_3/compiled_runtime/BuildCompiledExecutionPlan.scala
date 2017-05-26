@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
 
-object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, LogicalPlanState, CompilationState] {
+object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
 
   override def phase = CODE_GENERATION
 
@@ -45,7 +45,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, LogicalP
 
   override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
 
-  override def process(from: LogicalPlanState, context: CompiledRuntimeContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
@@ -60,7 +60,7 @@ object BuildCompiledExecutionPlan extends Phase[CompiledRuntimeContext, LogicalP
     }
   }
 
-  private def createExecutionPlan(context: CompiledRuntimeContext, compiled: CompiledPlan) = new ExecutionPlan {
+  private def createExecutionPlan(context: EnterpriseRuntimeContext, compiled: CompiledPlan) = new ExecutionPlan {
     private val fingerprint = context.createFingerprintReference(compiled.fingerprint)
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)

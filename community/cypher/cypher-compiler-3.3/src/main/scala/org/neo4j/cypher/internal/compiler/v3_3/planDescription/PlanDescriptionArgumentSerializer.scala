@@ -34,7 +34,7 @@ object PlanDescriptionArgumentSerializer {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
       case Expression(expr) => if (expr == null) "" else removeGeneratedNames(expr.asCanonicalStringVal)
       case Expressions(expressions) => expressions.map({
-        case (k, v) if v != null => s"$k :  ${v.asCanonicalStringVal}"
+        case (k, v) if v != null => s"$k : ${v.asCanonicalStringVal}"
         case (k, _) => s"$k : null"
       }).mkString("{", ", ", "}")
       case UpdateActionName(action) => action

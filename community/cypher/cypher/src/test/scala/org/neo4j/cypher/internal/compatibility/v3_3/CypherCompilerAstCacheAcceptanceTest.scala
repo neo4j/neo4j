@@ -24,7 +24,7 @@ import java.time.{Clock, Instant, ZoneOffset}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBuilder, RuntimeContext}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContext}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
@@ -43,7 +43,7 @@ import scala.collection.Map
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance): CostCompatibility[CompilerContext, RuntimeContext, Transformer[RuntimeContext, LogicalPlanState, CompilationState]] = {
+                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance): CostCompatibility[CompilerContext, CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
 
     val config = CypherCompilerConfiguration(
       queryCacheSize,
@@ -59,8 +59,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     )
     CostCompatibility(config, clock, kernelMonitors,
                       kernelAPI, log, CypherPlanner.default, CypherRuntime.default,
-                      CypherUpdateStrategy.default, CommunityRuntimeBuilder, CommunityContextCreator,
-                      RuntimeContext.apply  )
+                      CypherUpdateStrategy.default, CommunityRuntimeBuilder, LogicalPlanningContextCreator,
+                      CommunityRuntimeContext.apply  )
   }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
@@ -88,7 +88,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   var counter: CacheCounter = _
-  var compiler: CostCompatibility[CompilerContext, RuntimeContext, Transformer[RuntimeContext, LogicalPlanState, CompilationState]] = _
+  var compiler: CostCompatibility[CompilerContext, CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

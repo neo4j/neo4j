@@ -34,7 +34,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
 case class CostCompatibility[PC <: CompilerContext,
-                             RC <: RuntimeContext,
+                             RC <: CommunityRuntimeContext,
                              T <: Transformer[RC, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
                                                                                        clock: Clock,
                                                                                        kernelMonitors: KernelMonitors,

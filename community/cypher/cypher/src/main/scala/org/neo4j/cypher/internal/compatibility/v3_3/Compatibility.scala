@@ -51,7 +51,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 trait Compatibility[PC <: CompilerContext,
-                    RC <: RuntimeContext,
+                    RC <: CommunityRuntimeContext,
                     T <: Transformer[RC, LogicalPlanState, CompilationState]] {
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI

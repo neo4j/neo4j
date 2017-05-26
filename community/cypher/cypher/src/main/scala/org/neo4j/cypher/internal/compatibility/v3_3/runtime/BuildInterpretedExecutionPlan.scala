@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
 
-object BuildInterpretedExecutionPlan extends Phase[RuntimeContext, LogicalPlanState, CompilationState] {
+object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
 
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
-  override def process(from: LogicalPlanState, context: RuntimeContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val logicalPlan = from.logicalPlan
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors)

@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_2.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBuilder, RuntimeContext}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContext}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2, _}
 import org.neo4j.cypher.internal.compiler.v3_2.{CommunityContextCreator => CommunityContextCreator3_2, CommunityRuntimeBuilder => CommunityRuntimeBuilder3_2}
-import org.neo4j.cypher.internal.compiler.v3_3.{CommunityContextCreator, CypherCompilerConfiguration}
+import org.neo4j.cypher.internal.compiler.v3_3.{LogicalPlanningContextCreator, CypherCompilerConfiguration}
 import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
@@ -87,8 +87,8 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelAPI:
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.3. If you need to use it, please compatibility mode Cypher 3.1")
       case _ =>
         CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, log,
-                               spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
-                               CommunityContextCreator, RuntimeContext.apply)
+                          spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
+                          LogicalPlanningContextCreator, CommunityRuntimeContext.apply)
     }
 }
 

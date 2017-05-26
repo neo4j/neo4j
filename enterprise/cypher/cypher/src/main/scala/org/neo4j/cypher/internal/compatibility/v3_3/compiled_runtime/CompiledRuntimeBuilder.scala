@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, If, Transformer}
 
-class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeContext, LogicalPlanState, CompilationState]] {
+class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
 
-  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CompiledRuntimeContext, LogicalPlanState, CompilationState] =
+  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] =
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
-          If[CompiledRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
             BuildInterpretedExecutionPlan
           )
 
@@ -41,18 +41,18 @@ class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[CompiledRuntimeC
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
         BuildCompiledExecutionPlan andThen
-          If[CompiledRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do[CompiledRuntimeContext, LogicalPlanState, CompilationState]( (_,_) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+            Do[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
           )
 
       case Some(CompiledRuntimeName) =>
         BuildCompiledExecutionPlan andThen
-          If[CompiledRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do((ctx: CompiledRuntimeContext) => warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx)) andThen
+          If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
+            Do((ctx: EnterpriseRuntimeContext) => warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx)) andThen
               BuildInterpretedExecutionPlan
           )
     }
 
-  private def warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx: CompiledRuntimeContext) =
+  private def warnThatCompiledRuntimeDoesNotYetSupportQuery(ctx: EnterpriseRuntimeContext) =
     ctx.notificationLogger.log(RuntimeUnsupportedNotification)
 }

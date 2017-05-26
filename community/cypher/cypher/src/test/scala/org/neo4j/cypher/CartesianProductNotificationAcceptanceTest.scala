@@ -97,8 +97,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       val tracer =CompilationPhaseTracer.NO_TRACING
       val parsed = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
       val queryGraphSolver = Compatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
-      val context = CommunityContextCreator.create(tracer, logger, planContext, parsed.queryText, Set.empty, None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy,  Clock.systemUTC(),
-                                     simpleExpressionEvaluator)
+      val context = LogicalPlanningContextCreator.create(tracer, logger, planContext, parsed.queryText, Set.empty, None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(),
+                                                         simpleExpressionEvaluator)
 
       val normalized = compiler.normalizeQuery(parsed, context)
       compiler.planPreparedQuery(normalized, context)
@@ -127,7 +127,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       rewriterSequencer = RewriterStepSequencer.newValidating,
       plannerName = None,
       updateStrategy = None,
-      contextCreator = CommunityContextCreator
+      contextCreator = LogicalPlanningContextCreator
     )
   }
 }

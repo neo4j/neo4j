@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 /**
   * This builder takes on queries that requires no planning such as procedures and schema commands
   */
-case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[RuntimeContext, LogicalPlanState, CompilationState] {
+case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -43,7 +43,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Runti
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def process(from: LogicalPlanState, context: RuntimeContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val maybeExecutionPlan: Option[ExecutionPlan] = from.maybeLogicalPlan match {
       case None => throw new IllegalStateException("A proper logical plan must have been built by now")
       case Some(plan) => plan match {

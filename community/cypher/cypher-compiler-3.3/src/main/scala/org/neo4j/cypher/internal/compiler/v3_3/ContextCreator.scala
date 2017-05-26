@@ -43,7 +43,7 @@ trait ContextCreator[Context <: BaseContext] {
              evaluator: ExpressionEvaluator): Context
 }
 
-object CommunityContextCreator extends ContextCreator[CompilerContext] {
+object LogicalPlanningContextCreator extends ContextCreator[CompilerContext] {
   override def create(tracer: CompilationPhaseTracer,
                       notificationLogger: InternalNotificationLogger,
                       planContext: PlanContext,

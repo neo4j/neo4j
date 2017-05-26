@@ -29,8 +29,8 @@ trait RuntimeBuilder[T <: Transformer[_, _, _]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T
 }
 
-object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[RuntimeContext, LogicalPlanState, CompilationState]] {
-  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[RuntimeContext, LogicalPlanState, CompilationState] =
+object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] {
+  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState] =
     runtimeName match {
     case None | Some(InterpretedRuntimeName) =>
       BuildInterpretedExecutionPlan

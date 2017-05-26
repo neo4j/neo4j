@@ -30,29 +30,29 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 
-class RuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
-                     override val tracer: CompilationPhaseTracer,
-                     override val notificationLogger: InternalNotificationLogger,
-                     override val planContext: PlanContext,
-                     override val monitors: Monitors,
-                     override val metrics: Metrics,
-                     override val config: CypherCompilerConfiguration,
-                     override val queryGraphSolver: QueryGraphSolver,
-                     override val updateStrategy: UpdateStrategy,
-                     override val debugOptions: Set[String],
-                     override val clock: Clock,
-                     val typeConverter: RuntimeTypeConverter,
-                     val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
+class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
+                              override val tracer: CompilationPhaseTracer,
+                              override val notificationLogger: InternalNotificationLogger,
+                              override val planContext: PlanContext,
+                              override val monitors: Monitors,
+                              override val metrics: Metrics,
+                              override val config: CypherCompilerConfiguration,
+                              override val queryGraphSolver: QueryGraphSolver,
+                              override val updateStrategy: UpdateStrategy,
+                              override val debugOptions: Set[String],
+                              override val clock: Clock,
+                              val typeConverter: RuntimeTypeConverter,
+                              val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
                           config, queryGraphSolver, updateStrategy, debugOptions, clock)
 
-object RuntimeContext {
+object CommunityRuntimeContext {
   def apply(context: CompilerContext, data: RuntimeSpecificContext) =
-    new RuntimeContext(context.exceptionCreator, context.tracer, context.notificationLogger, context.planContext,
-                       context.monitors, context.metrics, context.config, context.queryGraphSolver,
-                       context.updateStrategy, context.debugOptions, context.clock, data.typeConverter,
-                       data.createFingerprintReference)
+    new CommunityRuntimeContext(context.exceptionCreator, context.tracer, context.notificationLogger, context.planContext,
+                                context.monitors, context.metrics, context.config, context.queryGraphSolver,
+                                context.updateStrategy, context.debugOptions, context.clock, data.typeConverter,
+                                data.createFingerprintReference)
 }
 
 case class RuntimeSpecificContext(typeConverter: RuntimeTypeConverter,

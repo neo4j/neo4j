@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.CompiledRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
@@ -48,9 +48,9 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                updateStrategy: UpdateStrategy = mock[UpdateStrategy],
                debugOptions: Set[String] = Set.empty,
                clock: Clock = Clock.systemUTC(),
-               codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): CompiledRuntimeContext = {
-      new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-        monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock,  typeConverter, createFingerprintReference, codeStructure)
+               codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): EnterpriseRuntimeContext = {
+      new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
+                                   monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, typeConverter, createFingerprintReference, codeStructure)
     }
 
 }

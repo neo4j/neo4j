@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.CodeStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
@@ -32,20 +32,20 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, I
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQuery
 
-class CompiledRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
-                             override val tracer: CompilationPhaseTracer,
-                             override val notificationLogger: InternalNotificationLogger,
-                             override val planContext: PlanContext,
-                             override val monitors: Monitors,
-                             override val metrics: Metrics,
-                             override val queryGraphSolver: QueryGraphSolver,
-                             override val config: CypherCompilerConfiguration,
-                             override val updateStrategy: UpdateStrategy,
-                             override val debugOptions: Set[String],
-                             override val clock: Clock,
-                             override val typeConverter: RuntimeTypeConverter,
-                             override val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-                             val codeStructure: CodeStructure[GeneratedQuery])
-  extends RuntimeContext(exceptionCreator, tracer,
-                         notificationLogger, planContext, monitors, metrics,
-                         config, queryGraphSolver, updateStrategy, debugOptions, clock, typeConverter, createFingerprintReference)
+class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
+                               override val tracer: CompilationPhaseTracer,
+                               override val notificationLogger: InternalNotificationLogger,
+                               override val planContext: PlanContext,
+                               override val monitors: Monitors,
+                               override val metrics: Metrics,
+                               override val queryGraphSolver: QueryGraphSolver,
+                               override val config: CypherCompilerConfiguration,
+                               override val updateStrategy: UpdateStrategy,
+                               override val debugOptions: Set[String],
+                               override val clock: Clock,
+                               override val typeConverter: RuntimeTypeConverter,
+                               override val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+                               val codeStructure: CodeStructure[GeneratedQuery])
+  extends CommunityRuntimeContext(exceptionCreator, tracer,
+                                  notificationLogger, planContext, monitors, metrics,
+                                  config, queryGraphSolver, updateStrategy, debugOptions, clock, typeConverter, createFingerprintReference)
