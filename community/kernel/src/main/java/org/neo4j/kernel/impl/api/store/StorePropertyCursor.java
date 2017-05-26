@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -41,6 +42,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final RecordCursor<PropertyRecord> recordCursor;
 
     private Lock lock;
+    private AssertOpen assertOpen;
 
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
@@ -49,11 +51,12 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         this.recordCursor = cursors.property();
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock readLock )
+    public StorePropertyCursor init( long firstPropertyId, Lock readLock, AssertOpen assertOpen )
     {
         recordCursor.placeAt( firstPropertyId, FORCE );
         payload.clear();
         lock = readLock;
+        this.assertOpen = assertOpen;
         return this;
     }
 
@@ -99,7 +102,9 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public Object value()
     {
-        return payload.value();
+        Object value = payload.value();
+        assertOpen.assertOpen();
+        return value;
     }
 
     @Override

@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -247,7 +248,7 @@ public class LabelTransactionStateTest
     {
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor() );
 
         // WHEN
@@ -263,7 +264,7 @@ public class LabelTransactionStateTest
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
                 StubCursors.labels( 12 ) ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor() );
 
         // WHEN
@@ -279,7 +280,7 @@ public class LabelTransactionStateTest
         // GIVEN
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337,
                 StubCursors.labels( 12 ) ) );
-        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+        when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor() );
 
         // WHEN
@@ -339,7 +340,7 @@ public class LabelTransactionStateTest
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) )
                     .thenReturn( asNodeCursor( nodeLabels.nodeId, StubCursors.labels( nodeLabels.labelIds ) ) );
-            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ) ) )
+            when( store.nodeGetProperties( eq( storeStatement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
                     .thenReturn( asPropertyCursor() );
 
             for ( int label : nodeLabels.labelIds )

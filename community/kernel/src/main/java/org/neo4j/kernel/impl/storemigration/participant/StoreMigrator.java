@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -623,7 +624,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final List<Object> scratch = new ArrayList<>();
         return ( ENTITY entity, RECORD record ) ->
         {
-            cursor.init( record.getNextProp(), LockService.NO_LOCK );
+            cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
             scratch.clear();
             while ( cursor.next() )
             {

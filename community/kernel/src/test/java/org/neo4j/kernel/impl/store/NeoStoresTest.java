@@ -103,6 +103,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.configuration.Config.embeddedDefaults;
@@ -346,7 +347,8 @@ public class NeoStoresTest
 
     private DefinedProperty getProperty( int key, StorageStatement statement, long propertyId )
     {
-        try ( Cursor<PropertyItem> propertyCursor = statement.acquireSinglePropertyCursor( propertyId, key, NO_LOCK ) )
+        try ( Cursor<PropertyItem> propertyCursor = statement
+                .acquireSinglePropertyCursor( propertyId, key, NO_LOCK, ALWAYS_OPEN ) )
         {
             if ( propertyCursor.next() )
             {

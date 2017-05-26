@@ -261,7 +261,7 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            cursor = storeLayer.nodeGetProperties( statement.getStoreStatement(), node );
+            cursor = storeLayer.nodeGetProperties( statement.getStoreStatement(), node, statement );
         }
 
         return statement.hasTxStateWithChanges()
@@ -321,7 +321,7 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            cursor = storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId );
+            cursor = storeLayer.nodeGetProperty( statement.getStoreStatement(), node, propertyKeyId, statement );
         }
 
         return statement.hasTxStateWithChanges()
@@ -340,7 +340,7 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            cursor = storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship );
+            cursor = storeLayer.relationshipGetProperties( statement.getStoreStatement(), relationship, statement );
         }
 
         return statement.hasTxStateWithChanges()
@@ -402,7 +402,8 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            cursor = storeLayer.relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId );
+            cursor = storeLayer
+                    .relationshipGetProperty( statement.getStoreStatement(), relationship, propertyKeyId, statement );
         }
 
         return statement.hasTxStateWithChanges()

@@ -23,6 +23,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
@@ -175,15 +176,16 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock )
+    public Cursor<PropertyItem> acquirePropertyCursor( long propertyId, Lock lock, AssertOpen assertOpen )
     {
-        return propertyCursorCache.get().init( propertyId, lock );
+        return propertyCursorCache.get().init( propertyId, lock, assertOpen );
     }
 
     @Override
-    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock )
+    public Cursor<PropertyItem> acquireSinglePropertyCursor( long propertyId, int propertyKeyId, Lock lock,
+            AssertOpen assertOpen )
     {
-        return singlePropertyCursorCache.get().init( propertyId, propertyKeyId, lock );
+        return singlePropertyCursorCache.get().init( propertyId, propertyKeyId, lock, assertOpen );
     }
 
     @Override
