@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.10-SNAPSHOT</version>
+    <version>2.3.11-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>community-build</artifactId>
-  <version>3.0.10-SNAPSHOT</version>
+  <version>2.3.11-SNAPSHOT</version>
 
   <name>Neo4j - Community Build</name>
   <packaging>pom</packaging>
@@ -27,20 +27,16 @@
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
+	<url>https://github.com/neo4j/neo4j/tree/master/community</url>
   </scm>
 
   <modules>
-    <module>common</module>
-    <module>resource</module>
-    <module>collections</module>
-    <module>primitive-collections</module>
-    <module>graphdb-api</module>
     <module>unsafe</module>
+    <module>function</module>
+    <module>primitive-collections</module>
     <module>io</module>
     <module>csv</module>
     <module>logging</module>
-    <module>security</module>
     <module>neo4j-slf4j</module>
     <module>codegen</module>
     <module>kernel</module>
@@ -48,22 +44,22 @@
     <module>udc</module>
     <module>monitor-logging</module>
     <module>lucene-index</module>
-    <module>lucene-index-upgrade</module>
     <module>graph-algo</module>
     <module>graph-matching</module>
     <module>neo4j</module>
     <module>neo4j-community</module>
     <module>shell</module>
     <module>import-tool</module>
+    <module>embedded-examples</module>
     <module>server-api</module>
-    <module>bolt</module>
+    <module>graphviz</module>
     <module>server</module>
+    <module>server-examples</module>
     <module>server-plugin-test</module>
+	<module>consistency-check-legacy</module>
     <module>consistency-check</module>
     <module>neo4j-harness</module>
     <module>licensecheck-config</module>
-    <module>dbms</module>
-    <module>command-line</module>
   </modules>
 
   <licenses>
@@ -88,6 +84,17 @@ the relevant Commercial Agreement.
 
   <profiles>
     <profile>
+      <id>include-browser</id>
+      <activation>
+        <property>
+          <name>!skipBrowser</name>
+        </property>
+      </activation>
+      <modules>
+        <module>browser</module>
+      </modules>
+    </profile>
+    <profile>
       <id>include-cypher</id>
       <activation>
         <property>
@@ -97,96 +104,6 @@ the relevant Commercial Agreement.
       <modules>
         <module>cypher</module>
       </modules>
-    </profile>
-    <profile>
-      <id>freeze</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>freeze</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>ease-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>aggregate-artifacts</id>
-                <goals>
-                  <goal>aggregate</goal>
-                </goals>
-                <configuration>
-                  <includes>
-                    <include>org.neo4j:*</include>
-                    <include>org.neo4j.app:*</include>
-                    <include>org.neo4j.test:*</include>
-                    <include>org.neo4j.build:licensecheck-config:*</include>
-                  </includes>
-                  <excludes>
-                    <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-2.3</exclude>
-                  </excludes>
-                </configuration>
-              </execution>
-              <execution>
-                <id>freeze-artifacts</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-      <dependencies>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-community</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-shell</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-import-tool</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.app</groupId>
-          <artifactId>neo4j-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.build</groupId>
-          <artifactId>licensecheck-config</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>cypher-parent</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.test</groupId>
-          <artifactId>neo4j-harness</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-slf4j</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
     </profile>
   </profiles>
 </project>
