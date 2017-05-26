@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -111,7 +112,8 @@ public class StoreMigration
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new Monitors() );
+            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new Monitors(),
+                    IndexStoreView.EMPTY );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
             KernelExtensions kernelExtensions = life.add( new KernelExtensions(
