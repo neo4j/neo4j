@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,7 +48,7 @@ public class KernelStatementTest
         when( transaction.securityContext() ).thenReturn( AUTH_DISABLED );
 
         KernelStatementImplementation statement =
-                new KernelStatementImplementation( transaction, null, mock( SchemaResources.class ), null,
+                new KernelStatementImplementation( transaction, null, mock( StorageStatement.class ), null,
                         new CanWrite(), LockTracer.NONE );
         statement.acquire();
 
@@ -59,9 +59,9 @@ public class KernelStatementTest
     public void shouldReleaseStorageStatementWhenForceClosed() throws Exception
     {
         // given
-        SchemaResources schemaResources = mock( SchemaResources.class );
+        StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatementImplementation statement =
-                new KernelStatementImplementation( mock( KernelTransactionImplementation.class ), null, schemaResources,
+                new KernelStatementImplementation( mock( KernelTransactionImplementation.class ), null, storeStatement,
                         new Procedures(), new CanWrite(), LockTracer.NONE );
         statement.acquire();
 
@@ -69,7 +69,7 @@ public class KernelStatementTest
         statement.forceClose();
 
         // then
-        verify( schemaResources ).close();
+        verify( storeStatement ).release();
     }
 
     @Test( expected = NotInTransactionException.class )
@@ -77,7 +77,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        SchemaResources storeStatement = mock( SchemaResources.class );
+        StorageStatement storeStatement = mock( StorageStatement.class );
         AccessCapability accessCapability = mock( AccessCapability.class );
         Procedures procedures = mock( Procedures.class );
         KernelStatement statement = new KernelStatementImplementation( transaction, txStateHolder,

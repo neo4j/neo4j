@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.WritableTransactionState;
 
@@ -91,7 +91,7 @@ public class LockingStatementOperationsTest
     private final TxState txState = new TxState();
     private final KernelStatementImplementation state =
             new KernelStatementImplementation( transaction, new SimpleTxStateHolder( txState ),
-                    mock( SchemaResources.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
+                    mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
     private final SchemaStateOperations schemaStateOps;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );

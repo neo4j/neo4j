@@ -63,13 +63,12 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.BatchingLongProgression;
 import org.neo4j.storageengine.api.BatchingProgressionFactory;
-import org.neo4j.storageengine.api.CursorPools;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -102,35 +101,33 @@ public class StorageLayer implements StoreReadLayer
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
-    private final Supplier<SchemaResources> schemaResourcesSupplier;
+    private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
-    private final CursorPools cursorPools;
     private final BatchingProgressionFactory progressionFactory;
 
     public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<SchemaResources> schemaResourcesSupplier, SchemaCache schemaCache,
-            CursorPools cursorPools, BatchingProgressionFactory progressionFactory )
+            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache,
+            BatchingProgressionFactory progressionFactory )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.schemaResourcesSupplier = schemaResourcesSupplier;
+        this.statementProvider = storeStatementSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
-        this.cursorPools = cursorPools;
         this.progressionFactory = progressionFactory;
     }
 
     @Override
-    public SchemaResources schemaResources()
+    public StorageStatement newStatement()
     {
-        return schemaResourcesSupplier.get();
+        return statementProvider.get();
     }
 
     @Override
@@ -175,7 +172,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( SchemaResources statement, int labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId )
     {
         return statement.getLabelScanReader().nodesWithLabel( labelId );
     }
@@ -260,17 +257,17 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexReader indexGetReader( SchemaResources schemaResources, IndexDescriptor index )
+    public IndexReader indexGetReader( StorageStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        return schemaResources.getIndexReader( index );
+        return statement.getIndexReader( index );
     }
 
     @Override
-    public IndexReader indexGetFreshReader( SchemaResources schemaResources, IndexDescriptor index )
+    public IndexReader indexGetFreshReader( StorageStatement statement, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        return schemaResources.getFreshIndexReader( index );
+        return statement.getFreshIndexReader( index );
     }
 
     @Override
@@ -403,85 +400,90 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public BatchingLongProgression parallelNodeScanProgression()
+    public BatchingLongProgression parallelNodeScanProgression( StorageStatement statement )
     {
         return progressionFactory.parallelAllNodeScan( nodeStore );
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetCursor( BatchingLongProgression progression, NodeTransactionStateView stateView )
+    public Cursor<NodeItem> nodeGetCursor( StorageStatement statement, BatchingLongProgression progression,
+            NodeTransactionStateView stateView )
     {
-        return cursorPools.acquireNodeCursor( progression, stateView );
+        return statement.acquireNewNodeCursor( progression, stateView );
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetAllCursor( NodeTransactionStateView stateView )
+    public Cursor<NodeItem> nodeGetAllCursor( StorageStatement statement, NodeTransactionStateView stateView )
     {
-        return cursorPools.acquireNodeCursor( progressionFactory.allNodeScan( nodeStore ), stateView );
+        return statement.acquireNodeCursor( progressionFactory.allNodeScan( nodeStore ), stateView );
     }
 
     @Override
-    public Cursor<NodeItem> nodeGetSingleCursor( long nodeId, NodeTransactionStateView stateView )
+    public Cursor<NodeItem> nodeGetSingleCursor( StorageStatement statement, long nodeId,
+            NodeTransactionStateView stateView )
     {
-        return cursorPools.acquireNodeCursor( progressionFactory.singleNodeFetch( nodeId ), stateView );
+        return statement.acquireNodeCursor( progressionFactory.singleNodeFetch( nodeId ), stateView );
     }
 
     @Override
-    public Cursor<RelationshipItem> relationshipGetSingleCursor( long relationshipId, ReadableTransactionState state )
-    {
-        return cursorPools.acquireSingleRelationshipCursor( relationshipId, state );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor( ReadableTransactionState state )
-    {
-        return cursorPools.relationshipsGetAllCursor( state );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> nodeGetRelationships( NodeItem nodeItem, Direction direction,
+    public Cursor<RelationshipItem> relationshipCursor( StorageStatement statement, long relationshipId,
             ReadableTransactionState state )
     {
-        return nodeGetRelationships( nodeItem, direction, null, state );
+        return statement.acquireSingleRelationshipCursor( relationshipId, state );
     }
 
     @Override
-    public Cursor<RelationshipItem> nodeGetRelationships( NodeItem node, Direction direction, int[] relTypes,
+    public Cursor<RelationshipItem> relationshipsGetAllCursor( StorageStatement statement,
             ReadableTransactionState state )
     {
-        return cursorPools
-                .acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
+        return statement.relationshipsGetAllCursor( state );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem nodeItem,
+            Direction direction, ReadableTransactionState state )
+    {
+        return nodeGetRelationships( statement, nodeItem, direction, null, state );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( StorageStatement statement, NodeItem node,
+            Direction direction, int[] relTypes, ReadableTransactionState state )
+    {
+        return statement.acquireNodeRelationshipCursor( node.isDense(), node.id(), node.nextRelationshipId(), direction,
                 relTypes, state );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperties( NodeItem node, PropertyContainerState state )
+    public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node,
+            PropertyContainerState state )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return cursorPools.acquirePropertyCursor( node.nextPropertyId(), lock, state );
+        return statement.acquirePropertyCursor( node.nextPropertyId(), lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> nodeGetProperty( NodeItem node, int propertyKeyId, PropertyContainerState state )
+    public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
+            PropertyContainerState state )
     {
         Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
-        return cursorPools.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, state );
+        return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperties( RelationshipItem relationship, PropertyContainerState state )
+    public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
+            PropertyContainerState state )
     {
-        Lock lock =
-                relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return cursorPools.acquirePropertyCursor( relationship.nextPropertyId(), lock, state );
+        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
+        return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock, state );
     }
 
     @Override
-    public Cursor<PropertyItem> relationshipGetProperty( RelationshipItem relationship,
+    public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship,
             int propertyKeyId, PropertyContainerState state )
     {
         Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
-        return cursorPools.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, state );
+        return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, state );
     }
 
     @Override
@@ -586,26 +588,27 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntSet relationshipTypes( NodeItem node )
+    public PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node )
     {
         PrimitiveIntSet set = intSet();
         if ( node.isDense() )
         {
-            cursorPools.acquireRelationshipGroupCursor( node.nextGroupId() ).forAll( group -> set.add( group.type() ) );
+            statement.acquireRelationshipGroupCursor( node.nextGroupId() ).forAll( group -> set.add( group.type() ) );
         }
         else
         {
-            nodeGetRelationships( node, BOTH, EMPTY ).forAll( relationship -> set.add( relationship.type() ) );
+            nodeGetRelationships( statement, node, BOTH, EMPTY )
+                    .forAll( relationship -> set.add( relationship.type() ) );
         }
         return set;
     }
 
     @Override
-    public void degrees( NodeItem node, DegreeVisitor visitor )
+    public void degrees( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
     {
         if ( node.isDense() )
         {
-            try ( NodeDegreeCounter degreeCounter = cursorPools
+            try ( NodeDegreeCounter degreeCounter = statement
                     .acquireNodeDegreeCounter( node.id(), node.nextGroupId() ) )
             {
                 degreeCounter.accept( visitor );
@@ -613,12 +616,13 @@ public class StorageLayer implements StoreReadLayer
         }
         else
         {
-            visitNode( node, visitor );
+            visitNode( statement, node, visitor );
         }
     }
 
     @Override
-    public int countDegrees( NodeItem node, Direction direction, ReadableTransactionState state )
+    public int countDegrees( StorageStatement statement, NodeItem node, Direction direction,
+            ReadableTransactionState state )
     {
         int count;
         if ( state != null && state.nodeIsAddedInThisTx( node.id() ) )
@@ -629,7 +633,7 @@ public class StorageLayer implements StoreReadLayer
         {
             if ( node.isDense() )
             {
-                try ( NodeDegreeCounter degreeCounter = cursorPools
+                try ( NodeDegreeCounter degreeCounter = statement
                         .acquireNodeDegreeCounter( node.id(), node.nextGroupId() ) )
                 {
                     count = degreeCounter.count( direction );
@@ -637,7 +641,7 @@ public class StorageLayer implements StoreReadLayer
             }
             else
             {
-                count = count( nodeGetRelationships( node, direction, EMPTY ) );
+                count = count( nodeGetRelationships( statement, node, direction, EMPTY ) );
             }
         }
 
@@ -645,7 +649,8 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public int countDegrees( NodeItem node, Direction direction, int relType, ReadableTransactionState state )
+    public int countDegrees( StorageStatement statement, NodeItem node, Direction direction, int relType,
+            ReadableTransactionState state )
     {
         int count;
         if ( state != null && state.nodeIsAddedInThisTx( node.id() ) )
@@ -656,7 +661,7 @@ public class StorageLayer implements StoreReadLayer
         {
             if ( node.isDense() )
             {
-                try ( NodeDegreeCounter degreeCounter = cursorPools
+                try ( NodeDegreeCounter degreeCounter = statement
                         .acquireNodeDegreeCounter( node.id(), node.nextGroupId() ) )
                 {
                     count = degreeCounter.count( direction, relType );
@@ -664,16 +669,16 @@ public class StorageLayer implements StoreReadLayer
             }
             else
             {
-                count = count( nodeGetRelationships( node, direction, new int[]{relType}, EMPTY ) );
+                count = count( nodeGetRelationships( statement, node, direction, new int[]{relType}, EMPTY ) );
             }
         }
 
         return state == null ? count : state.getNodeState( node.id() ).augmentDegree( direction, count, relType );
     }
 
-    private void visitNode( NodeItem node, DegreeVisitor visitor )
+    private void visitNode( StorageStatement statement, NodeItem node, DegreeVisitor visitor )
     {
-        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( node, BOTH, EMPTY ) )
+        try ( Cursor<RelationshipItem> relationships = nodeGetRelationships( statement, node, BOTH, EMPTY ) )
         {
             while ( relationships.next() )
             {

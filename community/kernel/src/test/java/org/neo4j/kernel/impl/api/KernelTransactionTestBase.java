@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.StoreSchemaResources;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.SchemaResources;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -91,12 +91,12 @@ public class KernelTransactionTestBase
     {
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( readLayer.schemaResources() ).thenReturn( mock( StoreSchemaResources.class ) );
+        when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArguments()[0]).add( null ) )
                 .when( storageEngine ).createCommands( anyCollectionOf( StorageCommand.class ),
-                any( ReadableTransactionState.class ), any( SchemaResources.class ),
+                any( ReadableTransactionState.class ), any( StorageStatement.class ),
                 any( ResourceLocker.class ), anyLong() );
     }
 

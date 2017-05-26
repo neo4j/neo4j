@@ -251,7 +251,7 @@ public abstract class Iterators
             if ( iterator.hasNext() )
             {
                 throw new NoSuchElementException( "More than one element in " + iterator + ". First element is '"
-                        + result + "' and the second element is '" + iterator.next() + "'" );
+                                                  + result + "' and the second element is '" + iterator.next() + "'" );
             }
             return result;
         }
@@ -307,7 +307,7 @@ public abstract class Iterators
         if ( !collection.add( item ) )
         {
             throw new IllegalStateException( "Encountered an already added item:" + item +
-                    " when adding items uniquely to a collection:" + collection );
+                                             " when adding items uniquely to a collection:" + collection );
         }
     }
 

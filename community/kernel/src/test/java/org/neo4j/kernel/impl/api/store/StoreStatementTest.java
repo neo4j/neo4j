@@ -33,18 +33,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class StoreSchemaResourcesTest
+public class StoreStatementTest
 {
     @Test
     public void shouldCloseOpenedLabelScanReader() throws Exception
     {
         // given
-        @SuppressWarnings( "unchecked" )
         Supplier<LabelScanReader> scanStore = mock( Supplier.class );
         LabelScanReader scanReader = mock( LabelScanReader.class );
 
         when( scanStore.get() ).thenReturn( scanReader );
-        StoreSchemaResources statement = new StoreSchemaResources( null, scanStore );
+        StoreStatement statement = new StoreStatement( MockedNeoStores.basicMockedNeoStores(), mock( Supplier.class ),
+                scanStore, LockService.NO_LOCK_SERVICE );
+        statement.acquire();
 
         // when
         LabelScanReader actualReader = statement.getLabelScanReader();

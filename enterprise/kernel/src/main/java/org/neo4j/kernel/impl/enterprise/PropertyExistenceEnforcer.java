@@ -38,11 +38,13 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
+import org.neo4j.kernel.impl.api.store.SingleNodeFetch;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.SchemaResources;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -149,7 +151,7 @@ class PropertyExistenceEnforcer
         private final ReadableTransactionState txState;
         private final StoreReadLayer storeLayer;
         private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
-        private SchemaResources schemaResources;
+        private StorageStatement storageStatement;
 
         Decorator( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer )
         {
@@ -196,9 +198,9 @@ class PropertyExistenceEnforcer
         public void close()
         {
             super.close();
-            if ( schemaResources != null )
+            if ( storageStatement != null )
             {
-                schemaResources.close();
+                storageStatement.close();
             }
         }
 
@@ -210,7 +212,8 @@ class PropertyExistenceEnforcer
             }
 
             PrimitiveIntSet labelIds;
-            try ( Cursor<NodeItem> node = storeLayer.nodeGetSingleCursor( nodeId, txState ) )
+            try ( Cursor<NodeItem> node = storeStatement()
+                    .acquireNodeCursor( new SingleNodeFetch( nodeId ), txState ) )
             {
                 if ( node.next() )
                 {
@@ -220,8 +223,7 @@ class PropertyExistenceEnforcer
                         return;
                     }
                     propertyKeyIds.clear();
-                    try ( Cursor<PropertyItem> properties = storeLayer
-                            .nodeGetProperties( node.get(), txState.getNodeState( nodeId ) ) )
+                    try ( Cursor<PropertyItem> properties = properties( node.get() ) )
                     {
                         while ( properties.next() )
                         {
@@ -247,7 +249,8 @@ class PropertyExistenceEnforcer
 
             int relationshipType;
             int[] required;
-            try ( Cursor<RelationshipItem> relationship = storeLayer.relationshipGetSingleCursor( id, txState ) )
+            try ( Cursor<RelationshipItem> relationship = storeStatement()
+                    .acquireSingleRelationshipCursor( id, txState ) )
             {
                 if ( relationship.next() )
                 {
@@ -258,8 +261,7 @@ class PropertyExistenceEnforcer
                         return;
                     }
                     propertyKeyIds.clear();
-                    try ( Cursor<PropertyItem> properties = storeLayer.relationshipGetProperties( relationship.get(),
-                            txState.getRelationshipState( id ) ) )
+                    try ( Cursor<PropertyItem> properties = properties( relationship.get() ) )
                     {
                         while ( properties.next() )
                         {
@@ -272,6 +274,7 @@ class PropertyExistenceEnforcer
                     throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
                 }
             }
+
             for ( int mandatory : required )
             {
                 if ( !propertyKeyIds.contains( mandatory ) )
@@ -279,6 +282,24 @@ class PropertyExistenceEnforcer
                     failRelationship( id, relationshipType, mandatory );
                 }
             }
+        }
+
+        private Cursor<PropertyItem> properties( NodeItem node )
+        {
+            Lock lock = node.lock();
+            return storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock, txState.getNodeState( node.id() ) );
+        }
+
+        private Cursor<PropertyItem> properties( RelationshipItem relationship )
+        {
+            Lock lock = relationship.lock();
+            return storeStatement().acquirePropertyCursor( relationship.nextPropertyId(),
+                    lock, txState.getRelationshipState( relationship.id() ) );
+        }
+
+        private StorageStatement storeStatement()
+        {
+            return storageStatement == null ? storageStatement = storeLayer.newStatement() : storageStatement;
         }
     }
 
