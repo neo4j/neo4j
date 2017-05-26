@@ -92,8 +92,8 @@ public class StoreMigrationIT
         return result;
     }
 
-    private final RecordFormats from;
-    private final RecordFormats to;
+    protected final RecordFormats from;
+    protected final RecordFormats to;
 
     @Parameterized.Parameters( name = "Migrate: {0}->{1}" )
     public static Iterable<Object[]> data() throws IOException
