@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.Collections;
+
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -83,7 +85,8 @@ public class NodeImporter extends EntityImporter
     @Override
     public boolean labelField( long labelField )
     {
-        throw new UnsupportedOperationException();
+        nodeRecord.setLabelField( labelField, Collections.emptyList() );
+        return true;
     }
 
     @Override

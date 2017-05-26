@@ -44,6 +44,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     private final BatchingIdGetter propertyIds;
     protected final Monitor monitor;
     private long propertyCount;
+    private boolean hasPropertyId;
+    private long propertyId;
 
     protected EntityImporter( PropertyStore propertyStore,
             BatchingPropertyKeyTokenRepository propertyKeyTokenRepository, Monitor monitor )
@@ -62,12 +64,14 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     @Override
     public boolean property( String key, Object value )
     {
+        assert !hasPropertyId;
         return property( propertyKeyTokenRepository.getOrCreateId( key ), value );
     }
 
     @Override
     public boolean property( int propertyKeyId, Object value )
     {
+        assert !hasPropertyId;
         encodeProperty( nextPropertyBlock(), propertyKeyId, value );
         propertyCount++;
         return true;
@@ -76,13 +80,17 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
     @Override
     public boolean propertyId( long nextProp )
     {
-        throw new UnsupportedOperationException();
+        assert !hasPropertyId;
+        hasPropertyId = true;
+        propertyId = nextProp;
+        return true;
     }
 
     @Override
     public void endOfEntity()
     {
         propertyBlocksCursor = 0;
+        hasPropertyId = false;
     }
 
     private PropertyBlock nextPropertyBlock()
@@ -106,6 +114,11 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter implements Auto
 
     protected long createAndWritePropertyChain()
     {
+        if ( hasPropertyId )
+        {
+            return propertyId;
+        }
+
         if ( propertyBlocksCursor == 0 )
         {
             return Record.NO_NEXT_PROPERTY.longValue();
