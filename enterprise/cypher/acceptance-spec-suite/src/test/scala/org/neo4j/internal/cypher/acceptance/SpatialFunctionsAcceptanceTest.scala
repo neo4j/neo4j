@@ -26,19 +26,19 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
 
   test("point function should work with literal map") {
     val result = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
   test("point function should work with literal map and cartesian coordinates") {
     val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
   }
 
   test("point function should work with literal map and geographic coordinates") {
     val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
   }
 
@@ -56,7 +56,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
 
   test("point function should work with integer arguments") {
     val result = executeWithAllPlanners("RETURN point({x: 2, y: 4}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> CartesianPoint(2, 4, CRS.Cartesian))))
   }
 
@@ -86,19 +86,19 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
 
   test("should default to Cartesian if missing cartesian CRS") {
     val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
   }
 
   test("should default to WGS84 if missing geographic CRS") {
     val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
   }
 
   test("should allow Geographic CRS with x/y coordinates") {
     val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
   }
 
@@ -110,13 +110,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
 
   test("point function should work with previous map") {
     val result = executeWithAllPlanners("WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point")
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
   test("distance function should work on co-located points") {
     val result = executeWithAllPlanners("WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist")
-    result should useProjectionWith("Point", "Distance")
+    result should useProjectionWith("point", "distance")
     result.toList should equal(List(Map("dist" -> 0.0)))
   }
 
@@ -126,7 +126,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({x: 1.1, y: 5.4, crs: 'cartesian'}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
+    result should useProjectionWith("point", "distance")
     result.columnAs("dist").next().asInstanceOf[Double] should equal(1.5)
   }
 
@@ -136,7 +136,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |WITH point({longitude: 12.78, latitude: 56.7}) as p1, point({latitude: 56.71, longitude: 12.79}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
+    result should useProjectionWith("point", "distance")
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1270)
   }
 
@@ -146,7 +146,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |WITH point({latitude: 56.7, longitude: 12.78}) as p1, point({longitude: -51.9, latitude: -16.7}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
+    result should useProjectionWith("point", "distance")
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
   }
 
@@ -164,7 +164,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1, point({latitude: 55.611784, longitude: 12.994341}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
+    result should useProjectionWith("point", "distance")
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(27842)
   }
 
@@ -198,7 +198,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     val result = executeWithAllPlanners("MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point")
 
     // Then
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
@@ -210,7 +210,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     val result = executeWithAllPlanners("MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point")
 
     // Then
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
@@ -222,7 +222,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     val result = executeWithAllPlanners("MATCH (p:Place) RETURN point(p) as point")
 
     // Then
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
@@ -244,7 +244,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     val result = executeWithAllPlanners("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location")
 
     // Then
-    result should useProjectionWith("Point")
+    result should useProjectionWith("point")
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 }

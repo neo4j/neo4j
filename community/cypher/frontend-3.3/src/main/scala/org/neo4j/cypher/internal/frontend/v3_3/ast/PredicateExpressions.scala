@@ -62,8 +62,6 @@ case class Not(rhs: Expression)(val position: InputPosition) extends Expression 
   override val signatures = Vector(
     ExpressionSignature(Vector(CTBoolean), outputType = CTBoolean)
   )
-
-  override def asCanonicalStringVal: String = s"NOT(${rhs.asCanonicalStringVal})"
 }
 
 case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
@@ -74,8 +72,6 @@ case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition)
   override def canonicalOperatorSymbol = "="
 
   def switchSides: Equals = copy(rhs, lhs)(position)
-
-  override def asCanonicalStringVal = s"${lhs.asCanonicalStringVal} == ${rhs.asCanonicalStringVal}"
 }
 
 case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {

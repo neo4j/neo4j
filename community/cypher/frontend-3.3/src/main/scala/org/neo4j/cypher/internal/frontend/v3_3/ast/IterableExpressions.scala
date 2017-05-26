@@ -191,13 +191,18 @@ case class PatternComprehension(namedPath: Option[Variable], pattern: Relationsh
 sealed trait IterablePredicateExpression extends FilteringExpression {
 
   def scope: FilterScope
-  def variable = scope.variable
-  def innerPredicate = scope.innerPredicate
+  def variable: Variable = scope.variable
+  def innerPredicate: Option[Expression] = scope.innerPredicate
 
   override def semanticCheck(ctx: SemanticContext) =
     checkPredicateDefined chain
     super.semanticCheck(ctx) chain
     this.specifyType(CTBoolean)
+
+  override def asCanonicalStringVal: String = {
+    val predicate = innerPredicate.map(p => s" where ${p.asCanonicalStringVal}").getOrElse("")
+    s"$name(${variable.asCanonicalStringVal}) in ${expression.asCanonicalStringVal}$predicate"
+  }
 }
 
 case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val position: InputPosition) extends IterablePredicateExpression {

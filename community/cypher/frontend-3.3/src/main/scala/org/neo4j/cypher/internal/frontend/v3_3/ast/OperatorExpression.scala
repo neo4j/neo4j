@@ -29,12 +29,15 @@ trait LeftUnaryOperatorExpression extends OperatorExpression {
   self: Expression =>
 
   def rhs: Expression
+
+  override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol(${rhs.asCanonicalStringVal})"
 }
 
 trait RightUnaryOperatorExpression extends OperatorExpression {
   self: Expression =>
 
   def lhs: Expression
+  override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol(${lhs.asCanonicalStringVal})"
 }
 
 trait BinaryOperatorExpression extends OperatorExpression {
@@ -42,11 +45,17 @@ trait BinaryOperatorExpression extends OperatorExpression {
 
   def lhs: Expression
   def rhs: Expression
+
+  override def asCanonicalStringVal: String = {
+    s"${lhs.asCanonicalStringVal} $canonicalOperatorSymbol ${rhs.asCanonicalStringVal}"
+  }
 }
 
 trait MultiOperatorExpression  extends OperatorExpression {
   self: Expression =>
 
   def exprs: Set[Expression]
+
+  override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
 }
 

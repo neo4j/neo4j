@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3._
 trait SymbolicName extends ASTNode with ASTParticle {
   def name: String
   def position: InputPosition
-  override def asCanonicalStringVal = name
+  override def asCanonicalStringVal: String = name
 }
 
 case class Namespace(parts: List[String] = List.empty)(val position: InputPosition) extends ASTNode

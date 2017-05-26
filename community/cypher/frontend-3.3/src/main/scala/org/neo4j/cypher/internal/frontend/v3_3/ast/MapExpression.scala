@@ -29,4 +29,8 @@ case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position
   override def semanticCheck(ctx: SemanticContext) =
     items.map(_._2).semanticCheck(ctx) chain
       super.semanticCheck(ctx)
+
+  override def asCanonicalStringVal: String = items.map {
+    case (key, value) => s"${key.asCanonicalStringVal}: ${value.asCanonicalStringVal}"
+  }.mkString("{", ", ", "}")
 }
