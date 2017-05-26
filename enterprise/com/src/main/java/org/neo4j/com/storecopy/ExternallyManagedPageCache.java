@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -100,9 +99,9 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    public FileSystemAbstraction getCachedFileSystem()
     {
-        return delegate.streamFilesRecursive( directory );
+        return delegate.getCachedFileSystem();
     }
 
     /**

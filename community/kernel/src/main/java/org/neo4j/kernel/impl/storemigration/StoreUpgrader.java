@@ -30,8 +30,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -264,11 +264,12 @@ public class StoreUpgrader
             {
                 fileSystem.deleteRecursively( migrationDirectory );
             }
-            // We use the page cache here to make sure that the migration directory is clean even if we are using a
-            // block device.
+            // We use the file system from the page cache here to make sure that the migration directory is clean
+            // even if we are using a block device.
             try
             {
-                pageCache.streamFilesRecursive( migrationDirectory ).forEach( FileHandle.HANDLE_DELETE );
+                pageCache.getCachedFileSystem().streamFilesRecursive( migrationDirectory )
+                        .forEach( FileHandle.HANDLE_DELETE );
             }
             catch ( NoSuchFileException e )
             {

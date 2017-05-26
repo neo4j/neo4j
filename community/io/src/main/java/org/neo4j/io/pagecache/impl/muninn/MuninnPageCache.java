@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -32,9 +31,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Stream;
 
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -409,60 +407,6 @@ public class MuninnPageCache implements PageCache
         return null;
     }
 
-    @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
-    {
-        return swapperFactory.streamFilesRecursive( directory.getCanonicalFile() ).map( this::checkingFileHandle );
-    }
-
-    private FileHandle checkingFileHandle( FileHandle fileHandle )
-    {
-        return new FileHandle()
-        {
-            @Override
-            public File getFile()
-            {
-                return fileHandle.getFile();
-            }
-
-            @Override
-            public File getRelativeFile()
-            {
-                return fileHandle.getRelativeFile();
-            }
-
-            @Override
-            public void rename( File targetFile, CopyOption... options ) throws IOException
-            {
-                synchronized ( MuninnPageCache.this )
-                {
-                    File sourceFile = getFile();
-                    sourceFile = sourceFile.getCanonicalFile();
-                    targetFile = targetFile.getCanonicalFile();
-                    assertNotMapped( sourceFile, FileIsMappedException.Operation.RENAME );
-                    assertNotMapped( targetFile, FileIsMappedException.Operation.RENAME );
-                    fileHandle.rename( targetFile, options );
-                }
-            }
-
-            @Override
-            public String toString()
-            {
-                return fileHandle.toString();
-            }
-
-            @Override
-            public void delete() throws IOException
-            {
-                synchronized ( MuninnPageCache.this )
-                {
-                    assertNotMapped( getFile(), FileIsMappedException.Operation.DELETE );
-                    fileHandle.delete();
-                }
-            }
-        };
-    }
-
     private void assertNotMapped( File file, FileIsMappedException.Operation operation ) throws IOException
     {
         if ( tryGetMappingOrNull( file ) != null )
@@ -687,6 +631,12 @@ public class MuninnPageCache implements PageCache
     public int maxCachedPages()
     {
         return pages.length;
+    }
+
+    @Override
+    public FileSystemAbstraction getCachedFileSystem()
+    {
+        return swapperFactory.getFileSystemAbstraction();
     }
 
     int getPageCacheId()

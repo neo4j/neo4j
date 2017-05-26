@@ -48,6 +48,11 @@ public interface PageSwapperFactory
     void open( FileSystemAbstraction fs, Configuration config );
 
     /**
+     * Get the {@link FileSystemAbstraction} that represents the underlying storage for the page swapper.
+     */
+    FileSystemAbstraction getFileSystemAbstraction();
+
+    /**
      * Get the name of this PageSwapperFactory implementation, for configuration purpose.
      */
     String implementationName();
@@ -104,33 +109,6 @@ public interface PageSwapperFactory
      * durable regardless of which method that does the forcing.
      */
     void syncDevice() throws IOException;
-
-    /**
-     * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
-     * sub-directories.
-     * <p>
-     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
-     * will be returned with a file handle for just that file.
-     * <p>
-     * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
-     * will not be reflected in the stream.
-     * <p>
-     * No directories will be returned. Only files. If a file handle ends up leaving a directory empty through a
-     * rename or a delete, then the empty directory will automatically be deleted as well.
-     * Likewise, if a file is moved to a path where not all of the directories in the path exists, then those missing
-     * directories will be created prior to the file rename.
-     * <p>
-     * This method form the basis of the implementation of the {@link PageCache#streamFilesRecursive(File)} method.
-     * The key difference is that the stream and file handles are oblivious about which files are mapped or not.
-     * Thus, the returned {@link FileHandle file handles} will never throw any
-     * {@link org.neo4j.io.pagecache.impl.FileIsMappedException}s.
-     *
-     * @param directory The base directory to start streaming files from, or the specific individual file to stream.
-     * @return A stream of all files in the tree.
-     * @throws NoSuchFileException If the given base directory or file does not exists.
-     * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
-     */
-    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
 
     /**
      * Close and release any resources associated with this PageSwapperFactory, that it may have opened or acquired

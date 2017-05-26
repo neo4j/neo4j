@@ -21,11 +21,11 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
-import java.util.stream.Stream;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -110,24 +110,8 @@ public interface PageCache extends AutoCloseable
     int maxCachedPages();
 
     /**
-     * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its
-     * sub-directories.
-     * <p>
-     * Alternatively, if the {@link File} given as an argument refers to a file instead of a directory, then a stream
-     * will be returned with a file handle for just that file.
-     * <p>
-     * The stream is based on a snapshot of the file tree, so changes made to the tree using the returned file handles
-     * will not be reflected in the stream.
-     * <p>
-     * No directories will be returned. Only files. If a file handle ends up leaving a directory empty through a
-     * rename or a delete, then the empty directory will automatically be deleted as well.
-     * Likewise, if a file is moved to a path where not all of the directories in the path exists, then those missing
-     * directories will be created prior to the file rename.
-     *
-     * @param directory The base directory to start streaming files from, or the specific individual file to stream.
-     * @return A stream of all files in the tree.
-     * @throws NoSuchFileException If the given base directory or file does not exists.
-     * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
+     * Get the {@link FileSystemAbstraction} that represents the filesystem where the paged files reside.
+     * @return the filesystem that the page cache is using.
      */
-    Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
+    FileSystemAbstraction getCachedFileSystem();
 }

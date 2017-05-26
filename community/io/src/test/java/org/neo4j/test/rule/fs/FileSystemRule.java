@@ -33,7 +33,9 @@ import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -217,6 +219,12 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     public void deleteFileOrThrow( File file ) throws IOException
     {
         fs.deleteFileOrThrow( file );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return fs.streamFilesRecursive( directory );
     }
 
     @Override

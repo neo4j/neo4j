@@ -28,10 +28,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 
-import static org.neo4j.io.pagecache.FileHandle.HANDLE_DELETE;
+import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
 
 public class StoreUtil
 {
@@ -74,7 +74,7 @@ public class StoreUtil
             FileUtils.deleteRecursively( file );
         }
 
-        pageCache.streamFilesRecursive( storeDir )
+        pageCache.getCachedFileSystem().streamFilesRecursive( storeDir )
                 .filter( fh -> DEEP_STORE_FILE_FILTER.accept( fh.getFile() ) ).forEach( HANDLE_DELETE );
     }
 
@@ -101,7 +101,7 @@ public class StoreUtil
         final Stream<FileHandle> fileHandleStream;
         try
         {
-            fileHandleStream = pageCache.streamFilesRecursive( from );
+            fileHandleStream = pageCache.getCachedFileSystem().streamFilesRecursive( from );
         }
         catch ( IOException e )
         {
@@ -115,7 +115,7 @@ public class StoreUtil
     public static void deleteRecursive( File storeDir, PageCache pageCache ) throws IOException
     {
         FileUtils.deleteRecursively( storeDir );
-        pageCache.streamFilesRecursive( storeDir ).forEach( HANDLE_DELETE );
+        pageCache.getCachedFileSystem().streamFilesRecursive( storeDir ).forEach( HANDLE_DELETE );
     }
 
     public static boolean isBranchedDataDirectory( File file )

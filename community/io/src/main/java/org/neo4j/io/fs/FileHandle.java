@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.io.fs;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,11 +25,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.CopyOption;
 import java.util.function.Consumer;
 
-import org.neo4j.io.fs.FileUtils;
-
 /**
  * A handle to a file as seen by the page cache. The file may or may not be mapped.
- * @see PageCache#streamFilesRecursive(File)
+ * @see FileSystemAbstraction#streamFilesRecursive(File)
  */
 public interface FileHandle
 {
@@ -102,7 +100,8 @@ public interface FileHandle
 
     /**
      * Get a {@link File} object for the abstract path name that this file handle represents, and that is
-     * <em>relative</em> to the base path that was passed into the {@link PageCache#streamFilesRecursive(File)} method.
+     * <em>relative</em> to the base path that was passed into the
+     * {@link FileSystemAbstraction#streamFilesRecursive(File)} method.
      * <p>
      * This method is otherwise behaviourally the same as {@link #getFile()}.
      *

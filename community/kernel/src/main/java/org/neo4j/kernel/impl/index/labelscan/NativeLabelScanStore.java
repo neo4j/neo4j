@@ -38,7 +38,7 @@ import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -349,7 +349,7 @@ public class NativeLabelScanStore implements LabelScanStore
 
     private Optional<FileHandle> storeFileHandle() throws IOException
     {
-        return pageCache.streamFilesRecursive( storeFile ).findFirst();
+        return  pageCache.getCachedFileSystem().streamFilesRecursive( storeFile ).findFirst() ;
     }
 
     /**

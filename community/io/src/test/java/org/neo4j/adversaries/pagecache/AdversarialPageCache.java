@@ -24,15 +24,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -117,9 +115,8 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    public FileSystemAbstraction getCachedFileSystem()
     {
-        adversary.injectFailure( NoSuchFileException.class, IOException.class );
-        return delegate.streamFilesRecursive( directory );
+        return delegate.getCachedFileSystem();
     }
 }

@@ -37,13 +37,16 @@ import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.io.fs.StreamFilesRecursive;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
@@ -228,6 +231,12 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     {
         adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         delegate.deleteFileOrThrow( file );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
 
     private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(

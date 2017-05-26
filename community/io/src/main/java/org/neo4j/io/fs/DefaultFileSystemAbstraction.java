@@ -40,6 +40,7 @@ import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
@@ -216,6 +217,12 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public void deleteFileOrThrow( File file ) throws IOException
     {
         Files.delete( file.toPath() );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
 
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )

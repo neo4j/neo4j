@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import org.neo4j.io.pagecache.FileHandle;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 
 @FunctionalInterface
@@ -38,7 +38,7 @@ public interface FileMoveAction
     {
         return ( toDir, copyOptions ) ->
         {
-            Optional<FileHandle> handle = pageCache.streamFilesRecursive( file ).findAny();
+            Optional<FileHandle> handle = pageCache.getCachedFileSystem().streamFilesRecursive( file ).findAny();
             if ( handle.isPresent() )
             {
                 handle.get().rename( new File( toDir, file.getName() ), copyOptions );

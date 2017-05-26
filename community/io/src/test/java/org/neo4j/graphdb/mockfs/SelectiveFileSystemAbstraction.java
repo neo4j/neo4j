@@ -29,10 +29,13 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StreamFilesRecursive;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 /**
@@ -198,6 +201,13 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     public void deleteFileOrThrow( File file ) throws IOException
     {
         chooseFileSystem( file ).deleteFileOrThrow( file );
+    }
+
+    @Override
+    public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
+    {
+        return StreamFilesRecursive.streamFilesRecursive( directory, this );
+
     }
 
     private FileSystemAbstraction chooseFileSystem( File file )
