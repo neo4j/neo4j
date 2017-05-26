@@ -84,7 +84,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -92,10 +91,12 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.mockito.answer.AwaitAnswer;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -111,7 +112,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -230,7 +230,8 @@ public class IndexingServiceTest
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( updater );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyList() );
+        AwaitAnswer<Void> awaitAnswer = afterAwaiting( latch );
+        doAnswer( awaitAnswer ).when( populator ).add( any( IndexEntryUpdate.class ) );
 
         IndexingService indexingService =
                 newIndexingServiceWithMockedDependencies( populator, accessor, withData( addNodeUpdate( 1, "value1" ) ) );
