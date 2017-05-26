@@ -310,30 +310,6 @@
 
   <profiles>
     <profile>
-      <id>freeze</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>freeze</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>ease-maven-plugin</artifactId>
-            <groupId>org.neo4j.build.plugins</groupId>
-            <executions>
-              <execution>
-                <id>freeze-artifacts</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
       <id>disable-shell-script-tests</id>
       <activation>
         <os>
