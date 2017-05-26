@@ -47,6 +47,7 @@ public enum Record
     public static final byte CREATED_IN_TX = 2;
     public static final byte REQUIRE_SECONDARY_UNIT = 4;
     public static final byte HAS_SECONDARY_UNIT = 8;
+    public static final byte USES_FIXED_REFERENCE_FORMAT = 16;
 
 
     private byte byteValue;
