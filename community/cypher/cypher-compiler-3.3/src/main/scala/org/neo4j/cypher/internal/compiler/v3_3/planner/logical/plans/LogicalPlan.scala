@@ -93,22 +93,43 @@ abstract class LogicalPlan
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
 
   override def toString = {
-    val children = lhs.toIndexedSeq ++ rhs.toIndexedSeq
-    val nonChildFields = productIterator.filterNot(children.contains).mkString(", ")
-    val l = lhs.map(p => indent("LHS -> " + p) + "\n").getOrElse("")
-    val r = rhs.map(p => indent("RHS -> " + p) + "\n").getOrElse("")
+    def indent(level: Int, in: String): String = level match {
+      case 0 => in
+      case _ => "\n" + "  " * level + in
+    }
 
-    val childrenText = if (l+r == "") "{}" else s"""{
-                                               |$l$r}""".stripMargin
+    val childrenHeap = new scala.collection.mutable.Stack[(String, Int, Option[LogicalPlan])]
+    childrenHeap.push(("", 0, Some(this)))
+    val sb = new StringBuilder()
 
-    s"""$productPrefix($nonChildFields) $childrenText""".stripMargin
+    while (childrenHeap.nonEmpty) {
+      childrenHeap.pop() match {
+        case (prefix, level, Some(plan)) =>
+          val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
+          val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
+          val prodPrefix = plan.productPrefix
+          sb.append(indent(level, s"""$prefix$prodPrefix($nonChildFields) {""".stripMargin))
+
+          (plan.lhs, plan.rhs) match {
+            case (None, None) =>
+              sb.append("}")
+            case (Some(l), None) =>
+              childrenHeap.push(("\n" + "  " * level + "}", level + 1, None))
+              childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
+            case _ =>
+              childrenHeap.push(("\n" + "  " * level + "}", level + 1, None))
+              childrenHeap.push(("RHS -> ", level + 1, plan.rhs))
+              childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
+          }
+        case (prefix, _, _) =>
+          sb.append(prefix)
+      }
+    }
+
+    sb.toString()
   }
 
   def satisfiesExpressionDependencies(e: Expression) = e.dependencies.map(IdName.fromVariable).forall(availableSymbols.contains)
-
-  private def indent(in: String) = {
-    in.split("\n").map("  " + _).mkString("\n")
-  }
 
   def debugId: String = f"0x${hashCode()}%08x"
 
