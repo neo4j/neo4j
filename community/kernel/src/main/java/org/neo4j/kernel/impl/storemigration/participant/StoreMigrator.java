@@ -671,7 +671,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 visitor.propertyId( record.getNextProp() );
                 visitor.labelField( record.getLabelField() );
                 propertyDecorator.accept( visitor, record );
-                return false;
+                return true;
             }
         };
     }

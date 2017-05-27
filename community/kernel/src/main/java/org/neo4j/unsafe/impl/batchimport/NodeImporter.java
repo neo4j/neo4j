@@ -33,6 +33,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
+import static java.lang.Long.max;
+
 /**
  * Imports nodes using data from {@link InputChunk}.
  */
@@ -45,6 +47,7 @@ public class NodeImporter extends EntityImporter
     private final BatchingIdGetter nodeIds;
 
     private long nodeCount;
+    private long highestId;
 
     public NodeImporter( NeoStores stores, BatchingPropertyKeyTokenRepository propertyKeyTokenRepository,
             BatchingLabelTokenRepository labelTokenRepository, IdMapper idMapper, Monitor monitor )
@@ -62,6 +65,7 @@ public class NodeImporter extends EntityImporter
     public boolean id( long id )
     {
         nodeRecord.setId( id );
+        highestId = max( highestId, id );
         return true;
     }
 
@@ -112,5 +116,6 @@ public class NodeImporter extends EntityImporter
     {
         super.close();
         monitor.nodesImported( nodeCount );
+        nodeStore.setHighestPossibleIdInUse( highestId );
     }
 }
