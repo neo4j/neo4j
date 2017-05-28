@@ -24,7 +24,6 @@ import java.util.UUID
 import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IdentityTypeConverter, RuntimeTypeConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, InternalQueryStatistics}
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterNotFoundException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
@@ -40,7 +39,6 @@ class QueryState(val query: QueryContext,
                  val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
-                 val typeConverter: RuntimeTypeConverter = IdentityTypeConverter,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
                    new SingleThreadedLRUCache(maxSize = 16)) {
   private var _pathValueBuilder: PathValueBuilder = _
@@ -62,13 +60,13 @@ class QueryState(val query: QueryContext,
   def getStatistics: InternalQueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, typeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, cachedIn)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, typeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, cachedIn)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, typeConverter, cachedIn)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, cachedIn)
 }
 
 object QueryState {

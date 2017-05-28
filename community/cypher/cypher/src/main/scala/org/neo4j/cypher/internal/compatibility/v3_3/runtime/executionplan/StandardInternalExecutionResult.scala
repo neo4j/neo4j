@@ -45,7 +45,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   import scala.collection.JavaConverters._
 
   protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
-  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   protected def isOpen = !isClosed
   protected def isClosed = taskCloser.exists(_.isClosed)
@@ -207,7 +207,7 @@ object StandardInternalExecutionResult {
 
     self: StandardInternalExecutionResult =>
 
-    val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
+    val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
     @throws(classOf[Exception])
     def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {

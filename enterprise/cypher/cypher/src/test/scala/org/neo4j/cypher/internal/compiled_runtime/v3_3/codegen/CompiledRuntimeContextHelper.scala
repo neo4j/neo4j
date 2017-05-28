@@ -24,7 +24,6 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
@@ -39,7 +38,6 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                tracer: CompilationPhaseTracer = NO_TRACING,
                notificationLogger: InternalNotificationLogger = devNullLogger,
                planContext: PlanContext = new NotImplementedPlanContext,
-               typeConverter: RuntimeTypeConverter = mock[RuntimeTypeConverter],
                createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference = _ => mock[PlanFingerprintReference],
                monitors: Monitors = mock[Monitors],
                metrics: Metrics = mock[Metrics],
@@ -50,7 +48,7 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                clock: Clock = Clock.systemUTC(),
                codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): EnterpriseRuntimeContext = {
       new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                                   monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, typeConverter, createFingerprintReference, codeStructure)
+                                   monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, createFingerprintReference, codeStructure)
     }
 
 }

@@ -49,7 +49,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
-    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, context.typeConverter, logicalPlan, idMap)
+    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
     val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
     val execPlan = new ExecutionPlan {
       private val fingerprint = context.createFingerprintReference(fp)

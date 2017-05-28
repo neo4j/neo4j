@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import java.lang.Math._
+import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.{CRS, Geometry, Point}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, ExecutionContext}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.graphdb.spatial.{Coordinate, Geometry, Point}
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
@@ -44,14 +45,10 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
   implicit def coerceToPoint(geometry: Geometry): Point = geometry match {
     case point: Point => point
-    case _ if(geometry.geometryType == "Point") => new Point {
-      override def coordinate = geometry.coordinates(0)
-
-      override def y: Double = coordinate.values(0)
-
-      override def x: Double = coordinate.values(1)
-
-      override def crs: CRS = geometry.crs
+    case _ if geometry.getGeometryType == "Point" => new Point {
+      override def getCRS = geometry.getCRS
+      override def getGeometryType: String = geometry.getGeometryType
+      override def getCoordinates: util.List[Coordinate] = geometry.getCoordinates
     }
     case _ => throw new CypherTypeException(s"Expected Point, but got $geometry")
   }
@@ -87,13 +84,15 @@ trait DistanceCalculator {
 }
 
 object CartesianCalculator extends DistanceCalculator {
-  override def isDefinedAt(p1: Point, p2: Point) =
-    p1.crs == CRS.Cartesian && p2.crs == CRS.Cartesian
+  override def isDefinedAt(p1: Point, p2: Point): Boolean =
+    p1.getCRS.getCode == CRS.Cartesian.code && p2.getCRS.getCode == CRS.Cartesian.code
 
   override def calculateDistance(p1: Point, p2: Point): Double = {
-    val d2: Seq[Double] = (p1.coordinate.values zip p2.coordinate.values).map(x => pow(x._2 - x._1, 2))
-    val sum = d2.foldLeft(0.0)((a, v) => a + v)
-    sqrt(sum)
+    val p1Coordinates = p1.getCoordinate.getCoordinate
+    val p2Coordinates = p2.getCoordinate.getCoordinate
+
+    sqrt((p2Coordinates.get(0) - p1Coordinates.get(0)) * (p2Coordinates.get(0) - p1Coordinates.get(0)) +
+           (p2Coordinates.get(1) - p1Coordinates.get(1)) * (p2Coordinates.get(1) - p1Coordinates.get(1)))
   }
 }
 
@@ -102,11 +101,13 @@ object HaversinCalculator extends DistanceCalculator {
   private val EARTH_RADIUS_METERS = 6378140.0
 
   override def isDefinedAt(p1: Point, p2: Point): Boolean =
-    p1.crs == CRS.WGS84 && p2.crs == CRS.WGS84
+    p1.getCRS.getCode == CRS.WGS84.code && p2.getCRS.getCode == CRS.WGS84.code
 
   override def calculateDistance(p1: Point, p2: Point): Double = {
-    val c1: Array[Double] = p1.coordinate.values.map(toRadians).toArray
-    val c2: Array[Double] = p2.coordinate.values.map(toRadians).toArray
+    val c1Coord = p1.getCoordinate.getCoordinate
+    val c2Coord = p2.getCoordinate.getCoordinate
+    val c1: Array[Double] = Array(toRadians(c1Coord.get(0)), toRadians(c1Coord.get(1)))
+    val c2: Array[Double] = Array(toRadians(c2Coord.get(0)), toRadians(c2Coord.get(1)))
     val dx = c2(0) - c1(0)
     val dy = c2(1) - c1(1)
     val a = pow(sin(dy / 2), 2.0) + cos(c1(1)) * cos(c2(1)) * pow(sin(dx / 2.0), 2.0)

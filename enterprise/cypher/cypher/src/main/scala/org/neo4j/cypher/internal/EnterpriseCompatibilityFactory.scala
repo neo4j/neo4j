@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeSpecificContext
 import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{RuntimeBuilder, RuntimeSpecificContext}
-import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2, _}
+import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2}
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.Transformer
+import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -54,7 +52,7 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
         val runtimeContextCreator = (c: CompilerContext, data: RuntimeSpecificContext) =>  {
           new EnterpriseRuntimeContext(c.exceptionCreator, c.tracer, c.notificationLogger, c.planContext, c.monitors,
                                        c.metrics, c.queryGraphSolver, c.config, c.updateStrategy, c.debugOptions, c.clock,
-                                       data.typeConverter, data.createFingerprintReference, GeneratedQueryStructure)
+                                       data.createFingerprintReference, GeneratedQueryStructure)
         }
 
         CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),

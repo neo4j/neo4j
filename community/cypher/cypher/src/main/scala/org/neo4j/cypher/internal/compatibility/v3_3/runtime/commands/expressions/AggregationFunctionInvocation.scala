@@ -33,13 +33,13 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
 
     override def result(implicit state:QueryState) = {
       val isGraphKernelResultValue = state.query.isGraphKernelResultValue _
-      val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.typeConverter.asPrivateType)
+      val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
       scalaValues.asDeepScalaValue(aggregator.result)
     }
 
     override def apply(data: ExecutionContext)
                       (implicit state: QueryState) = {
-      val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
+      val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
       val argValues = arguments.map(arg => converter.asDeepJavaValue(arg(data)(state)))
       aggregator.update(argValues)
     }

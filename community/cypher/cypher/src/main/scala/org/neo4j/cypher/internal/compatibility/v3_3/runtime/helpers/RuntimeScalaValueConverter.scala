@@ -32,7 +32,7 @@ import scala.collection.immutable
 //
 // Main use: Converting results when using ExecutionEngine from scala
 //
-class RuntimeScalaValueConverter(skip: Any => Boolean, converter: Any => Any) {
+class RuntimeScalaValueConverter(skip: Any => Boolean) {
 
   final def asDeepScalaMap[A, B](map: JavaMap[A, B]): immutable.Map[A, Any] =
     if (map == null) null else immutableMapValues(map.asScala, asDeepScalaValue): immutable.Map[A, Any]
@@ -48,7 +48,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean, converter: Any => Any) {
     case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
     case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
     case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
-    case anything => converter(anything)
+    case anything => anything
   }
 
   def asShallowScalaValue(value: Any): Any = value match {
@@ -56,7 +56,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean, converter: Any => Any) {
     case javaMap: JavaMap[_, _] => javaMap.asScala.toMap: immutable.Map[_, _]
     case javaIterable: JavaIterable[_] => javaIterable.asScala.toIndexedSeq: IndexedSeq[_]
     case map: collection.Map[_, _] => map.toMap: immutable.Map[_, _]
-    case anything => converter(anything)
+    case anything => anything
   }
 
   private def copyJavaList(list: java.util.List[_], newList: () => java.util.List[Any]) = {

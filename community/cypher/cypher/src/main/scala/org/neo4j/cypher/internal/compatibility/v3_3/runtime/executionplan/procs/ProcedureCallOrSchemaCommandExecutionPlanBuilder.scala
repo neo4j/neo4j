@@ -50,7 +50,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
         // Global call: CALL foo.bar.baz("arg1", 2)
         case StandAloneProcedureCall(signature, args, types, indices) =>
           Some(ProcedureCallExecutionPlan(signature, args, types, indices,
-                                          context.notificationLogger.notifications, context.typeConverter.asPublicType))
+                                          context.notificationLogger.notifications))
 
         // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
         case CreateNodeKeyConstraint(node, label, props) =>

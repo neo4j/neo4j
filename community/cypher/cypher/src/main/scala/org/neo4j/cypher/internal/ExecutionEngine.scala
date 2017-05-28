@@ -74,8 +74,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LFUCache[String, ParsedQuery](getPlanCacheSize)
 
-  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
-  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
+  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   @throws(classOf[SyntaxException])
   def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {

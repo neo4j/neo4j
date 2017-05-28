@@ -24,7 +24,6 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, UpdateStrategy}
@@ -43,9 +42,8 @@ class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosi
                                override val updateStrategy: UpdateStrategy,
                                override val debugOptions: Set[String],
                                override val clock: Clock,
-                               override val typeConverter: RuntimeTypeConverter,
                                override val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                                val codeStructure: CodeStructure[GeneratedQuery])
   extends CommunityRuntimeContext(exceptionCreator, tracer,
                                   notificationLogger, planContext, monitors, metrics,
-                                  config, queryGraphSolver, updateStrategy, debugOptions, clock, typeConverter, createFingerprintReference)
+                                  config, queryGraphSolver, updateStrategy, debugOptions, clock, createFingerprintReference)

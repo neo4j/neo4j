@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlan2PlanDescription
@@ -33,7 +32,6 @@ import scala.collection.mutable
 
 case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                                                 columns: List[String],
-                                                typeConverter: RuntimeTypeConverter,
                                                 logicalPlan: LogicalPlan,
                                                 idMap: Map[LogicalPlan, Id]) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
@@ -67,8 +65,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
-                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty,
-                                 typeConverter = typeConverter)
+                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
       try {
         try {
           createResults(state, planType, notificationLogger)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{ListSupport}
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
@@ -57,7 +57,7 @@ case class ProcedureCallPipe(source: Pipe,
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
+    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
 
     rowProcessor(input, state, converter)
   }
@@ -69,7 +69,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
 
     val isGraphKernelResultValue = qtx.isGraphKernelResultValue _
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.typeConverter.asPrivateType)
+    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
     input flatMap { input =>
       val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))

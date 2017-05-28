@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTypeConverter
-import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, UpdateStrategy}
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, UpdateStrategy}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
 
 class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                               override val tracer: CompilationPhaseTracer,
@@ -41,7 +40,6 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                               override val updateStrategy: UpdateStrategy,
                               override val debugOptions: Set[String],
                               override val clock: Clock,
-                              val typeConverter: RuntimeTypeConverter,
                               val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
@@ -51,11 +49,10 @@ object CommunityRuntimeContext {
   def apply(context: CompilerContext, data: RuntimeSpecificContext) =
     new CommunityRuntimeContext(context.exceptionCreator, context.tracer, context.notificationLogger, context.planContext,
                                 context.monitors, context.metrics, context.config, context.queryGraphSolver,
-                                context.updateStrategy, context.debugOptions, context.clock, data.typeConverter,
+                                context.updateStrategy, context.debugOptions, context.clock,
                                 data.createFingerprintReference)
 }
 
-case class RuntimeSpecificContext(typeConverter: RuntimeTypeConverter,
-                                  createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
+case class RuntimeSpecificContext(createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
 
 

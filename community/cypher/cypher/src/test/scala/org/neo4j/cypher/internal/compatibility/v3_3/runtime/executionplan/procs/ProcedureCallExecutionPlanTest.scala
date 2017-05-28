@@ -36,8 +36,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should be able to call procedure with single argument") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty, publicTypeConverter = identity
-    )
+                                          notifications = Set.empty)
 
     // When
     val res = proc.run(ctx, NormalMode, Map.empty)
@@ -50,8 +49,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty, publicTypeConverter = identity
-    )
+                                          notifications = Set.empty)
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -64,8 +62,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty, publicTypeConverter = identity
-    )
+                                          notifications = Set.empty)
 
     // When
     proc.run(ctx, NormalMode, Map.empty)

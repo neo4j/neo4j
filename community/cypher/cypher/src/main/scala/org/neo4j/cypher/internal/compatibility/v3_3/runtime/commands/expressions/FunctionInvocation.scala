@@ -32,8 +32,8 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
    val query = state.query
 
     val isGraphKernelResultValue = query.isGraphKernelResultValue _
-    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.typeConverter.asPublicType)
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, state.typeConverter.asPrivateType)
+    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
+    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
     val argValues = arguments.map(arg => converter.asDeepJavaValue(arg(ctx)(state)))
 
     val result = query.callFunction(signature.name, argValues, signature.allowed)

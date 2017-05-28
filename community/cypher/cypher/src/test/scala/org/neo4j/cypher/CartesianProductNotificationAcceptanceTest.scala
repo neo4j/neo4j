@@ -23,9 +23,8 @@ import java.time.Clock
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IdentityTypeConverter, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, StringInfoLogger, WrappedMonitors}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.simpleExpressionEvaluator
+import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, WrappedMonitors}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
@@ -34,7 +33,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   var logger: InternalNotificationLogger = _

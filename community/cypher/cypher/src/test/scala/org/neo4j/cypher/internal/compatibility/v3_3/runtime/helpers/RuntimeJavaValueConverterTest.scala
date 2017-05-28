@@ -26,7 +26,7 @@ import scala.collection.convert.Wrappers.SeqWrapper
 class RuntimeJavaValueConverterTest extends CypherFunSuite {
 
   test("should used indexed seq when converting list") {
-    val converter: RuntimeJavaValueConverter = new RuntimeJavaValueConverter(_ => false, identity)
+    val converter: RuntimeJavaValueConverter = new RuntimeJavaValueConverter(_ => false)
 
     val converted = converter.asDeepJavaValue(List(1, 2, 3)).asInstanceOf[SeqWrapper[_]]
 
@@ -34,7 +34,7 @@ class RuntimeJavaValueConverterTest extends CypherFunSuite {
   }
 
   test("should used indexed seq when converting iterator") {
-    val converter: RuntimeJavaValueConverter = new RuntimeJavaValueConverter(_ => false, identity)
+    val converter: RuntimeJavaValueConverter = new RuntimeJavaValueConverter(_ => false)
 
     val converted = converter.asDeepJavaValue(List(1, 2, 3).iterator).asInstanceOf[SeqWrapper[_]]
 

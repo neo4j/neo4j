@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
-import org.neo4j.cypher.internal.compiler.v3_3.{CRS, GeographicPoint}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, GeographicPoint}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.GenTraversableOnce

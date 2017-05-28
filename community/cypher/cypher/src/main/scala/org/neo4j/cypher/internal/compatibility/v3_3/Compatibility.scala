@@ -143,7 +143,7 @@ trait Compatibility[PC <: CompilerContext,
   private def runtimeCompilerContext(planCompilerContext: PC) = {
     val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
       new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
-    runtimeContextCreator(planCompilerContext, RuntimeSpecificContext(typeConversions, createFingerprintReference))
+    runtimeContextCreator(planCompilerContext, RuntimeSpecificContext(createFingerprintReference))
   }
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
@@ -180,8 +180,7 @@ trait Compatibility[PC <: CompilerContext,
         case CypherExecutionMode.normal => NormalMode
       }
       exceptionHandler.runSafely {
-        val innerParams = typeConversions.asPrivateMap(params)
-        val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
+        val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, params)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
           new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),

@@ -48,8 +48,7 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
-                                      resultIndices: Seq[(Int, String)], notifications: Set[InternalNotification],
-                                      publicTypeConverter: Any => Any)
+                                      resultIndices: Seq[(Int, String)], notifications: Set[InternalNotification])
   extends ExecutionPlan {
 
     private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(toCommandExpression) ++
@@ -95,7 +94,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     }
 
     private def evaluateArguments(ctx: QueryContext, params: Map[String, Any]): Seq[Any] = {
-      val converter = new RuntimeJavaValueConverter(ctx.isGraphKernelResultValue, publicTypeConverter)
+      val converter = new RuntimeJavaValueConverter(ctx.isGraphKernelResultValue)
       val state = new QueryState(ctx, ExternalCSVResource.empty, params)
       argExprCommands.map(expr => converter.asDeepJavaValue(expr.apply(ExecutionContext.empty)(state)))
     }

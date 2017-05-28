@@ -27,7 +27,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class RowIteratorVisitationTest extends CypherFunSuite {
 
-  val javaValues = new RuntimeJavaValueConverter(_ => false, identity)
+  val javaValues = new RuntimeJavaValueConverter(_ => false)
   import javaValues.feedIteratorToVisitable
 
   test("should convert non-empty iterator to visitor") {

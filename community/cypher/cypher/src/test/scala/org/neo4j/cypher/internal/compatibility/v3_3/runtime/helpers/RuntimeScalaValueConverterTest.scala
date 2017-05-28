@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class RuntimeScalaValueConverterTest extends CypherFunSuite {
 
-  val converter = new RuntimeScalaValueConverter(_ => false, identity)
+  val converter = new RuntimeScalaValueConverter(_ => false)
 
   test("should convert hash map") {
     val it = new util.HashMap[String, Any]()

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IdentityTypeConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{EagerResultIterator, _}
 import org.neo4j.cypher.internal.compiler.v3_3._
@@ -45,7 +44,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
 
     val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
-    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
+    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
     val builder = builderFactory.create()
@@ -63,7 +62,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
+    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
     val builder = builderFactory.create()
@@ -82,7 +81,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
-    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, IdentityTypeConverter, logicalPlan, new FakeIdMap)
+    val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
     val builder = builderFactory.create()
