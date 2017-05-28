@@ -674,4 +674,30 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       => ()
     }
   }
+
+  test("should be able to OR together two index range seeks") {
+    val plan = (new given {
+      indexOn("Awesome", "prop1")
+      indexOn("Awesome", "prop2")
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._2
+
+    RangeQueryExpression(InequalitySeekRangeWrapper(
+      RangeGreaterThan(NonEmptyList(InclusiveBound(StringLiteral("Frodo")_)))
+    )_)
+
+    val prop1Predicate = RangeQueryExpression(InequalitySeekRangeWrapper(
+      RangeGreaterThan(NonEmptyList(InclusiveBound(SignedDecimalIntegerLiteral("42")(pos))))
+    )(pos))
+    val prop2Predicate = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("apa")(pos)))(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelToken = LabelToken("Awesome", LabelId(0))
+    val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val union: Union = Union(seek2, seek1)(solved)
+    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+
+    plan should equal(distinct)
+  }
+
 }

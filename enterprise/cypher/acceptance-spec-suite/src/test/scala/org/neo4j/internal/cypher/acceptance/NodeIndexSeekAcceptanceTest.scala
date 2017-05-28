@@ -28,22 +28,72 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
  */
 class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
-  test("Should allow AND and OR with index") {
-    graph.createIndex("User", "prop")
-    val u1 = createLabeledNode(Map("prop" -> 1), "User")
-    val u2 = createLabeledNode(Map("prop" -> 11), "User")
-    for (i <- 13 to 100) createLabeledNode(Map("prop" -> i), "User")
+  test("Should allow AND and OR with index and equality predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> i, "prop2" -> i), "User"))
 
     val query =
       """MATCH (c:User)
-        |WHERE ((c.prop >= 1 AND c.prop <= 5)
-        |OR (c.prop >= 10 AND c.prop <= 12))
+        |WHERE ((c.prop1 = 1 AND c.prop2 = 1)
+        |OR (c.prop1 = 11 AND c.prop2 = 11))
         |RETURN c""".stripMargin
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
-    val expected = List(Map("c" -> u1), Map("c" -> u2))
-    result should (use("NodeIndexSeek") and evaluateTo(expected))
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useIndex(":User(prop1)", ":User(prop2)")
+  }
+
+  test("Should allow AND and OR with index and inequality predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> i, "prop2" -> i), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 >= 1 AND c.prop2 < 2)
+        |OR (c.prop1 >= 10 AND c.prop2 <= 12))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useIndex(":User(prop1)", ":User(prop2)")
+  }
+
+  test("Should allow AND and OR with index seek and STARTS WITH predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> s"${i}_val", "prop2" -> s"${i}_val"), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 STARTS WITH '1_' AND c.prop2 STARTS WITH '1_')
+        |OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationWith("NodeIndexSeekByRange", ":User(prop1", ":User(prop2")
+  }
+
+  test("Should allow AND and OR with index scan and regex predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> s"${i}_val", "prop2" -> s"${i}_val"), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 =~ '1_.*' AND c.prop2 =~ '1_.*')
+        |OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationWith("NodeIndexScan", ":User(prop1)", ":User(prop2)")
   }
 
   test("should not forget predicates") {

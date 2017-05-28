@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.frontend.v3_2.ast.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, Ors}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.ir.v3_2.QueryGraph
@@ -58,8 +59,8 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               val predicates = collection.mutable.HashSet[Expression]()
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
-                  predicates ++= p1.solved.tailOrSelf.queryGraph.selections.flatPredicates
-                  predicates ++= p2.solved.tailOrSelf.queryGraph.selections.flatPredicates
+                  predicates ++= coveringPredicates(p1)
+                  predicates ++= coveringPredicates(p2)
                   producer.planUnion(p1, p2)
               }
               val orPlan = context.logicalPlanProducer.planDistinct(singlePlan)
@@ -72,4 +73,10 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     }
   }
 
+  def coveringPredicates(plan: LogicalPlan): Seq[Expression] = {
+    plan.solved.tailOrSelf.queryGraph.selections.flatPredicates.map {
+      case PartialPredicateWrapper(coveredPredicate, coveringPredicate) => coveringPredicate
+      case predicate => predicate
+    }
+  }
 }
