@@ -36,6 +36,7 @@ import org.neo4j.values.Values;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
@@ -71,14 +72,14 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        String value = "bozo";
+        Value value = Values.of( "bozo" );
         Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
 
         long nodeId = statement.dataWriteOperations().nodeCreate();
 
         // WHEN
         int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
-        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( value ) );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, value );
 
         // THEN
         assertEquals( value, statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ) );
@@ -105,14 +106,14 @@ public class PropertyIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId );
 
         // THEN
-        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
 
         // WHEN
         commit();
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
     }
 
     @Test
@@ -136,7 +137,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // THEN
             assertTrue( previous.equals( "bozo" ) );
-            assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+            assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
 
             // WHEN
             commit();
@@ -144,7 +145,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
     }
 
     @Test
@@ -173,7 +174,7 @@ public class PropertyIT extends KernelIntegrationTest
             statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, newValue );
 
             // THEN
-            assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), equalTo( newValue.asPublic() ) );
+            assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), equalTo( newValue ) );
 
             // WHEN
             commit();
@@ -182,7 +183,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             ReadOperations readOperations = readOperationsInNewTransaction();
-            assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newValue.asPublic() ) );
+            assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newValue ) );
             assertThat( toList( readOperations.nodeGetPropertyKeys( nodeId ) ),
                     equalTo( Collections.singletonList( propertyKeyId ) ) );
         }
@@ -224,7 +225,8 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertThat( statement.readOperations().nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
-        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
+        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ),
+                not( equalTo( Values.NO_VALUE ) ) );
 
         // WHEN
         commit();
@@ -232,7 +234,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), not( equalTo( Values.NO_VALUE ) ) );
     }
 
     @Test
@@ -247,7 +249,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertThat( statement.readOperations().nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        assertThat( statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
 
         // WHEN
         commit();
@@ -256,7 +258,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
     }
 
     @Test
@@ -276,7 +278,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
+        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
     }
 
     @Test
@@ -296,7 +298,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ) );
+        assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ).asPublic() );
     }
 
     @Test
@@ -398,7 +400,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeGetProperty( node, prop ), nullValue() );
+        assertThat( readOperations.nodeGetProperty( node, prop ), equalTo( Values.NO_VALUE ) );
     }
 
     @Test
@@ -427,7 +429,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.relationshipGetProperty( rel, prop ), nullValue() );
+        assertThat( readOperations.relationshipGetProperty( rel, prop ), equalTo( Values.NO_VALUE ) );
     }
 }
 

@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -84,9 +85,9 @@ public class NodeSchemaMatcherTest
                 unIndexedPropId} );
         EntityReadOperations readOps = mock( EntityReadOperations.class );
         when( readOps.nodeGetPropertyKeys( state, node ) ).thenReturn( defaultPropertyIds );
-        when( readOps.nodeGetProperty( state, node, propId1 ) ).thenReturn( "hi1" );
-        when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( "hi2" );
-        when( readOps.nodeGetProperty( state, node, unIndexedPropId ) ).thenReturn( "hi3" );
+        when( readOps.nodeGetProperty( state, node, propId1 ) ).thenReturn( Values.of( "hi1" ) );
+        when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( Values.of( "hi2" ) );
+        when( readOps.nodeGetProperty( state, node, unIndexedPropId ) ).thenReturn( Values.of( "hi3" ) );
 
         nodeSchemaMatcher = new NodeSchemaMatcher( readOps );
     }

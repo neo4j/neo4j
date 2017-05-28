@@ -103,6 +103,8 @@ import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
@@ -544,7 +546,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
     {
-        return nodesByLabelAndProperty( myLabel, key, value );
+        return nodesByLabelAndProperty( myLabel, key, Values.of( value ) );
     }
 
     @Override
@@ -582,7 +584,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return new TopLevelTransaction( spi.beginTransaction( type, securityContext, timeoutMillis ), spi::currentStatement );
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
+    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Value value )
     {
         Statement statement = spi.currentStatement();
 
@@ -635,7 +637,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return null;
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Object value,
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,
             Statement statement, int labelId )
     {
         return map2nodes(
@@ -714,10 +716,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         private final PrimitiveLongIterator nodesWithLabel;
         private final ReadOperations statement;
         private final int propertyKeyId;
-        private final Object value;
+        private final Value value;
 
         PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
-                int propertyKeyId, Object value )
+                int propertyKeyId, Value value )
         {
             this.nodesWithLabel = nodesWithLabel;
             this.statement = statement;
@@ -733,10 +735,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 long nextValue = nodesWithLabel.next();
                 try
                 {
-                    Object propertyValue = statement.nodeGetProperty( nextValue, propertyKeyId );
+                    Value propertyValue = statement.nodeGetProperty( nextValue, propertyKeyId );
                     if ( propertyValue != null )
                     {
-                        if ( Property.property( propertyKeyId, propertyValue ).valueEquals( value ) )
+                        if ( propertyValue.equals( value ) )
                         {
                             return next( nextValue );
                         }

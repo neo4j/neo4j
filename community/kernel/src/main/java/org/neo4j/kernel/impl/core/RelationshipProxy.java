@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static java.lang.String.format;
@@ -336,14 +337,14 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+                Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
 
-                if ( value == null )
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
                 }
 
-                return value;
+                return value.asPublic();
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -364,8 +365,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
-            return value == null ? defaultValue : value;
+            Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asPublic();
         }
         catch ( EntityNotFoundException e )
         {

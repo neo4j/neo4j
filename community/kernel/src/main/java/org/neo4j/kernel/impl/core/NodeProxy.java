@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static java.lang.String.format;
@@ -345,8 +346,8 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
-            return value == null ? defaultValue : value;
+            Value value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asPublic();
         }
         catch ( EntityNotFoundException e )
         {
@@ -454,14 +455,14 @@ public class NodeProxy implements Node
                     throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+                Value value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
 
-                if ( value == null )
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
                 }
 
-                return value;
+                return value.asPublic();
 
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )

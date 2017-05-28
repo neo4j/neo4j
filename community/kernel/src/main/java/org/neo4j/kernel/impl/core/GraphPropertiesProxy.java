@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static java.lang.String.format;
@@ -98,14 +99,14 @@ public class GraphPropertiesProxy implements GraphProperties
                     throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().graphGetProperty( propertyKeyId );
+                Value value = statement.readOperations().graphGetProperty( propertyKeyId );
 
-                if ( value == null )
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.GRAPH, -1 );
                 }
 
-                return value;
+                return value.asPublic();
             }
             catch ( PropertyNotFoundException e )
             {
@@ -126,8 +127,8 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value = statement.readOperations().graphGetProperty( propertyKeyId );
-            return value == null ? defaultValue : value;
+            Value value = statement.readOperations().graphGetProperty( propertyKeyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asPublic();
         }
     }
 

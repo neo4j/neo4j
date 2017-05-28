@@ -57,6 +57,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.Value;
 
 /**
  * Defines all types of read operations that can be done from the {@link KernelAPI}.
@@ -190,15 +191,15 @@ public interface ReadOperations
 
     boolean nodeHasProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Object nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Value nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
     boolean relationshipHasProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Object relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
+    Value relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
     boolean graphHasProperty( int propertyKeyId );
 
-    Object graphGetProperty( int propertyKeyId );
+    Value graphGetProperty( int propertyKeyId );
 
     <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
             throws EntityNotFoundException, EXCEPTION;

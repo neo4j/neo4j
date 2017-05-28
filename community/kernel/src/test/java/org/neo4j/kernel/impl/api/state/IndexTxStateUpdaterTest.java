@@ -111,9 +111,9 @@ public class IndexTxStateUpdaterTest
                 Property.property( propId1, "hi1" ),
                 Property.property( propId2, "hi2" ),
                 Property.property( propId3, "hi3" ) ) );
-        when( readOps.nodeGetProperty( state, node, propId1 ) ).thenReturn( "hi1" );
-        when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( "hi2" );
-        when( readOps.nodeGetProperty( state, node, propId3 ) ).thenReturn( "hi3" );
+        when( readOps.nodeGetProperty( state, node, propId1 ) ).thenReturn( Values.of( "hi1" ) );
+        when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( Values.of( "hi2" ) );
+        when( readOps.nodeGetProperty( state, node, propId3 ) ).thenReturn( Values.of( "hi3" ) );
 
         indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
 

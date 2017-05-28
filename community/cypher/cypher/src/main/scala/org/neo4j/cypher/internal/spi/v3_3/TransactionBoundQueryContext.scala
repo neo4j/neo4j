@@ -311,7 +311,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
+      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asPublic()
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))

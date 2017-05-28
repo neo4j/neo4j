@@ -27,8 +27,6 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.PropertyValueComparison;
 import org.neo4j.values.Value;
@@ -222,7 +220,8 @@ public abstract class IndexQuery implements Predicate<Object>
         @Override
         public boolean test( Object value )
         {
-            return exactValue.equals( Values.of( value ) );
+            Value typed = value instanceof Value ? (Value)value : Values.of( value );
+            return exactValue.equals( typed );
         }
 
         public Object value()
@@ -233,17 +232,17 @@ public abstract class IndexQuery implements Predicate<Object>
 
     public static final class NumberRangePredicate extends IndexQuery
     {
-        private final Number from;
+        private final Value from;
         private final boolean fromInclusive;
-        private final Number to;
+        private final Value to;
         private final boolean toInclusive;
 
         NumberRangePredicate( int propertyKeyId, Number from, boolean fromInclusive, Number to, boolean toInclusive )
         {
             super( propertyKeyId );
-            this.from = from;
+            this.from = Values.numberValue( from );
             this.fromInclusive = fromInclusive;
-            this.to = to;
+            this.to = Values.numberValue( to );
             this.toInclusive = toInclusive;
         }
 
@@ -260,38 +259,61 @@ public abstract class IndexQuery implements Predicate<Object>
             {
                 return false;
             }
-            if ( !(value instanceof Number) )
+            if ( Values.isNumberValue( value ) )
             {
-                return false;
-            }
-            Number number = (Number) value;
-            if ( from != null )
-            {
-                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, from );
-                if ( compare < 0 || !fromInclusive && compare == 0 )
+                Value number = (Value) value;
+                if ( from != Values.NO_VALUE )
                 {
-                    return false;
+                    int compare = Values.VALUE_COMPARATOR.compare( number, from );
+                    if ( compare < 0 || !fromInclusive && compare == 0 )
+                    {
+                        return false;
+                    }
                 }
-            }
-            if ( to != null )
-            {
-                int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, to );
-                if ( compare > 0 || !toInclusive && compare == 0 )
+                if ( to != Values.NO_VALUE )
                 {
-                    return false;
+                    int compare = Values.VALUE_COMPARATOR.compare( number, to );
+                    if ( compare > 0 || !toInclusive && compare == 0 )
+                    {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
+            if ( value instanceof Number )
+            {
+                Number number = (Number) value;
+                if ( from != Values.NO_VALUE )
+                {
+                    Number from = (Number) this.from.asPublic();
+                    int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, from );
+                    if ( compare < 0 || !fromInclusive && compare == 0 )
+                    {
+                        return false;
+                    }
+                }
+                if ( to != Values.NO_VALUE )
+                {
+                    Number to = (Number) this.to.asPublic();
+                    int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, to );
+                    if ( compare > 0 || !toInclusive && compare == 0 )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
         }
 
         public Number from()
         {
-            return from;
+            return (Number)from.asPublic();
         }
 
         public Number to()
         {
-            return to;
+            return (Number)to.asPublic();
         }
 
         public boolean fromInclusive()

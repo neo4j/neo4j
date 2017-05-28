@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.Value;
 
 public interface EntityReadOperations
 {
@@ -72,7 +73,7 @@ public interface EntityReadOperations
 
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );
 
-    Object graphGetProperty( KernelStatement state, int propertyKeyId );
+    Value graphGetProperty( KernelStatement state, int propertyKeyId );
 
     /**
      * Return all property keys associated with a relationship.
@@ -100,7 +101,7 @@ public interface EntityReadOperations
 
     Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node );
 
-    Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
+    Value nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
 
     boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
 
@@ -108,7 +109,7 @@ public interface EntityReadOperations
 
     Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement, RelationshipItem relationship );
 
-    Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
+    Value relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
 
     boolean relationshipHasProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId );
 

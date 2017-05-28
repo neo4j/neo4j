@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.values.Value;
 
 /**
  * When looking up nodes by a property value, we have to do a two-stage check.
@@ -116,8 +117,8 @@ public class LookupFilter
                     for ( IndexQuery predicate : numericPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
-                        Object value = operations.nodeGetProperty( state, nodeItem, propertyKeyId );
-                        if ( !predicate.test( value ) )
+                        Value value = operations.nodeGetProperty( state, nodeItem, propertyKeyId );
+                        if ( !predicate.test( value.asPublic() ) )
                         {
                             return false;
                         }

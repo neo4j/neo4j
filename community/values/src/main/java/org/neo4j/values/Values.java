@@ -60,6 +60,11 @@ public class Values
                     Comparator.comparingInt( VirtualValue::hashCode )
                 );
 
+    public static boolean isNumberValue( Object value )
+    {
+        return value instanceof NumberValue;
+    }
+
     // DIRECT FACTORY METHODS
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
@@ -144,6 +149,10 @@ public class Values
         if ( number instanceof Short )
         {
             return shortValue( number.shortValue() );
+        }
+        if ( number == null )
+        {
+            return NO_VALUE;
         }
 
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
