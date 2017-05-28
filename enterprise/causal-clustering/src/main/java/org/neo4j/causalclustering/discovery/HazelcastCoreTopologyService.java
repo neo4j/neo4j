@@ -131,7 +131,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
                 return;
             }
             membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, HazelcastCoreTopologyService.this::refreshTopology );
+            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod,
+                    HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
         } );
         startingThread.setDaemon( true );
