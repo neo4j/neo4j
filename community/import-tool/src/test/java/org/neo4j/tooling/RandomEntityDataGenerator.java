@@ -133,7 +133,6 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
         }
     }
 
-
     private String[] randomLabels( Random random )
     {
         int length = random.nextInt( 3 );
