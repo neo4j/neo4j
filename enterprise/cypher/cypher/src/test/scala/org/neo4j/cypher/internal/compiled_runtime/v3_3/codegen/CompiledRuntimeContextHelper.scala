@@ -48,7 +48,7 @@ object CompiledRuntimeContextHelper extends MockitoSugar {
                clock: Clock = Clock.systemUTC(),
                codeStructure: CodeStructure[GeneratedQuery] = mock[CodeStructure[GeneratedQuery]]): EnterpriseRuntimeContext = {
       new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                                   monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, createFingerprintReference, codeStructure)
+                                   monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, codeStructure)
     }
 
 }

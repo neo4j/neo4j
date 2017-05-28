@@ -23,9 +23,9 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, UpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_3.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
 
@@ -39,20 +39,39 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                               override val queryGraphSolver: QueryGraphSolver,
                               override val updateStrategy: UpdateStrategy,
                               override val debugOptions: Set[String],
-                              override val clock: Clock,
-                              val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
+                              override val clock: Clock)
   extends CompilerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
-                          config, queryGraphSolver, updateStrategy, debugOptions, clock)
+                          config, queryGraphSolver, updateStrategy, debugOptions, clock) {
 
-object CommunityRuntimeContext {
-  def apply(context: CompilerContext, data: RuntimeSpecificContext) =
-    new CommunityRuntimeContext(context.exceptionCreator, context.tracer, context.notificationLogger, context.planContext,
-                                context.monitors, context.metrics, context.config, context.queryGraphSolver,
-                                context.updateStrategy, context.debugOptions, context.clock,
-                                data.createFingerprintReference)
+  val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
+    new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
 }
 
-case class RuntimeSpecificContext(createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
+object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeContext] {
 
+  override def create(tracer: CompilationPhaseTracer,
+                      notificationLogger: InternalNotificationLogger,
+                      planContext: PlanContext,
+                      queryText: String,
+                      debugOptions: Set[String],
+                      offset: Option[InputPosition],
+                      monitors: Monitors,
+                      metricsFactory: MetricsFactory,
+                      queryGraphSolver: QueryGraphSolver,
+                      config: CypherCompilerConfiguration,
+                      updateStrategy: UpdateStrategy,
+                      clock: Clock,
+                      evaluator: ExpressionEvaluator): CommunityRuntimeContext = {
+    val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
+
+    val metrics: Metrics = if (planContext == null)
+      null
+    else
+      metricsFactory.newMetrics(planContext.statistics, evaluator)
+
+    new CommunityRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
+                        monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
+  }
+}
 

@@ -50,9 +50,8 @@ import org.neo4j.logging.Log
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-trait Compatibility[PC <: CompilerContext,
-                    RC <: CommunityRuntimeContext,
-                    T <: Transformer[RC, LogicalPlanState, CompilationState]] {
+trait Compatibility[CONTEXT <: CommunityRuntimeContext,
+                    T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]] {
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
   val clock: Clock
@@ -60,8 +59,7 @@ trait Compatibility[PC <: CompilerContext,
   val config: CypherCompilerConfiguration
   val logger: InfoLogger
   val runtimeBuilder: RuntimeBuilder[T]
-  val planContextCreator: ContextCreator[PC]
-  val runtimeContextCreator: (PC, RuntimeSpecificContext) => RC
+  val contextCreator: ContextCreator[CONTEXT]
   val maybePlannerName: Option[CostBasedPlannerName]
   val maybeRuntimeName: Option[RuntimeName]
   val maybeUpdateStrategy: Option[UpdateStrategy]
@@ -76,11 +74,11 @@ trait Compatibility[PC <: CompilerContext,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_3.CypherCompiler[PC]
+  protected val compiler: v3_3.CypherCompiler[CONTEXT]
 
   private def queryGraphSolver = Compatibility.createQueryGraphSolver(maybePlannerName.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-  def createExecPlan: Transformer[RC, LogicalPlanState, CompilationState] = {
+  def createExecPlan: Transformer[CONTEXT, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
         runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan])
@@ -108,21 +106,21 @@ trait Compatibility[PC <: CompilerContext,
         //Context used for db communication during planning
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
-        val planCompilerContext = planContextCreator.create(tracer, notificationLogger, planContext,
-                                                            syntacticQuery.queryText, preParsedQuery.debugOptions,
-                                                            Some(preParsedQuery.offset), monitors,
-                                                            CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
-                                                            config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
-                                                            clock, simpleExpressionEvaluator)
+        val context = contextCreator.create(tracer, notificationLogger, planContext,
+                                                        syntacticQuery.queryText, preParsedQuery.debugOptions,
+                                                        Some(preParsedQuery.offset), monitors,
+                                                        CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
+                                                        config, maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+                                                        clock, simpleExpressionEvaluator)
         //Prepare query for caching
-        val preparedQuery = compiler.normalizeQuery(syntacticQuery, planCompilerContext)
+        val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_3) => plan.isStale(planContext.txIdProvider, planContext.statistics)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
         def createPlan(): ExecutionPlan_v3_3 = {
-          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, planCompilerContext)
-          val result = createExecPlan.transform(logicalPlanState, runtimeCompilerContext(planCompilerContext))
+          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+          val result = createExecPlan.transform(logicalPlanState, context)
           result.maybeExecutionPlan.get
         }
         val executionPlan = if (preParsedQuery.debugOptions.isEmpty)
@@ -138,12 +136,6 @@ trait Compatibility[PC <: CompilerContext,
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
-  }
-
-  private def runtimeCompilerContext(planCompilerContext: PC) = {
-    val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
-      new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
-    runtimeContextCreator(planCompilerContext, RuntimeSpecificContext(createFingerprintReference))
   }
 
   protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {

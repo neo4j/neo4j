@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
@@ -33,22 +33,20 @@ import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
-case class CostCompatibility[PC <: CompilerContext,
-                             RC <: CommunityRuntimeContext,
-                             T <: Transformer[RC, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
-                                                                                       clock: Clock,
-                                                                                       kernelMonitors: KernelMonitors,
-                                                                                       kernelAPI: KernelAPI,
-                                                                                       log: Log,
-                                                                                       planner: CypherPlanner,
-                                                                                       runtime: CypherRuntime,
-                                                                                       updateStrategy: CypherUpdateStrategy,
-                                                                                       runtimeBuilder: RuntimeBuilder[T],
-                                                                                       planContextCreator: ContextCreator[PC],
-                                                                                       runtimeContextCreator: (PC, RuntimeSpecificContext) => RC)
-  extends Compatibility[PC, RC, T] {
+case class CostCompatibility[CONTEXT <: CommunityRuntimeContext,
+                             T <: Transformer[CONTEXT, LogicalPlanState, CompilationState]](config: CypherCompilerConfiguration,
+                                                                                            clock: Clock,
+                                                                                            kernelMonitors: KernelMonitors,
+                                                                                            kernelAPI: KernelAPI,
+                                                                                            log: Log,
+                                                                                            planner: CypherPlanner,
+                                                                                            runtime: CypherRuntime,
+                                                                                            updateStrategy: CypherUpdateStrategy,
+                                                                                            runtimeBuilder: RuntimeBuilder[T],
+                                                                                            contextCreator: ContextCreator[CONTEXT])
+  extends Compatibility[CONTEXT, T] {
 
-  assert(planContextCreator != null)
+  assert(contextCreator != null)
   override val maybePlannerName: Option[CostBasedPlannerName] = planner match {
     case CypherPlanner.default => None
     case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
@@ -67,12 +65,12 @@ case class CostCompatibility[PC <: CompilerContext,
     case CypherRuntime.compiled => Some(CompiledRuntimeName)
   }
 
-  protected override val compiler: CypherCompiler[PC] = {
+  protected override val compiler: CypherCompiler[CONTEXT] = {
 
     val monitors = WrappedMonitors(kernelMonitors)
 
     new CypherCompilerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
-                                                  maybePlannerName, maybeUpdateStrategy, planContextCreator)
+                                                  maybePlannerName, maybeUpdateStrategy, contextCreator)
   }
 
   override val logger = new StringInfoLogger(log)

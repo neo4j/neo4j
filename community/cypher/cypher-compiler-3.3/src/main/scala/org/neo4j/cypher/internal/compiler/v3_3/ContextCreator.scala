@@ -42,29 +42,3 @@ trait ContextCreator[Context <: BaseContext] {
              clock: Clock,
              evaluator: ExpressionEvaluator): Context
 }
-
-object LogicalPlanningContextCreator extends ContextCreator[CompilerContext] {
-  override def create(tracer: CompilationPhaseTracer,
-                      notificationLogger: InternalNotificationLogger,
-                      planContext: PlanContext,
-                      queryText: String,
-                      debugOptions: Set[String],
-                      offset: Option[InputPosition],
-                      monitors: Monitors,
-                      metricsFactory: MetricsFactory,
-                      queryGraphSolver: QueryGraphSolver,
-                      config: CypherCompilerConfiguration,
-                      updateStrategy: UpdateStrategy,
-                      clock: Clock,
-                      evaluator: ExpressionEvaluator): CompilerContext = {
-    val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
-
-    val metrics: Metrics = if (planContext == null)
-      null
-    else
-      metricsFactory.newMetrics(planContext.statistics, evaluator)
-
-    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
-  }
-}
