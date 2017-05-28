@@ -37,7 +37,7 @@ public interface CoreTopologyService extends TopologyService
      *
      * @return True if the cluster ID was successfully CAS:ed, otherwise false.
      */
-    boolean setClusterId( ClusterId clusterId );
+    boolean setClusterId( ClusterId clusterId ) throws InterruptedException;
 
     interface Listener
     {

@@ -121,7 +121,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         return Optional.ofNullable( clusterId );
     }
 
-    private void publishClusterId( ClusterId localClusterId ) throws BindingException
+    private void publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
     {
         boolean success = topologyService.setClusterId( localClusterId );
         if ( !success )

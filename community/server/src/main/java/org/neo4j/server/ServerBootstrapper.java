@@ -188,8 +188,18 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         try
         {
+            /*
+             * We want to interrupt the main thread which has start()ed lifecycle instances that may be blocked
+             * somewhere. If we don't do that, then the JVM will hang on the final join() for non daemon threads.
+             */
+            Thread t = Thread.currentThread();
+            log.debug( "Installing signal handler to interrupt thread named " + t.getName() );
             // SIGTERM is invoked when system service is stopped
-            Signal.handle( new Signal( SIGTERM ), ( signal ) -> System.exit( 0 ) );
+            Signal.handle( new Signal( SIGTERM ), ( signal ) ->
+            {
+                t.interrupt();
+                System.exit( 0 );
+            } );
         }
         catch ( Throwable e )
         {
