@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.api.PropertyValueComparison;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
-public abstract class IndexQuery implements Predicate<Object>
+public abstract class IndexQuery implements Predicate<Value>
 {
     /**
      * Searches the index for all entries that has the given property.
@@ -168,7 +168,7 @@ public abstract class IndexQuery implements Predicate<Object>
         return propertyKeyId;
     }
 
-    public abstract boolean test( Object value );
+    public abstract boolean test( Value value );
 
     public enum IndexQueryType
     {
@@ -195,7 +195,7 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
             return value != null;
         }
@@ -218,10 +218,9 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
-            Value typed = value instanceof Value ? (Value)value : Values.of( value );
-            return exactValue.equals( typed );
+            return exactValue.equals( value );
         }
 
         public Object value()
@@ -253,7 +252,7 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
             if ( value == null )
             {
@@ -261,10 +260,9 @@ public abstract class IndexQuery implements Predicate<Object>
             }
             if ( Values.isNumberValue( value ) )
             {
-                Value number = (Value) value;
                 if ( from != Values.NO_VALUE )
                 {
-                    int compare = Values.VALUE_COMPARATOR.compare( number, from );
+                    int compare = Values.VALUE_COMPARATOR.compare( value, from );
                     if ( compare < 0 || !fromInclusive && compare == 0 )
                     {
                         return false;
@@ -272,30 +270,7 @@ public abstract class IndexQuery implements Predicate<Object>
                 }
                 if ( to != Values.NO_VALUE )
                 {
-                    int compare = Values.VALUE_COMPARATOR.compare( number, to );
-                    if ( compare > 0 || !toInclusive && compare == 0 )
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            if ( value instanceof Number )
-            {
-                Number number = (Number) value;
-                if ( from != Values.NO_VALUE )
-                {
-                    Number from = (Number) this.from.asPublic();
-                    int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, from );
-                    if ( compare < 0 || !fromInclusive && compare == 0 )
-                    {
-                        return false;
-                    }
-                }
-                if ( to != Values.NO_VALUE )
-                {
-                    Number to = (Number) this.to.asPublic();
-                    int compare = PropertyValueComparison.COMPARE_NUMBERS.compare( number, to );
+                    int compare = Values.VALUE_COMPARATOR.compare( value, to );
                     if ( compare > 0 || !toInclusive && compare == 0 )
                     {
                         return false;
@@ -329,17 +304,17 @@ public abstract class IndexQuery implements Predicate<Object>
 
     public static final class StringRangePredicate extends IndexQuery
     {
-        private final String from;
+        private final Value from;
         private final boolean fromInclusive;
-        private final String to;
+        private final Value to;
         private final boolean toInclusive;
 
         StringRangePredicate( int propertyKeyId, String from, boolean fromInclusive, String to, boolean toInclusive )
         {
             super( propertyKeyId );
-            this.from = from;
+            this.from = Values.stringValue( from );
             this.fromInclusive = fromInclusive;
-            this.to = to;
+            this.to = Values.stringValue( to );
             this.toInclusive = toInclusive;
         }
 
@@ -350,28 +325,27 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
             if ( value == null )
             {
                 return false;
             }
-            if ( !(value instanceof String) )
+            if ( !Values.isTextValue( value ) )
             {
                 return false;
             }
-            String str = (String) value;
-            if ( from != null )
+            if ( from != Values.NO_VALUE )
             {
-                int compare = PropertyValueComparison.COMPARE_STRINGS.compare( str, from );
+                int compare = Values.VALUE_COMPARATOR.compare( value, from );
                 if ( compare < 0 || !fromInclusive && compare == 0 )
                 {
                     return false;
                 }
             }
-            if ( to != null )
+            if ( to != Values.NO_VALUE )
             {
-                int compare = PropertyValueComparison.COMPARE_STRINGS.compare( str, to );
+                int compare = Values.VALUE_COMPARATOR.compare( value, to );
                 if ( compare > 0 || !toInclusive && compare == 0 )
                 {
                     return false;
@@ -382,7 +356,7 @@ public abstract class IndexQuery implements Predicate<Object>
 
         public String from()
         {
-            return from;
+            return (String)from.asPublic();
         }
 
         public boolean fromInclusive()
@@ -392,7 +366,7 @@ public abstract class IndexQuery implements Predicate<Object>
 
         public String to()
         {
-            return to;
+            return (String)to.asPublic();
         }
 
         public boolean toInclusive()
@@ -418,9 +392,9 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
-            return value != null && value instanceof String && ((String)value).startsWith( prefix );
+            return value != null && Values.isTextValue( value ) && ((String)value.asPublic()).startsWith( prefix );
         }
 
         public String prefix()
@@ -446,9 +420,9 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
-            return value != null && value instanceof String && ((String)value).contains( contains );
+            return value != null && Values.isTextValue( value ) && ((String)value.asPublic()).contains( contains );
         }
 
         public String contains()
@@ -474,9 +448,9 @@ public abstract class IndexQuery implements Predicate<Object>
         }
 
         @Override
-        public boolean test( Object value )
+        public boolean test( Value value )
         {
-            return value != null && value instanceof String && ((String)value).endsWith( suffix );
+            return value != null && Values.isTextValue( value ) && ((String)value.asPublic()).endsWith( suffix );
         }
 
         public String suffix()

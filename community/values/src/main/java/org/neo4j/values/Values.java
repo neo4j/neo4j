@@ -65,12 +65,21 @@ public class Values
         return value instanceof NumberValue;
     }
 
+    public static boolean isTextValue( Object value )
+    {
+        return value instanceof TextValue;
+    }
+
     // DIRECT FACTORY METHODS
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
     public static Value stringValue( String value )
     {
+        if ( value == null )
+        {
+            return NO_VALUE;
+        }
         return new StringValue.Direct( value );
     }
 
