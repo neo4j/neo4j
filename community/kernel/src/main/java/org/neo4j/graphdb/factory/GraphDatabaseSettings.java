@@ -493,7 +493,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "This feature is available in the Neo4j Enterprise Edition." )
     public static final Setting<Boolean> log_queries = setting( "dbms.logs.query.enabled", BOOLEAN, FALSE );
 
-    @Description( "Path of the logs directory" )
+    @Description( "Path of the logs directory." )
     public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
 
     @Description( "Path to the query log file." )
