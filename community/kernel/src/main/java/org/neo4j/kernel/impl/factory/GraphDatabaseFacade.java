@@ -225,7 +225,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public void init( SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config )
     {
         this.spi = spi;
-        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
+        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
 
         Supplier<Statement> statementSupplier = spi::currentStatement;
         Supplier<KernelTransaction> transactionSupplier = spi::currentTransaction;

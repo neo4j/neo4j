@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.graphdb.DependencyResolver;
@@ -33,7 +32,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
@@ -94,7 +92,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
 
     private TransactionStateMachine.SPI createTxSpi( Clock clock )
     {
-        long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
         Duration txAwaitDuration = Duration.ofMillis( bookmarkReadyTimeout );
 
         return new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine,

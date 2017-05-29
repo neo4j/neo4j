@@ -44,7 +44,6 @@
     <module>auth-plugin-api</module>
     <module>deferred-locks</module>
     <module>ha</module>
-    <module>cypher</module>
   </modules>
 
   <licenses>
@@ -68,4 +67,3 @@ terms of the relevant Commercial Agreement.
   </licenses>
 
 </project>
-

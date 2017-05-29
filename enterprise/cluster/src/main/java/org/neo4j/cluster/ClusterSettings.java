@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
 
@@ -115,10 +116,10 @@ public class ClusterSettings implements LoadableConfig
     @Description( "Default timeout used for clustering timeouts. Override  specific timeout settings with proper" +
             " values if necessary. This value is the default value for the ha.heartbeat_interval," +
             " ha.paxos_timeout and ha.learn_timeout settings." )
-    public static final Setting<Long> default_timeout = setting( "ha.default_timeout", DURATION, "5s" );
+    public static final Setting<Duration> default_timeout = setting( "ha.default_timeout", DURATION, "5s" );
 
     @Description( "How often heartbeat messages should be sent. Defaults to ha.default_timeout." )
-    public static final Setting<Long> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION,
+    public static final Setting<Duration> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION,
             default_timeout );
 
     @Description( "How long to wait for heartbeats from other instances before marking them as suspects for failure. " +
@@ -127,7 +128,7 @@ public class ClusterSettings implements LoadableConfig
             "stable masters but also will result in longer waits before a failover in case of master failure. This " +
             "value should not be set to less than twice the ha.heartbeat_interval value otherwise there is a high " +
             "risk of frequent master switches and possibly branched data occurrence." )
-    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "40s" );
+    public static final Setting<Duration> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "40s" );
 
     /*
      * ha.join_timeout
@@ -135,17 +136,17 @@ public class ClusterSettings implements LoadableConfig
      */
     @Description( "Timeout for broadcasting values in cluster. Must consider end-to-end duration of Paxos algorithm." +
             " This value is the default value for the ha.join_timeout and ha.leave_timeout settings." )
-    public static final Setting<Long> broadcast_timeout = setting( "ha.broadcast_timeout", DURATION, "30s" );
+    public static final Setting<Duration> broadcast_timeout = setting( "ha.broadcast_timeout", DURATION, "30s" );
 
     @Description( "Timeout for joining a cluster. Defaults to ha.broadcast_timeout. " +
             "Note that if the timeout expires during cluster formation, the operator may have to restart the instance or instances." )
-    public static final Setting<Long> join_timeout = setting( "ha.join_timeout", DURATION, broadcast_timeout );
+    public static final Setting<Duration> join_timeout = setting( "ha.join_timeout", DURATION, broadcast_timeout );
 
     @Description( "Timeout for waiting for configuration from an existing cluster member during cluster join." )
-    public static final Setting<Long> configuration_timeout = setting( "ha.configuration_timeout", DURATION, "1s" );
+    public static final Setting<Duration> configuration_timeout = setting( "ha.configuration_timeout", DURATION, "1s" );
 
     @Description( "Timeout for waiting for cluster leave to finish. Defaults to ha.broadcast_timeout." )
-    public static final Setting<Long> leave_timeout = setting( "ha.leave_timeout", DURATION, broadcast_timeout );
+    public static final Setting<Duration> leave_timeout = setting( "ha.leave_timeout", DURATION, broadcast_timeout );
 
     /*
      *  ha.phase1_timeout
@@ -156,23 +157,23 @@ public class ClusterSettings implements LoadableConfig
             "ha.phase2_timeout and ha.election_timeout settings. If it is not given a value it " +
             "defaults to ha.default_timeout and will implicitly change if ha.default_timeout changes. This is an " +
             "advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
-    public static final Setting<Long> paxos_timeout = setting( "ha.paxos_timeout", DURATION, default_timeout );
+    public static final Setting<Duration> paxos_timeout = setting( "ha.paxos_timeout", DURATION, default_timeout );
 
     @Description( "Timeout for Paxos phase 1. If it is not given a value it defaults to ha.paxos_timeout and will " +
             "implicitly change if ha.paxos_timeout changes. This is an advanced parameter which should only be " +
             "changed if specifically advised by Neo4j Professional Services. " )
-    public static final Setting<Long> phase1_timeout = setting( "ha.phase1_timeout", DURATION, paxos_timeout );
+    public static final Setting<Duration> phase1_timeout = setting( "ha.phase1_timeout", DURATION, paxos_timeout );
 
     @Description( "Timeout for Paxos phase 2. If it is not given a value it defaults to ha.paxos_timeout and will " +
             "implicitly change if ha.paxos_timeout changes. This is an advanced parameter which should only be " +
             "changed if specifically advised by Neo4j Professional Services. " )
-    public static final Setting<Long> phase2_timeout = setting( "ha.phase2_timeout", DURATION, paxos_timeout );
+    public static final Setting<Duration> phase2_timeout = setting( "ha.phase2_timeout", DURATION, paxos_timeout );
 
     @Description( "Timeout for learning values. Defaults to ha.default_timeout." )
-    public static final Setting<Long> learn_timeout = setting( "ha.learn_timeout", DURATION, default_timeout );
+    public static final Setting<Duration> learn_timeout = setting( "ha.learn_timeout", DURATION, default_timeout );
 
     @Description( "Timeout for waiting for other members to finish a role election. Defaults to ha.paxos_timeout." )
-    public static final Setting<Long> election_timeout = setting( "ha.election_timeout", DURATION, paxos_timeout );
+    public static final Setting<Duration> election_timeout = setting( "ha.election_timeout", DURATION, paxos_timeout );
 
     @Internal
     public static final Setting<String> instance_name = setting("unsupported.ha.instance_name", STRING, (String) null);

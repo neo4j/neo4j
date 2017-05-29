@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.junit.Test;
+
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.junit.Test;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -85,5 +86,23 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
                         "configuration options are specified in the neo4j settings namespace (such as dbms., ha., " +
                         "cypher., etc). This is currently false by default but will be true by default in 4.0.",
                 "false" }, config.get( 0 ) );
+    }
+
+    @Test
+    public void durationAlwaysListedWithUnit() throws Exception
+    {
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
+                        Collections.singletonList( GraphDatabaseSettings.transaction_timeout.name() ).toArray(),
+                        SecurityContext.AUTH_DISABLED );
+
+        // Then
+        List<Object[]> config = asList( stream );
+
+        assertEquals( 1, config.size() );
+        assertArrayEquals( new Object[]{ "dbms.transaction.timeout",
+                "The maximum time interval of a transaction within which it should be completed.",
+                "0s" }, config.get( 0 ) );
     }
 }

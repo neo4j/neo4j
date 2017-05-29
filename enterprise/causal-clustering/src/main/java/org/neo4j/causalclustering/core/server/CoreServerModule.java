@@ -117,7 +117,7 @@ public class CoreServerModule
         LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
                 messageLogger, identityModule.myself() );
 
-        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
+        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life
                 .add( new CatchUpClient( clusteringModule.topologyService(), logProvider, Clocks.systemClock(),
                         inactivityTimeoutMillis, monitors ) );
@@ -189,7 +189,7 @@ public class CoreServerModule
         dependencies.satisfyDependency( raftLogPruner );
 
         life.add( new PruningScheduler( raftLogPruner, jobScheduler,
-                config.get( CausalClusteringSettings.raft_log_pruning_frequency ), logProvider ) );
+                config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
 
         int queueSize = config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = config.get( CausalClusteringSettings.raft_in_queue_max_batch );
@@ -197,11 +197,11 @@ public class CoreServerModule
         BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( messageHandler, queueSize, maxBatch,
                 logProvider );
 
-        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout );
+        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
 
         MembershipWaiter membershipWaiter = new MembershipWaiter( identityModule.myself(), jobScheduler,
                 dbHealthSupplier, electionTimeout * 4, logProvider );
-        long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout );
+        long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout ).toMillis();
         membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout,
                 consensusModule.raftMachine(), logProvider );
 

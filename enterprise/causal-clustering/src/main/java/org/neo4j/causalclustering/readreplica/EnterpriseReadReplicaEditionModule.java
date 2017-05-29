@@ -160,7 +160,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         {
         };
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
@@ -181,7 +181,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
-        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout );
+        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life.add(
                 new CatchUpClient( topologyService, logProvider, Clocks.systemClock(),
                         inactivityTimeoutMillis, monitors ) );
@@ -270,7 +270,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,
                         upstreamDatabaseStrategySelector, catchupTimeoutService,
-                        config.get( CausalClusteringSettings.pull_interval ), batchingTxApplier,
+                        config.get( CausalClusteringSettings.pull_interval ).toMillis(), batchingTxApplier,
                         platformModule.monitors, storeCopyProcess, databaseHealthSupplier );
         dependencies.satisfyDependencies( catchupProcess );
 

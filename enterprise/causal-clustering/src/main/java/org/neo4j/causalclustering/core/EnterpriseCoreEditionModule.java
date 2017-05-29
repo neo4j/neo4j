@@ -30,7 +30,6 @@ import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
@@ -65,7 +64,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -192,7 +190,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule, clusterStateDirectory.get() );
         topologyService = clusteringModule.topologyService();
 
-        long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle );
+        long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
         int maxQueueSize = config.get( CausalClusteringSettings.outgoing_queue_size );
 
         final SenderService raftSender = new SenderService(
@@ -278,7 +276,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         schemaWriteGuard = createSchemaWriteGuard();
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 

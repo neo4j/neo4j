@@ -112,7 +112,7 @@ public class ConsensusModule
                         new RaftMembershipState.Marshal(),
                         config.get( CausalClusteringSettings.raft_membership_state_size ), logProvider ) );
 
-        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout );
+        long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
         long heartbeatInterval = electionTimeout / 3;
 
         Integer expectedClusterSize = config.get( CausalClusteringSettings.expected_core_cluster_size );
@@ -122,7 +122,7 @@ public class ConsensusModule
         SendToMyself leaderOnlyReplicator = new SendToMyself( myself, outbound );
 
         raftMembershipManager = new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                expectedClusterSize, electionTimeout, systemClock(), config.get( join_catch_up_timeout ),
+                expectedClusterSize, electionTimeout, systemClock(), config.get( join_catch_up_timeout ).toMillis(),
                 raftMembershipStorage );
 
         life.add( raftMembershipManager );

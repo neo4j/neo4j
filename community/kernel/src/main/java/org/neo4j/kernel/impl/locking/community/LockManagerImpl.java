@@ -47,7 +47,7 @@ public class LockManagerImpl
     {
         this.ragManager = ragManager;
         this.clock = clock;
-        this.lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout );
+        this.lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toMillis();
     }
 
     public boolean getReadLock( LockTracer tracer, LockResource resource, Object tx )

@@ -20,8 +20,8 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
@@ -215,7 +215,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
-    public static Setting<Long> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
+    public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
@@ -237,7 +237,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
     @Internal
-    public static final Setting<Long> transaction_start_timeout =
+    public static final Setting<Duration> transaction_start_timeout =
             setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
 
     @Internal
@@ -247,15 +247,16 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description("The maximum time interval of a transaction within which it should be completed.")
-    public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
+    public static final Setting<Duration> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String
+            .valueOf( UNSPECIFIED_TIMEOUT ) );
 
     @Description( "The maximum time interval within which lock should be acquired." )
-    public static final Setting<Long> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
+    public static final Setting<Duration> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
             String.valueOf( UNSPECIFIED_TIMEOUT ) );
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
-    public static final Setting<Long> shutdown_transaction_end_timeout =
+    public static final Setting<Duration> shutdown_transaction_end_timeout =
             setting( "dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database " +
@@ -276,11 +277,11 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal
-    public static final Setting<Long> counts_store_rotation_timeout =
+    public static final Setting<Duration> counts_store_rotation_timeout =
             setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" );
 
     @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
-    public static final Setting<Long> store_internal_log_rotation_delay =
+    public static final Setting<Duration> store_internal_log_rotation_delay =
             setting("dbms.logs.debug.rotation.delay", DURATION, "300s" );
 
     @Description( "Maximum number of history files for the debug log." )
@@ -304,7 +305,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
                   "the database places on the system, as each check-point implies a flushing and forcing of all the " +
                   "store files." )
-    public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "15m" );
+    public static final Setting<Duration> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "15m" );
 
     @Description( "Limit the number of IOs the background checkpoint process will consume per second. " +
                   "This setting is advisory, is ignored in Neo4j Community Edition, and is followed to " +
@@ -458,13 +459,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     @SuppressWarnings( "unused" )
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
     @Internal
-    public static final Setting<Long> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
+    public static final Setting<Duration> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
 
     @SuppressWarnings( "unused" )
     @Description("The amount of time in ms the monitor thread has to be blocked before logging a message it was " +
             "blocked.")
     @Internal
-    public static final Setting<Long> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
+    public static final Setting<Duration> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min(1) );
@@ -498,7 +499,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
-    public static final Setting<Long> log_queries_threshold = setting("dbms.logs.query.threshold", DURATION, "0s");
+    public static final Setting<Duration> log_queries_threshold = setting("dbms.logs.query.threshold", DURATION, "0s");
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
             "will occur. Accepts a binary suffix `k`, `m` or `g`." )
@@ -592,9 +593,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final BoltConnectorValidator boltValidator = new BoltConnectorValidator();
 
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
-    public static final Setting<Long> bookmark_ready_timeout = setting(
+    public static final Setting<Duration> bookmark_ready_timeout = setting(
             "dbms.transaction.bookmark_ready_timeout", DURATION, "30s",
-            min( TimeUnit.SECONDS.toMillis( 1 ) ) );
+            min( Duration.ofSeconds( 1 ) ) );
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )

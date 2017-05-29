@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.Duration;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -160,7 +161,7 @@ public class EnterpriseSecurityModuleTest
         Log mockLog = mock( Log.class );
         when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
         when( mockLog.isDebugEnabled() ).thenReturn( true );
-        when( config.get( SecuritySettings.auth_cache_ttl ) ).thenReturn( 0L );
+        when( config.get( SecuritySettings.auth_cache_ttl ) ).thenReturn( Duration.ZERO );
         when( config.get( SecuritySettings.auth_cache_max_capacity ) ).thenReturn( 10 );
         when( config.get( SecuritySettings.security_log_successful_authentication ) ).thenReturn( false );
         when( config.get( GraphDatabaseSettings.auth_max_failed_attempts ) ).thenReturn( 3 );

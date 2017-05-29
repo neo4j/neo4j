@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.integration;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import javax.management.ObjectName;
 
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.jmx.impl.ConfigurationBean;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -42,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.jmx.JmxUtils.getAttribute;
 import static org.neo4j.jmx.JmxUtils.getObjectName;
 
@@ -51,6 +51,23 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     public TemporaryFolder tempDir = new TemporaryFolder();
 
     private CommunityNeoServer server;
+
+    @Test
+    public void durationsAlwaysHaveUnitsInJMX() throws Throwable
+    {
+        // Given
+        server = CommunityServerBuilder.server()
+                .withProperty( transaction_timeout.name(), "10" )
+                .build();
+
+        // When
+        server.start();
+
+        // Then
+        ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
+        String attr = getAttribute( name, transaction_timeout.name() );
+        assertThat( attr, equalTo( "10s" ) );
+    }
 
     @Test
     public void serverConfigShouldBeVisibleInJMX() throws Throwable

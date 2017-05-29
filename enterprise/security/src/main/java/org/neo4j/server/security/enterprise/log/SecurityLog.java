@@ -49,7 +49,7 @@ public class SecurityLog extends LifecycleAdapter implements Log
 
         rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile,
                 config.get( SecuritySettings.store_security_log_rotation_threshold ),
-                config.get( SecuritySettings.store_security_log_rotation_delay ),
+                config.get( SecuritySettings.store_security_log_rotation_delay ).toMillis(),
                 config.get( SecuritySettings.store_security_log_max_archives ), executor );
 
         FormattedLog formattedLog = builder.toOutputStream( rotatingSupplier );
