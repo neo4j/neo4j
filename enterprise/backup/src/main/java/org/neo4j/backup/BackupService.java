@@ -77,8 +77,10 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.rootCause;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
 /**
@@ -177,7 +179,9 @@ class BackupService
                     CancellationRequest.NEVER_CANCELLED,
                     MoveAfterCopy.moveReplaceExisting() );
 
-            File debugLogFile = tuningConfiguration.get( store_internal_log_path );
+            File debugLogFile =
+                    tuningConfiguration.with( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
+                            .get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, timestamp );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
@@ -235,7 +239,8 @@ class BackupService
             {
                 targetDb.shutdown();
             }
-            File debugLogFile = config.get( store_internal_log_path );
+            File debugLogFile = config.with( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
+                    .get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
