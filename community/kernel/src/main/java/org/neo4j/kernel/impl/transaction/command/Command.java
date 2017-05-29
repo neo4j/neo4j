@@ -226,9 +226,10 @@ public abstract class Command implements StorageCommand
 
         private boolean writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
         {
-            byte flags = bitFlags(  bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                    bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
             channel.put( flags );
             if ( record.inUse() )
             {
@@ -274,7 +275,8 @@ public abstract class Command implements StorageCommand
             byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                    bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ));
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
             channel.put( flags );
             if ( record.inUse() )
             {
@@ -322,7 +324,8 @@ public abstract class Command implements StorageCommand
         {
             byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
             channel.put( flags );
             channel.putShort( (short) record.getType() );
             channel.putLong( record.getNext() );
@@ -401,7 +404,8 @@ public abstract class Command implements StorageCommand
             byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                    bitFlag( record.getRelId() != -1, Record.REL_PROPERTY.byteValue() ),
                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
 
             channel.put( flags ); // 1
             channel.putLong( record.getNextProp() ).putLong( record.getPrevProp() ); // 8 + 8
