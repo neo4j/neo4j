@@ -44,22 +44,13 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.tools.util.TransactionLogUtils;
 
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 /**
  * Tool to read raw data from various stores.
@@ -288,17 +279,8 @@ public class RsdrMain
     private static IOCursor<LogEntry> getLogCursor( FileSystemAbstraction fileSystem, String fname,
             NeoStores neoStores ) throws IOException
     {
-        File file = new File( neoStores.getStoreDir(), fname );
-        StoreChannel fileChannel = fileSystem.open( file, "r" );
-        LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false, file );
-        console.printf( "Logical log version: %s with prev committed tx[%s]%n",
-                logHeader.logVersion, logHeader.lastCommittedTxId );
-
-        PhysicalLogVersionedStoreChannel channel =
-                new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        return new LogEntryCursor( logEntryReader, logChannel );
+        return TransactionLogUtils
+                .openLogEntryCursor( fileSystem, new File( neoStores.getStoreDir(), fname ), NO_MORE_CHANNELS );
     }
 
     private static void readLog(

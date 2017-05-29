@@ -43,11 +43,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.LogTestUtils;
 import org.neo4j.tools.txlog.checktypes.CheckType;
 import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.tools.util.TransactionLogUtils.openLogs;
 
 /**
  * Tool that verifies consistency of transaction logs.
@@ -133,29 +133,36 @@ public class CheckTxLogs
                 logFileSizes.put( i, fs.getFileSize( logFiles.getLogFileForVersion( i ) ) );
             }
 
-            LogEntryCursor logEntryCursor = LogTestUtils.openLogs( fs, logFiles );
-            while ( logEntryCursor.next() )
+            try ( LogEntryCursor logEntryCursor = openLogEntryCursor( logFiles ) )
             {
-                LogEntry logEntry = logEntryCursor.get();
-                if ( logEntry instanceof CheckPoint )
+                while ( logEntryCursor.next() )
                 {
-                    LogPosition logPosition = logEntry.<CheckPoint>as().getLogPosition();
-                    // if the file has been pruned we cannot validate the check point
-                    if ( logPosition.getLogVersion() >= lowestLogVersion )
+                    LogEntry logEntry = logEntryCursor.get();
+                    if ( logEntry instanceof CheckPoint )
                     {
-                        long size = logFileSizes.get( logPosition.getLogVersion() );
-                        if ( logPosition.getByteOffset() < 0 || size < 0 || logPosition.getByteOffset() > size )
+                        LogPosition logPosition = logEntry.<CheckPoint>as().getLogPosition();
+                        // if the file has been pruned we cannot validate the check point
+                        if ( logPosition.getLogVersion() >= lowestLogVersion )
                         {
-                            long currentLogVersion = logEntryCursor.getCurrentLogVersion();
-                            handler.reportInconsistentCheckPoint( currentLogVersion, logPosition, size );
-                            success = false;
-                        }
+                            long size = logFileSizes.get( logPosition.getLogVersion() );
+                            if ( logPosition.getByteOffset() < 0 || size < 0 || logPosition.getByteOffset() > size )
+                            {
+                                long currentLogVersion = logEntryCursor.getCurrentLogVersion();
+                                handler.reportInconsistentCheckPoint( currentLogVersion, logPosition, size );
+                                success = false;
+                            }
 
+                        }
                     }
                 }
             }
         }
         return success;
+    }
+
+    LogEntryCursor openLogEntryCursor( PhysicalLogFiles logFiles ) throws IOException
+    {
+        return openLogs( fs, logFiles );
     }
 
     boolean scan( PhysicalLogFiles logFiles, InconsistenciesHandler handler, CheckType<?,?>... checkTypes )
@@ -193,7 +200,7 @@ public class CheckTxLogs
         boolean validLogs = true;
         long commandsRead = 0;
         long lastSeenTxId = BASE_TX_ID;
-        try ( LogEntryCursor logEntryCursor = LogTestUtils.openLogs( fs, logFiles ) )
+        try ( LogEntryCursor logEntryCursor = openLogEntryCursor( logFiles ) )
         {
             while ( logEntryCursor.next() )
             {
