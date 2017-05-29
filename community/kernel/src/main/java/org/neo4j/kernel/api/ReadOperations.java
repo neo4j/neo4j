@@ -198,8 +198,8 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
-            IndexBrokenKernelException;
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value, boolean exclusive )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;

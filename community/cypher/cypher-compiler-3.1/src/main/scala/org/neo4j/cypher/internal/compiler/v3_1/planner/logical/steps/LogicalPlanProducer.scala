@@ -259,14 +259,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
-                              argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
+                              argumentIds: Set[IdName],
+                              exclusive: Boolean)(implicit context: LogicalPlanningContext) = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+    NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds, exclusive)(solved)
   }
 
   def planAssertSameNode(node: IdName, left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {

@@ -119,6 +119,28 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     )
   }
 
+  test("exclusive lock hint changes the plan accordingly") {
+    planFor("MATCH (n) MERGE (n)-[r:T]->(b) USING EXCLUSIVE LOCK").plan should equal(
+      EmptyResult(
+        Apply(
+          AllNodesScan(IdName("n"), Set())(solved),
+          AntiConditionalApply(
+            Optional(
+              Expand(
+                LockNodes(Argument(Set(IdName("n")))(solved)(), Set(IdName("n")))(solved),
+                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
+              Set(IdName("n")))(solved),
+            MergeCreateRelationship(
+              MergeCreateNode(
+                Argument(Set(IdName("n")))(solved)(),
+                IdName("b"), Seq.empty, None)(solved),
+              IdName("r"), IdName("n"), LazyType("T"), IdName("b"), None)(solved),
+            Seq(IdName("b"), IdName("r")))(solved)
+        )(solved)
+      )(solved)
+    )
+  }
+
   test("should not plan two create nodes when they are already in scope when creating a relationship") {
     val plan = planFor("MATCH (n) MATCH (m) MERGE (n)-[r:T]->(m)").plan
     plan should equal(EmptyResult(

@@ -137,7 +137,8 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint,
+        argumentIds, exclusive = false)
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getUniqueIndexRule(label, property)

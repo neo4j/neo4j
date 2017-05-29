@@ -235,11 +235,12 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index, Object value,
+                                            boolean exclusive )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check( statement );
-        return entityReadDelegate.nodeGetFromUniqueIndexSeek( statement, index, value );
+        return entityReadDelegate.nodeGetFromUniqueIndexSeek( statement, index, value, exclusive );
     }
 
     @Override

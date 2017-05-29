@@ -126,7 +126,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // then
       resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, false)) => ()
       }
     }
   }
@@ -166,7 +166,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // then
       resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, false)) => ()
       }
 
       resultPlans.map(_.solved.queryGraph) should beLike {
@@ -183,13 +183,13 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       uniqueIndexOn("Awesomer", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(false)(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
         case Seq(AssertSameNode(`idName`,
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
+          NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, false),
+          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, false))) => ()
       }
     }
   }
@@ -201,11 +201,11 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(false)(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, false)) => ()
       }
     }
   }
@@ -219,16 +219,16 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       uniqueIndexOn("Awesomest", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(false)(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
         case Seq(
         AssertSameNode(`idName`,
           AssertSameNode(`idName`,
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _)),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _))) => ()
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, false),
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, false)),
+          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _, false))) => ()
       }
     }
   }
@@ -244,7 +244,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       uniqueIndexOn("Awesomestest", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = mergeUniqueIndexSeekLeafPlanner(false)(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
@@ -252,10 +252,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         AssertSameNode(`idName`,
           AssertSameNode(`idName`,
             AssertSameNode(`idName`,
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, false),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _, false)),
+            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _, false)),
+          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, false))) => ()
       }
     }
   }

@@ -50,6 +50,8 @@ public class ConstraintEnforcingEntityOperationsTest
     private KernelStatement state;
     private Locks.Client locks;
     private ConstraintEnforcingEntityOperations ops;
+    private boolean NOT_EXCLUSIVE = false;
+    private boolean EXCLUSIVE = true;
 
     @Before
     public void given_ConstraintEnforcingEntityOperations_with_OnlineIndex() throws Exception
@@ -70,10 +72,11 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, NOT_EXCLUSIVE ) ).thenReturn(
+                expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, NOT_EXCLUSIVE );
 
         // then
         assertEquals( expectedNodeId, nodeId );
@@ -82,13 +85,30 @@ public class ConstraintEnforcingEntityOperationsTest
     }
 
     @Test
+    public void shouldTakeAndHoldExclusiveLockIfNodeIsExists() throws Exception
+    {
+        // given
+        long expectedNodeId = 15;
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, EXCLUSIVE ) ).thenReturn(
+                expectedNodeId );
+
+        // when
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, EXCLUSIVE );
+
+        // then
+        assertEquals( expectedNodeId, nodeId );
+        verify( locks).acquireExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verifyNoMoreInteractions( locks );
+    }
+
+    @Test
     public void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
     {
         // given
-        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, NOT_EXCLUSIVE ) ).thenReturn( NO_SUCH_NODE );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, NOT_EXCLUSIVE );
 
         // then
         assertEquals( NO_SUCH_NODE, nodeId );
@@ -99,16 +119,31 @@ public class ConstraintEnforcingEntityOperationsTest
     }
 
     @Test
+    public void shouldTakeExclusiveLocksWhenHintedToDoSo() throws Exception
+    {
+        // given
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, EXCLUSIVE ) ).thenReturn( NO_SUCH_NODE );
+
+        // when
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, EXCLUSIVE );
+
+        // then
+        assertEquals( NO_SUCH_NODE, nodeId );
+        verify( locks ).acquireExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verifyNoMoreInteractions( locks );
+    }
+
+    @Test
     public void shouldHoldIndexReadLockIfNodeIsConcurrentlyCreated() throws Exception
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) )
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, NOT_EXCLUSIVE ) )
                 .thenReturn( NO_SUCH_NODE )
                 .thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, NOT_EXCLUSIVE );
 
         // then
         assertEquals( expectedNodeId, nodeId );

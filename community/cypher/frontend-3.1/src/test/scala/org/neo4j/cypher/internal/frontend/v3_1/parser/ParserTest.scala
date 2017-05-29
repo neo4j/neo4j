@@ -45,7 +45,7 @@ trait ParserTest[T, J] extends CypherFunSuite {
 
     def shouldMatch(expected: PartialFunction[J, Unit]) {
       actuals foreach {
-        actual => expected.isDefinedAt(actual) should equal(true)
+        actual => expected.applyOrElse(actual, (mismatch:J) => fail(s"$mismatch did not match the given pattern"))
       }
     }
 

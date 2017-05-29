@@ -766,7 +766,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value,
+                                            boolean exclusive )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         StorageStatement storeStatement = state.getStoreStatement();

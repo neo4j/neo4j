@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{HasLabels, In, LabelName, MapExpression, Property, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{DummyPosition, SemanticDirection}
 
@@ -152,7 +152,7 @@ class UpdateGraphTest extends CypherFunSuite {
       DeleteExpression(Variable("a")(pos), forced = false),
       MergeNodePattern(
         CreateNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
-        QueryGraph.empty, Seq.empty, Seq.empty)
+        QueryGraph.empty, Seq.empty, Seq.empty, exclusiveLocking = false)
     ))
 
     ug.overlaps(qg) shouldBe true

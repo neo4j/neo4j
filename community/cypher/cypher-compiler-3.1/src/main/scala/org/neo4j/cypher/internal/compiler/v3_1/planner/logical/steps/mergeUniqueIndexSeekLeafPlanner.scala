@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast._
  *    /  \
  * (ui1) (ui2)
  */
-object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+case class mergeUniqueIndexSeekLeafPlanner(exclusive: Boolean) extends AbstractIndexSeekLeafPlanner {
 
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
 
@@ -63,7 +63,8 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => NodeUniqueIndexSeek =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint,
+        argumentIds, exclusive)
 
   override def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getUniqueIndexRule(label, property)

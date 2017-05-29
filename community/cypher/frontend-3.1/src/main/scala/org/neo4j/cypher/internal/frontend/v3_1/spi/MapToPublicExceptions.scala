@@ -44,6 +44,8 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def joinHintException(variable: String, message: String, cause: Throwable): T
 
+  def lockingHintException(cause: Throwable): T
+
   def profilerStatisticsNotReadyException(cause: Throwable): T
 
   def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable): T

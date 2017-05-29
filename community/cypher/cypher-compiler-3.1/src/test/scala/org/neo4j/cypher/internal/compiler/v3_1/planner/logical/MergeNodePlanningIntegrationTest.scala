@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_1.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, LockingHintException}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.PropertyKeyId
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -54,6 +57,10 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         "X" -> 30.0
       )
     } planFor "MERGE (a:X)").plan should equal(emptyResult)
+  }
+
+  test("should not be able to use exclusive lock if there is nothing to lock") {
+    intercept[LockingHintException](planFor("MERGE (a:X) USING EXCLUSIVE LOCK"))
   }
 
   test("should plan single merge node with properties") {
@@ -116,6 +123,32 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     plan should not be using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
+  }
+
+  test("should take exclusive locks when hinted to do so and appropiate index exists") {
+    val plan = (new given {
+      uniqueIndexOn("X", "prop")
+    } planFor "MERGE (a:X {prop: 42}) USING EXCLUSIVE LOCK").plan
+
+
+    val allNodesScan = AllNodesScan(aId, Set.empty)(solved)
+    val propertyKeyName = PropertyKeyName("prop")(pos)
+    val propertyValue = SignedDecimalIntegerLiteral("42")(pos)
+
+    val labelToken: LabelToken = LabelToken(LabelName("X")_, LabelId(0))
+    val propKeyToken: PropertyKeyToken = PropertyKeyToken(propertyKeyName, PropertyKeyId(0))
+    val lit42: Expression = SignedDecimalIntegerLiteral("42") _
+    val selection = NodeUniqueIndexSeek(aId, labelToken, propKeyToken, SingleQueryExpression(lit42), Set.empty, exclusive = true)(solved)
+    val optional = Optional(selection)(solved)
+
+    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq(LabelName("X")_),
+      Some(MapExpression(List((PropertyKeyName("prop")(pos),
+        SignedDecimalIntegerLiteral("42")(pos))))(pos)))(solved)
+
+    val aca = AntiConditionalApply(optional, onCreate, Seq(aId))(solved)
+    val emptyResult = EmptyResult(aca)(solved)
+
+    plan should equal(emptyResult)
   }
 
   /*

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LockNodes, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LockNodes, LogicalPlan, NodeUniqueIndexSeek}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_1.LockingHintException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.{ContainerIndex, PathExpression, Variable}
-
 /*
  * This coordinates PlannerQuery planning of updates.
  */
@@ -73,7 +74,7 @@ case object PlanUpdates
       //MERGE ()
       case p: MergeNodePattern =>
         val mergePlan = planMerge(source, p.matchGraph, Seq(p.createNodePattern), Seq.empty, p.onCreate,
-          p.onMatch, first)
+          p.onMatch, first, p.exclusiveLocking)
         //we have to force the plan to solve what we actually solve
         val solved = context.logicalPlanProducer.estimatePlannerQuery(
           source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
@@ -82,7 +83,7 @@ case object PlanUpdates
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
         val mergePlan = planMerge(source, p.matchGraph, p.createNodePatterns, p.createRelPatterns, p.onCreate,
-          p.onMatch, first)
+          p.onMatch, first, p.exclusiveLocking)
         //we have to force the plan to solve what we actually solve
         val solved = context.logicalPlanProducer.estimatePlannerQuery(
           source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
@@ -154,12 +155,13 @@ case object PlanUpdates
    */
   def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNodePattern],
                 createRelationshipPatterns: Seq[CreateRelationshipPattern], onCreatePatterns: Seq[SetMutatingPattern],
-                onMatchPatterns: Seq[SetMutatingPattern], first: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
+                onMatchPatterns: Seq[SetMutatingPattern], first: Boolean, exclusiveLocking: Boolean)
+               (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val producer: LogicalPlanProducer = context.logicalPlanProducer
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
-    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner(exclusiveLocking)),
       context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
@@ -167,7 +169,8 @@ case object PlanUpdates
 
     val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
-    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
+    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns,
+      innerContext, ids, exclusiveLocking)
 
     //            condApply
     //             /   \
@@ -208,12 +211,32 @@ case object PlanUpdates
                              createNodePatterns: Seq[CreateNodePattern],
                              createRelationshipPatterns: Seq[CreateRelationshipPattern],
                              context: LogicalPlanningContext,
-                             ids: Seq[IdName]): LogicalPlan = {
+                             ids: Seq[IdName],
+                             exclusiveLocking: Boolean): LogicalPlan = {
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph)(ctx)
       if (mergeReadPart.solved.queryGraph != matchGraph)
         throw new CantHandleQueryException(s"The planner was unable to successfully plan the MERGE read:\n${mergeReadPart.solved.queryGraph}\n not equal to \n$matchGraph")
       producer.planOptional(mergeReadPart, matchGraph.argumentIds)(ctx)
+    }
+
+    // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
+    val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
+
+    def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
+      val lockThese = nodesToLock intersect plan.availableSymbols
+      if (lockThese.nonEmpty)
+        LockNodes(plan, lockThese)(plan.solved)
+      else
+        plan
+    }
+
+    val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
+
+    val firstContext = if (exclusiveLocking && nodesToLock.nonEmpty) {
+      lockingContext
+    } else {
+      context
     }
 
     //        apply
@@ -223,23 +246,9 @@ case object PlanUpdates
     // source  mergeReadPart
     //                \
     //                arg
-    val matchOrNull = producer.planApply(source, mergeRead(context))(context)
+    val matchOrNull = producer.planApply(source, mergeRead(firstContext))(context)
 
-    // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
-    val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
-
-    if (nodesToLock.nonEmpty) {
-
-      def addLockToPlan(plan: LogicalPlan): LogicalPlan = {
-        val lockThese = nodesToLock intersect plan.availableSymbols
-        if (lockThese.nonEmpty)
-          LockNodes(plan, lockThese)(plan.solved)
-        else
-          plan
-      }
-
-      val lockingContext = context.copy(leafPlanUpdater = addLockToPlan)
-
+    val result = if (nodesToLock.nonEmpty && !exclusiveLocking) {
       //        antiCondApply
       //        /   \
       //       /  optional
@@ -253,5 +262,17 @@ case object PlanUpdates
       producer.planAntiConditionalApply(matchOrNull, ifMissingLockAndMatchAgain, ids)(context)
     } else
       matchOrNull
+
+    if (exclusiveLocking && !containsLocking(result))
+      throw new LockingHintException
+
+    result
+  }
+
+  private def containsLocking(plan: LogicalPlan): Boolean = {
+    plan.treeExists {
+      case _: LockNodes => true
+      case index: NodeUniqueIndexSeek => index.exclusive
+    }
   }
 }

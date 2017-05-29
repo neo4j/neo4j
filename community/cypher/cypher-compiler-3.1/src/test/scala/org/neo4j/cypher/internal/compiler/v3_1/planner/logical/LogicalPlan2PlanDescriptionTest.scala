@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.ManyQueryExpression
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression, Index, KeyNames, LabelName}
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
@@ -62,7 +62,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       , NodeIndexSeek(IdName("x"), LabelToken("Label", LabelId(0)), PropertyKeyToken("Prop", PropertyKeyId(0)), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(23) ->
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren, Seq(Index("Label", "Prop"), EstimatedRows(23)), Set("x"))
 
-      , NodeUniqueIndexSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), PropertyKeyToken("Porp", PropertyKeyId(0)), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(95) ->
+      , NodeUniqueIndexSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), PropertyKeyToken("Porp", PropertyKeyId(0)), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty, false)(95) ->
         PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren, Seq(Index("Lebal", "Porp"), EstimatedRows(95)), Set("x"))
 
       , Expand(lhsLP, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(95) ->

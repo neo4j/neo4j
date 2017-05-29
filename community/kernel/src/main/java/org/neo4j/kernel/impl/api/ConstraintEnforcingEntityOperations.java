@@ -163,7 +163,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             state.locks().optimistic().acquireExclusive( INDEX_ENTRY,
                     indexEntryResourceId( labelId, propertyKeyId, Strings.prettyPrint( value ) ) );
 
-            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
+            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value, false );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
                 throw new UniquePropertyConstraintViolationKernelException( labelId, propertyKeyId, value, existing );
@@ -320,7 +320,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
             IndexDescriptor index,
-            Object value )
+            Object value,
+            boolean exclusive)
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( state, index );
@@ -339,15 +340,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         Locks.Client locks = state.locks().optimistic();
         long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
 
-        locks.acquireShared( INDEX_ENTRY, indexEntryId );
+        if(exclusive)
+            locks.acquireExclusive( INDEX_ENTRY, indexEntryId );
+        else
+            locks.acquireShared( INDEX_ENTRY, indexEntryId );
 
-        long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
-        if ( NO_SUCH_NODE == nodeId )
+        long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value, exclusive );
+        if ( NO_SUCH_NODE == nodeId && !exclusive )
         {
             locks.releaseShared( INDEX_ENTRY, indexEntryId );
             locks.acquireExclusive( INDEX_ENTRY, indexEntryId );
 
-            nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
+            nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value, exclusive );
             if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
                 // downgrade to a shared lock

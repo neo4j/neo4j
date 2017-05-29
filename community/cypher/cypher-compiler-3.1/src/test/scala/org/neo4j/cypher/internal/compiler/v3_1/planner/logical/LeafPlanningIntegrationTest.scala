@@ -351,8 +351,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       uniqueIndexOn("Awesome", "prop")
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
+    val labelToken = LabelToken("Awesome", LabelId(0))
+    val keyToken = PropertyKeyToken("prop", PropertyKeyId(0))
     plan.plan should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeUniqueIndexSeek("n", labelToken, keyToken, SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty, exclusive = false)(solved)
     )
   }
 
@@ -489,7 +491,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty, exclusive = false)(solved)
     )
   }
 
@@ -502,7 +504,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
+        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty, exclusive = false)(solved)
       )(solved)
     )
   }
@@ -516,7 +518,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
+        NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty, exclusive = false)(solved)
       )(solved)
     )
   }
