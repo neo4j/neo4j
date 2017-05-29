@@ -352,17 +352,6 @@ public class BookmarkTest
         assertEquals( 17, bookmark.txId() );
     }
 
-    @Test
-    public void shouldReturnNull() throws Exception
-    {
-        Map<String,Object> params = params( null,
-                asList( "neo4j:bookmark:v1:tx3", "neo4j:bookmark:v1:tx5", null, "neo4j:bookmark:v1:tx17" ) );
-
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
-
-        assertEquals( 17, bookmark.txId() );
-    }
-
     private static Map<String,Object> params( String bookmark, Object bookmarks )
     {
         Map<String,Object> result = new HashMap<>();
