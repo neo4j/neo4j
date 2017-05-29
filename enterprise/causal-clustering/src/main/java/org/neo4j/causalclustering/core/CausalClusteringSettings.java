@@ -194,8 +194,8 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Path to RAFT messages log." )
     public static final Setting<File> raft_messages_log_path =
-            derivedSetting( "dbms.logs.query.path", logs_directory, ( logs ) -> new File( logs, "raft-messages.log" ),
-                    PATH );
+            derivedSetting( "causal_clustering.raft_messages_log_path", logs_directory,
+                    ( logs ) -> new File( logs, "raft-messages.log" ), PATH );
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
