@@ -53,13 +53,13 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val query =
       """MATCH (c:User)
         |WHERE ((c.prop1 >= 1 AND c.prop2 < 2)
-        |OR (c.prop1 >= 10 AND c.prop2 <= 12))
+        |OR (c.prop1 > 10 AND c.prop2 <= 11))
         |RETURN c""".stripMargin
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useIndex(":User(prop1)", ":User(prop2)")
+    result should useOperationTimes("NodeIndexScan", 2)
+    result should use("Union")
   }
 
   test("Should allow AND and OR with index seek and STARTS WITH predicates") {
@@ -93,7 +93,23 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useOperationWith("NodeIndexScan", ":User(prop1)", ":User(prop2)")
+    result should useOperationTimes("NodeIndexScan", 2)
+    result should use("Union")
+  }
+
+  test("Should allow OR with index scan and regex predicates") {
+    graph.createIndex("User", "prop")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop" -> s"${i}_val"), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationWith("NodeIndexScan", ":User(prop)")
   }
 
   test("should not forget predicates") {

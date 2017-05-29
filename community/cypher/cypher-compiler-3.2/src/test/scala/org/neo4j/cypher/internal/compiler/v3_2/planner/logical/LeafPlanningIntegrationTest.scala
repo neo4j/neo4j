@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_2.{ExclusiveBound, InclusiveBound, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.ir.v3_2.{Cost, IdName}
 
-class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
   test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new given {
@@ -681,20 +681,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._2
 
-    RangeQueryExpression(InequalitySeekRangeWrapper(
-      RangeGreaterThan(NonEmptyList(InclusiveBound(StringLiteral("Frodo")_)))
-    )_)
-
-    val prop1Predicate = RangeQueryExpression(InequalitySeekRangeWrapper(
-      RangeGreaterThan(NonEmptyList(InclusiveBound(SignedDecimalIntegerLiteral("42")(pos))))
-    )(pos))
     val prop2Predicate = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("apa")(pos)))(pos))
     val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
     val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
     val labelToken = LabelToken("Awesome", LabelId(0))
-    val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
-    val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
-    val union: Union = Union(seek2, seek1)(solved)
+    val prop1Predicate = GreaterThanOrEqual(prop("n", "prop1"), literalInt(42))(pos)
+    val seek1 = Selection(Seq(prop1Predicate), NodeIndexScan(IdName("n"), labelToken, prop1, Set.empty)(solved))(solved)
+    val seek2 = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val union = Union(seek1, seek2)(solved)
     val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
 
     plan should equal(distinct)
