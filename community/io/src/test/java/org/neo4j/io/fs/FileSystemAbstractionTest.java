@@ -49,7 +49,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.not;
@@ -60,8 +59,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
 import static org.neo4j.io.fs.FileHandle.handleRename;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -710,6 +707,16 @@ public abstract class FileSystemAbstractionTest
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
         verifyRecordsInFile( b, recordCount );
 
+    }
+
+    @Test
+    public void shouldHandlePathThatLooksVeryDifferentWhenCanonicalized() throws Exception
+    {
+        File dir = existingDirectory( "/././home/.././././home/././.././././././././././././././././././home/././" );
+        File a = existingFile( "/home/a" );
+
+        List<File> filepaths = fsa.streamFilesRecursive( dir ).map( FileHandle::getRelativeFile ).collect( toList() );
+        assertThat( filepaths, containsInAnyOrder( new File( a.getName() ) ) );
     }
 
     private void generateFileWithRecords( File file, int recordCount ) throws IOException
