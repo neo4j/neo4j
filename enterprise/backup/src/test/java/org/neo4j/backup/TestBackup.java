@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -81,6 +80,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 @RunWith( Parameterized.class )
@@ -576,7 +578,8 @@ public class TestBackup
 
     private static boolean checkLogFileExistence( String directory )
     {
-        return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
+        return Config.embeddedDefaults( stringMap( logs_directory.name(), directory ) ).get( store_internal_log_path )
+                .exists();
     }
 
     private long lastTxChecksumOf( File storeDir, PageCache pageCache ) throws IOException

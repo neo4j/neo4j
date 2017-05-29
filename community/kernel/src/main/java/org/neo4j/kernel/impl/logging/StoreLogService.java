@@ -41,7 +41,7 @@ import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
-    public static final String INTERNAL_LOG_NAME = "debug.log";
+    //public static final String INTERNAL_LOG_NAME = "debug.log";
 
     public static class Builder
     {
@@ -55,6 +55,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         };
         private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
+        private File debugLog;
 
         private Builder()
         {
@@ -101,12 +102,21 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public StoreLogService inLogsDirectory( FileSystemAbstraction fileSystem, File logsDir ) throws IOException
+        public Builder withInternalLog( File logFile ) throws IOException
         {
-            return new StoreLogService(
-                    userLogProvider,
-                    fileSystem, new File( logsDir, INTERNAL_LOG_NAME ), logLevels, defaultLevel,
-                    internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
+            this.debugLog = logFile;
+            return this;
+        }
+
+        public StoreLogService build( FileSystemAbstraction fileSystem ) throws IOException
+        {
+            if ( debugLog == null )
+            {
+                throw new IllegalArgumentException( "Debug log can't be null; set its value using `withInternalLog`" );
+            }
+            return new StoreLogService( userLogProvider, fileSystem, debugLog, logLevels, defaultLevel,
+                    internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor,
+                    rotationListener );
         }
     }
 
@@ -122,9 +132,9 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                         jobScheduler );
     }
 
-    public static StoreLogService inLogsDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    public static Builder withInternalLog( File logFile ) throws IOException
     {
-        return new Builder().inLogsDirectory( fileSystem, storeDir );
+        return new Builder().withInternalLog( logFile );
     }
 
     private final Closeable closeable;

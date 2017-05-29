@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -42,6 +41,7 @@ import static org.junit.Assert.assertEquals;
 
 public class GraphDatabaseInternalLogIT
 {
+    public static final String INTERNAL_LOG_FILE = "debug.log";
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
 
@@ -52,7 +52,7 @@ public class GraphDatabaseInternalLogIT
         new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase().shutdown();
-        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
@@ -75,7 +75,7 @@ public class GraphDatabaseInternalLogIT
         logService.getInternalLog( getClass() ).debug( "A debug entry" );
 
         db.shutdown();
-        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
@@ -100,7 +100,7 @@ public class GraphDatabaseInternalLogIT
         logService.getInternalLog( StringWriter.class ).debug( "A SW debug entry" );
 
         db.shutdown();
-        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );

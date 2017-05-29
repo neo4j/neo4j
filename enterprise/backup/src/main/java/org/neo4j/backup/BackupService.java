@@ -57,7 +57,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -78,6 +77,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
@@ -177,7 +177,8 @@ class BackupService
                     CancellationRequest.NEVER_CANCELLED,
                     MoveAfterCopy.moveReplaceExisting() );
 
-            bumpDebugDotLogFileVersion( targetDirectory, timestamp );
+            File debugLogFile = tuningConfiguration.get( store_internal_log_path );
+            bumpDebugDotLogFileVersion( debugLogFile, timestamp );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
@@ -234,7 +235,8 @@ class BackupService
             {
                 targetDb.shutdown();
             }
-            bumpDebugDotLogFileVersion( targetDirectory, backupStartTime );
+            File debugLogFile = config.get( store_internal_log_path );
+            bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
@@ -410,18 +412,15 @@ class BackupService
         return handler.getLastSeenTransactionId();
     }
 
-    private static boolean bumpDebugDotLogFileVersion( File dbDirectory, long toTimestamp )
+    private static boolean bumpDebugDotLogFileVersion( final File debugLogFile, final long toTimestamp )
     {
-        File[] candidates = dbDirectory.listFiles( ( dir, name ) -> name.equals( StoreLogService.INTERNAL_LOG_NAME ) );
-        if ( candidates == null || candidates.length != 1 )
+        if ( !debugLogFile.exists() )
         {
             return false;
         }
-        // candidates has a unique member, the right one
-        File previous = candidates[0];
         // Build to, from existing parent + new filename
-        File to = new File( previous.getParentFile(), StoreLogService.INTERNAL_LOG_NAME + "." + toTimestamp );
-        return previous.renameTo( to );
+        File to = new File( debugLogFile.getParentFile(), debugLogFile.getName() + "." + toTimestamp );
+        return debugLogFile.renameTo( to );
     }
 
     private List<KernelExtensionFactory<?>> loadKernelExtensions()

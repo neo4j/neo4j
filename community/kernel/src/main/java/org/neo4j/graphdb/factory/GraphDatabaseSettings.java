@@ -502,6 +502,12 @@ public class GraphDatabaseSettings implements LoadableConfig
             ( logs ) -> new File( logs, "query.log" ),
             PATH );
 
+    @Description( "Path to the debug log file." )
+    public static final Setting<File> store_internal_log_path = derivedSetting( "dbms.logs.debug.path",
+            logs_directory,
+            ( logs ) -> new File( logs, "debug.log" ),
+            PATH );
+
     @Description( "Log parameters for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
             setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );

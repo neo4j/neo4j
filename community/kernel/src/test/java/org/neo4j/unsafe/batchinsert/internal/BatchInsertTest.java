@@ -76,7 +76,6 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
-import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -639,7 +638,7 @@ public class BatchInsertTest
         File storeDir = this.storeDir.graphDbDir();
         BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap() );
         inserter.shutdown();
-        assertTrue( new File( storeDir, StoreLogService.INTERNAL_LOG_NAME ).delete() );
+        assertTrue( new File( storeDir, "debug.log" ).delete() );
     }
 
     @Test

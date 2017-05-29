@@ -49,7 +49,6 @@ import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
-import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -338,7 +337,7 @@ public class TestBranchedData
         for ( File file : Objects.requireNonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
-            if ( !fileName.equals( StoreLogService.INTERNAL_LOG_NAME ) && !file.getName().startsWith( "branched-" ) )
+            if ( !fileName.equals( "debug.log" ) && !file.getName().startsWith( "branched-" ) )
             {
                 FileUtils.renameFile( file, new File( branchDir, file.getName() ) );
             }
