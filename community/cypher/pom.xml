@@ -163,6 +163,11 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+    </dependency>
+
     <!-- shared java test dependencies -->
     <dependency>
       <groupId>junit</groupId>
