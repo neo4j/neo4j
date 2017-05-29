@@ -269,8 +269,8 @@ public class SecuritySettings implements LoadableConfig
     // Security log settings
     //=========================================================================
 
-    @Internal
-    public static final Setting<File> security_log_filename = derivedSetting( "dbms.security.log_path",
+    @Description( "Path to the security log file." )
+    public static final Setting<File> security_log_filename = derivedSetting( "dbms.logs.security.path",
             GraphDatabaseSettings.logs_directory,
             ( logs ) -> new File( logs, "security.log" ),
             PATH );
