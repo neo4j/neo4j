@@ -147,7 +147,7 @@
                 <boolean>true</boolean>
               </void>
               <void property="versionInfoCopyright">
-                <string>2002-2015 Neo Technology Inc.</string>
+                <string>2002-2017 Neo Technology Inc.</string>
               </void>
               <void property="versionInfoFileDescription">
                 <string>${compiler:sys.fullName}</string>
