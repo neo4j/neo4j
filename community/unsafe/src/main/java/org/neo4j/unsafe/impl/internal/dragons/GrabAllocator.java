@@ -19,20 +19,18 @@
  */
 package org.neo4j.unsafe.impl.internal.dragons;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
+
 /**
- * The memory manager is simple: it only allocates memory, until it itself is finalizable and frees it all in one go.
- *
- * The memory is allocated in large segments, called "grabs", and the memory returned by the memory manager is page
- * aligned, and plays well with transparent huge pages and other operating system optimisations.
- *
- * The memory manager assumes that the memory claimed from it is evenly divisible in units of pages.
+ * This memory allocator is allocating memory in large segments, called "grabs", and the memory returned by the memory
+ * manager is page aligned, and plays well with transparent huge pages and other operating system optimisations.
  */
-public final class MemoryManager
+public final class GrabAllocator implements MemoryAllocator
 {
     /**
      * The amount of memory, in bytes, to grab in each Grab.
      */
-    private static final long GRAB_SIZE = FeatureToggles.getInteger( MemoryManager.class, "GRAB_SIZE", 512 * 1024 ); // 512 KiB
+    private static final long GRAB_SIZE = getInteger( GrabAllocator.class, "GRAB_SIZE", 512 * 1024 ); // 512 KiB
 
     /**
      * The amount of memory that this memory manager can still allocate.
@@ -43,13 +41,13 @@ public final class MemoryManager
     private Grab grabs;
 
     /**
-     * Create a new MemoryManager that will allocate the given amount of memory, to pointers that are aligned to the
+     * Create a new GrabAllocator that will allocate the given amount of memory, to pointers that are aligned to the
      * given alignment size.
      * @param expectedMaxMemory The maximum amount of memory that this memory manager is expected to allocate. The
      * actual amount of memory used can end up greater than this value, if some of it gets wasted on alignment padding.
      * @param alignment The byte multiple that the allocated pointers have to be aligned at.
      */
-    public MemoryManager( long expectedMaxMemory, long alignment )
+    GrabAllocator( long expectedMaxMemory, long alignment )
     {
         if ( alignment == 0 )
         {
@@ -59,6 +57,7 @@ public final class MemoryManager
         this.alignment = alignment;
     }
 
+    @Override
     public synchronized long sumUsedMemory()
     {
         long sum = 0;
@@ -71,12 +70,7 @@ public final class MemoryManager
         return sum;
     }
 
-    /**
-     * Allocate a contiguous, aligned region of memory of the given size in bytes.
-     * @param bytes the number of bytes to allocate.
-     * @return A pointer to the allocated memory.
-     * @throws OutOfMemoryError if the requested memory could not be allocated.
-     */
+    @Override
     public synchronized long allocateAligned( long bytes )
     {
         if ( bytes > GRAB_SIZE )

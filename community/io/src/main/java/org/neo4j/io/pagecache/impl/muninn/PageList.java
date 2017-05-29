@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
+import org.neo4j.unsafe.impl.internal.dragons.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
@@ -91,20 +91,20 @@ class PageList
 
     private final int pageCount;
     private final int cachePageSize;
-    private final MemoryManager memoryManager;
+    private final MemoryAllocator memoryAllocator;
     private final SwapperSet swappers;
     private final long victimPageAddress;
     private final long baseAddress;
 
-    PageList( int pageCount, int cachePageSize, MemoryManager memoryManager, SwapperSet swappers, long victimPageAddress )
+    PageList( int pageCount, int cachePageSize, MemoryAllocator memoryAllocator, SwapperSet swappers, long victimPageAddress )
     {
         this.pageCount = pageCount;
         this.cachePageSize = cachePageSize;
-        this.memoryManager = memoryManager;
+        this.memoryAllocator = memoryAllocator;
         this.swappers = swappers;
         this.victimPageAddress = victimPageAddress;
         long bytes = ((long) pageCount) * META_DATA_BYTES_PER_PAGE;
-        this.baseAddress = memoryManager.allocateAligned( bytes );
+        this.baseAddress = memoryAllocator.allocateAligned( bytes );
         clearMemory( baseAddress, pageCount );
     }
 
@@ -119,7 +119,7 @@ class PageList
     {
         this.pageCount = pageList.pageCount;
         this.cachePageSize = pageList.cachePageSize;
-        this.memoryManager = pageList.memoryManager;
+        this.memoryAllocator = pageList.memoryAllocator;
         this.swappers = pageList.swappers;
         this.victimPageAddress = pageList.victimPageAddress;
         this.baseAddress = pageList.baseAddress;
@@ -306,7 +306,7 @@ class PageList
     {
         if ( getAddress( pageRef ) == 0L )
         {
-            long addr = memoryManager.allocateAligned( getCachePageSize() );
+            long addr = memoryAllocator.allocateAligned( getCachePageSize() );
             UnsafeUtil.putLong( offAddress( pageRef ), addr );
         }
     }

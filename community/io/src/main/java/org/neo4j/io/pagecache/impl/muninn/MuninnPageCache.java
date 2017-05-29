@@ -46,7 +46,7 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
+import org.neo4j.unsafe.impl.internal.dragons.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
@@ -220,10 +220,10 @@ public class MuninnPageCache implements PageCache
 
         long alignment = swapperFactory.getRequiredBufferAlignment();
         long expectedMaxMemory = ((long) maxPages) * cachePageSize; // cast to long prevents overflow
-        MemoryManager memoryManager = new MemoryManager( expectedMaxMemory, alignment );
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMaxMemory, alignment );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
 
-        this.pages = new PageList( maxPages, cachePageSize, memoryManager, new SwapperSet(), victimPage );
+        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage );
 
         setFreelistHead( new AtomicInteger() );
     }

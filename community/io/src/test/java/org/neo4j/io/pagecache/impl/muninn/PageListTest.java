@@ -50,7 +50,7 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
+import org.neo4j.unsafe.impl.internal.dragons.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -82,13 +82,13 @@ public class PageListTest
     }
 
     private static ExecutorService executor;
-    private static MemoryManager mman;
+    private static MemoryAllocator mman;
 
     @BeforeClass
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = new MemoryManager( ByteUnit.mebiBytes( 1 ), ALIGNMENT );
+        mman = MemoryAllocator.createAllocator( ByteUnit.mebiBytes( 1 ), ALIGNMENT );
     }
 
     @AfterClass

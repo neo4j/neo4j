@@ -25,12 +25,17 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
-public class MemoryManagerTest
+public class MemoryAllocatorTest
 {
+    protected MemoryAllocator createAllocator( long expectedMaxMemory, long alignment )
+    {
+        return MemoryAllocator.createAllocator( expectedMaxMemory, alignment );
+    }
+
     @Test
     public void allocatedPointerMustNotBeNull() throws Exception
     {
-        MemoryManager mman = new MemoryManager( 16 * 4096, 8 );
+        MemoryAllocator mman = createAllocator( 16 * 4096, 8 );
         long address = mman.allocateAligned( 8192 );
         assertThat( address, is( not( 0L ) ) );
     }
@@ -38,7 +43,7 @@ public class MemoryManagerTest
     @Test
     public void allocatedPointerMustBePageAligned() throws Exception
     {
-        MemoryManager mman = new MemoryManager( 16 * 4096, UnsafeUtil.pageSize() );
+        MemoryAllocator mman = createAllocator( 16 * 4096, UnsafeUtil.pageSize() );
         long address = mman.allocateAligned( 8192 );
         assertThat( address % UnsafeUtil.pageSize(), is( 0L ) );
     }
@@ -46,7 +51,7 @@ public class MemoryManagerTest
     @Test
     public void mustBeAbleToAllocatePastMemoryLimit() throws Exception
     {
-        MemoryManager mman = new MemoryManager( 8192, 2 );
+        MemoryAllocator mman = createAllocator( 8192, 2 );
         for ( int i = 0; i < 4100; i++ )
         {
             assertThat( mman.allocateAligned( 1 ) % 2, is( 0L ) );
@@ -57,13 +62,13 @@ public class MemoryManagerTest
     @Test( expected = IllegalArgumentException.class )
     public void alignmentCannotBeZero() throws Exception
     {
-        new MemoryManager( 8192, 0 );
+        createAllocator( 8192, 0 );
     }
 
     @Test
     public void mustBeAbleToAllocateSlabsLargerThanGrabSize() throws Exception
     {
-        MemoryManager mman = new MemoryManager( 32 * 1024 * 1024, 1 );
+        MemoryAllocator mman = createAllocator( 32 * 1024 * 1024, 1 );
         long page1 = mman.allocateAligned( UnsafeUtil.pageSize() );
         long largeBlock = mman.allocateAligned( 1024 * 1024 ); // 1 MiB
         long page2 = mman.allocateAligned( UnsafeUtil.pageSize() );
