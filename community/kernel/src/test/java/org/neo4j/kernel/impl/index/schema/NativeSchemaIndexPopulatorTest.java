@@ -49,7 +49,6 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -750,18 +749,18 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
 
     private static class NativeSchemaIndexHeaderReader implements Header.Reader
     {
-        byte state;
-        String failureMessage;
+        private byte state;
+        private String failureMessage;
 
         @Override
-        public void read( PageCursor from, int length )
+        public void read( ByteBuffer headerData )
         {
-            state = from.getByte();
+            state = headerData.get();
             if ( state == NativeSchemaIndexPopulator.BYTE_FAILED )
             {
-                short messageLength = from.getShort();
+                short messageLength = headerData.getShort();
                 byte[] failureMessageBytes = new byte[messageLength];
-                from.getBytes( failureMessageBytes );
+                headerData.get( failureMessageBytes );
                 failureMessage = new String( failureMessageBytes, Charsets.UTF_8 );
             }
         }

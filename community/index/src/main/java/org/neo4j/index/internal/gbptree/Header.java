@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -69,14 +69,11 @@ public class Header
     {
         /**
          * Called when it's time to read header data from the most up to date and valid state page.
-         * Due to the nature of the underlying {@link PageCache} this method may be called several times,
-         * some times with invalid data in the {@link PageCursor}. Because of this there mustn't be any
-         * exceptions thrown or decisions made based on the read data until the GBPTree constructor has been
-         * completely executed.
+         * The data that can be accessed from the {@code headerBytes} buffer have been consistently
+         * read from a {@link PageCursor}.
          *
-         * @param from {@link PageCursor} positioned at beginning of the header data to read.
-         * @param length number of bytes available to read in the header data.
+         * @param headerBytes {@link ByteBuffer} containing the header data.
          */
-        void read( PageCursor from, int length );
+        void read( ByteBuffer headerBytes );
     }
 }

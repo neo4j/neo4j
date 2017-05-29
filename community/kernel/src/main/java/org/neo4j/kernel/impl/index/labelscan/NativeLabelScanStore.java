@@ -348,7 +348,7 @@ public class NativeLabelScanStore implements LabelScanStore
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class, NATIVE_LABEL_INDEX_TAG );
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
-                ( pageCursor, length ) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
+                headerData -> isRebuilding.setValue( headerData.get() == REBUILDING );
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
                 recoveryCleanupWorkCollector );
         return isRebuilding.getValue();
