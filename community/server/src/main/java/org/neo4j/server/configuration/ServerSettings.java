@@ -34,6 +34,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.web.JettyThreadCalculator;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -42,9 +43,11 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
@@ -140,6 +143,11 @@ public class ServerSettings implements LoadableConfig
 
     @Description( "Enable HTTP request logging." )
     public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
+
+    @Description( "Path to HTTP request log." )
+    public static final Setting<File> http_log_path =
+            derivedSetting( "dbms.logs.http.path", logs_directory, ( logs ) -> new File( logs, "http.log" ),
+                    PATH );
 
     @Description( "Number of HTTP logs to keep." )
     public static final Setting<Integer> http_logging_rotation_keep_number =
