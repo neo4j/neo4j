@@ -470,45 +470,6 @@ public class UserFunctionIT
     private static List<Exception> exceptionsInFunction = Collections.<Exception>synchronizedList( new ArrayList<>() );
 
     @Test
-    public void shouldBeAbleToSpawnThreadsCreatingTransactionInFunctions() throws Throwable
-    {
-        // given
-        Runnable doIt = () ->
-        {
-            Result result = db.execute( "RETURN org.neo4j.procedure.unsupportedFunction()" );
-            result.resultAsString();
-            result.close();
-        };
-
-        int numThreads = 10;
-        Thread[] threads = new Thread[numThreads];
-        for ( int i = 0; i < numThreads; i++ )
-        {
-            threads[i] = new Thread( doIt );
-        }
-
-        // when
-        for ( int i = 0; i < numThreads; i++ )
-        {
-            threads[i].start();
-        }
-
-        for ( int i = 0; i < numThreads; i++ )
-        {
-            threads[i].join();
-        }
-
-        // Then
-        Result result = db.execute( "MATCH () RETURN count(*) as n" );
-        assertThat( result.hasNext(), equalTo( true ) );
-        while ( result.hasNext() )
-        {
-            assertThat( result.next().get( "n" ), equalTo( (long) numThreads ) );
-        }
-        result.close();
-    }
-
-    @Test
     public void shouldBeAbleToUseFunctionCallWithPeriodicCommit() throws IOException
     {
         // GIVEN
@@ -710,130 +671,97 @@ public class UserFunctionIT
         //Given/When
         Result res = db.execute( "CALL dbms.functions()" );
 
-        String expected =
-                "+-----------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------------" +
-                "----------------------------------+" +
-                lineSeparator() +
-                "| name                                                | signature                                   " +
-                "                                                                                                    " +
-                "             | description             |" +
-                lineSeparator() +
-                "+------------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------------" +
-                "---------------------------------+" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.avgDoubleList'                 | 'org.neo4j.procedure.avgDoubleList(someValue" +
-                " :: LIST? OF FLOAT?) :: (FLOAT?)'                                                                   " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.avgNumberList'                 | 'org.neo4j.procedure.avgNumberList(someValue" +
-                " :: LIST? OF NUMBER?) :: (FLOAT?)'                                                                  " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.defaultValues'                 | 'org.neo4j.procedure.defaultValues(string = " +
-                "a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = true :: BOOLEAN?) " +
-                ":: (STRING?)' | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.delegatingFunction'            | 'org.neo4j.procedure.delegatingFunction" +
-                "(someValue :: INTEGER?) :: (INTEGER?)'                                                              " +
-                "                  | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.genericArguments'              | 'org.neo4j.procedure.genericArguments" +
-                "(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF INTEGER?) :: (INTEGER?)' " +
-                "                    | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.indexOutOfBounds'              | 'org.neo4j.procedure.indexOutOfBounds() :: " +
-                "(INTEGER?)'                                                                                         " +
-                "              | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.integrationTestMe'             | 'org.neo4j.procedure.integrationTestMe() :: " +
-                "(INTEGER?)'                                                                                         " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.listCoolPeopleInDatabase'      | 'org.neo4j.procedure" +
-                ".listCoolPeopleInDatabase() :: (LIST? OF ANY?)'                                                     " +
-                "                                     | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.logAround'                     | 'org.neo4j.procedure.logAround() :: " +
-                "(INTEGER?)'                                                                                         " +
-                "                     | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.mapArgument'                   | 'org.neo4j.procedure.mapArgument(map :: " +
-                "MAP?) :: (INTEGER?)'                                                                                " +
-                "                 | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.node'                          | 'org.neo4j.procedure.node(id :: INTEGER?) ::" +
-                " (NODE?)'                                                                                           " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.nodeListArgument'              | 'org.neo4j.procedure.nodeListArgument(nodes " +
-                ":: LIST? OF NODE?) :: (INTEGER?)'                                                                   " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.nodePaths'                     | 'org.neo4j.procedure.nodePaths(someValue :: " +
-                "NODE?) :: (PATH?)'                                                                                  " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.nodeWithDescription'           | 'org.neo4j.procedure.nodeWithDescription" +
-                "(someValue :: NODE?) :: (NODE?)'                                                                    " +
-                "                 | 'This is a description' |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.readOnlyCallingWriteFunction'  | 'org.neo4j.procedure" +
-                ".readOnlyCallingWriteFunction() :: (NODE?)'                                                         " +
-                "                                     | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.readOnlyCallingWriteProcedure' | 'org.neo4j.procedure" +
-                ".readOnlyCallingWriteProcedure() :: (INTEGER?)'                                                     " +
-                "                                     | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.readOnlyTryingToWrite'         | 'org.neo4j.procedure.readOnlyTryingToWrite()" +
-                " :: (NODE?)'                                                                                        " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.readOnlyTryingToWriteSchema'   | 'org.neo4j.procedure" +
-                ".readOnlyTryingToWriteSchema() :: (STRING?)'                                                        " +
-                "                                     | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.recursiveSum'                  | 'org.neo4j.procedure.recursiveSum(someValue " +
-                ":: INTEGER?) :: (INTEGER?)'                                                                         " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.shutdown'                      | 'org.neo4j.procedure.shutdown() :: (STRING?)" +
-                "'                                                                                                   " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.simpleArgument'                | 'org.neo4j.procedure.simpleArgument" +
-                "(someValue :: INTEGER?) :: (INTEGER?)'                                                              " +
-                "                      | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.squareDouble'                  | 'org.neo4j.procedure.squareDouble(someValue " +
-                ":: FLOAT?) :: (FLOAT?)'                                                                             " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.squareLong'                    | 'org.neo4j.procedure.squareLong(someValue ::" +
-                " INTEGER?) :: (INTEGER?)'                                                                           " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.throwsExceptionInStream'       | 'org.neo4j.procedure.throwsExceptionInStream" +
-                "() :: (INTEGER?)'                                                                                   " +
-                "             | ''                      |" +
-                lineSeparator() +
-                "| 'org.neo4j.procedure.unsupportedFunction'           | 'org.neo4j.procedure.unsupportedFunction() " +
-                ":: (STRING?)'                                                                                       " +
-                "              | ''                      |" +
-                lineSeparator() +
-                "| 'this.is.test.only.sum'                             | 'this.is.test.only.sum(numbers :: LIST? OF " +
-                "NUMBER?) :: (NUMBER?)'                                                                              " +
-                "              | ''                      |" +
-                lineSeparator() +
-                "+------------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------------" +
-                "---------------------------------+" +
-                lineSeparator() +
-                "26 rows" + lineSeparator();
+        String expected = String.format(
+                      "+------------------------------------------------------------------------------------------------" +
+                      "-------------------------------------------------------------------------------------------------" +
+                      "---------------------------------------------+%n" +
+                      "| name                                                | signature                             " +
+                      "                                                                                              " +
+                      "                         | description             |%n" +
+                      "+------------------------------------------------------------------------------------------------" +
+                      "-------------------------------------------------------------------------------------------------" +
+                      "---------------------------------------------+%n" +
+                      "| \"org.neo4j.procedure.avgDoubleList\"                 | \"org.neo4j.procedure.avgDoubleList" +
+                      "(someValue :: LIST? OF FLOAT?) :: (FLOAT?)\"                                                  " +
+                      "                              | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.avgNumberList\"                 | \"org.neo4j.procedure.avgNumberList" +
+                      "(someValue :: LIST? OF NUMBER?) :: (FLOAT?)\"                                                 " +
+                      "                              | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.defaultValues\"                 | \"org.neo4j.procedure.defaultValues" +
+                      "(string = a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = " +
+                      "true :: BOOLEAN?) :: (STRING?)\" | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.delegatingFunction\"            | \"org.neo4j.procedure" +
+                      ".delegatingFunction(someValue :: INTEGER?) :: (INTEGER?)\"                                    " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.genericArguments\"              | \"org.neo4j.procedure" +
+                      ".genericArguments(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF " +
+                      "INTEGER?) :: (INTEGER?)\"                     | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.indexOutOfBounds\"              | \"org.neo4j.procedure" +
+                      ".indexOutOfBounds() :: (INTEGER?)\"                                                           " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.integrationTestMe\"             | \"org.neo4j.procedure" +
+                      ".integrationTestMe() :: (INTEGER?)\"                                                          " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.listCoolPeopleInDatabase\"      | \"org.neo4j.procedure" +
+                      ".listCoolPeopleInDatabase() :: (LIST? OF ANY?)\"                                              " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.logAround\"                     | \"org.neo4j.procedure.logAround() ::" +
+                      " (INTEGER?)\"                                                                                 " +
+                      "                             | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.mapArgument\"                   | \"org.neo4j.procedure.mapArgument" +
+                      "(map :: MAP?) :: (INTEGER?)\"                                                                 " +
+                      "                                | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.node\"                          | \"org.neo4j.procedure.node(id :: " +
+                      "INTEGER?) :: (NODE?)\"                                                                        " +
+                      "                                | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.nodeListArgument\"              | \"org.neo4j.procedure" +
+                      ".nodeListArgument(nodes :: LIST? OF NODE?) :: (INTEGER?)\"                                    " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.nodePaths\"                     | \"org.neo4j.procedure.nodePaths" +
+                      "(someValue :: NODE?) :: (PATH?)\"                                                             " +
+                      "                                  | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.nodeWithDescription\"           | \"org.neo4j.procedure" +
+                      ".nodeWithDescription(someValue :: NODE?) :: (NODE?)\"                                         " +
+                      "                                            | \"This is a description\" |%n" +
+                      "| \"org.neo4j.procedure.readOnlyCallingWriteFunction\"  | \"org.neo4j.procedure" +
+                      ".readOnlyCallingWriteFunction() :: (NODE?)\"                                                  " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.readOnlyCallingWriteProcedure\" | \"org.neo4j.procedure" +
+                      ".readOnlyCallingWriteProcedure() :: (INTEGER?)\"                                              " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.readOnlyTryingToWrite\"         | \"org.neo4j.procedure" +
+                      ".readOnlyTryingToWrite() :: (NODE?)\"                                                         " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.readOnlyTryingToWriteSchema\"   | \"org.neo4j.procedure" +
+                      ".readOnlyTryingToWriteSchema() :: (STRING?)\"                                                 " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.recursiveSum\"                  | \"org.neo4j.procedure.recursiveSum" +
+                      "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
+                      "                               | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.shutdown\"                      | \"org.neo4j.procedure.shutdown() :: " +
+                      "(STRING?)\"                                                                                   " +
+                      "                             | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.simpleArgument\"                | \"org.neo4j.procedure.simpleArgument" +
+                      "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
+                      "                             | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.squareDouble\"                  | \"org.neo4j.procedure.squareDouble" +
+                      "(someValue :: FLOAT?) :: (FLOAT?)\"                                                           " +
+                      "                               | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.squareLong\"                    | \"org.neo4j.procedure.squareLong" +
+                      "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
+                      "                                 | \"\"                      |%n" +
+                      "| \"org.neo4j.procedure.throwsExceptionInStream\"       | \"org.neo4j.procedure" +
+                      ".throwsExceptionInStream() :: (INTEGER?)\"                                                    " +
+                      "                                            | \"\"                      |%n" +
+                      "| \"this.is.test.only.sum\"                             | \"this.is.test.only.sum(numbers :: " +
+                      "LIST? OF NUMBER?) :: (NUMBER?)\"                                                              " +
+                      "                              | \"\"                      |%n" +
+                      "+-----------------------------------------------------------------------------------------------" +
+                                    "----------------------------------------------------------------------------------" +
+                                    "-------------------------------------------------------------+%n" +
+                      "25 rows%n");
 
-        assertThat( res.resultAsString(), equalTo( expected.replaceAll( "'", "\"" ) ) );
+        assertThat( res.resultAsString(), equalTo(expected) );
     }
 
     @Test
@@ -1045,25 +973,6 @@ public class UserFunctionIT
         }
 
         @UserFunction
-        public String unsupportedFunction()
-        {
-            jobs.submit( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.createNode();
-                    tx.success();
-                }
-                catch ( Exception e )
-                {
-                    exceptionsInFunction.add( e );
-                }
-            } );
-
-            return "why!?";
-        }
-
-        @UserFunction
         public Path nodePaths( @Name( "someValue" ) Node node )
         {
             return (Path) db
@@ -1086,6 +995,4 @@ public class UserFunctionIT
             return "done";
         }
     }
-
-    private static final ScheduledExecutorService jobs = Executors.newScheduledThreadPool( 5 );
 }
