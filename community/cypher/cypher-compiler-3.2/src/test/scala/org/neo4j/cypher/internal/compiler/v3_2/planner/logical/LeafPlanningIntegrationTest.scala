@@ -543,6 +543,16 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("should plan hinted index seek with or") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) USING INDEX n:Awesome(prop) WHERE n.prop = 42 OR n.prop = 1337 RETURN n"
+
+    plan._2 should equal(
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop", PropertyKeyId(0))), ManyQueryExpression(ListLiteral(List(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("1337")_))_), Set.empty)(solved)
+    )
+  }
+
   test("should plan hinted index seek when there are multiple indices") {
     implicit val plan = new given {
       indexOn("Awesome", "prop1")
@@ -555,6 +565,25 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), Seq(PropertyKeyToken("prop2", PropertyKeyId(1))), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
+  }
+
+  test("should plan hinted index seek when there are multiple or indices") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop1")
+      indexOn("Awesome", "prop2")
+    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
+
+    val prop1Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
+    val prop2Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("3")(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelToken = LabelToken("Awesome", LabelId(0))
+    val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
+    val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val union: Union = Union(seek2, seek1)(solved)
+    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+
+    plan._2 should equal(distinct)
   }
 
   test("should plan hinted unique index seek") {
