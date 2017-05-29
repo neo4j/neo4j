@@ -47,7 +47,7 @@ public class ClientReconnectIT extends AbstractShellIT
     {
         createRelationshipChain( 2 );
         makeServerRemotelyAvailable();
-        Map<String,Serializable> initialSession = MapUtil.<String,Serializable>genericMap( "TITLE_KEYS", "test" );
+        Map<String,Serializable> initialSession = MapUtil.genericMap( "TITLE_KEYS", "test" );
         ShellClient client = newRemoteClient( initialSession );
         String name = "MyTest";
         client.evaluate( "mknode --cd" );

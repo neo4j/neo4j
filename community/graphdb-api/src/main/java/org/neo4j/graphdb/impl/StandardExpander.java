@@ -453,7 +453,7 @@ public abstract class StandardExpander implements PathExpander
     };
 
     public static final StandardExpander EMPTY =
-            new RegularExpander( Collections.<Direction, RelationshipType[]>emptyMap() );
+            new RegularExpander( Collections.emptyMap() );
 
     private static class DirectionAndTypes
     {

@@ -78,7 +78,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         catch ( LifecycleException e )
         {
             @SuppressWarnings( {"ThrowableResultOfMethodCallIgnored", "unchecked"} )
-            Throwable cause = peel( e, Predicates.<Throwable>instanceOf( LifecycleException.class ) );
+            Throwable cause = peel( e, Predicates.instanceOf( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
             {
                 System.err.println( "ERROR: " + cause.getMessage() +

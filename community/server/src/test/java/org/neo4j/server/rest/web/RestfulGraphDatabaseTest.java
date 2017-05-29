@@ -890,7 +890,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204WhenSuccessfullyRemovedRelationshipProperties()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
+        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", "bar" ) );
 
         Response response = service.deleteAllRelationshipProperties( relationshipId );
         assertEquals( 204, response.getStatus() );
@@ -920,7 +920,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204WhenRemovingRelationshipProperty()
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
+        helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", "bar" ) );
 
         Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
 

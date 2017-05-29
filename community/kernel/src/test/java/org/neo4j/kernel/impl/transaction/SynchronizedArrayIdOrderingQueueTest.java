@@ -81,7 +81,7 @@ public class SynchronizedArrayIdOrderingQueueTest
 
         // THEN
         queue.removeChecked( awaitedId++ );
-        queue.removeChecked( awaitedId++ );
+        queue.removeChecked( awaitedId );
         assertTrue( queue.isEmpty() );
     }
 
@@ -137,14 +137,10 @@ public class SynchronizedArrayIdOrderingQueueTest
 
     private WorkerCommand<Void, Object> awaitHead( final IdOrderingQueue queue, final long id )
     {
-        return new WorkerCommand<Void, Object>()
+        return state ->
         {
-            @Override
-            public Object doWork( Void state ) throws Exception
-            {
-                queue.waitFor( id );
-                return null;
-            }
+            queue.waitFor( id );
+            return null;
         };
     }
 }

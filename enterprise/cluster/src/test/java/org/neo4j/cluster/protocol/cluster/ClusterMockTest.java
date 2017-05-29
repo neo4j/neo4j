@@ -373,8 +373,7 @@ public class ClusterMockTest
         }
 
         assertEquals( description + ": In:" + in + ", Out:" + out, protocolServers.size(),
-                Iterables.count( Iterables.<Cluster,
-                List<Cluster>>flatten( in, out ) ) );
+                Iterables.count( Iterables.flatten( in, out ) ) );
 
         if ( !errors.isEmpty() )
         {

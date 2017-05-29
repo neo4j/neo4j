@@ -651,7 +651,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( actions.getNodeRelationships( nodeId, direction, Collections.<String>emptyList() ) );
+            return output.ok( actions.getNodeRelationships( nodeId, direction, Collections.emptyList() ) );
         }
         catch ( NodeNotFoundException e )
         {
@@ -684,7 +684,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( actions.getNodeDegree( nodeId, direction, Collections.<String>emptyList() ) );
+            return output.ok( actions.getNodeDegree( nodeId, direction, Collections.emptyList() ) );
         }
         catch ( NodeNotFoundException e )
         {

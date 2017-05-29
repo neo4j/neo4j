@@ -179,7 +179,7 @@ public enum AtomicBroadcastState
                             }
                             else
                             {
-                                context.receive( message.<Payload>getPayload() );
+                                context.receive( message.getPayload() );
                             }
 
                             break;

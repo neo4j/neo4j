@@ -158,7 +158,7 @@ public class StateMachinesTest
     public enum TestMessage
             implements MessageType
     {
-        message1, message2, message3, message4, message5;
+        message1, message2, message3, message4, message5
     }
 
     public enum TestState

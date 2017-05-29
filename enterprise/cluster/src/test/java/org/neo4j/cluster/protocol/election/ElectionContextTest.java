@@ -100,7 +100,7 @@ public class ElectionContextTest
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId( 1 ),
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                Iterables.iterable( new ElectionRole( "coordinator" ) ),
                 clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
@@ -193,7 +193,7 @@ public class ElectionContextTest
         // Given
         final String coordinatorRole = "coordinator";
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
@@ -235,7 +235,7 @@ public class ElectionContextTest
         // Given
         final String coordinatorRole = "coordinator";
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
@@ -259,7 +259,7 @@ public class ElectionContextTest
         // Given
         final String coordinatorRole = "coordinator";
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
@@ -299,7 +299,7 @@ public class ElectionContextTest
         clusterMemberIds.add( me );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
-        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration,
                 new Executor()
                 {
@@ -410,7 +410,7 @@ public class ElectionContextTest
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
         MultiPaxosContext context = new MultiPaxosContext( me,
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( role1 ) ), clusterConfiguration,
+                Iterables.iterable( new ElectionRole( role1 ) ), clusterConfiguration,
                 new Executor()
                 {
                     @Override

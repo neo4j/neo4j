@@ -202,12 +202,7 @@ public class BigStoreIT implements RelationshipType
 
         // Not 1024, matches better wanted result with -Xmx
         long heapMb = Runtime.getRuntime().maxMemory() / (1000 * 1000);
-        if ( heapMb < requiredHeapMb )
-        {
-            // This test requires a heap of size requiredHeapMb, this heap has only heapMb
-            return false;
-        }
-        return true;
+        return heapMb >= requiredHeapMb;
     }
 
     public static void assertProperties( Map<String, Object> properties, PropertyContainer entity )

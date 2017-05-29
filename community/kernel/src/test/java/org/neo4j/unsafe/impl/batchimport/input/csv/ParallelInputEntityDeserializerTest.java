@@ -87,7 +87,7 @@ public class ParallelInputEntityDeserializerTest
         };
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
                 defaultFormatNodeFileHeader(), config, idType, threads, threads, deserializerFactory,
-                Validators.<InputNode>emptyValidator(), InputNode.class ) )
+                Validators.emptyValidator(), InputNode.class ) )
         {
             // WHEN/THEN
             long previousLineNumber = -1;
@@ -137,7 +137,7 @@ public class ParallelInputEntityDeserializerTest
         boolean noticedPanic = false;
         try ( ParallelInputEntityDeserializer<InputNode> deserializer = new ParallelInputEntityDeserializer<>( data,
                 defaultFormatNodeFileHeader(), config, idType, 3, 3, deserializerFactory,
-                Validators.<InputNode>emptyValidator(), InputNode.class ) )
+                Validators.emptyValidator(), InputNode.class ) )
         {
             deserializer.hasNext();
             RuntimeException panic = new RuntimeException();

@@ -113,7 +113,7 @@ public class ConsoleUtil
     public static String airlineHelp( Cli<?> cli )
     {
         StringBuilder builder = new StringBuilder();
-        Help.help( cli.getMetadata(), Collections.<String>emptyList(), builder );
+        Help.help( cli.getMetadata(), Collections.emptyList(), builder );
         return builder.toString();
     }
 

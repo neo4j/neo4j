@@ -63,7 +63,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
         {
             schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
-            labelIndexDirectory = labelScanStoreProvider.getStoreDirectory( storeDir );
+            labelIndexDirectory = LabelScanStoreProvider.getStoreDirectory( storeDir );
             deleteObsoleteIndexes = true;
         }
     }

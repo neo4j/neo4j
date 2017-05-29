@@ -127,12 +127,7 @@ class ProverTimeouts extends Timeouts
             }
         }
 
-        if ( those.hasNext() )
-        {
-            return false;
-        }
-
-        return true;
+        return !those.hasNext();
     }
 
     @Override

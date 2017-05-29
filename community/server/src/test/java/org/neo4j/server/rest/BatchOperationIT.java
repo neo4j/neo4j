@@ -375,7 +375,7 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         Map<String, Object> result = JsonHelper.jsonToMap(entity);
         String exception = (String) result.get("exception");
         assertThat(exception, is("BatchOperationFailedException"));
-        String innerException = (String) ((Map) JsonHelper.jsonToMap((String) result.get("message"))).get("exception");
+        String innerException = (String) JsonHelper.jsonToMap((String) result.get("message")).get("exception");
         assertThat(innerException, is("CypherTypeException"));
     }
 

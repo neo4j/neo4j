@@ -184,7 +184,7 @@ public class TestDatasourceCommitOrderDataVisibility
             {
                 try ( Transaction ignored = graphDatabaseService.beginTx() )
                 {
-                    assertThat( (Integer) commonNode.getProperty( PROPERTY_NAME ), is( PROPERTY_VALUE ) );
+                    assertThat( commonNode.getProperty( PROPERTY_NAME ), is( PROPERTY_VALUE ) );
                 }
                 catch ( Throwable t )
                 {

@@ -178,34 +178,23 @@ public class CheckPointSchedulerTest
         // when
         scheduler.start();
 
-        Thread runCheckPointer = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                jobScheduler.runJob();
-            }
-        };
+        Thread runCheckPointer = new Thread( jobScheduler::runJob );
         runCheckPointer.start();
 
         checkPointerLatch.waitForAllToStart();
 
-        Thread stopper = new Thread()
+        Thread stopper = new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    scheduler.stop();
-                    stoppedCompleted.set( true );
-                }
-                catch ( Throwable throwable )
-                {
-                    ex.set( throwable );
-                }
+                scheduler.stop();
+                stoppedCompleted.set( true );
             }
-        };
+            catch ( Throwable throwable )
+            {
+                ex.set( throwable );
+            }
+        } );
 
         stopper.start();
 

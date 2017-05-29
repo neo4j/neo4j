@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -67,16 +66,12 @@ public class ReaderLogVersionBridgeTest
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.fileExists( file ) ).thenReturn( true );
         when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
-        when( newStoreChannel.read( Matchers.<ByteBuffer>any() ) ).then( new Answer<Integer>()
+        when( newStoreChannel.read( Matchers.<ByteBuffer>any() ) ).then( invocationOnMock ->
         {
-            @Override
-            public Integer answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
-                buffer.putLong( encodeLogVersion( version + 1 ) );
-                buffer.putLong( 42 );
-                return LOG_HEADER_SIZE;
-            }
+            ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
+            buffer.putLong( encodeLogVersion( version + 1 ) );
+            buffer.putLong( 42 );
+            return LOG_HEADER_SIZE;
         } );
 
         // when

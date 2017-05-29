@@ -105,7 +105,7 @@ public class ClusterStateTest
         ClusterContext context = mock( ClusterContext.class );
         Map<InstanceId, URI> existingMembers = members( 1, 2 );
         when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
-        when( context.getJoiningInstances() ).thenReturn( Collections.<URI>emptyList() );
+        when( context.getJoiningInstances() ).thenReturn( Collections.emptyList() );
         when( context.hasJoinBeenDenied() ).thenReturn( true );
         when( context.getJoinDeniedConfigurationResponseState() )
                 .thenReturn( configurationResponseState( existingMembers ) );
@@ -245,7 +245,7 @@ public class ClusterStateTest
 
     private ConfigurationResponseState configurationResponseState( Map<InstanceId, URI> existingMembers )
     {
-        return new ConfigurationResponseState( Collections.<String,InstanceId>emptyMap(),
+        return new ConfigurationResponseState( Collections.emptyMap(),
                 existingMembers, null, "ClusterStateTest" );
     }
 

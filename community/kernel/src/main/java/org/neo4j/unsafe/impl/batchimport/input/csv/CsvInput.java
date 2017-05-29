@@ -113,7 +113,7 @@ public class CsvInput implements Input
             {
                 DeserializerFactory<InputNode> factory = defaultNodeDeserializer( groups, config, idType, badCollector );
                 return new InputGroupsDeserializer<>( nodeDataFactory.iterator(), nodeHeaderFactory, config,
-                        idType, maxProcessors, 1, factory, Validators.<InputNode>emptyValidator(), InputNode.class );
+                        idType, maxProcessors, 1, factory, Validators.emptyValidator(), InputNode.class );
             }
 
             @Override

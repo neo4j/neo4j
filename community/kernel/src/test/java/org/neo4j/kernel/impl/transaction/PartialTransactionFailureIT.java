@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -179,26 +179,22 @@ public class PartialTransactionFailureIT
             final Node y,
             final CountDownLatch latch )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
-                    tx.success();
-                    latch.await();
-                    db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-                    db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                            new SimpleTriggerInfo( "test" )
-                    );
-                }
-                catch ( Exception ignore )
-                {
-                    // We don't care about our transactions failing, as long as we
-                    // can recover our database to a consistent state.
-                }
+                x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
+                tx.success();
+                latch.await();
+                db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+                db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                        new SimpleTriggerInfo( "test" )
+                );
+            }
+            catch ( Exception ignore )
+            {
+                // We don't care about our transactions failing, as long as we
+                // can recover our database to a consistent state.
             }
         };
     }
@@ -215,7 +211,7 @@ public class PartialTransactionFailureIT
         private static GraphDatabaseFacadeFactory.Dependencies dependencies()
         {
             GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-            state.addKernelExtensions( Arrays.asList( new InMemoryIndexProviderFactory() ) );
+            state.addKernelExtensions( singletonList( new InMemoryIndexProviderFactory() ) );
             return state.databaseDependencies();
         }
     }

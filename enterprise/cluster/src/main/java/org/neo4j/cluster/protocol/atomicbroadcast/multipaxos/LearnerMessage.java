@@ -85,12 +85,7 @@ public enum LearnerMessage
 
             LearnState that = (LearnState) o;
 
-            if ( value != null ? !value.equals( that.value ) : that.value != null )
-            {
-                return false;
-            }
-
-            return true;
+            return value != null ? value.equals( that.value ) : that.value == null;
         }
 
         @Override

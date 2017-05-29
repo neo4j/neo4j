@@ -150,7 +150,7 @@ public class ParallelBatchImporterTest
     @Parameterized.Parameters( name = "{0},{1},{3}" )
     public static Collection<Object[]> data()
     {
-        return Arrays.<Object[]>asList(
+        return Arrays.asList(
 
                 // synchronous I/O, actual node id input
                 new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), true},

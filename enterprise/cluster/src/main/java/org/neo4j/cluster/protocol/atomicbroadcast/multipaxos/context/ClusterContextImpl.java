@@ -560,12 +560,7 @@ class ClusterContextImpl
         {
             return false;
         }
-        if ( learnerContext != null ? !learnerContext.equals( that.learnerContext ) : that.learnerContext != null )
-        {
-            return false;
-        }
-
-        return true;
+        return learnerContext != null ? learnerContext.equals( that.learnerContext ) : that.learnerContext == null;
     }
 
     @Override

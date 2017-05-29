@@ -134,7 +134,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
     private enum IdGeneratorState
     {
-        PENDING, SLAVE, MASTER;
+        PENDING, SLAVE, MASTER
     }
 
     private class HaIdGenerator implements IdGenerator

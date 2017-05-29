@@ -208,7 +208,7 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     private Set<T> resultSet( Set<T> coll )
     {
-        return coll == null ? Collections.<T>emptySet() : Collections.unmodifiableSet( coll );
+        return coll == null ? Collections.emptySet() : Collections.unmodifiableSet( coll );
     }
 
     public boolean unRemove( T item )
@@ -250,13 +250,8 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
         {
             return false;
         }
-        if ( removedElements != null ? !removedElements.equals( diffSets.removedElements ) : diffSets.removedElements
-                != null )
-        {
-            return false;
-        }
-
-        return true;
+        return removedElements != null ? removedElements.equals( diffSets.removedElements )
+                                       : diffSets.removedElements == null;
     }
 
     @Override

@@ -143,7 +143,7 @@ public class QueryInvalidationIT
     {
         for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
         {
-            db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", (Object) userId ) );
+            db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", userId ) );
         }
         Map<String,Object> params = new HashMap<>();
         for ( int i = 0; i < numConnections; i++ )
@@ -164,7 +164,7 @@ public class QueryInvalidationIT
 
     private void executeDistantFriendsCountQuery( int userId )
     {
-        Map<String,Object> params = singletonMap( "userId", (Object) (long) randomInt( userId ) );
+        Map<String,Object> params = singletonMap( "userId", (long) randomInt( userId ) );
 
         try ( Result result = db.execute(
                 "MATCH (user:User { userId: {userId} } ) -[:FRIEND]- () -[:FRIEND]- (distantFriend) " +

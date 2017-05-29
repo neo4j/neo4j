@@ -119,7 +119,7 @@ public class PrimitiveLongCollections
             @Override
             protected boolean fetchNext()
             {
-                return ++index < items.length ? next( items[index] ) : false;
+                return ++index < items.length && next( items[index] );
             }
         };
     }
@@ -133,7 +133,7 @@ public class PrimitiveLongCollections
             @Override
             protected boolean fetchNext()
             {
-                return --index >= 0 ? next( items[index] ) : false;
+                return --index >= 0 && next( items[index] );
             }
         };
     }
@@ -169,7 +169,7 @@ public class PrimitiveLongCollections
                     singleItemReturned = true;
                     return next( item );
                 }
-                return iterator.hasNext() ? next( iterator.next() ) : false;
+                return iterator.hasNext() && next( iterator.next() );
             }
         };
     }
@@ -221,7 +221,7 @@ public class PrimitiveLongCollections
                     }
                 }
             }
-            return currentIterator != null && currentIterator.hasNext() ? next( currentIterator.next() ) : false;
+            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
         }
 
         protected final PrimitiveLongIterator currentIterator()
@@ -402,7 +402,7 @@ public class PrimitiveLongCollections
         {
             try
             {
-                return current <= end ? next( current ) : false;
+                return current <= end && next( current );
             }
             finally
             {
@@ -422,7 +422,7 @@ public class PrimitiveLongCollections
             {
                 try
                 {
-                    return !returned ? next( item ) : false;
+                    return !returned && next( item );
                 }
                 finally
                 {

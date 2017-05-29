@@ -36,7 +36,7 @@ public class DummyPluginInitializer implements PluginLifecycle
     @Override
     public Collection<Injectable<?>> start( GraphDatabaseService graphDatabaseService, Configuration config )
     {
-        return Collections.<Injectable<?>>singleton( new Injectable<Long>()
+        return Collections.singleton( new Injectable<Long>()
         {
             @Override
             public Long getValue()

@@ -64,7 +64,7 @@ public class CachingIterator<T> implements ListIterator<T>
     @Override
     public boolean hasNext()
     {
-        return visited.size() > position ? true : source.hasNext();
+        return visited.size() > position || source.hasNext();
     }
 
     /**

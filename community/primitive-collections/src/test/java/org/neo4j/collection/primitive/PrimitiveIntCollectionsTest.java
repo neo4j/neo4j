@@ -112,7 +112,7 @@ public class PrimitiveIntCollectionsTest
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, (IntPredicate) item -> item != 2 );
+        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
@@ -539,7 +539,7 @@ public class PrimitiveIntCollectionsTest
             @Override
             protected boolean fetchNext()
             {
-                return count.decrementAndGet() >= 0 ? next( count.get() ) : false;
+                return count.decrementAndGet() >= 0 && next( count.get() );
             }
         };
 

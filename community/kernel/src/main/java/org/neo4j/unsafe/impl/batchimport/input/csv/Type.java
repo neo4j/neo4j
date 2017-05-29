@@ -32,5 +32,5 @@ public enum Type
     TYPE,
     START_ID,
     END_ID,
-    IGNORE;
+    IGNORE
 }

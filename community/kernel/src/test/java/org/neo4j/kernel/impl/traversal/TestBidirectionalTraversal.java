@@ -225,7 +225,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
                 // Just make up a number bigger than the path length (in this case 10) so that we can assert it in
                 // the collision policy later
                 .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand(
-                        PathExpanders.<Integer>forType( to ),
+                        PathExpanders.forType( to ),
                         new InitialBranchState.State<>( 0, 10 ) ) )
                 .collisionPolicy( collisionPolicy )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "d" ) ) );

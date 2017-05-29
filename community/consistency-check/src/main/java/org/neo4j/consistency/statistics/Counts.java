@@ -47,7 +47,7 @@ public interface Counts
         backLinks,
         nullLinks,
         nodeSparse,
-        nodeDense;
+        nodeDense
     }
 
     void incAndGet( Type type, int threadIndex );

@@ -889,11 +889,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             checkOutOfBounds( this.cursor );
         }
-        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount ) )
-        {
-            return false;
-        }
-        return true;
+        return !(nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount ));
     }
 
     /**

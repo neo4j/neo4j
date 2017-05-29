@@ -370,12 +370,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         {
             return false;
         }
-        if ( nodeSuspicions != null ? !nodeSuspicions.equals( that.nodeSuspicions ) : that.nodeSuspicions != null )
-        {
-            return false;
-        }
-
-        return true;
+        return nodeSuspicions != null ? nodeSuspicions.equals( that.nodeSuspicions ) : that.nodeSuspicions == null;
     }
 
     @Override

@@ -179,14 +179,7 @@ public class HazelcastClusterTopology
             {
                 if ( !member.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY ) )
                 {
-                    if ( member.localMember() )
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    return member.localMember();
                 }
             }
             return false;

@@ -63,8 +63,8 @@ public class DefaultFormatTest
     {
         Map<String, Object> map = input.readMap( "{\"key1\":\"value1\",     \"key2\":\"value11\"}" );
         assertNotNull( map );
-        assertThat( map, hasEntry( "key1", (Object) "value1" ) );
-        assertThat( map, hasEntry( "key2", (Object) "value11" ) );
+        assertThat( map, hasEntry( "key1", "value1" ) );
+        assertThat( map, hasEntry( "key2", "value11" ) );
         assertTrue( "map contained extra values", map.size() == 2 );
     }
 

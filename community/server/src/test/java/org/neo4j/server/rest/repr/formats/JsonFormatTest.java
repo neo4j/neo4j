@@ -161,6 +161,6 @@ public class JsonFormatTest
             }
         } );
 
-        assertEquals( "bar",((Map)((List)((Map)JsonHelper.jsonToMap(entity)).get("foo")).get(0)).get("foo") );
+        assertEquals( "bar",((Map)((List) JsonHelper.jsonToMap(entity).get("foo")).get(0)).get("foo") );
     }
 }

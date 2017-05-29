@@ -176,19 +176,19 @@ public class WriteTransactionCommandOrderingTest
         when( recordChangeSet.changeSize() ).thenReturn( 3 );
 
         when( labelTokenChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Integer,LabelTokenRecord,Void>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( relationshipTypeTokenChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );
+                Collections.emptyList() );
         when( propertyKeyTokenChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Integer,PropertyKeyTokenRecord,Void>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( relationshipRecordChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Long,RelationshipRecord,Void>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( propertyRecordChanges.changes() )
-                .thenReturn( Collections.<RecordProxy<Long,PropertyRecord,PrimitiveRecord>>emptyList() );
+                .thenReturn( Collections.emptyList() );
         when( relationshipGroupChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,RelationshipGroupRecord,Integer>>emptyList() );
+                Collections.emptyList() );
         when( schemaRuleChanges.changes() ).thenReturn(
-                Collections.<RecordProxy<Long,SchemaRecord,SchemaRule>>emptyList() );
+                Collections.emptyList() );
 
         NeoStores neoStores = mock( NeoStores.class );
         when( neoStores.getNodeStore() ).thenReturn( mock( NodeStore.class ) );

@@ -224,7 +224,7 @@ public abstract class Command implements StorageCommand
             writeNodeRecord( channel, after );
         }
 
-        private boolean writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
+        private void writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
         {
             byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                    bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
@@ -245,7 +245,6 @@ public abstract class Command implements StorageCommand
             // Always write dynamic label records because we want to know which ones have been deleted
             // especially if the node has been deleted.
             writeDynamicRecords( channel, record.getDynamicLabelRecords() );
-            return false;
         }
     }
 

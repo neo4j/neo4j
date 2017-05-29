@@ -86,10 +86,10 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
             return true;
         }
         Message toMatchAgainst = (Message) message;
-        boolean toMatches = to == null ? true : to.toString().equals( toMatchAgainst.getHeader( Message.TO ) );
-        boolean fromMatches = from == null ? true : from.toString().equals( toMatchAgainst.getHeader( Message.FROM ) );
-        boolean typeMatches = theMessageType == null ? true : theMessageType == toMatchAgainst.getMessageType();
-        boolean payloadMatches = payload == null ? true : payload.equals( toMatchAgainst.getPayload() );
+        boolean toMatches = to == null || to.toString().equals( toMatchAgainst.getHeader( Message.TO ) );
+        boolean fromMatches = from == null || from.toString().equals( toMatchAgainst.getHeader( Message.FROM ) );
+        boolean typeMatches = theMessageType == null || theMessageType == toMatchAgainst.getMessageType();
+        boolean payloadMatches = payload == null || payload.equals( toMatchAgainst.getPayload() );
         boolean headersMatch = true;
         for ( String header : headers )
         {

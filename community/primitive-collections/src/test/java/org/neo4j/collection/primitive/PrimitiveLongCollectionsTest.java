@@ -115,7 +115,7 @@ public class PrimitiveLongCollectionsTest
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, (LongPredicate) item -> item != 2 );
+        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
@@ -604,7 +604,7 @@ public class PrimitiveLongCollectionsTest
             @Override
             protected boolean fetchNext()
             {
-                return count.decrementAndGet() >= 0 ? next( count.get() ) : false;
+                return count.decrementAndGet() >= 0 && next( count.get() );
             }
         };
 

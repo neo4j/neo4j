@@ -46,7 +46,7 @@ public interface EntityWriteOperations
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
 
     int nodeDetachDelete( KernelStatement state, long nodeId )
-            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException,
+            throws
             KernelException;
 
     /**

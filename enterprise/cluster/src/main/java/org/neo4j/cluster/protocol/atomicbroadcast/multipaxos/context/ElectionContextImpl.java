@@ -368,12 +368,7 @@ public class ElectionContextImpl
         {
             return false;
         }
-        if ( roles != null ? !roles.equals( that.roles ) : that.roles != null )
-        {
-            return false;
-        }
-
-        return true;
+        return roles != null ? roles.equals( that.roles ) : that.roles == null;
     }
 
     @Override

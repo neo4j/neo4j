@@ -41,7 +41,7 @@ public class GitHub1304Test
     {
         BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsoluteFile(), fileSystemRule.get() );
 
-        long nodeId = batchInserter.createNode( Collections.<String, Object>emptyMap() );
+        long nodeId = batchInserter.createNode( Collections.emptyMap() );
 
         for ( int i = 0; i < 4; i++ )
         {

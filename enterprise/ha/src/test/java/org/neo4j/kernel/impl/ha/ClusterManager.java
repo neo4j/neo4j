@@ -127,7 +127,7 @@ public class ClusterManager
         /**
          * Fail incoming cluster network traffic.
          */
-        IN;
+        IN
     }
 
     private static final long DEFAULT_TIMEOUT_SECONDS = 60L;

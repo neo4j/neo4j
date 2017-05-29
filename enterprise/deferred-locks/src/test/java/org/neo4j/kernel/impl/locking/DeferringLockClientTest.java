@@ -115,7 +115,7 @@ public class DeferringLockClientTest
             }
             expected.add( lockUnit );
         }
-        actualClient.assertRegisteredLocks( Collections.<LockUnit>emptySet() );
+        actualClient.assertRegisteredLocks( Collections.emptySet() );
         client.acquireDeferredLocks();
 
         // THEN

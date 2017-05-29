@@ -211,8 +211,8 @@ public class TxStateTransactionDataViewTest
         // Then
         PropertyEntry<Node> entry = single( propertyEntries );
         assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.value(), equalTo( (Object) "newValue" ) );
-        assertThat( entry.previouslyCommitedValue(), equalTo( (Object) "prevValue" ) );
+        assertThat( entry.value(), equalTo( "newValue" ) );
+        assertThat( entry.previouslyCommitedValue(), equalTo( "prevValue" ) );
         assertThat( entry.entity().getId(), equalTo( 1L ) );
     }
 
@@ -262,7 +262,7 @@ public class TxStateTransactionDataViewTest
         // Then
         PropertyEntry<Relationship> entry = single( propertyEntries );
         assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.previouslyCommitedValue(), equalTo( (Object) "prevValue" ) );
+        assertThat( entry.previouslyCommitedValue(), equalTo( "prevValue" ) );
         assertThat( entry.entity().getId(), equalTo( 1L ) );
     }
 
@@ -288,8 +288,8 @@ public class TxStateTransactionDataViewTest
         // Then
         PropertyEntry<Relationship> entry = single( propertyEntries );
         assertThat( entry.key(), equalTo( "theKey" ) );
-        assertThat( entry.value(), equalTo( (Object) "newValue" ) );
-        assertThat( entry.previouslyCommitedValue(), equalTo( (Object) "prevValue" ) );
+        assertThat( entry.value(), equalTo( "newValue" ) );
+        assertThat( entry.previouslyCommitedValue(), equalTo( "prevValue" ) );
         assertThat( entry.entity().getId(), equalTo( 1L ) );
     }
 

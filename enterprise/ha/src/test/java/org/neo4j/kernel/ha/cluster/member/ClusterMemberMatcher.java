@@ -185,11 +185,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
             {
                 return false;
             }
-            if ( uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getUris() ) ) ) )
-            {
-                return false;
-            }
-            return true;
+            return !(uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getUris() ) ) ));
         }
 
         @Override

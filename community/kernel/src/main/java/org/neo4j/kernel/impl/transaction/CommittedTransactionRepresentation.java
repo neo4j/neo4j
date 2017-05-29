@@ -88,20 +88,8 @@ public class CommittedTransactionRepresentation
 
         CommittedTransactionRepresentation that = (CommittedTransactionRepresentation) o;
 
-        if ( !commitEntry.equals( that.commitEntry ) )
-        {
-            return false;
-        }
-        if ( !startEntry.equals( that.startEntry ) )
-        {
-            return false;
-        }
-        if ( !transactionRepresentation.equals( that.transactionRepresentation ) )
-        {
-            return false;
-        }
-
-        return true;
+        return commitEntry.equals( that.commitEntry ) && startEntry.equals( that.startEntry ) &&
+               transactionRepresentation.equals( that.transactionRepresentation );
     }
 
     @Override

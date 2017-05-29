@@ -43,7 +43,7 @@ public interface DataWriteOperations
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
 
     int nodeDetachDelete( long nodeId )
-            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException, KernelException;
+            throws KernelException;
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;

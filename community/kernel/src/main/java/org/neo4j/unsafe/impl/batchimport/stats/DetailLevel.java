@@ -26,5 +26,5 @@ public enum DetailLevel
 {
     NO,
     IMPORTANT,
-    BASIC;
+    BASIC
 }

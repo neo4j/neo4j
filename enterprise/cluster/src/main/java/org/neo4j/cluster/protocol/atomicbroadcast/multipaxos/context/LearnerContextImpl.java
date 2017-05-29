@@ -222,12 +222,7 @@ class LearnerContextImpl
         {
             return false;
         }
-        if ( paxosInstances != null ? !paxosInstances.equals( that.paxosInstances ) : that.paxosInstances != null )
-        {
-            return false;
-        }
-
-        return true;
+        return paxosInstances != null ? paxosInstances.equals( that.paxosInstances ) : that.paxosInstances == null;
     }
 
     @Override

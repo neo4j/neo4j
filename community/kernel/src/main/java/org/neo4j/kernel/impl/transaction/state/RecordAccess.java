@@ -63,7 +63,7 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
      * A proxy for a record that encapsulates load/store actions to take, knowing when the underlying record is
      * requested for reading or for writing.
      */
-    public interface RecordProxy<KEY, RECORD, ADDITIONAL>
+    interface RecordProxy<KEY, RECORD, ADDITIONAL>
     {
         KEY getKey();
 
@@ -87,7 +87,7 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
     /**
      * Hook for loading and creating records.
      */
-    public interface Loader<KEY,RECORD,ADDITIONAL>
+    interface Loader<KEY,RECORD,ADDITIONAL>
     {
         RECORD newUnused( KEY key, ADDITIONAL additionalData );
 

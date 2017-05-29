@@ -106,7 +106,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        channel.writeInbound( channel.readOutbound() );
 
         // then
         assertEquals( request, channel.readInbound() );
@@ -121,7 +121,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( response );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        channel.writeInbound( channel.readOutbound() );
 
         // then
         assertEquals( response, channel.readInbound() );
@@ -138,7 +138,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        channel.writeInbound( channel.readOutbound() );
 
         // then
         assertEquals( request, channel.readInbound() );
@@ -154,7 +154,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( response );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        channel.writeInbound( channel.readOutbound() );
 
         // then
         assertEquals( response, channel.readInbound() );
@@ -170,7 +170,7 @@ public class RaftMessageProcessingTest
 
         // when
         channel.writeOutbound( request );
-        channel.writeInbound( new Object[]{channel.readOutbound()} );
+        channel.writeInbound( channel.readOutbound() );
 
         // then
         assertEquals( request, channel.readInbound() );

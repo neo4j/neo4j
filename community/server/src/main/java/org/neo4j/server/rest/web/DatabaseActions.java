@@ -383,7 +383,7 @@ public class DatabaseActions
 
         graphDb.index().forNodes( indexName );
         return new NodeIndexRepresentation( indexName,
-                Collections.<String,String>emptyMap() );
+                Collections.emptyMap() );
     }
 
     public IndexRepresentation createRelationshipIndex(
@@ -405,7 +405,7 @@ public class DatabaseActions
 
         graphDb.index().forRelationships( indexName );
         return new RelationshipIndexRepresentation( indexName,
-                Collections.<String,String>emptyMap() );
+                Collections.emptyMap() );
     }
 
     public void removeNodeIndex( String indexName )
@@ -681,7 +681,7 @@ public class DatabaseActions
         index.add( relationship, key, value );
         return new IndexedEntityRepresentation( relationship, key, value,
                 new RelationshipIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public IndexedEntityRepresentation addToNodeIndex( String indexName, String key, String value, long nodeId )
@@ -691,7 +691,7 @@ public class DatabaseActions
         index.add( node, key, value );
         return new IndexedEntityRepresentation( node, key, value,
                 new NodeIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public void removeFromNodeIndex( String indexName, String key, String value, long id )
@@ -734,7 +734,7 @@ public class DatabaseActions
         Node node = graphDb.getNodeById( id );
         return new IndexedEntityRepresentation( node, key, value,
                 new NodeIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public IndexedEntityRepresentation getIndexedRelationship(
@@ -747,7 +747,7 @@ public class DatabaseActions
         Relationship node = graphDb.getRelationshipById( id );
         return new IndexedEntityRepresentation( node, key, value,
                 new RelationshipIndexRepresentation( indexName,
-                        Collections.<String,String>emptyMap() ) );
+                        Collections.emptyMap() ) );
     }
 
     public ListRepresentation getIndexedNodes( String indexName, final String key,
@@ -802,14 +802,14 @@ public class DatabaseActions
 
     private ListRepresentation toListNodeRepresentation()
     {
-        return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList() );
+        return new ListRepresentation( RepresentationType.NODE, Collections.emptyList() );
     }
 
     private ListRepresentation toListNodeRepresentation( final IndexHits<Node> result, final IndexResultOrder order )
     {
         if ( result == null )
         {
-            return new ListRepresentation( RepresentationType.NODE, Collections.<Representation>emptyList() );
+            return new ListRepresentation( RepresentationType.NODE, Collections.emptyList() );
         }
         final IterableWrapper<Representation,Node> results = new IterableWrapper<Representation,Node>( result )
         {
@@ -829,7 +829,7 @@ public class DatabaseActions
 
     private ListRepresentation toListRelationshipRepresentation()
     {
-        return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList() );
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.emptyList() );
     }
 
     private ListRepresentation toListRelationshipRepresentation( final IndexHits<Relationship> result,
@@ -837,7 +837,7 @@ public class DatabaseActions
     {
         if ( result == null )
         {
-            return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.<Representation>emptyList() );
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, Collections.emptyList() );
         }
         final IterableWrapper<Representation,Relationship> results = new IterableWrapper<Representation,
                 Relationship>( result )
@@ -897,7 +897,7 @@ public class DatabaseActions
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,
-                new NodeIndexRepresentation( indexName, Collections.<String,String>emptyMap() ) ), created );
+                new NodeIndexRepresentation( indexName, Collections.emptyMap() ) ), created );
     }
 
     public Pair<IndexedEntityRepresentation,Boolean> getOrCreateIndexedRelationship(
@@ -943,7 +943,7 @@ public class DatabaseActions
             created = entity.wasCreated();
         }
         return Pair.of( new IndexedEntityRepresentation( result, key, value,
-                        new RelationshipIndexRepresentation( indexName, Collections.<String,String>emptyMap() ) ),
+                        new RelationshipIndexRepresentation( indexName, Collections.emptyMap() ) ),
                 created );
     }
 
@@ -1663,7 +1663,7 @@ public class DatabaseActions
     public ListRepresentation getLabelConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredNodeConstraints( labelName, Predicates.<ConstraintDefinition>alwaysTrue() ) ) );
+                filteredNodeConstraints( labelName, Predicates.alwaysTrue() ) ) );
     }
 
     public Representation getLabelUniquenessConstraints( String labelName )

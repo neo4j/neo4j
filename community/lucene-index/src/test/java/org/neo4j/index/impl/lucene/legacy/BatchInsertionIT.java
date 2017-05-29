@@ -109,7 +109,7 @@ public class BatchInsertionIT
     {
         File file = new File( dbRule.getStoreDirAbsolutePath() );
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
-        long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
+        long nodeId = inserter.createNode( Collections.emptyMap() );
 
         final Object finalValue = 87;
         inserter.setNodeProperty( nodeId, "a", "some property value" );
@@ -135,7 +135,7 @@ public class BatchInsertionIT
     {
         File file = new File( dbRule.getStoreDirAbsolutePath() );
         BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
-        long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
+        long nodeId = inserter.createNode( Collections.emptyMap() );
 
         final Object finalValue1 = 87;
         final Object finalValue2 = 3.14;

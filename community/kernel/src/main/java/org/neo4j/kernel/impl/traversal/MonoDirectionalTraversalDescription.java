@@ -175,7 +175,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         else
         {
             return existing == Evaluators.all() ? toAdd :
-                new MultiEvaluator( new PathEvaluator[] { existing, toAdd } );
+                new MultiEvaluator( existing, toAdd );
         }
     }
 

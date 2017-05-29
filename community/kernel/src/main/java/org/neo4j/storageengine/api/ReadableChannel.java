@@ -32,42 +32,42 @@ public interface ReadableChannel
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    byte get() throws IOException, ReadPastEndException;
+    byte get() throws IOException;
 
     /**
      * @return the next {@code short} in this channel.
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    short getShort() throws IOException, ReadPastEndException;
+    short getShort() throws IOException;
 
     /**
      * @return the next {@code int} in this channel.
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    int getInt() throws IOException, ReadPastEndException;
+    int getInt() throws IOException;
 
     /**
      * @return the next {@code long} in this channel.
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    long getLong() throws IOException, ReadPastEndException;
+    long getLong() throws IOException;
 
     /**
      * @return the next {@code float} in this channel.
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    float getFloat() throws IOException, ReadPastEndException;
+    float getFloat() throws IOException;
 
     /**
      * @return the next {@code double} in this channel.
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    double getDouble() throws IOException, ReadPastEndException;
+    double getDouble() throws IOException;
 
     /**
      * Reads the next {@code length} bytes from this channel and puts them into {@code bytes}.
@@ -78,5 +78,5 @@ public interface ReadableChannel
      * @throws IOException I/O error from channel.
      * @throws ReadPastEndException if not enough data was available.
      */
-    void get( byte[] bytes, int length ) throws IOException, ReadPastEndException;
+    void get( byte[] bytes, int length ) throws IOException;
 }

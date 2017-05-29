@@ -67,12 +67,7 @@ public class FailureMessage implements ResponseMessage
         {
             return false;
         }
-        if ( status != null ? !status.equals( that.status ) : that.status != null )
-        {
-            return false;
-        }
-
-        return true;
+        return status != null ? status.equals( that.status ) : that.status == null;
     }
 
     @Override

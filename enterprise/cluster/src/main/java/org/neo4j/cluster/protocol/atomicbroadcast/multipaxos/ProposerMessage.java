@@ -104,12 +104,7 @@ public enum ProposerMessage
             {
                 return false;
             }
-            if ( value != null ? !value.equals( that.value ) : that.value != null )
-            {
-                return false;
-            }
-
-            return true;
+            return value != null ? value.equals( that.value ) : that.value == null;
         }
 
         @Override
@@ -152,12 +147,7 @@ public enum ProposerMessage
 
             RejectPrepare that = (RejectPrepare) o;
 
-            if ( ballot != that.ballot )
-            {
-                return false;
-            }
-
-            return true;
+            return ballot == that.ballot;
         }
 
         @Override

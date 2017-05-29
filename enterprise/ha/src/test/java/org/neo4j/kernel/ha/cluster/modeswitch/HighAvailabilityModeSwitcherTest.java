@@ -236,7 +236,7 @@ public class HighAvailabilityModeSwitcherTest
 
                 when( executor.submit( any( Runnable.class ) ) ).thenAnswer(
                         (Answer<Future<?>>) invocation ->
-                                realExecutor.submit( (Runnable) () ->
+                                realExecutor.submit( () ->
                                         ((Runnable) invocation.getArguments()[0]).run() ) );
 
                 when( executor.schedule( any( Runnable.class ), anyLong(), any( TimeUnit.class ) ) ).thenAnswer(

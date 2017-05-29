@@ -223,12 +223,7 @@ public class MultiPaxosContext
         {
             return false;
         }
-        if ( !proposerContext.equals( that.proposerContext ) )
-        {
-            return false;
-        }
-
-        return true;
+        return proposerContext.equals( that.proposerContext );
     }
 
     @Override

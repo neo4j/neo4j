@@ -171,7 +171,7 @@ public class LabelAndIndexUpdateBatchingIT
     }
 
     private static List<TransactionRepresentation> extractTransactions( GraphDatabaseAPI db )
-            throws NoSuchTransactionException, IOException
+            throws IOException
     {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
         List<TransactionRepresentation> transactions = new ArrayList<>();

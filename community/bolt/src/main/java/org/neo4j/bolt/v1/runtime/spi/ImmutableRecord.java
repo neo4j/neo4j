@@ -49,12 +49,7 @@ public class ImmutableRecord implements Record
         }
 
         Record that = (Record) o;
-        if ( !Arrays.equals( fields, that.fields() ) )
-        {
-            return false;
-        }
-
-        return true;
+        return Arrays.equals( fields, that.fields() );
     }
 
     @Override

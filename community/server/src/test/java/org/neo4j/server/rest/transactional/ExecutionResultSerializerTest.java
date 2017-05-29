@@ -952,7 +952,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     @SafeVarargs
     private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String,Object>... rows )
     {
-        return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
+        return mockExecutionResult( planDescription, Collections.emptyList(), rows );
     }
 
     @SafeVarargs

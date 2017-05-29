@@ -154,7 +154,7 @@ public class AStar implements PathFinder<WeightedPath>
         private final Node end;
         private Node lastNode;
         private final PriorityMap<Node, Node, Double> nextPrioritizedNodes =
-                PriorityMap.<Node, Double>withSelfKeyNaturalOrder();
+                PriorityMap.withSelfKeyNaturalOrder();
         private final Map<Long, Visit> visitData = new HashMap<Long, Visit>();
 
         AStarIterator( Node start, Node end )

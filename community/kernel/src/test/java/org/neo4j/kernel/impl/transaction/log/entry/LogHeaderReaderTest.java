@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,15 +57,11 @@ public class LogHeaderReaderTest
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         final ReadableByteChannel channel = mock( ReadableByteChannel.class );
 
-        when( channel.read( buffer ) ).thenAnswer( new Answer<Integer>()
+        when( channel.read( buffer ) ).thenAnswer( invocation ->
         {
-            @Override
-            public Integer answer( InvocationOnMock invocation ) throws Throwable
-            {
-                buffer.putLong( encodeLogVersion( expectedLogVersion ) );
-                buffer.putLong( expectedTxId );
-                return 8 + 8;
-            }
+            buffer.putLong( encodeLogVersion( expectedLogVersion ) );
+            buffer.putLong( expectedTxId );
+            return 8 + 8;
         } );
 
         // when

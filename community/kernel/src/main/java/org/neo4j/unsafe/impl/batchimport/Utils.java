@@ -59,7 +59,7 @@ public class Utils
     public enum CompareType
     {
         EQ, GT, GE, LT, LE, NE
-    };
+    }
 
     public static boolean unsignedCompare( long dataA, long dataB, CompareType compareType )
     {   // works for signed and unsigned values
@@ -74,7 +74,7 @@ public class Utils
             }
             // fall through to GT
         case GT:
-            return !((dataA < dataB) ^ ((dataA < 0) != (dataB < 0)));
+            return dataA < dataB == ((dataA < 0) != (dataB < 0));
         case LE:
             if ( dataA == dataB )
             {

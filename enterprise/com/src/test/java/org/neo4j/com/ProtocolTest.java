@@ -77,6 +77,6 @@ public class ProtocolTest
     {
         NodeRecord node = new NodeRecord( 0 );
         node.setInUse( true );
-        return Arrays.<StorageCommand>asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
+        return Arrays.asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
     }
 }

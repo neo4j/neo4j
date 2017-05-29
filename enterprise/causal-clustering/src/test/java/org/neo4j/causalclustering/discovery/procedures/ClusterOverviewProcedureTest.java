@@ -136,12 +136,7 @@ public class ClusterOverviewProcedureTest
             }
 
             Set<String> recordGroups = Iterables.asSet( (List<String>) record[3] );
-            if ( !groups.equals( recordGroups ) )
-            {
-                return false;
-            }
-
-            return true;
+            return groups.equals( recordGroups );
         }
 
         @Override

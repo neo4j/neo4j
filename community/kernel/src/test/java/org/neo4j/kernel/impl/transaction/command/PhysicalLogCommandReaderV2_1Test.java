@@ -60,7 +60,7 @@ public class PhysicalLogCommandReaderV2_1Test
         PropertyCommand readCommand = (PropertyCommand) reader.read( data );
         PropertyRecord readRecord = readCommand.getAfter();
         assertEquals( id, readRecord.getId() );
-        PropertyBlock readBlock = Iterables.single( (Iterable<PropertyBlock>) readRecord );
+        PropertyBlock readBlock = Iterables.single( readRecord );
         assertArrayEquals( data1, readBlock.getValueRecords().get( 0 ).getData() );
         assertArrayEquals( data2, readBlock.getValueRecords().get( 1 ).getData() );
         assertEquals( 2, readRecord.getDeletedRecords().size() );

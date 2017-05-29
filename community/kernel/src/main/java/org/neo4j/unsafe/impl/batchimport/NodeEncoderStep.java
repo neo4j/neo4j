@@ -83,7 +83,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
             // Labels
             if ( batchNode.hasLabelField() )
             {
-                nodeRecord.setLabelField( batchNode.labelField(), Collections.<DynamicRecord>emptyList() );
+                nodeRecord.setLabelField( batchNode.labelField(), Collections.emptyList() );
             }
             else if ( batchNode.labels().length > 0 )
             {

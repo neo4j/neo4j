@@ -79,15 +79,15 @@ public class CypherResultRepresentationTest
 
         // Then
         Map<String, Object> serializedPlan = (Map<String, Object>) serialized.get( "plan" );
-        assertThat( (String) serializedPlan.get( "name" ), equalTo( name ) );
-        assertThat( (Integer) serializedPlan.get( "rows" ), is( 25 ) );
-        assertThat( (Integer) serializedPlan.get( "dbHits" ), is( 13 ) );
+        assertThat( serializedPlan.get( "name" ), equalTo( name ) );
+        assertThat( serializedPlan.get( "rows" ), is( 25 ) );
+        assertThat( serializedPlan.get( "dbHits" ), is( 13 ) );
 
         List<Map<String, Object>> children = (List<Map<String, Object>>) serializedPlan.get( "children" );
         assertThat( children.size(), is( 1 ) );
 
         Map<String, Object> args = (Map<String, Object>) serializedPlan.get( "args" );
-        assertThat( (String) args.get( "argumentKey" ), is( "argumentValue" ) );
+        assertThat( args.get( "argumentKey" ), is( "argumentValue" ) );
     }
 
     @Test
@@ -120,9 +120,9 @@ public class CypherResultRepresentationTest
         // Then
         Map one = (Map) ((Map) ((List) ((List) serialized.get( "data" )).get( 0 )).get( 0 )).get( "one" );
         List two = (List) one.get( "two" );
-        assertThat( (String) two.get( 0 ), is( "wait for it..." ) );
+        assertThat( two.get( 0 ), is( "wait for it..." ) );
         Map foo = (Map) two.get( 1 );
-        assertThat( (String) foo.get( "three" ), is( "GO!" ) );
+        assertThat( foo.get( "three" ), is( "GO!" ) );
     }
 
     @Test

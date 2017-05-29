@@ -57,19 +57,19 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
 
     @Override
     public TransactionCursor getTransactions( long transactionIdToStartFrom )
-            throws NoSuchTransactionException, IOException
+            throws IOException
     {
         return physicalStore.getTransactions( transactionIdToStartFrom );
     }
 
     @Override
-    public TransactionCursor getTransactions( LogPosition position ) throws NoSuchTransactionException, IOException
+    public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
         return physicalStore.getTransactions( position );
     }
 
     @Override
-    public TransactionMetadata getMetadataFor( long transactionId ) throws NoSuchTransactionException, IOException
+    public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
     {
         return physicalStore.getMetadataFor( transactionId );
     }

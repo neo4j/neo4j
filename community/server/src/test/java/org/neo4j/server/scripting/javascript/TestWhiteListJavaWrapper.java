@@ -83,7 +83,7 @@ public class TestWhiteListJavaWrapper
         NativeJavaObject obj = (NativeJavaObject)wrapped;
 
         assertThat( obj.has( "aGetter", scope ), is( false ));
-        assertThat( (UniqueTag) obj.get( "aGetter", scope ), is( UniqueTag.NOT_FOUND ) );
+        assertThat( obj.get( "aGetter", scope ), is( UniqueTag.NOT_FOUND ) );
     }
 
     @Test( expected = SecurityException.class )

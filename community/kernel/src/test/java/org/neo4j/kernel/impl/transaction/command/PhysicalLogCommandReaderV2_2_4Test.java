@@ -42,8 +42,8 @@ public class PhysicalLogCommandReaderV2_2_4Test
         IndexDefineCommand definitions = new IndexDefineCommand();
         int indexNameId = 10;
         definitions.init(
-                MapUtil.<String,Integer>genericMap( "myindex", indexNameId ),
-                MapUtil.<String,Integer>genericMap() );
+                MapUtil.genericMap( "myindex", indexNameId ),
+                MapUtil.genericMap() );
         definitions.serialize( channel );
         RemoveCommand removeCommand = new IndexCommand.RemoveCommand();
         removeCommand.init( indexNameId, IndexEntityType.Node.id(), 1234, -1, null );

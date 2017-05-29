@@ -58,7 +58,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.api.properties.Property.property;
@@ -93,7 +93,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 .storeDirectory( directory.directory() )
                 .indexProvider( new InMemoryIndexProvider() )
                 .build();
-        storageEngine.apply( tx( asList( createIndexRule(
+        storageEngine.apply( tx( singletonList( createIndexRule(
                 InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, descriptor ) ) ),
                 TransactionApplicationMode.EXTERNAL );
         Dependencies dependencies = new Dependencies();

@@ -95,14 +95,14 @@ public class CypherIT extends AbstractRestFunctionalTestBase
         Map<String,Object> stats = (Map<String,Object>) output.get( "stats" );
 
         assertThat( stats, isA( Map.class ) );
-        assertThat( (Boolean) stats.get( "contains_updates" ), is( true ) );
-        assertThat( (Integer) stats.get( "labels_added" ), is( 1 ) );
-        assertThat( (Integer) stats.get( "labels_removed" ), is( 1 ) );
-        assertThat( (Integer) stats.get( "nodes_created" ), is( 0 ) );
-        assertThat( (Integer) stats.get( "nodes_deleted" ), is( 0 ) );
-        assertThat( (Integer) stats.get( "properties_set" ), is( 0 ) );
-        assertThat( (Integer) stats.get( "relationships_created" ), is( 0 ) );
-        assertThat( (Integer) stats.get( "relationship_deleted" ), is( 0 ) );
+        assertThat( stats.get( "contains_updates" ), is( true ) );
+        assertThat( stats.get( "labels_added" ), is( 1 ) );
+        assertThat( stats.get( "labels_removed" ), is( 1 ) );
+        assertThat( stats.get( "nodes_created" ), is( 0 ) );
+        assertThat( stats.get( "nodes_deleted" ), is( 0 ) );
+        assertThat( stats.get( "properties_set" ), is( 0 ) );
+        assertThat( stats.get( "relationships_created" ), is( 0 ) );
+        assertThat( stats.get( "relationship_deleted" ), is( 0 ) );
     }
 
     /**

@@ -45,7 +45,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "c", "cost", (float) 1 );
         graph.makeEdge( "a", "d", "cost", (long) 1 );
-        graph.makeEdge( "a", "e", "cost", (int) 1 );
+        graph.makeEdge( "a", "e", "cost", 1 );
         graph.makeEdge( "b", "c", "cost", (double) 1 );
         graph.makeEdge( "c", "d", "cost", (byte) 1 );
         graph.makeEdge( "d", "e", "cost", (short) 1 );
@@ -72,7 +72,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "b", "c", "cost", (float) 1 );
-        graph.makeEdge( "c", "d", "cost", (int) 1 );
+        graph.makeEdge( "c", "d", "cost", 1 );
         graph.makeEdge( "d", "e", "cost", (long) 1 );
         graph.makeEdge( "e", "f", "cost", (byte) 1 );
         FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,

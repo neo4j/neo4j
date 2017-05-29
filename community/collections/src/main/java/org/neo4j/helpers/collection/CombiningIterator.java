@@ -45,7 +45,7 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
 
     public CombiningIterator( T first, Iterator<T> rest )
     {
-        this( Collections.<Iterator<T>>emptyList() );
+        this( Collections.emptyList() );
         this.hasFetchedNext = true;
         this.nextObject = first;
         this.currentIterator = rest;

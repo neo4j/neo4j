@@ -86,7 +86,7 @@ public class TestTransactionEventsWithIndexes extends TestTransactionEvents
         try ( Transaction ignore = db.beginTx() )
         {
             Node node = single( index.get( "key", "value" ) );
-            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+            assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }
 }

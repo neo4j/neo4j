@@ -120,7 +120,7 @@ public class FormattedLogProviderTest
 
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer )
     {
-        return newFormattedLogProvider( writer, Collections.<String, Level>emptyMap() );
+        return newFormattedLogProvider( writer, Collections.emptyMap() );
     }
 
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer, String context, Level level )

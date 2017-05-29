@@ -537,7 +537,7 @@ public class EncodingIdMapper implements IdMapper
                 long pivotEId = dataCache.get( pivot );
                 if ( comparator.ge( rightEId, pivotEId ) )
                 {
-                    return rightEId == pivotEId ? right > pivot : true;
+                    return rightEId != pivotEId || right > pivot;
                 }
                 return false;
             }

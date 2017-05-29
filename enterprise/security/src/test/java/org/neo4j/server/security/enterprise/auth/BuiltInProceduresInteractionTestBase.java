@@ -1129,10 +1129,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @SuppressWarnings( "unchecked" )
     private Matcher<Map<String, Object>> hasQueryId()
     {
-        return hasEntry(
-            equalTo( "queryId" ),
-            allOf( (Matcher) isA( String.class ), (Matcher) containsString( QueryId.QUERY_ID_PREFIX ) )
-        );
+        Matcher<String> queryId = equalTo( "queryId" );
+        Matcher valueMatcher =
+                allOf( (Matcher) isA( String.class ), (Matcher) containsString( QueryId.QUERY_ID_PREFIX ) );
+        return hasEntry( queryId, valueMatcher );
     }
 
     @SuppressWarnings( "unchecked" )

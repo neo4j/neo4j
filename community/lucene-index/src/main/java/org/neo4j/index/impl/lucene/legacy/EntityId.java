@@ -61,7 +61,7 @@ public interface EntityId
         @Override
         public boolean equals( Object obj )
         {
-            return obj instanceof EntityId ? ((EntityId)obj).id() == id : false;
+            return obj instanceof EntityId && ((EntityId) obj).id() == id;
         }
 
         @Override

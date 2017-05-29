@@ -251,7 +251,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
-        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
+        final List<Object> idList = Arrays.asList( "10", "9", "10" );
         InputIterable<Object> ids = wrap( "source", idList );
 
         Group group = new Group.Adapter( GLOBAL.id(), "global" );

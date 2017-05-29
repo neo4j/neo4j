@@ -94,7 +94,7 @@ public class PropertyBlock implements Cloneable
 
     public List<DynamicRecord> getValueRecords()
     {
-        return valueRecords != null ? valueRecords : Collections.<DynamicRecord>emptyList();
+        return valueRecords != null ? valueRecords : Collections.emptyList();
     }
 
     public long getSingleValueBlock()

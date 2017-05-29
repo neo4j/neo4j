@@ -107,14 +107,7 @@ public class CommitContentionTest
     private Thread startFirstTransactionWhichBlocksDuringPushUntilSecondTransactionFinishes() throws
             InterruptedException
     {
-        Thread thread = new Thread( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                createNode();
-            }
-        } );
+        Thread thread = new Thread( this::createNode );
 
         thread.start();
 

@@ -65,7 +65,7 @@ public class TestExceptions
 
         // when
         Throwable peeled = Exceptions.peel( exception,
-                Predicates.<Throwable>instanceOfAny( RuntimeException.class, LevelFourException.class ) );
+                Predicates.instanceOfAny( RuntimeException.class, LevelFourException.class ) );
 
         // then
         assertEquals( expected, peeled );

@@ -85,7 +85,7 @@ public class StateMachine
         {
             // Let the old state handle the incoming message and tell us what the new state should be
             State<Object, MessageType> oldState = (State<Object, MessageType>) state;
-            State<?, ?> newState = oldState.handle( (Object) context, (Message<MessageType>) message, outgoing );
+            State<?, ?> newState = oldState.handle( context, (Message<MessageType>) message, outgoing );
             state = newState;
 
             // Notify any listeners of the new state

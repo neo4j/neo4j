@@ -101,7 +101,7 @@ public class ExceptionHandlingIterable<T> implements Iterable<T>
     {
         // TODO it's pretty bad that we have to do this. We should refactor our exception hierarchy
         // to eliminate the need for this hack.
-        ExceptionHandlingIterable.<RuntimeException>sneakyThrow( t );
+        ExceptionHandlingIterable.sneakyThrow( t );
     }
 
     protected boolean exceptionOnHasNext( Throwable t )

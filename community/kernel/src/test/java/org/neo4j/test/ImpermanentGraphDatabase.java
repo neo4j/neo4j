@@ -102,7 +102,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
     {
         this( storeDir, params,
-                Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
+                Iterables.cast( Service.load(
                         KernelExtensionFactory.class ) ) );
     }
 

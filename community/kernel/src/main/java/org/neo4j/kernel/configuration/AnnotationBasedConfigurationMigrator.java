@@ -80,7 +80,7 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
                 if ( type.isInstance( fieldValue ) &&
                         (annotation == null || field.getAnnotation( annotation ) != null) )
                 {
-                    found.add( Pair.<Field,T>of( field, (T) fieldValue ) );
+                    found.add( Pair.of( field, (T) fieldValue ) );
                 }
             }
             catch ( IllegalAccessException ignored )

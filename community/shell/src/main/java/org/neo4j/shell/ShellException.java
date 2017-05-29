@@ -140,7 +140,7 @@ public class ShellException extends Exception
             return false;
         }
         Throwable cause = e.getCause();
-        return cause == null ? true : isCompletelyRecognizedException( cause );
+        return cause == null || isCompletelyRecognizedException( cause );
     }
 
     public static String stackTraceAsString( Throwable cause )

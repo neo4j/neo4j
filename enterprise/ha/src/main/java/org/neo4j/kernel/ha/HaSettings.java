@@ -126,7 +126,7 @@ public class HaSettings implements LoadableConfig
                 "replaces it. This strategy uses potentially more space than branch_then_copy but it allows " +
                 "for store copy failures to be recoverable as the original store is maintained until " +
                 "the store copy finishes successfully." )
-        copy_then_branch;
+        copy_then_branch
     }
 
     public enum TxPushStrategy

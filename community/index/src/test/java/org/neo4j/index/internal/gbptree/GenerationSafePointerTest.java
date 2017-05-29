@@ -338,11 +338,7 @@ public class GenerationSafePointerTest
             {
                 return false;
             }
-            if ( pointer != other.pointer )
-            {
-                return false;
-            }
-            return true;
+            return pointer == other.pointer;
         }
 
         @Override

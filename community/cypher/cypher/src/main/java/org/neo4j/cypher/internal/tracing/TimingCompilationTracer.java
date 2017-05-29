@@ -164,7 +164,7 @@ public class TimingCompilationTracer implements CompilationTracer
         @Override
         public List<PhaseEvent> phases()
         {
-            return Collections.<PhaseEvent>unmodifiableList( phases );
+            return Collections.unmodifiableList( phases );
         }
     }
 

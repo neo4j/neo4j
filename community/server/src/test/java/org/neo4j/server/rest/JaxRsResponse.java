@@ -147,7 +147,7 @@ public class JaxRsResponse extends Response
             ConsoleService consoleService =
                     new ConsoleService( null, mock( Database.class ), NullLogProvider.getInstance(), null );
             ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
-                    Collections.<AdvertisableService>singletonList( consoleService ) );
+                    Collections.singletonList( consoleService ) );
             Map<String,Map<String,String>> map = srr.serialize();
 
             assertNotNull( map.get( "services" ) );

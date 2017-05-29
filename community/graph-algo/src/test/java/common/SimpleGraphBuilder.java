@@ -87,7 +87,7 @@ public class SimpleGraphBuilder
 
     public Node makeNode( String id )
     {
-        return makeNode( id, Collections.<String, Object>emptyMap() );
+        return makeNode( id, Collections.emptyMap() );
     }
 
     public Node makeNode( String id, Object... keyValuePairs )
@@ -144,7 +144,7 @@ public class SimpleGraphBuilder
 
     public Relationship makeEdge( String node1, String node2 )
     {
-        return makeEdge( node1, node2, Collections.<String, Object>emptyMap() );
+        return makeEdge( node1, node2, Collections.emptyMap() );
     }
 
     public Relationship makeEdge( String node1, String node2, Map<String, Object> edgeProperties )

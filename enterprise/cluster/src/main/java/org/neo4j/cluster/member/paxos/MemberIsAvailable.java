@@ -140,12 +140,7 @@ public class MemberIsAvailable
         {
             return false;
         }
-        if ( !roleUri.equals( that.roleUri ) )
-        {
-            return false;
-        }
-
-        return true;
+        return roleUri.equals( that.roleUri );
     }
 
     @Override

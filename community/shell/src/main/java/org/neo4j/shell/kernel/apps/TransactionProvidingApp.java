@@ -757,7 +757,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
                 matches.put( type.name(), direction );
             }
         }
-        return matches.isEmpty() ? Collections.<String, Direction>emptyMap() : matches;
+        return matches.isEmpty() ? Collections.emptyMap() : matches;
     }
 
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,

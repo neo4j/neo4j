@@ -776,12 +776,12 @@ public class Settings
 
     public static <T> Function<String, T> options( T... optionValues )
     {
-        return options( Iterables.<T,T>iterable( optionValues ), false );
+        return options( Iterables.iterable( optionValues ), false );
     }
 
     public static <T> Function<String, T> optionsIgnoreCase( T... optionValues )
     {
-        return options( Iterables.<T,T>iterable( optionValues ), true );
+        return options( Iterables.iterable( optionValues ), true );
     }
 
     public static <T> Function<String, T> options( final Iterable<T> optionValues, final boolean ignoreCase )

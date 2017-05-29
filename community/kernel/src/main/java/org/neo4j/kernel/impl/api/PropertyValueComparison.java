@@ -56,12 +56,12 @@ public class PropertyValueComparison
 
     public enum SuperType
     {
-        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.<Object>exclusive( "" ) ),
-        STRING( 1, Limit.<Object>inclusive( "" ), Limit.<Object>exclusive( false ) ),
-        BOOLEAN( 2, Limit.<Object>inclusive( false ), Limit.<Object>inclusive( true ) ),
+        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.exclusive( "" ) ),
+        STRING( 1, Limit.inclusive( "" ), Limit.exclusive( false ) ),
+        BOOLEAN( 2, Limit.inclusive( false ), Limit.inclusive( true ) ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3, Limit.<Object>inclusive( Double.NEGATIVE_INFINITY ), Limit.<Object>inclusive( Double.NaN ) );
+        NUMBER( 3, Limit.inclusive( Double.NEGATIVE_INFINITY ), Limit.inclusive( Double.NaN ) );
 
         public final int typeId;
         public final Limit<Object> lowLimit;

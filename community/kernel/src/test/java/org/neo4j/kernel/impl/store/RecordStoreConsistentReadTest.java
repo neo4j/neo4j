@@ -486,8 +486,8 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
 
-            List<PropertyBlock> actualBlocks = Iterables.asList( (Iterable<PropertyBlock>) actualRecord );
-            List<PropertyBlock> expectedBlocks = Iterables.asList( (Iterable<PropertyBlock>) expectedRecord );
+            List<PropertyBlock> actualBlocks = Iterables.asList( actualRecord );
+            List<PropertyBlock> expectedBlocks = Iterables.asList( expectedRecord );
             assertThat( "getPropertyBlocks().size", actualBlocks.size(), is( expectedBlocks.size() ) );
             for ( int i = 0; i < actualBlocks.size(); i++ )
             {

@@ -83,7 +83,7 @@ import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIME
 
 interface TimeoutTests
 { /* Category marker */
-};
+}
 
 @RunWith( FrameworkRunner.class )
 @CreateDS(

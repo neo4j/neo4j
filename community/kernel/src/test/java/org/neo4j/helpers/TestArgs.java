@@ -119,7 +119,7 @@ public class TestArgs
         Validator<Integer> validator = mock( Validator.class );
 
         // WHEN
-        int value = args.interpretOption( "arg", Converters.<Integer>mandatory(), Converters.toInt(), validator );
+        int value = args.interpretOption( "arg", Converters.mandatory(), Converters.toInt(), validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -136,7 +136,7 @@ public class TestArgs
         Validator<Integer> validator = mock( Validator.class );
 
         // WHEN
-        int value = args.interpretOrphan( 0, Converters.<Integer>mandatory(), Converters.toInt(), validator );
+        int value = args.interpretOrphan( 0, Converters.mandatory(), Converters.toInt(), validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -167,7 +167,7 @@ public class TestArgs
         {   // Good
         }
 
-        Collection<Integer> numbers = args.interpretOptions( key, Converters.<Integer>optional(),
+        Collection<Integer> numbers = args.interpretOptions( key, Converters.optional(),
                 Converters.toInt() );
 
         // THEN
@@ -213,7 +213,7 @@ public class TestArgs
 
         // WHEN
         Collection<Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
-                Converters.<String>mandatory(), value -> value );
+                Converters.mandatory(), value -> value );
 
         // THEN
         assertEquals( 2, options.size() );
@@ -332,7 +332,7 @@ public class TestArgs
         Args args = Args.withFlags().parse();
 
         // When
-        Collection<String> interpreted = args.interpretOptions( "something", Converters.<String>optional(),
+        Collection<String> interpreted = args.interpretOptions( "something", Converters.optional(),
                 value -> value );
 
         // Then
@@ -343,6 +343,6 @@ public class TestArgs
     {
         first,
         second,
-        third;
+        third
     }
 }

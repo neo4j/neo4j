@@ -117,7 +117,7 @@ public class PrimitiveIntCollections
             @Override
             protected boolean fetchNext()
             {
-                return ++index < items.length ? next( items[index] ) : false;
+                return ++index < items.length && next( items[index] );
             }
         };
     }
@@ -131,7 +131,7 @@ public class PrimitiveIntCollections
             @Override
             protected boolean fetchNext()
             {
-                return --index >= 0 ? next( items[index] ) : false;
+                return --index >= 0 && next( items[index] );
             }
         };
     }
@@ -162,7 +162,7 @@ public class PrimitiveIntCollections
                     singleItemReturned = true;
                     return next( item );
                 }
-                return iterator.hasNext() ? next( iterator.next() ) : false;
+                return iterator.hasNext() && next( iterator.next() );
             }
         };
     }
@@ -214,7 +214,7 @@ public class PrimitiveIntCollections
                     }
                 }
             }
-            return currentIterator != null && currentIterator.hasNext() ? next( currentIterator.next() ) : false;
+            return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
         }
 
         protected final PrimitiveIntIterator currentIterator()
@@ -394,7 +394,7 @@ public class PrimitiveIntCollections
         {
             try
             {
-                return current <= end ? next( current ) : false;
+                return current <= end && next( current );
             }
             finally
             {
@@ -414,7 +414,7 @@ public class PrimitiveIntCollections
             {
                 try
                 {
-                    return !returned ? next( item ) : false;
+                    return !returned && next( item );
                 }
                 finally
                 {
@@ -718,7 +718,7 @@ public class PrimitiveIntCollections
                     }
                     current = source.next();
                 }
-                return source.hasNext() ? next( current.next() ) : false;
+                return source.hasNext() && next( current.next() );
             }
         };
     }

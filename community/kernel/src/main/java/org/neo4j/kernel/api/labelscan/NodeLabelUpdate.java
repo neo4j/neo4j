@@ -93,12 +93,7 @@ public class NodeLabelUpdate
         {
             return false;
         }
-        if ( !Arrays.equals( labelsBefore, that.labelsBefore ) )
-        {
-            return false;
-        }
-
-        return true;
+        return Arrays.equals( labelsBefore, that.labelsBefore );
     }
 
     @Override

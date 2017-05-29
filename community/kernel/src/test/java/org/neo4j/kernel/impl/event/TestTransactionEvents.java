@@ -44,7 +44,6 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
@@ -677,10 +676,9 @@ public class TestTransactionEvents
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Label label = label( "Label" );
-        IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().indexFor( label ).on( "indexed" ).create();
+            db.schema().indexFor( label ).on( "indexed" ).create();
             tx.success();
         }
 
@@ -713,7 +711,7 @@ public class TestTransactionEvents
         try ( Transaction ignore = db.beginTx() )
         {
             Node node = db.findNode( label, "indexed", "value" );
-            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+            assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }
 
@@ -723,10 +721,9 @@ public class TestTransactionEvents
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Label label = label( "Label" );
-        IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().indexFor( label ).on( "indexed" ).create();
+            db.schema().indexFor( label ).on( "indexed" ).create();
             tx.success();
         }
 
@@ -760,7 +757,7 @@ public class TestTransactionEvents
         try ( Transaction ignore = db.beginTx() )
         {
             Node node = db.findNode( label, "indexed", "value" );
-            assertThat( node.getProperty( "random" ), is( (Object) 42 ) );
+            assertThat( node.getProperty( "random" ), is( 42 ) );
         }
     }
 

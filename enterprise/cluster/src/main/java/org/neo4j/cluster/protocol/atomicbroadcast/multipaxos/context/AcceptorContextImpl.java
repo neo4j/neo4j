@@ -90,12 +90,7 @@ class AcceptorContextImpl
 
         AcceptorContextImpl that = (AcceptorContextImpl) o;
 
-        if ( instanceStore != null ? !instanceStore.equals( that.instanceStore ) : that.instanceStore != null )
-        {
-            return false;
-        }
-
-        return true;
+        return instanceStore != null ? instanceStore.equals( that.instanceStore ) : that.instanceStore == null;
     }
 
     @Override

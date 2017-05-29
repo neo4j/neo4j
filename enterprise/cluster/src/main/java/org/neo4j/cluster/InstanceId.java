@@ -81,12 +81,7 @@ public class InstanceId implements Externalizable, Comparable<InstanceId>
 
         InstanceId instanceId1 = (InstanceId) o;
 
-        if ( serverId != instanceId1.serverId )
-        {
-            return false;
-        }
-
-        return true;
+        return serverId == instanceId1.serverId;
     }
 
     @Override

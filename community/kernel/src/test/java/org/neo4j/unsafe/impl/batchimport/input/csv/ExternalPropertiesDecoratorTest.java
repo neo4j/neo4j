@@ -55,7 +55,7 @@ public class ExternalPropertiesDecoratorTest
         Configuration config = config();
         IdType idType = IdType.STRING;
         Decorator<InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
-                DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
+                DataFactories.data( NO_NODE_DECORATOR, readable( propertyData ) ),
                 defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD, silentBadCollector( 0 ) );
 
         // WHEN
@@ -83,7 +83,7 @@ public class ExternalPropertiesDecoratorTest
         Configuration config = config();
         IdType idType = IdType.STRING;
         Decorator<InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
-                DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
+                DataFactories.data( NO_NODE_DECORATOR, readable( propertyData ) ),
                 defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD, silentBadCollector( 0 ) );
 
         // WHEN

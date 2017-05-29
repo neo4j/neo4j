@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -164,7 +164,6 @@ public class VersionAwareLogEntryReaderTest
     public void shouldReturnNullWhenNotEnoughDataInTheChannel() throws IOException
     {
         // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         // when
@@ -445,7 +444,7 @@ public class VersionAwareLogEntryReaderTest
 
         // Write command ...
         int posBefore = channel.writerPosition();
-        writer.serialize( asList( new Command.NodeCommand( new NodeRecord( 1 ),
+        writer.serialize( singletonList( new Command.NodeCommand( new NodeRecord( 1 ),
                 new NodeRecord( 1 ).initialize( true, 1, false, 2, 0 ) ) ) );
         int posAfter = channel.writerPosition();
         // ... which then gets overwritten with invalid data

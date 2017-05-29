@@ -89,7 +89,7 @@ public class Slf4jLogProviderTest
         LoggingEvent event = events.get( 0 );
         assertThat( event.getLoggerName(), is( getClass().getName() ) );
         assertThat( event.getLevel(), is( level ) );
-        assertThat( event.getMessage(), is( (Object) message ) );
+        assertThat( event.getMessage(), is( message ) );
     }
 
     private ArrayList<LoggingEvent> getLoggingEvents()

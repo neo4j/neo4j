@@ -75,12 +75,7 @@ public class InstanceId
 
         InstanceId that = (InstanceId) o;
 
-        if ( id != that.id )
-        {
-            return false;
-        }
-
-        return true;
+        return id == that.id;
     }
 
     @Override

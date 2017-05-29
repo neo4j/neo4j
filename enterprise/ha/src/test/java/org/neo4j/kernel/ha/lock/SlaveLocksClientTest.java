@@ -532,7 +532,7 @@ public class SlaveLocksClientTest
 
         logProvider.assertExactly( inLog( SlaveLocksClient.class )
                 .warn( equalTo( "Unable to stop lock session on master" ),
-                        CoreMatchers.<Throwable>instanceOf( DistributedLockFailureException.class ) ) );
+                        CoreMatchers.instanceOf( DistributedLockFailureException.class ) ) );
     }
 
     @Test
@@ -545,7 +545,7 @@ public class SlaveLocksClientTest
 
         logProvider.assertExactly( inLog( SlaveLocksClient.class )
                 .warn( equalTo( "Unable to stop lock session on master" ),
-                        CoreMatchers.<Throwable>equalTo( error ) ) );
+                        CoreMatchers.equalTo( error ) ) );
     }
 
     @Test

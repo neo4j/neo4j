@@ -177,7 +177,7 @@ public class DelayedBufferTest
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
-        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), Predicates.<Long>alwaysTrue(),
+        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), Predicates.alwaysTrue(),
                 10, consumer );
         buffer.offer( 0 );
         buffer.offer( 1 );

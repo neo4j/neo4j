@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static java.lang.Math.toIntExact;
@@ -126,11 +125,6 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     {
         writer.put( bytes, length );
         return this;
-    }
-
-    public StoreChannel getFileChannel()
-    {
-        throw new UnsupportedOperationException();
     }
 
     public boolean isOpen()

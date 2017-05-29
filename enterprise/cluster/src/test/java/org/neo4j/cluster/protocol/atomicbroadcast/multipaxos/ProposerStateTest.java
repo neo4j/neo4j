@@ -108,7 +108,7 @@ public class ProposerStateTest
         // The instance is closed
         PaxosInstance paxosInstance = new PaxosInstance( paxosInstanceStore, instanceId ); // the instance
         paxosInstance.propose( 2001, Iterables.asList(
-                Iterables.<URI, URI>iterable( create( "http://something1" ), create( "http://something2" ),
+                Iterables.iterable( create( "http://something1" ), create( "http://something2" ),
                         create( "http://something3" ) ) ) );
 
         Message message = Message.to( ProposerMessage.promise, create( "http://something1" ),

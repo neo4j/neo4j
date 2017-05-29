@@ -259,12 +259,7 @@ class ProposerContextImpl
         {
             return false;
         }
-        if ( pendingValues != null ? !pendingValues.equals( that.pendingValues ) : that.pendingValues != null )
-        {
-            return false;
-        }
-
-        return true;
+        return pendingValues != null ? pendingValues.equals( that.pendingValues ) : that.pendingValues == null;
     }
 
     @Override

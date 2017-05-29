@@ -40,5 +40,5 @@ public enum ExistingTargetStrategy
     /**
      * Skip the file operation as a whole if the target file already exists.
      */
-    SKIP;
+    SKIP
 }

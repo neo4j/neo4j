@@ -293,11 +293,11 @@ public class StoreFilesTest
         FilenameFilter filter = ( directory, name ) -> !name.startsWith( "ignore" );
         storeFiles = new StoreFiles( fs, pageCache, filter );
 
-        List<File> filesOnFilesystem = Arrays.asList( new File[]{a, c} );
-        List<File> fileOnFilesystem = Arrays.asList( new File[]{a} );
-        List<File> filesOnPageCache = Arrays.asList( new File[]{b, d} );
-        List<File> fileOnPageCache = Arrays.asList( new File[]{b} );
-        List<File> ingore = Arrays.asList( new File[]{ignore} );
+        List<File> filesOnFilesystem = Arrays.asList( a, c );
+        List<File> fileOnFilesystem = Arrays.asList( a );
+        List<File> filesOnPageCache = Arrays.asList( b, d );
+        List<File> fileOnPageCache = Arrays.asList( b );
+        List<File> ingore = Arrays.asList( ignore );
 
         assertFalse( storeFiles.isEmpty( dir, filesOnFilesystem ) );
         assertFalse( storeFiles.isEmpty( dir, fileOnFilesystem ) );
