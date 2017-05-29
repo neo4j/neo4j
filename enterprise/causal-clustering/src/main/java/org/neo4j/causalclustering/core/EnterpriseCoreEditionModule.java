@@ -96,6 +96,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
+
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
@@ -252,8 +254,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final MessageLogger<MemberId> messageLogger;
         if ( config.get( CausalClusteringSettings.raft_messages_log_enable ) )
         {
-            File logsDir = config.get( GraphDatabaseSettings.logs_directory );
-            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logsDir ) ) );
+            File logFile = config.get( raft_messages_log_path );
+            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logFile ) ) );
         }
         else
         {
@@ -296,14 +298,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         return consensusModule.raftMachine().currentRole() == Role.LEADER;
     }
 
-    private static PrintWriter raftMessagesLog( File logsDir )
+    private static PrintWriter raftMessagesLog( File logFile )
     {
         //noinspection ResultOfMethodCallIgnored
-        logsDir.mkdirs();
+        logFile.getParentFile().mkdirs();
         try
         {
 
-            return new PrintWriter( new FileOutputStream( new File( logsDir, "raft-messages.log" ), true ) );
+            return new PrintWriter( new FileOutputStream( logFile, true ) );
         }
         catch ( FileNotFoundException e )
         {

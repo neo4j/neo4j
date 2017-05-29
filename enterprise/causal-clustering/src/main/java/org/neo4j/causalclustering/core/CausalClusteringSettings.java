@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Settings;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -43,9 +45,11 @@ import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
@@ -187,6 +191,11 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
     public static final Setting<Boolean> raft_messages_log_enable =
             setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE);
+
+    @Description( "Path to RAFT messages log." )
+    public static final Setting<File> raft_messages_log_path =
+            derivedSetting( "dbms.logs.query.path", logs_directory, ( logs ) -> new File( logs, "raft-messages.log" ),
+                    PATH );
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
