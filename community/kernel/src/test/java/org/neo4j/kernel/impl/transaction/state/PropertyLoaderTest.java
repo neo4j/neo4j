@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -44,7 +45,9 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
@@ -55,7 +58,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.properties.Property.intProperty;
 
 public class PropertyLoaderTest
 {
@@ -195,8 +197,13 @@ public class PropertyLoaderTest
     private static PropertyBlock newSingleIntPropertyBlock( int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, PROP_KEY_ID, value, null, null );
+        PropertyStore.encodeValue( block, PROP_KEY_ID, Values.intValue( value ), null, null );
         block.setKeyIndexId( PROP_KEY_ID );
         return block;
+    }
+
+    private StorageProperty intProperty( int propKeyId, int value )
+    {
+        return new PropertyKeyValue( propKeyId, Values.of( value ) );
     }
 }

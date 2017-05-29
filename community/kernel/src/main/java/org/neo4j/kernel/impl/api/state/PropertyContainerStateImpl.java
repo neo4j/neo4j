@@ -25,8 +25,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -231,14 +230,14 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     {
         return propertyMap == null ? Collections.emptyIterator() :
                 Iterators.map(
-                    entry -> Property.property( entry.getKey(), entry.getValue().asPublic() ),
+                    entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
                     propertyMap.entrySet().iterator()
                 );
     }
 
-    private DefinedProperty getPropertyOrNull( VersionedHashMap<Integer,Value> propertyMap, int propertyKeyId )
+    private PropertyKeyValue getPropertyOrNull( VersionedHashMap<Integer,Value> propertyMap, int propertyKeyId )
     {
         Value value = propertyMap.get( propertyKeyId );
-        return value == null ? null : Property.property( propertyKeyId, value.asPublic() );
+        return value == null ? null : new PropertyKeyValue( propertyKeyId, value );
     }
 }

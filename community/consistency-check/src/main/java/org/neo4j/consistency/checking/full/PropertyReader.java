@@ -26,8 +26,7 @@ import java.util.List;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -35,6 +34,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
+
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class PropertyReader implements PropertyAccessor
@@ -93,13 +96,13 @@ public class PropertyReader implements PropertyAccessor
         return propertyBlocks;
     }
 
-    public DefinedProperty propertyValue( PropertyBlock block )
+    public Value propertyValue( PropertyBlock block )
     {
-        return block.getType().readProperty( block.getKeyIndexId(), block, Suppliers.singleton( propertyStore ) );
+        return block.getType().getValue( block, propertyStore );
     }
 
     @Override
-    public Property getProperty( long nodeId, int propertyKeyId )
+    public Value getPropertyValue( long nodeId, int propertyKeyId )
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )
@@ -112,6 +115,6 @@ public class PropertyReader implements PropertyAccessor
                 }
             }
         }
-        return Property.noNodeProperty( nodeId, propertyKeyId );
+        return Values.NO_VALUE;
     }
 }

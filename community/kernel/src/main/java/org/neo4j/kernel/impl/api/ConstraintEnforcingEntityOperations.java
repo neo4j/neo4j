@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
@@ -210,7 +209,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             {
                 if ( nodePropertyId != changedPropertyKeyId )
                 {
-                    values[k] = IndexQuery.exact( nodePropertyId, Values.of( property.value() ) );
+                    values[k] = IndexQuery.exact( nodePropertyId, property.value() );
                 }
                 nMatched++;
             }
@@ -255,8 +254,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
-                        new IndexEntryConflictException( existing, NO_SUCH_NODE,
-                                OrderedPropertyValues.of( propertyValues ) ) );
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE, IndexQuery.asValueTuple( propertyValues ) ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
@@ -421,7 +419,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );

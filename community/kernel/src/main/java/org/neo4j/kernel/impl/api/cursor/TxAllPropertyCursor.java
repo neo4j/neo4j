@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.api.cursor;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageProperty;
 
@@ -51,13 +50,13 @@ public class TxAllPropertyCursor extends TxAbstractPropertyCursor
                 StorageProperty changedProperty = state.getChangedProperty( propertyKeyId );
                 if ( changedProperty != null )
                 {
-                    this.property = (DefinedProperty) changedProperty;
+                    this.property = changedProperty;
                     return true;
                 }
 
                 if ( !state.isPropertyRemoved( propertyKeyId ) )
                 {
-                    this.property = Property.property( propertyKeyId, cursor.get().value() );
+                    this.property = new PropertyKeyValue( propertyKeyId, cursor.get().value() );
                     return true;
                 }
             }
@@ -67,7 +66,7 @@ public class TxAllPropertyCursor extends TxAbstractPropertyCursor
 
         if ( added != null && added.hasNext() )
         {
-            property = (DefinedProperty) added.next();
+            property = added.next();
             return true;
         }
         else

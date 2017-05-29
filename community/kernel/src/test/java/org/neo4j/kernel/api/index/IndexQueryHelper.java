@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 public class IndexQueryHelper
@@ -31,5 +33,39 @@ public class IndexQueryHelper
     public static IndexQuery exact( int propertyKeyId, Object value )
     {
         return IndexQuery.exact( propertyKeyId, Values.of( value ) );
+    }
+
+    public static IndexEntryUpdate<LabelSchemaDescriptor> add(
+            long nodeId, LabelSchemaDescriptor schema, Object... objects )
+    {
+        return IndexEntryUpdate.add( nodeId, schema, toValues( objects ) );
+    }
+
+    public static IndexEntryUpdate<LabelSchemaDescriptor> remove(
+            long nodeId, LabelSchemaDescriptor schema, Object... objects )
+    {
+        return IndexEntryUpdate.remove( nodeId, schema, toValues( objects ) );
+    }
+
+    public static IndexEntryUpdate<LabelSchemaDescriptor> change(
+            long nodeId, LabelSchemaDescriptor schema, Object o1, Object o2 )
+    {
+        return IndexEntryUpdate.change( nodeId, schema, Values.of( o1 ), Values.of( o2 ) );
+    }
+
+    public static IndexEntryUpdate<LabelSchemaDescriptor> change(
+            long nodeId, LabelSchemaDescriptor schema, Object[] o1, Object[] o2 )
+    {
+        return IndexEntryUpdate.change( nodeId, schema, toValues( o1 ), toValues( o2 ) );
+    }
+
+    private static Value[] toValues( Object[] objects )
+    {
+        Value[] values = new Value[objects.length];
+        for ( int i = 0; i < objects.length; i++ )
+        {
+            values[i] = Values.of( objects[i] );
+        }
+        return values;
     }
 }

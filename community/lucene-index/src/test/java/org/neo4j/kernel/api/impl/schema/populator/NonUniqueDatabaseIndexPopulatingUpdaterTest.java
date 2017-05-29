@@ -27,6 +27,7 @@ import java.io.IOException;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
@@ -43,9 +44,9 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {

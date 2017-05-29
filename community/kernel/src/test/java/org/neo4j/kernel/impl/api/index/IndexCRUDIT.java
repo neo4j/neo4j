@@ -58,6 +58,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -96,7 +97,7 @@ public class IndexCRUDIT
             int label = readOperations.labelGetForName( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
-                    IndexEntryUpdate.add( node.getId(), descriptor, value1 ) ) ) );
+                    IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) ) );
             tx.success();
         }
         // We get two updates because we both add a label and a property to be indexed
@@ -136,7 +137,7 @@ public class IndexCRUDIT
             int label = readOperations.labelGetForName( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
-                    IndexEntryUpdate.add( node.getId(), descriptor, value ) ) ) );
+                    IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) ) );
             tx.success();
         }
     }

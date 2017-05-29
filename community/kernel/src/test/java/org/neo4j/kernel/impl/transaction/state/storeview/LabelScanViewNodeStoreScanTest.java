@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -152,10 +153,12 @@ public class LabelScanViewNodeStoreScanTest
     private void populateWithConcurrentUpdates( LabelScanViewNodeStoreScan<Exception> scanViewStoreScan )
     {
         MultipleIndexPopulator.MultipleIndexUpdater indexUpdater = mock( MultipleIndexPopulator.MultipleIndexUpdater.class );
-        scanViewStoreScan.acceptUpdate( indexUpdater, add( 1, index.schema(), "add" ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, change( 2, index.schema(), "changeBefore", "changeAfter" ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, change( 2, index.schema(), "changeBefore2", "changeAfter2" ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, remove( 3, index.schema(), "remove" ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater, add( 1, index.schema(), Values.of( "add" ) ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater,
+                change( 2, index.schema(), Values.of( "changeBefore" ), Values.of( "changeAfter" ) ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater,
+                change( 2, index.schema(), Values.of( "changeBefore2" ), Values.of( "changeAfter2" ) ), 0L );
+        scanViewStoreScan.acceptUpdate( indexUpdater, remove( 3, index.schema(), Values.of( "remove" ) ), 0L );
     }
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )

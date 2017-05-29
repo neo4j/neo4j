@@ -66,7 +66,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -163,6 +162,8 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
@@ -405,7 +406,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
         RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords = recordAccess.getPropertyRecords();
 
-        propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
+        propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, Values.of( propertyValue ), propertyRecords );
     }
 
     private void validateIndexCanBeCreated( int labelId, int[] propertyKeyIds )
@@ -770,7 +771,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             protected PropertyBlock underlyingObjectToObject( Entry<String, Object> property )
             {
                 return propertyCreator.encodePropertyValue(
-                        getOrCreatePropertyKeyId( property.getKey() ), property.getValue() );
+                        getOrCreatePropertyKeyId( property.getKey() ), Values.of( property.getValue() ) );
             }
         };
     }
@@ -919,7 +920,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     }
 
     @Override
-    public Map<String, Object> getNodeProperties( long nodeId )
+    public Map<String,Value> getNodeProperties( long nodeId )
     {
         NodeRecord record = getNodeRecord( nodeId ).forReadingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
@@ -967,7 +968,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     }
 
     @Override
-    public Map<String, Object> getRelationshipProperties( long relId )
+    public Map<String,Value> getRelationshipProperties( long relId )
     {
         RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( relId, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
@@ -1024,16 +1025,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return "EmbeddedBatchInserter[" + storeDir + "]";
     }
 
-    private Map<String, Object> getPropertyChain( long nextProp )
+    private Map<String, Value> getPropertyChain( long nextProp )
     {
-        final Map<String, Object> map = new HashMap<>();
+        final Map<String, Value> map = new HashMap<>();
         propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), propBlock ->
         {
             String key = propertyKeyTokens.byId( propBlock.getKeyIndexId() ).name();
-            DefinedProperty propertyData = propBlock.newPropertyData( propertyStore );
-            Object value = propertyData.value() != null ? propertyData.value() :
-                           propBlock.getType().getValue( propBlock, propertyStore );
-            map.put( key, value );
+            Value propertyValue = propBlock.newPropertyValue( propertyStore );
+            map.put( key, propertyValue );
         } );
         return map;
     }

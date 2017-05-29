@@ -19,9 +19,13 @@
  */
 package org.neo4j.values;
 
-abstract class TextValue extends ScalarValue
+public abstract class TextValue extends ScalarValue
 {
-    abstract String stringValue();
+    TextValue()
+    {
+    }
+
+    public abstract String stringValue();
 
     abstract int compareTo( TextValue other );
 

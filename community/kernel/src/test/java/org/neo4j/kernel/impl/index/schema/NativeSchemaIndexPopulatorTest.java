@@ -63,6 +63,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -908,7 +909,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
 
     protected static IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
     }
 
     private byte[] fileWithContent() throws IOException

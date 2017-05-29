@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -55,7 +57,7 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         // GIVEN
         int key = 10;
-        int value = 12345;
+        Value value = Values.of( 12345 );
         PropertyRecord before = propertyRecord();
         PropertyRecord after = propertyRecord( property( key, value ) );
 
@@ -70,8 +72,8 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         // GIVEN
         int key = 10;
-        int valueBefore = 12341;
-        int valueAfter = 738;
+        Value valueBefore = Values.of( 12341 );
+        Value valueAfter = Values.of( 738 );
         PropertyRecord before = propertyRecord( property( key, valueBefore ) );
         PropertyRecord after = propertyRecord( property( key, valueAfter ) );
 
@@ -88,7 +90,7 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         // GIVEN
         int key = 10;
-        int value = 12341;
+        Value value = Values.of( 12341 );
         PropertyRecord before = propertyRecord( property( key, value ) );
         PropertyRecord after = propertyRecord( property( key, value ) );
 
@@ -103,7 +105,7 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         // GIVEN
         int key = 10;
-        int value = 12341;
+        Value value = Values.of( 12341 );
         PropertyRecord before = propertyRecord( property( key, value ) );
         PropertyRecord after = propertyRecord();
 
@@ -166,8 +168,8 @@ public class PropertyPhysicalToLogicalConverterTest
     {
         // GIVEN
         int key = 12;
-        String oldValue = "value1";
-        String newValue = "value two";
+        Value oldValue = Values.of( "value1" );
+        Value newValue = Values.of( "value two" );
         PropertyRecordChange movedFrom = change(
                 propertyRecord( property( key, oldValue ) ),
                 propertyRecord() );
@@ -198,7 +200,7 @@ public class PropertyPhysicalToLogicalConverterTest
         return record;
     }
 
-    private PropertyBlock property( long key, Object value )
+    private PropertyBlock property( long key, Value value )
     {
         PropertyBlock block = new PropertyBlock();
         store.encodeValue( block, (int) key, value );
@@ -210,8 +212,10 @@ public class PropertyPhysicalToLogicalConverterTest
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private PropertyStore store;
-    private final String longString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing";
-    private final String longerString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd";
+    private final Value longString = Values.of(
+            "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing" );
+    private final Value longerString = Values.of(
+            "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd" );
     private PropertyPhysicalToLogicalConverter converter;
     private final long[] none = new long[0];
     private final long[] labels = new long[]{11};

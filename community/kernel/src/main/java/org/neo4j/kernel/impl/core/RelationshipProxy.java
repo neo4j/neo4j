@@ -302,7 +302,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     {
                         String name =
                                 statement.readOperations().propertyKeyGetName( propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value() );
+                        properties.put( name, propertyCursor.get().value().asPublic() );
                     }
 
                     return properties;

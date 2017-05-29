@@ -61,6 +61,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.Values;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -199,7 +200,7 @@ public class MultipleIndexPopulatorUpdatesTest
         {
             if ( nodeRecord.getId() == 7 )
             {
-                indexPopulator.queue( IndexEntryUpdate.change( 8L, index, "a", "b" ) );
+                indexPopulator.queue( IndexEntryUpdate.change( 8L, index, Values.of( "a" ), Values.of( "b" ) ) );
             }
         }
     }

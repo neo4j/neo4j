@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -252,7 +254,7 @@ public class PropertyCreatorTest
 
     private void setProperty( int key, Object value )
     {
-        creator.primitiveSetProperty( primitive, key, value, records );
+        creator.primitiveSetProperty( primitive, key, Values.of( value ), records );
     }
 
     private void assertChain( ExpectedRecord... expectedRecords )
@@ -274,20 +276,20 @@ public class PropertyCreatorTest
         {
             PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
             assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().getValue( block, null ) );
+            assertEquals( expectedProperty.value, block.getType().getValueNow( block, null ) );
         }
     }
 
     private static class ExpectedProperty
     {
         private final int key;
-        private final Object value;
+        private final Value value;
 
         ExpectedProperty( int key, Object value )
         {
             super();
             this.key = key;
-            this.value = value;
+            this.value = Values.of( value );
         }
     }
 

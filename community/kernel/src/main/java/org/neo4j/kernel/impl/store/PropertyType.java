@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.store;
 
 import java.util.Arrays;
-import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 /**
  * Defines valid property types.
@@ -36,15 +35,15 @@ public enum PropertyType
     BOOL( 1 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.booleanProperty( propertyKeyId, getValue( block.getSingleValueLong() ) );
+            return Values.booleanValue( getValue( block.getSingleValueLong() ) );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return getValue( block.getSingleValueLong() );
+            return getValue( block, store );
         }
 
         private boolean getValue( long propBlock )
@@ -55,80 +54,73 @@ public enum PropertyType
     BYTE( 2 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.byteProperty( propertyKeyId, block.getSingleValueByte() );
+            return Values.byteValue( block.getSingleValueByte() );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Byte.valueOf( block.getSingleValueByte() );
+            return Values.byteValue( block.getSingleValueByte() );
         }
     },
     SHORT( 3 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.shortProperty( propertyKeyId, block.getSingleValueShort() );
+            return Values.shortValue( block.getSingleValueShort() );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Short.valueOf( block.getSingleValueShort() );
+            return Values.shortValue( block.getSingleValueShort() );
         }
     },
     CHAR( 4 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.charProperty( propertyKeyId, (char) block.getSingleValueShort() );
+            return Values.charValue( (char) block.getSingleValueShort() );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Character.valueOf( (char) block.getSingleValueShort() );
+            return Values.charValue( (char) block.getSingleValueShort() );
         }
     },
     INT( 5 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.intProperty( propertyKeyId, block.getSingleValueInt() );
+            return Values.intValue( block.getSingleValueInt() );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Integer.valueOf( block.getSingleValueInt() );
+            return Values.intValue( block.getSingleValueInt() );
         }
     },
     LONG( 6 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
             long firstBlock = block.getSingleValueBlock();
             long value = valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
-            return Property.longProperty( propertyKeyId, value );
+            return Values.longValue( value );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Long.valueOf( getLongValue( block ) );
-        }
-
-        private long getLongValue( PropertyBlock block )
-        {
-            long firstBlock = block.getSingleValueBlock();
-            return valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) :
-                    block.getValueBlocks()[1];
+            return getValue( block, store );
         }
 
         private boolean valueIsInlined( long firstBlock )
@@ -146,39 +138,29 @@ public enum PropertyType
     FLOAT( 7 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.floatProperty( propertyKeyId, Float.intBitsToFloat( block.getSingleValueInt() ) );
+            return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Float.valueOf( getValue( block.getSingleValueInt() ) );
-        }
-
-        private float getValue( int propBlock )
-        {
-            return Float.intBitsToFloat( propBlock );
+            return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
         }
     },
     DOUBLE( 8 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.doubleProperty( propertyKeyId, Double.longBitsToDouble( block.getValueBlocks()[1] ) );
+            return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return Double.valueOf( getValue( block.getValueBlocks()[1] ) );
-        }
-
-        private double getValue( long propBlock )
-        {
-            return Double.longBitsToDouble( propBlock );
+            return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
         }
 
         @Override
@@ -190,20 +172,15 @@ public enum PropertyType
     STRING( 9 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, final PropertyBlock block,
-                                             final Supplier<PropertyStore> store )
+        public Value getValue( final PropertyBlock block, final PropertyStore store )
         {
-            return Property.lazyStringProperty(propertyKeyId, () -> getValue( block, store.get() ) );
+            return Values.lazyStringValue( () -> store.getStringFor( block ) );
         }
 
         @Override
-        public String getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            if ( store == null )
-            {
-                return null;
-            }
-            return store.getStringFor( block );
+            return Values.stringValue( store.getStringFor( block ) );
         }
 
         @Override
@@ -215,19 +192,16 @@ public enum PropertyType
     ARRAY( 10 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, final PropertyBlock block, final Supplier<PropertyStore> store )
+        public Value getValue( final PropertyBlock block, final PropertyStore store )
         {
-            return Property.lazyArrayProperty(propertyKeyId, () -> getValue( block, store.get() ) );
+            // TODO: make me lazy again?
+            return getValueNow( block, store );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            if ( store == null )
-            {
-                return null;
-            }
-            return store.getArrayFor( block );
+            return Values.of( store.getArrayFor( block ) );
         }
 
         @Override
@@ -253,15 +227,15 @@ public enum PropertyType
     SHORT_STRING( 11 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
-            return Property.stringProperty( propertyKeyId, LongerShortString.decode( block ) );
+            return Values.stringValue( LongerShortString.decode( block ) );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return LongerShortString.decode( block );
+            return Values.stringValue( LongerShortString.decode( block ) );
         }
 
         @Override
@@ -273,16 +247,16 @@ public enum PropertyType
     SHORT_ARRAY( 12 )
     {
         @Override
-        public DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store )
+        public Value getValue( PropertyBlock block, PropertyStore store )
         {
             // TODO: Specialize per type
-            return Property.property( propertyKeyId, ShortArray.decode(block) );
+            return Values.of( ShortArray.decode(block) );
         }
 
         @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
+        public Value getValueNow( PropertyBlock block, PropertyStore store )
         {
-            return ShortArray.decode( block );
+            return Values.of( ShortArray.decode( block ) );
         }
 
         @Override
@@ -327,9 +301,9 @@ public enum PropertyType
         return (byte) type;
     }
 
-    public abstract Object getValue( PropertyBlock block, PropertyStore store );
+    public abstract Value getValueNow( PropertyBlock block, PropertyStore store );
 
-    public abstract DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store );
+    public abstract Value getValue( PropertyBlock block, PropertyStore store );
 
     public static PropertyType getPropertyTypeOrNull( long propBlock )
     {

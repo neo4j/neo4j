@@ -61,6 +61,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @RunWith( MockitoJUnitRunner.class )
 public class MultipleIndexPopulatorTest
@@ -366,8 +367,8 @@ public class MultipleIndexPopulatorTest
             throws IOException, IndexEntryConflictException
     {
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1, "foo" );
-        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index1, "bar" );
+        IndexEntryUpdate update1 = add( 1, index1, "foo" );
+        IndexEntryUpdate update2 = add( 2, index1, "bar" );
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
 
@@ -388,7 +389,7 @@ public class MultipleIndexPopulatorTest
 
     private IndexEntryUpdate createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
     {
-        return IndexEntryUpdate.add( 1, schemaDescriptor, "theValue" );
+        return add( 1, schemaDescriptor, "theValue" );
     }
 
     private RuntimeException getSampleError()

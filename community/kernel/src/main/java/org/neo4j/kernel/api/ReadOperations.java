@@ -158,7 +158,7 @@ public interface ReadOperations
     long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException, IndexNotApplicableKernelException;
 
-    long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );

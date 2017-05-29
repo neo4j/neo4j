@@ -28,17 +28,20 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.IndexQuery;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -68,8 +71,8 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
             populator.create();
             populator.add( Arrays.asList(
-                    IndexEntryUpdate.add( 1, descriptor.schema(), "v1", "v2" ),
-                    IndexEntryUpdate.add( 2, descriptor.schema(), "v1", "v2" ) ) );
+                    add( 1, descriptor.schema(), "v1", "v2" ),
+                    add( 2, descriptor.schema(), "v1", "v2" ) ) );
             populator.close( true );
 
             // then
@@ -85,9 +88,9 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
 
     public static class Unique extends CompositeIndexPopulatorCompatibility
     {
-        String value1 = "value1";
-        String value2 = "value2";
-        String value3 = "value3";
+        Value value1 = Values.of( "value1" );
+        Value value2 = Values.of( "value2" );
+        Value value3 = Values.of( "value3" );
         int nodeId1 = 3;
         int nodeId2 = 4;
 
@@ -120,7 +123,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             catch ( IndexEntryConflictException conflict )
             {
                 assertEquals( nodeId1, conflict.getExistingNodeId() );
-                assertEquals( OrderedPropertyValues.ofUndefined( value1, value2 ), conflict.getPropertyValues() );
+                assertEquals( ValueTuple.of( value1, value2 ), conflict.getPropertyValues() );
                 assertEquals( nodeId2, conflict.getAddedNodeId() );
             }
         }

@@ -85,11 +85,14 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.format.RecordGenerators;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.traversal.AsOneStartBranchTest;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -101,6 +104,8 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
@@ -273,25 +278,25 @@ public class BatchInsertTest
     public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1() throws Exception
     {
         // Given
-        BatchInserter batchInserter = globalInserter;
+        BatchInserter inserter = globalInserter;
 
         String[] array1 = { "1" };
         String[] array2 = { "a" };
 
-        long id1 = batchInserter.createNode(map("array", array1));
-        long id2 = batchInserter.createNode( map() );
+        long id1 = inserter.createNode(map("array", array1));
+        long id2 = inserter.createNode( map() );
 
         // When
-        batchInserter.getNodeProperties( id1 ).get( "array" );
-        batchInserter.setNodeProperty( id1, "array", array1 );
-        batchInserter.setNodeProperty( id2, "array", array2 );
+        inserter.getNodeProperties( id1 ).get( "array" );
+        inserter.setNodeProperty( id1, "array", array1 );
+        inserter.setNodeProperty( id2, "array", array2 );
 
-        batchInserter.getNodeProperties( id1 ).get( "array" );
-        batchInserter.setNodeProperty( id1, "array", array1 );
-        batchInserter.setNodeProperty( id2, "array", array2 );
+        inserter.getNodeProperties( id1 ).get( "array" );
+        inserter.setNodeProperty( id1, "array", array1 );
+        inserter.setNodeProperty( id2, "array", array2 );
 
         // Then
-        assertThat( batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
+        assertThat( inserter.getNodeProperties( id1 ).get( "array" ), equalTo( Values.of( array1 ) ) );
     }
 
     @Test
@@ -316,7 +321,7 @@ public class BatchInsertTest
         long tehNode = inserter.createNode( MapUtil.map( "one", "one" ,"two","two","three","three") );
         inserter.setNodeProperty( tehNode, "four", "four" );
         inserter.setNodeProperty( tehNode, "five", "five" );
-        Map<String, Object> props = inserter.getNodeProperties( tehNode );
+        Map<String, Object> props = getNodeProperties( inserter, tehNode );
         assertEquals( 5, props.size() );
         assertEquals( "one", props.get( "one" ) );
         assertEquals( "five", props.get( "five" ) );
@@ -344,7 +349,7 @@ public class BatchInsertTest
 
         long tehNode = inserter.createNode( MapUtil.map( "foo", "bar" ) );
         inserter.setNodeProperty( tehNode, "foo2", "bar2" );
-        Map<String, Object> props = inserter.getNodeProperties( tehNode );
+        Map<String, Object> props = getNodeProperties( inserter, tehNode );
         assertEquals( 2, props.size() );
         assertEquals( "bar", props.get( "foo" ) );
         assertEquals( "bar2", props.get( "foo2" ) );
@@ -353,14 +358,14 @@ public class BatchInsertTest
 
         inserter = newBatchInserter();
 
-        props = inserter.getNodeProperties( tehNode );
+        props = getNodeProperties( inserter, tehNode );
         assertEquals( 2, props.size() );
         assertEquals( "bar", props.get( "foo" ) );
         assertEquals( "bar2", props.get( "foo2" ) );
 
         inserter.setNodeProperty( tehNode, "foo", "bar3" );
 
-        props = inserter.getNodeProperties( tehNode );
+        props = getNodeProperties( inserter, tehNode );
         assertEquals( "bar3", props.get( "foo" ) );
         assertEquals( 2, props.size() );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -369,7 +374,7 @@ public class BatchInsertTest
         inserter.shutdown();
         inserter = newBatchInserter();
 
-        props = inserter.getNodeProperties( tehNode );
+        props = getNodeProperties( inserter, tehNode );
         assertEquals( "bar3", props.get( "foo" ) );
         assertEquals( 2, props.size() );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -389,7 +394,7 @@ public class BatchInsertTest
                 RelationshipType.withName( "TestingPropsHere" ),
                 MapUtil.map( "foo", "bar" ) );
         inserter.setRelationshipProperty( theRel, "foo2", "bar2" );
-        Map<String, Object> props = inserter.getRelationshipProperties( theRel );
+        Map<String, Object> props = getRelationshipProperties( inserter, theRel );
         assertEquals( 2, props.size() );
         assertEquals( "bar", props.get( "foo" ) );
         assertEquals( "bar2", props.get( "foo2" ) );
@@ -398,14 +403,14 @@ public class BatchInsertTest
 
         inserter = newBatchInserter();
 
-        props = inserter.getRelationshipProperties( theRel );
+        props = getRelationshipProperties( inserter, theRel );
         assertEquals( 2, props.size() );
         assertEquals( "bar", props.get( "foo" ) );
         assertEquals( "bar2", props.get( "foo2" ) );
 
         inserter.setRelationshipProperty( theRel, "foo", "bar3" );
 
-        props = inserter.getRelationshipProperties( theRel );
+        props = getRelationshipProperties( inserter, theRel );
         assertEquals( "bar3", props.get( "foo" ) );
         assertEquals( 2, props.size() );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -414,7 +419,7 @@ public class BatchInsertTest
         inserter.shutdown();
         inserter = newBatchInserter();
 
-        props = inserter.getRelationshipProperties( theRel );
+        props = getRelationshipProperties( inserter, theRel );
         assertEquals( "bar3", props.get( "foo" ) );
         assertEquals( 2, props.size() );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -530,7 +535,7 @@ public class BatchInsertTest
         batchInserter.setNodeProperty( nodeId, key, secondValue );
 
         // THEN
-        assertTrue( Arrays.equals( secondValue, (String[]) batchInserter.getNodeProperties( nodeId ).get( key ) ) );
+        assertTrue( Arrays.equals( secondValue, (String[]) getNodeProperties( batchInserter, nodeId ).get( key ) ) );
     }
 
     @Test
@@ -649,7 +654,7 @@ public class BatchInsertTest
 
         // Assert for node
         long nodeId = inserter.createNode( map() );
-        inserter.getNodeProperties( nodeId );
+        getNodeProperties( inserter, nodeId );
         //cp=N U http://www.w3.org/1999/02/22-rdf-syntax-ns#type, c=N
 
         // Assert for relationship
@@ -938,7 +943,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( IndexEntryUpdate.add( nodeId, internalIndex.schema(), "Jakewins" ) );
+        verify( populator ).add( IndexEntryUpdate.add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -972,7 +977,8 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( IndexEntryUpdate.add( nodeId, internalUniqueIndex.schema(), "Jakewins" ) );
+        verify( populator ).add(
+                IndexEntryUpdate.add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1006,8 +1012,8 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( IndexEntryUpdate.add( jakewins, internalIndex.schema(), "Jakewins" ) );
-        verify( populator ).add( IndexEntryUpdate.add( boggle, internalIndex.schema(), "b0ggl3" ) );
+        verify( populator ).add( IndexEntryUpdate.add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) );
+        verify( populator ).add( IndexEntryUpdate.add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1079,8 +1085,8 @@ public class BatchInsertTest
         batchInserter.setNodeProperty( nodeId, "additional", "something" );
 
         // THEN there should be no problems doing so
-        assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( nodeId ).get( "name" ) );
-        assertEquals( "something", batchInserter.getNodeProperties( nodeId ).get( "additional" ) );
+        assertEquals( Values.of( "YetAnotherOne" ), batchInserter.getNodeProperties( nodeId ).get( "name" ) );
+        assertEquals( Values.of( "something" ), batchInserter.getNodeProperties( nodeId ).get( "additional" ) );
     }
 
     /**
@@ -1115,17 +1121,17 @@ public class BatchInsertTest
         properties.put( "languages", new String[0] );
         long personNodeId = inserter.createNode(properties);
 
-        assertEquals( "Shevchenko", inserter.getNodeProperties( personNodeId ).get( "lastName" ) );
-        assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ), is( emptyArray() ) );
+        assertEquals( "Shevchenko", getNodeProperties( inserter, personNodeId ).get( "lastName" ) );
+        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ), is( emptyArray() ) );
 
         inserter.setNodeProperty( personNodeId, "email", new String[]{"Edward1099511659993@gmail.com"} );
-        assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
+        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ),
                 arrayContaining( "Edward1099511659993@gmail.com" ) );
 
         inserter.setNodeProperty( personNodeId, "email",
                 new String[]{"Edward1099511659993@gmail.com", "backup@gmail.com"} );
 
-        assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
+        assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ),
                 arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
     }
 
@@ -1134,14 +1140,14 @@ public class BatchInsertTest
     {
         // GIVEN
         BatchInserter batchInserter = globalInserter;
-        long id = batchInserter.createNode( new HashMap<String, Object>() );
+        long id = batchInserter.createNode( new HashMap<>() );
 
         // WHEN
         batchInserter.setNodeProperty( id, "test", "looooooooooong test" );
         batchInserter.setNodeProperty( id, "test", "small test" );
 
         // THEN
-        assertEquals( "small test", batchInserter.getNodeProperties( id ).get( "test" ) );
+        assertEquals( Values.of( "small test" ), batchInserter.getNodeProperties( id ).get( "test" ) );
     }
 
     @Test
@@ -1160,7 +1166,7 @@ public class BatchInsertTest
         batchInserter.setNodeProperty( id, "count", "something" );
 
         // THEN
-        assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
+        assertEquals( Values.of( "something" ), batchInserter.getNodeProperties( id ).get( "count" ) );
     }
 
     @Test
@@ -1385,7 +1391,7 @@ public class BatchInsertTest
         catch ( RuntimeException ex )
         {
             // good
-            assertEquals( new IndexEntryConflictException( 0, 1, value ), ex.getCause() );
+            assertEquals( new IndexEntryConflictException( 0, 1, Values.of( value ) ), ex.getCause() );
         }
     }
 
@@ -1402,7 +1408,7 @@ public class BatchInsertTest
         inserter.setNodeProperties( node, properties );
 
         // THEN
-        assertEquals( properties, inserter.getNodeProperties( node ) );
+        assertEquals( properties, getNodeProperties( inserter, node ) );
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
@@ -1588,15 +1594,8 @@ public class BatchInsertTest
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );
-        Object readValue = inserter.getNodeProperties( nodeId ).get( "key" );
-        if ( readValue.getClass().isArray() )
-        {
-            assertTrue( Arrays.equals( (int[])value, (int[])readValue ) );
-        }
-        else
-        {
-            assertEquals( value, readValue );
-        }
+        Value readValue = inserter.getNodeProperties( nodeId ).get( "key" );
+        assertEquals( Values.of( value ), readValue );
     }
 
     private int[] intArray( int length )
@@ -1651,5 +1650,27 @@ public class BatchInsertTest
             expectedLabelNames.add( labelName );
         }
         return Pair.of( labels, expectedLabelNames );
+    }
+
+    private Map<String,Object> getNodeProperties( BatchInserter inserter, long nodeId )
+    {
+        Map<String,Value> asValues = inserter.getNodeProperties( nodeId );
+        return valueMapToObjectMap( asValues );
+    }
+
+    private Map<String,Object> getRelationshipProperties( BatchInserter inserter, long relId )
+    {
+        Map<String,Value> asValues = inserter.getRelationshipProperties( relId );
+        return valueMapToObjectMap( asValues );
+    }
+
+    private Map<String,Object> valueMapToObjectMap( Map<String,Value> asValues )
+    {
+        Map<String,Object> asObjects = new HashMap<>();
+        for ( Map.Entry<String,Value> entry : asValues.entrySet() )
+        {
+            asObjects.put( entry.getKey(), entry.getValue().asPublic() );
+        }
+        return asObjects;
     }
 }

@@ -25,8 +25,6 @@ import java.util.Comparator;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -58,6 +56,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -358,65 +357,53 @@ public class TransactionRecordState implements RecordState
     /**
      * Changes an existing property's value of the given relationship, with the
      * given index to the passed value
-     *
-     * @param relId The id of the relationship which holds the property to
+     *  @param relId The id of the relationship which holds the property to
      *            change.
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
-     * @return The changed property, as a PropertyData object.
      */
-    public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
+    public void relChangeProperty( long relId, int propertyKey, Value value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
      * Changes an existing property of the given node, with the given index to
      * the passed value
-     *
-     * @param nodeId The id of the node which holds the property to change.
+     *  @param nodeId The id of the node which holds the property to change.
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
-     * @return The changed property, as a PropertyData object.
      */
-    public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
+    public void nodeChangeProperty( long nodeId, int propertyKey, Value value )
     {
         RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
      * Adds a property to the given relationship, with the given index and
      * value.
-     *
-     * @param relId The id of the relationship to which to add the property.
+     *  @param relId The id of the relationship to which to add the property.
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
-     * @return The added property, as a PropertyData object.
      */
-    public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
+    public void relAddProperty( long relId, int propertyKey, Value value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = recordChangeSet.getRelRecords().getOrLoad( relId, null );
         propertyCreator.primitiveSetProperty( rel, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
      * Adds a property to the given node, with the given index and value.
-     *
-     * @param nodeId The id of the node to which to add the property.
+     *  @param nodeId The id of the node to which to add the property.
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
-     * @return The added property, as a PropertyData object.
      */
-    public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
+    public void nodeAddProperty( long nodeId, int propertyKey, Value value )
     {
         RecordProxy<Long, NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
@@ -544,16 +531,13 @@ public class TransactionRecordState implements RecordState
 
     /**
      * Adds a property to the graph, with the given index and value.
-     *
-     * @param propertyKey The index of the key of the property to add.
+     *  @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
-     * @return The added property, as a PropertyData object.
      */
-    public DefinedProperty graphAddProperty( int propertyKey, Object value )
+    public void graphAddProperty( int propertyKey, Value value )
     {
         propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**
@@ -562,13 +546,11 @@ public class TransactionRecordState implements RecordState
      *
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
-     * @return The changed property, as a PropertyData object.
      */
-    public DefinedProperty graphChangeProperty( int propertyKey, Object value )
+    public void graphChangeProperty( int propertyKey, Value value )
     {
         propertyCreator.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value,
                 recordChangeSet.getPropertyRecords() );
-        return Property.property( propertyKey, value );
     }
 
     /**

@@ -99,6 +99,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.mockito.answer.AwaitAnswer;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -1185,18 +1186,18 @@ public class IndexingServiceTest
     private NodeUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
     {
         return NodeUpdates.forNode( nodeId, new long[]{labelId} )
-                .added( index.schema().getPropertyId(), propertyValue ).build();
+                .added( index.schema().getPropertyId(), Values.of( propertyValue ) ).build();
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, Object propertyValue )
     {
-        return IndexEntryUpdate.add( nodeId, index.schema(), propertyValue );
+        return IndexEntryUpdate.add( nodeId, index.schema(), Values.of( propertyValue ) );
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, Object propertyValue, int labelId )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, index.schema().getPropertyId() );
-        return IndexEntryUpdate.add( nodeId, schema, propertyValue );
+        return IndexEntryUpdate.add( nodeId, schema, Values.of( propertyValue ) );
     }
 
     private IndexingService newIndexingServiceWithMockedDependencies( IndexPopulator populator,

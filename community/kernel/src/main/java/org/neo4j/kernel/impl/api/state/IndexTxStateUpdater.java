@@ -27,9 +27,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -39,6 +36,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -81,7 +79,7 @@ public class IndexTxStateUpdater
             int[] indexPropertyIds = index.schema().getPropertyIds();
             if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
             {
-                OrderedPropertyValues values = getOrderedPropertyValues( state, node, indexPropertyIds );
+                ValueTuple values = getValueTuple( state, node, indexPropertyIds );
                 if ( changeType == LabelChangeType.ADDED_LABEL )
                 {
                     for ( int i = 0; i < values.size(); i++ )
@@ -115,8 +113,8 @@ public class IndexTxStateUpdater
                 ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
-                    OrderedPropertyValues values =
-                            getOrderedPropertyValues( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
+                    ValueTuple values =
+                            getValueTuple( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
                     state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
                 } );
     }
@@ -130,8 +128,8 @@ public class IndexTxStateUpdater
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
-                    OrderedPropertyValues values =
-                            getOrderedPropertyValues( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
+                    ValueTuple values =
+                            getValueTuple( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
                     state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
                 });
     }
@@ -147,41 +145,40 @@ public class IndexTxStateUpdater
                     Validators.INDEX_VALUE_VALIDATOR.validate( afterValue );
                     int[] indexPropertyIds = index.schema().getPropertyIds();
 
-                    Object[] valuesBefore = new Object[indexPropertyIds.length];
-                    Object[] valuesAfter = new Object[indexPropertyIds.length];
+                    Value[] valuesBefore = new Value[indexPropertyIds.length];
+                    Value[] valuesAfter = new Value[indexPropertyIds.length];
                     for ( int i = 0; i < indexPropertyIds.length; i++ )
                     {
                         int indexPropertyId = indexPropertyIds[i];
                         if ( indexPropertyId == propertyKeyId )
                         {
-                            valuesBefore[i] = beforeValue.asPublic();
-                            valuesAfter[i] = afterValue.asPublic();
+                            valuesBefore[i] = beforeValue;
+                            valuesAfter[i] = afterValue;
                         }
                         else
                         {
-                            Object value = readOps.nodeGetProperty( state, node, indexPropertyId ).asPublic();
+                            Value value = readOps.nodeGetProperty( state, node, indexPropertyId );
                             valuesBefore[i] = value;
                             valuesAfter[i] = value;
                         }
                     }
                     state.txState().indexDoUpdateEntry( index.schema(), node.id(),
-                            OrderedPropertyValues.ofUndefined( valuesBefore ), OrderedPropertyValues.ofUndefined(
-                                    valuesAfter ) );
+                            ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
                 });
     }
 
     // HELPERS
 
-    private OrderedPropertyValues getOrderedPropertyValues( KernelStatement state, NodeItem node,
+    private ValueTuple getValueTuple( KernelStatement state, NodeItem node,
             int[] indexPropertyIds )
     {
-        return getOrderedPropertyValues( state, node, NO_SUCH_PROPERTY_KEY, Values.NO_VALUE, indexPropertyIds );
+        return getValueTuple( state, node, NO_SUCH_PROPERTY_KEY, Values.NO_VALUE, indexPropertyIds );
     }
 
-    private OrderedPropertyValues getOrderedPropertyValues( KernelStatement state, NodeItem node,
+    private ValueTuple getValueTuple( KernelStatement state, NodeItem node,
             int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds )
     {
-        DefinedProperty[] values = new DefinedProperty[indexPropertyIds.length];
+        Value[] values = new Value[indexPropertyIds.length];
         Cursor<PropertyItem> propertyCursor = readOps.nodeGetProperties( state, node );
         while ( propertyCursor.next() )
         {
@@ -190,8 +187,7 @@ public class IndexTxStateUpdater
             if ( k >= 0 )
             {
                 values[k] = indexPropertyIds[k] == changedPropertyKeyId
-                            ? Property.property( property.propertyKeyId(), changedValue.asPublic() )
-                            : Property.property( property.propertyKeyId(), property.value() );
+                            ? changedValue : property.value();
             }
         }
 
@@ -200,11 +196,11 @@ public class IndexTxStateUpdater
             int k = ArrayUtils.indexOf( indexPropertyIds, changedPropertyKeyId );
             if ( k >= 0 )
             {
-                values[k] = Property.property( changedPropertyKeyId, changedValue.asPublic() );
+                values[k] = changedValue;
             }
         }
 
-        return OrderedPropertyValues.of( values );
+        return ValueTuple.of( values );
     }
 
     private static boolean nodeHasIndexProperties( PrimitiveIntSet nodeProperties, int[] indexPropertyIds )

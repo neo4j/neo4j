@@ -513,7 +513,7 @@ public class OperationsFacade
     }
 
     @Override
-    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();

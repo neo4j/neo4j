@@ -148,7 +148,7 @@ public class StateOperationsAutoIndexingTest
         PropertyItem existingProperty = mock( PropertyItem.class );
 
         when(existingProperty.propertyKeyId()).thenReturn( propertyKeyId );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when(existingProperty.value()).thenReturn( Values.of( "Goodbye!" ) );
 
         NodeItem node = mock( NodeItem.class );
         when( node.labels() ).thenReturn( PrimitiveIntCollections.emptySet() );
@@ -174,7 +174,7 @@ public class StateOperationsAutoIndexingTest
         PropertyItem existingProperty = mock( PropertyItem.class );
 
         when(existingProperty.propertyKeyId()).thenReturn( propertyKeyId );
-        when(existingProperty.value()).thenReturn( "Goodbye!" );
+        when(existingProperty.value()).thenReturn( Values.of( "Goodbye!" ) );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );
@@ -195,7 +195,7 @@ public class StateOperationsAutoIndexingTest
         // Given
         PropertyItem existingProperty = mock( PropertyItem.class );
         when( existingProperty.propertyKeyId() ).thenReturn( 1 );
-        when( existingProperty.value() ).thenReturn( "Goodbye!" );
+        when( existingProperty.value() ).thenReturn( Values.of( "Goodbye!" ) );
         int propertyKeyId = existingProperty.propertyKeyId();
 
         NodeItem node = mock( NodeItem.class );
@@ -220,7 +220,7 @@ public class StateOperationsAutoIndexingTest
 
         int propertyKeyId = 1;
         when( existingProperty.propertyKeyId() ).thenReturn( propertyKeyId );
-        when( existingProperty.value() ).thenReturn( "Goodbye!" );
+        when( existingProperty.value() ).thenReturn( Values.of( "Goodbye!" ) );
 
         RelationshipItem relationship = mock( RelationshipItem.class );
         when( storeStmt.acquireSingleRelationshipCursor( 1337 ) ).thenReturn( cursor( relationship ) );

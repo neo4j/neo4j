@@ -23,9 +23,11 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.SchemaUtil;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,12 +35,13 @@ import static org.hamcrest.Matchers.equalTo;
 public class IndexEntryConflictExceptionTest
 {
     public static final int labelId = 1;
+    public static final Value value = Values.of( "hi" );
 
     @Test
     public void shouldMakeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2 );
-        IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, "hi" );
+        IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, value );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),
                 equalTo( "Both Node(0) and Node(1) have the label `label[1]` and property `property[2]` = 'hi'" ) );
@@ -48,7 +51,7 @@ public class IndexEntryConflictExceptionTest
     public void shouldMakeEntryConflictsForOneNode()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2 );
-        IndexEntryConflictException e = new IndexEntryConflictException( 0L, StatementConstants.NO_SUCH_NODE, "hi" );
+        IndexEntryConflictException e = new IndexEntryConflictException( 0L, StatementConstants.NO_SUCH_NODE, value );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),
                 equalTo( "Node(0) already exists with label `label[1]` and property `property[2]` = 'hi'" ) );
@@ -58,7 +61,7 @@ public class IndexEntryConflictExceptionTest
     public void shouldMakeCompositeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2, 3, 4 );
-        OrderedPropertyValues values = OrderedPropertyValues.ofUndefined( true, "hi", new long[]{6L, 4L} );
+        ValueTuple values = ValueTuple.of( true, "hi", new long[]{6L, 4L} );
         IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, values );
 
         assertThat( e.evidenceMessage( SchemaUtil.idTokenNameLookup, schema ),

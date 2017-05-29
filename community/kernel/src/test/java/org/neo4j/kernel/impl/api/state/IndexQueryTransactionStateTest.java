@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -62,7 +63,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.labels;
@@ -347,10 +347,10 @@ public class IndexQueryTransactionStateTest
     private void mockStoreProperty()
     {
         when( store.nodeGetProperties( eq( statement ), any( NodeItem.class ), any( AssertOpen.class ) ) )
-                .thenReturn( asPropertyCursor( property( propertyKeyId, value.asPublic() ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, value ) ) );
         when( store.nodeGetProperty( eq( statement ), any( NodeItem.class ), eq( propertyKeyId ),
                 any( AssertOpen.class ) ) )
-                .thenReturn( asPropertyCursor( property( propertyKeyId, value.asPublic() ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, value ) ) );
     }
 
     private void assertNoSuchNode( long node )

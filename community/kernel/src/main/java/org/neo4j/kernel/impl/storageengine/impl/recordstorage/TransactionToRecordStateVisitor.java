@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
@@ -115,13 +114,13 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         while ( changed.hasNext() )
         {
-            DefinedProperty prop = (DefinedProperty) changed.next();
-            recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
+            StorageProperty prop = changed.next();
+            recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.valueForced() );
         }
         while ( added.hasNext() )
         {
-            DefinedProperty prop = (DefinedProperty) added.next();
-            recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
+            StorageProperty prop = added.next();
+            recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.valueForced() );
         }
     }
 
@@ -135,13 +134,13 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         while ( changed.hasNext() )
         {
-            DefinedProperty prop = (DefinedProperty) changed.next();
-            recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
+            StorageProperty prop = changed.next();
+            recordState.relChangeProperty( id, prop.propertyKeyId(), prop.valueForced() );
         }
         while ( added.hasNext() )
         {
-            DefinedProperty prop = (DefinedProperty) added.next();
-            recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
+            StorageProperty prop = added.next();
+            recordState.relAddProperty( id, prop.propertyKeyId(), prop.valueForced() );
         }
     }
 
@@ -155,13 +154,13 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         while ( changed.hasNext() )
         {
-            DefinedProperty prop = (DefinedProperty) changed.next();
-            recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
+            StorageProperty prop = changed.next();
+            recordState.graphChangeProperty( prop.propertyKeyId(), prop.valueForced() );
         }
         while ( added.hasNext() )
         {
-            DefinedProperty prop = (DefinedProperty) added.next();
-            recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
+            StorageProperty prop = added.next();
+            recordState.graphAddProperty( prop.propertyKeyId(), prop.valueForced() );
         }
     }
 

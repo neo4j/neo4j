@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.values.Value;
 
 public class DuplicateCheckingCollector extends SimpleCollector
 {
@@ -75,36 +75,36 @@ public class DuplicateCheckingCollector extends SimpleCollector
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
-        Property property = accessor.getProperty( nodeId, propertyKeyId );
+        Value reference = accessor.getPropertyValue( nodeId, propertyKeyId );
 
         // We either have to find the first conflicting entry set element,
         // or append one for the property we just fetched:
-        EntrySet current = actualValues;
+        EntrySet currentEntrySet = actualValues;
         scan:
         do
         {
             for ( int i = 0; i < EntrySet.INCREMENT; i++ )
             {
-                Object value = current.value[i];
+                Value value = currentEntrySet.value[i];
 
-                if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
+                if ( currentEntrySet.nodeId[i] == StatementConstants.NO_SUCH_NODE )
                 {
-                    current.value[i] = property.value();
-                    current.nodeId[i] = nodeId;
+                    currentEntrySet.value[i] = reference;
+                    currentEntrySet.nodeId[i] = nodeId;
                     if ( i == EntrySet.INCREMENT - 1 )
                     {
-                        current.next = new EntrySet();
+                        currentEntrySet.next = new EntrySet();
                     }
                     break scan;
                 }
-                else if ( property.valueEquals( value ) )
+                else if ( reference.equals( value ) )
                 {
-                    throw new IndexEntryConflictException( current.nodeId[i], nodeId, value );
+                    throw new IndexEntryConflictException( currentEntrySet.nodeId[i], nodeId, value );
                 }
             }
-            current = current.next;
+            currentEntrySet = currentEntrySet.next;
         }
-        while ( current != null );
+        while ( currentEntrySet != null );
     }
 
     @Override
@@ -134,7 +134,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
     {
         static final int INCREMENT = 10000;
 
-        Object[] value = new Object[INCREMENT];
+        Value[] value = new Value[INCREMENT];
         long[] nodeId = new long[INCREMENT];
         EntrySet next;
 

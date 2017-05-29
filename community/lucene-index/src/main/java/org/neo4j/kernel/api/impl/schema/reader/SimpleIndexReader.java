@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.Value;
 
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType.exact;
@@ -179,7 +180,7 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object... propertyValues )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValues );

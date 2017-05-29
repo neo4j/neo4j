@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.values.Value;
+
 /**
  * Key in a native schema index for numbers.
  */
 interface SchemaNumberKey
 {
-    void from( long entityId, Object[] values );
+    void from( long entityId, Value[] values );
 
     String propertiesAsString();
 

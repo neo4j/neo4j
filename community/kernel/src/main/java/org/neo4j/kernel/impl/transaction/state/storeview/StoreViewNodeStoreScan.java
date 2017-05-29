@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -104,7 +106,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
                 if ( propertyKeyIdFilter.test( propertyKeyId ) )
                 {
                     // This node has a property of interest to us
-                    Object value = valueOf( property );
+                    Value value = valueOf( property );
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
                     updates.added( propertyKeyId, value );
                     hasRelevantProperty = true;
@@ -123,11 +125,11 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
         return () -> new PropertyBlockIterator( node );
     }
 
-    private Object valueOf( PropertyBlock property )
+    private Value valueOf( PropertyBlock property )
     {
         // Make sure the value is loaded, even if it's of a "heavy" kind.
         propertyStore.ensureHeavy( property );
-        return property.getType().getValue( property, propertyStore );
+        return property.getType().getValueNow( property, propertyStore );
     }
 
     private static boolean containsAnyLabel( int[] labelIdFilter, long[] labels )

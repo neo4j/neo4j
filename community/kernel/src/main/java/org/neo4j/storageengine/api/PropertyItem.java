@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.values.Value;
+
 /**
  * Property item returned from property cursors
  */
@@ -32,5 +34,5 @@ public interface PropertyItem
     /**
      * @return the value of the current property.
      */
-    Object value();
+    Value value();
 }

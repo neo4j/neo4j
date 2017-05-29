@@ -50,6 +50,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 public class NonUniqueDatabaseIndexPopulatorTest
 {
@@ -102,9 +103,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, labelSchemaDescriptor, "aaa" ),
-                IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bbb" ),
-                IndexEntryUpdate.add( 3, labelSchemaDescriptor, "ccc" ) );
+                add( 1, labelSchemaDescriptor, "aaa" ),
+                add( 2, labelSchemaDescriptor, "bbb" ),
+                add( 3, labelSchemaDescriptor, "ccc" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -119,9 +120,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         List<IndexEntryUpdate> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, labelSchemaDescriptor, "foo" ),
-                IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bar" ),
-                IndexEntryUpdate.add( 3, labelSchemaDescriptor, "foo" ) );
+                add( 1, labelSchemaDescriptor, "foo" ),
+                add( 2, labelSchemaDescriptor, "bar" ),
+                add( 3, labelSchemaDescriptor, "foo" ) );
 
         updates.forEach( populator::includeSample );
 
@@ -136,9 +137,9 @@ public class NonUniqueDatabaseIndexPopulatorTest
         populator = newPopulator();
 
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
-                IndexEntryUpdate.add( 1, labelSchemaDescriptor, "foo" ),
-                IndexEntryUpdate.add( 2, labelSchemaDescriptor, "bar" ),
-                IndexEntryUpdate.add( 42, labelSchemaDescriptor, "bar" ) );
+                add( 1, labelSchemaDescriptor, "foo" ),
+                add( 2, labelSchemaDescriptor, "bar" ),
+                add( 42, labelSchemaDescriptor, "bar" ) );
 
         populator.add( updates );
 

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.values.Value;
 
 public class PropertyCreator
 {
@@ -55,7 +56,7 @@ public class PropertyCreator
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
-            RecordProxy<Long, P, Void> primitiveRecordChange, int propertyKey, Object value,
+            RecordProxy<Long, P, Void> primitiveRecordChange, int propertyKey, Value value,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         PropertyBlock block = encodePropertyValue( propertyKey, value );
@@ -184,12 +185,12 @@ public class PropertyCreator
         return propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize();
     }
 
-    public PropertyBlock encodePropertyValue( int propertyKey, Object value )
+    public PropertyBlock encodePropertyValue( int propertyKey, Value value )
     {
         return encodeValue( new PropertyBlock(), propertyKey, value );
     }
 
-    public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Object value )
+    public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
         PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator );
         return block;

@@ -154,11 +154,11 @@ public class PartitionedIndexReaderTest
     public void countNodesOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.countIndexedNodes(1, "a") ).thenReturn( 1L );
-        when( indexReader2.countIndexedNodes(1, "a") ).thenReturn( 2L );
-        when( indexReader3.countIndexedNodes(1, "a") ).thenReturn( 3L );
+        when( indexReader1.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 1L );
+        when( indexReader2.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 2L );
+        when( indexReader3.countIndexedNodes( 1, Values.of( "a" ) ) ).thenReturn( 3L );
 
-        assertEquals( 6, indexReader.countIndexedNodes( 1, "a" ) );
+        assertEquals( 6, indexReader.countIndexedNodes( 1, Values.of( "a" ) ) );
     }
 
     @Test

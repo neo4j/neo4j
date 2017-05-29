@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueGroup;
 import org.neo4j.values.Values;
 
 /**
@@ -72,8 +73,8 @@ public class LookupFilter
                     for ( IndexQuery predicate : numericPredicates )
                     {
                         int propertyKeyId = predicate.propertyKeyId();
-                        Object value = accessor.getProperty( nodeId, propertyKeyId ).value( null );
-                        if ( !predicate.test( Values.of( value ) ) )
+                        Value value = accessor.getPropertyValue( nodeId, propertyKeyId );
+                        if ( !predicate.test( value ) )
                         {
                             return false;
                         }
@@ -155,8 +156,8 @@ public class LookupFilter
         return false;
     }
 
-    private static boolean isNumberOrArray( Object value )
+    private static boolean isNumberOrArray( Value value )
     {
-        return value instanceof Number || value.getClass().isArray();
+        return Values.isNumberValue( value ) || Values.isArrayValue( value );
     }
 }

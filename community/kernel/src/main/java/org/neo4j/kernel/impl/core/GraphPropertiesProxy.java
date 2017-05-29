@@ -228,7 +228,7 @@ public class GraphPropertiesProxy implements GraphProperties
             {
                 int propertyKeyId = propertyKeys.next();
                 properties.put( readOperations.propertyKeyGetName( propertyKeyId ),
-                        readOperations.graphGetProperty( propertyKeyId ) );
+                        readOperations.graphGetProperty( propertyKeyId ).asPublic() );
             }
             return properties;
         }

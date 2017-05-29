@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
@@ -56,6 +55,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -173,8 +174,8 @@ public class NeoStoreIndexStoreViewTest
     @Test
     public void shouldReadProperties() throws EntityNotFoundException
     {
-        Property property = storeView.getProperty( alistair.getId(), propertyKeyId );
-        assertTrue( property.valueEquals( "Alistair" ) );
+        Value value = storeView.getPropertyValue( alistair.getId(), propertyKeyId );
+        assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 
     @Test
@@ -209,7 +210,7 @@ public class NeoStoreIndexStoreViewTest
 
     NodeUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return NodeUpdates.forNode( nodeId, labels ).added( propertyKeyId, value ).build();
+        return NodeUpdates.forNode( nodeId, labels ).added( propertyKeyId, Values.of( value ) ).build();
     }
 
     private void createAlistairAndStefanNodes()

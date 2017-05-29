@@ -57,11 +57,9 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaUtil;
@@ -106,6 +104,7 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
 
 import static java.lang.String.format;
@@ -293,7 +292,7 @@ public class StateHandlingStatementOperations implements
         {
             if ( cursor.next() )
             {
-                return Values.of( cursor.get().value() );
+                return cursor.get().value();
             }
         }
         catch ( NotFoundException e )
@@ -374,7 +373,7 @@ public class StateHandlingStatementOperations implements
         {
             if ( cursor.next() )
             {
-                return Values.of( cursor.get().value() );
+                return cursor.get().value();
             }
         }
         catch ( NotFoundException e )
@@ -832,7 +831,7 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
         PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, query );
         PrimitiveLongIterator changesFiltered =
-                filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( query ) );
+                filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
@@ -850,7 +849,8 @@ public class StateHandlingStatementOperations implements
         {
         case exact:
             IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
-            return filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
+            return filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( exactPreds ) );
+
         case stringSuffix:
         case stringContains:
         case exists:
@@ -918,7 +918,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
@@ -942,7 +942,7 @@ public class StateHandlingStatementOperations implements
 
     private PrimitiveLongIterator filterIndexStateChangesForSeek(
             KernelStatement state, PrimitiveLongIterator nodeIds, IndexDescriptor index,
-            OrderedPropertyValues propertyValues )
+            ValueTuple propertyValues )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -1030,7 +1030,7 @@ public class StateHandlingStatementOperations implements
                 }
                 else
                 {
-                    existingValue = Values.of( properties.get().value() );
+                    existingValue = properties.get().value();
                     autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
                 }
             }
@@ -1070,7 +1070,7 @@ public class StateHandlingStatementOperations implements
                 }
                 else
                 {
-                    existingValue = Values.of( properties.get().value() );
+                    existingValue = properties.get().value();
                     autoIndexing.relationships().propertyChanged(
                             ops, relationshipId, propertyKeyId, existingValue, value );
                 }
@@ -1110,7 +1110,7 @@ public class StateHandlingStatementOperations implements
             {
                 if ( properties.next() )
                 {
-                    existingValue = Values.of( properties.get().value() );
+                    existingValue = properties.get().value();
 
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
                     state.txState().nodeDoRemoveProperty( node.id(), propertyKeyId, existingValue );
@@ -1136,7 +1136,7 @@ public class StateHandlingStatementOperations implements
             {
                 if ( properties.next() )
                 {
-                    existingValue = Values.of( properties.get().value() );
+                    existingValue = properties.get().value();
 
                     autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
                     state.txState()
@@ -1181,10 +1181,10 @@ public class StateHandlingStatementOperations implements
         Iterator<StorageProperty> properties = graphGetAllProperties( state );
         while ( properties.hasNext() )
         {
-            DefinedProperty property = (DefinedProperty) properties.next();
+            StorageProperty property = properties.next();
             if ( property.propertyKeyId() == propertyKeyId )
             {
-                return Values.of( property.value() );
+                return property.valueForced();
             }
         }
         return Values.NO_VALUE;

@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -330,17 +331,17 @@ public class DatabaseIndexAccessorTest
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, index.schema(), value );
+        return IndexQueryHelper.add( nodeId, index.schema(), value );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object value )
     {
-        return IndexEntryUpdate.remove( nodeId, index.schema(), value );
+        return IndexQueryHelper.remove( nodeId, index.schema(), value );
     }
 
     private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexEntryUpdate.change( nodeId, index.schema(), valueBefore, valueAfter );
+        return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )

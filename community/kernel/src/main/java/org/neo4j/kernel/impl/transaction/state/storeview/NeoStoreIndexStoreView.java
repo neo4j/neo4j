@@ -25,7 +25,6 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
@@ -41,6 +40,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -128,7 +129,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             for ( PropertyBlock property : propertyRecord )
             {
-                Object value = property.getType().getValue( property, propertyStore );
+                Value value = property.getType().getValueNow( property, propertyStore );
                 update.added( property.getKeyIndexId(), value );
             }
         }
@@ -136,7 +137,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
@@ -146,17 +147,17 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
-            return Property.noNodeProperty( nodeId, propertyKeyId );
+            return Values.NO_VALUE;
         }
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( propertyKeyId );
             if ( propertyBlock != null )
             {
-                return propertyBlock.newPropertyData( propertyStore );
+                return propertyBlock.newPropertyValue( propertyStore );
             }
         }
-        return Property.noNodeProperty( nodeId, propertyKeyId );
+        return Values.NO_VALUE;
     }
 
     @Override
@@ -179,7 +180,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 int currentPropertyId = block.getKeyIndexId();
                 if ( propertyIds.contains( currentPropertyId ) )
                 {
-                    Object currentValue = block.getType().getValue( block, propertyStore );
+                    Value currentValue = block.getType().getValueNow( block, propertyStore );
                     sink.onProperty( currentPropertyId, currentValue );
                     propertyIds.remove( currentPropertyId );
                 }

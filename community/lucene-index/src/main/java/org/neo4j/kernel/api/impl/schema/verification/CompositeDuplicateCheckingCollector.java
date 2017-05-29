@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {
@@ -49,46 +49,44 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
-        Property[] properties = new Property[propertyKeyIds.length];
-        Object[] values = new Object[propertyKeyIds.length];
-        for ( int i = 0; i < properties.length; i++ )
+        Value[] reference = new Value[propertyKeyIds.length];
+        for ( int i = 0; i < reference.length; i++ )
         {
-            properties[i] = accessor.getProperty( nodeId, propertyKeyIds[i] );
-            values[i] = properties[i].value();
+            reference[i] = accessor.getPropertyValue( nodeId, propertyKeyIds[i] );
         }
 
         // We either have to find the first conflicting entry set element,
         // or append one for the property we just fetched:
-        CompositeEntrySet current = actualValues;
+        CompositeEntrySet currentEntrySet = actualValues;
         scan:
         do
         {
             for ( int i = 0; i < CompositeEntrySet.INCREMENT; i++ )
             {
-                Object[] currentValues = current.values[i];
+                Value[] currentValues = currentEntrySet.values[i];
 
-                if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
+                if ( currentEntrySet.nodeId[i] == StatementConstants.NO_SUCH_NODE )
                 {
-                    current.values[i] = values;
-                    current.nodeId[i] = nodeId;
+                    currentEntrySet.values[i] = reference;
+                    currentEntrySet.nodeId[i] = nodeId;
                     if ( i == CompositeEntrySet.INCREMENT - 1 )
                     {
-                        current.next = new CompositeEntrySet();
+                        currentEntrySet.next = new CompositeEntrySet();
                     }
                     break scan;
                 }
-                else if ( propertyValuesEqual( properties, currentValues ) )
+                else if ( propertyValuesEqual( reference, currentValues ) )
                 {
-                    throw new IndexEntryConflictException( current.nodeId[i], nodeId,
-                            OrderedPropertyValues.ofUndefined( currentValues ) );
+                    throw new IndexEntryConflictException(
+                            currentEntrySet.nodeId[i], nodeId, ValueTuple.of( currentValues ) );
                 }
             }
-            current = current.next;
+            currentEntrySet = currentEntrySet.next;
         }
-        while ( current != null );
+        while ( currentEntrySet != null );
     }
 
-    private boolean propertyValuesEqual( Property[] properties, Object[] values )
+    private boolean propertyValuesEqual( Value[] properties, Value[] values )
     {
         if ( properties.length != values.length )
         {
@@ -96,7 +94,7 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
         }
         for ( int i = 0; i < properties.length; i++ )
         {
-            if ( !properties[i].valueEquals( values[i] ) )
+            if ( !properties[i].equals( values[i] ) )
             {
                 return false;
             }
@@ -125,7 +123,7 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
     {
         static final int INCREMENT = 10000;
 
-        Object[][] values = new Object[INCREMENT][];
+        Value[][] values = new Value[INCREMENT][];
         long[] nodeId = new long[INCREMENT];
         CompositeEntrySet next;
 

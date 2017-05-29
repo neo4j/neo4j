@@ -40,6 +40,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
@@ -49,6 +50,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.values.Values.values;
 
 public class FullScanNonUniqueIndexSamplerTest
 {
@@ -103,7 +105,7 @@ public class FullScanNonUniqueIndexSamplerTest
         List<Number> result = new ArrayList<>();
         for ( IndexEntryUpdate<?> update : NativeSchemaIndexPopulatorTest.someDuplicateIndexEntryUpdates() )
         {
-            result.add( (Number) update.values()[0] );
+            result.add( (Number) update.values()[0].asPublic() );
         }
         // TODO: perhaps some more values?
         return result;
@@ -120,8 +122,8 @@ public class FullScanNonUniqueIndexSamplerTest
                 long nodeId = 0;
                 for ( Number number : values )
                 {
-                    key.from( nodeId, array( number ) );
-                    value.from( nodeId, array( number ) );
+                    key.from( nodeId, values( number ) );
+                    value.from( nodeId, values( number ) );
                     writer.put( key, value );
                     nodeId++;
                 }

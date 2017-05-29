@@ -33,7 +33,7 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -63,7 +63,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
@@ -108,7 +107,7 @@ public class TxStateTransactionDataViewTest
         when( storeStatement.acquireSingleNodeCursor( 2L ) ).thenReturn( asNodeCursor( 2L, 20L, labels( 15 ) ) );
 
         when( storeStatement.acquirePropertyCursor( eq( 20L ), any( Lock.class ), any( AssertOpen.class ) ) )
-                .thenReturn( asPropertyCursor( stringProperty( 1, "p" ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( 1, Values.of( "p" ) ) ) );
 
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn( asNodeCursor( 1L, 21L, labels() ) );
         when( storeStatement.acquirePropertyCursor( eq( 21L ), any( Lock.class ), any( AssertOpen.class ) ) )
@@ -151,7 +150,7 @@ public class TxStateTransactionDataViewTest
         when( storeStatement.acquireSingleRelationshipCursor( 2L ) ).
                 thenReturn( asRelationshipCursor( 2L, 1, 1L, 1L, propertyId ) );
         when( storeStatement.acquirePropertyCursor( propertyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( Property.stringProperty( 1, "p" ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( 1, Values.of( "p" ) ) ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
 
@@ -207,7 +206,7 @@ public class TxStateTransactionDataViewTest
                 asNodeCursor( 1L, propertyId, labels() ) );
         when( storeStatement
                 .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( Property.property( propertyKeyId, prevValue.asPublic() ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().assignedNodeProperties();
@@ -233,7 +232,7 @@ public class TxStateTransactionDataViewTest
                 asNodeCursor( 1L, propertyId, labels() ) );
         when( storeStatement
                 .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( Property.property( propertyKeyId, prevValue.asPublic() ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().removedNodeProperties();
@@ -258,7 +257,7 @@ public class TxStateTransactionDataViewTest
                 .thenReturn( asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
         when( storeStatement
                 .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( Property.property( propertyKeyId, prevValue.asPublic() ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().removedRelationshipProperties();
@@ -284,7 +283,7 @@ public class TxStateTransactionDataViewTest
                 asRelationshipCursor( 1, 0, 0, 0, propertyId ) );
         when( storeStatement
                 .acquireSinglePropertyCursor( propertyId, propertyKeyId, NO_LOCK, AssertOpen.ALWAYS_OPEN ) )
-                .thenReturn( asPropertyCursor( Property.property( propertyKeyId, prevValue.asPublic() ) ) );
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKeyId, prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().assignedRelationshipProperties();

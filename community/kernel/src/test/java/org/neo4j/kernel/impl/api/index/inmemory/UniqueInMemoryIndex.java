@@ -33,9 +33,10 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 
 class UniqueInMemoryIndex extends InMemoryIndex
 {
@@ -139,11 +140,11 @@ class UniqueInMemoryIndex extends InMemoryIndex
             Map<Object,Long> entries = new HashMap<>();
             for ( long nodeId : nodeIds )
             {
-                final Object value = accessor.getProperty( nodeId, schema.getPropertyId() ).value();
+                final Value value = accessor.getPropertyValue( nodeId, schema.getPropertyId() );
                 if ( entries.containsKey( value ) )
                 {
                     long existingNodeId = entries.get( value );
-                    throw new IndexEntryConflictException( existingNodeId, nodeId, OrderedPropertyValues.ofUndefined( value ) );
+                    throw new IndexEntryConflictException( existingNodeId, nodeId, ValueTuple.of( value ) );
                 }
                 entries.put( value, nodeId );
             }
@@ -162,10 +163,10 @@ class UniqueInMemoryIndex extends InMemoryIndex
         @Override
         public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
         {
-            Map<OrderedPropertyValues,Long> entries = new HashMap<>();
+            Map<ValueTuple,Long> entries = new HashMap<>();
             for ( long nodeId : nodeIds )
             {
-                final OrderedPropertyValues values = getValues( nodeId );
+                final ValueTuple values = getValues( nodeId );
                 if ( entries.containsKey( values ) )
                 {
                     long existingNodeId = entries.get( values );
@@ -175,15 +176,15 @@ class UniqueInMemoryIndex extends InMemoryIndex
             }
         }
 
-        OrderedPropertyValues getValues( long nodeId ) throws PropertyNotFoundException, EntityNotFoundException
+        ValueTuple getValues( long nodeId ) throws PropertyNotFoundException, EntityNotFoundException
         {
             int[] propertyIds = schema.getPropertyIds();
-            Object[] values = new Object[propertyIds.length];
+            Value[] values = new Value[propertyIds.length];
             for ( int i = 0; i < values.length; i++ )
             {
-                values[i] = accessor.getProperty( nodeId, propertyIds[i] ).value();
+                values[i] = accessor.getPropertyValue( nodeId, propertyIds[i] );
             }
-            return OrderedPropertyValues.ofUndefined( values );
+            return ValueTuple.of( values );
         }
     }
 }

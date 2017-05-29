@@ -31,9 +31,9 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.values.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
@@ -65,35 +65,32 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             this.updates = updates;
         }
 
-        public Builder added( int propertyKeyId, Object value )
+        public Builder added( int propertyKeyId, Value value )
         {
             updates.put( propertyKeyId, NodeUpdates.after( value ) );
             return this;
         }
 
-        public Builder removed( int propertyKeyId, Object value )
+        public Builder removed( int propertyKeyId, Value value )
         {
             updates.put( propertyKeyId, NodeUpdates.before( value ) );
             return this;
         }
 
-        public Builder changed( int propertyKeyId, Object before, Object after )
+        public Builder changed( int propertyKeyId, Value before, Value after )
         {
             updates.put( propertyKeyId, NodeUpdates.changed( before, after ) );
             return this;
         }
 
-        public NodeUpdates build()
+        public Builder existing( int propertyKeyId, Value value )
         {
-            return updates;
+            updates.put( propertyKeyId, NodeUpdates.unchanged( value ) );
+            return this;
         }
 
-        public NodeUpdates buildWithExistingProperties( DefinedProperty... definedProperties )
+        public NodeUpdates build()
         {
-            for ( DefinedProperty property : definedProperties )
-            {
-                updates.put( property.propertyKeyId(), NodeUpdates.unchanged( property.value() ) );
-            }
             return updates;
         }
     }
@@ -149,7 +146,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     }
 
     @Override
-    public void onProperty( int propertyId, Object value )
+    public void onProperty( int propertyId, Value value )
     {
         knownProperties.put( propertyId, unchanged( value ) );
     }
@@ -330,9 +327,9 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return true;
     }
 
-    private Object[] valuesBefore( int[] propertyIds )
+    private Value[] valuesBefore( int[] propertyIds )
     {
-        Object[] values = new Object[propertyIds.length];
+        Value[] values = new Value[propertyIds.length];
         for ( int i = 0; i < propertyIds.length; i++ )
         {
             values[i] = knownProperties.get( propertyIds[i] ).before;
@@ -340,9 +337,9 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return values;
     }
 
-    private Object[] valuesAfter( int[] propertyIds )
+    private Value[] valuesAfter( int[] propertyIds )
     {
-        Object[] values = new Object[propertyIds.length];
+        Value[] values = new Value[propertyIds.length];
         for ( int i = 0; i < propertyIds.length; i++ )
         {
             PropertyValue propertyValue = knownProperties.get( propertyIds[i] );
@@ -452,11 +449,11 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private static class PropertyValue
     {
-        private final Object before;
-        private final Object after;
+        private final Value before;
+        private final Value after;
         private final PropertyValueType type;
 
-        private PropertyValue( Object before, Object after, PropertyValueType type )
+        private PropertyValue( Value before, Value after, PropertyValueType type )
         {
             this.before = before;
             this.after = after;
@@ -508,11 +505,11 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             switch ( type )
             {
             case NoValue:   return true;
-            case Before:    return propertyValueEqual( before, that.before );
-            case After:     return propertyValueEqual( after, that.after );
-            case UnChanged: return propertyValueEqual( after, that.after );
-            case Changed:   return propertyValueEqual( before, that.before ) &&
-                                    propertyValueEqual( after, that.after );
+            case Before:    return before.equals( that.before );
+            case After:     return after.equals( that.after );
+            case UnChanged: return after.equals( that.after );
+            case Changed:   return before.equals( that.before ) &&
+                                    after.equals( that.after );
             default:        throw new IllegalStateException( "This cannot happen!" );
             }
         }
@@ -527,74 +524,24 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         }
     }
 
-    private static boolean propertyValueEqual( Object a, Object b )
-    {
-        if ( a == null )
-        {
-            return b == null;
-        }
-        if ( b == null )
-        {
-            return false;
-        }
-
-        if ( a instanceof boolean[] && b instanceof boolean[] )
-        {
-            return Arrays.equals( (boolean[]) a, (boolean[]) b );
-        }
-        if ( a instanceof byte[] && b instanceof byte[] )
-        {
-            return Arrays.equals( (byte[]) a, (byte[]) b );
-        }
-        if ( a instanceof short[] && b instanceof short[] )
-        {
-            return Arrays.equals( (short[]) a, (short[]) b );
-        }
-        if ( a instanceof int[] && b instanceof int[] )
-        {
-            return Arrays.equals( (int[]) a, (int[]) b );
-        }
-        if ( a instanceof long[] && b instanceof long[] )
-        {
-            return Arrays.equals( (long[]) a, (long[]) b );
-        }
-        if ( a instanceof char[] && b instanceof char[] )
-        {
-            return Arrays.equals( (char[]) a, (char[]) b );
-        }
-        if ( a instanceof float[] && b instanceof float[] )
-        {
-            return Arrays.equals( (float[]) a, (float[]) b );
-        }
-        if ( a instanceof double[] && b instanceof double[] )
-        {
-            return Arrays.equals( (double[]) a, (double[]) b );
-        }
-        if ( a instanceof Object[] && b instanceof Object[] )
-        {
-            return Arrays.equals( (Object[]) a, (Object[]) b );
-        }
-        return a.equals( b );
-    }
-
     private static PropertyValue noValue = new PropertyValue( null, null, NoValue );
 
-    private static PropertyValue before( Object value )
+    private static PropertyValue before( Value value )
     {
         return new PropertyValue( value, null, PropertyValueType.Before );
     }
 
-    private static PropertyValue after( Object value )
+    private static PropertyValue after( Value value )
     {
         return new PropertyValue( null, value, PropertyValueType.After );
     }
 
-    private static PropertyValue unchanged( Object value )
+    private static PropertyValue unchanged( Value value )
     {
         return new PropertyValue( value, value, PropertyValueType.UnChanged );
     }
 
-    private static PropertyValue changed( Object before, Object after )
+    private static PropertyValue changed( Value before, Value after )
     {
         return new PropertyValue( before, after, PropertyValueType.Changed );
     }

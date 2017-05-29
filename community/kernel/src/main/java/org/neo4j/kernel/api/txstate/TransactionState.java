@@ -20,12 +20,12 @@
 package org.neo4j.kernel.api.txstate;
 
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.
@@ -91,5 +91,5 @@ public interface TransactionState extends ReadableTransactionState
 
     boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
-    void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, OrderedPropertyValues before, OrderedPropertyValues after );
+    void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
 }

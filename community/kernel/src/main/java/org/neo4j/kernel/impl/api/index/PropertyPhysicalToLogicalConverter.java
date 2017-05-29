@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -58,8 +60,8 @@ public class PropertyPhysicalToLogicalConverter
                 // CHANGE
                 if ( !beforeBlock.hasSameContentsAs( afterBlock ) )
                 {
-                    Object beforeVal = valueOf( beforeBlock );
-                    Object afterVal = valueOf( afterBlock );
+                    Value beforeVal = valueOf( beforeBlock );
+                    Value afterVal = valueOf( afterBlock );
                     properties.changed( key, beforeVal, afterVal );
                 }
             }
@@ -115,13 +117,13 @@ public class PropertyPhysicalToLogicalConverter
         }
     }
 
-    private Object valueOf( PropertyBlock block )
+    private Value valueOf( PropertyBlock block )
     {
         if ( block == null )
         {
             return null;
         }
 
-        return block.getType().getValue( block, propertyStore );
+        return block.getType().getValueNow( block, propertyStore );
     }
 }

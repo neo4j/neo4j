@@ -68,7 +68,7 @@ public interface EntityReadOperations
     long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException;
 
-    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );

@@ -31,11 +31,10 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.test.Property;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
@@ -59,7 +58,7 @@ public class TxStateVisitorTest
         state.accept( visitor );
 
         // Then
-        DefinedProperty prop = DefinedProperty.stringProperty( propKey, "hello" );
+        StorageProperty prop = new PropertyKeyValue( propKey, Values.of( "hello" ) );
         assertThat(visitor.relPropertyChanges, contains( propChange( relId, noProperty, asList( prop ), noRemoved ) ) );
     }
 

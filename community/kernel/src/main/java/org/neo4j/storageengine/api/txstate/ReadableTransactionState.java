@@ -26,7 +26,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -37,6 +36,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.ValueTuple;
 
 /**
  * This interface contains the methods for reading transaction state from the transaction state.
@@ -126,7 +126,7 @@ public interface ReadableTransactionState
 
     ReadableDiffSets<Long> indexUpdatesForScan( IndexDescriptor index );
 
-    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, OrderedPropertyValues values );
+    ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
     ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
                                                              Number lower, boolean includeLower,
@@ -173,4 +173,5 @@ public interface ReadableTransactionState
      * The same applies to schema changes, such as creating and dropping indexes and constraints.
      */
     boolean hasDataChanges();
+
 }

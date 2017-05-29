@@ -20,12 +20,12 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.values.Value;
 
 /**
  * Used by the {@link IndexPopulator} for verifying constraints, if need be.
  */
 public interface PropertyAccessor
 {
-    Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 }

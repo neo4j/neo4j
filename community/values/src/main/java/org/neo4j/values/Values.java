@@ -37,11 +37,16 @@ import java.util.Comparator;
 @SuppressWarnings( "WeakerAccess" )
 public class Values
 {
+    public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
+    public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
+    public static final Value MIN_STRING = Values.stringValue( "" );
+    public static final Value MAX_STRING = Values.booleanValue( false );
+
     private Values()
     {
     }
 
-    interface ValueLoader<T>
+    public interface ValueLoader<T>
     {
         T load() throws ValueLoadException;
     }
@@ -68,6 +73,11 @@ public class Values
     public static boolean isTextValue( Object value )
     {
         return value instanceof TextValue;
+    }
+
+    public static boolean isArrayValue( Value value )
+    {
+        return value instanceof ArrayValue;
     }
 
     // DIRECT FACTORY METHODS
@@ -353,6 +363,16 @@ public class Values
         // otherwise fail
         throw new IllegalArgumentException(
                     String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+    }
+
+    public static Value[] values( Object... objects )
+    {
+        Value[] values = new Value[objects.length];
+        for ( int i = 0; i < objects.length; i++ )
+        {
+            values[i] = Values.of( objects[i] );
+        }
+        return values;
     }
 
     private static Value arrayValue( Object[] value )

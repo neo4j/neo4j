@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -255,17 +256,17 @@ public class LuceneSchemaIndexPopulatorTest
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, index.schema(), value );
+        return IndexQueryHelper.add( nodeId, index.schema(), value );
     }
 
     private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexEntryUpdate.change( nodeId, index.schema(), valueBefore, valueAfter );
+        return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object removedValue )
     {
-        return IndexEntryUpdate.remove( nodeId, index.schema(), removedValue );
+        return IndexQueryHelper.remove( nodeId, index.schema(), removedValue );
     }
 
     private void assertIndexedValues( Hit... expectedHits ) throws IOException
@@ -297,7 +298,7 @@ public class LuceneSchemaIndexPopulatorTest
     private static void addUpdate( IndexPopulator populator, long nodeId, Object value )
             throws IOException, IndexEntryConflictException
     {
-        populator.add( Collections.singletonList( IndexEntryUpdate.add( nodeId, index.schema(), value ) ) );
+        populator.add( Collections.singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );
     }
 
     private static void updatePopulator(

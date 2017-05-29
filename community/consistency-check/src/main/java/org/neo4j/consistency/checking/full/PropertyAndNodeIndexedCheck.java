@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static java.lang.String.format;
@@ -105,7 +106,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 int[] indexPropertyIds = indexRule.schema().getPropertyIds();
                 if ( nodeHasSchemaProperties( nodePropertyMap, indexPropertyIds ) )
                 {
-                    Object[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
+                    Value[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
                     try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
                     {
                         long nodeId = record.getId();
@@ -197,13 +198,13 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private Object[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
+    private Value[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
     {
-        Object[] values = new Object[indexPropertyIds.length];
+        Value[] values = new Value[indexPropertyIds.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
         {
             PropertyBlock propertyBlock = propertyMap.get( indexPropertyIds[i] );
-            values[i] = propertyReader.propertyValue( propertyBlock ).value();
+            values[i] = propertyReader.propertyValue( propertyBlock );
         }
         return values;
     }

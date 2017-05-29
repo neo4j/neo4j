@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -46,6 +47,8 @@ import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;
@@ -285,7 +288,10 @@ public class SimpleUniquenessVerifierTest
 
     private PropertyAccessor newPropertyAccessor( List<Object> propertyValues )
     {
-        return new TestPropertyAccessor( propertyValues.toArray() );
+        return new TestPropertyAccessor(
+                propertyValues.stream()
+                        .map( Values::of )
+                        .collect( Collectors.toList() ) );
     }
 
     private UniquenessVerifier newSimpleUniquenessVerifier() throws IOException

@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.BOOL;
@@ -215,34 +217,34 @@ class StorePropertyPayloadCursor
         return readArrayFromBuffer( buffer );
     }
 
-    Object value()
+    Value value()
     {
         switch ( type() )
         {
         case BOOL:
-            return booleanValue();
+            return Values.booleanValue( booleanValue() );
         case BYTE:
-            return byteValue();
+            return Values.byteValue( byteValue() );
         case SHORT:
-            return shortValue();
+            return Values.shortValue( shortValue() );
         case CHAR:
-            return charValue();
+            return Values.charValue( charValue() );
         case INT:
-            return intValue();
+            return Values.intValue( intValue() );
         case LONG:
-            return longValue();
+            return Values.longValue( longValue() );
         case FLOAT:
-            return floatValue();
+            return Values.floatValue( floatValue() );
         case DOUBLE:
-            return doubleValue();
+            return Values.doubleValue( doubleValue() );
         case SHORT_STRING:
-            return shortStringValue();
+            return Values.stringValue( shortStringValue() );
         case STRING:
-            return stringValue();
+            return Values.stringValue( stringValue() );
         case SHORT_ARRAY:
-            return shortArrayValue();
+            return Values.of( shortArrayValue() );
         case ARRAY:
-            return arrayValue();
+            return Values.of( arrayValue() );
         default:
             throw new IllegalStateException( "No such type:" + type() );
         }

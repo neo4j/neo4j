@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumberPropertyValue;
+import org.neo4j.values.Value;
+
+import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
 
 /**
  * Includes comparison value and entity id (to be able to handle non-unique values).
@@ -37,10 +39,9 @@ class NonUniqueSchemaNumberKey implements SchemaNumberKey
     long entityId;
 
     @Override
-    public void from( long entityId, Object[] values )
+    public void from( long entityId, Value[] values )
     {
-        assertValidSingleNumberPropertyValue( values );
-        this.value = ((Number) values[0]).doubleValue();
+        this.value = assertValidSingleNumber( values ).doubleValue();
         this.entityId = entityId;
     }
 

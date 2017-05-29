@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.Value;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
@@ -104,7 +105,7 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object... propertyValues )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         return indexReaders.parallelStream()
                 .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyValues ) )

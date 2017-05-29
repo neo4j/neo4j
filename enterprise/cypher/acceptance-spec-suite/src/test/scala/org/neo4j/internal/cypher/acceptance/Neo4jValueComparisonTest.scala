@@ -22,9 +22,8 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure
-import org.neo4j.kernel.api.properties.Property
+import org.neo4j.values.Values
 import org.scalacheck._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -100,16 +99,16 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
     Arbitrary.arbitrary[Double]
   )
 
-  val testCase: Gen[Values] = for {
+  val testCase: Gen[ValuePair] = for {
     a <- arbAnyVal
     b <- arbAnyVal
     t <- testDifficulties
   } yield {
     val (x, y) = t(a, b)
-    Values(x, y)
+    ValuePair(x, y)
   }
 
-  case class Values(a: Any, b: Any) {
+  case class ValuePair(a: Any, b: Any) {
     override def toString: String = s"(a: ${str(a)}, b: ${str(b)})"
 
     private def str(x: Any) = if (x == null) "NULL" else s"${x.getClass.getSimpleName} $x"
@@ -119,7 +118,7 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
 
   test("compare equality between modules") {
     GeneratorDrivenPropertyChecks.forAll(testCase) {
-      case Values(l, r) =>
+      case ValuePair(l, r) =>
         val compiledL2R = CompiledEquivalenceUtils.equals(l, r)
         val compiledR2L = CompiledEquivalenceUtils.equals(r, l)
         val interpretedL2R = Equivalent(l).equals(r)
@@ -130,8 +129,8 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
         if (compiledL2R != interpretedL2R) fail(s"compiled[$compiledL2R] = interpreted[$interpretedL2R]")
 
         if (l != null && r != null) {
-          val propertyL2R = Property.property(NO_SUCH_PROPERTY_KEY, l).valueEquals(r)
-          val propertyR2L = Property.property(NO_SUCH_PROPERTY_KEY, r).valueEquals(l)
+          val propertyL2R = Values.of(l).equals(Values.of(r))
+          val propertyR2L = Values.of(r).equals(Values.of(l))
           if (propertyL2R != propertyR2L) fail(s"property (l = r)[$propertyL2R] = (r = l)[$propertyR2L]")
           if (propertyL2R != interpretedL2R) fail(s"property[$propertyL2R] = interpreted[$interpretedL2R]")
 

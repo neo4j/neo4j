@@ -58,6 +58,8 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.MockedNeoStores;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
@@ -528,10 +530,10 @@ public class StorePropertyCursorTest
                 cursor.init( firstPropertyId, NO_LOCK, ALWAYS_OPEN );
 
                 assertTrue( cursor.next() );
-                assertEquals( "1", cursor.value() );
+                assertEquals( Values.of( "1" ), cursor.value() );
 
                 assertTrue( cursor.next() );
-                assertEquals( "2", cursor.value() );
+                assertEquals( Values.of( "2" ), cursor.value() );
 
                 assertFalse( cursor.next() );
                 assertFalse( cursor.next() );
@@ -715,7 +717,7 @@ public class StorePropertyCursorTest
             {
                 cursor.init( recordId, NO_LOCK, ALWAYS_OPEN );
                 assertTrue( cursor.next() );
-                assertEquals( expectedValue, cursor.value() );
+                assertEquals( Values.of( expectedValue ), cursor.value() );
                 assertFalse( cursor.next() );
             }
         }
@@ -726,7 +728,7 @@ public class StorePropertyCursorTest
             {
                 cursor.init( recordId, NO_LOCK, ALWAYS_OPEN );
                 assertTrue( cursor.next() );
-                assertArrayEquals( expectedValue, (byte[]) cursor.value() );
+                assertTrue( cursor.value().equals( expectedValue ) );
                 assertFalse( cursor.next() );
             }
         }
@@ -735,16 +737,9 @@ public class StorePropertyCursorTest
     private static void assertEqualValues( Object expectedValue, PropertyItem item )
     {
         // fetch twice with typed methods
-        if ( expectedValue.getClass().isArray() )
-        {
-            assertArrayEquals( (double[]) expectedValue, (double[]) item.value(), 0.0 );
-            assertArrayEquals( (double[]) expectedValue, (double[]) item.value(), 0.0 );
-        }
-        else
-        {
-            assertEquals( expectedValue, item.value() );
-            assertEquals( expectedValue, item.value() );
-        }
+        Value expected = Values.of( expectedValue );
+        assertTrue( item.value().equals( expected ) );
+        assertTrue( item.value().equals( expected ) );
     }
 
     public static long firstIdOf( List<PropertyRecord> propertyChain )
@@ -830,7 +825,7 @@ public class StorePropertyCursorTest
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
 
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block, keyId, Values.of( value ), stringAllocator, arrayAllocator );
 
         PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block );
@@ -847,9 +842,9 @@ public class StorePropertyCursorTest
         DynamicRecordAllocator arrayAllocator = store.getArrayStore();
 
         PropertyBlock block1 = new PropertyBlock();
-        PropertyStore.encodeValue( block1, keyId1, value1, stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block1, keyId1, Values.of( value1 ), stringAllocator, arrayAllocator );
         PropertyBlock block2 = new PropertyBlock();
-        PropertyStore.encodeValue( block2, keyId2, value2, stringAllocator, arrayAllocator );
+        PropertyStore.encodeValue( block2, keyId2, Values.of( value2 ), stringAllocator, arrayAllocator );
 
         PropertyRecord record = new PropertyRecord( store.nextId() );
         record.addPropertyBlock( block1 );
@@ -891,7 +886,7 @@ public class StorePropertyCursorTest
         List<Object> values = new ArrayList<>();
         while ( cursor.next() )
         {
-            values.add( cursor.value() );
+            values.add( cursor.value().asPublic() );
         }
         return values;
     }

@@ -72,6 +72,8 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -153,7 +155,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor, value );
+        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
 
         verify( populator ).create();
         verify( populator ).configureSampling( true );
@@ -200,8 +202,8 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( node1, descriptor, value );
-        IndexEntryUpdate update2 = add( node4, descriptor, value );
+        IndexEntryUpdate update1 = IndexEntryUpdate.add( node1, descriptor, Values.of( value ) );
+        IndexEntryUpdate update2 = add( node4, descriptor, Values.of( value ) );
 
         verify( populator ).create();
         verify( populator ).configureSampling( true );
@@ -452,15 +454,15 @@ public class IndexPopulationJobTest
         private final Set<Pair<Long, Object>> added = new HashSet<>();
         private IndexPopulationJob job;
         private final long nodeToChange;
-        private final Object newValue;
-        private final Object previousValue;
+        private final Value newValue;
+        private final Value previousValue;
         private final LabelSchemaDescriptor index;
 
         NodeChangingWriter( long nodeToChange, int propertyKeyId, Object previousValue, Object newValue, int label )
         {
             this.nodeToChange = nodeToChange;
-            this.previousValue = previousValue;
-            this.newValue = newValue;
+            this.previousValue = Values.of( previousValue );
+            this.newValue = Values.of( newValue );
             this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
@@ -480,7 +482,7 @@ public class IndexPopulationJobTest
             {
                 job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
             }
-            added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
+            added.add( Pair.of( update.getEntityId(), update.values()[0].asPublic() ) );
         }
 
         @Override
@@ -495,7 +497,7 @@ public class IndexPopulationJobTest
                     {
                         case ADDED:
                         case CHANGED:
-                            added.add( Pair.of( update.getEntityId(), update.values()[0] ) );
+                            added.add( Pair.of( update.getEntityId(), update.values()[0].asPublic() ) );
                             break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );
@@ -527,13 +529,13 @@ public class IndexPopulationJobTest
         private final Map<Long, Object> removed = new HashMap<>();
         private final long nodeToDelete;
         private IndexPopulationJob job;
-        private final Object valueToDelete;
+        private final Value valueToDelete;
         private final LabelSchemaDescriptor index;
 
         NodeDeletingWriter( long nodeToDelete, int propertyKeyId, Object valueToDelete, int label )
         {
             this.nodeToDelete = nodeToDelete;
-            this.valueToDelete = valueToDelete;
+            this.valueToDelete = Values.of( valueToDelete );
             this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
@@ -558,7 +560,7 @@ public class IndexPopulationJobTest
             {
                 job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
             }
-            added.put( update.getEntityId(), update.values()[0] );
+            added.put( update.getEntityId(), update.values()[0].asPublic() );
         }
 
         @Override
@@ -573,10 +575,10 @@ public class IndexPopulationJobTest
                     {
                         case ADDED:
                         case CHANGED:
-                            added.put( update.getEntityId(), update.values()[0] );
+                            added.put( update.getEntityId(), update.values()[0].asPublic() );
                             break;
                         case REMOVED:
-                            removed.put( update.getEntityId(), update.values()[0] ); // on remove, value is the before value
+                            removed.put( update.getEntityId(), update.values()[0].asPublic() ); // on remove, value is the before value
                             break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );

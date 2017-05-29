@@ -129,7 +129,7 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedNodes( 2, "testValue" );
+        simpleIndexReader.countIndexedNodes( 2, Values.of( "testValue" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
     }

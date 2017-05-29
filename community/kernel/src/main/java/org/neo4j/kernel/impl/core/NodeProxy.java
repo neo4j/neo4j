@@ -420,7 +420,7 @@ public class NodeProxy implements Node
                     {
                         String name = statement.readOperations().propertyKeyGetName(
                                 propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value() );
+                        properties.put( name, propertyCursor.get().value().asPublic() );
                     }
 
                     return properties;

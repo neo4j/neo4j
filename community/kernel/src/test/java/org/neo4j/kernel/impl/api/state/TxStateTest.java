@@ -38,7 +38,6 @@ import java.util.Set;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
@@ -52,6 +51,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
@@ -222,8 +222,7 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, OrderedPropertyValues.ofUndefined( "value43"
-        ) );
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, ValueTuple.of( "value43" ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -1689,7 +1688,7 @@ public class TxStateTest
                     Value valueAfter = Values.of( entry.other() );
                     state.nodeDoAddProperty( nodeId, propertyKeyId, valueAfter );
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.ofUndefined( valueAfter.asPublic() ) );
+                            ValueTuple.of( valueAfter.asPublic() ) );
                 }
             }
         };

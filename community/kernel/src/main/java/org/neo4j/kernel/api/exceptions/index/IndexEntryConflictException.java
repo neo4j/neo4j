@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 
 import static java.lang.String.format;
+import static java.lang.String.valueOf;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 /**
@@ -34,16 +38,16 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
  */
 public class IndexEntryConflictException extends Exception
 {
-    private final OrderedPropertyValues propertyValues;
+    private final ValueTuple propertyValues;
     private final long addedNodeId;
     private final long existingNodeId;
 
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object propertyValue )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Value propertyValue )
     {
-        this( existingNodeId, addedNodeId, OrderedPropertyValues.ofUndefined( propertyValue ) );
+        this( existingNodeId, addedNodeId, ValueTuple.of( propertyValue ) );
     }
 
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, OrderedPropertyValues propertyValues )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, ValueTuple propertyValues )
     {
         super( format( "Both node %d and node %d share the property value %s",
                 existingNodeId, addedNodeId, propertyValues ) );
@@ -81,14 +85,14 @@ public class IndexEntryConflictException extends Exception
         }
     }
 
-    public OrderedPropertyValues getPropertyValues()
+    public ValueTuple getPropertyValues()
     {
         return propertyValues;
     }
 
-    public Object getSinglePropertyValue()
+    public Value getSinglePropertyValue()
     {
-        return propertyValues.getSinglePropertyValue();
+        return propertyValues.getOnlyValue();
     }
 
     public long getAddedNodeId()
@@ -150,8 +154,55 @@ public class IndexEntryConflictException extends Exception
             sb.append( '`' );
             sb.append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
             sb.append( "` = " );
-            sb.append( OrderedPropertyValues.quote( propertyValues.valueAt( i ) ) );
+            sb.append( quote( propertyValues.valueAt( i ).asPublic() ) );
         }
         return sb.toString();
     }
+
+    private static String quote( Object propertyValue )
+    {
+        if ( propertyValue instanceof String )
+        {
+            return format( "'%s'", propertyValue );
+        }
+        else if ( propertyValue.getClass().isArray() )
+        {
+            Class<?> type = propertyValue.getClass().getComponentType();
+            if ( type == Boolean.TYPE )
+            {
+                return Arrays.toString( (boolean[]) propertyValue );
+            }
+            else if ( type == Byte.TYPE )
+            {
+                return Arrays.toString( (byte[]) propertyValue );
+            }
+            else if ( type == Short.TYPE )
+            {
+                return Arrays.toString( (short[]) propertyValue );
+            }
+            else if ( type == Character.TYPE )
+            {
+                return Arrays.toString( (char[]) propertyValue );
+            }
+            else if ( type == Integer.TYPE )
+            {
+                return Arrays.toString( (int[]) propertyValue );
+            }
+            else if ( type == Long.TYPE )
+            {
+                return Arrays.toString( (long[]) propertyValue );
+            }
+            else if ( type == Float.TYPE )
+            {
+                return Arrays.toString( (float[]) propertyValue );
+            }
+            else if ( type == Double.TYPE )
+            {
+                return Arrays.toString( (double[]) propertyValue );
+            }
+            return Arrays.toString( (Object[]) propertyValue );
+        }
+        return valueOf( propertyValue );
+    }
+
 }

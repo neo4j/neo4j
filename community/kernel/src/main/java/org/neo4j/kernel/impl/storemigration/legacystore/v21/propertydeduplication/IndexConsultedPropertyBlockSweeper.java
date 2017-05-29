@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.values.Value;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -65,7 +66,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
 
             if ( block.getKeyIndexId() == propertyKeyId )
             {
-                Object propertyValue = propertyStore.getValue( block );
+                Value propertyValue = propertyStore.getValue( block );
 
                 if ( !foundExact && index.contains( nodeRecord.getId(), propertyValue ) )
                 {

@@ -36,7 +36,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
@@ -67,7 +66,10 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.values.TextValue;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueGroup;
+import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -160,7 +162,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
-    private Map<LabelSchemaDescriptor, Map<OrderedPropertyValues, DiffSets<Long>>> indexUpdates;
+    private Map<LabelSchemaDescriptor, Map<ValueTuple, DiffSets<Long>>> indexUpdates;
 
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
@@ -996,7 +998,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor descriptor, OrderedPropertyValues values )
+    public ReadableDiffSets<Long> indexUpdatesForSeek( IndexDescriptor descriptor, ValueTuple values )
     {
         assert values != null;
         return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false ) );
@@ -1016,38 +1018,38 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                                                                         Number lower, boolean includeLower,
                                                                         Number upper, boolean includeUpper )
     {
-        TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        TreeMap<ValueTuple, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return null;
         }
 
-        OrderedPropertyValues selectedLower;
+        ValueTuple selectedLower;
         boolean selectedIncludeLower;
 
-        OrderedPropertyValues selectedUpper;
+        ValueTuple selectedUpper;
         boolean selectedIncludeUpper;
 
-        //TODO: Get working with composite indexes
+        //TODO: Get working with composite indexes'
         if ( lower == null )
         {
-            selectedLower = OrderedPropertyValues.ofUndefined( NUMBER.lowLimit.castValue( Number.class ) );
-            selectedIncludeLower = NUMBER.lowLimit.isInclusive;
+            selectedLower = ValueTuple.of( Values.MIN_NUMBER );
+            selectedIncludeLower = true;
         }
         else
         {
-            selectedLower = OrderedPropertyValues.ofUndefined( lower );
+            selectedLower = ValueTuple.of( Values.numberValue( lower ) );
             selectedIncludeLower = includeLower;
         }
 
         if ( upper == null )
         {
-            selectedUpper = OrderedPropertyValues.ofUndefined( NUMBER.highLimit.castValue( Number.class ) );
-            selectedIncludeUpper = NUMBER.highLimit.isInclusive;
+            selectedUpper = ValueTuple.of( Values.MAX_NUMBER );
+            selectedIncludeUpper = true;
         }
         else
         {
-            selectedUpper = OrderedPropertyValues.ofUndefined( upper );
+            selectedUpper = ValueTuple.of( Values.numberValue( upper ) );
             selectedIncludeUpper = includeUpper;
         }
 
@@ -1078,38 +1080,38 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                                                                         String lower, boolean includeLower,
                                                                         String upper, boolean includeUpper )
     {
-        TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        TreeMap<ValueTuple, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return null;
         }
 
-        OrderedPropertyValues selectedLower;
+        ValueTuple selectedLower;
         boolean selectedIncludeLower;
 
-        OrderedPropertyValues selectedUpper;
+        ValueTuple selectedUpper;
         boolean selectedIncludeUpper;
 
         //TODO: Get working with composite indexes
         if ( lower == null )
         {
-            selectedLower = OrderedPropertyValues.ofUndefined( STRING.lowLimit.castValue( String.class ) );
-            selectedIncludeLower = STRING.lowLimit.isInclusive;
+            selectedLower = ValueTuple.of( Values.MIN_STRING );
+            selectedIncludeLower = true;
         }
         else
         {
-            selectedLower = OrderedPropertyValues.ofUndefined( lower );
+            selectedLower = ValueTuple.of( Values.stringValue( lower ) );
             selectedIncludeLower = includeLower;
         }
 
         if ( upper == null )
         {
-            selectedUpper = OrderedPropertyValues.ofUndefined( STRING.highLimit.castValue( Boolean.class ).booleanValue() );
-            selectedIncludeUpper = STRING.highLimit.isInclusive;
+            selectedUpper = ValueTuple.of( Values.MAX_STRING );
+            selectedIncludeUpper = false;
         }
         else
         {
-            selectedUpper = OrderedPropertyValues.ofUndefined( upper );
+            selectedUpper = ValueTuple.of( Values.stringValue( upper ) );
             selectedIncludeUpper = includeUpper;
         }
 
@@ -1133,18 +1135,18 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
-        TreeMap<OrderedPropertyValues, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        TreeMap<ValueTuple, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
             return null;
         }
         //TODO: get working with composite indexes
-        OrderedPropertyValues floor = OrderedPropertyValues.ofUndefined( prefix );
+        ValueTuple floor = ValueTuple.of( Values.stringValue( prefix ) );
         DiffSets<Long> diffs = new DiffSets<>();
-        for ( Map.Entry<OrderedPropertyValues,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        for ( Map.Entry<ValueTuple,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
         {
-            OrderedPropertyValues key = entry.getKey();
-            if ( key.getSinglePropertyValue().toString().startsWith( prefix ) )
+            ValueTuple key = entry.getKey();
+            if ( ((TextValue)key.getOnlyValue()).stringValue().startsWith( prefix ) )
             {
                 DiffSets<Long> diffSets = entry.getValue();
                 diffs.addAll( diffSets.getAdded().iterator() );
@@ -1161,25 +1163,25 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     // Ensure sorted index updates for a given index. This is needed for range query support and
     // may involve converting the existing hash map first
     //
-    private TreeMap<OrderedPropertyValues, DiffSets<Long>> getSortedIndexUpdates( LabelSchemaDescriptor descriptor )
+    private TreeMap<ValueTuple, DiffSets<Long>> getSortedIndexUpdates( LabelSchemaDescriptor descriptor )
     {
         if ( indexUpdates == null )
         {
             return null;
         }
-        Map<OrderedPropertyValues, DiffSets<Long>> updates = indexUpdates.get( descriptor );
+        Map<ValueTuple, DiffSets<Long>> updates = indexUpdates.get( descriptor );
         if ( updates == null )
         {
             return null;
         }
-        TreeMap<OrderedPropertyValues,DiffSets<Long>> sortedUpdates;
+        TreeMap<ValueTuple,DiffSets<Long>> sortedUpdates;
         if ( updates instanceof TreeMap )
         {
-            sortedUpdates = (TreeMap<OrderedPropertyValues,DiffSets<Long>>) updates;
+            sortedUpdates = (TreeMap<ValueTuple,DiffSets<Long>>) updates;
         }
         else
         {
-            sortedUpdates = new TreeMap<>( OrderedPropertyValues.COMPARATOR );
+            sortedUpdates = new TreeMap<>( ValueTuple.COMPARATOR );
             sortedUpdates.putAll( updates );
             indexUpdates.put( descriptor, sortedUpdates );
         }
@@ -1188,10 +1190,10 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     @Override
     public void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId,
-            OrderedPropertyValues propertiesBefore, OrderedPropertyValues propertiesAfter )
+            ValueTuple propertiesBefore, ValueTuple propertiesAfter )
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
-        Map<OrderedPropertyValues,DiffSets<Long>> updates = getIndexUpdatesByDescriptor( descriptor, true);
+        Map<ValueTuple,DiffSets<Long>> updates = getIndexUpdatesByDescriptor( descriptor, true);
         if ( propertiesBefore != null )
         {
             DiffSets<Long> before = getIndexUpdatesForSeek( updates, propertiesBefore, true );
@@ -1223,9 +1225,9 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     private DiffSets<Long> getIndexUpdatesForSeek(
-            LabelSchemaDescriptor schema, OrderedPropertyValues values, boolean create )
+            LabelSchemaDescriptor schema, ValueTuple values, boolean create )
     {
-        Map<OrderedPropertyValues,DiffSets<Long>> updates = getIndexUpdatesByDescriptor( schema, create );
+        Map<ValueTuple,DiffSets<Long>> updates = getIndexUpdatesByDescriptor( schema, create );
         if ( updates != null )
         {
             return getIndexUpdatesForSeek( updates, values, create );
@@ -1233,8 +1235,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return null;
     }
 
-    private DiffSets<Long> getIndexUpdatesForSeek( Map<OrderedPropertyValues,DiffSets<Long>> updates,
-            OrderedPropertyValues values, boolean create )
+    private DiffSets<Long> getIndexUpdatesForSeek( Map<ValueTuple,DiffSets<Long>> updates,
+            ValueTuple values, boolean create )
     {
         DiffSets<Long> diffs = updates.get( values );
         if ( diffs == null && create )
@@ -1244,7 +1246,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return diffs;
     }
 
-    private Map<OrderedPropertyValues,DiffSets<Long>> getIndexUpdatesByDescriptor( LabelSchemaDescriptor schema,
+    private Map<ValueTuple,DiffSets<Long>> getIndexUpdatesByDescriptor( LabelSchemaDescriptor schema,
             boolean create )
     {
         if ( indexUpdates == null )
@@ -1255,7 +1257,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             }
             indexUpdates = new HashMap<>();
         }
-        Map<OrderedPropertyValues, DiffSets<Long>> updates = indexUpdates.get( schema );
+        Map<ValueTuple, DiffSets<Long>> updates = indexUpdates.get( schema );
         if ( updates == null )
         {
             if ( !create )
@@ -1273,7 +1275,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return null;
         }
-        Map<OrderedPropertyValues, DiffSets<Long>> updates = indexUpdates.get( schema );
+        Map<ValueTuple, DiffSets<Long>> updates = indexUpdates.get( schema );
         if ( updates == null )
         {
             return null;
