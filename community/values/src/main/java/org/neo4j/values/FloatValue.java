@@ -19,27 +19,56 @@
  */
 package org.neo4j.values;
 
-public enum ValueGroup
+import static java.lang.String.format;
+
+final class FloatValue extends FloatingPointValue
 {
-    NO_VALUE( -1 ),
-    TEXT( 0 ),
-    BOOLEAN( 1 ),
-    INTEGER( 2 ),
-    FLOAT( 2 ),
-    INTEGER_ARRAY( 3 ),
-    FLOAT_ARRAY( 3 ),
-    TEXT_ARRAY( 4 ),
-    BOOLEAN_ARRAY( 5 );
+    private final float value;
 
-    private final int comparabilityGroup;
-
-    ValueGroup( int comparabilityGroup )
+    FloatValue( float value )
     {
-        this.comparabilityGroup = comparabilityGroup;
+        this.value = value;
     }
 
-    public int comparabilityGroup()
+    @Override
+    public double doubleValue()
     {
-        return comparabilityGroup;
+        return value;
+    }
+
+    @Override
+    public boolean equals( boolean x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( char x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( String x )
+    {
+        return false;
+    }
+
+    @Override
+    public void writeTo( ValueWriter writer )
+    {
+        writer.writeFloatingPoint( value );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Float(%e)", value );
     }
 }

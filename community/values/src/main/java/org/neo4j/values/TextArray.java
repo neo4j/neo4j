@@ -19,31 +19,13 @@
  */
 package org.neo4j.values;
 
-final class NoValue extends Value
+abstract class TextArray extends ArrayValue
 {
-    @SuppressWarnings( "WeakerAccess" )
-    public static NoValue NO_VALUE = new NoValue();
+    abstract String stringValue( int offset );
 
-    private NoValue()
+    public int compareTo( TextArray other )
     {
-    }
-
-    @Override
-    public boolean equals( Object other )
-    {
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 123456789;
-    }
-
-    @Override
-    public boolean equals( Value other )
-    {
-        return false;
+        return TextValues.compareTextArrays( this, other );
     }
 
     @Override
@@ -83,55 +65,13 @@ final class NoValue extends Value
     }
 
     @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
     public boolean equals( boolean[] x )
     {
         return false;
     }
 
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public void writeTo( ValueWriter writer )
-    {
-        writer.writeNull();
-    }
-
-    @Override
-    public Object asPublic()
-    {
-        return null;
-    }
-
     public ValueGroup valueGroup()
     {
-        return ValueGroup.NO_VALUE;
+        return ValueGroup.TEXT_ARRAY;
     }
 }

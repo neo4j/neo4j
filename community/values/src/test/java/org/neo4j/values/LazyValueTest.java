@@ -35,38 +35,38 @@ public class LazyValueTest
     public void shouldLoadLazyStringProperty() throws Exception
     {
         // given
-        LazyString value = new LazyString( value( "person" ) );
+        StringValue.Lazy value = new StringValue.Lazy( value( "person" ) );
         // when / then
-        assertThat( value.getOrLoad(), equalTo( "person" ) );
+        assertThat( value.value(), equalTo( "person" ) );
     }
 
     @Test
     public void shouldLoadLazyStringValueOnlyOnce() throws Exception
     {
         // given
-        LazyString value = new LazyString( value( "person" ) );
+        StringValue.Lazy value = new StringValue.Lazy( value( "person" ) );
         // when / then
-        assertThat( value.getOrLoad(), equalTo( "person" ) );
-        assertThat( value.getOrLoad(), equalTo( "person" ) );
+        assertThat( value.value(), equalTo( "person" ) );
+        assertThat( value.value(), equalTo( "person" ) );
     }
 
     @Test
     public void shouldLoadLazyArrayProperty() throws Exception
     {
         // given
-        LazyIntArray value = new LazyIntArray( value( new int[]{1, 2, 3} ) );
+        IntArray.Lazy value = new IntArray.Lazy( value( new int[]{1, 2, 3} ) );
         // when / then
-        assertThat( value.getOrLoad(), equalTo( new int[]{1, 2, 3} ) );
+        assertThat( value.value(), equalTo( new int[]{1, 2, 3} ) );
     }
 
     @Test
     public void shouldLoadLazyArrayValueOnlyOnce() throws Exception
     {
         // given
-        LazyIntArray value = new LazyIntArray( value( new int[]{1, 2, 3} ) );
+        IntArray.Lazy value = new IntArray.Lazy( value( new int[]{1, 2, 3} ) );
         // when / then
-        assertThat( value.getOrLoad(), equalTo( new int[]{1, 2, 3} ) );
-        assertThat( value.getOrLoad(), equalTo( new int[]{1, 2, 3} ) );
+        assertThat( value.value(), equalTo( new int[]{1, 2, 3} ) );
+        assertThat( value.value(), equalTo( new int[]{1, 2, 3} ) );
     }
 
     private static <T> ValueLoader<T> value( final T value )

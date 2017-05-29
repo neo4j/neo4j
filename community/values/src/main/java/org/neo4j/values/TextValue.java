@@ -19,8 +19,20 @@
  */
 package org.neo4j.values;
 
-interface LazyValue<T>
+abstract class TextValue extends ScalarValue
 {
-    void registerValue( T value );
-    Object getMaybeValue();
+    abstract String stringValue();
+
+    abstract int compareTo( TextValue other );
+
+    @Override
+    public boolean equals( boolean x )
+    {
+        return false;
+    }
+
+    public ValueGroup valueGroup()
+    {
+        return ValueGroup.TEXT;
+    }
 }

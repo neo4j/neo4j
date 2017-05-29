@@ -43,57 +43,57 @@ public class Values
 
     public static Value stringValue( String value )
     {
-        return new DirectString( value );
+        return new StringValue.Direct( value );
     }
 
     public static Value lazyStringValue( ValueLoader<String> producer )
     {
-        return new LazyString( producer );
+        return new StringValue.Lazy( producer );
     }
 
     public static Value lazyByteArray( ValueLoader<byte[]> producer )
     {
-        return new LazyByteArray( producer );
+        return new ByteArray.Lazy( producer );
     }
 
     public static Value lazyShortArray( ValueLoader<short[]> producer )
     {
-        return new LazyShortArray( producer );
+        return new ShortArray.Lazy( producer );
     }
 
     public static Value lazyIntArray( ValueLoader<int[]> producer )
     {
-        return new LazyIntArray( producer );
+        return new IntArray.Lazy( producer );
     }
 
     public static Value lazyLongArray( ValueLoader<long[]> producer )
     {
-        return new LazyLongArray( producer );
+        return new LongArray.Lazy( producer );
     }
 
     public static Value lazyFloatArray( ValueLoader<float[]> producer )
     {
-        return new LazyFloatArray( producer );
+        return new FloatArray.Lazy( producer );
     }
 
     public static Value lazyDoubleArray( ValueLoader<double[]> producer )
     {
-        return new LazyDoubleArray( producer );
+        return new DoubleArray.Lazy( producer );
     }
 
     public static Value lazyCharArray( ValueLoader<char[]> producer )
     {
-        return new LazyCharArray( producer );
+        return new CharArray.Lazy( producer );
     }
 
     public static Value lazyStringArray( ValueLoader<String[]> producer )
     {
-        return new LazyStringArray( producer );
+        return new StringArray.Lazy( producer );
     }
 
     public static Value lazyBooleanArray( ValueLoader<boolean[]> producer )
     {
-        return new LazyBooleanArray( producer );
+        return new BooleanArray.Lazy( producer );
     }
 
     public static Value numberValue( Number number )
@@ -128,87 +128,87 @@ public class Values
 
     public static Value longValue( long value )
     {
-        return new DirectLong( value );
+        return new LongValue( value );
     }
 
     public static Value intValue( int value )
     {
-        return new DirectInt( value );
+        return new IntValue( value );
     }
 
     public static Value shortValue( short value )
     {
-        return new DirectShort( value );
+        return new ShortValue( value );
     }
 
     public static Value byteValue( byte value )
     {
-        return new DirectByte( value );
+        return new ByteValue( value );
     }
 
     public static Value booleanValue( boolean value )
     {
-        return new DirectBoolean( value );
+        return new BooleanValue( value );
     }
 
     public static Value charValue( char value )
     {
-        return new DirectChar( value );
+        return new CharValue( value );
     }
 
     public static Value doubleValue( double value )
     {
-        return new DirectDouble( value );
+        return new DoubleValue( value );
     }
 
     public static Value floatValue( float value )
     {
-        return new DirectFloat( value );
+        return new FloatValue( value );
     }
 
     public static Value stringArray( String[] value )
     {
-        return new DirectStringArray( value );
+        return new StringArray.Direct( value );
     }
 
     public static Value byteArray( byte[] value )
     {
-        return new DirectByteArray( value );
+        return new ByteArray.Direct( value );
     }
 
     public static Value longArray( long[] value )
     {
-        return new DirectLongArray( value );
+        return new LongArray.Direct( value );
     }
 
     public static Value intArray( int[] value )
     {
-        return new DirectIntArray( value );
+        return new IntArray.Direct( value );
     }
 
     public static Value doubleArray( double[] value )
     {
-        return new DirectDoubleArray( value );
+        return new DoubleArray.Direct( value );
     }
 
     public static Value floatArray( float[] value )
     {
-        return new DirectFloatArray( value );
+        return new FloatArray.Direct( value );
     }
 
     public static Value booleanArray( boolean[] value )
     {
-        return new DirectBooleanArray( value );
+        return new BooleanArray.Direct( value );
     }
 
     public static Value charArray( char[] value )
     {
-        return new DirectCharArray( value );
+        return new CharArray.Direct( value );
     }
 
     public static Value shortArray( short[] value )
     {
-        return new DirectShortArray( value );
+        return new ShortArray.Direct( value );
     }
 
     // BOXED FACTORY METHODS

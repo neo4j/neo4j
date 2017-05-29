@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-public abstract class Value implements ValueGroup.WithId
+public abstract class Value
 {
     @Override
     public abstract boolean equals( Object other );
@@ -56,4 +56,6 @@ public abstract class Value implements ValueGroup.WithId
     public abstract void writeTo( ValueWriter writer );
 
     public abstract Object asPublic();
+
+    public abstract ValueGroup valueGroup();
 }

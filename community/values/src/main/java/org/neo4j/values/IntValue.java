@@ -19,8 +19,38 @@
  */
 package org.neo4j.values;
 
-interface LazyValue<T>
+import static java.lang.String.format;
+
+final class IntValue extends IntegralValue
 {
-    void registerValue( T value );
-    Object getMaybeValue();
+    private final int value;
+
+    IntValue( int value )
+    {
+        this.value = value;
+    }
+
+    @Override
+    public long longValue()
+    {
+        return value;
+    }
+
+    @Override
+    public void writeTo( ValueWriter writer )
+    {
+        writer.writeInteger( value );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Int(%d)", value );
+    }
 }

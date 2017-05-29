@@ -19,8 +19,6 @@
  */
 package org.neo4j.values;
 
-interface LazyValue<T>
+abstract class StoreableValue extends Value
 {
-    void registerValue( T value );
-    Object getMaybeValue();
 }

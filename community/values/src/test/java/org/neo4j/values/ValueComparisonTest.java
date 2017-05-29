@@ -34,7 +34,7 @@ public class ValueComparisonTest
     public ExpectedException thrown = ExpectedException.none();
 
     private ValueComparator comparator = new ValueComparator(
-            Comparator.comparingInt( ValueGroup.Id::comparabilityGroup ) );
+            Comparator.comparingInt( ValueGroup::comparabilityGroup ) );
 
     private Object[] objs = new Object[]{
             // OTHER

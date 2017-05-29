@@ -19,8 +19,27 @@
  */
 package org.neo4j.values;
 
-interface LazyValue<T>
+abstract class NumberValue extends ScalarValue
 {
-    void registerValue( T value );
-    Object getMaybeValue();
+    abstract int compareTo( IntegralValue other );
+
+    abstract int compareTo( FloatingPointValue other );
+
+    @Override
+    public boolean equals( boolean x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( char x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( String x )
+    {
+        return false;
+    }
 }

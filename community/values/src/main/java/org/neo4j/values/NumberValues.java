@@ -196,7 +196,7 @@ public class NumberValues
         return value - 1;
     }
 
-    public static boolean numbersEqual( ValueGroup.VIntegerArray lhs, ValueGroup.VIntegerArray rhs )
+    public static boolean numbersEqual( IntegralArray lhs, IntegralArray rhs )
     {
         int length = lhs.length();
         if ( length != rhs.length() )
@@ -213,7 +213,7 @@ public class NumberValues
         return true;
     }
 
-    public static boolean numbersEqual( ValueGroup.VFloatingPointArray lhs, ValueGroup.VFloatingPointArray rhs )
+    public static boolean numbersEqual( FloatingPointArray lhs, FloatingPointArray rhs )
     {
         int length = lhs.length();
         if ( length != rhs.length() )
@@ -230,7 +230,7 @@ public class NumberValues
         return true;
     }
 
-    public static boolean numbersEqual( ValueGroup.VFloatingPointArray fps, ValueGroup.VIntegerArray ins )
+    public static boolean numbersEqual( FloatingPointArray fps, IntegralArray ins )
     {
         int length = ins.length();
         if ( length != fps.length() )
@@ -247,7 +247,7 @@ public class NumberValues
         return true;
     }
 
-    public static int compareIntegerArrays( ValueGroup.VIntegerArray a, ValueGroup.VIntegerArray b )
+    public static int compareIntegerArrays( IntegralArray a, IntegralArray b )
     {
         int i = 0;
         int length = a.length();
@@ -261,7 +261,7 @@ public class NumberValues
         return x;
     }
 
-    public static int compareIntegerVsFloatArrays( ValueGroup.VIntegerArray a, ValueGroup.VFloatingPointArray b )
+    public static int compareIntegerVsFloatArrays( IntegralArray a, FloatingPointArray b )
     {
         int i = 0;
         int length = a.length();
@@ -275,7 +275,7 @@ public class NumberValues
         return x;
     }
 
-    public static int compareFloatArrays( ValueGroup.VFloatingPointArray a, ValueGroup.VFloatingPointArray b )
+    public static int compareFloatArrays( FloatingPointArray a, FloatingPointArray b )
     {
         int i = 0;
         int length = a.length();
@@ -289,7 +289,7 @@ public class NumberValues
         return x;
     }
 
-    public static int compareBooleanArrays( ValueGroup.VBooleanArray a, ValueGroup.VBooleanArray b )
+    public static int compareBooleanArrays( BooleanArray a, BooleanArray b )
     {
         int i = 0;
         int length = a.length();

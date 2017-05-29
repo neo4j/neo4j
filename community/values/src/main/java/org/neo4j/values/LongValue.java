@@ -19,8 +19,56 @@
  */
 package org.neo4j.values;
 
-interface LazyValue<T>
+import static java.lang.String.format;
+
+final class LongValue extends IntegralValue
 {
-    void registerValue( T value );
-    Object getMaybeValue();
+    private final long value;
+
+    LongValue( long value )
+    {
+        this.value = value;
+    }
+
+    @Override
+    public long longValue()
+    {
+        return value;
+    }
+
+    @Override
+    public boolean equals( boolean x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( char x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( String x )
+    {
+        return false;
+    }
+
+    @Override
+    public void writeTo( ValueWriter writer )
+    {
+        writer.writeInteger( value );
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Long(%d)", value );
+    }
 }

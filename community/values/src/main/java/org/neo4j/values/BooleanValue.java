@@ -19,79 +19,37 @@
  */
 package org.neo4j.values;
 
-final class NoValue extends Value
-{
-    @SuppressWarnings( "WeakerAccess" )
-    public static NoValue NO_VALUE = new NoValue();
+import static java.lang.String.format;
 
-    private NoValue()
+/**
+ * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
+ * we don't extend a class that has fields.
+ */
+final class BooleanValue extends ScalarValue
+{
+    private final boolean bool;
+
+    BooleanValue( boolean bool )
     {
+        this.bool = bool;
     }
 
     @Override
     public boolean equals( Object other )
     {
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 123456789;
+        return other != null && other instanceof Value && equals( (Value) other );
     }
 
     @Override
     public boolean equals( Value other )
     {
-        return false;
-    }
-
-    @Override
-    public boolean equals( byte[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( short[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( int[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( long[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( float[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( double[] x )
-    {
-        return false;
+        return other.equals( bool );
     }
 
     @Override
     public boolean equals( boolean x )
     {
-        return false;
-    }
-
-    @Override
-    public boolean equals( boolean[] x )
-    {
-        return false;
+        return bool == x;
     }
 
     @Override
@@ -107,31 +65,41 @@ final class NoValue extends Value
     }
 
     @Override
-    public boolean equals( char[] x )
+    public int hashCode()
     {
-        return false;
+        return bool ? -1 : 0;
     }
 
-    @Override
-    public boolean equals( String[] x )
+    public boolean booleanValue()
     {
-        return false;
+        return bool;
+    }
+
+    public int compareTo( BooleanValue other )
+    {
+        return Boolean.compare( bool, other.booleanValue() );
     }
 
     @Override
     public void writeTo( ValueWriter writer )
     {
-        writer.writeNull();
+        writer.writeBoolean( bool );
     }
 
     @Override
     public Object asPublic()
     {
-        return null;
+        return bool;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Boolean('%s')", Boolean.toString( bool ) );
     }
 
     public ValueGroup valueGroup()
     {
-        return ValueGroup.NO_VALUE;
+        return ValueGroup.BOOLEAN;
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+@SuppressWarnings( "WeakerAccess" )
 public class TextValues
 {
     private TextValues()
@@ -42,7 +43,7 @@ public class TextValues
         return x;
     }
 
-    public static int compareTextArrays( ValueGroup.VTextArray a, ValueGroup.VTextArray b )
+    public static int compareTextArrays( TextArray a, TextArray b )
     {
         int i = 0;
         int length = a.length();

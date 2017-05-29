@@ -25,9 +25,9 @@ import static java.lang.String.format;
 
 class ValueComparator implements Comparator<Value>
 {
-    private final Comparator<ValueGroup.Id> valueGroupComparator;
+    private final Comparator<ValueGroup> valueGroupComparator;
 
-    ValueComparator( Comparator<ValueGroup.Id> valueGroupComparator )
+    ValueComparator( Comparator<ValueGroup> valueGroupComparator )
     {
         this.valueGroupComparator = valueGroupComparator;
     }
@@ -37,8 +37,8 @@ class ValueComparator implements Comparator<Value>
     {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
-        ValueGroup.Id id1 = v1.valueGroupId();
-        ValueGroup.Id id2 = v2.valueGroupId();
+        ValueGroup id1 = v1.valueGroup();
+        ValueGroup id2 = v2.valueGroup();
 
         int x = valueGroupComparator.compare( id1, id2 );
 
@@ -50,28 +50,28 @@ class ValueComparator implements Comparator<Value>
                 return x;
 
             case INTEGER:
-                return compareNumberScalar( (ValueGroup.VInteger)v1, v2 );
+                return compareNumberScalar( (IntegralValue)v1, v2 );
 
             case FLOAT:
-                return compareNumberScalar( (ValueGroup.VFloatingPoint)v1, v2 );
+                return compareNumberScalar( (FloatingPointValue)v1, v2 );
 
             case TEXT:
-                return ((ValueGroup.VText) v1).compareTo( (ValueGroup.VText) v2 );
+                return ((TextValue) v1).compareTo( (TextValue) v2 );
 
             case BOOLEAN:
-                return ((ValueGroup.VBoolean) v1).compareTo( (ValueGroup.VBoolean) v2 );
+                return ((BooleanValue) v1).compareTo( (BooleanValue) v2 );
 
             case INTEGER_ARRAY:
-                return compareNumberArray( (ValueGroup.VIntegerArray)v1, v2 );
+                return compareNumberArray( (IntegralArray)v1, v2 );
 
             case FLOAT_ARRAY:
-                return compareNumberArray( (ValueGroup.VFloatingPointArray)v1, v2 );
+                return compareNumberArray( (FloatingPointArray)v1, v2 );
 
             case TEXT_ARRAY:
-                return ((ValueGroup.VTextArray) v1).compareTo( (ValueGroup.VTextArray) v2 );
+                return ((TextArray) v1).compareTo( (TextArray) v2 );
 
             case BOOLEAN_ARRAY:
-                return ((ValueGroup.VBooleanArray) v1).compareTo( (ValueGroup.VBooleanArray) v2 );
+                return ((BooleanArray) v1).compareTo( (BooleanArray) v2 );
 
             default:
                 throw new UnsupportedOperationException( format( "Unknown ValueGroup id '%s'", id1 ) );
@@ -80,67 +80,67 @@ class ValueComparator implements Comparator<Value>
         return x;
     }
 
-    private int compareNumberScalar( ValueGroup.VInteger v1, Value v2 )
+    private int compareNumberScalar( IntegralValue v1, Value v2 )
     {
-        switch ( v2.valueGroupId() )
+        switch ( v2.valueGroup() )
         {
         case INTEGER:
-            return v1.compareTo( (ValueGroup.VInteger)v2 );
+            return v1.compareTo( (IntegralValue)v2 );
 
         case FLOAT:
-            return v1.compareTo( (ValueGroup.VFloatingPoint)v2 );
+            return v1.compareTo( (FloatingPointValue)v2 );
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.Id.INTEGER, v2.valueGroupId() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.INTEGER, v2.valueGroup() ) );
         }
     }
 
-    private int compareNumberScalar( ValueGroup.VFloatingPoint v1, Value v2 )
+    private int compareNumberScalar( FloatingPointValue v1, Value v2 )
     {
-        switch ( v2.valueGroupId() )
+        switch ( v2.valueGroup() )
         {
         case INTEGER:
-            return v1.compareTo( (ValueGroup.VInteger)v2 );
+            return v1.compareTo( (IntegralValue)v2 );
 
         case FLOAT:
-            return v1.compareTo( (ValueGroup.VFloatingPoint)v2 );
+            return v1.compareTo( (FloatingPointValue)v2 );
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.Id.FLOAT, v2.valueGroupId() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.FLOAT, v2.valueGroup() ) );
         }
     }
 
-    private int compareNumberArray( ValueGroup.VIntegerArray v1, Value v2 )
+    private int compareNumberArray( IntegralArray v1, Value v2 )
     {
-        switch ( v2.valueGroupId() )
+        switch ( v2.valueGroup() )
         {
-        case INTEGER:
-            return v1.compareTo( (ValueGroup.VIntegerArray)v2 );
+        case INTEGER_ARRAY:
+            return v1.compareTo( (IntegralArray)v2 );
 
-        case FLOAT:
-            return v1.compareTo( (ValueGroup.VFloatingPointArray)v2 );
+        case FLOAT_ARRAY:
+            return v1.compareTo( (FloatingPointArray)v2 );
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.Id.INTEGER, v2.valueGroupId() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.INTEGER_ARRAY, v2.valueGroup() ) );
         }
     }
 
-    private int compareNumberArray( ValueGroup.VFloatingPointArray v1, Value v2 )
+    private int compareNumberArray( FloatingPointArray v1, Value v2 )
     {
-        switch ( v2.valueGroupId() )
+        switch ( v2.valueGroup() )
         {
-        case INTEGER:
-            return v1.compareTo( (ValueGroup.VIntegerArray)v2 );
+        case INTEGER_ARRAY:
+            return v1.compareTo( (IntegralArray)v2 );
 
-        case FLOAT:
-            return v1.compareTo( (ValueGroup.VFloatingPointArray)v2 );
+        case FLOAT_ARRAY:
+            return v1.compareTo( (FloatingPointArray)v2 );
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.Id.FLOAT, v2.valueGroupId() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.FLOAT_ARRAY, v2.valueGroup() ) );
         }
     }
 
