@@ -69,6 +69,16 @@ trait QueryPlanTestSupport {
     }
   }
 
+  def useOperationTimes(operation:String, times: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      MatchResult(
+        matches = plan.find(operation).size == times,
+        rawFailureMessage = s"Plan should use $operation ${times} times:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use $operation ${times} times:\n$plan")
+    }
+  }
+
   def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       MatchResult(

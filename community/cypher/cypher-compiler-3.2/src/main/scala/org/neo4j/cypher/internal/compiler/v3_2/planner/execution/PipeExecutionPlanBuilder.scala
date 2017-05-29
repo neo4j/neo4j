@@ -131,6 +131,9 @@ class PipeExecutionPlanBuilder(clock: Clock,
 
           pipeStack.push(newPipe)
 
+        case (Some(left), Some(right)) if right == left =>
+          throw new InternalException(s"Tried to build pipes from bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
+
         case (Some(left), Some(_)) if comingFrom == left =>
           val arg1 = pipeStack.pop()
           val arg2 = pipeStack.pop()

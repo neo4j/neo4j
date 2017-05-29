@@ -28,6 +28,109 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
  */
 class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
+  test("Should allow AND and OR with index and equality predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> i, "prop2" -> i), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 = 1 AND c.prop2 = 1)
+        |OR (c.prop1 = 11 AND c.prop2 = 11))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useIndex(":User(prop1)", ":User(prop2)")
+  }
+
+  test("Should allow AND and OR with index and inequality predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> i, "prop2" -> i), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 >= 1 AND c.prop2 < 2)
+        |OR (c.prop1 > 10 AND c.prop2 <= 11))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationTimes("NodeIndexScan", 2)
+    result should use("Union")
+  }
+
+  test("Should allow AND and OR with index seek and STARTS WITH predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> s"${i}_val", "prop2" -> s"${i}_val"), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 STARTS WITH '1_' AND c.prop2 STARTS WITH '1_')
+        |OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationWith("NodeIndexSeekByRange", ":User(prop1", ":User(prop2")
+  }
+
+  test("Should allow AND and OR with index scan and regex predicates") {
+    graph.createIndex("User", "prop1")
+    graph.createIndex("User", "prop2")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> s"${i}_val", "prop2" -> s"${i}_val"), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop1 =~ '1_.*' AND c.prop2 =~ '1_.*')
+        |OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationTimes("NodeIndexScan", 2)
+    result should use("Union")
+  }
+
+  test("Should allow OR with index scan and regex predicates") {
+    graph.createIndex("User", "prop")
+    val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop" -> s"${i}_val"), "User"))
+
+    val query =
+      """MATCH (c:User)
+        |WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
+    result should useOperationWith("NodeIndexScan", ":User(prop)")
+  }
+
+  test("Should allow AND and OR with index equality") {
+    graph.createIndex("User", "prop")
+    graph.createIndex("User", "prop2")
+    val u1 = createLabeledNode(Map("prop" -> 1,"prop2" -> 1), "User")
+    val u2 = createLabeledNode(Map("prop" -> 11,"prop2" -> 11), "User")
+    for (i <- 13 to 100) createLabeledNode(Map("prop" -> i,"prop2" -> i), "User")
+
+    val query =
+      """MATCH (c:User)
+        |WHERE ((c.prop = 1 AND c.prop2 = 1)
+        |OR (c.prop = 11 AND c.prop2 = 11))
+        |RETURN c""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    val expected = List(Map("c" -> u2), Map("c" -> u1))
+    result should (useIndex(":User(prop)", ":User(prop2)") and evaluateTo(expected))
+  }
+
   test("should not forget predicates") {
     setUpDatabaseForTests()
 
