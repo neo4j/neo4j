@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.unsafe.impl.internal.dragons.MemoryAllocator;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.is;
