@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -96,6 +97,7 @@ public class RemoteStore
         /* Clean as in clean shutdown. Without transaction logs this should be the truth,
         * but otherwise it can be used as a starting point for scanning the logs. */
         long lastCleanTxId = txIdStore.getLastCommittedTransactionId();
+        log.info( "Last Clean Tx Id: %d", lastCleanTxId );
 
         /* these are the transaction logs */
         ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
@@ -111,7 +113,7 @@ public class RemoteStore
             catch ( NoSuchTransactionException e )
             {
                 log.info( "No transaction logs found. Will use metadata store as base for pull request." );
-                return lastCleanTxId;
+                return Math.max( TransactionIdStore.BASE_TX_ID + 1, lastCleanTxId );
             }
 
             while ( cursor.next() )
