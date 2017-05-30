@@ -712,7 +712,7 @@ public class PageListTest
         pageList.unlockExclusive( prevPageRef );
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusive( nextPageRef );
-        long s;
+        long s = 0;
         assertTrue( pageList.tryExclusiveLock( prevPageRef ) );
         assertTrue( pageList.tryExclusiveLock( nextPageRef ) );
         assertTrue( (s = pageList.tryFlushLock( pageRef )) != 0 );
@@ -727,9 +727,9 @@ public class PageListTest
         pageList.unlockExclusive( prevPageRef );
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusive( nextPageRef );
-        long ps;
-        long ns;
-        long s;
+        long ps = 0;
+        long ns = 0;
+        long s = 0;
         assertTrue( (ps = pageList.tryFlushLock( prevPageRef )) != 0 );
         assertTrue( (ns = pageList.tryFlushLock( nextPageRef )) != 0 );
         assertTrue( (s = pageList.tryFlushLock( pageRef )) != 0 );
@@ -797,8 +797,8 @@ public class PageListTest
         pageList.unlockExclusive( prevPageRef );
         pageList.unlockExclusive( pageRef );
         pageList.unlockExclusive( nextPageRef );
-        long ps;
-        long ns;
+        long ps = 0;
+        long ns = 0;
         assertTrue( (ps = pageList.tryFlushLock( prevPageRef )) != 0 );
         assertTrue( (ns = pageList.tryFlushLock( nextPageRef )) != 0);
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
