@@ -19,34 +19,43 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import com.hazelcast.spi.properties.GroupProperty;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
-    public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    public CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider )
     {
         configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider );
+        return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider );
     }
 
     @Override
-    public TopologyService topologyService( Config config, LogProvider logProvider,
+    public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
                                             JobScheduler jobScheduler, MemberId myself )
     {
         configureHazelcast( config );
-        return new HazelcastClient( new HazelcastClientConnector( config ), jobScheduler, logProvider, config, myself );
+        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy ), jobScheduler, logProvider, config, myself );
     }
 
     private static void configureHazelcast( Config config )
     {
         // tell hazelcast to not phone home
         System.setProperty( "hazelcast.phone.home.enabled", "false" );
+
+        String licenseKey = config.get( CausalClusteringSettings.hazelcast_license_key );
+        if ( licenseKey != null )
+        {
+            GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty( licenseKey );
+        }
 
         // Make hazelcast quiet
         if ( config.get( CausalClusteringSettings.disable_middleware_logging ) )

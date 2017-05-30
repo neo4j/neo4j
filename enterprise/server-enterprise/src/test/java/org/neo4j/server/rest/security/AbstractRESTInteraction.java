@@ -34,7 +34,6 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -42,6 +41,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -83,9 +83,9 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
                 .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
                 .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
                 .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), OPTIONAL.name() )
-                .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
+                .withProperty( LegacySslPolicyConfig.tls_key_file.name(),
                         NeoInteractionLevel.tempPath( "key", ".key" ) )
-                .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
+                .withProperty( LegacySslPolicyConfig.tls_certificate_file.name(),
                         NeoInteractionLevel.tempPath( "cert", ".cert" ) )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) );
 

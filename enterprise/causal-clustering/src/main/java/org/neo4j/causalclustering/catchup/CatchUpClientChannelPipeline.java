@@ -49,15 +49,22 @@ import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 class CatchUpClientChannelPipeline
 {
-    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider, Monitors monitors )
+    static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider, Monitors monitors, SslPolicy sslPolicy )
             throws Exception
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
 
         ChannelPipeline pipeline = ch.pipeline();
+
+        if ( sslPolicy != null )
+        {
+            pipeline.addLast( sslPolicy.nettyClientHandler( ch ) );
+        }
+
         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 

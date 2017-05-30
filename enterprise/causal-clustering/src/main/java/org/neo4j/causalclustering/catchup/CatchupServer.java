@@ -75,6 +75,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 public class CatchupServer extends LifecycleAdapter
 {
@@ -90,6 +91,7 @@ public class CatchupServer extends LifecycleAdapter
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
+    private final SslPolicy sslPolicy;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
@@ -106,7 +108,7 @@ public class CatchupServer extends LifecycleAdapter
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
             CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
             FileSystemAbstraction fs, PageCache pageCache,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex )
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex, SslPolicy sslPolicy )
     {
         this.snapshotService = snapshotService;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
@@ -123,6 +125,7 @@ public class CatchupServer extends LifecycleAdapter
         this.checkPointerSupplier = checkPointerSupplier;
         this.fs = fs;
         this.pageCache = pageCache;
+        this.sslPolicy = sslPolicy;
     }
 
     @Override
@@ -139,11 +142,17 @@ public class CatchupServer extends LifecycleAdapter
                 .localAddress( listenAddress.socketAddress() ).childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    protected void initChannel( SocketChannel ch )
+                    protected void initChannel( SocketChannel ch ) throws Exception
                     {
                         CatchupServerProtocol protocol = new CatchupServerProtocol();
 
                         ChannelPipeline pipeline = ch.pipeline();
+
+                        if ( sslPolicy != null )
+                        {
+                            pipeline.addLast( sslPolicy.nettyServerHandler( ch ) );
+                        }
+
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 

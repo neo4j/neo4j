@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -80,6 +81,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log;
+    private ConfigValues settingsFunction;
 
     /**
      * @return a configuration with embedded defaults
@@ -266,6 +268,16 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
+     * Unlike the public {@link Setting} instances, the function passed in here has access to
+     * the raw setting data, meaning it can provide functionality that cross multiple settings
+     * and other more advanced use cases.
+     */
+    public <T> T view( Function<ConfigValues,T> projection )
+    {
+        return projection.apply( settingsFunction );
+    }
+
+    /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
      *
@@ -408,6 +420,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
         params.clear();
         params.putAll( validSettings );
+        settingsFunction = new ConfigValues( params );
 
         // We only warn when parsing the file so we don't warn about the same setting more than once
         configFile.ifPresent( file -> warnAboutDeprecations( userSettings ) );

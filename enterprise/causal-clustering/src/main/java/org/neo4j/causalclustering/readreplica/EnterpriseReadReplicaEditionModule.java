@@ -58,6 +58,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
@@ -98,6 +99,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ssl.SslPolicy;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -176,7 +178,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
-        TopologyService topologyService = discoveryServiceFactory.topologyService( config,
+        SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
+        SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
+
+        TopologyService topologyService = discoveryServiceFactory.topologyService( config, clusterSslPolicy,
                 logProvider, platformModule.jobScheduler, myself );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
@@ -184,7 +189,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life.add(
                 new CatchUpClient( topologyService, logProvider, Clocks.systemClock(),
-                        inactivityTimeoutMillis, monitors ) );
+                        inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -290,7 +295,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 localDatabase::dataSource, localDatabase::isAvailable, null, config, platformModule.monitors,
                 new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                platformModule.storeCopyCheckPointMutex );
+                platformModule.storeCopyCheckPointMutex, clusterSslPolicy );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 

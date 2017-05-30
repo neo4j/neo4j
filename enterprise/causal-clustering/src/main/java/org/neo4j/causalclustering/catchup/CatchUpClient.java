@@ -40,6 +40,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
@@ -51,13 +52,14 @@ public class CatchUpClient extends LifecycleAdapter
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
+    private final SslPolicy sslPolicy;
     private final long inactivityTimeoutMillis;
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
 
     private NioEventLoopGroup eventLoopGroup;
 
     public CatchUpClient( TopologyService topologyService, LogProvider logProvider, Clock clock,
-            long inactivityTimeoutMillis, Monitors monitors )
+            long inactivityTimeoutMillis, Monitors monitors, SslPolicy sslPolicy )
     {
         this.logProvider = logProvider;
         this.topologyService = topologyService;
@@ -65,6 +67,7 @@ public class CatchUpClient extends LifecycleAdapter
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.monitors = monitors;
+        this.sslPolicy = sslPolicy;
     }
 
     public <T> T makeBlockingRequest( MemberId upstream, CatchUpRequest request,
@@ -119,7 +122,7 @@ public class CatchUpClient extends LifecycleAdapter
                         @Override
                         protected void initChannel( SocketChannel ch ) throws Exception
                         {
-                            CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors );
+                            CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, sslPolicy );
                         }
                     } );
 

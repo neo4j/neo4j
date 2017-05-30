@@ -66,6 +66,7 @@
     <module>dbms</module>
     <module>command-line</module>
     <module>procedure-compiler</module>
+    <module>ssl</module>
   </modules>
 
   <licenses>

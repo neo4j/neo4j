@@ -41,6 +41,7 @@ import org.neo4j.kernel.configuration.HttpConnectorValidator;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
+import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
@@ -591,6 +592,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final BoltConnectorValidator boltValidator = new BoltConnectorValidator();
+
+    // Needed to validate config, accessed via reflection
+    @SuppressWarnings( "unused" )
+    public static final SslPolicyConfigValidator sslPolicyConfigValidator = new SslPolicyConfigValidator();
 
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Duration> bookmark_ready_timeout = setting(

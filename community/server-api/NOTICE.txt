@@ -34,6 +34,11 @@ Apache Software License, Version 2.0
   Commons Logging
   Lucene Core
   Lucene Memory
+  Netty/All-in-One
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 
 Common Development and Distribution License Version 1.1
   jsr311-api

@@ -125,6 +125,11 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "causal_clustering.disable_middleware_logging", BOOLEAN, TRUE );
 
+    @Internal // not supported yet
+    @Description( "Hazelcast license key" )
+    public static final Setting<String> hazelcast_license_key =
+            setting( "hazelcast.license_key", STRING, NO_DEFAULT );
+
     @Description( "The maximum file size before the storage file is rotated (in unit of entries)" )
     public static final Setting<Integer> last_flushed_state_size =
             setting( "causal_clustering.last_applied_state_size", INTEGER, "1000" );
@@ -389,4 +394,9 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Enable multi-data center features. Requires appropriate licensing." )
     public static final Setting<Boolean> multi_dc_license =
             setting( "causal_clustering.multi_dc_license", BOOLEAN, FALSE );
+
+    @Description( "Name of the SSL policy to be used by the clustering, as defined under the dbms.ssl.policy.* settings." +
+                  " If no policy is configured then the communication will not be secured." )
+    public static final Setting<String> ssl_policy =
+            prefixSetting( "causal_clustering.ssl_policy", STRING, NO_DEFAULT );
 }

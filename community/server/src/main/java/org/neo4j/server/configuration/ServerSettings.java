@@ -26,12 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.DocumentedDefaultValue;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.web.JettyThreadCalculator;
 
@@ -51,6 +50,7 @@ import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
 @Description("Settings used by the server configuration")
 public class ServerSettings implements LoadableConfig
@@ -127,17 +127,6 @@ public class ServerSettings implements LoadableConfig
             },
             EMPTY );
 
-    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections. Certificate files must be named _neo4j.cert_ and _neo4j.key_" )
-    public static final Setting<File> certificates_directory = BoltKernelExtension.Settings.certificates_directory;
-
-    @Internal
-    @Description("Path to the X.509 public certificate to be used by Neo4j for TLS connections")
-    public static final Setting<File> tls_certificate_file = BoltKernelExtension.Settings.tls_certificate_file;
-
-    @Internal
-    @Description("Path to the X.509 private key to be used by Neo4j for TLS connections")
-    public static final Setting<File> tls_key_file = BoltKernelExtension.Settings.tls_key_file;
-
     @Description("Enable HTTP request logging.")
     public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
 
@@ -182,6 +171,9 @@ public class ServerSettings implements LoadableConfig
     @SuppressWarnings("unused") // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple commands with semi-colon." )
     public static final Setting<String> browser_postConnectCmd = setting( "browser.post_connect_cmd", STRING, "" );
+
+    @Description( "SSL policy name." )
+    public static final Setting<String> ssl_policy = setting( "https.ssl_policy", STRING, LEGACY_POLICY_NAME );
 
     @Internal
     public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );

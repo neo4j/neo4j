@@ -33,6 +33,7 @@ import java.util.List;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,7 +52,7 @@ public class BoltQueryLoggingIT
         String tmpDir = createTempDir().getAbsolutePath();
         this.neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.certificates_directory.name(), tmpDir )
+            .withConfig( LegacySslPolicyConfig.certificates_directory.name(), tmpDir )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
             .withConfig( GraphDatabaseSettings.logs_directory, tmpDir )
             .withConfig( GraphDatabaseSettings.log_queries, "true")
