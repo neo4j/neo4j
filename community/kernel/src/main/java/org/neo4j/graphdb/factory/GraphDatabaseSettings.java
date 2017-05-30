@@ -488,18 +488,24 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min( 1 ) );
 
     @Description( "Log executed queries that take longer than the configured threshold, dbms.logs.query.threshold. " +
-            "Log entries are written to the file _query.log_ located in the Logs directory. " +
+            "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
             "For location of the Logs directory, see <<file-locations>>. " +
             "This feature is available in the Neo4j Enterprise Edition." )
     public static final Setting<Boolean> log_queries = setting( "dbms.logs.query.enabled", BOOLEAN, FALSE );
 
-    @Description( "Path of the logs directory" )
+    @Description( "Path of the logs directory." )
     public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
 
-    @Internal
+    @Description( "Path to the query log file." )
     public static final Setting<File> log_queries_filename = derivedSetting( "dbms.logs.query.path",
             logs_directory,
             ( logs ) -> new File( logs, "query.log" ),
+            PATH );
+
+    @Description( "Path to the debug log file." )
+    public static final Setting<File> store_internal_log_path = derivedSetting( "dbms.logs.debug.path",
+            logs_directory,
+            ( logs ) -> new File( logs, "debug.log" ),
             PATH );
 
     @Description( "Log parameters for the executed queries being logged." )

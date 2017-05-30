@@ -58,6 +58,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
@@ -95,8 +96,8 @@ public class StoreMigration
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,
             LogProvider userLogProvider ) throws IOException
     {
-        StoreLogService logService =
-                StoreLogService.withUserLogProvider( userLogProvider ).inLogsDirectory( fs, storeDirectory );
+        StoreLogService logService = StoreLogService.withUserLogProvider( userLogProvider )
+                .withInternalLog( config.get( store_internal_log_path ) ).build( fs );
 
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigration.class ) );

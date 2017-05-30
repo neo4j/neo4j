@@ -168,6 +168,9 @@ import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -238,7 +241,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        StoreLogService logService = life.add( StoreLogService.inLogsDirectory( fileSystem, this.storeDir ) );
+        File internalLog = config.with( stringMap( logs_directory.name(), storeDir.getCanonicalPath() ) )
+                .get( store_internal_log_path );
+        StoreLogService logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
         msgLog = logService.getInternalLog( getClass() );
         storeLocker = tryLockStore( fileSystem );
 

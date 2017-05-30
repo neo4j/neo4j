@@ -66,6 +66,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -273,11 +274,15 @@ public class PlatformModule
         }
         builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
 
-        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
+        File logFile = config.get( store_internal_log_path );
+        if ( !logFile.getParentFile().exists() )
+        {
+            logFile.getParentFile().mkdirs();
+        }
         StoreLogService logService;
         try
         {
-            logService = builder.inLogsDirectory( fileSystem, logsDir );
+            logService = builder.withInternalLog( logFile ).build( fileSystem );
         }
         catch ( IOException ex )
         {
