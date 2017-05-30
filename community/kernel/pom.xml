@@ -143,6 +143,9 @@ the relevant Commercial Agreement.
             <include>org/neo4j/procedure/*</include>
             <include>org/neo4j/helpers/collection/*</include>
           </includes>
+          <excludes>
+            <exclude>org/neo4j/graphdb/impl</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
