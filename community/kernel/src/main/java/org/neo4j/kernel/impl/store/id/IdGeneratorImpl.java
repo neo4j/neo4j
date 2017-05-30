@@ -123,7 +123,7 @@ public class IdGeneratorImpl implements IdGenerator
     public synchronized long nextId()
     {
         assertStillOpen();
-        long nextDefragId = idFile.getReuseableId();
+        long nextDefragId = idFile.getReusableId();
         if ( nextDefragId != IdFile.NO_RESULT )
         {
             return nextDefragId;
@@ -137,11 +137,6 @@ public class IdGeneratorImpl implements IdGenerator
         return highId++;
     }
 
-    private void assertStillOpen()
-    {
-        idFile.assertStillOpen();
-    }
-
     @Override
     public synchronized IdRange nextIdBatch( int size )
     {
@@ -152,7 +147,7 @@ public class IdGeneratorImpl implements IdGenerator
         long[] defragIds = new long[size];
         while ( count < size )
         {
-            long id = idFile.getReuseableId();
+            long id = idFile.getReusableId();
             if ( id == -1 )
             {
                 break;
@@ -178,7 +173,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @param id The next free id returned from {@link #nextId()} if there are no existing free ids.
      */
     @Override
-    public void setHighId( long id )
+    public synchronized void setHighId( long id )
     {
         IdValidator.assertIdWithinCapacity( id, max );
         highId = id;
@@ -191,15 +186,15 @@ public class IdGeneratorImpl implements IdGenerator
      * @return The next free "high" id
      */
     @Override
-    public long getHighId()
+    public synchronized long getHighId()
     {
         return highId;
     }
 
     @Override
-    public long getHighestPossibleIdInUse()
+    public synchronized long getHighestPossibleIdInUse()
     {
-        return getHighId() - 1;
+        return highId - 1;
     }
 
     /**
@@ -272,7 +267,7 @@ public class IdGeneratorImpl implements IdGenerator
     }
 
     @Override
-    public long getDefragCount()
+    public synchronized long getDefragCount()
     {
         return idFile.getFreeIdCount();
     }
@@ -281,6 +276,11 @@ public class IdGeneratorImpl implements IdGenerator
     public synchronized void delete()
     {
         idFile.delete();
+    }
+
+    private void assertStillOpen()
+    {
+        idFile.assertStillOpen();
     }
 
     @Override

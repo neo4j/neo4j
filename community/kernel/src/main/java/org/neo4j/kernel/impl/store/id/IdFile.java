@@ -31,10 +31,10 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 public class IdFile
 {
-    public static final long NO_RESULT = -1;
+    static final long NO_RESULT = -1;
 
     // sticky(byte), nextFreeId(long)
-    public static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
+    private static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
     // if sticky the id generator wasn't closed properly so it has to be
     // rebuilt (go through the node, relationship, property, rel type etc files)
@@ -44,17 +44,15 @@ public class IdFile
     private final File file;
     private final FileSystemAbstraction fs;
     private StoreChannel fileChannel;
-
-    private FreeIdKeeper freeIdKeeper;
+    private boolean closed = true;
 
     private final int grabSize;
     private final boolean aggressiveReuse;
+    private FreeIdKeeper freeIdKeeper;
 
     private long initialHighId;
 
-    private boolean closed = true;
-
-    public IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
+    IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
     {
         if ( grabSize < 1 )
         {
@@ -81,8 +79,7 @@ public class IdFile
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
-                    "Unable to init id generator " + file, e );
+            throw new UnderlyingStorageException( "Unable to init id file " + file, e );
         }
     }
 
@@ -91,7 +88,7 @@ public class IdFile
         return closed;
     }
 
-    public long getInitialHighId()
+    long getInitialHighId()
     {
         return initialHighId;
     }
@@ -100,7 +97,7 @@ public class IdFile
     {
         if ( closed )
         {
-            throw new IllegalStateException( "Closed id generator " + file );
+            throw new IllegalStateException( "Closed id file " + file );
         }
     }
 
@@ -130,13 +127,13 @@ public class IdFile
         byte storageStatus = buffer.get();
         if ( storageStatus != CLEAN_GENERATOR )
         {
-            throw new InvalidIdGeneratorException( "Sticky generator[ " +
-                    fileName + "] delete this id file and build a new one" );
+            throw new InvalidIdGeneratorException( "Id file not properly shutdown [ " +
+                    fileName + " ], delete this id file and build a new one" );
         }
         return buffer.getLong();
     }
 
-    public static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
+    static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
@@ -164,31 +161,24 @@ public class IdFile
 
     public void close( long highId )
     {
-        if ( closed )
+        if ( !closed )
         {
-            return;
-        }
-
-        try
-        {
-            freeIdKeeper.close(); // first write out free ids, then mark as clean
-            writeHeader( highId );
-            fileChannel.force( false );
-
-            markAsCleanlyClosed( );
-
-            closeChannel();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                    "Unable to close id generator " + file, e );
+            try
+            {
+                freeIdKeeper.close();
+                writeHeader( highId );
+                markAsCleanlyClosed();
+                closeChannel();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Unable to close id file " + file, e );
+            }
         }
     }
 
     private void closeChannel() throws IOException
     {
-        // flush and close
         fileChannel.force( false );
         fileChannel.close();
         fileChannel = null;
@@ -213,21 +203,20 @@ public class IdFile
             }
             catch ( IOException e )
             {
-                throw new UnderlyingStorageException( "Unable to safe close id generator " + file, e );
+                throw new UnderlyingStorageException( "Unable to close id file " + file, e );
             }
         }
 
         if ( !fs.deleteFile( file ) )
         {
-            throw new UnderlyingStorageException( "Unable to delete id generator " + file );
+            throw new UnderlyingStorageException( "Unable to delete id file " + file );
         }
     }
 
     /**
-     *
-     * @return -1 if no availabele
+     * @return next free id or {@link IdFile#NO_RESULT} if not available
      */
-    public long getReuseableId()
+    long getReusableId()
     {
         return freeIdKeeper.getId();
     }
@@ -237,36 +226,34 @@ public class IdFile
         freeIdKeeper.freeId( id );
     }
 
-    public long getFreeIdCount()
+    long getFreeIdCount()
     {
         return freeIdKeeper.getCount();
     }
 
     /**
-     * Creates a new id generator.
+     * Creates a new id file.
      *
-     * @param fileName The name of the id generator
-     * @param throwIfFileExists if {@code true} will cause an {@link UnderlyingStorageException} to be thrown if
+     * @param file The name of the id generator
+     * @param throwIfFileExists if {@code true} will cause an {@link IllegalStateException} to be thrown if
      * the file already exists. if {@code false} will truncate the file writing the header in it.
      */
-    public static void createEmptyIdFile( FileSystemAbstraction fs, File fileName, long highId,
-            boolean throwIfFileExists )
+    static void createEmptyIdFile( FileSystemAbstraction fs, File file, long highId, boolean throwIfFileExists )
     {
         // sanity checks
         if ( fs == null )
         {
             throw new IllegalArgumentException( "Null filesystem" );
         }
-        if ( fileName == null )
+        if ( file == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
-        if ( throwIfFileExists && fs.fileExists( fileName ) )
+        if ( throwIfFileExists && fs.fileExists( file ) )
         {
-            throw new IllegalStateException( "Can't create IdGeneratorFile["
-                    + fileName + "], file already exists" );
+            throw new IllegalStateException( "Can't create id file [" + file + "], file already exists" );
         }
-        try ( StoreChannel channel = fs.create( fileName ) )
+        try ( StoreChannel channel = fs.create( file ) )
         {
             // write the header
             channel.truncate( 0 );
@@ -277,8 +264,7 @@ public class IdFile
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
-                    "Unable to create id generator" + fileName, e );
+            throw new UnderlyingStorageException( "Unable to create id file " + file, e );
         }
     }
 
