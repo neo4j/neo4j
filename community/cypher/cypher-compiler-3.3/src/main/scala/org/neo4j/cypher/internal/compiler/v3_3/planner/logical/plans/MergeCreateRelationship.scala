@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.LazyType
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, RelTypeName}
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
 
-case class MergeCreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: LazyType, endNode: IdName,
+case class MergeCreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
                                    properties: Option[Expression])
                                   (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.phases
 
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
@@ -29,24 +28,14 @@ import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 import scala.reflect.ClassTag
 
 case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
-  private val acceptableTypes: Set[Class[_]] = Set(
-    classOf[Statement],
-    classOf[SemanticState],
-    classOf[UnionQuery],
-    classOf[LogicalPlan],
-    classOf[ExecutionPlan]
-  )
-
-  assert(acceptableTypes.contains(manifest.runtimeClass))
 
   override def check(in: AnyRef): Seq[String] = in match {
-    case state: CompilationState =>
+    case state: LogicalPlanState =>
       manifest.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
         case x if classOf[UnionQuery] == x && state.maybeUnionQuery.isEmpty => Seq("Union query missing")
         case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
-        case x if classOf[ExecutionPlan] == x && state.maybeExecutionPlan.isEmpty => Seq("Execution plan missing")
         case _ => Seq.empty
       }
     case x => throw new IllegalArgumentException(s"Unknown state: $x")

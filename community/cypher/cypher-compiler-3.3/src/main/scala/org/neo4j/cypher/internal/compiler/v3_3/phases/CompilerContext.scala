@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.phases
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
@@ -33,12 +31,10 @@ class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherExc
                       val tracer: CompilationPhaseTracer,
                       val notificationLogger: InternalNotificationLogger,
                       val planContext: PlanContext,
-                      val typeConverter: RuntimeTypeConverter,
-                      val createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                       val monitors: Monitors,
                       val metrics: Metrics,
-                      val queryGraphSolver: QueryGraphSolver,
                       val config: CypherCompilerConfiguration,
+                      val queryGraphSolver: QueryGraphSolver,
                       val updateStrategy: UpdateStrategy,
                       val debugOptions: Set[String],
                       val clock: Clock) extends BaseContext

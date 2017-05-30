@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, ast}
@@ -81,20 +80,16 @@ object InternalPlanDescription {
     case class ColumnsLeft(value: Seq[String]) extends Argument
     case class Expression(value: ast.Expression) extends Argument
     case class Expressions(expressions: Map[String, ast.Expression]) extends Argument
-    case class LegacyExpression(value: commands.expressions.Expression) extends Argument
-    case class LegacyExpressions(expressions: Map[String, commands.expressions.Expression]) extends Argument {
-      override def name = "LegacyExpression"
-    }
     case class UpdateActionName(value: String) extends Argument
     case class MergePattern(startPoint: String) extends Argument
     case class LegacyIndex(value: String) extends Argument
     case class Index(label: String, propertyKeys: Seq[String]) extends Argument
-    case class PrefixIndex(label: String, propertyKey: String, prefix: commands.expressions.Expression) extends Argument
+    case class PrefixIndex(label: String, propertyKey: String, prefix: ast.Expression) extends Argument
     case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String]) extends Argument
     case class LabelName(label: String) extends Argument
     case class KeyNames(keys: Seq[String]) extends Argument
-    case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
-    case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
+    case class KeyExpressions(expressions: Seq[Expression]) extends Argument
+    case class EntityByIdRhs(value: SeekableArgs) extends Argument
     case class EstimatedRows(value: Double) extends Argument
     case class Signature(procedureName: QualifiedName,
                          args: Seq[ast.Expression],

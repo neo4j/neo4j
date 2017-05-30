@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands.QueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
 

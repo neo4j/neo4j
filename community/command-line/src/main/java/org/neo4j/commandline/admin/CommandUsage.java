@@ -45,6 +45,7 @@ class CommandUsage
             output.accept( Arguments.rightColumnFormatted( left, arguments.usage(), left.length() + 1 ) );
         }
         output.accept( "" );
+        Usage.printEnvironmentVariables( output );
         output.accept( command.allArguments().description( command.description() ) );
     }
 }

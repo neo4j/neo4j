@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeHashJoin
@@ -66,6 +66,16 @@ trait QueryPlanTestSupport {
         matches = otherText.forall(o => plan.find(operation).exists(_.toString.contains(o))),
         rawFailureMessage = s"Plan should use $operation with ${otherText.mkString(",")}:\n$plan",
         rawNegatedFailureMessage = s"Plan should not use $operation with ${otherText.mkString(",")}:\n$plan")
+    }
+  }
+
+  def useOperationTimes(operation:String, times: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      MatchResult(
+        matches = plan.find(operation).size == times,
+        rawFailureMessage = s"Plan should use $operation ${times} times:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use $operation ${times} times:\n$plan")
     }
   }
 

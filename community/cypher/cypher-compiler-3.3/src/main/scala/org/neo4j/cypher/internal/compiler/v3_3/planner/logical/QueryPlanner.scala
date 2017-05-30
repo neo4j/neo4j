@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 import org.neo4j.cypher.internal.ir.v3_3.{Cost, PeriodicCommit, PlannerQuery, UnionQuery}
 
-case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, CompilationState, CompilationState] {
+case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
 
   override def phase = LOGICAL_PLANNING
 
@@ -36,7 +36,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   override def postConditions = Set(CompilationContains[LogicalPlan])
 
-  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)
     val logicalPlanningContext = LogicalPlanningContext(
       planContext = context.planContext,
@@ -53,7 +53,6 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
     )
 
     val (perCommit, logicalPlan) = plan(from.unionQuery)(logicalPlanningContext)
-
     from.copy(maybePeriodicCommit = Some(perCommit), maybeLogicalPlan = Some(logicalPlan))
   }
 

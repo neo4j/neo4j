@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v3_3.CostCompatibility
-import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.EnterpriseRuntimeContextCreator
+import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
+import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
@@ -41,14 +42,16 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
   override def create(spec: PlannerSpec_v3_2, config: CypherCompilerConfiguration): v3_2.Compatibility[_] =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3.Compatibility[_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): Compatibility[_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) => inner.create(spec, config)
 
       case (_, CypherRuntime.compiled) | (_, CypherRuntime.default) =>
-        val contextCreator = new EnterpriseContextCreator(GeneratedQueryStructure)
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog
-        (getClass), spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder, contextCreator)
+
+
+        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),
+                          spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
+                          EnterpriseRuntimeContextCreator(GeneratedQueryStructure))
 
       case _ => inner.create(spec, config)
     }

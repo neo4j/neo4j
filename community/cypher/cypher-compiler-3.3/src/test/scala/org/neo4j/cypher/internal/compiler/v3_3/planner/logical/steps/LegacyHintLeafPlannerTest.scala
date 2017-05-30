@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LegacyNodeIndexSeek, LogicalPlan}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -47,7 +48,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
@@ -73,7 +74,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 

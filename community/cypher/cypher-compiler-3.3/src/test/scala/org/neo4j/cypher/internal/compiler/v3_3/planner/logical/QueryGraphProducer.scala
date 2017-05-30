@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationState
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
@@ -44,7 +44,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val semanticState = SemanticChecker.check(cleanedStatement, mkException)
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
-    val state = CompilationState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
+    val state = LogicalPlanState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create()
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 

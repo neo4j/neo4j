@@ -19,26 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Rand, Timestamp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation, LabelName, Parameter}
 import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, _}
 
 import scala.language.implicitConversions
 
 object Metrics {
 
+  import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
+
   object QueryGraphSolverInput {
+
     def empty = QueryGraphSolverInput(Map.empty, Cardinality(1), strictness = None)
   }
 
-  case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality, strictness: Option[StrictnessMode]) {
+  case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality,
+                                   strictness: Option[StrictnessMode]) {
+
     def recurse(fromPlan: LogicalPlan): QueryGraphSolverInput = {
       val newCardinalityInput = fromPlan.solved.estimatedCardinality
-      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
+      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo) (_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }
 
@@ -59,18 +64,35 @@ object Metrics {
   type LabelInfo = Map[IdName, Set[LabelName]]
 }
 
+trait ExpressionEvaluator {
+
+  def hasParameters(expr: Expression): Boolean = expr.inputs.exists {
+    case (Parameter(_, _), _) => true
+    case _ => false
+  }
+
+  def isNonDeterministic(expr: Expression): Boolean =
+    expr.inputs.exists {
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Rand => true
+      case (func@FunctionInvocation(_, _, _, _), _) if func.function == Timestamp => true
+      case _ => false
+    }
+
+  def evaluateExpression(expr: Expression): Option[Any]
+}
+
 case class Metrics(cost: CostModel,
                    cardinality: CardinalityModel,
                    queryGraphCardinalityModel: QueryGraphCardinalityModel)
 
 trait MetricsFactory {
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def newCostModel(): CostModel
   def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics) = {
+  def newMetrics(statistics: GraphStatistics,expressionEvaluator: ExpressionEvaluator) = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
-    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
+    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
     Metrics(newCostModel(), cardinality, queryGraphCardinalityModel)
   }
 }

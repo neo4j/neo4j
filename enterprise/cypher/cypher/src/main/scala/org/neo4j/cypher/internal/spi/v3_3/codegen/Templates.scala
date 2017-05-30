@@ -29,13 +29,14 @@ import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, ResultRowImpl, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherExecutionException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
+import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}

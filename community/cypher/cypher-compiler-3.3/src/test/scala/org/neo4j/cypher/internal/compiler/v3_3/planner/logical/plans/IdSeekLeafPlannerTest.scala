@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -37,6 +38,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   // NOTE: the ronja rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
 
+  private val evaluator = mock[ExpressionEvaluator]
   test("simple node by id seek with a collection of node ids") {
     // given
     val variable: Variable = Variable("n")_
@@ -58,7 +60,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
@@ -93,7 +95,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
@@ -126,7 +128,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
@@ -157,7 +159,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
@@ -193,7 +195,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -230,7 +232,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -273,7 +275,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -320,7 +322,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, evaluator)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 

@@ -90,6 +90,13 @@ public class StoreInfoCommandTest
 
             assertEquals( String.format( "usage: neo4j-admin store-info --store=<path-to-dir>%n" +
                             "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
+                            "%n" +
                             "Prints information about a Neo4j database store, such as what version of Neo4j%n" +
                             "created it. Note that this command expects a path to a store directory, for%n" +
                             "example --store=data/databases/graph.db.%n" +

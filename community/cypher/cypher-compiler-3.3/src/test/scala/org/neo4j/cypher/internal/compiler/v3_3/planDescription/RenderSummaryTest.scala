@@ -19,13 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.{PipeMonitor, SingleRowPipe}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class RenderSummaryTest extends CypherFunSuite {
-
-  val pipe = SingleRowPipe()()(mock[PipeMonitor])
 
   test("single node is represented nicely") {
     val arguments = Seq(

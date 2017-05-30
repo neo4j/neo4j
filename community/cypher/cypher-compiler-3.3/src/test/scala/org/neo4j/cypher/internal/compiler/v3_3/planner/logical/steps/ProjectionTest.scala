@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.{Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AscSortItem

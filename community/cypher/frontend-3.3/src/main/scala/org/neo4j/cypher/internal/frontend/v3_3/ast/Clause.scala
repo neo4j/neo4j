@@ -115,7 +115,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         SemanticError(
           """|Cannot use index hint in this context.
             | Index hints are only supported for the following predicates in WHERE
-            | (either directly or as part of a top-level AND):
+            | (either directly or as part of a top-level AND or OR):
             | equality comparison, inequality (range) comparison, STARTS WITH,
             | IN condition or checking property existence.
             | The comparison cannot be performed between two property values.
@@ -163,7 +163,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
               }
             }
             (newAcc, None)
-        case _: Where | _: And | _: Ands | _: Set[_] =>
+        case _: Where | _: And | _: Ands | _: Set[_] | _: Or | _: Ors =>
           acc => (acc, Some(identity))
         case _ =>
           acc => (acc, None)

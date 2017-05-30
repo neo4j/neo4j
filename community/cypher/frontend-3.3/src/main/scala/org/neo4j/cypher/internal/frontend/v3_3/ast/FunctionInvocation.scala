@@ -45,6 +45,8 @@ case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, 
     case UnresolvedFunction => true
     case _ => false
   }
+
+  override def asCanonicalStringVal = s"$name(${args.map(_.asCanonicalStringVal).mkString(",")})"
 }
 
 case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {

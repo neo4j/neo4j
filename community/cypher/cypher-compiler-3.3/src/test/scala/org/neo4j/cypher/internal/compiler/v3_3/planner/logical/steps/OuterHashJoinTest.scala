@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
@@ -62,7 +63,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics)
+      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val plans = outerHashJoin(optionalQg, left)

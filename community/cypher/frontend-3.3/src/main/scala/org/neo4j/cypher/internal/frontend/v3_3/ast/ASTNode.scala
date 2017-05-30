@@ -47,6 +47,9 @@ trait ASTNode
       val duped = constructor.invoke(this, ctorArgs: _*)
       duped.asInstanceOf[self.type]
     }
+
+  def asCanonicalStringVal: String = toString
+
 }
 
 sealed trait ASTNodeType { self: ASTNode => }

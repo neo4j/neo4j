@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.helpers
 import java.util
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.RuntimeJavaValueConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.isGraphKernelResultValue
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
@@ -105,7 +105,7 @@ trait GraphIcing {
     def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)
 
     private val locker: PropertyContainerLocker = new PropertyContainerLocker
-    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
+    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
     private def createTransactionalContext(txType: Type, queryText: String, params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
       val tx = graph.beginTransaction(txType, AUTH_DISABLED)

@@ -24,19 +24,20 @@ import java.util
 import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.spi._
-import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.{CodeGenContext, QueryExecutionTracer}
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi._
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable, symbols}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_3.codegen._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.{GeneratedMethodStructure, Methods}
+import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager

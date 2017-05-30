@@ -93,9 +93,13 @@ public enum LogEntryVersion
     // as of 2016-05-30: neo4j 3.0.2 legacy index IndexDefineCommand maps write size as short instead of byte
     // See comment for V2.2.10 for version number explanation
     // log entry layout hasn't changed since 2_3 so just use that one
-    V3_0_2( -9, LogEntryParsersV2_3.class );
+    V3_0_2( -9, LogEntryParsersV2_3.class ),
+    // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised
+    // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
+    // log version to prevent mixed-version clusters from forming.
+    V3_0_10( -10, LogEntryParsersV2_3.class );
 
-    public static final LogEntryVersion CURRENT = V3_0_2;
+    public static final LogEntryVersion CURRENT = V3_0_10;
     private static final LogEntryVersion[] ALL = values();
     private static final LogEntryVersion[] LOOKUP_BY_VERSION = new LogEntryVersion[ALL.length + 1]; // pessimistic size
     static
