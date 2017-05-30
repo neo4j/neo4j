@@ -21,6 +21,9 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+/**
+ * Static methods for comparing and hashing chars, Strings and Text values.
+ */
 @SuppressWarnings( "WeakerAccess" )
 public class TextValues
 {

@@ -21,6 +21,18 @@ package org.neo4j.values;
 
 import java.lang.reflect.Array;
 
+/**
+ * Entry point to the values library.
+ *
+ * The values library centers around the Value class, which represents a value in Neo4j. Values can be correctly
+ * checked for equality over different primitive representations, including consistent hashCodes and sorting.
+ *
+ * To create Values use the factory methods in the Values class.
+ *
+ * Values come in two major categories: Storable and Virtual. Storable values are valid values for
+ * node, relationship and graph properties. Virtual values are not supported as property values, but might be created
+ * and returned as part of cypher execution. These include Node, Relationship and Path.
+ */
 @SuppressWarnings( "WeakerAccess" )
 public class Values
 {
@@ -33,7 +45,7 @@ public class Values
         T load() throws ValueLoadException;
     }
 
-    class ValueLoadException extends RuntimeException
+    public class ValueLoadException extends RuntimeException
     {
     }
 
@@ -213,6 +225,15 @@ public class Values
 
     // BOXED FACTORY METHODS
 
+    /**
+     * Generic value factory method.
+     *
+     * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
+     * make testing convenient. Passing a Value and in parameter should never be needed, and will throw an
+     * UnsupportedOperationException.
+     * @param value Object to convert to Value
+     * @return the created Value
+     */
     public static Value of( Object value )
     {
         if ( value instanceof String )
@@ -291,6 +312,12 @@ public class Values
         {
             return NoValue.NO_VALUE;
         }
+        if ( value instanceof Value )
+        {
+            throw new UnsupportedOperationException(
+                    "Converting a Value to a Value using Values.of() is not supported." );
+        }
+
         // otherwise fail
         throw new IllegalArgumentException(
                     String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );

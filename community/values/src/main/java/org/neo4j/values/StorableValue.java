@@ -19,6 +19,9 @@
  */
 package org.neo4j.values;
 
-abstract class StoreableValue extends Value
+/**
+ * Value that can be stored as a node, relationship or graph property.
+ */
+abstract class StorableValue extends Value
 {
 }

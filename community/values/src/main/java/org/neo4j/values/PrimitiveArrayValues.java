@@ -21,6 +21,12 @@ package org.neo4j.values;
 
 import java.util.Arrays;
 
+/**
+ * Static methods for checking the equality of arrays of primitives.
+ *
+ * This class handles only evaluation of a[] == b[] where type( a ) != type( b ), ei. byte[] == int[] and such.
+ * byte[] == byte[] evaluation can be done using Arrays.equals().
+ */
 public class PrimitiveArrayValues
 {
     private PrimitiveArrayValues()

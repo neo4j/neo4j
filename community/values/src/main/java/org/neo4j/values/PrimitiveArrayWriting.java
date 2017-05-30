@@ -19,6 +19,9 @@
  */
 package org.neo4j.values;
 
+/**
+ * Static methods for writing primitive arrays to a ValueWriter.
+ */
 public class PrimitiveArrayWriting
 {
     public static void writeTo( ValueWriter writer, byte[] values )

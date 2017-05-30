@@ -19,7 +19,10 @@
  */
 package org.neo4j.values;
 
-abstract class ScalarValue extends StoreableValue
+/**
+ * Single instance of one of the storable primitives.
+ */
+abstract class ScalarValue extends StorableValue
 {
     @Override
     public boolean equals( byte[] x )

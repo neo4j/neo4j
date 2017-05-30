@@ -19,7 +19,10 @@
  */
 package org.neo4j.values;
 
-abstract class ArrayValue extends StoreableValue
+/**
+ * Array of one of the storable primitives
+ */
+abstract class ArrayValue extends StorableValue
 {
     abstract int length();
 

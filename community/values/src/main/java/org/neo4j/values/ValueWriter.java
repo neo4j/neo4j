@@ -19,6 +19,11 @@
  */
 package org.neo4j.values;
 
+/**
+ * Writer of values.
+ *
+ * Has functionality to write all supported primitives, as well as arrays and different representations of Strings.
+ */
 public interface ValueWriter
 {
     enum ArrayType

@@ -22,6 +22,11 @@ package org.neo4j.values;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
+/**
+ * Static methods for computing the hashCode of primitive numbers and arrays of primitive numbers.
+ *
+ * Also compares Value typed number arrays.
+ */
 @SuppressWarnings( "WeakerAccess" )
 public class NumberValues
 {
@@ -181,19 +186,6 @@ public class NumberValues
     public static int compareLongAgainstDouble( long lhs, double rhs )
     {
         return - compareDoubleAgainstLong( rhs, lhs );
-    }
-
-    /**
-     * Return an integer one less than the given integer, or throw {@link ArithmeticException} if the given integer is
-     * zero.
-     */
-    public static int decrementExactNotPastZero( int value )
-    {
-        if ( value == 0 )
-        {
-            throw new ArithmeticException( "integer underflow past zero" );
-        }
-        return value - 1;
     }
 
     public static boolean numbersEqual( IntegralArray lhs, IntegralArray rhs )

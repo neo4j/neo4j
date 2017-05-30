@@ -19,6 +19,10 @@
  */
 package org.neo4j.values;
 
+/**
+ * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
+ * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
+ */
 public enum ValueGroup
 {
     NO_VALUE( -1 ),

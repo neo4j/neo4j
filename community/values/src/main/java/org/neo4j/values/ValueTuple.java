@@ -19,6 +19,9 @@
  */
 package org.neo4j.values;
 
+/**
+ * A tuple of n values.
+ */
 public class ValueTuple
 {
     public static ValueTuple of( Value... values )
