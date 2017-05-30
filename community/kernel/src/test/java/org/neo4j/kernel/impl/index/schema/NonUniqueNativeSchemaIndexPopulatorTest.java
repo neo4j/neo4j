@@ -34,11 +34,9 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.impl.index.schema.FullScanNonUniqueIndexSamplerTest.countUniqueValues;
@@ -109,27 +107,9 @@ public class NonUniqueNativeSchemaIndexPopulatorTest
         random.reset();
         Random updaterRandom = new Random( random.seed() );
         Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0.1f );
-        int numberOfPopulatorUpdates = LARGE_AMOUNT_OF_UPDATES;
 
         // when
-        int count = 0;
-        for ( int i = 0; i < numberOfPopulatorUpdates; i++ )
-        {
-            if ( updaterRandom.nextFloat() < 0.1 )
-            {
-                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor ) )
-                {
-                    int numberOfUpdaterUpdates = updaterRandom.nextInt( 100 );
-                    for ( int j = 0; j < numberOfUpdaterUpdates; j++ )
-                    {
-                        indexUpdater.process( updates.next() );
-                        count++;
-                    }
-                }
-            }
-            populator.add( updates.next() );
-            count++;
-        }
+        int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
 
         // then
         populator.close( true );

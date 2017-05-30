@@ -122,14 +122,13 @@ public class UniqueNativeSchemaIndexPopulatorTest
         random.reset();
         Random updaterRandom = new Random( random.seed() );
         Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0.01f );
-        int numberOfPopulatorUpdates = LARGE_AMOUNT_OF_UPDATES;
         Number failSafeDuplicateValue = 12345.6789D;
 
         // when
         try
         {
             populator.add( add( 1_000_000_000, failSafeDuplicateValue ) );
-            for ( int i = 0; i < numberOfPopulatorUpdates; i++ )
+            for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
             {
                 if ( updaterRandom.nextFloat() < 0.1 )
                 {

@@ -63,7 +63,7 @@ class NonUniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE ext
     {
         this.updateSampling = onlineSampling;
         this.sampler = onlineSampling ? new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() )
-                                      : new FullScanNonUniqueIndexSampler<>( gbpTree, layout, samplingConfig );
+                                      : new FullScanNonUniqueIndexSampler<>( tree, layout, samplingConfig );
     }
 
     @Override

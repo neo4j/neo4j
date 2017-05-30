@@ -62,6 +62,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -79,11 +80,11 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue>
 {
-    static final int LARGE_AMOUNT_OF_UPDATES = 10_000;
+    static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
     private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 42, 666 );
     static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) -> null;
 
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    private final FileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     protected final RandomRule random = new RandomRule();
@@ -91,8 +92,8 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     private Layout<KEY,VALUE> layout;
-    File indexFile;
-    PageCache pageCache;
+    private File indexFile;
+    private PageCache pageCache;
     NativeSchemaIndexPopulator<KEY,VALUE> populator;
 
     @Before
@@ -114,13 +115,13 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     public void createShouldCreateFile() throws Exception
     {
         // given
-        assertFalse( fs.fileExists( indexFile ) );
+        assertFileNotPresent();
 
         // when
         populator.create();
 
         // then
-        assertTrue( fs.fileExists( indexFile ) );
+        assertFilePresent();
         populator.close( true );
     }
 
@@ -154,17 +155,20 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         populator.drop();
 
         // then
-        assertFalse( fs.fileExists( indexFile ) );
+        assertFileNotPresent();
     }
 
     @Test
     public void dropShouldSucceedOnNonExistentFile() throws Exception
     {
         // given
-        assertFalse( fs.fileExists( indexFile ) );
+        assertFileNotPresent();
+
+        // when
+        populator.drop();
 
         // then
-        populator.drop();
+        assertFileNotPresent();
     }
 
     @Test
@@ -399,11 +403,154 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         random.reset();
         Random updaterRandom = new Random( random.seed() );
         Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0 );
-        int numberOfPopulatorUpdates = LARGE_AMOUNT_OF_UPDATES;
 
         // when
+        int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
+
+        // then
+        populator.close( true );
+        random.reset();
+        verifyUpdates( randomUniqueUpdateGenerator( random, 0 ), count );
+    }
+
+    @Test
+    public void dropMustSucceedAfterSuccessfulClose() throws Exception
+    {
+        // given
+        populator.create();
+        populator.close( true );
+
+        // when
+        populator.drop();
+
+        // then
+        assertFileNotPresent();
+    }
+
+    @Test
+    public void dropMustSucceedAfterUnsuccessfulClose() throws Exception
+    {
+        // given
+        populator.create();
+        populator.close( false );
+
+        // when
+        populator.drop();
+
+        // then
+        assertFileNotPresent();
+    }
+
+    @Test
+    public void successfulCloseMustThrowWithoutPriorSuccessfulCreate() throws Exception
+    {
+        // given
+        assertFileNotPresent();
+
+        // when
+        try
+        {
+            populator.close( true );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void unsuccessfulCloseMustSucceedWithoutSuccessfulPriorCreate() throws Exception
+    {
+        // given
+        assertFileNotPresent();
+        String failureMessage = "There is no spoon";
+        populator.markAsFailed( failureMessage );
+
+        // when
+        populator.close( false );
+
+        // then
+        assertHeader( false, failureMessage, false );
+    }
+
+    @Test
+    public void successfulCloseMustThrowAfterDrop() throws Exception
+    {
+        // given
+        populator.create();
+
+        // when
+        populator.drop();
+
+        // then
+        try
+        {
+            populator.close( true );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void unsuccessfulCloseMustThrowAfterDrop() throws Exception
+    {
+        // given
+        populator.create();
+
+        // when
+        populator.drop();
+
+        // then
+        try
+        {
+            populator.close( false );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
+    private void assertFilePresent()
+    {
+        assertTrue( fs.fileExists( indexFile ) );
+    }
+
+    private void assertFileNotPresent()
+    {
+        assertFalse( fs.fileExists( indexFile ) );
+    }
+
+    static IndexEntryUpdate[] someIndexEntryUpdates()
+    {
+        return new IndexEntryUpdate[]{
+                add( 0, 0 ),
+                add( 1, 4 ),
+                add( 2, Double.MAX_VALUE ),
+                add( 3, -Double.MAX_VALUE ),
+                add( 4, Float.MAX_VALUE ),
+                add( 5, -Float.MAX_VALUE ),
+                add( 6, Long.MAX_VALUE ),
+                add( 7, Long.MIN_VALUE ),
+                add( 8, Integer.MAX_VALUE ),
+                add( 9, Integer.MIN_VALUE ),
+                add( 10, Short.MAX_VALUE ),
+                add( 11, Short.MIN_VALUE ),
+                add( 12, Byte.MAX_VALUE ),
+                add( 13, Byte.MIN_VALUE )
+        };
+    }
+
+    int interleaveLargeAmountOfUpdates( Random updaterRandom,
+            Iterator<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
+    {
         int count = 0;
-        for ( int i = 0; i < numberOfPopulatorUpdates; i++ )
+        for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
         {
             if ( updaterRandom.nextFloat() < 0.1 )
             {
@@ -420,14 +567,10 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
             populator.add( updates.next() );
             count++;
         }
-
-        // then
-        populator.close( true );
-        random.reset();
-        verifyUpdates( randomUniqueUpdateGenerator( random, 0 ), count );
+        return count;
     }
 
-    protected Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( RandomRule randomRule,
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( RandomRule randomRule,
             float fractionDuplicates )
     {
         return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
@@ -475,71 +618,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     }
 
     @SuppressWarnings( "rawtypes" )
-    // unique ->
-    // addShouldThrowOnDuplicateValues
-    // updaterShouldThrowOnDuplicateValues
-    // non-unique ->
-    // addShouldApplyDuplicateValues
-    // updaterShouldApplyDuplicateValues
-
-    // successfulCloseMustCloseGBPTree
-    // successfulCloseMustCheckpointGBPTree (already verified by add / updater tests)
-    // successfulCloseMustMarkIndexAsOnline
-
-    // unsuccessfulCloseMustCloseGBPTree
-    // unsuccessfulCloseMustNotMarkIndexAsOnline
-    // unsuccessfulCloseMustSucceedWithoutMarkAsFailed
-
-    // closeMustWriteFailureMessageAfterMarkedAsFailed
-    // closeMustWriteFailureMessageAfterMarkedAsFailedWithLongMessage
-    // successfulCloseMustThrowIfMarkedAsFailed
-
-    // shouldApplyLargeAmountOfInterleavedRandomUpdates
-    // unique ->
-    // shouldThrowOnLargeAmountOfInterleavedRandomUpdatesWithDuplicates
-    // non-unique ->
-    // shouldApplyLargeAmountOfInterleavedRandomUpdatesWithDuplicates
-
-    // SAMPLING
-    // includeSample
-    // configureSampling
-    // sampleResult
-
-    // ???
-    // todo closeAfterDrop
-    // todo dropAfterClose
-
-    // METHODS
-    // create()
-    // drop()
-    // add( Collection<? extends IndexEntryUpdate<?>> updates )
-    // add( IndexEntryUpdate<?> update )
-    // verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-    // newPopulatingUpdater( PropertyAccessor accessor )
-    // close( boolean populationCompletedSuccessfully )
-    // markAsFailed( String failure )
-
-    static IndexEntryUpdate[] someIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE )
-        };
-    }
-
-    @SuppressWarnings( "rawtypes" )
     static IndexEntryUpdate[] someDuplicateIndexEntryUpdates()
     {
         return new IndexEntryUpdate[]{
@@ -577,7 +655,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        try ( GBPTree<KEY,VALUE> tree = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
                 headerReader, RecoveryCleanupWorkCollector.IMMEDIATE ) )
         {
             if ( online )
@@ -604,7 +682,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     private String longString( int length )
     {
         String alphabet = "123xyz";
-        StringBuffer outputBuffer = new StringBuffer( length );
+        StringBuilder outputBuffer = new StringBuilder( length );
         for ( int i = 0; i < length; i++ )
         {
             outputBuffer.append( alphabet.charAt( random.nextInt( alphabet.length() ) ) );
@@ -612,7 +690,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         return outputBuffer.toString();
     }
 
-    void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,
+    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,
             NativeSchemaIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
     {
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -628,7 +706,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         }
     }
 
-    protected void verifyUpdates( Iterator<IndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
+    void verifyUpdates( Iterator<IndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
             throws IOException
     {
         @SuppressWarnings( "unchecked" )
@@ -821,7 +899,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
 
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
     {
-//        tree.printTree( false, false, false );
         KEY lowest = layout.newKey();
         lowest.initAsLowest();
         KEY highest = layout.newKey();

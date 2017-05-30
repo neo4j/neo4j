@@ -65,8 +65,9 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
 
     private Writer<KEY,VALUE> singleWriter;
     private byte[] failureBytes;
+    private boolean dropped;
 
-    GBPTree<KEY,VALUE> gbpTree;
+    GBPTree<KEY,VALUE> tree;
 
     NativeSchemaIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
@@ -81,26 +82,38 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
     }
 
     @Override
-    public void create() throws IOException
+    public synchronized void create() throws IOException
     {
         GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
-        gbpTree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER,
-                recoveryCleanupWorkCollector );
+        instantiateTree();
         instantiateWriter();
     }
 
-    protected void instantiateWriter() throws IOException
+    private void instantiateTree() throws IOException
+    {
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER,
+                recoveryCleanupWorkCollector );
+    }
+
+    void instantiateWriter() throws IOException
     {
         assert singleWriter == null;
-        singleWriter = gbpTree.writer();
+        singleWriter = tree.writer();
     }
 
     @Override
-    public void drop() throws IOException
+    public synchronized void drop() throws IOException
     {
-        closeWriter();
-        gbpTree = closeIfPresent( gbpTree );
-        GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
+        try
+        {
+            closeWriter();
+            closeTree();
+            GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
+        }
+        finally
+        {
+            dropped = true;
+        }
     }
 
     @Override
@@ -141,29 +154,61 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        if ( populationCompletedSuccessfully && failureBytes != null )
+        try
         {
-            throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
+            closeWriter();
+            if ( populationCompletedSuccessfully && failureBytes != null )
+            {
+                throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
+            }
+            if ( populationCompletedSuccessfully )
+            {
+                assertPopulatorOpen();
+                markTreeAsOnline();
+            }
+            else
+            {
+                assertNotDropped();
+                ensureTreeInstantiated();
+                markTreeAsFailed();
+            }
         }
-        closeWriter();
-        if ( populationCompletedSuccessfully )
+        finally
         {
-            markTreeAsOnline();
+            closeTree();
         }
-        else
+    }
+
+    private void assertNotDropped()
+    {
+        if ( dropped )
         {
-            markTreeAsFailed();
+            throw new IllegalStateException( "Populator has already been dropped." );
         }
-        gbpTree.close();
-        gbpTree = null;
-}
+    }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
         failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
+    }
+
+    private void ensureTreeInstantiated() throws IOException
+    {
+        if ( tree == null )
+        {
+            instantiateTree();
+        }
+    }
+
+    private void assertPopulatorOpen()
+    {
+        if ( tree == null )
+        {
+            throw new IllegalStateException( "Populator has already been closed." );
+        }
     }
 
     private void markTreeAsFailed() throws IOException
@@ -172,12 +217,12 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
         {
             failureBytes = "".getBytes();
         }
-        gbpTree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
+        tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
     }
 
     private void markTreeAsOnline() throws IOException
     {
-        gbpTree.checkpoint( IOLimiter.unlimited(), ( pc ) -> pc.putByte( BYTE_ONLINE ) );
+        tree.checkpoint( IOLimiter.unlimited(), ( pc ) -> pc.putByte( BYTE_ONLINE ) );
     }
 
     private <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
@@ -189,9 +234,14 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
         return null;
     }
 
-    protected void closeWriter() throws IOException
+    void closeWriter() throws IOException
     {
         singleWriter = closeIfPresent( singleWriter );
+    }
+
+    private void closeTree() throws IOException
+    {
+        tree = closeIfPresent( tree );
     }
 
     private class NativeSchemaIndexUpdater implements IndexUpdater
