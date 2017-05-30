@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -96,6 +97,48 @@ public class PhysicalLogCommandReaderV3_0Test
         assertEquals( before, relationshipCommand.getBefore() );
         verifySecondaryUnit( before, relationshipCommand.getBefore() );
         assertEquals( after, relationshipCommand.getAfter() );
+    }
+
+    @Test
+    public void readRelationshipCommandWithFixedReferenceFormat300() throws IOException
+    {
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        before.setUseFixedReferences( true );
+        RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
+        after.setUseFixedReferences( true );
+        new Command.RelationshipCommand( before, after ).serialize( channel );
+
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipCommand );
+
+        Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
+        assertEquals( before, relationshipCommand.getBefore() );
+        assertTrue( relationshipCommand.getBefore().isUseFixedReferences() );
+        assertEquals( after, relationshipCommand.getAfter() );
+        assertTrue( relationshipCommand.getAfter().isUseFixedReferences() );
+    }
+
+    @Test
+    public void readRelationshipCommandWithFixedReferenceFormat302() throws IOException
+    {
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
+        before.setUseFixedReferences( true );
+        RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
+        after.setUseFixedReferences( true );
+        new Command.RelationshipCommand( before, after ).serialize( channel );
+
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipCommand );
+
+        Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
+        assertEquals( before, relationshipCommand.getBefore() );
+        assertTrue( relationshipCommand.getBefore().isUseFixedReferences() );
+        assertEquals( after, relationshipCommand.getAfter() );
+        assertTrue( relationshipCommand.getAfter().isUseFixedReferences() );
     }
 
     @Test
@@ -174,6 +217,58 @@ public class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
+    public void readRelationshipGroupCommandWithFixedReferenceFormat300() throws IOException
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
+        before.setUseFixedReferences( true );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
+        after.setUseFixedReferences( true );
+
+        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+
+        // When
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipGroupCommand);
+
+        Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
+
+        // Then
+        assertEquals( before, relationshipGroupCommand.getBefore() );
+        assertEquals( after, relationshipGroupCommand.getAfter() );
+        assertTrue( relationshipGroupCommand.getBefore().isUseFixedReferences() );
+        assertTrue( relationshipGroupCommand.getAfter().isUseFixedReferences() );
+    }
+
+    @Test
+    public void readRelationshipGroupCommandWithFixedReferenceFormat302() throws IOException
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
+        before.setUseFixedReferences( true );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
+        after.setUseFixedReferences( true );
+
+        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+
+        // When
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipGroupCommand);
+
+        Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
+
+        // Then
+        assertEquals( before, relationshipGroupCommand.getBefore() );
+        assertEquals( after, relationshipGroupCommand.getAfter() );
+        assertTrue( relationshipGroupCommand.getBefore().isUseFixedReferences() );
+        assertTrue( relationshipGroupCommand.getAfter().isUseFixedReferences() );
+    }
+
+    @Test
     public void shouldReadNeoStoreCommand() throws Throwable
     {
         // Given
@@ -194,6 +289,58 @@ public class PhysicalLogCommandReaderV3_0Test
         // Then
         assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
         assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
+    }
+
+    @Test
+    public void nodeCommandWithFixedReferenceFormat300() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        NodeRecord before = new NodeRecord( 42, true, false, 33, 99, 66 );
+        NodeRecord after = new NodeRecord( 42, true, false, 33, 99, 66 );
+        before.setUseFixedReferences( true );
+        after.setUseFixedReferences( true );
+
+        new Command.NodeCommand( before, after ).serialize( channel );
+
+        // When
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.NodeCommand);
+
+        Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
+
+        // Then
+        assertEquals( before, nodeCommand.getBefore() );
+        assertEquals( after, nodeCommand.getAfter() );
+        assertTrue( nodeCommand.getBefore().isUseFixedReferences() );
+        assertTrue( nodeCommand.getAfter().isUseFixedReferences() );
+    }
+
+    @Test
+    public void nodeCommandWithFixedReferenceFormat302() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        NodeRecord before = new NodeRecord( 42, true, false, 33, 99, 66 );
+        NodeRecord after = new NodeRecord( 42, true, false, 33, 99, 66 );
+        before.setUseFixedReferences( true );
+        after.setUseFixedReferences( true );
+
+        new Command.NodeCommand( before, after ).serialize( channel );
+
+        // When
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.NodeCommand);
+
+        Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
+
+        // Then
+        assertEquals( before, nodeCommand.getBefore() );
+        assertEquals( after, nodeCommand.getAfter() );
+        assertTrue( nodeCommand.getBefore().isUseFixedReferences() );
+        assertTrue( nodeCommand.getAfter().isUseFixedReferences() );
     }
 
     @Test
@@ -240,6 +387,54 @@ public class PhysicalLogCommandReaderV3_0Test
         assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
         assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
         verifySecondaryUnit( after, neoStoreCommand.getAfter() );
+    }
+
+    @Test
+    public void readPropertyCommandWithFixedReferenceFormat300() throws IOException
+    {
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        PropertyRecord before = new PropertyRecord( 1 );
+        PropertyRecord after = new PropertyRecord( 2 );
+        before.setUseFixedReferences( true );
+        after.setUseFixedReferences( true );
+
+        new Command.PropertyCommand( before, after ).serialize( channel );
+
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.PropertyCommand);
+
+        Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
+
+        // Then
+        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
+        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
+        assertTrue( neoStoreCommand.getBefore().isUseFixedReferences() );
+        assertTrue( neoStoreCommand.getAfter().isUseFixedReferences() );
+    }
+
+    @Test
+    public void readPropertyCommandWithFixedReferenceFormat302() throws IOException
+    {
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        PropertyRecord before = new PropertyRecord( 1 );
+        PropertyRecord after = new PropertyRecord( 2 );
+        before.setUseFixedReferences( true );
+        after.setUseFixedReferences( true );
+
+        new Command.PropertyCommand( before, after ).serialize( channel );
+
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.PropertyCommand);
+
+        Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
+
+        // Then
+        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
+        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
+        assertTrue( neoStoreCommand.getBefore().isUseFixedReferences() );
+        assertTrue( neoStoreCommand.getAfter().isUseFixedReferences() );
     }
 
     @Test

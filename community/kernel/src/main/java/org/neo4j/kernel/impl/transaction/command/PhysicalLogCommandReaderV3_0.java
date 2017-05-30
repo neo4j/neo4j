@@ -209,6 +209,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
         boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         int type = shortToUnsignedInt( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
@@ -223,6 +224,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         {
             record.setSecondaryUnitId( channel.getLong() );
         }
+        record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
     }
 
@@ -404,6 +406,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
         boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         NodeRecord record;
         Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
@@ -419,6 +422,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             {
                 record.setSecondaryUnitId( channel.getLong() );
             }
+            record.setUseFixedReferences( usesFixedReferenceFormat );
         }
         else
         {
@@ -436,6 +440,8 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
         boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
         RelationshipRecord record;
         if ( inUse )
         {
@@ -454,6 +460,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             {
                 record.setSecondaryUnitId( channel.getLong() );
             }
+            record.setUseFixedReferences( usesFixedReferenceFormat );
         }
         else
         {
@@ -525,8 +532,10 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         boolean nodeProperty = !bitFlag( flags, Record.REL_PROPERTY.byteValue() );
         boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        record.setUseFixedReferences( usesFixedReferenceFormat );
 
         long nextProp = channel.getLong(); // 8
         long prevProp = channel.getLong(); // 8

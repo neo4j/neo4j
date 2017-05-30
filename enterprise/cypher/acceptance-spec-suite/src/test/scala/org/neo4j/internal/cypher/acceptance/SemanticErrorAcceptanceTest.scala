@@ -274,18 +274,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should fail if using a hint with multiple OR'd equality comparisons") {
-    executeAndEnsureError(
-      "match (n:Person) using index n:Person(name) where n.name = 'a' OR n.name = 'b' return n",
-      "Cannot use index hint in this context. Index hints are only supported for the following "+
-        "predicates in WHERE (either directly or as part of a top-level AND): equality comparison, " +
-        "inequality (range) comparison, STARTS WITH, IN condition or checking property " +
-        "existence. The comparison cannot be performed between two property values. Note that the " +
-        "label and property comparison must be specified on a non-optional node (line 1, " +
-        "column 18 (offset: 17))"
-    )
-  }
-
   test("should fail if no parens around node") {
     executeAndEnsureError(
       "match n:Person return n",
