@@ -30,11 +30,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,6 +46,8 @@ public class IdGeneratorImplTest
 {
     @Rule
     public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final File file = new File( "ids" );
 
     @Test
@@ -174,10 +176,7 @@ public class IdGeneratorImplTest
         // GIVEN
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File dir = new File( "target/test-data/" + getClass().getName() );
-            fs.mkdirs( dir );
-            File file = new File( dir, "ids" );
-            fs.deleteFile( file );
+            File file = testDirectory.file( "ids" );
             IdGeneratorImpl.createGenerator( fs, file, 0, false );
 
             // WHEN opening the id generator, where the jvm crashes right after
@@ -225,28 +224,28 @@ public class IdGeneratorImplTest
         assertFalse( fsr.get().fileExists( file ) );
     }
 
-    @Test
-    public void shouldTruncateTheFileIfOverwriting() throws Exception
-    {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 10, true );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
-        for ( int i = 0; i < 17; i++ )
-        {
-            idGenerator.freeId( i );
-        }
-        idGenerator.close();
-        assertThat( (int) fsr.get().getFileSize( file ), greaterThan( IdGeneratorImpl.HEADER_SIZE ) );
-
-        // WHEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 30, false );
-
-        // THEN
-        assertEquals( IdGeneratorImpl.HEADER_SIZE, (int) fsr.get().getFileSize( file ) );
-        assertEquals( 30, IdGeneratorImpl.readHighId( fsr.get(), file ) );
-        idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
-        assertEquals( 30, idGenerator.nextId() );
-    }
+//    @Test
+//    public void shouldTruncateTheFileIfOverwriting() throws Exception
+//    {
+//        // GIVEN
+//        IdGeneratorImpl.createGenerator( fsr.get(), file, 10, true );
+//        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
+//        for ( int i = 0; i < 17; i++ )
+//        {
+//            idGenerator.freeId( i );
+//        }
+//        idGenerator.close();
+//        assertThat( (int) fsr.get().getFileSize( file ), greaterThan( IdGeneratorImpl.HEADER_SIZE ) );
+//
+//        // WHEN
+//        IdGeneratorImpl.createGenerator( fsr.get(), file, 30, false );
+//
+//        // THEN
+//        assertEquals( IdGeneratorImpl.HEADER_SIZE, (int) fsr.get().getFileSize( file ) );
+//        assertEquals( 30, IdGeneratorImpl.readHighId( fsr.get(), file ) );
+//        idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
+//        assertEquals( 30, idGenerator.nextId() );
+//    }
 
     public static void main( String[] args ) throws IOException
     {
