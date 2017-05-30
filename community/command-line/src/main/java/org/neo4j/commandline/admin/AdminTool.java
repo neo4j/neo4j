@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.Args;
 
 import static java.lang.String.format;
+
 import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class AdminTool

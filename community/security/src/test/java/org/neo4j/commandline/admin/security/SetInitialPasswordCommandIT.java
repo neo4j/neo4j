@@ -19,11 +19,11 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.commandline.admin.BlockerLocator;
@@ -112,9 +112,14 @@ public class SetInitialPasswordCommandIT
         assertNoAuthIniFile();
 
         verify( out ).stdErrLine( "not enough arguments" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out, times( 3 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( String.format( "environment variables:" ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
         verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
@@ -128,9 +133,15 @@ public class SetInitialPasswordCommandIT
         assertNoAuthIniFile();
 
         verify( out ).stdErrLine( "unrecognized arguments: 'bar'" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out, times( 3 ) ).stdErrLine( "" );
         verify( out ).stdErrLine( "usage: neo4j-admin set-initial-password <password>" );
-        verify( out, times( 2 ) ).stdErrLine( "" );
+        verify( out ).stdErrLine( String.format( "environment variables:" ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_CONF    Path to directory which contains neo4j.conf." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_DEBUG   Set to anything to enable debug output." ) );
+        verify( out ).stdErrLine( String.format( "    NEO4J_HOME    Neo4j home directory." ) );
+        verify( out ).stdErrLine( String.format( "    HEAP_SIZE     Set size of JVM heap during command execution." ) );
+        verify( out ).stdErrLine( String.format( "                  Takes a number and a unit, for example 512m." ) );
+
         verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );

@@ -19,17 +19,17 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -163,6 +163,13 @@ public class HelpCommandTest
             helpCommand.execute( "foobar" );
 
             assertEquals( String.format( "usage: neo4j-admin foobar [--database=<name>]%n" +
+                            "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
                             "%n" +
                             "This is a description of the foobar command.%n" +
                             "%n" +

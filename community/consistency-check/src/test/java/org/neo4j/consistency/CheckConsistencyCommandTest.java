@@ -331,6 +331,13 @@ public class CheckConsistencyCommandTest
                             "                                     [--check-label-scan-store[=<true|false>]]%n" +
                             "                                     [--check-property-owners[=<true|false>]]%n" +
                             "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
+                            "%n" +
                             "This command allows for checking the consistency of a database or a backup%n" +
                             "thereof. It cannot be used with a database which is currently in use.%n" +
                             "%n" +

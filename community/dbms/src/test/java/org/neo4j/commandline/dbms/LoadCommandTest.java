@@ -308,6 +308,13 @@ public class LoadCommandTest
             assertEquals( String.format( "usage: neo4j-admin load --from=<archive-path> [--database=<name>]%n" +
                             "                        [--force[=<true|false>]]%n" +
                             "%n" +
+                            "environment variables:%n" +
+                            "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
+                            "    NEO4J_DEBUG   Set to anything to enable debug output.%n" +
+                            "    NEO4J_HOME    Neo4j home directory.%n" +
+                            "    HEAP_SIZE     Set size of JVM heap during command execution.%n" +
+                            "                  Takes a number and a unit, for example 512m.%n" +
+                            "%n" +
                             "Load a database from an archive. <archive-path> must be an archive created with%n" +
                             "the dump command. <database> is the name of the database to create. Existing%n" +
                             "databases can be replaced by specifying --force. It is not possible to replace a%n" +

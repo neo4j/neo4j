@@ -52,7 +52,6 @@ public class Usage
         output.accept( "Manage your Neo4j instance." );
         output.accept( "" );
 
-        output.accept( "environment variables:" );
         printEnvironmentVariables( output );
 
         output.accept( "available commands:" );
@@ -62,8 +61,9 @@ public class Usage
         output.accept( format( "Use %s help <command> for more details.", scriptName ) );
     }
 
-    private void printEnvironmentVariables( Consumer<String> output )
+    static void printEnvironmentVariables( Consumer<String> output )
     {
+        output.accept( "environment variables:" );
         output.accept( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         output.accept( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         output.accept( "    NEO4J_HOME    Neo4j home directory." );
