@@ -214,7 +214,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   }
 
   private def getMinimumTimeBeforeReplanning: Long = {
-    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue()
+    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis().longValue()
     getSetting(graph, setting, DEFAULT_QUERY_PLAN_TTL)
   }
 
