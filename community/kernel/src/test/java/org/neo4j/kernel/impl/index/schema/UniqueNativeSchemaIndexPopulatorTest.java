@@ -178,7 +178,6 @@ public class UniqueNativeSchemaIndexPopulatorTest
         populator.close( true );
     }
 
-
     @Override
     protected void copyValue( UniqueSchemaNumberValue value, UniqueSchemaNumberValue into )
     {
