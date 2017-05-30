@@ -633,6 +633,7 @@ public class NeoStores implements AutoCloseable
             {
                 log.warn( "Missing counts store, rebuilding it." );
                 new CountsComputer( neoStores ).initialize( updater );
+                log.warn( "Counts store rebuild completed." );
             }
 
             @Override

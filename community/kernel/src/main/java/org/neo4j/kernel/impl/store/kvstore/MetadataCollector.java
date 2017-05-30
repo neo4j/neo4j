@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEndianByteArrayBuffer>
@@ -35,11 +36,13 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     private int header, data;
     private State state = State.expecting_format_specifier;
     private byte[] catalogue = NO_DATA;
+    private final ReadableBuffer expectedFormat;
 
-    MetadataCollector( int entriesPerPage, HeaderField<?>[] headerFields )
+    MetadataCollector( int entriesPerPage, HeaderField<?>[] headerFields, ReadableBuffer expectedFormat)
     {
         this.entriesPerPage = entriesPerPage;
         this.headerFields = headerFields = headerFields.clone();
+        this.expectedFormat = expectedFormat;
         this.headerValues = new Object[headerFields.length];
         for ( int i = 0; i < headerFields.length; i++ )
         {
@@ -83,6 +86,11 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
     }
 
     abstract boolean verifyFormatSpecifier( ReadableBuffer value );
+
+    ReadableBuffer expectedFormat()
+    {
+        return expectedFormat;
+    }
 
     @Override
     byte[] pageCatalogue()
@@ -230,7 +238,8 @@ abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEnd
             if ( !collector.verifyFormatSpecifier( value ) )
             {
                 collector.state = in_error;
-                throw new IllegalStateException( "Format header/trailer has changed." );
+                throw new IllegalStateException( format( "Format header/trailer has changed. " +
+                        "Expected format:`%s`, actual:`%s`.", collector.expectedFormat(), value) );
             }
 
             try

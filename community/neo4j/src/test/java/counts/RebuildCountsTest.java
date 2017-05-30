@@ -57,8 +57,6 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class RebuildCountsTest
 {
-    // Indexing counts are recovered/rebuild in IndexingService.start() and are not tested here
-
     @Test
     public void shouldRebuildMissingCountsStoreOnStart() throws IOException
     {
@@ -77,9 +75,9 @@ public class RebuildCountsTest
         assertEquals( HUMANS, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        internalLogProvider.assertAtLeastOnce(
-                inLog( MetaDataStore.class ).warn( "Missing counts store, rebuilding it." )
-        );
+        AssertableLogProvider.LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
     }
 
     @Test
@@ -102,9 +100,9 @@ public class RebuildCountsTest
         assertEquals( 0, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        internalLogProvider.assertAtLeastOnce(
-                inLog( MetaDataStore.class ).warn( "Missing counts store, rebuilding it." )
-        );
+        AssertableLogProvider.LogMatcherBuilder matcherBuilder = inLog( MetaDataStore.class );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Missing counts store, rebuilding it." ) );
+        internalLogProvider.assertAtLeastOnce( matcherBuilder.warn( "Counts store rebuild completed." ) );
     }
 
     private void createAliensAndHumans()

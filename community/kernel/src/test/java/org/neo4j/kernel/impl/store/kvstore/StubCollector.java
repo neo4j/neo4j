@@ -23,7 +23,7 @@ class StubCollector extends MetadataCollector
 {
     StubCollector( int entriesPerPage, String... header )
     {
-        super( entriesPerPage, headerFields( header ) );
+        super( entriesPerPage, headerFields( header ), BigEndianByteArrayBuffer.buffer( 0 ) );
     }
 
     @Override
