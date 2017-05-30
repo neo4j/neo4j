@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.txtracking;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -39,13 +40,13 @@ public class TransactionIdTracker
     private static final int POLL_INTERVAL = 25;
     private static final TimeUnit POLL_UNIT = TimeUnit.MILLISECONDS;
 
-    private final TransactionIdStore transactionIdStore;
+    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final AvailabilityGuard availabilityGuard;
 
-    public TransactionIdTracker( TransactionIdStore transactionIdStore, AvailabilityGuard availabilityGuard )
+    public TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStoreSupplier, AvailabilityGuard availabilityGuard )
     {
         this.availabilityGuard = availabilityGuard;
-        this.transactionIdStore = transactionIdStore;
+        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
     }
 
     /**
@@ -82,7 +83,7 @@ public class TransactionIdTracker
         {
             throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
                     "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
-                    transactionIdStore.getLastClosedTransactionId() );
+                    transactionIdStore().getLastClosedTransactionId() );
         }
     }
 
@@ -93,7 +94,7 @@ public class TransactionIdTracker
             throw new TransactionFailureException( Status.General.DatabaseUnavailable,
                     "Database had become unavailable while waiting for requested version %d.", oldestAcceptableTxId );
         }
-        return oldestAcceptableTxId <= transactionIdStore.getLastClosedTransactionId();
+        return oldestAcceptableTxId <= transactionIdStore().getLastClosedTransactionId();
     }
 
     /**
@@ -105,6 +106,11 @@ public class TransactionIdTracker
      */
     public long newestEncounteredTxId()
     {
-        return transactionIdStore.getLastClosedTransactionId();
+        return transactionIdStore().getLastClosedTransactionId();
+    }
+
+    private TransactionIdStore transactionIdStore()
+    {
+        return transactionIdStoreSupplier.get();
     }
 }

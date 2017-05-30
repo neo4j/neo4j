@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -47,7 +46,6 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
 
     private QueryExecutionEngine queryExecutionEngine;
     private GraphDatabaseQueryService queryService;
-    private TransactionIdStore transactionIdStore;
     private AvailabilityGuard availabilityGuard;
 
     public LifecycleManagedBoltFactory( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
@@ -74,7 +72,6 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
         DependencyResolver dependencyResolver = gds.getDependencyResolver();
         queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
         queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
-        transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
         availabilityGuard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
         life.start();
     }
@@ -95,8 +92,8 @@ public class LifecycleManagedBoltFactory extends LifecycleAdapter implements Bol
     public BoltStateMachine newMachine( String connectionDescriptor, Runnable onClose, Clock clock )
     {
         TransactionStateMachine.SPI transactionSPI =
-                new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine, transactionIdStore,
-                        availabilityGuard, queryService, clock );
+                new TransactionStateMachineSPI( gds, txBridge, queryExecutionEngine, availabilityGuard, queryService,
+                        clock );
         BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,
                 logging, authentication, connectionTracker, transactionSPI );
         return new BoltStateMachine( boltSPI, onClose, Clock.systemUTC() );

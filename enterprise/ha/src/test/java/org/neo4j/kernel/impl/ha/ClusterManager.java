@@ -69,6 +69,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -98,7 +99,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1152,6 +1152,12 @@ public class ClusterManager
             }
         }
 
+        public String getBoltAddress( HighlyAvailableGraphDatabase db )
+        {
+            return "bolt://" + db.getDependencyResolver().resolveDependency( Config.class ).get(
+                    new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address ).toString();
+        }
+
         /**
          * @return the current master in the cluster.
          * @throws IllegalStateException if there's no current master.
@@ -1317,6 +1323,11 @@ public class ClusterManager
             };
         }
 
+        private AdvertisedSocketAddress socketAddressForServer( String advertisedAddress, InstanceId id )
+        {
+            return new AdvertisedSocketAddress( advertisedAddress, ( 5000 + id.toIntegerIndex() ) );
+        }
+
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
         {
             Cluster.Member member = spec.getMembers().get( serverId.toIntegerIndex() - firstInstanceId );
@@ -1351,12 +1362,25 @@ public class ClusterManager
                     storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
                 }
                 GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
+
                 builder.setConfig( ClusterSettings.cluster_name, name );
                 builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
                 builder.setConfig( ClusterSettings.server_id, serverId + "" );
                 builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
                 builder.setConfig( HaSettings.ha_server, clusterUri.getHost() + ":" + haPort );
                 builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+
+                String listenAddress = "127.0.0.1";
+                int boltPort = 8000 + serverId.toIntegerIndex();
+                AdvertisedSocketAddress advertisedSocketAddress = socketAddressForServer( listenAddress, serverId );
+                String advertisedAddress = advertisedSocketAddress.getHostname();
+                String boltAdvertisedAddress = advertisedAddress + ":" + boltPort;
+
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).type, "BOLT" );
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled, "true" );
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address, listenAddress + ":" + boltPort );
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+
                 for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
                 {
                     builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );

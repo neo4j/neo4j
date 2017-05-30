@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import java.util.function.Supplier;
+
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -98,10 +100,10 @@ public class CausalConsistencyIT
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )
     {
-        TransactionIdStore transactionIdStore =
-                database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        Supplier<TransactionIdStore> transactionIdStoreSupplier = database.getDependencyResolver().provideDependency(
+                TransactionIdStore.class );
         AvailabilityGuard availabilityGuard =
                 database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStore, availabilityGuard );
+        return new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
     }
 }
