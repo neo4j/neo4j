@@ -63,9 +63,10 @@ public class StreamFilesRecursive
     {
         try
         {
+            File canonicalizedDirectory = directory.getCanonicalFile();
             // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
-            List<File> snapshot = streamFilesRecursiveInner( directory.getCanonicalFile(), fs ).collect( toList() );
-            return snapshot.stream().map( f -> new WrappingFileHandle( f, directory, fs ) );
+            List<File> snapshot = streamFilesRecursiveInner( canonicalizedDirectory, fs ).collect( toList() );
+            return snapshot.stream().map( f -> new WrappingFileHandle( f, canonicalizedDirectory, fs ) );
         }
         catch ( UncheckedIOException e )
         {
