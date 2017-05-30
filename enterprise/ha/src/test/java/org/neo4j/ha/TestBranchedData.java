@@ -60,6 +60,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.GraphDatabaseInternalLogIT.INTERNAL_LOG_FILE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
@@ -337,7 +338,7 @@ public class TestBranchedData
         for ( File file : Objects.requireNonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
-            if ( !fileName.equals( "debug.log" ) && !file.getName().startsWith( "branched-" ) )
+            if ( !fileName.equals( INTERNAL_LOG_FILE ) && !file.getName().startsWith( "branched-" ) )
             {
                 FileUtils.renameFile( file, new File( branchDir, file.getName() ) );
             }

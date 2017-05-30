@@ -120,6 +120,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.GraphDatabaseInternalLogIT.INTERNAL_LOG_FILE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -638,7 +639,7 @@ public class BatchInsertTest
         File storeDir = this.storeDir.graphDbDir();
         BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap() );
         inserter.shutdown();
-        assertTrue( new File( storeDir, "debug.log" ).delete() );
+        assertTrue( new File( storeDir, INTERNAL_LOG_FILE ).delete() );
     }
 
     @Test
