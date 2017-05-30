@@ -103,6 +103,6 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         assertEquals( 1, config.size() );
         assertArrayEquals( new Object[]{ "dbms.transaction.timeout",
                 "The maximum time interval of a transaction within which it should be completed.",
-                "0s" }, config.get( 0 ) );
+                "0ms" }, config.get( 0 ) );
     }
 }

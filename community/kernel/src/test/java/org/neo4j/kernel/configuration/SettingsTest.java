@@ -270,7 +270,7 @@ public class SettingsTest
     public void testDuration()
     {
         Setting<Duration> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
-        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( 4000L ) );
+        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
     }
 
     @Test
@@ -307,7 +307,7 @@ public class SettingsTest
         Setting<File> config = setting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath(),
                 basePath( home ), isFile );
         assertThat( config.apply( map( stringMap() ) ).getAbsolutePath(),
-            equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
+                equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
     }
 
     @Test
@@ -376,7 +376,7 @@ public class SettingsTest
         assertThat( uri.apply( always -> null ).toString(), equalTo( "/db/data" ) );
     }
 
-    public static <From, To> Function<From, To> map( final Map<From, To> map )
+    public static <From, To> Function<From,To> map( final Map<From,To> map )
     {
         return from -> map.get( from );
     }
