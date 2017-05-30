@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
@@ -47,7 +47,8 @@ public class TxPullResponseEncodeDecodeTest
 
         // when
         channel.writeOutbound( sent );
-        channel.writeInbound( channel.readOutbound() );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         TxPullResponse received = channel.readInbound();
@@ -62,7 +63,7 @@ public class TxPullResponseEncodeDecodeTest
                 new Command.NodeCommand( new NodeRecord( arbitraryRecordId ), new NodeRecord( arbitraryRecordId ) );
 
         PhysicalTransactionRepresentation physicalTransactionRepresentation =
-                new PhysicalTransactionRepresentation( asList( new LogEntryCommand( command ).getXaCommand() ) );
+                new PhysicalTransactionRepresentation( singletonList( new LogEntryCommand( command ).getXaCommand() ) );
         physicalTransactionRepresentation.setHeader( new byte[]{}, 0, 0, 0, 0, 0, 0 );
 
         LogEntryStart startEntry = new LogEntryStart( 0, 0, 0L, 0L, new byte[]{}, LogPosition.UNSPECIFIED );

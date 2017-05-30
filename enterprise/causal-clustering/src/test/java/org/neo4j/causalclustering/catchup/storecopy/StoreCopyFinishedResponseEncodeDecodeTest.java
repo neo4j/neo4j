@@ -40,7 +40,8 @@ public class StoreCopyFinishedResponseEncodeDecodeTest
 
         // when
         channel.writeOutbound( sent );
-        channel.writeInbound( channel.readOutbound() );
+        Object message = channel.readOutbound();
+        channel.writeInbound( message );
 
         // then
         StoreCopyFinishedResponse received = channel.readInbound();
