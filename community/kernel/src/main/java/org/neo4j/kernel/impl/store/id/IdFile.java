@@ -34,7 +34,7 @@ public class IdFile
     static final long NO_RESULT = -1;
 
     // sticky(byte), nextFreeId(long)
-    private static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
+    static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
     // if sticky the id generator wasn't closed properly so it has to be
     // rebuilt (go through the node, relationship, property, rel type etc files)
