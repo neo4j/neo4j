@@ -111,7 +111,7 @@ abstract class DoubleArray extends FloatingPointArray
         return format( "DoubleArray(%s)", Arrays.toString( value() ) );
     }
 
-    final static class Direct extends DoubleArray
+    static final class Direct extends DoubleArray
     {
         final double[] value;
 
@@ -128,7 +128,7 @@ abstract class DoubleArray extends FloatingPointArray
         }
     }
 
-    final static class Lazy extends DoubleArray implements LazyValue<double[]>
+    static final class Lazy extends DoubleArray implements LazyValue<double[]>
     {
         private volatile Object field;
 

@@ -94,7 +94,7 @@ abstract class CharArray extends TextArray
         return format( "CharArray(%s)", Arrays.toString( value() ) );
     }
 
-    final static class Direct extends CharArray
+    static final class Direct extends CharArray
     {
         final char[] value;
 
@@ -111,7 +111,7 @@ abstract class CharArray extends TextArray
         }
     }
 
-    final static class Lazy extends CharArray implements LazyValue<char[]>
+    static final class Lazy extends CharArray implements LazyValue<char[]>
     {
         private volatile Object field;
 

@@ -111,7 +111,7 @@ abstract class ByteArray extends IntegralArray
         return format( "ByteArray(%s)", Arrays.toString( value() ) );
     }
 
-    final static class Direct extends ByteArray
+    static final class Direct extends ByteArray
     {
         final byte[] value;
 
@@ -128,7 +128,7 @@ abstract class ByteArray extends IntegralArray
         }
     }
 
-    final static class Lazy extends ByteArray implements LazyValue<byte[]>
+    static final class Lazy extends ByteArray implements LazyValue<byte[]>
     {
         private volatile Object field;
 

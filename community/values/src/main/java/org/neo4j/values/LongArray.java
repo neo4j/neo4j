@@ -111,7 +111,7 @@ abstract class LongArray extends IntegralArray
         return format( "LongArray(%s)", Arrays.toString( value() ) );
     }
 
-    final static class Direct extends LongArray
+    static final class Direct extends LongArray
     {
         final long[] value;
 
@@ -128,7 +128,7 @@ abstract class LongArray extends IntegralArray
         }
     }
 
-    final static class Lazy extends LongArray implements LazyValue<long[]>
+    static final class Lazy extends LongArray implements LazyValue<long[]>
     {
         private volatile Object field;
 

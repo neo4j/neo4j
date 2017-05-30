@@ -85,7 +85,7 @@ abstract class StringValue extends TextValue
         return value();
     }
 
-    final static class Direct extends StringValue
+    static final class Direct extends StringValue
     {
         final String value;
 
@@ -102,7 +102,7 @@ abstract class StringValue extends TextValue
         }
     }
 
-    final static class Lazy extends StringValue implements LazyValue<String>
+    static final class Lazy extends StringValue implements LazyValue<String>
     {
         private volatile Object field;
 

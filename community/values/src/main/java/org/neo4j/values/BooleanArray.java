@@ -138,7 +138,7 @@ abstract class BooleanArray extends ArrayValue
         return ValueGroup.BOOLEAN_ARRAY;
     }
 
-    final static class Direct extends BooleanArray
+    static final class Direct extends BooleanArray
     {
         private final boolean[] value;
 
@@ -155,7 +155,7 @@ abstract class BooleanArray extends ArrayValue
         }
     }
 
-    final static class Lazy extends BooleanArray implements LazyValue<boolean[]>
+    static final class Lazy extends BooleanArray implements LazyValue<boolean[]>
     {
         private volatile Object field;
 

@@ -92,7 +92,7 @@ abstract class StringArray extends TextArray
         return TextValues.compareTextArrays( this, other );
     }
 
-    final static class Direct extends StringArray
+    static final class Direct extends StringArray
     {
         final String[] value;
 
@@ -109,7 +109,7 @@ abstract class StringArray extends TextArray
         }
     }
 
-    final static class Lazy extends StringArray implements LazyValue<String[]>
+    static final class Lazy extends StringArray implements LazyValue<String[]>
     {
         private volatile Object field;
 
