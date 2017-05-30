@@ -189,10 +189,12 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.raft_log_pruning_frequency", DURATION, "10m" );
 
     @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
+    @Internal
     public static final Setting<Boolean> raft_messages_log_enable =
             setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE);
 
     @Description( "Path to RAFT messages log." )
+    @Internal
     public static final Setting<File> raft_messages_log_path =
             derivedSetting( "causal_clustering.raft_messages_log_path", logs_directory,
                     ( logs ) -> new File( logs, "raft-messages.log" ), PATH );
