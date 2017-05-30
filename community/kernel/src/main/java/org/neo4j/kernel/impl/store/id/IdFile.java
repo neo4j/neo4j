@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,11 +28,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-import static java.lang.Math.max;
 
-
-public class IdFile implements Closeable
+public class IdFile
 {
+    public static final long NO_RESULT = -1;
+
     // sticky(byte), nextFreeId(long)
     public static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
@@ -47,14 +46,15 @@ public class IdFile implements Closeable
     private StoreChannel fileChannel;
 
     private FreeIdKeeper freeIdKeeper;
-    private final HighIdKeeper highIdKeeper = new HighIdKeeper();
 
     private final int grabSize;
     private final boolean aggressiveReuse;
 
+    private long initialHighId;
+
     private boolean closed = true;
 
-    public IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse, long highId )
+    public IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
     {
         if ( grabSize < 1 )
         {
@@ -65,7 +65,6 @@ public class IdFile implements Closeable
         this.fs = fs;
         this.grabSize = grabSize;
         this.aggressiveReuse = aggressiveReuse;
-        highIdKeeper.setHighId( highId );
     }
 
     // initialize the id generator and performs a simple validation
@@ -74,13 +73,10 @@ public class IdFile implements Closeable
         try
         {
             fileChannel = fs.open( file, "rw" );
+            initialHighId = readAndValidateHeader();
+            markAsSticky();
 
-            ByteBuffer buffer = readHeader();
-            highIdKeeper.setHighId( max( buffer.getLong(), highIdKeeper.getHighId() ) );
-            markAsSticky( buffer );
-
-            fileChannel.position( HEADER_SIZE );
-            this.freeIdKeeper = new FreeIdKeeper( fileChannel, grabSize, aggressiveReuse );
+            this.freeIdKeeper = new FreeIdKeeper( fileChannel, grabSize, aggressiveReuse, HEADER_SIZE );
             closed = false;
         }
         catch ( IOException e )
@@ -95,6 +91,11 @@ public class IdFile implements Closeable
         return closed;
     }
 
+    public long getInitialHighId()
+    {
+        return initialHighId;
+    }
+
     void assertStillOpen()
     {
         if ( closed )
@@ -103,13 +104,11 @@ public class IdFile implements Closeable
         }
     }
 
-    private ByteBuffer readHeader() throws IOException
+    private long readAndValidateHeader() throws IOException
     {
         try
         {
-            ByteBuffer buffer = readHighIdFromHeader( fileChannel, file );
-
-            return buffer;
+            return readAndValidate( fileChannel, file );
         }
         catch ( InvalidIdGeneratorException e )
         {
@@ -118,7 +117,7 @@ public class IdFile implements Closeable
         }
     }
 
-    private static ByteBuffer readHighIdFromHeader( StoreChannel channel, File fileName ) throws IOException
+    private static long readAndValidate( StoreChannel channel, File fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
         int read = channel.read( buffer );
@@ -134,32 +133,36 @@ public class IdFile implements Closeable
             throw new InvalidIdGeneratorException( "Sticky generator[ " +
                     fileName + "] delete this id file and build a new one" );
         }
-        return buffer;
+        return buffer.getLong();
     }
 
     public static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
-            return readHighIdFromHeader( channel, file ).getLong();
+            return readAndValidate( channel, file );
         }
     }
 
-    /**
-     * Made available for testing purposes.
-     * Marks an id generator as sticky, i.e. not cleanly shut down.
-     */
-    public void markAsSticky( ByteBuffer buffer ) throws IOException
+    private void markAsSticky() throws IOException
     {
-        buffer.clear();
-        buffer.put( STICKY_GENERATOR ).limit( 1 ).flip();
+        ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES );
+        buffer.put( STICKY_GENERATOR ).flip();
         fileChannel.position( 0 );
         fileChannel.write( buffer );
         fileChannel.force( false );
     }
 
-    @Override
-    public void close()
+    private void markAsCleanlyClosed(  ) throws IOException
+    {
+        // remove sticky
+        ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES );
+        buffer.put( CLEAN_GENERATOR ).flip();
+        fileChannel.position( 0 );
+        fileChannel.write( buffer );
+    }
+
+    public void close( long highId )
     {
         if ( closed )
         {
@@ -169,11 +172,10 @@ public class IdFile implements Closeable
         try
         {
             freeIdKeeper.close(); // first write out free ids, then mark as clean
-            ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-            writeHeader( buffer );
+            writeHeader( highId );
             fileChannel.force( false );
 
-            markAsCleanlyClosed( buffer );
+            markAsCleanlyClosed( );
 
             closeChannel();
         }
@@ -191,26 +193,13 @@ public class IdFile implements Closeable
         fileChannel.close();
         fileChannel = null;
         closed = true;
-        // make this generator unusable
-        highIdKeeper.setHighId( -1L );
     }
 
-    private void markAsCleanlyClosed( ByteBuffer buffer ) throws IOException
+    private void writeHeader( long highId ) throws IOException
     {
-        // remove sticky
-        buffer.clear();
-        buffer.put( CLEAN_GENERATOR );
-        buffer.limit( 1 );
-        buffer.flip();
+        ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
+        buffer.put( STICKY_GENERATOR ).putLong( highId ).flip();
         fileChannel.position( 0 );
-        fileChannel.write( buffer );
-    }
-
-    private void writeHeader( ByteBuffer buffer ) throws IOException
-    {
-        fileChannel.position( 0 );
-        buffer.put( STICKY_GENERATOR ).putLong( highIdKeeper.getHighId() );
-        buffer.flip();
         fileChannel.write( buffer );
     }
 
@@ -241,16 +230,6 @@ public class IdFile implements Closeable
     public long getReuseableId()
     {
         return freeIdKeeper.getId();
-    }
-
-    public long getHighId()
-    {
-        return highIdKeeper.getHighId();
-    }
-
-    public void setHighId( long highId )
-    {
-        highIdKeeper.setHighId( highId );
     }
 
     public void freeId( long id )
@@ -307,7 +286,7 @@ public class IdFile implements Closeable
     public String toString()
     {
         return "IdFile{" + "file=" + file + ", fs=" + fs + ", fileChannel=" + fileChannel + ", defragCount=" +
-                freeIdKeeper.getCount() + ", highIdKeeper=" + highIdKeeper + ", grabSize=" + grabSize + ", aggressiveReuse=" +
+                freeIdKeeper.getCount() + ", grabSize=" + grabSize + ", aggressiveReuse=" +
                 aggressiveReuse + ", closed=" + closed + '}';
     }
 }

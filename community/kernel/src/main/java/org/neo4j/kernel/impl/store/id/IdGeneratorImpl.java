@@ -26,6 +26,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
+import static java.lang.Math.max;
+
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
  * nodes space are connected to each other via relationships. On nodes and
@@ -68,6 +70,8 @@ public class IdGeneratorImpl implements IdGenerator
 
     private IdFile idFile;
 
+    private long highId = INTEGER_MINUS_ONE;
+
     /**
      * Opens the id generator represented by <CODE>fileName</CODE>. The
      * <CODE>grabSize</CODE> means how many defragged ids we should keep in
@@ -99,8 +103,9 @@ public class IdGeneratorImpl implements IdGenerator
     {
         this.max = max;
 
-        this.idFile = new IdFile( fs, file, grabSize, aggressiveReuse, highId );
+        this.idFile = new IdFile( fs, file, grabSize, aggressiveReuse );
         this.idFile.init();
+        this.highId = max( idFile.getInitialHighId(), highId );
     }
 
     /**
@@ -119,19 +124,17 @@ public class IdGeneratorImpl implements IdGenerator
     {
         assertStillOpen();
         long nextDefragId = idFile.getReuseableId();
-        if ( nextDefragId != -1 )
+        if ( nextDefragId != IdFile.NO_RESULT )
         {
             return nextDefragId;
         }
 
-        long id = idFile.getHighId();
-        if ( IdValidator.isReservedId( id ) )
+        if ( IdValidator.isReservedId( highId ) )
         {
-            id++;
+            highId++;
         }
-        IdValidator.assertValidId( id, max );
-        idFile.setHighId( id + 1 );
-        return id;
+        IdValidator.assertValidId( highId, max );
+        return highId++;
     }
 
     private void assertStillOpen()
@@ -163,7 +166,7 @@ public class IdGeneratorImpl implements IdGenerator
         System.arraycopy( tmpArray, 0, defragIds, 0, count );
 
         int sizeLeftForRange = size - count;
-        long start = idFile.getHighId();
+        long start = highId;
         setHighId( start + sizeLeftForRange );
         return new IdRange( defragIds, start, sizeLeftForRange );
     }
@@ -178,7 +181,7 @@ public class IdGeneratorImpl implements IdGenerator
     public void setHighId( long id )
     {
         IdValidator.assertIdWithinCapacity( id, max );
-        idFile.setHighId( id );
+        highId = id;
     }
 
     /**
@@ -190,7 +193,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public long getHighId()
     {
-        return idFile.getHighId();
+        return highId;
     }
 
     @Override
@@ -222,9 +225,9 @@ public class IdGeneratorImpl implements IdGenerator
             return;
         }
 
-        if ( id < 0 || id >= idFile.getHighId() )
+        if ( id < 0 || id >= highId )
         {
-            throw new IllegalArgumentException( "Illegal id[" + id + "], highId is " + idFile.getHighId() );
+            throw new IllegalArgumentException( "Illegal id[" + id + "], highId is " + highId );
         }
         idFile.freeId( id );
     }
@@ -241,7 +244,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized void close()
     {
-        idFile.close();
+        idFile.close( highId );
     }
 
     /**
@@ -265,7 +268,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized long getNumberOfIdsInUse()
     {
-        return idFile.getHighId() - getDefragCount();
+        return highId - getDefragCount();
     }
 
     @Override

@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.kernel.impl.store.id.FreeIdKeeper.NO_RESULT;
+import static org.neo4j.kernel.impl.store.id.IdFile.NO_RESULT;
 
 public class FreeIdKeeperTest
 {
@@ -52,7 +53,7 @@ public class FreeIdKeeperTest
         // Given
         StoreChannel channel = mock( StoreChannel.class );
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
 
         // when
         // then
@@ -66,7 +67,7 @@ public class FreeIdKeeperTest
         // Given
         StoreChannel channel = mock( StoreChannel.class );
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
 
         // when
         keeper.freeId( 13 );
@@ -88,7 +89,7 @@ public class FreeIdKeeperTest
         // Given
         StoreChannel channel = mock( StoreChannel.class );
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
 
         // when
         keeper.freeId( 13 );
@@ -106,7 +107,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = spy( fs.get().open( new File( "id.file" ), "rw" ) );
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
         reset( channel ); // because we get the position in the constructor, we need to reset all calls on the spy
 
         // when
@@ -130,10 +131,10 @@ public class FreeIdKeeperTest
     public void shouldReadBackPersistedIdsWhenAggressiveReuseIsSet() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
 
         // when
         // we store enough ids to cause overflow to file
@@ -154,10 +155,10 @@ public class FreeIdKeeperTest
     public void shouldReadBackManyPersistedIdBatchesWhenAggressiveReuseIsSet() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
         Set<Long> freeIds = new HashSet<>();
 
         // when
@@ -182,10 +183,10 @@ public class FreeIdKeeperTest
     {
         // this is testing the stack property, but from the viewpoint of avoiding unnecessary disk reads
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
 
         // when
         // we store enough ids to cause overflow to file
@@ -218,10 +219,10 @@ public class FreeIdKeeperTest
     public void persistedIdsShouldStillBeCounted() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true, 0 );
 
         // when
         // we store enough ids to cause overflow to file
@@ -245,10 +246,10 @@ public class FreeIdKeeperTest
     public void shouldStoreAndRestoreIds() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
         Set<Long> freeIds = new HashSet<>(); // stack guarantees are not maintained between restarts
 
         // when
@@ -270,7 +271,7 @@ public class FreeIdKeeperTest
         channel.close();
         // and then we open a new one over the same file
         channel = fs.get().open( new File( "id.file" ), "rw" );
-        keeper = new FreeIdKeeper( channel, threshold, true );
+        keeper = getFreeIdKeeper( channel, threshold );
 
         // then
         // the count should be returned correctly
@@ -288,10 +289,10 @@ public class FreeIdKeeperTest
     public void shouldNotReturnNewlyReleasedIdsIfAggressiveIsFalse() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, false );
+        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
 
         // when
         keeper.freeId( 1 );
@@ -308,7 +309,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = spy( fs.get().open( new File( "id.file" ), "rw" ) );
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, false );
+        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
 
         // when
         // enough ids are persisted to overflow
@@ -328,10 +329,10 @@ public class FreeIdKeeperTest
     public void shouldReturnIdsRestoredAndIgnoreNewlyReleasedIfAggressiveReuseIsFalse() throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, false );
+        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
         Set<Long> freeIds = new HashSet<>();
         for ( long i = 0; i < threshold; i++ )
         {
@@ -342,7 +343,7 @@ public class FreeIdKeeperTest
         channel.close();
         // and then we open a new one over the same file
         channel = fs.get().open( new File( "id.file" ), "rw" );
-        keeper = new FreeIdKeeper( channel, threshold, false );
+        keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
 
         // when
         // we release some ids that spill to disk
@@ -368,10 +369,10 @@ public class FreeIdKeeperTest
             throws Exception
     {
         // given
-        StoreChannel channel = fs.get().open( new File( "id.file" ), "rw" );
+        StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, false );
+        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
         Set<Long> freeIds = new HashSet<>();
         for ( long i = 0; i < threshold; i++ )
         {
@@ -382,7 +383,7 @@ public class FreeIdKeeperTest
         channel.close();
         // and then we open a new one over the same file
         channel = fs.get().open( new File( "id.file" ), "rw" );
-        keeper = new FreeIdKeeper( channel, threshold, false );
+        keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
 
         // when - then
         // we exhaust all ids restored
@@ -401,5 +402,25 @@ public class FreeIdKeeperTest
         // then
         // we should have no ids to return
         assertEquals( NO_RESULT, keeper.getId() );
+    }
+
+    private FreeIdKeeper getFreeIdKeeper( StoreChannel channel, int threshold ) throws IOException
+    {
+        return getFreeIdKeeper( channel, threshold, false );
+    }
+
+    private FreeIdKeeper getFreeIdKeeperAggressive( StoreChannel channel, int threshold ) throws IOException
+    {
+        return getFreeIdKeeper( channel, threshold, true );
+    }
+
+    private FreeIdKeeper getFreeIdKeeper( StoreChannel channel, int threshold, boolean aggresiveReuse ) throws IOException
+    {
+        return new FreeIdKeeper( channel, threshold, aggresiveReuse, 0 );
+    }
+
+    private StoreChannel getStoreChannel() throws IOException
+    {
+        return fs.get().open( new File( "id.file" ), "rw" );
     }
 }

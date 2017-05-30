@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
+import static org.neo4j.kernel.impl.store.id.IdFile.NO_RESULT;
+
 /**
  * Instances of this class maintain a list of free ids with the potential to overflow to disk if the number
  * of free ids becomes too large.
@@ -41,8 +43,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
  */
 public class FreeIdKeeper implements Closeable
 {
-    public static final long NO_RESULT = -1;
-    public static final int ID_ENTRY_SIZE = Long.BYTES;
+
+    private static final int ID_ENTRY_SIZE = Long.BYTES;
     private final LinkedList<Long> freeIds = new LinkedList<>();
     private final LinkedList<Long> readFromDisk = new LinkedList<>();
     private final StoreChannel channel;
@@ -66,22 +68,17 @@ public class FreeIdKeeper implements Closeable
     private long maxReadPosition;
     private long readPosition; // the place from where we read. Always <= maxReadPosition
 
-    public FreeIdKeeper( StoreChannel channel, int threshold, boolean aggressiveReuse ) throws IOException
+    public FreeIdKeeper( StoreChannel channel, int threshold, boolean aggressiveReuse, int initialPosition ) throws IOException
     {
         this.channel = channel;
         this.threshold = threshold;
         this.aggressiveReuse = aggressiveReuse;
-        this.lowWatermarkForChannelPosition = channel.position();
+        this.lowWatermarkForChannelPosition = initialPosition;
         readPosition = lowWatermarkForChannelPosition;
-        restoreIdsOnStartup();
-    }
 
-    private void restoreIdsOnStartup() throws IOException
-    {
         // this is always true regardless of aggressiveReuse. It only matters once we start writing
-        maxReadPosition = channel.size();
+        maxReadPosition = this.channel.size();
         defraggedIdCount = ( maxReadPosition - lowWatermarkForChannelPosition ) / ID_ENTRY_SIZE;
-        readIdBatch();
     }
 
     public void freeId( long id )
