@@ -25,7 +25,7 @@ import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.udc.UsageData;
@@ -33,6 +33,7 @@ import org.neo4j.udc.UsageDataKeys;
 
 class BoltStateMachineSPI implements BoltStateMachine.SPI
 {
+    private final String source;
     private final String connectionDescriptor;
     private final UsageData usageData;
     private final ErrorReporter errorReporter;
@@ -42,13 +43,15 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
 
     final TransactionStateMachine.SPI transactionSpi;
 
-    BoltStateMachineSPI( String connectionDescriptor,
+    BoltStateMachineSPI( String source,
+                         String connectionDescriptor,
                          UsageData usageData,
                          LogService logging,
                          Authentication authentication,
                          BoltConnectionTracker connectionTracker,
                          TransactionStateMachine.SPI transactionStateMachineSPI )
     {
+        this.source = source;
         this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
         this.errorReporter = new ErrorReporter( logging );
@@ -91,6 +94,7 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     @Override
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
+        authToken.put( AuthToken.SOURCE, source );
         return authentication.authenticate( authToken );
     }
 

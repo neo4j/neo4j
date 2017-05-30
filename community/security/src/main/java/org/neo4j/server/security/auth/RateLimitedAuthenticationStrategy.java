@@ -58,7 +58,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     /**
      * Tracks authentication state for each user
      */
-    private final ConcurrentMap<String, AuthenticationMetadata> authenticationData = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, AuthenticationMetadata>> authenticationData = new ConcurrentHashMap<>();
 
     public RateLimitedAuthenticationStrategy( Clock clock, int maxFailedAttempts )
     {
@@ -67,9 +67,9 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     }
 
     @Override
-    public AuthenticationResult authenticate( User user, String password)
+    public AuthenticationResult authenticate( User user, String password, String source )
     {
-        AuthenticationMetadata authMetadata = authMetadataFor( user.name() );
+        AuthenticationMetadata authMetadata = authMetadataFor( user.name(), source );
 
         if ( !authMetadata.authenticationPermitted() )
         {
@@ -87,14 +87,27 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         }
     }
 
-    private AuthenticationMetadata authMetadataFor( String username )
+    private AuthenticationMetadata authMetadataFor( String username, String source )
     {
-        AuthenticationMetadata authMeta = authenticationData.get( username );
+        ConcurrentMap<String, AuthenticationMetadata> authMetaMap = authenticationData.get( username );
+
+        if ( authMetaMap == null )
+        {
+            authMetaMap = new ConcurrentHashMap<>();
+            ConcurrentMap<String,AuthenticationMetadata> preExisting = authenticationData.putIfAbsent( username, authMetaMap );
+
+            if ( preExisting != null )
+            {
+                authMetaMap = preExisting;
+            }
+        }
+
+        AuthenticationMetadata authMeta = authMetaMap.get( source );
 
         if ( authMeta == null )
         {
             authMeta = new AuthenticationMetadata();
-            AuthenticationMetadata preExisting = authenticationData.putIfAbsent( username, authMeta );
+            AuthenticationMetadata preExisting = authMetaMap.putIfAbsent( source, authMeta );
             if ( preExisting != null )
             {
                 authMeta = preExisting;

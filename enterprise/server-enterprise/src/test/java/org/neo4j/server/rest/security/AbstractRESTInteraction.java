@@ -40,7 +40,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -49,6 +48,7 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.security.auth.SecurityTestUtils;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.server.security.enterprise.auth.EnterpriseUserManager;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
@@ -61,7 +61,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
-import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 abstract class AbstractRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
@@ -125,7 +124,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType )
             throws Throwable
     {
-        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        SecurityContext securityContext = authManager.login( SecurityTestUtils.authToken( subject.username, subject.password ) );
         return getLocalGraph().beginTransaction( txType, securityContext );
     }
 

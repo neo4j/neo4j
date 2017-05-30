@@ -382,10 +382,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         String username;
         String password;
+        String source;
         try
         {
             username = AuthToken.safeCast( AuthToken.PRINCIPAL, shiroAuthToken.getAuthTokenMap() );
             password = AuthToken.safeCast( AuthToken.CREDENTIALS, shiroAuthToken.getAuthTokenMap() );
+            source = AuthToken.safeCast( AuthToken.SOURCE, shiroAuthToken.getAuthTokenMap() );
         }
         catch ( InvalidAuthTokenException e )
         {
@@ -398,7 +400,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
             throw new UnknownAccountException();
         }
 
-        AuthenticationResult result = authenticationStrategy.authenticate( user, password );
+        AuthenticationResult result = authenticationStrategy.authenticate( user, password, source );
 
         switch ( result )
         {

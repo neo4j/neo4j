@@ -82,6 +82,7 @@ class ThreadedTransaction<S>
                     @Override
                     public Throwable apply( S subject )
                     {
+                        LatchState state = LatchState.NOT_STARTED;
                         try ( InternalTransaction tx = neo.beginLocalTransactionAsUser( subject, txType ) )
                         {
                             Result result = null;
@@ -90,6 +91,7 @@ class ThreadedTransaction<S>
                                 if ( startEarly )
                                 {
                                     latch.start();
+                                    state = LatchState.STARTED;
                                 }
                                 for ( String query : queries )
                                 {
@@ -102,15 +104,18 @@ class ThreadedTransaction<S>
                                 if ( !startEarly )
                                 {
                                     latch.startAndWaitForAllToStart();
+                                    state = LatchState.STARTED;
                                 }
                             }
                             finally
                             {
-                                if ( !startEarly )
+                                if ( !startEarly && state == LatchState.NOT_STARTED )
                                 {
                                     latch.start();
+                                    state = LatchState.STARTED;
                                 }
                                 latch.finishAndWaitForAllToFinish();
+                                state = LatchState.FINISHED;
                             }
                             result.close();
                             tx.success();
@@ -118,6 +123,15 @@ class ThreadedTransaction<S>
                         }
                         catch (Throwable t)
                         {
+                            if ( state == LatchState.NOT_STARTED )
+                            {
+                                latch.start();
+                                state = LatchState.STARTED;
+                            }
+                            if ( state == LatchState.STARTED )
+                            {
+                                latch.finish();
+                            }
                             return t;
                         }
                     }
@@ -160,5 +174,12 @@ class ThreadedTransaction<S>
     private Throwable join() throws ExecutionException, InterruptedException
     {
         return done.get();
+    }
+
+    private enum LatchState
+    {
+        STARTED,
+        FINISHED,
+        NOT_STARTED
     }
 }

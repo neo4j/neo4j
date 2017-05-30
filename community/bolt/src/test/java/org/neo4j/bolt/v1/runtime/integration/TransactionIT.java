@@ -55,12 +55,13 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-
+import static org.neo4j.bolt.v1.messaging.Neo4jPack.EMPTY_MAP;
 
 public class TransactionIT
 {
     private static final String USER_AGENT = "TransactionIT/0.0";
     private static final Pattern BOOKMARK_PATTERN = Pattern.compile( "neo4j:bookmark:v1:tx[0-9]+" );
+    private static final String SOURCE = "127.0.0.1";
 
     @Rule
     public SessionRule env = new SessionRule();
@@ -70,8 +71,8 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -94,8 +95,8 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -119,8 +120,8 @@ public class TransactionIT
         // Given
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
         BoltResponseRecorder pullAllRecorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "ROLLBACK", emptyMap(), runRecorder );
@@ -136,8 +137,8 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -163,8 +164,8 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         machine.run( "BEGIN", emptyMap(), recorder );
@@ -203,9 +204,9 @@ public class TransactionIT
             @Override
             public void run()
             {
-                try ( BoltStateMachine machine = env.newMachine( "<write>" ) )
+                try ( BoltStateMachine machine = env.newMachine( SOURCE, "<write>" ) )
                 {
-                    machine.init( USER_AGENT, emptyMap(), null );
+                    machine.init( USER_AGENT, EMPTY_MAP, null );
                     latch.await();
                     machine.run( "MATCH (n:A) SET n.prop = 'two'", emptyMap(), nullResponseHandler() );
                     machine.pullAll( nullResponseHandler() );
@@ -219,10 +220,10 @@ public class TransactionIT
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
-        try ( BoltStateMachine machine = env.newMachine( "<read>" ) )
+        try ( BoltStateMachine machine = env.newMachine( SOURCE, "<read>" ) )
         {
             BoltResponseRecorder recorder = new BoltResponseRecorder();
-            machine.init( USER_AGENT, emptyMap(), null );
+            machine.init( USER_AGENT, EMPTY_MAP, null );
             latch.release();
             final String bookmark = "neo4j:bookmark:v1:tx" + Long.toString( dbVersionAfterWrite );
             machine.run( "BEGIN", singletonMap( "bookmark", bookmark ), nullResponseHandler() );
@@ -267,10 +268,10 @@ public class TransactionIT
             @Override
             public void run()
             {
-                try ( BoltStateMachine stateMachine = env.newMachine( "<write>" ) )
+                try ( BoltStateMachine stateMachine = env.newMachine( SOURCE, "<write>" ) )
                 {
                     machine[0] = stateMachine;
-                    stateMachine.init( USER_AGENT, emptyMap(), null );
+                    stateMachine.init( USER_AGENT, EMPTY_MAP, null );
                     String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
                                            "CREATE (n:A {id: line[0], square: line[1]}) " +
                                            "WITH count(*) as number " +

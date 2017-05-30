@@ -29,6 +29,7 @@ import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.security.auth.SecurityTestUtils.SOURCE;
 
 public class RateLimitedAuthenticationStrategyTest
 {
@@ -41,7 +42,7 @@ public class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
 
         // Then
-        assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ) );
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
     @Test
@@ -53,7 +54,7 @@ public class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
 
         // Then
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
     }
 
     @Test
@@ -65,11 +66,11 @@ public class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
 
         // When we've failed two times
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
 
         // Then
-        assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ));
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.SUCCESS ));
     }
 
     @Test
@@ -81,18 +82,18 @@ public class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
 
         // When we've failed three times
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
 
         // Then
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
 
         // But when time heals all wounds
         clock.forward( 5, TimeUnit.SECONDS );
 
         // Then things should be alright
-        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong", SOURCE ), equalTo( AuthenticationResult.FAILURE ) );
     }
 
     @Test
@@ -104,18 +105,80 @@ public class RateLimitedAuthenticationStrategyTest
         User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
 
         // When we've failed three times
-        authStrategy.authenticate( user, "wrong" );
-        authStrategy.authenticate( user, "wrong" );
-        authStrategy.authenticate( user, "wrong" );
+        authStrategy.authenticate( user, "wrong", SOURCE );
+        authStrategy.authenticate( user, "wrong", SOURCE );
+        authStrategy.authenticate( user, "wrong", SOURCE );
 
         // Then
-        assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
 
         // But when time heals all wounds
         clock.forward( 5, TimeUnit.SECONDS );
 
         // Then things should be alright
-        assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ) );
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.SUCCESS ) );
+    }
+
+    @Test
+    public void shouldAllowRequestAfterMultipleFailedAttemptsWhenNewSource() throws Exception
+    {
+        // Given
+        FakeClock clock = getFakeClock();
+        AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
+        User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
+
+        // When we've failed three times
+        authStrategy.authenticate( user, "wrong", SOURCE );
+        authStrategy.authenticate( user, "wrong", SOURCE );
+        authStrategy.authenticate( user, "wrong", SOURCE );
+
+        // Then
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+
+        // But new source should allow attempt
+        assertThat( authStrategy.authenticate( user, "right", "other_source" ), equalTo( AuthenticationResult.SUCCESS ));
+    }
+
+    @Test
+    public void shouldSlowRequestForMultipleSourcesAfterMultipleFailedAttempts() throws Exception
+    {
+        String otherSource = "other_source";
+        // Given
+        FakeClock clock = getFakeClock();
+        AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
+        User user = new User.Builder( "user", Credential.forPassword( "right" ) ).build();
+
+        // When we've failed three times
+        authStrategy.authenticate( user, "wrong", SOURCE );
+        authStrategy.authenticate( user, "wrong", SOURCE );
+        authStrategy.authenticate( user, "wrong", SOURCE );
+
+        // Then
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+
+        clock.forward( 2, TimeUnit.SECONDS );
+
+        // And with new source
+        assertThat( authStrategy.authenticate( user, "wrong", otherSource ), equalTo( AuthenticationResult.FAILURE ));
+        assertThat( authStrategy.authenticate( user, "wrong", otherSource ), equalTo( AuthenticationResult.FAILURE ));
+        assertThat( authStrategy.authenticate( user, "wrong", otherSource ), equalTo( AuthenticationResult.FAILURE ));
+
+        // Then
+        assertThat( authStrategy.authenticate( user, "right", otherSource ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+
+        // Time should heal for the first source
+        clock.forward( 4, TimeUnit.SECONDS );
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.SUCCESS ));
+
+        // Still limit the other source
+        assertThat( authStrategy.authenticate( user, "right", otherSource ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+        assertThat( authStrategy.authenticate( user, "right", SOURCE ), equalTo( AuthenticationResult.SUCCESS ));
+
+        // But when time heals all wounds
+        clock.forward( 5, TimeUnit.SECONDS );
+
+        // Then things should be alright
+        assertThat( authStrategy.authenticate( user, "right", otherSource ), equalTo( AuthenticationResult.SUCCESS ));
     }
 
     private FakeClock getFakeClock()

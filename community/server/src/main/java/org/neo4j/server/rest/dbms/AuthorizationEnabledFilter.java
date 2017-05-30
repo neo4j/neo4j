@@ -106,7 +106,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
 
         try
         {
-            SecurityContext securityContext = authenticate( username, password );
+            SecurityContext securityContext = authenticate( username, password, servletRequest.getRemoteAddr() );
             switch ( securityContext.subject().getAuthenticationResult() )
             {
             case PASSWORD_CHANGE_REQUIRED:
@@ -149,10 +149,10 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         }
     }
 
-    private SecurityContext authenticate( String username, String password ) throws InvalidAuthTokenException
+    private SecurityContext authenticate( String username, String password, String source ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
-        Map<String,Object> authToken = newBasicAuthToken( username, password );
+        Map<String,Object> authToken = newBasicAuthToken( username, password, source );
         return authManager.login( authToken );
     }
 

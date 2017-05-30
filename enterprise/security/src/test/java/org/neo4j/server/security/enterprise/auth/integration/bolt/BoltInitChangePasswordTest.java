@@ -74,6 +74,6 @@ public class BoltInitChangePasswordTest
     private Map<String,Object> authToken( String username, String password, String newPassword )
     {
         return map( "principal", username, "credentials", password,
-                "new_credentials", newPassword, "scheme", "basic" );
+                "new_credentials", newPassword, "scheme", "basic", "source", "127.0.0.1" );
     }
 }

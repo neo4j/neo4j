@@ -26,7 +26,6 @@ import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.testing.NullResponseHandler;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -48,6 +47,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
+import static org.neo4j.bolt.v1.messaging.Neo4jPack.EMPTY_MAP;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @SuppressWarnings( "unchecked" )
@@ -55,6 +55,7 @@ public class BoltConnectionIT
 {
     private static final Map<String,Object> EMPTY_PARAMS = emptyMap();
     private static final String USER_AGENT = "BoltConnectionIT/0.0";
+    private static final String SOURCE = "127.0.0.1";
 
     @Rule
     public SessionRule env = new SessionRule();
@@ -63,7 +64,7 @@ public class BoltConnectionIT
     public void shouldCloseConnectionAckFailureBeforeInit() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -77,7 +78,7 @@ public class BoltConnectionIT
     public void shouldCloseConnectionResetBeforeInit() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -91,7 +92,7 @@ public class BoltConnectionIT
     public void shouldCloseConnectionOnRunBeforeInit() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -105,7 +106,7 @@ public class BoltConnectionIT
     public void shouldCloseConnectionOnDiscardAllBeforeInit() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -119,7 +120,7 @@ public class BoltConnectionIT
     public void shouldCloseConnectionOnPullAllBeforeInit() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -133,8 +134,8 @@ public class BoltConnectionIT
     public void shouldExecuteStatement() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -156,8 +157,8 @@ public class BoltConnectionIT
     public void shouldSucceedOn__run__pullAll__run() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -175,8 +176,8 @@ public class BoltConnectionIT
     public void shouldSucceedOn__run__discardAll__run() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -194,8 +195,8 @@ public class BoltConnectionIT
     public void shouldSucceedOn__run_BEGIN__pullAll__run_COMMIT__pullALL__run_COMMIT() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -220,8 +221,8 @@ public class BoltConnectionIT
     public void shouldFailOn__run__run() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran one statement
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -238,8 +239,8 @@ public class BoltConnectionIT
     public void shouldFailOn__pullAll__pullAll() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -257,8 +258,8 @@ public class BoltConnectionIT
     public void shouldFailOn__pullAll__discardAll() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -276,8 +277,8 @@ public class BoltConnectionIT
     public void shouldFailOn__discardAll__discardAll() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -295,8 +296,8 @@ public class BoltConnectionIT
     public void shouldFailOn__discardAll__pullAll() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And Given that I've ran and pulled one stream
         machine.run( "RETURN 1", EMPTY_PARAMS, nullResponseHandler() );
@@ -314,8 +315,8 @@ public class BoltConnectionIT
     public void shouldHandleImplicitCommitFailure() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
         machine.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );
 
@@ -341,8 +342,8 @@ public class BoltConnectionIT
         // and send a `ROLLBACK`, because that means that all failures in the
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
-        BoltStateMachine machine = env.newMachine("bolt-test");
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "bolt-test" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );
@@ -370,8 +371,8 @@ public class BoltConnectionIT
     public void shouldHandleFailureDuringResultPublishing() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
@@ -425,10 +426,10 @@ public class BoltConnectionIT
     public void shouldBeAbleToCleanlyRunMultipleSessionsInSingleThread() throws Throwable
     {
         // Given
-        BoltStateMachine firstMachine = env.newMachine( "<test>" );
-        firstMachine.init( USER_AGENT, emptyMap(), null );
-        BoltStateMachine secondMachine = env.newMachine( "<test>" );
-        secondMachine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine firstMachine = env.newMachine( SOURCE, "<test>" );
+        firstMachine.init( USER_AGENT, EMPTY_MAP, null );
+        BoltStateMachine secondMachine = env.newMachine( SOURCE, "<test>" );
+        secondMachine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And given I've started a transaction in one session
         runAndPull( firstMachine, "BEGIN" );
@@ -449,8 +450,8 @@ public class BoltConnectionIT
     public void shouldSupportUsingPeriodicCommitInSession() throws Exception
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( machine ) );
 
@@ -496,8 +497,8 @@ public class BoltConnectionIT
     public void shouldNotSupportUsingPeriodicCommitInTransaction() throws Exception
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( machine ) );
         runAndPull( machine, "BEGIN" );
@@ -525,8 +526,8 @@ public class BoltConnectionIT
     public void shouldAllowNewTransactionAfterFailure() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "<test>" );
-        machine.init( USER_AGENT, emptyMap(), null );
+        BoltStateMachine machine = env.newMachine( SOURCE, "<test>" );
+        machine.init( USER_AGENT, EMPTY_MAP, null );
 
         // And given I've started a transaction that failed
         runAndPull( machine, "BEGIN" );

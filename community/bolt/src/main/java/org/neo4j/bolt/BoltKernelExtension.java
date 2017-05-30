@@ -27,6 +27,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
@@ -242,8 +243,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         availableVersions.put(
                 (long) BoltProtocolV1.VERSION,
                 ( channel, isEncrypted ) -> {
+                    String source = ((InetSocketAddress) channel.remoteAddress()).getAddress().getHostAddress();
                     String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
-                    BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );
+                    BoltWorker worker = workerFactory.newWorker( source, descriptor, channel::close );
                     return new BoltProtocolV1( worker, channel, logging );
                 }
         );

@@ -49,6 +49,7 @@ import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE
 import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.server.security.auth.SecurityTestUtils.SOURCE;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicAuthManagerTest extends InitialUserTests
@@ -83,7 +84,7 @@ public class BasicAuthManagerTest extends InitialUserTests
         final User user = user1;
 
         // When
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( SUCCESS );
+        when( authStrategy.authenticate( user, "abc123", SOURCE )).thenReturn( SUCCESS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", SUCCESS );
@@ -99,7 +100,7 @@ public class BasicAuthManagerTest extends InitialUserTests
         final User user = user1;
 
         // When
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( TOO_MANY_ATTEMPTS );
+        when( authStrategy.authenticate( user, "abc123", SOURCE )).thenReturn( TOO_MANY_ATTEMPTS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", TOO_MANY_ATTEMPTS );
@@ -115,7 +116,7 @@ public class BasicAuthManagerTest extends InitialUserTests
         final User user = user1;
 
         // When
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( SUCCESS );
+        when( authStrategy.authenticate( user, "abc123", SOURCE )).thenReturn( SUCCESS );
 
         // Then
         assertLoginGivesResult( "jake", "abc123", PASSWORD_CHANGE_REQUIRED );

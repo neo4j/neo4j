@@ -37,6 +37,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class BoltConnectionAuthIT
 {
     private static final String USER_AGENT = "BoltConnectionAuthIT/0.0";
+    private static final String SOURCE = "127.0.0.1";
 
     @Rule
     public SessionRule env = new SessionRule().withAuthEnabled( true );
@@ -46,7 +47,7 @@ public class BoltConnectionAuthIT
     {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "test" );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // When
@@ -66,7 +67,7 @@ public class BoltConnectionAuthIT
     {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "test" );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         String version = "Neo4j/" + Version.getNeo4jVersion();
         // When
@@ -84,7 +85,7 @@ public class BoltConnectionAuthIT
     public void shouldCloseConnectionAfterAuthenticationFailure() throws Throwable
     {
         // Given
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "test" );
 
         // When... then
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -101,7 +102,7 @@ public class BoltConnectionAuthIT
     @Test
     public void shouldBeAbleToActOnSessionWhenUpdatingCredentials() throws Throwable
     {
-        BoltStateMachine machine = env.newMachine( "test" );
+        BoltStateMachine machine = env.newMachine( SOURCE, "test" );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
         // when

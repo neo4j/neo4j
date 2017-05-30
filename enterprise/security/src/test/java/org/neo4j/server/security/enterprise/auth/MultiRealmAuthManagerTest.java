@@ -65,6 +65,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.server.security.auth.SecurityTestUtils.SOURCE;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -429,7 +430,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
         final User user = newUser( "jake", "abc123", false );
         users.create( user );
         manager.start();
-        when( authStrategy.authenticate( user, "abc123" ) ).thenReturn( AuthenticationResult.SUCCESS );
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // When
         userManager.activateUser( "jake", false );
@@ -721,7 +722,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTests
     private void setMockAuthenticationStrategyResult( String username, String password, AuthenticationResult result )
     {
         final User user = users.getUserByName( username );
-        when( authStrategy.authenticate( user, password ) ).thenReturn( result );
+        when( authStrategy.authenticate( user, password, SOURCE ) ).thenReturn( result );
     }
 
     @Override

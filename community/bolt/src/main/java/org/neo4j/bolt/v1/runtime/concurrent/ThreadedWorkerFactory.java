@@ -57,9 +57,9 @@ public class ThreadedWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( String connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( String source, String connectionDescriptor, Runnable onClose )
     {
-        BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, Clock.systemUTC() );
+        BoltStateMachine machine = connector.newMachine( source, connectionDescriptor, onClose, Clock.systemUTC() );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );

@@ -118,7 +118,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     public InternalTransaction beginLocalTransactionAsUser( BoltSubject subject, KernelTransaction.Type txType )
             throws Throwable
     {
-        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password, "127.0.0.1" ) );
         return getLocalGraph().beginTransaction( txType, securityContext );
     }
 

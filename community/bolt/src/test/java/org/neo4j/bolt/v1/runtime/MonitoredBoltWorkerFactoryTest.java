@@ -41,6 +41,8 @@ import static org.neo4j.time.Clocks.systemClock;
 
 public class MonitoredBoltWorkerFactoryTest
 {
+    private static final String SOURCE = "127.0.0.1";
+
     @Test
     public void shouldSignalReceivedStartAndComplete() throws Throwable
     {
@@ -49,7 +51,7 @@ public class MonitoredBoltWorkerFactoryTest
 
         WorkerFactory delegate = mock( WorkerFactory.class );
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        when( delegate.newWorker( anyString(), anyObject() ) )
+        when( delegate.newWorker( anyString(), anyString(), anyObject() ) )
                 .thenReturn( new BoltWorker()
                 {
                     @Override
@@ -85,7 +87,7 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( monitor );
 
         MonitoredWorkerFactory workerFactory = new MonitoredWorkerFactory( monitors, delegate, clock );
-        BoltWorker worker = workerFactory.newWorker( "<test>" );
+        BoltWorker worker = workerFactory.newWorker( SOURCE, "<test>" );
 
         // when
         worker.enqueue( ( stateMachine ) -> {
@@ -109,13 +111,13 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( monitor );
 
         WorkerFactory mockWorkers = mock( WorkerFactory.class );
-        when( mockWorkers.newWorker( anyString(), any() ) ).thenReturn( mock( BoltWorker.class ) );
+        when( mockWorkers.newWorker( anyString(), anyString(), any() ) ).thenReturn( mock( BoltWorker.class ) );
 
         MonitoredWorkerFactory workerFactory = new MonitoredWorkerFactory( monitors, mockWorkers, systemClock() );
 
         for ( int i = 0; i < workersCount; i++ )
         {
-            workerFactory.newWorker( "<test>" );
+            workerFactory.newWorker( SOURCE, "<test>" );
         }
 
         assertEquals( workersCount, monitor.sessionsStarted );
@@ -131,14 +133,14 @@ public class MonitoredBoltWorkerFactoryTest
         // after monitor listeners are added
         WorkerFactory workerFactory = mock( WorkerFactory.class );
         BoltWorker innerSession = mock( BoltWorker.class );
-        when( workerFactory.newWorker( anyString(), anyObject() ) )
+        when( workerFactory.newWorker( anyString(), anyString(), anyObject() ) )
                 .thenReturn( innerSession );
 
         Monitors monitors = new Monitors();
         MonitoredWorkerFactory monitoredWorkerFactory = new MonitoredWorkerFactory( monitors, workerFactory, Clocks.fakeClock() );
 
         // When
-        BoltWorker worker = monitoredWorkerFactory.newWorker( "<test>" );
+        BoltWorker worker = monitoredWorkerFactory.newWorker( SOURCE, "<test>" );
 
         // Then
         assertEquals( innerSession, worker );
@@ -147,7 +149,7 @@ public class MonitoredBoltWorkerFactoryTest
         monitors.addMonitorListener( new CountingSessionMonitor() );
 
         // Then new sessions should be monitored
-        assertThat( monitoredWorkerFactory.newWorker( "<test>" ), instanceOf( MonitoredBoltWorker.class ) );
+        assertThat( monitoredWorkerFactory.newWorker( SOURCE, "<test>" ), instanceOf( MonitoredBoltWorker.class ) );
     }
 
     private static class CountingSessionMonitor implements MonitoredWorkerFactory.SessionMonitor
