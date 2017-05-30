@@ -58,7 +58,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
 @RunWith( Parameterized.class )
-public class TerminationOfSlavesDuringPullUpdatesTest
+public class TerminationOfSlavesDuringPullUpdatesIT
 {
     private static final int READER_CONTESTANTS = 20;
     private static final int STRING_LENGTH = 20000;
