@@ -108,38 +108,34 @@ public class TransactionThroughMasterSwitchStressIT
         final AtomicBoolean end = new AtomicBoolean();
         for ( int i = 0; i < 10; i++ )
         {
-            transactors.start( new Runnable()
+            transactors.start( () ->
             {
-                @Override
-                public void run()
+                Random random = ThreadLocalRandom.current();
+                while ( !end.get() )
                 {
-                    Random random = ThreadLocalRandom.current();
-                    while ( !end.get() )
+                    boolean committed = true;
+                    try ( Transaction tx = master.beginTx() )
                     {
-                        boolean committed = true;
-                        try ( Transaction tx = master.beginTx() )
-                        {
-                            Node node = master.getNodeById( nodeId );
+                        Node node = master.getNodeById( nodeId );
 
-                            // Acquiring lock, read int property value, increment, set incremented int property
-                            // should not break under any circumstances.
-                            tx.acquireWriteLock( node );
-                            node.setProperty( key, (Integer) node.getProperty( key, 0 ) + 1 );
-                            // Throw in relationship for good measure
-                            node.createRelationshipTo( master.createNode(), TEST );
+                        // Acquiring lock, read int property value, increment, set incremented int property
+                        // should not break under any circumstances.
+                        tx.acquireWriteLock( node );
+                        node.setProperty( key, (Integer) node.getProperty( key, 0 ) + 1 );
+                        // Throw in relationship for good measure
+                        node.createRelationshipTo( master.createNode(), TEST );
 
-                            Thread.sleep( random.nextInt( 1_000 ) );
-                            tx.success();
-                        }
-                        catch ( Throwable e )
-                        {
-                            // It's OK
-                            committed = false;
-                        }
-                        if ( committed )
-                        {
-                            successes.incrementAndGet();
-                        }
+                        Thread.sleep( random.nextInt( 1_000 ) );
+                        tx.success();
+                    }
+                    catch ( Throwable e )
+                    {
+                        // It's OK
+                        committed = false;
+                    }
+                    if ( committed )
+                    {
+                        successes.incrementAndGet();
                     }
                 }
             } );

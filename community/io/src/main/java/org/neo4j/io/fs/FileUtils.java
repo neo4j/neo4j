@@ -426,14 +426,7 @@ public class FileUtils
 
     public static LineListener echo( final PrintStream target )
     {
-        return new LineListener()
-        {
-            @Override
-            public void line( String line )
-            {
-                target.println( line );
-            }
-        };
+        return line -> target.println( line );
     }
 
     public static void readTextFile( File file, LineListener listener ) throws IOException

@@ -34,30 +34,25 @@ public abstract class PrimitiveRecordCheck
 {
     private final RecordField<RECORD, REPORT>[] fields;
     private final ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT> ownerCheck =
-            new ComparativeRecordChecker<RECORD, PrimitiveRecord, REPORT>()
+            ( record, other, engine, records ) ->
             {
-                @Override
-                public void checkReference( RECORD record, PrimitiveRecord other, CheckerEngine<RECORD, REPORT> engine,
-                                            RecordAccess records )
+                if ( record.getId() == other.getId() && record.getClass() == other.getClass() )
                 {
-                    if ( record.getId() == other.getId() && record.getClass() == other.getClass() )
-                    {
-                        // Owner identities match. Things are as they should be.
-                        return;
-                    }
+                    // Owner identities match. Things are as they should be.
+                    return;
+                }
 
-                    if ( other instanceof NodeRecord )
-                    {
-                        engine.report().multipleOwners( (NodeRecord) other );
-                    }
-                    else if ( other instanceof RelationshipRecord )
-                    {
-                        engine.report().multipleOwners( (RelationshipRecord) other );
-                    }
-                    else if ( other instanceof NeoStoreRecord )
-                    {
-                        engine.report().multipleOwners( (NeoStoreRecord) other );
-                    }
+                if ( other instanceof NodeRecord )
+                {
+                    engine.report().multipleOwners( (NodeRecord) other );
+                }
+                else if ( other instanceof RelationshipRecord )
+                {
+                    engine.report().multipleOwners( (RelationshipRecord) other );
+                }
+                else if ( other instanceof NeoStoreRecord )
+                {
+                    engine.report().multipleOwners( (NeoStoreRecord) other );
                 }
             };
 

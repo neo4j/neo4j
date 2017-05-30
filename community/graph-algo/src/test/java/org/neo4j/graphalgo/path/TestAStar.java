@@ -229,14 +229,7 @@ public class TestAStar extends Neo4jAlgoTestCase
     public void betterTentativePath() throws Exception
     {
         // GIVEN
-        EstimateEvaluator<Double> estimator = new EstimateEvaluator<Double>()
-        {
-            @Override
-            public Double getCost( Node node, Node goal )
-            {
-                return (Double) node.getProperty( "estimate" );
-            }
-        };
+        EstimateEvaluator<Double> estimator = ( node, goal ) -> (Double) node.getProperty( "estimate" );
         PathFinder<WeightedPath> finder = aStar( PathExpanders.allTypesAndDirections(),
                 doubleCostEvaluator( "weight", 0d ), estimator );
 
@@ -259,18 +252,14 @@ public class TestAStar extends Neo4jAlgoTestCase
         assertPath( best1_4, node1, node2, node3, node4 );
     }
 
-    static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = new EstimateEvaluator<Double>()
+    static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->
     {
-        @Override
-        public Double getCost( Node node, Node goal )
-        {
-            double dx = (Double) node.getProperty( "x" )
-                        - (Double) goal.getProperty( "x" );
-            double dy = (Double) node.getProperty( "y" )
-                        - (Double) goal.getProperty( "y" );
-            double result = Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
-            return result;
-        }
+        double dx = (Double) node.getProperty( "x" )
+                    - (Double) goal.getProperty( "x" );
+        double dy = (Double) node.getProperty( "y" )
+                    - (Double) goal.getProperty( "y" );
+        double result = Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
+        return result;
     };
 
     @Parameters

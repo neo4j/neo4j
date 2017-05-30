@@ -469,17 +469,13 @@ public class NodeRelationshipCacheTest
             }
         }
         AtomicInteger visitCount = new AtomicInteger();
-        GroupVisitor visitor = new GroupVisitor()
+        GroupVisitor visitor = ( nodeId1, typeId, out, in, loop ) ->
         {
-            @Override
-            public long visit( long nodeId, int typeId, long out, long in, long loop )
-            {
-                visitCount.incrementAndGet();
-                assertEquals( firstRelationshipIds.get( Pair.of( typeId, OUTGOING ) ).longValue(), out );
-                assertEquals( firstRelationshipIds.get( Pair.of( typeId, INCOMING ) ).longValue(), in );
-                assertEquals( firstRelationshipIds.get( Pair.of( typeId, BOTH ) ).longValue(), loop );
-                return 0;
-            }
+            visitCount.incrementAndGet();
+            assertEquals( firstRelationshipIds.get( Pair.of( typeId, OUTGOING ) ).longValue(), out );
+            assertEquals( firstRelationshipIds.get( Pair.of( typeId, INCOMING ) ).longValue(), in );
+            assertEquals( firstRelationshipIds.get( Pair.of( typeId, BOTH ) ).longValue(), loop );
+            return 0;
         };
         cache.getFirstRel( nodeId, visitor );
 

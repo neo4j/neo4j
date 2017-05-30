@@ -71,15 +71,11 @@ public class HighestTransactionIdTest
         for ( int i = 0; i < updaters; i++ )
         {
             final long id = i + 1;
-            race.addContestant( new Runnable()
+            race.addContestant( () ->
             {
-                @Override
-                public void run()
+                if ( highest.offer( id, id, id ) )
                 {
-                    if ( highest.offer( id, id, id ) )
-                    {
-                        accepted.incrementAndGet();
-                    }
+                    accepted.incrementAndGet();
                 }
             } );
         }

@@ -29,12 +29,8 @@ public class LongResponse extends Response<Long>
 {
     public LongResponse( Long response )
     {
-        super( response, StoreId.DEFAULT, new ResourceReleaser()
+        super( response, StoreId.DEFAULT, () ->
         {
-            @Override
-            public void release()
-            {
-            }
         } );
     }
 

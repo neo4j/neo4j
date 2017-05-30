@@ -70,14 +70,7 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable, AutoCl
     private final ArrayBlockingQueue<TO> processed;
     private final AtomicLong submittedTicket = new AtomicLong( -1 );
     private final AtomicLong processedTicket = new AtomicLong( -1 );
-    private final LongPredicate myTurnToAddToProcessedQueue = new LongPredicate()
-    {
-        @Override
-        public boolean test( long ticket )
-        {
-            return processedTicket.get() == ticket - 1;
-        }
-    };
+    private final LongPredicate myTurnToAddToProcessedQueue = ticket -> processedTicket.get() == ticket - 1;
     private final Runnable healthCheck;
     private volatile boolean done;
 

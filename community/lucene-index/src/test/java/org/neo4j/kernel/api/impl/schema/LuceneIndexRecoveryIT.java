@@ -227,14 +227,10 @@ public class LuceneIndexRecoveryIT
     {
         if ( db != null )
         {
-            fs.snapshot( new Runnable()
+            fs.snapshot( () ->
             {
-                @Override
-                public void run()
-                {
-                    db.shutdown();
-                    db = null;
-                }
+                db.shutdown();
+                db = null;
             } );
         }
     }

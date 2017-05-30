@@ -59,14 +59,7 @@ public class PriorityMap<E, K, P>
     }
 
     @SuppressWarnings( "rawtypes" )
-    private static final Converter SELF_KEY = new Converter()
-    {
-        @Override
-        public Object convert( Object source )
-        {
-            return source;
-        }
-    };
+    private static final Converter SELF_KEY = source -> source;
     @SuppressWarnings( "unchecked" )
     public static <K, P> PriorityMap<K, K, P> withSelfKey(
             Comparator<P> priority )

@@ -24,14 +24,8 @@ import java.util.Comparator;
 
 public class NodeLabelUpdate
 {
-    public static final Comparator<? super NodeLabelUpdate> SORT_BY_NODE_ID = new Comparator<NodeLabelUpdate>()
-    {
-        @Override
-        public int compare( NodeLabelUpdate o1, NodeLabelUpdate o2 )
-        {
-            return Long.compare( o1.getNodeId(), o2.getNodeId() );
-        }
-    };
+    public static final Comparator<? super NodeLabelUpdate> SORT_BY_NODE_ID =
+            (Comparator<NodeLabelUpdate>) ( o1, o2 ) -> Long.compare( o1.getNodeId(), o2.getNodeId() );
 
     private final long nodeId;
     private final long[] labelsBefore;

@@ -93,18 +93,11 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
         createIndex( labelName, propertyKey );
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
-        List<Map<String,Object>> serializedList = retryOnStillPopulating( new Callable<String>()
-        {
-            @Override
-            public String call()
-            {
-                return gen.get()
-                        .expectedStatus( 200 )
-                        .payload( createJsonFrom( definition ) )
-                        .get( getSchemaIndexLabelUri( labelName ) )
-                        .entity();
-            }
-        } );
+        List<Map<String,Object>> serializedList = retryOnStillPopulating( () -> gen.get()
+                                                                           .expectedStatus( 200 )
+                                                                           .payload( createJsonFrom( definition ) )
+                                                                           .get( getSchemaIndexLabelUri( labelName ) )
+                                                                           .entity() );
 
         Map<String,Object> index = new HashMap<>();
         index.put( "label", labelName );
@@ -162,14 +155,8 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
         createIndex( labelName1, propertyKey1 );
         createIndex( labelName2, propertyKey2 );
 
-        List<Map<String,Object>> serializedList = retryOnStillPopulating( new Callable<String>()
-        {
-            @Override
-            public String call() throws Exception
-            {
-                return gen.get().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
-            }
-        } );
+        List<Map<String,Object>> serializedList = retryOnStillPopulating(
+                () -> gen.get().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity() );
 
         Map<String,Object> index1 = new HashMap<>();
         index1.put( "label", labelName1 );

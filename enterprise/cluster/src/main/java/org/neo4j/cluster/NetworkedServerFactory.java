@@ -170,15 +170,11 @@ public class NetworkedServerFactory
             {
                 scheduler = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "timeout" ) );
 
-                scheduler.scheduleWithFixedDelay( new Runnable()
+                scheduler.scheduleWithFixedDelay( () ->
                 {
-                    @Override
-                    public void run()
-                    {
-                        long now = System.currentTimeMillis();
+                    long now = System.currentTimeMillis();
 
-                        protocolServer.getTimeouts().tick( now );
-                    }
+                    protocolServer.getTimeouts().tick( now );
                 }, 0, 10, TimeUnit.MILLISECONDS );
             }
 

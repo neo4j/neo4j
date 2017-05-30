@@ -122,14 +122,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
                 new SelectorFactory( end, interest ) )
                 .evaluator( includeWhereEndNodeIs( end ) )
                 .traverse( start );
-        return new Iterable<WeightedPath>()
-        {
-            @Override
-            public Iterator<WeightedPath> iterator()
-            {
-                return new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
-            }
-        };
+        return () -> new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
     }
 
     @Override

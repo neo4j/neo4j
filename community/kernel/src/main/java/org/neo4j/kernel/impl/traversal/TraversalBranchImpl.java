@@ -257,28 +257,21 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return new Iterable<Relationship>()
+        return () -> new PrefetchingIterator<Relationship>()
         {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                return new PrefetchingIterator<Relationship>()
-                {
-                    private TraversalBranch branch = TraversalBranchImpl.this;
+            private TraversalBranch branch = TraversalBranchImpl.this;
 
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        try
-                        {
-                            return branch != null ? branch.lastRelationship() : null;
-                        }
-                        finally
-                        {
-                            branch = branch != null ? branch.parent() : null;
-                        }
-                    }
-                };
+            @Override
+            protected Relationship fetchNextOrNull()
+            {
+                try
+                {
+                    return branch != null ? branch.lastRelationship() : null;
+                }
+                finally
+                {
+                    branch = branch != null ? branch.parent() : null;
+                }
             }
         };
     }
@@ -300,28 +293,21 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return new Iterable<Node>()
+        return () -> new PrefetchingIterator<Node>()
         {
-            @Override
-            public Iterator<Node> iterator()
-            {
-                return new PrefetchingIterator<Node>()
-                {
-                    private TraversalBranch branch = TraversalBranchImpl.this;
+            private TraversalBranch branch = TraversalBranchImpl.this;
 
-                    @Override
-                    protected Node fetchNextOrNull()
-                    {
-                        try
-                        {
-                            return branch.length() >= 0 ? branch.endNode() : null;
-                        }
-                        finally
-                        {
-                            branch = branch.parent();
-                        }
-                    }
-                };
+            @Override
+            protected Node fetchNextOrNull()
+            {
+                try
+                {
+                    return branch.length() >= 0 ? branch.endNode() : null;
+                }
+                finally
+                {
+                    branch = branch.parent();
+                }
             }
         };
     }

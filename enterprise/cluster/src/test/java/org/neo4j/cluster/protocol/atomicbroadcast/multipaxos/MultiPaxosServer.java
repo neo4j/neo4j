@@ -101,14 +101,7 @@ public class MultiPaxosServer
                     new InMemoryAcceptorInstanceStore(),
                     electionCredentialsProvider );
             server.addBindingListener( electionCredentialsProvider );
-            server.addBindingListener( new BindingListener()
-            {
-                @Override
-                public void listeningAt( URI me )
-                {
-                    System.out.println( "Listening at:" + me );
-                }
-            } );
+            server.addBindingListener( me -> System.out.println( "Listening at:" + me ) );
 
             cluster = server.newClient( Cluster.class );
             cluster.addClusterListener( new ClusterListener()
@@ -167,23 +160,19 @@ public class MultiPaxosServer
             } );
 
             broadcast = server.newClient( AtomicBroadcast.class );
-            broadcast.addAtomicBroadcastListener( new AtomicBroadcastListener()
+            broadcast.addAtomicBroadcastListener( value ->
             {
-                @Override
-                public void receive( Payload value )
+                try
                 {
-                    try
-                    {
-                        System.out.println( broadcastSerializer.receive( value ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( ClassNotFoundException e )
-                    {
-                        e.printStackTrace();
-                    }
+                    System.out.println( broadcastSerializer.receive( value ) );
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
+                catch ( ClassNotFoundException e )
+                {
+                    e.printStackTrace();
                 }
             } );
 

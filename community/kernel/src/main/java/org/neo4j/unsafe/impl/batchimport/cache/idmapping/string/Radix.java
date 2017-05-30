@@ -31,23 +31,9 @@ import static java.lang.Math.pow;
  */
 public abstract class Radix
 {
-    public static final Factory<Radix> LONG = new Factory<Radix>()
-    {
-        @Override
-        public Radix newInstance()
-        {
-            return new Radix.Long();
-        }
-    };
+    public static final Factory<Radix> LONG = () -> new Long();
 
-    public static final Factory<Radix> STRING = new Factory<Radix>()
-    {
-        @Override
-        public Radix newInstance()
-        {
-            return new Radix.String();
-        }
-    };
+    public static final Factory<Radix> STRING = () -> new String();
 
     protected final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
 

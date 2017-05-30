@@ -100,20 +100,15 @@ public class GraphCloner extends ServerPlugin
         TraversalDescription traversalDescription = graphDb.traversalDescription()
                 .expand( PathExpanders.allTypesAndDirections() )
                 .depthFirst()
-                .evaluator( new Evaluator()
+                .evaluator( path ->
                 {
-
-                    @Override
-                    public Evaluation evaluate( Path path )
+                    if ( path.length() < depth )
                     {
-                        if ( path.length() < depth )
-                        {
-                            return Evaluation.INCLUDE_AND_CONTINUE;
-                        }
-                        else
-                        {
-                            return Evaluation.INCLUDE_AND_PRUNE;
-                        }
+                        return Evaluation.INCLUDE_AND_CONTINUE;
+                    }
+                    else
+                    {
+                        return Evaluation.INCLUDE_AND_PRUNE;
                     }
                 } );
 

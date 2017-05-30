@@ -529,26 +529,22 @@ public class ClusterManager
 
     public static Predicate<ClusterManager.ManagedCluster> instanceEvicted( final HighlyAvailableGraphDatabase instance )
     {
-        return new Predicate<ClusterManager.ManagedCluster>()
+        return managedCluster ->
         {
-            @Override
-            public boolean test( ClusterManager.ManagedCluster managedCluster )
-            {
-                InstanceId instanceId = managedCluster.getServerId( instance );
+            InstanceId instanceId = managedCluster.getServerId( instance );
 
-                Iterable<HighlyAvailableGraphDatabase> members = managedCluster.getAllMembers();
-                for ( HighlyAvailableGraphDatabase member : members )
+            Iterable<HighlyAvailableGraphDatabase> members = managedCluster.getAllMembers();
+            for ( HighlyAvailableGraphDatabase member : members )
+            {
+                if ( instanceId.equals( managedCluster.getServerId( member ) ) )
                 {
-                    if ( instanceId.equals( managedCluster.getServerId( member ) ) )
+                    if ( member.role().equals( "UNKNOWN" ) )
                     {
-                        if ( member.role().equals( "UNKNOWN" ) )
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
-                return false;
             }
+            return false;
         };
     }
 

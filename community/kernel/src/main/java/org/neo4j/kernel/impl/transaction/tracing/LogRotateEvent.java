@@ -24,12 +24,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  */
 public interface LogRotateEvent extends AutoCloseable
 {
-    LogRotateEvent NULL = new LogRotateEvent()
+    LogRotateEvent NULL = () ->
     {
-        @Override
-        public void close()
-        {
-        }
     };
 
     /**

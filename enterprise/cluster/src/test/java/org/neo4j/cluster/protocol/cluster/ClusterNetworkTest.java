@@ -343,24 +343,20 @@ public class ClusterNetworkTest
                                     // Use test info to figure out who to join
                                     final Future<ClusterConfiguration> result = cluster.join( "default",
                                             URI.create( in.get( 0 ).toString() ) );
-                                    executor.submit( new Runnable()
+                                    executor.submit( () ->
                                     {
-                                        @Override
-                                        public void run()
+                                        try
                                         {
-                                            try
-                                            {
-                                                ClusterConfiguration clusterConfiguration = result.get();
-                                                logger.getLogger().fine( "**** Cluster configuration:" +
-                                                        clusterConfiguration );
-                                            }
-                                            catch ( Exception e )
-                                            {
-                                                logger.getLogger().fine( "**** Node " + joinServer + " could not " +
-                                                        "join cluster:" + e
-                                                        .getMessage() );
-                                                out.add( cluster );
-                                            }
+                                            ClusterConfiguration clusterConfiguration = result.get();
+                                            logger.getLogger().fine( "**** Cluster configuration:" +
+                                                    clusterConfiguration );
+                                        }
+                                        catch ( Exception e )
+                                        {
+                                            logger.getLogger().fine( "**** Node " + joinServer + " could not " +
+                                                    "join cluster:" + e
+                                                    .getMessage() );
+                                            out.add( cluster );
                                         }
                                     } );
                                 }
@@ -376,28 +372,24 @@ public class ClusterNetworkTest
                                 }
 
                                 final Future<ClusterConfiguration> result = cluster.join( "default", instanceUris );
-                                executor.submit( new Runnable()
+                                executor.submit( () ->
                                 {
-                                    @Override
-                                    public void run()
+                                    try
                                     {
-                                        try
+                                        ClusterConfiguration clusterConfiguration = result.get();
+                                        logger.getLogger().fine( "**** Cluster configuration:" +
+                                                clusterConfiguration );
+                                    }
+                                    catch ( Exception e )
+                                    {
+                                        if ( !(e.getCause() instanceof IllegalStateException) )
                                         {
-                                            ClusterConfiguration clusterConfiguration = result.get();
-                                            logger.getLogger().fine( "**** Cluster configuration:" +
-                                                    clusterConfiguration );
+                                            cluster.create( "default" );
                                         }
-                                        catch ( Exception e )
+                                        else
                                         {
-                                            if ( !(e.getCause() instanceof IllegalStateException) )
-                                            {
-                                                cluster.create( "default" );
-                                            }
-                                            else
-                                            {
-                                                logger.getLogger().fine( "*** Incorrectly configured cluster? "
-                                                        + e.getCause().getMessage() );
-                                            }
+                                            logger.getLogger().fine( "*** Incorrectly configured cluster? "
+                                                    + e.getCause().getMessage() );
                                         }
                                     }
                                 } );

@@ -229,14 +229,8 @@ public class DatabaseActions
 
     public Representation getAllPropertyKeys()
     {
-        Collection<ValueRepresentation> propKeys = Iterables.asSet( map( new Function<String,ValueRepresentation>()
-        {
-            @Override
-            public ValueRepresentation apply( String key )
-            {
-                return ValueRepresentation.string( key );
-            }
-        }, graphDb.getAllPropertyKeys() ) );
+        Collection<ValueRepresentation> propKeys =
+                Iterables.asSet( map( key -> ValueRepresentation.string( key ), graphDb.getAllPropertyKeys() ) );
 
         return new ListRepresentation( RepresentationType.STRING, propKeys );
     }
@@ -1436,14 +1430,8 @@ public class DatabaseActions
     public ListRepresentation getAllLabels( boolean inUse )
     {
         ResourceIterable<Label> labels = inUse ? graphDb.getAllLabelsInUse() : graphDb.getAllLabels();
-        Collection<ValueRepresentation> labelNames = Iterables.asSet( map( new Function<Label,ValueRepresentation>()
-        {
-            @Override
-            public ValueRepresentation apply( Label label )
-            {
-                return ValueRepresentation.string( label.name() );
-            }
-        }, labels ) );
+        Collection<ValueRepresentation> labelNames = Iterables.asSet( map(
+                label -> ValueRepresentation.string( label.name() ), labels ) );
 
         return new ListRepresentation( RepresentationType.STRING, labelNames );
     }
@@ -1461,34 +1449,18 @@ public class DatabaseActions
     public ListRepresentation getSchemaIndexes()
     {
         Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes();
-        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition,
-                IndexDefinitionRepresentation>()
-        {
-            @Override
-            public IndexDefinitionRepresentation apply( IndexDefinition definition )
-            {
-                return new IndexDefinitionRepresentation( definition,
-                        graphDb.schema().getIndexState( definition ),
-                        graphDb.schema().getIndexPopulationProgress( definition ) );
-            }
-        }, definitions );
+        Iterable<IndexDefinitionRepresentation> representations = map( definition -> new IndexDefinitionRepresentation( definition,
+                graphDb.schema().getIndexState( definition ),
+                graphDb.schema().getIndexPopulationProgress( definition ) ), definitions );
         return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
     }
 
     public ListRepresentation getSchemaIndexes( String labelName )
     {
         Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes( label( labelName ) );
-        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition,
-                IndexDefinitionRepresentation>()
-        {
-            @Override
-            public IndexDefinitionRepresentation apply( IndexDefinition definition )
-            {
-                return new IndexDefinitionRepresentation( definition,
-                        graphDb.schema().getIndexState( definition ),
-                        graphDb.schema().getIndexPopulationProgress( definition ) );
-            }
-        }, definitions );
+        Iterable<IndexDefinitionRepresentation> representations = map( definition -> new IndexDefinitionRepresentation( definition,
+                graphDb.schema().getIndexState( definition ),
+                graphDb.schema().getIndexPopulationProgress( definition ) ), definitions );
         return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
     }
 

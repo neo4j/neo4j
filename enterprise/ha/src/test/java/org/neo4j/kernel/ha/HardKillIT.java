@@ -81,28 +81,24 @@ public class HardKillIT
 
             final CountDownLatch newMasterAvailableLatch = new CountDownLatch( 1 );
             dbWithId2.getDependencyResolver().resolveDependency( ClusterClient.class ).addAtomicBroadcastListener(
-                    new AtomicBroadcastListener()
+                    value ->
                     {
-                        @Override
-                        public void receive( Payload value )
+                        try
                         {
-                            try
+                            Object event = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new
+                                    ObjectStreamFactory() ).receive( value );
+                            if ( event instanceof MemberIsAvailable )
                             {
-                                Object event = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new
-                                        ObjectStreamFactory() ).receive( value );
-                                if ( event instanceof MemberIsAvailable )
+                                if ( HighAvailabilityModeSwitcher.MASTER.equals( ((MemberIsAvailable) event)
+                                        .getRole() ) )
                                 {
-                                    if ( HighAvailabilityModeSwitcher.MASTER.equals( ((MemberIsAvailable) event)
-                                            .getRole() ) )
-                                    {
-                                        newMasterAvailableLatch.countDown();
-                                    }
+                                    newMasterAvailableLatch.countDown();
                                 }
                             }
-                            catch ( Exception e )
-                            {
-                                fail( e.toString() );
-                            }
+                        }
+                        catch ( Exception e )
+                        {
+                            fail( e.toString() );
                         }
                     } );
             proc.destroy();

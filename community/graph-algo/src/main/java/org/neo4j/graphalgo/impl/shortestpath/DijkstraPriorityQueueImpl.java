@@ -107,13 +107,7 @@ public class DijkstraPriorityQueueImpl<CostType> implements
     {
         super();
         this.costComparator = costComparator;
-        queue = new PriorityQueue<pathObject>( 11, new Comparator<pathObject>()
-        {
-            public int compare( pathObject o1, pathObject o2 )
-            {
-                return costComparator.compare( o1.getCost(), o2.getCost() );
-            }
-        } );
+        queue = new PriorityQueue<pathObject>( 11, ( o1, o2 ) -> costComparator.compare( o1.getCost(), o2.getCost() ) );
     }
 
     public void insertValue( Node node, CostType value )

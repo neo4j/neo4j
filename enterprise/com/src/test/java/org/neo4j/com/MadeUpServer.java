@@ -19,7 +19,6 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
 import java.io.IOException;
@@ -119,49 +118,34 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 
     enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
     {
-        MULTIPLY( new TargetCaller<MadeUpCommunicationInterface, Integer>()
+        MULTIPLY( ( master, context, input, target ) ->
         {
-            @Override
-            public Response<Integer> call( MadeUpCommunicationInterface master,
-                                           RequestContext context, ChannelBuffer input, ChannelBuffer target )
-            {
-                int value1 = input.readInt();
-                int value2 = input.readInt();
-                return master.multiply( value1, value2 );
-            }
-        }, Protocol.INTEGER_SERIALIZER ),
+            int value1 = input.readInt();
+            int value2 = input.readInt();
+            return master.multiply( value1, value2 );
+        }, Protocol.INTEGER_SERIALIZER, 0 ),
 
-        FETCH_DATA_STREAM( new TargetCaller<MadeUpCommunicationInterface, Void>()
+        FETCH_DATA_STREAM( ( master, context, input, target ) ->
         {
-            @Override
-            public Response<Void> call( MadeUpCommunicationInterface master,
-                                        RequestContext context, ChannelBuffer input, ChannelBuffer target )
-            {
-                int dataSize = input.readInt();
-                return master.fetchDataStream( new ToChannelBufferWriter( target ), dataSize );
-            }
+            int dataSize = input.readInt();
+            return master.fetchDataStream( new ToChannelBufferWriter( target ), dataSize );
         }, Protocol.VOID_SERIALIZER ),
 
-        SEND_DATA_STREAM( new TargetCaller<MadeUpCommunicationInterface, Void>()
+        SEND_DATA_STREAM( ( master, context, input, target ) ->
         {
-            @Override
-            public Response<Void> call( MadeUpCommunicationInterface master,
-                                        RequestContext context, ChannelBuffer input, ChannelBuffer target )
+            BlockLogReader reader = new BlockLogReader( input );
+            try
             {
-                BlockLogReader reader = new BlockLogReader( input );
+                return master.sendDataStream( reader );
+            }
+            finally
+            {
                 try
                 {
-                    return master.sendDataStream( reader );
+                    reader.close();
                 }
-                finally
+                catch ( IOException ignored )
                 {
-                    try
-                    {
-                        reader.close();
-                    }
-                    catch ( IOException ignored )
-                    {
-                    }
                 }
             }
         }, Protocol.VOID_SERIALIZER )
@@ -173,51 +157,34 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             }
         },
 
-        THROW_EXCEPTION( new TargetCaller<MadeUpCommunicationInterface, Integer>()
+        THROW_EXCEPTION( ( master, context, input, target ) -> master.throwException(
+                readString( input ) ), Protocol.VOID_SERIALIZER, 0 ),
+
+        CAUSE_READ_CONTEXT_EXCEPTION( ( master, context, input, target ) ->
         {
-            @Override
-            public Response<Integer> call( MadeUpCommunicationInterface master,
-                                           RequestContext context, ChannelBuffer input, ChannelBuffer target )
-            {
-                return master.throwException( readString( input ) );
-            }
+            throw new AssertionError(
+                    "Test should not reach this far, it should fail while reading the request context." );
         }, Protocol.VOID_SERIALIZER ),
 
-        CAUSE_READ_CONTEXT_EXCEPTION( new TargetCaller<MadeUpCommunicationInterface, Integer>()
-        {
-            @Override
-            public Response<Integer> call( MadeUpCommunicationInterface master,
-                RequestContext context, ChannelBuffer input, ChannelBuffer target )
-            {
-                throw new AssertionError(
-                        "Test should not reach this far, it should fail while reading the request context." );
-            }
-        }, Protocol.VOID_SERIALIZER ),
+        STREAM_BACK_TRANSACTIONS(
+                ( master, context, input, target ) -> master.streamBackTransactions(
+                        input.readInt(), input.readInt() ), Protocol.INTEGER_SERIALIZER, 0 ),
 
-        STREAM_BACK_TRANSACTIONS( new TargetCaller<MadeUpCommunicationInterface, Integer>()
-        {
-            @Override
-            public Response<Integer> call( MadeUpCommunicationInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
-            {
-                return master.streamBackTransactions( input.readInt(), input.readInt() );
-            }
-        }, Protocol.INTEGER_SERIALIZER ),
-
-        INFORM_ABOUT_TX_OBLIGATIONS( new TargetCaller<MadeUpCommunicationInterface, Integer>()
-        {
-            @Override
-            public Response<Integer> call( MadeUpCommunicationInterface master, RequestContext context,
-                    ChannelBuffer input, ChannelBuffer target )
-            {
-                return master.informAboutTransactionObligations( input.readInt(), input.readLong() );
-            }
-        }, Protocol.INTEGER_SERIALIZER );
+        INFORM_ABOUT_TX_OBLIGATIONS(
+                ( master, context, input, target ) -> master.informAboutTransactionObligations(
+                        input.readInt(), input.readLong() ), Protocol.INTEGER_SERIALIZER, 0 );
 
         private final TargetCaller masterCaller;
         private final ObjectSerializer serializer;
 
-        MadeUpRequestType( TargetCaller masterCaller, ObjectSerializer serializer )
+        MadeUpRequestType( TargetCaller<MadeUpCommunicationInterface,Integer> masterCaller, ObjectSerializer serializer,
+                           int ignore )
+        {
+            this.masterCaller = masterCaller;
+            this.serializer = serializer;
+        }
+
+        MadeUpRequestType( TargetCaller<MadeUpCommunicationInterface,Void> masterCaller, ObjectSerializer serializer )
         {
             this.masterCaller = masterCaller;
             this.serializer = serializer;

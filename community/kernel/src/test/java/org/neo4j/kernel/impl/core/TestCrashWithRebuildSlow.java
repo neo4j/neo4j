@@ -205,14 +205,10 @@ public class TestCrashWithRebuildSlow
         final Map<IdType,Long> highIds = new HashMap<>();
         NeoStores neoStores = db.getDependencyResolver().resolveDependency(
                 RecordStorageEngine.class ).testAccessNeoStores();
-        Visitor<CommonAbstractStore,RuntimeException> visitor = new Visitor<CommonAbstractStore,RuntimeException>()
+        Visitor<CommonAbstractStore,RuntimeException> visitor = store ->
         {
-            @Override
-            public boolean visit( CommonAbstractStore store ) throws RuntimeException
-            {
-                highIds.put( store.getIdType(), store.getHighId() );
-                return true;
-            }
+            highIds.put( store.getIdType(), store.getHighId() );
+            return true;
         };
         neoStores.visitStore( visitor );
         return highIds;

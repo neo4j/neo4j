@@ -219,15 +219,11 @@ public class HighAvailabilitySlavesTest
 
     private static Runnable slavesConsumingRunnable( final HighAvailabilitySlaves haSlaves )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            for ( Slave slave : haSlaves.getSlaves() )
             {
-                for ( Slave slave : haSlaves.getSlaves() )
-                {
-                    assertNotNull( slave );
-                }
+                assertNotNull( slave );
             }
         };
     }

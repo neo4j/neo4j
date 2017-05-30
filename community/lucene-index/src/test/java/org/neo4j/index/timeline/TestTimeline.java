@@ -132,14 +132,8 @@ public class TestTimeline
     private List<PropertyContainer> sortedEntities( LinkedList<Pair<PropertyContainer, Long>> timestamps, final boolean reversed )
     {
         List<Pair<PropertyContainer, Long>> sorted = new ArrayList<Pair<PropertyContainer,Long>>( timestamps );
-        sort( sorted, new Comparator<Pair<PropertyContainer, Long>>()
-        {
-            @Override
-            public int compare( Pair<PropertyContainer, Long> o1, Pair<PropertyContainer, Long> o2 )
-            {
-                return !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() );
-            }
-        } );
+        sort( sorted,
+                ( o1, o2 ) -> !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() ) );
 
         List<PropertyContainer> result = new ArrayList<PropertyContainer>();
         for ( Pair<PropertyContainer, Long> timestamp : sorted )

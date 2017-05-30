@@ -37,14 +37,10 @@ public class Template
     {
         this.templateFile = templateFile;
         substitutor = new VariableSubstitutor();
-        substitutionFunction = new Function<String, String>()
+        substitutionFunction = name ->
         {
-            @Override
-            public String apply( String name )
-            {
-                String var = System.getenv( name );
-                return var == null ? "" : var;
-            }
+            String var = System.getenv( name );
+            return var == null ? "" : var;
         };
     }
 

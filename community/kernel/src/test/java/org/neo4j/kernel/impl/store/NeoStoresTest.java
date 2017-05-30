@@ -1196,15 +1196,11 @@ public class NeoStoresTest
     {
         try
         {
-            storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
+            storeLayer.relationshipVisit( rel, ( relId, type, startNode, endNode ) ->
             {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                {
-                    assertEquals( firstNode, startNode );
-                    assertEquals( secondNode, endNode );
-                    assertEquals( relType, type );
-                }
+                assertEquals( firstNode, startNode );
+                assertEquals( secondNode, endNode );
+                assertEquals( relType, type );
             } );
         }
         catch ( EntityNotFoundException e )

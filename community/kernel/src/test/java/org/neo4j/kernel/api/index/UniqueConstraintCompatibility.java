@@ -609,21 +609,17 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         // lock. We need to sneak past these locks.
         final CountDownLatch createNodeReadyLatch = new CountDownLatch( 1 );
         final CountDownLatch createNodeCommitLatch = new CountDownLatch( 1 );
-        Future<?> updatingTransaction = executor.submit( new Runnable()
+        Future<?> updatingTransaction = executor.submit( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
+                for ( Action action : actions )
                 {
-                    for ( Action action : actions )
-                    {
-                        action.accept( tx );
-                    }
-                    tx.success();
-                    createNodeReadyLatch.countDown();
-                    awaitUninterruptibly( createNodeCommitLatch );
+                    action.accept( tx );
                 }
+                tx.success();
+                createNodeReadyLatch.countDown();
+                awaitUninterruptibly( createNodeCommitLatch );
             }
         } );
         createNodeReadyLatch.await();
@@ -649,15 +645,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         // population job to finish, and it's population job should in turn be blocked
         // on the lockBlockingIndexPopulator above:
         final CountDownLatch createConstraintTransactionStarted = new CountDownLatch( 1 );
-        Future<?> createConstraintTransaction = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-
-                createUniqueConstraint( createConstraintTransactionStarted );
-            }
-        } );
+        Future<?> createConstraintTransaction = executor.submit(
+                () -> createUniqueConstraint( createConstraintTransactionStarted ) );
         createConstraintTransactionStarted.await();
 
         // Now we can initiate the data-changing commit. It should then

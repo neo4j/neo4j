@@ -75,20 +75,16 @@ public abstract class DefinedProperty extends Property
         }
     };
 
-    public static final Comparator<DefinedProperty> COMPARATOR = new Comparator<DefinedProperty>()
+    public static final Comparator<DefinedProperty> COMPARATOR = ( left, right ) ->
     {
-        @Override
-        public int compare( DefinedProperty left, DefinedProperty right )
+        int cmp = left.propertyKeyId - right.propertyKeyId;
+        if ( cmp == 0 )
         {
-            int cmp = left.propertyKeyId - right.propertyKeyId;
-            if ( cmp == 0 )
-            {
-                return COMPARE_VALUES.compare( left.value(), right.value() );
-            }
-
-            // else
-            return cmp;
+            return COMPARE_VALUES.compare( left.value(), right.value() );
         }
+
+        // else
+        return cmp;
     };
 
     @Override

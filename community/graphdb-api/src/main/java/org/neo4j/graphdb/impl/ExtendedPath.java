@@ -61,31 +61,24 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Relationship> relationships()
     {
-        return new Iterable<Relationship>()
+        return () -> new PrefetchingIterator<Relationship>()
         {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                return new PrefetchingIterator<Relationship>()
-                {
-                    final Iterator<Relationship> startRelationships = start.relationships().iterator();
-                    boolean lastReturned;
+            final Iterator<Relationship> startRelationships = start.relationships().iterator();
+            boolean lastReturned;
 
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        if ( startRelationships.hasNext() )
-                        {
-                            return startRelationships.next();
-                        }
-                        if ( !lastReturned )
-                        {
-                            lastReturned = true;
-                            return lastRelationship;
-                        }
-                        return null;
-                    }
-                };
+            @Override
+            protected Relationship fetchNextOrNull()
+            {
+                if ( startRelationships.hasNext() )
+                {
+                    return startRelationships.next();
+                }
+                if ( !lastReturned )
+                {
+                    lastReturned = true;
+                    return lastRelationship;
+                }
+                return null;
             }
         };
     }
@@ -93,27 +86,20 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return new Iterable<Relationship>()
+        return () -> new PrefetchingIterator<Relationship>()
         {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                return new PrefetchingIterator<Relationship>()
-                {
-                    final Iterator<Relationship> startRelationships = start.reverseRelationships().iterator();
-                    boolean endReturned;
+            final Iterator<Relationship> startRelationships = start.reverseRelationships().iterator();
+            boolean endReturned;
 
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        if ( !endReturned )
-                        {
-                            endReturned = true;
-                            return lastRelationship;
-                        }
-                        return startRelationships.hasNext() ? startRelationships.next() : null;
-                    }
-                };
+            @Override
+            protected Relationship fetchNextOrNull()
+            {
+                if ( !endReturned )
+                {
+                    endReturned = true;
+                    return lastRelationship;
+                }
+                return startRelationships.hasNext() ? startRelationships.next() : null;
             }
         };
     }
@@ -121,31 +107,24 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Node> nodes()
     {
-        return new Iterable<Node>()
+        return () -> new PrefetchingIterator<Node>()
         {
-            @Override
-            public Iterator<Node> iterator()
-            {
-                return new PrefetchingIterator<Node>()
-                {
-                    final Iterator<Node> startNodes = start.nodes().iterator();
-                    boolean lastReturned;
+            final Iterator<Node> startNodes = start.nodes().iterator();
+            boolean lastReturned;
 
-                    @Override
-                    protected Node fetchNextOrNull()
-                    {
-                        if ( startNodes.hasNext() )
-                        {
-                            return startNodes.next();
-                        }
-                        if ( !lastReturned )
-                        {
-                            lastReturned = true;
-                            return endNode;
-                        }
-                        return null;
-                    }
-                };
+            @Override
+            protected Node fetchNextOrNull()
+            {
+                if ( startNodes.hasNext() )
+                {
+                    return startNodes.next();
+                }
+                if ( !lastReturned )
+                {
+                    lastReturned = true;
+                    return endNode;
+                }
+                return null;
             }
         };
     }
@@ -153,27 +132,20 @@ public class ExtendedPath implements Path
     @Override
     public Iterable<Node> reverseNodes()
     {
-        return new Iterable<Node>()
+        return () -> new PrefetchingIterator<Node>()
         {
-            @Override
-            public Iterator<Node> iterator()
-            {
-                return new PrefetchingIterator<Node>()
-                {
-                    final Iterator<Node> startNodes = start.reverseNodes().iterator();
-                    boolean endReturned;
+            final Iterator<Node> startNodes = start.reverseNodes().iterator();
+            boolean endReturned;
 
-                    @Override
-                    protected Node fetchNextOrNull()
-                    {
-                        if ( !endReturned )
-                        {
-                            endReturned = true;
-                            return endNode;
-                        }
-                        return startNodes.hasNext() ? startNodes.next() : null;
-                    }
-                };
+            @Override
+            protected Node fetchNextOrNull()
+            {
+                if ( !endReturned )
+                {
+                    endReturned = true;
+                    return endNode;
+                }
+                return startNodes.hasNext() ? startNodes.next() : null;
             }
         };
     }

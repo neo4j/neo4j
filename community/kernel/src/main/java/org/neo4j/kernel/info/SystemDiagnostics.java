@@ -250,14 +250,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            for ( File subdir : SYS_BLOCK.listFiles( new java.io.FileFilter()
-            {
-                @Override
-                public boolean accept( File path )
-                {
-                    return path.isDirectory();
-                }
-            } ) )
+            for ( File subdir : SYS_BLOCK.listFiles( path -> path.isDirectory() ) )
             {
                 File scheduler = new File( subdir, "queue/scheduler" );
                 if ( scheduler.isFile() )

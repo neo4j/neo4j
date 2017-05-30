@@ -491,23 +491,19 @@ public class ClusterMockTest
                                         toJoin[i] = servers.get( i ).getServer().boundAt();
                                     }
                                     final Future<ClusterConfiguration> result = cluster.join( "default", toJoin );
-                                    Runnable joiner = new Runnable()
+                                    Runnable joiner = () ->
                                     {
-                                        @Override
-                                        public void run()
+                                        try
                                         {
-                                            try
-                                            {
-                                                ClusterConfiguration clusterConfiguration = result.get();
-                                                logger.getLogger().fine( "**** Cluster configuration:" +
-                                                        clusterConfiguration );
-                                            }
-                                            catch ( Exception e )
-                                            {
-                                                logger.getLogger().warning( "**** Node could not join cluster:" + e
-                                                        .getMessage() );
-                                                out.add( cluster );
-                                            }
+                                            ClusterConfiguration clusterConfiguration = result.get();
+                                            logger.getLogger().fine( "**** Cluster configuration:" +
+                                                    clusterConfiguration );
+                                        }
+                                        catch ( Exception e )
+                                        {
+                                            logger.getLogger().warning( "**** Node could not join cluster:" + e
+                                                    .getMessage() );
+                                            out.add( cluster );
                                         }
                                     };
                                     network.addFutureWaiter( result, joiner );
@@ -524,32 +520,28 @@ public class ClusterMockTest
                                 }
 
                                 final Future<ClusterConfiguration> result = cluster.join( "default", instanceUris );
-                                Runnable joiner = new Runnable()
+                                Runnable joiner = () ->
                                 {
-                                    @Override
-                                    public void run()
+                                    try
                                     {
-                                        try
+                                        ClusterConfiguration clusterConfiguration = result.get();
+                                        logger.getLogger().fine( "**** Cluster configuration:" +
+                                                clusterConfiguration );
+                                    }
+                                    catch ( Exception e )
+                                    {
+                                        logger.getLogger().warning(
+                                                "**** Node " + joinServer + " could not join cluster:" + e
+                                                        .getMessage()
+                                        );
+                                        if ( !(e.getCause() instanceof IllegalStateException) )
                                         {
-                                            ClusterConfiguration clusterConfiguration = result.get();
-                                            logger.getLogger().fine( "**** Cluster configuration:" +
-                                                    clusterConfiguration );
+                                            cluster.create( "default" );
                                         }
-                                        catch ( Exception e )
+                                        else
                                         {
-                                            logger.getLogger().warning(
-                                                    "**** Node " + joinServer + " could not join cluster:" + e
-                                                            .getMessage()
-                                            );
-                                            if ( !(e.getCause() instanceof IllegalStateException) )
-                                            {
-                                                cluster.create( "default" );
-                                            }
-                                            else
-                                            {
-                                                logger.getLogger().warning( "*** Incorrectly configured cluster? "
-                                                        + e.getCause().getMessage() );
-                                            }
+                                            logger.getLogger().warning( "*** Incorrectly configured cluster? "
+                                                    + e.getCause().getMessage() );
                                         }
                                     }
                                 };
@@ -779,23 +771,19 @@ public class ClusterMockTest
                     {
                         final Future<ClusterConfiguration> result = cluster.join( "default",
                                 URI.create( in.get( 0 ).toString() ) );
-                        Runnable joiner = new Runnable()
+                        Runnable joiner = () ->
                         {
-                            @Override
-                            public void run()
+                            try
                             {
-                                try
-                                {
-                                    ClusterConfiguration clusterConfiguration = result.get();
-                                    logger.getLogger().fine( "**** Cluster configuration:" +
-                                            clusterConfiguration );
-                                }
-                                catch ( Exception e )
-                                {
-                                    logger.getLogger().fine( "**** Node could not join cluster:" + e
-                                            .getMessage() );
-                                    out.add( cluster );
-                                }
+                                ClusterConfiguration clusterConfiguration = result.get();
+                                logger.getLogger().fine( "**** Cluster configuration:" +
+                                        clusterConfiguration );
+                            }
+                            catch ( Exception e )
+                            {
+                                logger.getLogger().fine( "**** Node could not join cluster:" + e
+                                        .getMessage() );
+                                out.add( cluster );
                             }
                         };
                         network.addFutureWaiter( result, joiner );

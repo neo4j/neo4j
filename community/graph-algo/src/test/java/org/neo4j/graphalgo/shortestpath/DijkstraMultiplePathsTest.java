@@ -233,14 +233,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             0.0,
             graph.getNode( "a" ),
             graph.getNode( "e" ),
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                    Direction direction )
-                {
-                    return 1.0;
-                }
-            }, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
             MyRelTypes.R1 );
         // path discovery flags
         boolean pathBD = false;
@@ -324,14 +317,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             0.0,
             graph.getNode( "a" ),
             graph.getNode( "e" ),
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                    Direction direction )
-                {
-                    return 1.0;
-                }
-            }, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.OUTGOING,
             MyRelTypes.R1 );
         // path discovery flags
         boolean pathBD = false;

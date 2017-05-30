@@ -43,10 +43,7 @@ public class ServerStartupErrors
      */
     private static final Function<Throwable, ServerStartupException>[] translators = new Function[] {
         // Handle upgrade errors
-        new Function<Throwable, ServerStartupException>()
-        {
-            @Override
-            public ServerStartupException apply( Throwable o )
+            (Function<Throwable,ServerStartupException>) o ->
             {
                 Throwable rootCause = Exceptions.rootCause( o );
                 if ( rootCause instanceof UpgradeNotAllowedException )
@@ -55,7 +52,6 @@ public class ServerStartupErrors
                 }
                 return null;
             }
-        }
     };
 
     public static ServerStartupException translateToServerStartupError( Throwable cause )

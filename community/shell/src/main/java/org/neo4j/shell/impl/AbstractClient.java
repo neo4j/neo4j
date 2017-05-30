@@ -71,19 +71,15 @@ public abstract class AbstractClient implements ShellClient
 
     private Runnable getTerminateAction()
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    getServer().terminate( getId() );
-                }
-                catch ( Exception e )
-                {
-                    printStackTrace( e );
-                }
+                getServer().terminate( getId() );
+            }
+            catch ( Exception e )
+            {
+                printStackTrace( e );
             }
         };
     }

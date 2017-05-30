@@ -2086,15 +2086,11 @@ public class FullCheckIntegrationTest
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
                 defaultConsistencyCheckThreadsNumber() );
         return checker.execute( stores, FormattedLog.toOutputStream( System.out ),
-                new ConsistencyReporter.Monitor()
+                ( report, method, message ) ->
                 {
-                    @Override
-                    public void reported( Class<?> report, String method, String message )
-                    {
-                        Set<String> types = allReports.get( report );
-                        assert types != null;
-                        types.remove( method );
-                    }
+                    Set<String> types = allReports.get( report );
+                    assert types != null;
+                    types.remove( method );
                 } );
     }
 

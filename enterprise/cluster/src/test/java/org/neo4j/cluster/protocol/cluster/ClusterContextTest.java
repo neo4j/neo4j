@@ -62,14 +62,7 @@ public class ClusterContextTest
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -112,14 +105,7 @@ public class ClusterContextTest
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -155,14 +141,7 @@ public class ClusterContextTest
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config
@@ -204,14 +183,7 @@ public class ClusterContextTest
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config

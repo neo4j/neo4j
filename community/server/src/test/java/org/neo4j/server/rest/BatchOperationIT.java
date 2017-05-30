@@ -713,48 +713,44 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     @Test
     public void shouldFailWhenUsingPeriodicCommitViaNewTxEndpoint() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
+        ServerTestUtils.withCSVFile( 1, url ->
         {
-            @Override
-            public void execute( String url ) throws Exception
-            {
-                // Given
-                String jsonString = new PrettyJSON()
-                        .array()
-                        .object()
-                        .key( "method" ).value("POST")
-                        .key( "to" ).value("/transaction/commit")
-                        .key( "body" ).object()
-                        .key("statements").array()
-                        .object()
-                        .key( "statement" )
-                        .value( "USING PERIODIC COMMIT LOAD CSV FROM '" + url + "' AS line CREATE ()" )
-                        .endObject()
-                        .endArray()
-                        .endObject()
-                        .endObject()
-                        .endArray()
-                        .toString();
+            // Given
+            String jsonString = new PrettyJSON()
+                    .array()
+                    .object()
+                    .key( "method" ).value("POST")
+                    .key( "to" ).value("/transaction/commit")
+                    .key( "body" ).object()
+                    .key("statements").array()
+                    .object()
+                    .key( "statement" )
+                    .value( "USING PERIODIC COMMIT LOAD CSV FROM '" + url + "' AS line CREATE ()" )
+                    .endObject()
+                    .endArray()
+                    .endObject()
+                    .endObject()
+                    .endArray()
+                    .toString();
 
-                // When
-                JsonNode result = JsonHelper.jsonNode(gen.get()
-                        .expectedStatus(200)
-                        .payload(jsonString)
-                        .post(batchUri())
-                        .entity());
+            // When
+            JsonNode result = JsonHelper.jsonNode(gen.get()
+                    .expectedStatus(200)
+                    .payload(jsonString)
+                    .post(batchUri())
+                    .entity());
 
-                // Then
-                JsonNode results = result.get(0).get("body").get("results");
-                JsonNode errors = result.get(0).get("body").get("errors");
+            // Then
+            JsonNode results = result.get(0).get("body").get("results");
+            JsonNode errors = result.get(0).get("body").get("errors");
 
-                assertTrue( "Results not an array", results.isArray() );
-                assertEquals( 0, results.size() );
-                assertTrue( "Errors not an array", errors.isArray() );
-                assertEquals( 1, errors.size() );
+            assertTrue( "Results not an array", results.isArray() );
+            assertEquals( 0, results.size() );
+            assertTrue( "Errors not an array", errors.isArray() );
+            assertEquals( 1, errors.size() );
 
-                String errorCode = errors.get(0).get("code").getTextValue();
-                assertEquals( "Neo.ClientError.Statement.SemanticError", errorCode );
-            }
+            String errorCode = errors.get(0).get("code").getTextValue();
+            assertEquals( "Neo.ClientError.Statement.SemanticError", errorCode );
         } );
     }
 

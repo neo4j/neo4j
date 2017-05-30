@@ -162,22 +162,18 @@ public class UniqueIndexRecoveryTest
     private File snapshot( final File path ) throws IOException
     {
         File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
-        FileUtils.copyRecursively( path, snapshotDir, new FileFilter()
+        FileUtils.copyRecursively( path, snapshotDir, pathName ->
         {
-            @Override
-            public boolean accept( File pathName )
+            String subPath = pathName.getAbsolutePath().substring( path.getPath().length() ).replace( File.separatorChar, '/' );
+            if ( "/store_lock".equals( subPath ) )
             {
-                String subPath = pathName.getAbsolutePath().substring( path.getPath().length() ).replace( File.separatorChar, '/' );
-                if ( "/store_lock".equals( subPath ) )
-                {
-                    return false; // since the db is running, exclude the 'store_lock' file
-                }
-                if ( subPath.startsWith( "/schema/index/lucene/" ) || subPath.startsWith( "/schema/label/lucene/" ) )
-                {
-                    return !subPath.endsWith( "/write.lock" ); // since the db is running, exclude lucene lock files
-                }
-                return true;
+                return false; // since the db is running, exclude the 'store_lock' file
             }
+            if ( subPath.startsWith( "/schema/index/lucene/" ) || subPath.startsWith( "/schema/label/lucene/" ) )
+            {
+                return !subPath.endsWith( "/write.lock" ); // since the db is running, exclude lucene lock files
+            }
+            return true;
         } );
         return snapshotDir;
     }

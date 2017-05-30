@@ -271,75 +271,67 @@ public class NetworkSender
             senderExecutors.put( to, senderExecutor );
         }
 
-        senderExecutor.submit( new Runnable()
+        senderExecutor.submit( () ->
         {
-            @Override
-            public void run()
+            Channel channel = getChannel( to );
+
+            try
             {
-                Channel channel = getChannel( to );
-
-                try
+                if ( channel == null )
                 {
-                    if ( channel == null )
-                    {
-                        channel = openChannel( to );
-                        openedChannel( to, channel );
+                    channel = openChannel( to );
+                    openedChannel( to, channel );
 
-                        // Instance could be connected to, remove any marker of it being failed
-                        failedInstances.remove( to );
-                    }
+                    // Instance could be connected to, remove any marker of it being failed
+                    failedInstances.remove( to );
                 }
-                catch ( Exception e )
+            }
+            catch ( Exception e )
+            {
+                // Only print out failure message on first fail
+                if ( !failedInstances.contains( to ) )
                 {
-                    // Only print out failure message on first fail
-                    if ( !failedInstances.contains( to ) )
-                    {
-                        msgLog.warn( e.getMessage() );
-                        failedInstances.add( to );
-                    }
-
-                    return;
+                    msgLog.warn( e.getMessage() );
+                    failedInstances.add( to );
                 }
 
-                try
+                return;
+            }
+
+            try
+            {
+                // Set FROM header
+                message.setHeader( Message.FROM, me.toASCIIString() );
+
+                msgLog.debug( "Sending to " + to + ": " + message );
+
+                ChannelFuture future = channel.write( message );
+                future.addListener( future1 ->
                 {
-                    // Set FROM header
-                    message.setHeader( Message.FROM, me.toASCIIString() );
+                    monitor.sentMessage( message );
 
-                    msgLog.debug( "Sending to " + to + ": " + message );
-
-                    ChannelFuture future = channel.write( message );
-                    future.addListener( new ChannelFutureListener()
+                    if ( !future1.isSuccess() )
                     {
-                        @Override
-                        public void operationComplete( ChannelFuture future ) throws Exception
-                        {
-                            monitor.sentMessage( message );
+                        msgLog.debug( "Unable to write " + message + " to " + future1.getChannel(),
+                                future1.getCause() );
+                        closedChannel( future1.getChannel() );
 
-                            if ( !future.isSuccess() )
-                            {
-                                msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
-                                        future.getCause() );
-                                closedChannel( future.getChannel() );
-
-                                // Try again
-                                send( message );
-                            }
-                        }
-                    } );
-                }
-                catch ( Exception e )
+                        // Try again
+                        send( message );
+                    }
+                } );
+            }
+            catch ( Exception e )
+            {
+                if ( Exceptions.contains( e, ClosedChannelException.class ) )
                 {
-                    if ( Exceptions.contains( e, ClosedChannelException.class ) )
-                    {
-                        msgLog.warn( "Could not send message, because the connection has been closed." );
-                    }
-                    else
-                    {
-                        msgLog.warn( "Could not send message", e );
-                    }
-                    channel.close();
+                    msgLog.warn( "Could not send message, because the connection has been closed." );
                 }
+                else
+                {
+                    msgLog.warn( "Could not send message", e );
+                }
+                channel.close();
             }
         } );
     }

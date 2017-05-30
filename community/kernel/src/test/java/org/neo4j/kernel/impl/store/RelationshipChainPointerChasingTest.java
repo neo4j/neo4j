@@ -155,15 +155,11 @@ public class RelationshipChainPointerChasingTest
 
     private void deleteRelationshipsInSeparateThread( final Relationship... relationships ) throws InterruptedException
     {
-        executeTransactionInSeparateThread( new Runnable()
+        executeTransactionInSeparateThread( () ->
         {
-            @Override
-            public void run()
+            for ( Relationship relationship : relationships )
             {
-                for ( Relationship relationship : relationships )
-                {
-                    relationship.delete();
-                }
+                relationship.delete();
             }
         } );
     }

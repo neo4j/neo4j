@@ -94,46 +94,31 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
 
     public void add( final Node node, final String key, final Object value ) throws Exception
     {
-        execute( new WorkerCommand<CommandState, Void>()
+        execute( (WorkerCommand<CommandState,Void>) state ->
         {
-            @Override
-            public Void doWork( CommandState state )
-            {
-                state.index.add( node, key, value );
-                return null;
-            }
+            state.index.add( node, key, value );
+            return null;
         } );
     }
 
     public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue ) throws Exception
     {
-        return executeDontWait( new WorkerCommand<CommandState, Node>()
+        return executeDontWait( state ->
         {
-            @Override
-            public Node doWork( CommandState state )
+            UniqueFactory.UniqueNodeFactory factory = new UniqueFactory.UniqueNodeFactory( state.index )
             {
-                UniqueFactory.UniqueNodeFactory factory = new UniqueFactory.UniqueNodeFactory( state.index )
+                @Override
+                protected void initialize( Node node, Map<String, Object> properties )
                 {
-                    @Override
-                    protected void initialize( Node node, Map<String, Object> properties )
-                    {
-                        node.setProperty( key, initialValue );
-                    }
-                };
-                return factory.getOrCreate( key, value );
-            }
+                    node.setProperty( key, initialValue );
+                }
+            };
+            return factory.getOrCreate( key, value );
         } );
     }
 
     public Object getProperty( final PropertyContainer entity, final String key ) throws Exception
     {
-        return execute( new WorkerCommand<CommandState, Object>()
-        {
-            @Override
-            public Object doWork( CommandState state )
-            {
-                return entity.getProperty( key );
-            }
-        } );
+        return execute( state -> entity.getProperty( key ) );
     }
 }

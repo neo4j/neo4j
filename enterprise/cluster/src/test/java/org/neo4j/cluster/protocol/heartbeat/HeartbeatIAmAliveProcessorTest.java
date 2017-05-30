@@ -169,14 +169,10 @@ public class HeartbeatIAmAliveProcessorTest
         // Given
         MessageHolder holder = mock( MessageHolder.class );
         // The sender, which adds messages outgoing to the list above.
-        doAnswer( new Answer()
+        doAnswer( invocation ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                sentOut.add( (Message) invocation.getArguments()[0] );
-                return null;
-            }
+            sentOut.add( (Message) invocation.getArguments()[0] );
+            return null;
         } ).when( holder ).offer( Matchers.<Message<MessageType>>any() );
 
         ClusterContext mockContext = mock( ClusterContext.class );
@@ -217,14 +213,10 @@ public class HeartbeatIAmAliveProcessorTest
         // Given
         MessageHolder holder = mock( MessageHolder.class );
         // The sender, which adds messages outgoing to the list above.
-        doAnswer( new Answer()
+        doAnswer( invocation ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                sentOut.add( (Message) invocation.getArguments()[0] );
-                return null;
-            }
+            sentOut.add( (Message) invocation.getArguments()[0] );
+            return null;
         } ).when( holder ).offer( Matchers.<Message<MessageType>>any() );
 
         ClusterContext mockContext = mock( ClusterContext.class );

@@ -99,14 +99,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
 
             // Sort by name
             List<File> fileList = Arrays.asList( files );
-            Collections.sort( fileList, new Comparator<File>()
-            {
-                @Override
-                public int compare( File o1, File o2 )
-                {
-                    return o1.getName().compareTo( o2.getName() );
-                }
-            } );
+            Collections.sort( fileList, ( o1, o2 ) -> o1.getName().compareTo( o2.getName() ) );
 
             for ( File file : fileList )
             {

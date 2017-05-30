@@ -392,14 +392,7 @@ public class PrimitiveLongCollectionsTest
     public void itemAt() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
 
         // THEN
         try
@@ -432,14 +425,7 @@ public class PrimitiveLongCollectionsTest
     public void itemAtWithDefault() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
         long defaultValue = 55;
 
         // THEN
@@ -457,14 +443,7 @@ public class PrimitiveLongCollectionsTest
     public void indexOf() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
 
         // THEN
         assertEquals( -1, PrimitiveLongCollections.indexOf( items.iterator(), 55 ) );
@@ -477,38 +456,10 @@ public class PrimitiveLongCollectionsTest
     public void iteratorsEqual() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items1 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 2, 3 );
-            }
-        };
-        PrimitiveLongIterable items2 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 20, 3 );
-            }
-        };
-        PrimitiveLongIterable items3 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 2, 3, 4 );
-            }
-        };
-        PrimitiveLongIterable items4 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 2, 3 );
-            }
-        };
+        PrimitiveLongIterable items1 = () -> PrimitiveLongCollections.iterator( 1, 2, 3 );
+        PrimitiveLongIterable items2 = () -> PrimitiveLongCollections.iterator( 1, 20, 3 );
+        PrimitiveLongIterable items3 = () -> PrimitiveLongCollections.iterator( 1, 2, 3, 4 );
+        PrimitiveLongIterable items4 = () -> PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // THEN
         assertFalse( PrimitiveLongCollections.equals( items1.iterator(), items2.iterator() ) );

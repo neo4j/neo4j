@@ -302,13 +302,9 @@ public class TestCommunication
     public void serverContextVerificationCanThrowException() throws Throwable
     {
         final String failureMessage = "I'm failing";
-        TxChecksumVerifier failingVerifier = new TxChecksumVerifier()
+        TxChecksumVerifier failingVerifier = ( txId, checksum ) ->
         {
-            @Override
-            public void assertMatch( long txId, long checksum )
-            {
-                throw new FailingException( failureMessage );
-            }
+            throw new FailingException( failureMessage );
         };
 
         MadeUpServer server = builder.verifier( failingVerifier ).server();

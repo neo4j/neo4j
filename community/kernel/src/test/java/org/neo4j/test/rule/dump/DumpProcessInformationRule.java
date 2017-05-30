@@ -41,26 +41,12 @@ public class DumpProcessInformationRule extends ExternalResource
 
     public static Dump localVm( final PrintStream out )
     {
-        return new Dump()
-        {
-            @Override
-            public void dump()
-            {
-                DumpVmInformation.dumpVmInfo( out );
-            }
-        };
+        return () -> DumpVmInformation.dumpVmInfo( out );
     }
 
     public static Dump otherVm( final Matcher<String> processFilter, final File baseDir )
     {
-        return new Dump()
-        {
-            @Override
-            public void dump() throws Exception
-            {
-                new DumpProcessInformation( NullLogProvider.getInstance(), baseDir ).doThreadDump( processFilter );
-            }
-        };
+        return () -> new DumpProcessInformation( NullLogProvider.getInstance(), baseDir ).doThreadDump( processFilter );
     }
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool( 2 );
@@ -85,14 +71,10 @@ public class DumpProcessInformationRule extends ExternalResource
         if ( null == thunk )
         {
             super.before();
-            thunk = executor.schedule( new Callable<Void>()
+            thunk = executor.schedule( (Callable<Void>) () ->
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    dump();
-                    return null;
-                }
+                dump();
+                return null;
             }, duration, timeUnit );
         }
         else

@@ -110,20 +110,16 @@ public class PropertyDeduplicator
             }
 
             final long localHeadRecordId = headRecordId;
-            localDuplicateClusters.visitEntries( new PrimitiveIntObjectVisitor<DuplicateCluster, RuntimeException>()
+            localDuplicateClusters.visitEntries( ( key, duplicateCluster ) ->
             {
-                @Override
-                public boolean visited( int key, DuplicateCluster duplicateCluster )
+                List<DuplicateCluster> clusters = duplicateClusters.get( localHeadRecordId );
+                if ( clusters == null )
                 {
-                    List<DuplicateCluster> clusters = duplicateClusters.get( localHeadRecordId );
-                    if ( clusters == null )
-                    {
-                        clusters = new ArrayList<>();
-                        duplicateClusters.put( localHeadRecordId, clusters );
-                    }
-                    clusters.add( duplicateCluster );
-                    return false;
+                    clusters = new ArrayList<>();
+                    duplicateClusters.put( localHeadRecordId, clusters );
                 }
+                clusters.add( duplicateCluster );
+                return false;
             } );
 
             seenPropertyKeys.clear();

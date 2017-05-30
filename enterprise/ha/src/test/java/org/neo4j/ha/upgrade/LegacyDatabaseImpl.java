@@ -96,27 +96,23 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
 
         final RmiLocation rmiLocation = rmiLocation( rmiPort );
         ExecutorService executor = newSingleThreadExecutor();
-        Future<LegacyDatabase> future = executor.submit( new Callable<LegacyDatabase>()
+        Future<LegacyDatabase> future = executor.submit( () ->
         {
-            @Override
-            public LegacyDatabase call() throws Exception
+            long endTime = currentTimeMillis() + SECONDS.toMillis( 10000 );
+            while ( currentTimeMillis() < endTime )
             {
-                long endTime = currentTimeMillis() + SECONDS.toMillis( 10000 );
-                while ( currentTimeMillis() < endTime )
+                try
                 {
-                    try
-                    {
-                        return (LegacyDatabase) rmiLocation.getBoundObject();
-                    }
-                    catch ( RemoteException e )
-                    {
-                        // OK
-                        sleep( 100 );
-                    }
+                    return (LegacyDatabase) rmiLocation.getBoundObject();
                 }
-                process.destroy();
-                throw new IllegalStateException( "Couldn't get remote to legacy database" );
+                catch ( RemoteException e )
+                {
+                    // OK
+                    sleep( 100 );
+                }
             }
+            process.destroy();
+            throw new IllegalStateException( "Couldn't get remote to legacy database" );
         } );
         executor.shutdown();
         return future;

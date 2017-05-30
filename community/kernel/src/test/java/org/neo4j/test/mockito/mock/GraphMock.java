@@ -116,14 +116,7 @@ public class GraphMock
 
     private static <T> Answer<Iterator<T>> withIteratorOf( final Iterable<T> iterable )
     {
-        return new Answer<Iterator<T>>()
-        {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return iterable.iterator();
-            }
-        };
+        return invocation -> iterable.iterator();
     }
 
     private static Node mockNode( long id, Label[] labels, Properties properties )

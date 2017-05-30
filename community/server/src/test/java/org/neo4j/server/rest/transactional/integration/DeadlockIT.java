@@ -80,18 +80,14 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
 
     private OtherThreadExecutor.WorkerCommand<Object, Object> writeToFirstAndSecond()
     {
-        return new OtherThreadExecutor.WorkerCommand<Object, Object>()
+        return state ->
         {
-            @Override
-            public Object doWork( Object state ) throws Exception
-            {
-                HTTP.Response post = http.POST( "/db/data/transaction",
-                        quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
-                secondNodeLocked.countDown();
-                http.POST( post.location(),
-                        quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ) );
-                return null;
-            }
+            HTTP.Response post = http.POST( "/db/data/transaction",
+                    quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
+            secondNodeLocked.countDown();
+            http.POST( post.location(),
+                    quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ) );
+            return null;
         };
     }
 }

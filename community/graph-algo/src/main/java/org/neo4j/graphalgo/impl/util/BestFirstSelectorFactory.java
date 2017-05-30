@@ -145,12 +145,5 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
     protected abstract D calculateValue( TraversalBranch next );
 
     public static final Converter<Node, TraversalBranch> CONVERTER =
-            new Converter<Node, TraversalBranch>()
-    {
-        @Override
-        public Node convert( TraversalBranch source )
-        {
-            return source.endNode();
-        }
-    };
+            source -> source.endNode();
 }

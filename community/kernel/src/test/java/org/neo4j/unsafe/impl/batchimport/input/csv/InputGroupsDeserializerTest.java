@@ -79,14 +79,10 @@ public class InputGroupsDeserializerTest
                     @SuppressWarnings( "unchecked" )
                     InputEntityDeserializer<InputNode> result = mock( InputEntityDeserializer.class );
                     when( result.sourceDescription() ).thenReturn( String.valueOf( flips.get() ) );
-                    doAnswer( new Answer<Void>()
+                    doAnswer( invocation ->
                     {
-                        @Override
-                        public Void answer( InvocationOnMock invocation ) throws Throwable
-                        {
-                            stream.close();
-                            return null;
-                        }
+                        stream.close();
+                        return null;
                     } ).when( result ).close();
                     return result;
                 }, Validators.emptyValidator(), InputNode.class );

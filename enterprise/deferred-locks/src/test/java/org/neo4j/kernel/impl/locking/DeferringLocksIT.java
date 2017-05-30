@@ -85,19 +85,15 @@ public class DeferringLocksIT
         }
 
         // WHEN
-        t2.execute( new WorkerCommand<Void,Void>()
+        t2.execute( (WorkerCommand<Void,Void>) state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    node.setProperty( PROPERTY_KEY, VALUE_1 );
-                    tx.success();
-                    barrier.reached();
-                }
-                return null;
+                node.setProperty( PROPERTY_KEY, VALUE_1 );
+                tx.success();
+                barrier.reached();
             }
+            return null;
         } );
         try ( Transaction tx = db.beginTx() )
         {
@@ -128,19 +124,15 @@ public class DeferringLocksIT
         }
 
         // WHEN
-        Future<Void> future = t2.execute( new WorkerCommand<Void,Void>()
+        Future<Void> future = t2.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    node.removeProperty( PROPERTY_KEY );
-                    tx.success();
-                    barrier.reached();
-                }
-                return null;
+                node.removeProperty( PROPERTY_KEY );
+                tx.success();
+                barrier.reached();
             }
+            return null;
         } );
         try ( Transaction tx = db.beginTx() )
         {
@@ -173,19 +165,15 @@ public class DeferringLocksIT
         }
 
         // WHEN
-        Future<Void> future = t2.execute( new WorkerCommand<Void,Void>()
+        Future<Void> future = t2.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.getNodeById( nodeId ).delete();
-                    tx.success();
-                    barrier.reached();
-                }
-                return null;
+                db.getNodeById( nodeId ).delete();
+                tx.success();
+                barrier.reached();
             }
+            return null;
         } );
         try
         {
@@ -222,34 +210,26 @@ public class DeferringLocksIT
     @Test( timeout = TEST_TIMEOUT )
     public void readOwnChangesFromRacingIndexNoBlock() throws Throwable
     {
-        Future<Void> t2Future = t2.execute( new WorkerCommand<Void,Void>()
+        Future<Void> t2Future = t2.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    createNodeWithProperty( LABEL, PROPERTY_KEY, VALUE_1 );
-                    assertNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
+                createNodeWithProperty( LABEL, PROPERTY_KEY, VALUE_1 );
+                assertNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
 
-                    tx.success();
-                }
-                return null;
+                tx.success();
             }
+            return null;
         } );
 
-        Future<Void> t3Future = t3.execute( new WorkerCommand<Void,Void>()
+        Future<Void> t3Future = t3.execute( state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    createAndAwaitIndex( LABEL, PROPERTY_KEY );
-                    tx.success();
-                }
-                return null;
+                createAndAwaitIndex( LABEL, PROPERTY_KEY );
+                tx.success();
             }
+            return null;
         } );
 
         t3Future.get();

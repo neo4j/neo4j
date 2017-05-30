@@ -166,14 +166,8 @@ public class StoreUpgrader
     private void cleanupLegacyLeftOverDirsIn( File storeDir )
     {
         final Pattern leftOverDirsPattern = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
-        File[] leftOverDirs = storeDir.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File file, String name )
-            {
-                return file.isDirectory() && leftOverDirsPattern.matcher( name ).matches();
-            }
-        } );
+        File[] leftOverDirs = storeDir.listFiles(
+                ( file, name ) -> file.isDirectory() && leftOverDirsPattern.matcher( name ).matches() );
         if ( leftOverDirs != null )
         {
             for ( File leftOverDir : leftOverDirs )

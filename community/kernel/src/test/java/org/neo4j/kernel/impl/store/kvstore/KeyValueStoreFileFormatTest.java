@@ -373,25 +373,14 @@ public class KeyValueStoreFileFormatTest
             throws IOException
     {
         final List<Bytes> values = new ArrayList<>();
-        boolean result = file.scan( new SearchKey()
+        boolean result = file.scan( key -> key.putInt( key.size() - 4, min ), ( key, value ) ->
         {
-            @Override
-            public void searchKey( WritableBuffer key )
+            if ( key.getInt( key.size() - 4 ) <= max )
             {
-                key.putInt( key.size() - 4, min );
+                values.add( new Bytes( value.get( 0, new byte[value.size()] ) ) );
+                return true;
             }
-        }, new KeyValueVisitor()
-        {
-            @Override
-            public boolean visit( ReadableBuffer key, ReadableBuffer value )
-            {
-                if ( key.getInt( key.size() - 4 ) <= max )
-                {
-                    values.add( new Bytes( value.get( 0, new byte[value.size()] ) ) );
-                    return true;
-                }
-                return false;
-            }
+            return false;
         } );
         return Pair.of( result, values );
     }
@@ -496,21 +485,17 @@ public class KeyValueStoreFileFormatTest
     static KeyValueVisitor expectData( final Data expected )
     {
         expected.index = 0; // reset the visitor
-        return new KeyValueVisitor()
+        return ( key, value ) ->
         {
-            @Override
-            public boolean visit( ReadableBuffer key, ReadableBuffer value )
+            byte[] expectedKey = new byte[key.size()];
+            byte[] expectedValue = new byte[value.size()];
+            if ( !expected.visit( new BigEndianByteArrayBuffer( expectedKey ),
+                    new BigEndianByteArrayBuffer( expectedValue ) ) )
             {
-                byte[] expectedKey = new byte[key.size()];
-                byte[] expectedValue = new byte[value.size()];
-                if ( !expected.visit( new BigEndianByteArrayBuffer( expectedKey ),
-                        new BigEndianByteArrayBuffer( expectedValue ) ) )
-                {
-                    return false;
-                }
-                assertEqualContent( expectedKey, key );
-                return true;
+                return false;
             }
+            assertEqualContent( expectedKey, key );
+            return true;
         };
     }
 

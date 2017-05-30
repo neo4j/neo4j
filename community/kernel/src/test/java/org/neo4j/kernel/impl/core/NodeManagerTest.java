@@ -104,17 +104,13 @@ public class NodeManagerTest
         tx = db.beginTx();
         Iterator<Relationship> allRelationships = db.getAllRelationships().iterator();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
-            {
-                Transaction newTx = db.beginTx();
-                assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
-                createRelationshipAssumingTxWith( "key", 3 );
-                newTx.success();
-                newTx.close();
-            }
+            Transaction newTx = db.beginTx();
+            assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
+            createRelationshipAssumingTxWith( "key", 3 );
+            newTx.success();
+            newTx.close();
         } );
         thread.start();
         thread.join();

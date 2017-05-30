@@ -34,12 +34,8 @@ import java.util.concurrent.CountDownLatch;
  */
 public interface Barrier
 {
-    Barrier NONE = new Barrier()
+    Barrier NONE = () ->
     {
-        @Override
-        public void reached()
-        {
-        }
     };
 
     void reached();

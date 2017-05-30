@@ -97,12 +97,8 @@ public class EncodingIdMapper implements IdMapper
         void numberOfCollisions( int count );
     }
 
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void numberOfCollisions( int count )
-        {   // Do nothing.
-        }
+    public static final Monitor NO_MONITOR = count ->
+    {   // Do nothing.
     };
 
     // Bit in encoded String --> long values that marks that the particular item has a collision,

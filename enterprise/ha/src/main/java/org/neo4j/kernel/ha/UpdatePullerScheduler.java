@@ -56,19 +56,15 @@ public class UpdatePullerScheduler extends LifecycleAdapter
     {
         if ( pullIntervalMillis > 0 )
         {
-            intervalJobHandle = scheduler.scheduleRecurring( pullUpdates, new Runnable()
+            intervalJobHandle = scheduler.scheduleRecurring( pullUpdates, () ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        updatePuller.pullUpdates();
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        log.error( "Pull updates failed", e );
-                    }
+                    updatePuller.pullUpdates();
+                }
+                catch ( InterruptedException e )
+                {
+                    log.error( "Pull updates failed", e );
                 }
             }, pullIntervalMillis, pullIntervalMillis, TimeUnit.MILLISECONDS );
         }

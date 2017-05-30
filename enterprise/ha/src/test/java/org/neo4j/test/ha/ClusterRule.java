@@ -59,18 +59,14 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 public class ClusterRule extends ExternalResource implements ClusterBuilder<ClusterRule>
 {
     private static final StoreDirInitializer defaultStoreDirInitializer =
-            new ClusterManager.StoreDirInitializer()
+            ( serverId, storeDir ) ->
             {
-                @Override
-                public void initializeStoreDir( int serverId, File storeDir ) throws IOException
+                File[] files = storeDir.listFiles();
+                if ( files != null )
                 {
-                    File[] files = storeDir.listFiles();
-                    if ( files != null )
+                    for ( File file : files )
                     {
-                        for ( File file : files )
-                        {
-                            FileUtils.deleteRecursively( file );
-                        }
+                        FileUtils.deleteRecursively( file );
                     }
                 }
             };

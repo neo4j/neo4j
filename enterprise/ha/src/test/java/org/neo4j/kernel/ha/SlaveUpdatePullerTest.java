@@ -193,14 +193,10 @@ public class SlaveUpdatePullerTest
         // GIVEN
         Condition condition = mock( Condition.class );
 
-        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( new Answer<Boolean>()
+        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( invocation ->
         {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                updatePuller.stop();
-                return false;
-            }
+            updatePuller.stop();
+            return false;
         } );
 
         // WHEN

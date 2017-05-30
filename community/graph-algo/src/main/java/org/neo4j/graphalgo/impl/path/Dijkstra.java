@@ -164,15 +164,8 @@ public class Dijkstra implements PathFinder<WeightedPath>
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
         final Traverser traverser = traverser( start, end, interest );
-        return new Iterable<WeightedPath>()
-        {
-            @Override
-            public Iterator<WeightedPath> iterator()
-            {
-                return new WeightedPathIterator( traverser.iterator(), costEvaluator, epsilon,
-                        interest );
-            }
-        };
+        return () -> new WeightedPathIterator( traverser.iterator(), costEvaluator, epsilon,
+                interest );
     }
 
     private Traverser traverser( Node start, final Node end, PathInterest<Double> interest )

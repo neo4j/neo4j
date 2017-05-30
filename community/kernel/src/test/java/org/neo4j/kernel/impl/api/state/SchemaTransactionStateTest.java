@@ -255,14 +255,7 @@ public class SchemaTransactionStateTest
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
     {
-        return new Answer<Iterator<T>>()
-        {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return values.iterator();
-            }
-        };
+        return invocation -> values.iterator();
     }
 
     private static class Labels

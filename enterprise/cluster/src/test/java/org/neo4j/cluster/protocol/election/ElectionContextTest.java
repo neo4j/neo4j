@@ -301,14 +301,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration,
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -352,14 +345,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( role1 ) ), clusterConfiguration,
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                command -> command.run(), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -411,14 +397,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( me,
                 Iterables.iterable( new ElectionRole( role1 ) ), clusterConfiguration,
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                },
+                command -> command.run(),
                 NullLogProvider.getInstance(), mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );

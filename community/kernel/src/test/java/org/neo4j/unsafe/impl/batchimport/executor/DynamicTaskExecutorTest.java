@@ -263,14 +263,10 @@ public class DynamicTaskExecutorTest
         // WHEN
         try ( OtherThreadExecutor<Void> closer = new OtherThreadExecutor<>( "closer", null ) )
         {
-            Future<Void> shutdown = closer.executeDontWait( new WorkerCommand<Void,Void>()
+            Future<Void> shutdown = closer.executeDontWait( state ->
             {
-                @Override
-                public Void doWork( Void state ) throws Exception
-                {
-                    executor.close();
-                    return null;
-                }
+                executor.close();
+                return null;
             } );
             while ( !closer.waitUntilWaiting().isAt( DynamicTaskExecutor.class, "close" ) )
             {

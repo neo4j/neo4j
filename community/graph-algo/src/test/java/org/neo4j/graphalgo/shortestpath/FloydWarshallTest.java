@@ -104,27 +104,19 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "c" );
         graph.makeEdge( "d", "e" );
         new FloydWarshall<Double>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                    Direction direction )
+                ( relationship, direction ) ->
                 {
                     assertEquals( Direction.OUTGOING, direction );
                     return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() ).calculate();
         new FloydWarshall<Double>( 0.0, Double.MAX_VALUE, Direction.INCOMING,
-            new CostEvaluator<Double>()
-            {
-                public Double getCost( Relationship relationship,
-                    Direction direction )
+                ( relationship, direction ) ->
                 {
                     assertEquals( Direction.INCOMING, direction );
                     return 1.0;
-                }
-            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() ).calculate();
     }

@@ -107,14 +107,7 @@ public class PropertyValueComparison
             return OTHER;
         }
 
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = new Comparator<SuperType>()
-        {
-            @Override
-            public int compare( SuperType left, SuperType right )
-            {
-                return left.typeId - right.typeId;
-            }
-        };
+        public static Comparator<SuperType> TYPE_ID_COMPARATOR = ( left, right ) -> left.typeId - right.typeId;
     }
 
     public static final class Limit<T>

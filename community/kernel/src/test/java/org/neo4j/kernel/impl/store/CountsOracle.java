@@ -83,14 +83,8 @@ public class CountsOracle
     {
         CountsRecordState seenState = new CountsRecordState();
         final CountsAccessor.Initializer initializer = new CountsAccessor.Initializer( seenState, seenState );
-        List<CountsRecordState.Difference> differences = state.verify( new CountsVisitor.Visitable()
-        {
-            @Override
-            public void accept( final CountsVisitor verifier )
-            {
-                tracker.accept( CountsVisitor.Adapter.multiplex( initializer, verifier ) );
-            }
-        } );
+        List<CountsRecordState.Difference> differences = state.verify(
+                verifier -> tracker.accept( CountsVisitor.Adapter.multiplex( initializer, verifier ) ) );
         seenState.accept( new CountsVisitor()
         {
             @Override

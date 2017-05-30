@@ -269,50 +269,31 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
     private static final ComparativeRecordChecker<DynamicRecord,LabelTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_LABEL =
-            new ComparativeRecordChecker<DynamicRecord, LabelTokenRecord, ConsistencyReport.SchemaConsistencyReport>()
-    {
-        @Override
-        public void checkReference( DynamicRecord record, LabelTokenRecord labelTokenRecord,
-                                    CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
-                                    RecordAccess records )
-        {
-            if ( !labelTokenRecord.inUse() )
+            ( record, labelTokenRecord, engine, records ) ->
             {
-                engine.report().labelNotInUse( labelTokenRecord );
-            }
-        }
-    };
+                if ( !labelTokenRecord.inUse() )
+                {
+                    engine.report().labelNotInUse( labelTokenRecord );
+                }
+            };
 
     private static final ComparativeRecordChecker<DynamicRecord,RelationshipTypeTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_RELATIONSHIP_TYPE =
-            new ComparativeRecordChecker<DynamicRecord, RelationshipTypeTokenRecord,
-                    ConsistencyReport.SchemaConsistencyReport>()
-    {
-        @Override
-        public void checkReference( DynamicRecord record, RelationshipTypeTokenRecord relTypeTokenRecord,
-                                    CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
-                                    RecordAccess records )
-        {
-            if ( !relTypeTokenRecord.inUse() )
+            ( record, relTypeTokenRecord, engine, records ) ->
             {
-                engine.report().relationshipTypeNotInUse( relTypeTokenRecord );
-            }
-        }
-    };
+                if ( !relTypeTokenRecord.inUse() )
+                {
+                    engine.report().relationshipTypeNotInUse( relTypeTokenRecord );
+                }
+            };
 
     private static final ComparativeRecordChecker<DynamicRecord, PropertyKeyTokenRecord,
             ConsistencyReport.SchemaConsistencyReport> VALID_PROPERTY_KEY =
-            new ComparativeRecordChecker<DynamicRecord, PropertyKeyTokenRecord, ConsistencyReport.SchemaConsistencyReport>()
-    {
-        @Override
-        public void checkReference( DynamicRecord record, PropertyKeyTokenRecord propertyKeyTokenRecord,
-                                    CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
-                                    RecordAccess records )
-        {
-            if ( !propertyKeyTokenRecord.inUse() )
+            ( record, propertyKeyTokenRecord, engine, records ) ->
             {
-                engine.report().propertyKeyNotInUse( propertyKeyTokenRecord );
-            }
-        }
-    };
+                if ( !propertyKeyTokenRecord.inUse() )
+                {
+                    engine.report().propertyKeyNotInUse( propertyKeyTokenRecord );
+                }
+            };
 }

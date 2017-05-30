@@ -87,39 +87,18 @@ public class PrimitiveLongSetRIT
 
     private Printable given()
     {
-        return new Printable()
-        {
-            @Override
-            public void print( LinePrinter out )
-            {
-                out.println( PrimitiveLongSet.class.getSimpleName() + " set = " +
-                        Primitive.class.getSimpleName() + ".longSet();" );
-            }
-        };
+        return out -> out.println( PrimitiveLongSet.class.getSimpleName() + " set = " +
+                           Primitive.class.getSimpleName() + ".longSet();" );
     }
 
     private ActionFactory<Sets,String> actionFactory( final Random random )
     {
-        return new ActionFactory<Sets,String>()
-        {
-            @Override
-            public Action<Sets,String> apply( Sets from )
-            {
-                return generateAction( random, from );
-            }
-        };
+        return from -> generateAction( random, from );
     }
 
     private TargetFactory<Sets> setFactory()
     {
-        return new TargetFactory<Sets>()
-        {
-            @Override
-            public Sets newInstance()
-            {
-                return new Sets();
-            }
-        };
+        return () -> new Sets();
     }
 
     protected Action<Sets,String> generateAction( Random random, Sets from )

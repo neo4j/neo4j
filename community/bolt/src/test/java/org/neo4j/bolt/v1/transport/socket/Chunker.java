@@ -48,17 +48,13 @@ public class Chunker
 
         Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).then( new Answer<Object>()
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).then( inv ->
         {
-            @Override
-            public Object answer( InvocationOnMock inv ) throws Throwable
-            {
-                ByteBuf buf = (ByteBuf) inv.getArguments()[0];
-                outputBuffer.limit( outputBuffer.position() + buf.readableBytes() );
-                buf.readBytes( outputBuffer );
-                buf.release();
-                return null;
-            }
+            ByteBuf buf = (ByteBuf) inv.getArguments()[0];
+            outputBuffer.limit( outputBuffer.position() + buf.readableBytes() );
+            buf.readBytes( outputBuffer );
+            buf.release();
+            return null;
         } );
 
         ChunkedOutput out = new ChunkedOutput( ch, maxChunkSize + 2 /* for chunk header */ );

@@ -147,14 +147,10 @@ public class NetworkSenderReceiverTest
              */
             final AtomicBoolean senderChannelClosed = new AtomicBoolean( false );
 
-            doAnswer( new Answer<Object>()
+            doAnswer( invocation ->
             {
-                @Override
-                public Object answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    senderChannelClosed.set( true );
-                    return null;
-                }
+                senderChannelClosed.set( true );
+                return null;
             } ).when( logMock ).warn( anyString() );
 
             receiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ), new NetworkReceiver.Configuration()
@@ -225,15 +221,11 @@ public class NetworkSenderReceiverTest
 
             final AtomicBoolean received = new AtomicBoolean( false );
 
-            receiver.addMessageProcessor( new MessageProcessor()
+            receiver.addMessageProcessor( message ->
             {
-                @Override
-                public boolean process( Message<? extends MessageType> message )
-                {
-                    received.set( true );
-                    sem.release();
-                    return true;
-                }
+                received.set( true );
+                sem.release();
+                return true;
             } );
 
             receiver.init();
@@ -354,16 +346,12 @@ public class NetworkSenderReceiverTest
                 @Override
                 public void start() throws Throwable
                 {
-                    networkReceiver.addMessageProcessor( new MessageProcessor()
+                    networkReceiver.addMessageProcessor( message ->
                     {
-                        @Override
-                        public boolean process( Message<? extends MessageType> message )
-                        {
-                            // server receives a message
-                            processedMessage.set( true );
-                            latch.countDown();
-                            return true;
-                        }
+                        // server receives a message
+                        processedMessage.set( true );
+                        latch.countDown();
+                        return true;
                     } );
                 }
             } );

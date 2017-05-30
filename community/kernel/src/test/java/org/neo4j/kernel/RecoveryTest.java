@@ -100,37 +100,33 @@ public class RecoveryTest
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
-        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        writeSomeData( file, pair ->
         {
-            @Override
-            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
-            {
-                LogEntryWriter writer = pair.first();
-                Consumer<LogPositionMarker> consumer = pair.other();
-                LogPositionMarker marker = new LogPositionMarker();
+            LogEntryWriter writer = pair.first();
+            Consumer<LogPositionMarker> consumer = pair.other();
+            LogPositionMarker marker = new LogPositionMarker();
 
-                // last committed tx
-                consumer.accept( marker );
-                LogPosition lastCommittedTxPosition = marker.newPosition();
-                writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
-                lastCommittedTxStartEntry = new LogEntryStart( 0, 1, 2L, 3L, new byte[0], lastCommittedTxPosition );
-                writer.writeCommitEntry( 4L, 5L );
-                lastCommittedTxCommitEntry = new OnePhaseCommit( 4L, 5L );
+            // last committed tx
+            consumer.accept( marker );
+            LogPosition lastCommittedTxPosition = marker.newPosition();
+            writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+            lastCommittedTxStartEntry = new LogEntryStart( 0, 1, 2L, 3L, new byte[0], lastCommittedTxPosition );
+            writer.writeCommitEntry( 4L, 5L );
+            lastCommittedTxCommitEntry = new OnePhaseCommit( 4L, 5L );
 
-                // check point pointing to the previously committed transaction
-                writer.writeCheckPointEntry( lastCommittedTxPosition );
-                expectedCheckPointEntry = new CheckPoint( lastCommittedTxPosition );
+            // check point pointing to the previously committed transaction
+            writer.writeCheckPointEntry( lastCommittedTxPosition );
+            expectedCheckPointEntry = new CheckPoint( lastCommittedTxPosition );
 
-                // tx committed after checkpoint
-                consumer.accept( marker );
-                writer.writeStartEntry( 0, 1, 6L, 4L, new byte[0] );
-                expectedStartEntry = new LogEntryStart( 0, 1, 6L, 4L, new byte[0], marker.newPosition() );
+            // tx committed after checkpoint
+            consumer.accept( marker );
+            writer.writeStartEntry( 0, 1, 6L, 4L, new byte[0] );
+            expectedStartEntry = new LogEntryStart( 0, 1, 6L, 4L, new byte[0], marker.newPosition() );
 
-                writer.writeCommitEntry( 5L, 7L );
-                expectedCommitEntry = new OnePhaseCommit( 5L, 7L );
+            writer.writeCommitEntry( 5L, 7L );
+            expectedCommitEntry = new OnePhaseCommit( 5L, 7L );
 
-                return true;
-            }
+            return true;
         } );
 
         LifeSupport life = new LifeSupport();
@@ -159,26 +155,22 @@ public class RecoveryTest
                 {
                     recoveryRequired.set( true );
                     final Visitor<CommittedTransactionRepresentation,Exception> actual = super.startRecovery();
-                    return new Visitor<CommittedTransactionRepresentation,Exception>()
+                    return tx ->
                     {
-                        @Override
-                        public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
+                        actual.visit( tx );
+                        switch ( nr++ )
                         {
-                            actual.visit( tx );
-                            switch ( nr++ )
-                            {
-                            case 0:
-                                assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
-                                assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
-                                break;
-                            case 1:
-                                assertEquals( expectedStartEntry, tx.getStartEntry() );
-                                assertEquals( expectedCommitEntry, tx.getCommitEntry() );
-                                break;
-                            default: fail( "Too many recovered transactions" );
-                            }
-                            return false;
+                        case 0:
+                            assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
+                            assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
+                            break;
+                        case 1:
+                            assertEquals( expectedStartEntry, tx.getStartEntry() );
+                            assertEquals( expectedCommitEntry, tx.getCommitEntry() );
+                            break;
+                        default: fail( "Too many recovered transactions" );
                         }
+                        return false;
                     };
                 }
             }, monitor ) );
@@ -202,26 +194,22 @@ public class RecoveryTest
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
-        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        writeSomeData( file, pair ->
         {
-            @Override
-            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
-            {
-                LogEntryWriter writer = pair.first();
-                Consumer<LogPositionMarker> consumer = pair.other();
-                LogPositionMarker marker = new LogPositionMarker();
+            LogEntryWriter writer = pair.first();
+            Consumer<LogPositionMarker> consumer = pair.other();
+            LogPositionMarker marker = new LogPositionMarker();
 
-                // last committed tx
-                consumer.accept( marker );
-                writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
-                writer.writeCommitEntry( 4L, 5L );
+            // last committed tx
+            consumer.accept( marker );
+            writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+            writer.writeCommitEntry( 4L, 5L );
 
-                // check point
-                consumer.accept( marker );
-                writer.writeCheckPointEntry( marker.newPosition() );
+            // check point
+            consumer.accept( marker );
+            writer.writeCheckPointEntry( marker.newPosition() );
 
-                return true;
-            }
+            return true;
         } );
 
         LifeSupport life = new LifeSupport();
@@ -268,20 +256,16 @@ public class RecoveryTest
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
-        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        writeSomeData( file, pair ->
         {
-            @Override
-            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
-            {
-                LogEntryWriter writer = pair.first();
-                Consumer<LogPositionMarker> consumer = pair.other();
+            LogEntryWriter writer = pair.first();
+            Consumer<LogPositionMarker> consumer = pair.other();
 
-                // incomplete tx
-                consumer.accept( marker ); // <-- marker has the last good position
-                writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
+            // incomplete tx
+            consumer.accept( marker ); // <-- marker has the last good position
+            writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
 
-                return true;
-            }
+            return true;
         } );
 
         // WHEN
@@ -300,24 +284,20 @@ public class RecoveryTest
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
-        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        writeSomeData( file, pair ->
         {
-            @Override
-            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
-            {
-                LogEntryWriter writer = pair.first();
-                Consumer<LogPositionMarker> consumer = pair.other();
+            LogEntryWriter writer = pair.first();
+            Consumer<LogPositionMarker> consumer = pair.other();
 
-                // last committed tx
-                writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
-                writer.writeCommitEntry( 4L, 5L );
+            // last committed tx
+            writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+            writer.writeCommitEntry( 4L, 5L );
 
-                // incomplete tx
-                consumer.accept( marker ); // <-- marker has the last good position
-                writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
+            // incomplete tx
+            consumer.accept( marker ); // <-- marker has the last good position
+            writer.writeStartEntry( 0, 1, 5L, 4L, new byte[0] );
 
-                return true;
-            }
+            return true;
         } );
 
         // WHEN
@@ -341,21 +321,17 @@ public class RecoveryTest
         final int authorId = 1;
         final long transactionId = 4;
         final long commitTimestamp = 5;
-        writeSomeData( file, new Visitor<Pair<LogEntryWriter, Consumer<LogPositionMarker>>,IOException>()
+        writeSomeData( file, pair ->
         {
-            @Override
-            public boolean visit( Pair<LogEntryWriter,Consumer<LogPositionMarker>> pair ) throws IOException
-            {
-                LogEntryWriter writer = pair.first();
-                Consumer<LogPositionMarker> consumer = pair.other();
+            LogEntryWriter writer = pair.first();
+            Consumer<LogPositionMarker> consumer = pair.other();
 
-                // last committed tx
-                writer.writeStartEntry( masterId, authorId, 2L, 3L, additionalHeaderData );
-                writer.writeCommitEntry( transactionId, commitTimestamp );
-                consumer.accept( marker );
+            // last committed tx
+            writer.writeStartEntry( masterId, authorId, 2L, 3L, additionalHeaderData );
+            writer.writeCommitEntry( transactionId, commitTimestamp );
+            consumer.accept( marker );
 
-                return true;
-            }
+            return true;
         } );
 
         // WHEN

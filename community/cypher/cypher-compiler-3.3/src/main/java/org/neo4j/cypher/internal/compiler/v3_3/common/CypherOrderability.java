@@ -198,148 +198,98 @@ public class CypherOrderability
             throw new UnorderableValueException( value.getClass().getSimpleName() );
         }
 
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = new Comparator<SuperType>()
-        {
-            @Override
-            public int compare( SuperType left, SuperType right )
-            {
-                return left.typeId - right.typeId;
-            }
-        };
+        public static Comparator<SuperType> TYPE_ID_COMPARATOR = ( left, right ) -> left.typeId - right.typeId;
     }
 
     // NOTE: nulls are handled at the top of the public compare() method
     // so the type-specific comparators should not check arguments for null
 
-    private static Comparator<Object> FALLBACK_COMPARATOR = new Comparator<Object>()
+    private static Comparator<Object> FALLBACK_COMPARATOR = ( lhs, rhs ) ->
     {
-        @Override
-        public int compare( Object lhs, Object rhs )
+        if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
+             lhs instanceof Comparable &&
+             rhs instanceof Comparable )
         {
-            if ( lhs.getClass().isAssignableFrom( rhs.getClass() ) &&
-                 lhs instanceof Comparable &&
-                 rhs instanceof Comparable )
-            {
-                return ((Comparable) lhs).compareTo( rhs );
-            }
+            return ((Comparable) lhs).compareTo( rhs );
+        }
 
-            throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+        throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+    };
+
+    private static Comparator<Object> VOID_COMPARATOR = ( lhs, rhs ) -> 0;
+
+    private static Comparator<Number> NUMBER_COMPARATOR = ( lhs, rhs ) ->
+    {
+        // If floats, compare float values. If integer types, compare long values
+        if ( lhs instanceof Double && rhs instanceof Float )
+        {
+            return ((Double) lhs).compareTo( rhs.doubleValue() );
+        }
+        else if ( lhs instanceof Float && rhs instanceof Double )
+        {
+            return -((Double) rhs).compareTo( lhs.doubleValue() );
+        }
+        else if ( lhs instanceof Float && rhs instanceof Float )
+        {
+            return ((Float) lhs).compareTo( (Float) rhs );
+        }
+        else if ( lhs instanceof Double && rhs instanceof Double )
+        {
+            return ((Double) lhs).compareTo( (Double) rhs );
+        }
+        // Right hand side is neither Float nor Double
+        else if ( lhs instanceof Double || lhs instanceof Float )
+        {
+            return MathUtil.compareDoubleAgainstLong( lhs.doubleValue(), rhs.longValue() );
+        }
+        // Left hand side is neither Float nor Double
+        else if ( rhs instanceof Double || rhs instanceof Float )
+        {
+            return -MathUtil.compareDoubleAgainstLong( rhs.doubleValue(), lhs.longValue() );
+        }
+        // Everything else is a long from Cypher's point-of-view
+        return Long.compare( lhs.longValue(), rhs.longValue() );
+    };
+
+    private static Comparator<Object> STRING_COMPARATOR = ( lhs, rhs ) ->
+    {
+        if ( lhs instanceof Character && rhs instanceof String )
+        {
+            return lhs.toString().compareTo( (String) rhs );
+        }
+        else if ( lhs instanceof String && rhs instanceof Character )
+        {
+            return ((String) lhs).compareTo( rhs.toString() );
+        }
+        else
+        {
+            return ((Comparable) lhs).compareTo( rhs );
         }
     };
 
-    private static Comparator<Object> VOID_COMPARATOR = new Comparator<Object>()
-    {
-        @Override
-        public int compare( Object lhs, Object rhs )
-        {
-            return 0;
-        }
-    };
+    private static Comparator<Boolean> BOOLEAN_COMPARATOR = ( lhs, rhs ) -> lhs.compareTo( rhs );
 
-    private static Comparator<Number> NUMBER_COMPARATOR = new Comparator<Number>()
-    {
-        @Override
-        public int compare( Number lhs, Number rhs )
-        {
-            // If floats, compare float values. If integer types, compare long values
-            if ( lhs instanceof Double && rhs instanceof Float )
-            {
-                return ((Double) lhs).compareTo( rhs.doubleValue() );
-            }
-            else if ( lhs instanceof Float && rhs instanceof Double )
-            {
-                return -((Double) rhs).compareTo( lhs.doubleValue() );
-            }
-            else if ( lhs instanceof Float && rhs instanceof Float )
-            {
-                return ((Float) lhs).compareTo( (Float) rhs );
-            }
-            else if ( lhs instanceof Double && rhs instanceof Double )
-            {
-                return ((Double) lhs).compareTo( (Double) rhs );
-            }
-            // Right hand side is neither Float nor Double
-            else if ( lhs instanceof Double || lhs instanceof Float )
-            {
-                return MathUtil.compareDoubleAgainstLong( lhs.doubleValue(), rhs.longValue() );
-            }
-            // Left hand side is neither Float nor Double
-            else if ( rhs instanceof Double || rhs instanceof Float )
-            {
-                return -MathUtil.compareDoubleAgainstLong( rhs.doubleValue(), lhs.longValue() );
-            }
-            // Everything else is a long from Cypher's point-of-view
-            return Long.compare( lhs.longValue(), rhs.longValue() );
-        }
-    };
+    private static Comparator<NodeIdWrapper> NODE_COMPARATOR = ( lhs, rhs ) -> Long.compare( lhs.id(), rhs.id() );
 
-    private static Comparator<Object> STRING_COMPARATOR = new Comparator<Object>()
-    {
-        @Override
-        public int compare( Object lhs, Object rhs )
-        {
-            if ( lhs instanceof Character && rhs instanceof String )
-            {
-                return lhs.toString().compareTo( (String) rhs );
-            }
-            else if ( lhs instanceof String && rhs instanceof Character )
-            {
-                return ((String) lhs).compareTo( rhs.toString() );
-            }
-            else
-            {
-                return ((Comparable) lhs).compareTo( rhs );
-            }
-        }
-    };
-
-    private static Comparator<Boolean> BOOLEAN_COMPARATOR = new Comparator<Boolean>()
-    {
-        @Override
-        public int compare( Boolean lhs, Boolean rhs )
-        {
-            return lhs.compareTo( rhs );
-        }
-    };
-
-    private static Comparator<NodeIdWrapper> NODE_COMPARATOR = new Comparator<NodeIdWrapper>()
-    {
-        @Override
-        public int compare( NodeIdWrapper lhs, NodeIdWrapper rhs )
-        {
-            return Long.compare( lhs.id(), rhs.id() );
-        }
-    };
-
-    private static Comparator<RelationshipIdWrapper> RELATIONSHIP_COMPARATOR = new Comparator<RelationshipIdWrapper>()
-    {
-        @Override
-        public int compare( RelationshipIdWrapper lhs, RelationshipIdWrapper rhs )
-        {
-            return Long.compare( lhs.id(), rhs.id() );
-        }
-    };
+    private static Comparator<RelationshipIdWrapper> RELATIONSHIP_COMPARATOR =
+            ( lhs, rhs ) -> Long.compare( lhs.id(), rhs.id() );
 
     // TODO test
-    private static Comparator<Path> PATH_COMPARATOR = new Comparator<Path>()
+    private static Comparator<Path> PATH_COMPARATOR = ( lhs, rhs ) ->
     {
-        @Override
-        public int compare( Path lhs, Path rhs )
+        Iterator<PropertyContainer> lhsIter = lhs.iterator();
+        Iterator<PropertyContainer> rhsIter = lhs.iterator();
+        while ( lhsIter.hasNext() && rhsIter.hasNext() )
         {
-            Iterator<PropertyContainer> lhsIter = lhs.iterator();
-            Iterator<PropertyContainer> rhsIter = lhs.iterator();
-            while ( lhsIter.hasNext() && rhsIter.hasNext() )
+            int result = compare( lhsIter.next(), rhsIter.next() );
+            if ( 0 != result )
             {
-                int result = CypherOrderability.compare( lhsIter.next(), rhsIter.next() );
-                if ( 0 != result )
-                {
-                    return result;
-                }
+                return result;
             }
-            return (lhsIter.hasNext()) ? 1
-                                       : (rhsIter.hasNext()) ? -1
-                                                             : 0;
         }
+        return (lhsIter.hasNext()) ? 1
+                                   : (rhsIter.hasNext()) ? -1
+                                                         : 0;
     };
 
     private static Comparator<Object> LIST_COMPARATOR = new Comparator<Object>()

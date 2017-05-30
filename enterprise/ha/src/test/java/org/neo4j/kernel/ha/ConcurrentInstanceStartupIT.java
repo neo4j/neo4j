@@ -61,20 +61,16 @@ public class ConcurrentInstanceStartupIT
         {
             final int finalI = i;
 
-            Thread t = new Thread( new Runnable()
+            Thread t = new Thread( () ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        barrier.await();
-                        dbs[finalI - 1] = startDbAtBase( finalI, initialHosts );
-                    }
-                    catch ( InterruptedException | BrokenBarrierException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    barrier.await();
+                    dbs[finalI - 1] = startDbAtBase( finalI, initialHosts );
+                }
+                catch ( InterruptedException | BrokenBarrierException e )
+                {
+                    throw new RuntimeException( e );
                 }
             } );
             daThreads.add( t );

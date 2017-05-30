@@ -51,14 +51,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     @Override
     public Executor executor( Group group )
     {
-        return new Executor()
-        {
-            @Override
-            public void execute( Runnable command )
-            {
-                jobs.add( command );
-            }
-        };
+        return command -> jobs.add( command );
     }
 
     @Override

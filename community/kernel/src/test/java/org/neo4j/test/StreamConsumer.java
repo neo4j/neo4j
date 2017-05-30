@@ -38,21 +38,10 @@ public class StreamConsumer implements Runnable
         void handle( IOException failure );
     }
 
-    public static StreamExceptionHandler PRINT_FAILURES = new StreamExceptionHandler()
-    {
-        @Override
-        public void handle( IOException failure )
-        {
-            failure.printStackTrace();
-        }
-    };
+    public static StreamExceptionHandler PRINT_FAILURES = failure -> failure.printStackTrace();
 
-    public static StreamExceptionHandler IGNORE_FAILURES = new StreamExceptionHandler()
+    public static StreamExceptionHandler IGNORE_FAILURES = failure ->
     {
-        @Override
-        public void handle( IOException failure )
-        {
-        }
     };
 
     private final BufferedReader in;

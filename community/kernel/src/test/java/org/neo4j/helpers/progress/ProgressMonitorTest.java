@@ -622,14 +622,10 @@ public class ProgressMonitorTest
         ProgressMonitorFactory mock( final Indicator.OpenEnded indicatorMock )
         {
             ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
-            when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( new Answer<Indicator>()
+            when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( invocation ->
             {
-                @Override
-                public Indicator answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    when( indicatorMock.reportResolution() ).thenReturn( (Integer) invocation.getArguments()[1] );
-                    return indicatorMock;
-                }
+                when( indicatorMock.reportResolution() ).thenReturn( (Integer) invocation.getArguments()[1] );
+                return indicatorMock;
             } );
             factoryMocks.put( factory, true );
             return factory;

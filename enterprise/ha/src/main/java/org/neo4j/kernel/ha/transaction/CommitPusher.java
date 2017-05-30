@@ -46,14 +46,7 @@ public class CommitPusher extends LifecycleAdapter
 
         PullUpdateFuture( Slave slave, long txId )
         {
-            super( new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    return null;
-                }
-            } );
+            super( () -> null );
             this.slave = slave;
             this.txId = txId;
         }

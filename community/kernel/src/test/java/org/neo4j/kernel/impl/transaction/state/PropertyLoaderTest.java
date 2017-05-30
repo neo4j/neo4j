@@ -169,16 +169,12 @@ public class PropertyLoaderTest
     private <R extends PrimitiveRecord> void setUpPropertyChain( long id, Class<R> recordClass,
             CommonAbstractStore<R,? extends StoreHeader> store, int... propertyValues )
     {
-        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( new Answer<R>()
+        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( invocation ->
         {
-            @Override
-            public R answer( InvocationOnMock invocation ) throws Throwable
-            {
-                R record = (R) invocation.getArguments()[1];
-                record.setId( ((Number)invocation.getArguments()[0]).longValue() );
-                record.setNextProp( 1 );
-                return record;
-            }
+            R record = (R) invocation.getArguments()[1];
+            record.setId( ((Number)invocation.getArguments()[0]).longValue() );
+            record.setNextProp( 1 );
+            return record;
         } );
         List<PropertyRecord> propertyChain = new ArrayList<>( propertyValues.length );
         for ( int i = 0; i < propertyValues.length; i++ )

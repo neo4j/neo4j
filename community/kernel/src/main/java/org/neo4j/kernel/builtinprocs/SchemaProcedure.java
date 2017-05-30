@@ -229,14 +229,7 @@ public class SchemaProcedure
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
             this.endNode = endNode;
-            relationshipType = new RelationshipType()
-            {
-                @Override
-                public String name()
-                {
-                    return type;
-                }
-            };
+            relationshipType = () -> type;
         }
 
         @Override

@@ -74,47 +74,44 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
 
         // This is the mutating transaction - it will change stuff which will be read in between
         final AtomicReference<Exception> t1Exception = new AtomicReference<>();
-        Thread t1 = new Thread( new Runnable()
+        Thread t1 = new Thread( () ->
         {
-            public void run()
-            {
 
-                try ( Transaction tx = getGraphDb().beginTx() )
+            try ( Transaction tx = getGraphDb().beginTx() )
+            {
+                node1.setProperty( "key", "new" );
+                rel1.setProperty( "key", "new" );
+                node1.createRelationshipTo( node2, RelationshipType.withName( "TEST" ) );
+                assertPropertyEqual( node1, "key", "new" );
+                assertPropertyEqual( rel1, "key", "new" );
+                assertRelationshipCount( node1, 2 );
+                assertRelationshipCount( node2, 2 );
+                latch1.countDown();
+                latch2.await();
+                assertPropertyEqual( node1, "key", "new" );
+                assertPropertyEqual( rel1, "key", "new" );
+                assertRelationshipCount( node1, 2 );
+                assertRelationshipCount( node2, 2 );
+                // no tx.success();
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
+                Thread.interrupted();
+                t1Exception.set( e );
+            }
+            finally
+            {
+                try
                 {
-                    node1.setProperty( "key", "new" );
-                    rel1.setProperty( "key", "new" );
-                    node1.createRelationshipTo( node2, RelationshipType.withName( "TEST" ) );
-                    assertPropertyEqual( node1, "key", "new" );
-                    assertPropertyEqual( rel1, "key", "new" );
-                    assertRelationshipCount( node1, 2 );
-                    assertRelationshipCount( node2, 2 );
-                    latch1.countDown();
-                    latch2.await();
-                    assertPropertyEqual( node1, "key", "new" );
-                    assertPropertyEqual( rel1, "key", "new" );
-                    assertRelationshipCount( node1, 2 );
-                    assertRelationshipCount( node2, 2 );
-                    // no tx.success();
+                    assertPropertyEqual( node1, "key", "old" );
+                    assertPropertyEqual( rel1, "key", "old" );
+                    assertRelationshipCount( node1, 1 );
+                    assertRelationshipCount( node2, 1 );
                 }
                 catch ( Exception e )
                 {
-                    e.printStackTrace();
-                    Thread.interrupted();
-                    t1Exception.set( e );
-                }
-                finally
-                {
-                    try
-                    {
-                        assertPropertyEqual( node1, "key", "old" );
-                        assertPropertyEqual( rel1, "key", "old" );
-                        assertRelationshipCount( node1, 1 );
-                        assertRelationshipCount( node2, 1 );
-                    }
-                    catch ( Exception e )
-                    {
-                        t1Exception.compareAndSet( null, e );
-                    }
+                    t1Exception.compareAndSet( null, e );
                 }
             }
         } );

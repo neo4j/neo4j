@@ -220,15 +220,11 @@ public class MasterClientTest
 
     private static Response<Void> voidResponseWithTransactionLogs()
     {
-        return new TransactionStreamResponse<>( null, StoreId.DEFAULT, new TransactionStream()
+        return new TransactionStreamResponse<>( null, StoreId.DEFAULT, visitor ->
         {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+            for ( int i = 1; i <= TX_LOG_COUNT; i++ )
             {
-                for ( int i = 1; i <= TX_LOG_COUNT; i++ )
-                {
-                    visitor.visit( committedTransactionRepresentation( i ) );
-                }
+                visitor.visit( committedTransactionRepresentation( i ) );
             }
         }, ResourceReleaser.NO_OP );
     }

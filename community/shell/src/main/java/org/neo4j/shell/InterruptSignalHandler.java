@@ -51,21 +51,17 @@ public class InterruptSignalHandler implements SignalHandler, CtrlCHandler
 
         final SignalHandler oldHandler = Signal.handle( signal, this );
         final InterruptSignalHandler self = this;
-        return new Cancelable()
+        return () ->
         {
-            @Override
-            public void cancel()
+            SignalHandler handle = Signal.handle( signal, oldHandler );
+            if ( self != handle )
             {
-                SignalHandler handle = Signal.handle( signal, oldHandler );
-                if ( self != handle )
-                {
-                    throw new RuntimeException( "Error uninstalling ShellSignalHandler: " +
-                            "another handler interjected in the mean time" );
-                }
-                if ( !self.actionRef.compareAndSet( action, null ) )
-                {
-                    throw new RuntimeException( "Popping a action that has not been pushed before" );
-                }
+                throw new RuntimeException( "Error uninstalling ShellSignalHandler: " +
+                        "another handler interjected in the mean time" );
+            }
+            if ( !self.actionRef.compareAndSet( action, null ) )
+            {
+                throw new RuntimeException( "Popping a action that has not been pushed before" );
             }
         };
     }

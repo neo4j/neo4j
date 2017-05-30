@@ -152,14 +152,7 @@ public class ThreadRepository implements TestRule
 
         public Task trigger( final String event )
         {
-            return new Task()
-            {
-                @Override
-                public void perform() throws Exception
-                {
-                    collected.add( event );
-                }
-            };
+            return () -> collected.add( event );
         }
 
         public void assertInOrder( String... events ) throws Exception

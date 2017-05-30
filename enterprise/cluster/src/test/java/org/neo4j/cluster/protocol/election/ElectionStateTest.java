@@ -222,14 +222,7 @@ public class ElectionStateTest
     public void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
     {
         final List<Message> messages = new ArrayList<Message>( 1 );
-        MessageHolder holder = new MessageHolder()
-        {
-            @Override
-            public void offer( Message<? extends MessageType> message )
-            {
-                messages.add( message );
-            }
-        };
+        MessageHolder holder = message -> messages.add( message );
 
         ElectionContext context = mock( ElectionContext.class );
 
@@ -256,14 +249,7 @@ public class ElectionStateTest
         InstanceId winner = new InstanceId( 2 );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder holder = new MessageHolder()
-        {
-            @Override
-            public void offer( Message<? extends MessageType> message )
-            {
-                messages.add( message );
-            }
-        };
+        MessageHolder holder = message -> messages.add( message );
         ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext electionContext = mock( ElectionContext.class );

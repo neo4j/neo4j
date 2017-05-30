@@ -1022,17 +1022,13 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private Map<String, Object> getPropertyChain( long nextProp )
     {
         final Map<String, Object> map = new HashMap<>();
-        propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), new Listener<PropertyBlock>()
+        propertyTraverser.getPropertyChain( nextProp, recordAccess.getPropertyRecords(), propBlock ->
         {
-            @Override
-            public void receive( PropertyBlock propBlock )
-            {
-                String key = propertyKeyTokens.byId( propBlock.getKeyIndexId() ).name();
-                DefinedProperty propertyData = propBlock.newPropertyData( propertyStore );
-                Object value = propertyData.value() != null ? propertyData.value() :
-                               propBlock.getType().getValue( propBlock, propertyStore );
-                map.put( key, value );
-            }
+            String key = propertyKeyTokens.byId( propBlock.getKeyIndexId() ).name();
+            DefinedProperty propertyData = propBlock.newPropertyData( propertyStore );
+            Object value = propertyData.value() != null ? propertyData.value() :
+                           propBlock.getType().getValue( propBlock, propertyStore );
+            map.put( key, value );
         } );
         return map;
     }

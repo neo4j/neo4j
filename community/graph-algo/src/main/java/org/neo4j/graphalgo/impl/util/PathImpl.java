@@ -179,80 +179,60 @@ public final class PathImpl implements Path
 
     private Iterable<Node> nodeIterator( final Node start, final Iterable<Relationship> relationships )
     {
-        return new Iterable<Node>()
+        return () -> new Iterator<Node>()
         {
-            public Iterator<Node> iterator()
+            Node current = start;
+            int index;
+            Iterator<Relationship> relationshipIterator = relationships.iterator();
+
+            public boolean hasNext()
             {
-                return new Iterator<Node>()
+                return index <= path.length;
+            }
+
+            public Node next()
+            {
+                if ( current == null )
                 {
-                    Node current = start;
-                    int index;
-                    Iterator<Relationship> relationshipIterator = relationships.iterator();
-
-                    public boolean hasNext()
+                    throw new NoSuchElementException();
+                }
+                Node next = null;
+                if ( index < path.length )
+                {
+                    if ( !relationshipIterator.hasNext() )
                     {
-                        return index <= path.length;
+                        throw new IllegalStateException( String.format( "Number of relationships: %d does not" +
+                                              " match with path length: %d.", index, path.length ) );
                     }
+                    next = relationshipIterator.next().getOtherNode( current );
+                }
+                index += 1;
+                try
+                {
+                    return current;
+                }
+                finally
+                {
+                    current = next;
+                }
+            }
 
-                    public Node next()
-                    {
-                        if ( current == null )
-                        {
-                            throw new NoSuchElementException();
-                        }
-                        Node next = null;
-                        if ( index < path.length )
-                        {
-                            if ( !relationshipIterator.hasNext() )
-                            {
-                                throw new IllegalStateException( String.format( "Number of relationships: %d does not" +
-                                                      " match with path length: %d.", index, path.length ) );
-                            }
-                            next = relationshipIterator.next().getOtherNode( current );
-                        }
-                        index += 1;
-                        try
-                        {
-                            return current;
-                        }
-                        finally
-                        {
-                            current = next;
-                        }
-                    }
-
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                };
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }
 
     public Iterable<Relationship> relationships()
     {
-        return new Iterable<Relationship>()
-        {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                return new ArrayIterator<>( path );
-            }
-        };
+        return () -> new ArrayIterator<>( path );
     }
 
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
-        return new Iterable<Relationship>()
-        {
-            @Override
-            public Iterator<Relationship> iterator()
-            {
-                return new ReverseArrayIterator<>( path );
-            }
-        };
+        return () -> new ReverseArrayIterator<>( path );
     }
 
     public Iterator<PropertyContainer> iterator()

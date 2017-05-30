@@ -49,16 +49,12 @@ public class TransactionFilter extends InjectableProvider<Void> implements Resou
     @Override
     public ResourceMethodDispatchProvider adapt( final ResourceMethodDispatchProvider resourceMethodDispatchProvider )
     {
-        return new ResourceMethodDispatchProvider()
+        return abstractResourceMethod ->
         {
-            @Override
-            public RequestDispatcher create( AbstractResourceMethod abstractResourceMethod )
-            {
-                final RequestDispatcher requestDispatcher = resourceMethodDispatchProvider.create(
-                        abstractResourceMethod );
+            final RequestDispatcher requestDispatcher = resourceMethodDispatchProvider.create(
+                    abstractResourceMethod );
 
-                return new TransactionalRequestDispatcher( database, requestDispatcher );
-            }
+            return new TransactionalRequestDispatcher( database, requestDispatcher );
         };
     }
 }

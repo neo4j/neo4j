@@ -169,20 +169,16 @@ public class TestIndexProviderStore
 
         FileSystemAbstraction fs = spy( fileSystem );
         StoreChannel tempChannel;
-        when( tempChannel = fs.open( file, "rw" ) ).then( new Answer<StoreChannel>()
+        when( tempChannel = fs.open( file, "rw" ) ).then( ignored ->
         {
-            @Override
-            public StoreChannel answer( InvocationOnMock ignored ) throws Throwable
+            StoreChannel channel = fileSystem.open( file, "rw" );
+            if ( channelUsedToCreateFile[0] == null )
             {
-                StoreChannel channel = fileSystem.open( file, "rw" );
-                if ( channelUsedToCreateFile[0] == null )
-                {
-                    StoreChannel channelSpy = spy( channel );
-                    channelUsedToCreateFile[0] = channelSpy;
-                    channel = channelSpy;
-                }
-                return channel;
+                StoreChannel channelSpy = spy( channel );
+                channelUsedToCreateFile[0] = channelSpy;
+                channel = channelSpy;
             }
+            return channel;
         } );
 
         // Doing the FSA spying above, calling fs.open, actually invokes that method and so a channel

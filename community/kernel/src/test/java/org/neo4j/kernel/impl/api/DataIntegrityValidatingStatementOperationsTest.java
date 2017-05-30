@@ -286,14 +286,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     @SafeVarargs
     private static <T> Answer<Iterator<T>> withIterator( final T... content )
     {
-        return new Answer<Iterator<T>>()
-        {
-            @Override
-            public Iterator<T> answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                return iterator( content );
-            }
-        };
+        return invocationOnMock -> iterator( content );
     }
 
     private final KernelStatement state = StatementOperationsTestHelper.mockedState();

@@ -26,12 +26,8 @@ package org.neo4j.kernel.impl.transaction.tracing;
  */
 public interface LogForceEvent extends AutoCloseable
 {
-    LogForceEvent NULL = new LogForceEvent()
+    LogForceEvent NULL = () ->
     {
-        @Override
-        public void close()
-        {
-        }
     };
 
     /**

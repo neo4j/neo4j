@@ -203,12 +203,8 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO b", "b TO c", "c TO d" );
 
-        BranchCollisionPolicy collisionPolicy = new BranchCollisionPolicy()
-        {
-            @Override
-            public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
-            {
-                return new StandardBranchCollisionDetector( null, null )
+        BranchCollisionPolicy collisionPolicy =
+                ( evaluator, pathPredicate ) -> new StandardBranchCollisionDetector( null, null )
                 {
                     @Override
                     protected boolean includePath( Path path, TraversalBranch startPath, TraversalBranch endPath )
@@ -218,8 +214,6 @@ public class TestBidirectionalTraversal extends TraversalTestBase
                         return true;
                     }
                 };
-            }
-        };
 
         Iterables.count( getGraphDb().bidirectionalTraversalDescription()
                 // Just make up a number bigger than the path length (in this case 10) so that we can assert it in

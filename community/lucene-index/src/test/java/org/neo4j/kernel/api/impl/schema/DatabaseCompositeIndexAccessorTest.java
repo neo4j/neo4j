@@ -237,14 +237,10 @@ public class DatabaseCompositeIndexAccessorTest
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
         IndexSampler indexSampler = indexReader.createSampler();
 
-        Future<Void> drop = threading.executeAndAwait( new IOFunction<Void,Void>()
+        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
         {
-            @Override
-            public Void apply( Void nothing ) throws IOException
-            {
-                accessor.drop();
-                return nothing;
-            }
+            accessor.drop();
+            return nothing;
         }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
 
         try ( IndexReader reader = indexReader /* do not inline! */ )

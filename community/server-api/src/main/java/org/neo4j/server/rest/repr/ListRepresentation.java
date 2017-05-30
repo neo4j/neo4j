@@ -120,12 +120,8 @@ public class ListRepresentation extends Representation
 
     public static ListRepresentation numbers( final long... values )
     {
-        return new ListRepresentation( RepresentationType.LONG, new Iterable<ValueRepresentation>()
-        {
-            @Override
-            public Iterator<ValueRepresentation> iterator()
-            {
-                return new PrefetchingIterator<ValueRepresentation>()
+        return new ListRepresentation( RepresentationType.LONG, (Iterable<ValueRepresentation>) () ->
+                new PrefetchingIterator<ValueRepresentation>()
                 {
                     int pos;
 
@@ -138,33 +134,24 @@ public class ListRepresentation extends Representation
                         }
                         return ValueRepresentation.number( values[pos++] );
                     }
-                };
-            }
-        } );
+                } );
     }
 
     public static ListRepresentation numbers( final double[] values )
     {
         return new ListRepresentation( RepresentationType.DOUBLE,
-                new Iterable<ValueRepresentation>()
+                (Iterable<ValueRepresentation>) () -> new PrefetchingIterator<ValueRepresentation>()
                 {
-                    @Override
-                    public Iterator<ValueRepresentation> iterator()
-                    {
-                        return new PrefetchingIterator<ValueRepresentation>()
-                        {
-                            int pos;
+                    int pos;
 
-                            @Override
-                            protected ValueRepresentation fetchNextOrNull()
-                            {
-                                if ( pos >= values.length )
-                                {
-                                    return null;
-                                }
-                                return ValueRepresentation.number( values[pos++] );
-                            }
-                        };
+                    @Override
+                    protected ValueRepresentation fetchNextOrNull()
+                    {
+                        if ( pos >= values.length )
+                        {
+                            return null;
+                        }
+                        return ValueRepresentation.number( values[pos++] );
                     }
                 } );
     }
