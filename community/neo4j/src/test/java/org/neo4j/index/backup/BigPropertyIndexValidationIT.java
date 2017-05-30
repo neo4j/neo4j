@@ -20,7 +20,6 @@
 package org.neo4j.index.backup;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -92,6 +91,7 @@ public class BigPropertyIndexValidationIT
             ResourceIterator<Node> nodes = db.getAllNodes().iterator();
             assertFalse( nodes.hasNext() );
         }
+        db.shutdown();
     }
 
     @Test
@@ -123,6 +123,7 @@ public class BigPropertyIndexValidationIT
             ResourceIterator<Node> nodes = db.getAllNodes().iterator();
             assertFalse( nodes.hasNext() );
         }
+        db.shutdown();
     }
 
     @Test
@@ -155,5 +156,6 @@ public class BigPropertyIndexValidationIT
             ResourceIterator<Node> nodes = db.getAllNodes().iterator();
             assertFalse( nodes.hasNext() );
         }
+        db.shutdown();
     }
 }
