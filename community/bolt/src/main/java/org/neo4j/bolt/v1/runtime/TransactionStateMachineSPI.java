@@ -63,7 +63,6 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     TransactionStateMachineSPI( GraphDatabaseAPI db,
                                 ThreadToStatementContextBridge txBridge,
                                 QueryExecutionEngine queryExecutionEngine,
-                                TransactionIdStore transactionIdStoreSupplier,
                                 AvailabilityGuard availabilityGuard,
                                 GraphDatabaseQueryService queryService,
                                 Clock clock )
@@ -71,7 +70,8 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
         this.db = db;
         this.txBridge = txBridge;
         this.queryExecutionEngine = queryExecutionEngine;
-        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
+        this.transactionIdTracker = new TransactionIdTracker(
+                db.getDependencyResolver().provideDependency( TransactionIdStore.class ), availabilityGuard );
         this.contextFactory = Neo4jTransactionalContextFactory.create( queryService, locker );
         this.queryService = queryService;
         this.clock = clock;
