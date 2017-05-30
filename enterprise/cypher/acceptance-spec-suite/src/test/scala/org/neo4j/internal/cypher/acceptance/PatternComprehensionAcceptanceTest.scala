@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.kernel.impl.proc.Procedures
 

@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
 import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v3_3.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
@@ -74,8 +74,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LFUCache[String, ParsedQuery](getPlanCacheSize)
 
-  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
-  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue, identity)
+  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   @throws(classOf[SyntaxException])
   def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {

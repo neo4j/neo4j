@@ -25,7 +25,7 @@ import java.util.Collections
 import org.hamcrest.Matchers.greaterThan
 import org.junit.Assert.assertThat
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.DynamicIterable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor

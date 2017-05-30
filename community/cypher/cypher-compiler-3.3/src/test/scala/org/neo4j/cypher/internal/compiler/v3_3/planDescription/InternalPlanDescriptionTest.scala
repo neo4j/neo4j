@@ -19,32 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.pipes.Pipe
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class InternalPlanDescriptionTest extends CypherFunSuite {
 
-  def pipe: Pipe = mock[Pipe]
+  private val ID = new Id
 
   test("flatten behaves like expected for plan with two children") {
-    val child1 = PlanDescriptionImpl(pipe.id, "child1", NoChildren, Seq.empty, Set())
-    val child2 = PlanDescriptionImpl(pipe.id, "child2", NoChildren, Seq.empty, Set())
-    val top = PlanDescriptionImpl(pipe.id, "top", TwoChildren(child1, child2), Seq.empty, Set())
+    val child1 = PlanDescriptionImpl(ID, "child1", NoChildren, Seq.empty, Set())
+    val child2 = PlanDescriptionImpl(ID, "child2", NoChildren, Seq.empty, Set())
+    val top = PlanDescriptionImpl(ID, "top", TwoChildren(child1, child2), Seq.empty, Set())
 
     top.flatten should equal(Seq(top, child1, child2))
   }
 
   test("single plan flattened stays single") {
-    val single = PlanDescriptionImpl(pipe.id, "single", NoChildren, Seq.empty, Set())
+    val single = PlanDescriptionImpl(ID, "single", NoChildren, Seq.empty, Set())
 
     single.flatten should equal(Seq(single))
   }
 
   test("left leaning plan should also flatten out nicely") {
-    val leaf = PlanDescriptionImpl(pipe.id, "leaf", NoChildren, Seq.empty, Set())
-    val lvl1 = PlanDescriptionImpl(pipe.id, "lvl1", SingleChild(leaf), Seq.empty, Set())
-    val lvl2 = PlanDescriptionImpl(pipe.id, "lvl2", SingleChild(lvl1), Seq.empty, Set())
-    val root = PlanDescriptionImpl(pipe.id, "root", SingleChild(lvl2), Seq.empty, Set())
+    val leaf = PlanDescriptionImpl(ID, "leaf", NoChildren, Seq.empty, Set())
+    val lvl1 = PlanDescriptionImpl(ID, "lvl1", SingleChild(leaf), Seq.empty, Set())
+    val lvl2 = PlanDescriptionImpl(ID, "lvl2", SingleChild(lvl1), Seq.empty, Set())
+    val root = PlanDescriptionImpl(ID, "root", SingleChild(lvl2), Seq.empty, Set())
 
     root.flatten should equal(Seq(root, lvl2, lvl1, leaf))
   }
@@ -55,13 +54,13 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
              B1      B2
            C1  C2  C3  C4
      */
-    val C4 = PlanDescriptionImpl(pipe.id, "C4", NoChildren, Seq.empty, Set())
-    val C3 = PlanDescriptionImpl(pipe.id, "C3", NoChildren, Seq.empty, Set())
-    val C2 = PlanDescriptionImpl(pipe.id, "C2", NoChildren, Seq.empty, Set())
-    val C1 = PlanDescriptionImpl(pipe.id, "C1", NoChildren, Seq.empty, Set())
-    val B2 = PlanDescriptionImpl(pipe.id, "B2", TwoChildren(C3, C4), Seq.empty, Set())
-    val B1 = PlanDescriptionImpl(pipe.id, "B1", TwoChildren(C1, C2), Seq.empty, Set())
-    val A  = PlanDescriptionImpl(pipe.id, "A" , TwoChildren(B1, B2), Seq.empty, Set())
+    val C4 = PlanDescriptionImpl(ID, "C4", NoChildren, Seq.empty, Set())
+    val C3 = PlanDescriptionImpl(ID, "C3", NoChildren, Seq.empty, Set())
+    val C2 = PlanDescriptionImpl(ID, "C2", NoChildren, Seq.empty, Set())
+    val C1 = PlanDescriptionImpl(ID, "C1", NoChildren, Seq.empty, Set())
+    val B2 = PlanDescriptionImpl(ID, "B2", TwoChildren(C3, C4), Seq.empty, Set())
+    val B1 = PlanDescriptionImpl(ID, "B1", TwoChildren(C1, C2), Seq.empty, Set())
+    val A  = PlanDescriptionImpl(ID, "A" , TwoChildren(B1, B2), Seq.empty, Set())
 
     A.flatten should equal(Seq(A, B1, C1, C2, B2, C3, C4))
   }

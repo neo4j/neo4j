@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 object SimpleMetricsFactory extends MetricsFactory {
   def newCostModel(): CostModel = CardinalityCostModel
 
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
-    new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
+    new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
 
   def newQueryGraphCardinalityModel(statistics: GraphStatistics) =
     QueryGraphCardinalityModel.default(statistics)

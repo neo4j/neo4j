@@ -30,7 +30,7 @@ sealed trait Literal extends Expression {
 
 sealed trait NumberLiteral extends Literal {
   def stringVal: String
-  def asCanonicalStringVal: String = stringVal
+  override def asCanonicalStringVal: String = stringVal
 }
 
 sealed trait IntegerLiteral extends NumberLiteral {
@@ -131,13 +131,13 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTyping {
   protected def possibleTypes = CTString
 
-  def asCanonicalStringVal = value
+  override def asCanonicalStringVal = value
 }
 
 case class Null()(val position: InputPosition) extends Literal with SimpleTyping {
   val value = null
 
-  def asCanonicalStringVal = "NULL"
+  override def asCanonicalStringVal = "NULL"
 
   protected def possibleTypes = CTAny.covariant
 }
@@ -147,7 +147,7 @@ sealed trait BooleanLiteral extends Literal
 case class True()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
   val value: java.lang.Boolean = true
 
-  def asCanonicalStringVal = "true"
+  override def asCanonicalStringVal = "true"
 
   protected def possibleTypes = CTBoolean
 }
@@ -155,7 +155,7 @@ case class True()(val position: InputPosition) extends BooleanLiteral with Simpl
 case class False()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
   val value: java.lang.Boolean = false
 
-  def asCanonicalStringVal = "false"
+  override def asCanonicalStringVal = "false"
 
   protected def possibleTypes = CTBoolean
 }

@@ -27,4 +27,6 @@ case class Parameter(name: String,
   extends Expression with SimpleTyping {
 
   protected def possibleTypes: TypeSpec = parameterType.covariant
+
+  override def asCanonicalStringVal: String = s"{$name}"
 }

@@ -32,15 +32,16 @@ object PlanDescriptionArgumentSerializer {
 
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
-      case LegacyExpression(expr) => if (expr == null) "" else removeGeneratedNames(expr.toString)
-      case LegacyExpressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
-      case Expression(expr) => removeGeneratedNames(expr.toString)
-      case Expressions(expressions) => expressions.map({ case (k, v) => s"$k : $v" }).mkString("{", ", ", "}")
+      case Expression(expr) => if (expr == null) "" else removeGeneratedNames(expr.asCanonicalStringVal)
+      case Expressions(expressions) => expressions.map({
+        case (k, v) if v != null => s"$k : ${v.asCanonicalStringVal}"
+        case (k, _) => s"$k : null"
+      }).mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case LegacyIndex(index) => index
       case Index(label, properties) => s":$label(${properties.mkString(",")})"
-      case PrefixIndex(label, property, prefix) => s":$label($property STARTS WITH $prefix)"
+      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${p.asCanonicalStringVal})"
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)

@@ -23,9 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.{namePatternPredicatePatternElements, _}
-import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
@@ -63,8 +61,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
-      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
+      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
     def newCostModel() =
       SimpleMetricsFactory.newCostModel()
     def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
@@ -73,25 +71,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedQueryGraph = mock[QueryGraph]
 
-  def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
-    val context = mock[PipeExecutionBuilderContext]
-    val cardinality = new Metrics.CardinalityModel {
-      def apply(pq: PlannerQuery, ignored: QueryGraphSolverInput, ignoredAsWell: SemanticTable) = pq match {
-        case PlannerQuery.empty => Cardinality(1)
-        case _ => Cardinality(104999.99999)
-      }
-    }
-    when(context.cardinality).thenReturn(cardinality)
-    val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
-
-    when(context.semanticTable).thenReturn(semanticTable)
-
-    context
-  }
-
   def newMetricsFactory = SimpleMetricsFactory
 
-  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats)
+  def newExpressionEvaluator = new ExpressionEvaluator {
+    override def evaluateExpression(expr: Expression): Option[Any] = None
+  }
+
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
+    newMetricsFactory.newMetrics(stats, newExpressionEvaluator)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -201,7 +188,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
-    CompilationState(input).copy(maybeStatement = Some(newStatement))
+    LogicalPlanState(input).copy(maybeStatement = Some(newStatement))
   }
 
   def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
@@ -217,7 +204,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = CompilationState(query, None, CostBasedPlannerName.default)
+    val state = LogicalPlanState(query, None, CostBasedPlannerName.default)
 
     val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
     val output = pipeLine.transform(state, context)

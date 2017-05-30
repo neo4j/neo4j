@@ -82,8 +82,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def newCostModel() =
         (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
-      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
-        config.cardinalityModel(queryGraphCardinalityModel)
+      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
+        config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
 
       def newQueryGraphCardinalityModel(statistics: GraphStatistics) = QueryGraphCardinalityModel.default(statistics)
     }
@@ -156,32 +156,33 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     //
     // cf. QueryPlanningStrategy
     //
-    private def namePatternPredicates(input: CompilationState, context: CompilerContext): CompilationState = {
+    private def namePatternPredicates(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
       val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
       input.copy(maybeStatement = Some(newStatement))
     }
 
-    private def removeApply(input: CompilationState, context: CompilerContext): CompilationState = {
+    private def removeApply(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply))
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics)
-      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics, config = cypherCompilerConfig)
+      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
+      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
+                                         config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
 
-      val state = CompilationState(queryString, None, IDPPlannerName)
+      val state = LogicalPlanState(queryString, None, IDPPlannerName)
       val output = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
-      (output.periodicCommit, logicalPlan, output.semanticTable)
+      (output.periodicCommit, logicalPlan, output.semanticTable())
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
-      metricsFactory.newMetrics(config.graphStatistics).queryGraphCardinalityModel(qg, input, semanticTable)
+      metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator]).queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,

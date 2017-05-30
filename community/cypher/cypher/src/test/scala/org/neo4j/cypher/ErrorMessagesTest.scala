@@ -21,12 +21,16 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v3_3.CypherSerializer
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CypherSerializer
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
   // pure syntax errors -- not sure if TCK material?
+
+  test("foo") {
+    execute("RETURN 42")
+  }
 
   test("noReturnColumns") {
     expectError(

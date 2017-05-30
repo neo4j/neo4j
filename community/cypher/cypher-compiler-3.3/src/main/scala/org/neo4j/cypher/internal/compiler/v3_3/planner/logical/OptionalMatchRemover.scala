@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationState, CompilerContext}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState, CompilerContext}
 import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation, _}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
@@ -192,12 +192,12 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
 }
 
-trait PlannerQueryRewriter extends Phase[CompilerContext, CompilationState, CompilationState] {
+trait PlannerQueryRewriter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
   def instance(context: CompilerContext): Rewriter
 
-  override def process(from: CompilationState, context: CompilerContext): CompilationState = {
+  override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
     val query: UnionQuery = from.unionQuery
     val rewritten = query.endoRewrite(instance(context))
     from.copy(maybeUnionQuery = Some(rewritten))

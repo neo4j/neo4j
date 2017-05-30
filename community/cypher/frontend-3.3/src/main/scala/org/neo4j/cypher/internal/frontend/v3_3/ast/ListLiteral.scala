@@ -33,6 +33,7 @@ case class ListLiteral(expressions: Seq[Expression])(val position: InputPosition
     case Seq() => CTList(CTAny).covariant
     case _     => expressions.leastUpperBoundsOfTypes(state).wrapInCovariantList
   }
+  override def asCanonicalStringVal: String = expressions.map(_.asCanonicalStringVal).mkString("[", ", ", "]")
 }
 
 case class ListSlice(list: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)

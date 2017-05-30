@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.compiler.v3_3.commands.QueryExpression
-import org.neo4j.cypher.internal.compiler.v3_3.executionplan._
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -177,3 +175,12 @@ case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {
 
   override protected def build(plan: LogicalPlan, lhs: Seq[LogicalPlan], rhs: Seq[LogicalPlan]): Seq[LogicalPlan] = (plan +: lhs) ++ rhs
 }
+
+sealed trait IndexUsage {
+  def identifier:String
+}
+
+final case class SchemaIndexSeekUsage(identifier: String, label: String, propertyKeys: Seq[String]) extends IndexUsage
+final case class SchemaIndexScanUsage(identifier: String, label: String, propertyKey: String) extends IndexUsage
+final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
+final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
