@@ -51,14 +51,14 @@ class UniqueSchemaNumberKey implements SchemaNumberKey
     @Override
     public void initAsLowest()
     {
-        value = -Double.MAX_VALUE;
+        value = Double.NEGATIVE_INFINITY;
         isHighest = false;
     }
 
     @Override
     public void initAsHighest()
     {
-        value = Double.MAX_VALUE;
+        value = Double.POSITIVE_INFINITY;
         isHighest = true;
     }
 

@@ -53,14 +53,14 @@ class NonUniqueSchemaNumberKey implements SchemaNumberKey
     @Override
     public void initAsLowest()
     {
-        value = -Double.MAX_VALUE;
+        value = Double.NEGATIVE_INFINITY;
         entityId = Long.MIN_VALUE;
     }
 
     @Override
     public void initAsHighest()
     {
-        value = Double.MAX_VALUE;
+        value = Double.POSITIVE_INFINITY;
         entityId = Long.MAX_VALUE;
     }
 
