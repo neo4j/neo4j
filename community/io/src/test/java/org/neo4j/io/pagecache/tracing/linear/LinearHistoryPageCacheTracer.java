@@ -147,7 +147,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     @Override
     public double hitRatio()
     {
-        return 0;
+        return 0d;
     }
 
     @Override

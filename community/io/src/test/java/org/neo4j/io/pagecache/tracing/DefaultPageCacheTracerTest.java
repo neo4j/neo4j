@@ -31,7 +31,6 @@ import org.neo4j.io.pagecache.PageSwapper;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class DefaultPageCacheTracerTest
 {
@@ -76,7 +75,7 @@ public class DefaultPageCacheTracerTest
             evictionRunEvent.beginEviction().close();
         }
 
-        assertCounts( 0, 0, 0, 0, 4, 2, 3, 0, 36, 0, 0,  Double.NaN );
+        assertCounts( 0, 0, 0, 0, 4, 2, 3, 0, 36, 0, 0,  0d);
     }
 
     @Test
@@ -84,11 +83,11 @@ public class DefaultPageCacheTracerTest
     {
         tracer.mappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  Double.NaN );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
 
         tracer.unmappedFile( new File( "a" ) );
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  Double.NaN );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
     }
 
     @Test
@@ -101,7 +100,7 @@ public class DefaultPageCacheTracerTest
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, Double.NaN );
+        assertCounts( 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0d );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
@@ -110,13 +109,13 @@ public class DefaultPageCacheTracerTest
             fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, Double.NaN );
+        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d );
     }
 
     @Test
     public void shouldCalculateHitRatio() throws Exception
     {
-        assertTrue( "hitRatio", Double.isNaN( tracer.hitRatio() ) );
+        assertThat( "hitRation", tracer.hitRatio(), closeTo( 0d, 0.0001 ) );
         tracer.hits( 3 );
         tracer.faults( 7 );
         assertThat( "hitRation", tracer.hitRatio(), closeTo( 3.0 / 10, 0.0001 ) );
@@ -136,14 +135,6 @@ public class DefaultPageCacheTracerTest
         assertThat( "bytesWritten", tracer.bytesWritten(), is( bytesWritten ) );
         assertThat( "filesMapped", tracer.filesMapped(), is( filesMapped ) );
         assertThat( "filesUnmapped", tracer.filesUnmapped(), is( filesUnmapped ) );
-        double actualHitRatio = tracer.hitRatio();
-        if ( Double.isNaN( hitRatio ) )
-        {
-            assertTrue( "hitRatio", Double.isNaN( actualHitRatio ) );
-        }
-        else
-        {
-            assertThat( "hitRatio", actualHitRatio, closeTo( hitRatio, 0.0001 ) );
-        }
+        assertThat( "hitRatio", tracer.hitRatio(), closeTo( hitRatio, 0.0001 ) );
     }
 }

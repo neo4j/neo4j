@@ -108,7 +108,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     @Override
     public double hitRatio()
     {
-        return 0;
+        return 0d;
     }
 
     @Override

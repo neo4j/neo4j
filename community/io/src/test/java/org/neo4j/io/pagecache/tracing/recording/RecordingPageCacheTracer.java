@@ -152,7 +152,7 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     @Override
     public double hitRatio()
     {
-        return 0;
+        return 0d;
     }
 
     @Override

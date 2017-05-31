@@ -563,7 +563,7 @@ public class QueryLoggerTest
                     @Override
                     public double hitRatio()
                     {
-                        return 0;
+                        return 0d;
                     }
                 }, Thread.currentThread(),
                 clock,

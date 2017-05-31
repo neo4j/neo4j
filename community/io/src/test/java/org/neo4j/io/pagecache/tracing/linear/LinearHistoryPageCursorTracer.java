@@ -98,7 +98,7 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     @Override
     public double hitRatio()
     {
-        return 0;
+        return 0d;
     }
 
     @Override

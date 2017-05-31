@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.helpers.MathUtil
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 
 import scala.collection.mutable
@@ -82,7 +83,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
         val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
         val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
         val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
-        val hitRatio = hits.toDouble / (hits + misses)
+        val hitRatio = MathUtil.portion(hits, misses)
 
         input
           .addArgument(Arguments.Rows(rows))

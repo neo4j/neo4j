@@ -94,7 +94,7 @@ public interface PageCursorTracer extends PageCursorCounters
         @Override
         public double hitRatio()
         {
-            return 0;
+            return 0d;
         }
 
         @Override

@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class DefaultPageCursorTracerTest
 {
@@ -204,7 +203,7 @@ public class DefaultPageCursorTracerTest
     @Test
     public void shouldCalculateHitRatio() throws Exception
     {
-        assertTrue( Double.isNaN( pageCursorTracer.hitRatio() ) );
+        assertEquals( 0d, pageCursorTracer.hitRatio(), 0.0001 );
 
         pinFaultAndHit();
 

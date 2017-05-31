@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.Que
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider;
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer;
+import org.neo4j.helpers.MathUtil;
 
 public class ProfilingTracer implements QueryExecutionTracer
 {
@@ -38,8 +39,7 @@ public class ProfilingTracer implements QueryExecutionTracer
         long pageCacheMisses();
         default double pageCacheHitRatio()
         {
-            double hits = pageCacheHits();
-            return hits / (hits + pageCacheMisses());
+            return MathUtil.portion( pageCacheHits(), pageCacheMisses() );
         }
     }
 

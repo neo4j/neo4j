@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.MathUtil;
+
 /**
  * Instances describe single execution steps in a Cypher query execution plan
  *
@@ -116,7 +118,7 @@ public interface ExecutionPlanDescription
          */
         default double getPageCacheHitRatio()
         {
-            return ((double)getPageCacheHits()) / (getPageCacheHits() + getPageCacheMisses());
+            return MathUtil.portion( getPageCacheHits(), getPageCacheMisses() );
         }
     }
 }

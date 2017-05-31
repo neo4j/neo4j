@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.helpers.MathUtil;
+
 /**
  * Profiler statistics for a single execution step of a Cypher query execution plan
  */
@@ -55,6 +57,6 @@ public interface ProfilerStatistics
      */
     default double getPageCacheHitRatio()
     {
-        return ((double)getPageCacheHits()) / (getPageCacheHits() + getPageCacheMisses());
+        return MathUtil.portion( getPageCacheHits(), getPageCacheMisses() );
     }
 }

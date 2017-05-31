@@ -133,7 +133,7 @@ public interface PageCacheTracer extends PageCacheCounters
         @Override
         public double hitRatio()
         {
-            return 0;
+            return 0d;
         }
 
         @Override
