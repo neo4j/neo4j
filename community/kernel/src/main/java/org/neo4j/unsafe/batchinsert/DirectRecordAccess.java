@@ -114,9 +114,9 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
 
     private class DirectRecordProxy implements RecordProxy<KEY,RECORD,ADDITIONAL>
     {
-        private KEY key;
-        private RECORD record;
-        private ADDITIONAL additionalData;
+        private final KEY key;
+        private final RECORD record;
+        private final ADDITIONAL additionalData;
         private boolean changed = false;
         private final boolean created;
 
@@ -225,6 +225,8 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
     {
         if ( changeCounter.value() == 0 )
         {
+            // Clear the batch anyway since otherwise pure reads will fill it up more and more
+            batch.clear();
             return;
         }
 
