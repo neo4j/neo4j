@@ -51,6 +51,12 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
+    protected LayoutTestUtil createLayoutTestUtil()
+    {
+        return new UniqueLayoutTestUtil();
+    }
+
+    @Override
     protected int compareValue( UniqueNumberValue value1, UniqueNumberValue value2 )
     {
         int valueCompare = compareIndexedPropertyValue( value1, value2 );
@@ -59,12 +65,6 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest
             return Long.compare( value1.getEntityId(), value2.getEntityId() );
         }
         return valueCompare;
-    }
-
-    @Override
-    Layout<UniqueNumberKey,UniqueNumberValue> createLayout()
-    {
-        return new UniqueNumberLayout();
     }
 
     @Test
@@ -175,13 +175,5 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest
         assertEquals( updates.length, sample.uniqueValues() );
         assertEquals( updates.length, sample.indexSize() );
         populator.close( true );
-    }
-
-    @Override
-    protected void copyValue( UniqueNumberValue value, UniqueNumberValue into )
-    {
-        into.type = value.type;
-        into.rawValueBits = value.rawValueBits;
-        into.entityId = value.entityId;
     }
 }

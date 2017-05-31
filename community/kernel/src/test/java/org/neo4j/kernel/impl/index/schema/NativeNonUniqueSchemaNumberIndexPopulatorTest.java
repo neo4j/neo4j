@@ -45,22 +45,10 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         extends NativeSchemaIndexPopulatorTest<NonUniqueNumberKey,NonUniqueNumberValue>
 {
     @Override
-    Layout<NonUniqueNumberKey,NonUniqueNumberValue> createLayout()
-    {
-        return new NonUniqueNumberLayout();
-    }
-
-    @Override
     NativeSchemaNumberIndexPopulator<NonUniqueNumberKey,NonUniqueNumberValue> createPopulator( PageCache pageCache, File indexFile,
             Layout<NonUniqueNumberKey,NonUniqueNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
         return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE, samplingConfig );
-    }
-
-    @Override
-    protected int compareValue( NonUniqueNumberValue value1, NonUniqueNumberValue value2 )
-    {
-        return compareIndexedPropertyValue( value1, value2 );
     }
 
     @Test
@@ -188,9 +176,8 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
-    protected void copyValue( NonUniqueNumberValue value, NonUniqueNumberValue intoValue )
+    protected LayoutTestUtil createLayoutTestUtil()
     {
-        intoValue.type = value.type;
-        intoValue.rawValueBits = value.rawValueBits;
+        return new NonUniqueLayoutTestUtil();
     }
 }
