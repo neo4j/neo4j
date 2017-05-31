@@ -214,28 +214,24 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         final CountDownLatch latch = new CountDownLatch( 1 );
         final PointerTo<Boolean> flag = new PointerTo<>( false );
 
-        Thread t = new Thread( new Runnable()
+        Thread t = new Thread( () ->
         {
-            @Override
-            public void run()
+            while ( !flag.getValue() )
             {
-                while ( !flag.getValue() )
+                try
                 {
-                    try
-                    {
-                        HttpGet httpget = new HttpGet( url.toURI() );
-                        httpget.addHeader( "Accept", "application/json" );
-                        DefaultHttpClient client = new DefaultHttpClient();
-                        client.execute( httpget );
+                    HttpGet httpget = new HttpGet( url.toURI() );
+                    httpget.addHeader( "Accept", "application/json" );
+                    DefaultHttpClient client = new DefaultHttpClient();
+                    client.execute( httpget );
 
-                        // If we get here, the server's ready
-                        flag.setValue( true );
-                        latch.countDown();
-                    }
-                    catch ( Exception e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    // If we get here, the server's ready
+                    flag.setValue( true );
+                    latch.countDown();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
                 }
             }
         } );
@@ -339,41 +335,29 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     @Test
     public void shouldIncludePrefixedSystemProperties() throws Exception
     {
-        withSystemProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property", new Callable<Void>()
+        withSystemProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property", () ->
         {
-            @Override
-            public Void call() throws Exception
+            withSystemProperty( "os.test", "os-property", () ->
             {
-                withSystemProperty( "os.test", "os-property", new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        graphdb = createDatabase( config );
-                        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-                        assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
-                        assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
-                        return null;
-                    }
-                } );
+                graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
+                assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
                 return null;
-            }
+            } );
+            return null;
         } );
     }
 
     @Test
     public void shouldNotIncludeDistributionForWindows() throws Exception
     {
-        withSystemProperty( "os.name", "Windows", new Callable<Void>()
+        withSystemProperty( "os.name", "Windows", () ->
         {
-            @Override
-            public Void call() throws Exception
-            {
-                graphdb = createDatabase( config );
-                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-                assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
-                return null;
-            }
+            graphdb = createDatabase( config );
+            assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+            assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
+            return null;
         } );
     }
 
@@ -393,16 +377,12 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     @Test
     public void shouldNotIncludeDistributionForMacOS() throws Exception
     {
-        withSystemProperty( "os.name", "Mac OS X", new Callable<Void>()
+        withSystemProperty( "os.name", "Mac OS X", () ->
         {
-            @Override
-            public Void call() throws Exception
-            {
-                graphdb = createDatabase( config );
-                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-                assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
-                return null;
-            }
+            graphdb = createDatabase( config );
+            assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+            assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
+            return null;
         } );
     }
 

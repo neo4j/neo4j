@@ -74,7 +74,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             graph.makeEdge( "a", "b", "cost", (float) 1 );
             graph.makeEdge( "b", "x", "cost", (double) 7 );
             graph.makeEdge( "b", "c", "cost", (long) 1 );
-            graph.makeEdge( "c", "x", "cost", (int) 5 );
+            graph.makeEdge( "c", "x", "cost", 5 );
             graph.makeEdge( "c", "d", "cost", (byte) 1 );
             graph.makeEdge( "d", "x", "cost", (short) 3 );
             graph.makeEdge( "d", "e", "cost", (double) 1 );

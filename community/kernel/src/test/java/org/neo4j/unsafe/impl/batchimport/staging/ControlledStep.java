@@ -57,7 +57,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
 
     public static ControlledStep<?> stepWithStats( String name, int maxProcessors, Object... statisticsAltKeyAndValue )
     {
-        return stepWithStats( name, maxProcessors, MapUtil.<Key,Long>genericMap( statisticsAltKeyAndValue ) );
+        return stepWithStats( name, maxProcessors, MapUtil.genericMap( statisticsAltKeyAndValue ) );
     }
 
     private final String name;
@@ -121,7 +121,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     @Override
     public StepStats stats()
     {
-        return new StepStats( name, !isCompleted(), Arrays.<StatsProvider>asList( this ) );
+        return new StepStats( name, !isCompleted(), Arrays.asList( this ) );
     }
 
     @Override

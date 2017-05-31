@@ -201,7 +201,7 @@ public class CompactJsonFormat extends RepresentationFormat
     {
         if ( empty( input ) )
         {
-            return DefaultFormat.validateKeys( Collections.<String,Object>emptyMap(), requiredKeys );
+            return DefaultFormat.validateKeys( Collections.emptyMap(), requiredKeys );
         }
         try
         {

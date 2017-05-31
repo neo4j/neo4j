@@ -240,7 +240,7 @@ public class LegacyIndexesUpgradeTest
                 ENTITY entity = entityFactory.newInstance();
                 String key = keyFactory.apply( i );
                 Object value = valueFactory.apply( i );
-                assertEquals( entity, single( (Iterator<ENTITY>) index.get( key, value ) ) );
+                assertEquals( entity, single( index.get( key, value ) ) );
             }
             tx.success();
         }

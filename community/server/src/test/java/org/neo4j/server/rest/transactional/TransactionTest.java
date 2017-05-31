@@ -70,7 +70,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
         Map<String, Object> result = jsonToMap( response.entity() );
         assertNoErrors( result );
         Map<String, Object> node = resultCell( result, 0, 0 );
-        assertThat( (String) node.get( "name" ), equalTo( "My Node" ) );
+        assertThat( node.get( "name" ), equalTo( "My Node" ) );
     }
 
     @Test
@@ -354,7 +354,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
 
         assertThat( firstResult, hasKey( "stats" ) );
         Map<String,Object> stats = (Map<String,Object>) firstResult.get( "stats" );
-        assertThat( (Integer) stats.get( "nodes_created" ), equalTo( 1 ) );
+        assertThat( stats.get( "nodes_created" ), equalTo( 1 ) );
     }
 
     private void assertNoErrors( Map<String, Object> response )
@@ -371,7 +371,7 @@ public class TransactionTest extends AbstractRestFunctionalTestBase
         while ( expected.hasNext() )
         {
             assertTrue( errors.hasNext() );
-            assertThat( (String)errors.next().get( "code" ), equalTo( expected.next().code().serialize() ) );
+            assertThat( errors.next().get( "code" ), equalTo( expected.next().code().serialize() ) );
         }
         if ( errors.hasNext() )
         {

@@ -58,7 +58,7 @@ public class TestJavascriptSecurityRestrictions
 
         // Then
         assertThat( result, is( instanceOf( Evaluation.class ) ) );
-        assertThat( (Evaluation) result, is(Evaluation.INCLUDE_AND_CONTINUE) );
+        assertThat( result, is(Evaluation.INCLUDE_AND_CONTINUE) );
     }
 
     @Test( expected = EvaluationException.class )

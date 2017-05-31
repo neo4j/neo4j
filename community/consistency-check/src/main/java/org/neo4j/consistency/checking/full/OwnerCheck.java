@@ -204,48 +204,42 @@ class OwnerCheck implements CheckDecorator
         {
             return checker;
         }
-        return new RecordCheck<PropertyRecord, PropertyConsistencyReport>()
+        return ( record, engine, records ) ->
         {
-            @Override
-            public void check( PropertyRecord record,
-                               CheckerEngine<PropertyRecord, PropertyConsistencyReport> engine,
-                               RecordAccess records )
+            if ( record.inUse() )
             {
-                if ( record.inUse() )
-                {
-                    if ( owners != null && Record.NO_PREVIOUS_PROPERTY.is( record.getPrevProp() ) )
-                    { // this record is first in a chain
-                        PropertyOwner.UnknownOwner owner = new PropertyOwner.UnknownOwner();
-                        engine.comparativeCheck( owner, ORPHAN_CHECKER );
-                        if ( null == owners.putIfAbsent( record.getId(), owner ) )
-                        {
-                            owner.markInCustody();
-                        }
-                    }
-                    if ( dynamics != null )
+                if ( owners != null && Record.NO_PREVIOUS_PROPERTY.is( record.getPrevProp() ) )
+                { // this record is first in a chain
+                    PropertyOwner.UnknownOwner owner = new PropertyOwner.UnknownOwner();
+                    engine.comparativeCheck( owner, ORPHAN_CHECKER );
+                    if ( null == owners.putIfAbsent( record.getId(), owner ) )
                     {
-                        for ( PropertyBlock block : record )
+                        owner.markInCustody();
+                    }
+                }
+                if ( dynamics != null )
+                {
+                    for ( PropertyBlock block : record )
+                    {
+                        RecordType type = recordType( block.forceGetType() );
+                        if ( type != null )
                         {
-                            RecordType type = recordType( block.forceGetType() );
-                            if ( type != null )
+                            ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamics.get( type );
+                            if ( dynamicOwners != null )
                             {
-                                ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamics.get( type );
-                                if ( dynamicOwners != null )
+                                long id = block.getSingleValueLong();
+                                DynamicOwner.Property owner = new DynamicOwner.Property( type, record );
+                                DynamicOwner prev = dynamicOwners.put( id, owner );
+                                if ( prev != null )
                                 {
-                                    long id = block.getSingleValueLong();
-                                    DynamicOwner.Property owner = new DynamicOwner.Property( type, record );
-                                    DynamicOwner prev = dynamicOwners.put( id, owner );
-                                    if ( prev != null )
-                                    {
-                                        engine.comparativeCheck( prev.record( records ), owner );
-                                    }
+                                    engine.comparativeCheck( prev.record( records ), owner );
                                 }
                             }
                         }
                     }
                 }
-                checker.check( record, engine, records );
             }
+            checker.check( record, engine, records );
         };
     }
 
@@ -334,33 +328,27 @@ class OwnerCheck implements CheckDecorator
         {
             return checker;
         }
-        return new RecordCheck<DynamicRecord, DynamicConsistencyReport>()
+        return ( record, engine, records ) ->
         {
-            @Override
-            public void check( DynamicRecord record,
-                               CheckerEngine<DynamicRecord, DynamicConsistencyReport> engine,
-                               RecordAccess records )
+            if ( record.inUse() )
             {
-                if ( record.inUse() )
+                DynamicOwner.Unknown owner = new DynamicOwner.Unknown();
+                engine.comparativeCheck( owner, DynamicOwner.ORPHAN_CHECK );
+                if ( null == dynamicOwners.putIfAbsent( record.getId(), owner ) )
                 {
-                    DynamicOwner.Unknown owner = new DynamicOwner.Unknown();
-                    engine.comparativeCheck( owner, DynamicOwner.ORPHAN_CHECK );
-                    if ( null == dynamicOwners.putIfAbsent( record.getId(), owner ) )
+                    owner.markInCustody();
+                }
+                if ( !Record.NO_NEXT_BLOCK.is( record.getNextBlock() ) )
+                {
+                    DynamicOwner.Dynamic nextOwner = new DynamicOwner.Dynamic( type, record );
+                    DynamicOwner prevOwner = dynamicOwners.put( record.getNextBlock(), nextOwner );
+                    if ( prevOwner != null )
                     {
-                        owner.markInCustody();
-                    }
-                    if ( !Record.NO_NEXT_BLOCK.is( record.getNextBlock() ) )
-                    {
-                        DynamicOwner.Dynamic nextOwner = new DynamicOwner.Dynamic( type, record );
-                        DynamicOwner prevOwner = dynamicOwners.put( record.getNextBlock(), nextOwner );
-                        if ( prevOwner != null )
-                        {
-                            engine.comparativeCheck( prevOwner.record( records ), nextOwner );
-                        }
+                        engine.comparativeCheck( prevOwner.record( records ), nextOwner );
                     }
                 }
-                checker.check( record, engine, records );
             }
+            checker.check( record, engine, records );
         };
     }
 

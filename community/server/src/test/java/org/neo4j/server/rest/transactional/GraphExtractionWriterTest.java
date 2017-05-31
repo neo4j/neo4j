@@ -213,7 +213,7 @@ public class GraphExtractionWriterTest
         JsonNode nodes = result.get( "graph" ).get( "nodes" );
         assertEquals( "there should be 3 nodes", 3, nodes.size() );
         assertNode( "17", nodes, asList( "Foo" ), property( "name", "n1" ) );
-        assertNode( "666", nodes, Arrays.<String>asList(), property( "name", "n2" ) );
+        assertNode( "666", nodes, Arrays.asList(), property( "name", "n2" ) );
         assertNode( "42", nodes, asList( "Foo", "Bar" ), property( "name", "n3" ) );
     }
 

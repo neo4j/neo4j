@@ -37,14 +37,7 @@ public class DatabasePanicEventGenerator
     public void generateEvent( final ErrorState error, final Throwable cause )
     {
         ExecutorService executor = Executors.newSingleThreadExecutor(  );
-        executor.execute( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                kernelEventHandlers.kernelPanic( error, cause );
-            }
-        } );
+        executor.execute( () -> kernelEventHandlers.kernelPanic( error, cause ) );
         executor.shutdown();
     }
 }

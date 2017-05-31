@@ -204,7 +204,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
 
     public Optional<CountsAccessor.Updater> apply( long txId )
     {
-        return updater( txId ).<CountsAccessor.Updater>map( CountsUpdater::new );
+        return updater( txId ).map( CountsUpdater::new );
     }
 
     public CountsAccessor.IndexStatsUpdater updateIndexCounts()

@@ -222,14 +222,7 @@ public class TestMasterCommittingAtSlave
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
         Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
-                NullLog.getInstance(), new Slaves()
-        {
-            @Override
-            public Iterable<Slave> getSlaves()
-            {
-                return slaves;
-            }
-        }, new CommitPusher( scheduler ) );
+                NullLog.getInstance(), () -> slaves, new CommitPusher( scheduler ) );
         // Life
         try
         {

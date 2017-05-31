@@ -90,39 +90,18 @@ public class PrimitiveLongObjectMapRIT
 
     private Printable given()
     {
-        return new Printable()
-        {
-            @Override
-            public void print( LinePrinter out )
-            {
-                out.println( PrimitiveLongObjectMap.class.getSimpleName() + "<Integer> map = " +
-                        Primitive.class.getSimpleName() + ".longObjectMap();" );
-            }
-        };
+        return out -> out.println( PrimitiveLongObjectMap.class.getSimpleName() + "<Integer> map = " +
+                           Primitive.class.getSimpleName() + ".longObjectMap();" );
     }
 
     private ActionFactory<Maps,String> actionFactory( final Random random )
     {
-        return new ActionFactory<Maps,String>()
-        {
-            @Override
-            public Action<Maps,String> apply( Maps from )
-            {
-                return generateAction( random, from );
-            }
-        };
+        return from -> generateAction( random, from );
     }
 
     private TargetFactory<Maps> mapFactory()
     {
-        return new TargetFactory<Maps>()
-        {
-            @Override
-            public Maps newInstance()
-            {
-                return new Maps();
-            }
-        };
+        return () -> new Maps();
     }
 
     protected Action<Maps,String> generateAction( Random random, Maps from )

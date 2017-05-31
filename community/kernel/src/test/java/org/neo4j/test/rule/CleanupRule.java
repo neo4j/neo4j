@@ -102,19 +102,15 @@ public class CleanupRule extends ExternalResource
 
     private AutoCloseable closeable( final Method method, final Object target )
     {
-        return new AutoCloseable()
+        return () ->
         {
-            @Override
-            public void close() throws IOException
+            try
             {
-                try
-                {
-                    method.invoke( target );
-                }
-                catch ( IllegalAccessException | IllegalArgumentException | InvocationTargetException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                method.invoke( target );
+            }
+            catch ( IllegalAccessException | IllegalArgumentException | InvocationTargetException e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }

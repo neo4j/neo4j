@@ -71,7 +71,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     public void shouldGet200AndContentLengthForProperties()
     {
         long relId = helper.createRelationship( "LIKES" );
-        helper.setRelationshipProperties( relId, Collections.<String, Object>singletonMap( "foo", "bar" ) );
+        helper.setRelationshipProperties( relId, Collections.singletonMap( "foo", "bar" ) );
         JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() + "relationship/" + relId
                 + "/properties" );
         assertEquals( 200, response.getStatus() );
@@ -93,7 +93,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     public void shouldBeJSONContentTypeOnPropertiesResponse()
     {
         long relId = helper.createRelationship( "LIKES" );
-        helper.setRelationshipProperties( relId, Collections.<String, Object>singletonMap( "foo", "bar" ) );
+        helper.setRelationshipProperties( relId, Collections.singletonMap( "foo", "bar" ) );
         JaxRsResponse response = RestRequest.req().get( functionalTestHelper.dataUri() + "relationship/" + relId
                 + "/properties" );
         assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );

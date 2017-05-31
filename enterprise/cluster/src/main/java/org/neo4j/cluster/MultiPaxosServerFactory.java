@@ -161,14 +161,7 @@ public class MultiPaxosServerFactory
 
         final ProtocolServer server = new ProtocolServer( me, stateMachines, logging );
 
-        server.addBindingListener( new BindingListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                context.getClusterContext().setBoundAt( me );
-            }
-        } );
+        server.addBindingListener( me1 -> context.getClusterContext().setBoundAt( me1 ) );
 
         stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing(),
                 context.getClusterContext() ) );

@@ -52,14 +52,7 @@ public class TimingCompilationTracer implements CompilationTracer
     {
         long nanoTime();
 
-        Clock SYSTEM = new Clock()
-        {
-            @Override
-            public long nanoTime()
-            {
-                return System.nanoTime();
-            }
-        };
+        Clock SYSTEM = () -> System.nanoTime();
     }
 
     private final Clock clock;
@@ -164,7 +157,7 @@ public class TimingCompilationTracer implements CompilationTracer
         @Override
         public List<PhaseEvent> phases()
         {
-            return Collections.<PhaseEvent>unmodifiableList( phases );
+            return Collections.unmodifiableList( phases );
         }
     }
 

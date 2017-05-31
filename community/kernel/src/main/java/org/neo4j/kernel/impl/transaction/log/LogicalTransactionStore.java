@@ -44,7 +44,7 @@ public interface LogicalTransactionStore
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
     TransactionCursor getTransactions( long transactionIdToStartFrom )
-            throws NoSuchTransactionException, IOException;
+            throws IOException;
 
     /**
      * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
@@ -60,7 +60,7 @@ public interface LogicalTransactionStore
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
     TransactionCursor getTransactions( LogPosition position )
-            throws NoSuchTransactionException, IOException;
+            throws IOException;
 
     /**
      * Looks up meta data about a committed transaction.
@@ -72,5 +72,5 @@ public interface LogicalTransactionStore
      * @throws IOException if there was an I/O related error during reading the meta data.
      */
     TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId )
-            throws NoSuchTransactionException, IOException;
+            throws IOException;
 }

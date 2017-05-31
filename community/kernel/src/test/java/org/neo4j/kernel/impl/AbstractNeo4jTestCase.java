@@ -64,16 +64,12 @@ public abstract class AbstractNeo4jTestCase
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
 
     @ClassRule
-    public static final TestRule START_GRAPHDB = new TestRule()
+    public static final TestRule START_GRAPHDB = ( base, description ) ->
     {
-        @Override
-        public Statement apply( Statement base, Description description )
-        {
-            tearDownDb();
-            setupGraphDatabase( description.getTestClass().getName(),
-                    description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
-            return base;
-        }
+        tearDownDb();
+        setupGraphDatabase( description.getTestClass().getName(),
+                description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
+        return base;
     };
 
     private static ThreadLocal<GraphDatabaseAPI> threadLocalGraphDb = new ThreadLocal<>();

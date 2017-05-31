@@ -74,11 +74,6 @@ public class LogEntryStart extends AbstractLogEntry
         return startPosition;
     }
 
-    public void setStartPosition( LogPosition position )
-    {
-        this.startPosition = position;
-    }
-
     public long getTimeWritten()
     {
         return timeWritten;

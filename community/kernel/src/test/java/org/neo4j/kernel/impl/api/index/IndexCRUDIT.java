@@ -174,7 +174,7 @@ public class IndexCRUDIT
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions(
-                Collections.<KernelExtensionFactory<?>>singletonList( mockedIndexProviderFactory ) );
+                Collections.singletonList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }

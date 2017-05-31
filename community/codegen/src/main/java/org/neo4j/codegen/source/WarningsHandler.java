@@ -25,12 +25,8 @@ import javax.tools.JavaFileObject;
 
 interface WarningsHandler
 {
-    WarningsHandler NO_WARNINGS_HANDLER = new WarningsHandler()
+    WarningsHandler NO_WARNINGS_HANDLER = diagnostics ->
     {
-        @Override
-        public void handle( List<Diagnostic<? extends JavaFileObject>> diagnostics )
-        {
-        }
     };
 
     void handle( List<Diagnostic<? extends JavaFileObject>> diagnostics );

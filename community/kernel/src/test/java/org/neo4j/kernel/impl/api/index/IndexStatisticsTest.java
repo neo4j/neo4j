@@ -283,14 +283,7 @@ public class IndexStatisticsTest
         final Collection<Callable<UpdatesTracker>> jobs = new ArrayList<>( threads );
         for ( int i = 0; i < threads; i++ )
         {
-            jobs.add( new Callable<UpdatesTracker>()
-            {
-                @Override
-                public UpdatesTracker call() throws Exception
-                {
-                    return executeCreationsDeletionsAndUpdates( nodes, index, CREATION_MULTIPLIER );
-                }
-            } );
+            jobs.add( () -> executeCreationsDeletionsAndUpdates( nodes, index, CREATION_MULTIPLIER ) );
         }
 
         List<Future<UpdatesTracker>> futures = executorService.invokeAll( jobs );
@@ -372,26 +365,22 @@ public class IndexStatisticsTest
         {
             final int finalI = i;
 
-            jobs.add( new Callable<Void>()
+            jobs.add( () ->
             {
-                @Override
-                public Void call() throws Exception
+                int offset = finalI * peoplePerThread;
+                while ( offset < (finalI + 1) * peoplePerThread )
                 {
-                    int offset = finalI * peoplePerThread;
-                    while ( offset < (finalI + 1) * peoplePerThread )
+                    try
                     {
-                        try
-                        {
-                            offset += createNamedPeople( nodes, offset );
-                        }
-                        catch ( KernelException e )
-                        {
-                            exception.compareAndSet( null, e );
-                            throw new RuntimeException( e );
-                        }
+                        offset += createNamedPeople( nodes, offset );
                     }
-                    return null;
+                    catch ( KernelException e )
+                    {
+                        exception.compareAndSet( null, e );
+                        throw new RuntimeException( e );
+                    }
                 }
+                return null;
             } );
         }
 

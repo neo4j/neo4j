@@ -137,14 +137,10 @@ public class ProcessorStepTest
 
     private WorkerCommand<Void,Void> receive( final int processors, final ProcessorStep<Void> step )
     {
-        return new WorkerCommand<Void,Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                step.receive( processors, null );
-                return null;
-            }
+            step.receive( processors, null );
+            return null;
         };
     }
 }

@@ -530,7 +530,7 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord node = new NodeRecord( 42, false, -1, -1 );
                 node.setInUse( true );
-                node.setLabelField( inlinedLabelsLongRepresentation( label1, label2 ), Collections.<DynamicRecord>emptySet() );
+                node.setLabelField( inlinedLabelsLongRepresentation( label1, label2 ), Collections.emptySet() );
                 tx.create( node );
             }
         } );
@@ -622,7 +622,7 @@ public class FullCheckIntegrationTest
                 NodeRecord node = new NodeRecord( next.node(), false, -1, next.property() );
                 node.setInUse( true );
                 node.setLabelField( inlinedLabelsLongRepresentation( draconian ),
-                        Collections.<DynamicRecord>emptySet() );
+                        Collections.emptySet() );
                 PropertyRecord property = new PropertyRecord( node.getNextProp(), node );
                 property.setInUse( true );
                 PropertyBlock block = new PropertyBlock();
@@ -2086,15 +2086,11 @@ public class FullCheckIntegrationTest
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
                 defaultConsistencyCheckThreadsNumber() );
         return checker.execute( stores, FormattedLog.toOutputStream( System.out ),
-                new ConsistencyReporter.Monitor()
+                ( report, method, message ) ->
                 {
-                    @Override
-                    public void reported( Class<?> report, String method, String message )
-                    {
-                        Set<String> types = allReports.get( report );
-                        assert types != null;
-                        types.remove( method );
-                    }
+                    Set<String> types = allReports.get( report );
+                    assert types != null;
+                    types.remove( method );
                 } );
     }
 

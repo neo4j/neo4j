@@ -329,11 +329,11 @@ public class BuiltInProceduresTest
         when( read.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
         when( read.propertyKeyGetName( anyInt() ) )
-                .thenAnswer( ( invocation ) -> propKeys.get( (int) invocation.getArguments()[0] ) );
+                .thenAnswer( ( invocation ) -> propKeys.get( invocation.getArguments()[0] ) );
         when( read.labelGetName( anyInt() ) )
-                .thenAnswer( ( invocation ) -> labels.get( (int) invocation.getArguments()[0] ) );
+                .thenAnswer( ( invocation ) -> labels.get( invocation.getArguments()[0] ) );
         when( read.relationshipTypeGetName( anyInt() ) )
-                .thenAnswer( ( invocation ) -> relTypes.get( (int) invocation.getArguments()[0] ) );
+                .thenAnswer( ( invocation ) -> relTypes.get( invocation.getArguments()[0] ) );
 
         // Make it appear that labels are in use
         // TODO: We really should just have `labelsInUse()` on the Kernel API directly,

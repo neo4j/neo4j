@@ -75,12 +75,7 @@ public enum HeartbeatMessage
 
             IAmAliveState that = (IAmAliveState) o;
 
-            if ( server != null ? !server.equals( that.server ) : that.server != null )
-            {
-                return false;
-            }
-
-            return true;
+            return server != null ? server.equals( that.server ) : that.server == null;
         }
 
         @Override
@@ -128,12 +123,7 @@ public enum HeartbeatMessage
 
             SuspicionsState that = (SuspicionsState) o;
 
-            if ( suspicions != null ? !suspicions.equals( that.suspicions ) : that.suspicions != null )
-            {
-                return false;
-            }
-
-            return true;
+            return suspicions != null ? suspicions.equals( that.suspicions ) : that.suspicions == null;
         }
 
         @Override

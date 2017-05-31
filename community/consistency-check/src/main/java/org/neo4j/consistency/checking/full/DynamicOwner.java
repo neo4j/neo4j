@@ -40,16 +40,7 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
 {
     static final ComparativeRecordChecker<DynamicRecord, AbstractBaseRecord, ConsistencyReport.DynamicConsistencyReport>
             ORPHAN_CHECK =
-            new ComparativeRecordChecker<DynamicRecord, AbstractBaseRecord, ConsistencyReport.DynamicConsistencyReport>()
-            {
-                @Override
-                public void checkReference( DynamicRecord record, AbstractBaseRecord ignored,
-                                            CheckerEngine<DynamicRecord, ConsistencyReport.DynamicConsistencyReport> engine,
-                                            RecordAccess records )
-                {
-                    engine.report().orphanDynamicRecord();
-                }
-            };
+            ( record, ignored, engine, records ) -> engine.report().orphanDynamicRecord();
 
     abstract RecordReference<RECORD> record( RecordAccess records );
 

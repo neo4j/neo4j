@@ -46,14 +46,7 @@ public class TestTraversalWithLoops extends TraversalTestBase
         {
             Node a = getNodeWithName( "a" );
             final Node e = getNodeWithName( "e" );
-            Evaluator onlyEndNode = new Evaluator()
-            {
-                @Override
-                public Evaluation evaluate( Path path )
-                {
-                    return Evaluation.ofIncludes( path.endNode().equals( e ) );
-                }
-            };
+            Evaluator onlyEndNode = path -> Evaluation.ofIncludes( path.endNode().equals( e ) );
             TraversalDescription basicTraverser = getGraphDb().traversalDescription().evaluator( onlyEndNode );
             expectPaths( basicTraverser.traverse( a ), "a,b,c,d,e" );
             expectPaths( basicTraverser.uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( a ),

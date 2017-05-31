@@ -151,14 +151,10 @@ public class FlippableIndexProxyTest
 
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
     {
-        return new OtherThreadExecutor.WorkerCommand<Void, Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws IOException
-            {
-                awaitFuture( flippable.drop() );
-                return null;
-            }
+            awaitFuture( flippable.drop() );
+            return null;
         };
     }
 
@@ -166,23 +162,15 @@ public class FlippableIndexProxyTest
             final FlippableIndexProxy flippable, final CountDownLatch triggerFinishFlip,
             final CountDownLatch triggerExternalAccess )
     {
-        return new OtherThreadExecutor.WorkerCommand<Void, Void>()
+        return state ->
         {
-            @Override
-            public Void doWork( Void state ) throws FlipFailedKernelException
+            flippable.flip( () ->
             {
-                flippable.flip( new Callable<Void>()
-                {
-                    @Override
-                    public Void call()
-                    {
-                        triggerExternalAccess.countDown();
-                        assertTrue( awaitLatch( triggerFinishFlip ) );
-                        return null;
-                    }
-                }, null );
+                triggerExternalAccess.countDown();
+                assertTrue( awaitLatch( triggerFinishFlip ) );
                 return null;
-            }
+            }, null );
+            return null;
         };
     }
 

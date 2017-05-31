@@ -39,7 +39,7 @@ public class PaxosInstance
         p1_ready,
         p2_pending,
         closed,
-        delivered;
+        delivered
     }
     PaxosInstanceStore store;
 

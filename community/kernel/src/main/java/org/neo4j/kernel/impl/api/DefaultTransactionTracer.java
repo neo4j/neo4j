@@ -51,14 +51,7 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
 
     private long startTimeNanos;
 
-    private final LogRotateEvent logRotateEvent = new LogRotateEvent()
-    {
-        @Override
-        public void close()
-        {
-            updateCountersAndNotifyListeners();
-        }
-    };
+    private final LogRotateEvent logRotateEvent = () -> updateCountersAndNotifyListeners();
 
     private final LogAppendEvent logAppendEvent = new LogAppendEvent()
     {

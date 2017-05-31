@@ -29,12 +29,8 @@ public class IntegerResponse extends Response<Integer>
 {
     public IntegerResponse( Integer response )
     {
-        super( response, StoreId.DEFAULT, new ResourceReleaser()
+        super( response, StoreId.DEFAULT, () ->
         {
-            @Override
-            public void release()
-            {
-            }
         } );
     }
 

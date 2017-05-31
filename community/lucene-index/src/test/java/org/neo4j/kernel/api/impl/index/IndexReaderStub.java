@@ -53,7 +53,7 @@ public class IndexReaderStub extends LeafReader
     private IOException throwOnFields;
     private static FieldInfo DummyFieldInfo =
             new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
-                    DocValuesType.NONE, -1, Collections.<String,String>emptyMap() );
+                    DocValuesType.NONE, -1, Collections.emptyMap() );
 
     public IndexReaderStub( boolean allDeleted, final String... elements )
     {

@@ -47,14 +47,7 @@ public final class AdversarySignals
     {
         if ( !installed )
         {
-            Signal.handle( new Signal( "USR2" ), new SignalHandler()
-            {
-                @Override
-                public void handle( Signal sig )
-                {
-                    handleSignal();
-                }
-            } );
+            Signal.handle( new Signal( "USR2" ), sig -> handleSignal() );
             installed = true;
         }
     }
@@ -71,27 +64,13 @@ public final class AdversarySignals
             final RandomAdversary adversary,
             final double factor )
     {
-        installedHandlers.add( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                adversary.setProbabilityFactor( factor );
-            }
-        } );
+        installedHandlers.add( () -> adversary.setProbabilityFactor( factor ) );
     }
 
     public synchronized void setAndResetFactorWhenSignalled(
             final RandomAdversary adversary,
             final double factor )
     {
-        installedHandlers.add( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                adversary.setAndResetProbabilityFactor( factor );
-            }
-        } );
+        installedHandlers.add( () -> adversary.setAndResetProbabilityFactor( factor ) );
     }
 }

@@ -210,7 +210,7 @@ public class GraphDatabaseServiceExecuteTest
     {
         // given procedure that produces a point
         Procedures procedures =
-                ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
+                graphDb.getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
@@ -229,7 +229,7 @@ public class GraphDatabaseServiceExecuteTest
     {
         // given procedure that produces a point
         Procedures procedures =
-                ((GraphDatabaseAPI) graphDb).getDependencyResolver().resolveDependency( Procedures.class );
+                graphDb.getDependencyResolver().resolveDependency( Procedures.class );
         procedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
@@ -258,7 +258,7 @@ public class GraphDatabaseServiceExecuteTest
             @Override
             public List<Coordinate> getCoordinates()
             {
-                return Arrays.asList( new Coordinate[]{coord} );
+                return Arrays.asList( coord );
             }
 
             @Override
@@ -284,7 +284,7 @@ public class GraphDatabaseServiceExecuteTest
             @Override
             public List<Coordinate> getCoordinates()
             {
-                return Arrays.asList( new Coordinate[]{coord} );
+                return Arrays.asList( coord );
             }
 
             @Override

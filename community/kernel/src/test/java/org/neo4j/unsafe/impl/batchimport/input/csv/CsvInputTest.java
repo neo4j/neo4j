@@ -635,7 +635,7 @@ public class CsvInputTest
     public void shouldIncludeDataSourceInformationOnBadFieldValueOrLine() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.data(
                 ":ID,name,other:int\n" +
                 "1,Mattias,10\n" +
                 "2,Johan,abc\n" +
@@ -665,7 +665,7 @@ public class CsvInputTest
     public void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.data(
                 ":ID,name:IGNORE,other:int,:LABEL\n" +
                 "1,Mattias,10,Person\n" +
                 "2,Johan,111,Person\n" +
@@ -687,7 +687,7 @@ public class CsvInputTest
     public void shouldIgnoreRelationshipEntriesMarkedIgnoreUsingHeader() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputRelationship>> data = DataFactories.relationshipData( CsvInputTest.<InputRelationship>data(
+        Iterable<DataFactory<InputRelationship>> data = DataFactories.relationshipData( CsvInputTest.data(
                 ":START_ID,:TYPE,:END_ID,prop:IGNORE,other:int\n" +
                 "1,KNOWS,2,Mattias,10\n" +
                 "2,KNOWS,3,Johan,111\n" +
@@ -711,7 +711,7 @@ public class CsvInputTest
         // GIVEN
         RuntimeException failure = new RuntimeException( "FAILURE" );
         Iterable<DataFactory<InputNode>> data =
-                DataFactories.nodeData( CsvInputTest.<InputNode>data( ":ID,name\n1,Mattias",
+                DataFactories.nodeData( CsvInputTest.data( ":ID,name\n1,Mattias",
                         new FailingNodeDecorator( failure ) ) );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER,
                 config( COMMAS ), silentBadCollector( 0 ), getRuntime().availableProcessors() );
@@ -732,7 +732,7 @@ public class CsvInputTest
     public void shouldNotIncludeEmptyArraysInEntities() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.data(
                 ":ID,sprop:String[],lprop:long[]\n" +
                 "1,,\n" +
                 "2,a;b,10;20"
@@ -754,7 +754,7 @@ public class CsvInputTest
     public void shouldFailOnRelationshipWithMissingStartIdField() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.<InputRelationship>data(
+        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 ",1," ) );
         Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
@@ -777,7 +777,7 @@ public class CsvInputTest
     public void shouldFailOnRelationshipWithMissingEndIdField() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.<InputRelationship>data(
+        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 "1,," ) );
         Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
@@ -800,7 +800,7 @@ public class CsvInputTest
     public void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.data(
                 ":ID,one,two,three\n" +
                 "1,\"\",,value" ) );
         Configuration config = config( new Configuration.Overridden( COMMAS )
@@ -828,7 +828,7 @@ public class CsvInputTest
     public void shouldIgnoreEmptyExtraColumns() throws Exception
     {
         // GIVEN
-        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.data(
                 ":ID,one\n" +
                 "1,test,\n" +
                 "2,test,,additional" ) );
@@ -846,8 +846,8 @@ public class CsvInputTest
             assertNode( nodes.next(), 2L, properties( "one", "test" ), labels() );
             assertFalse( nodes.hasNext() );
         }
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1L ), eq( (String)null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1L ), eq( null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( null ) );
         verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( "additional" ) );
     }
 

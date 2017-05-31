@@ -92,37 +92,29 @@ public class GraphDatabaseShutdownTest
 
         // WHEN
         // one thread locks previously create node and initiates graph db shutdown
-        newSingleThreadExecutor().submit( new Callable<Void>()
+        newSingleThreadExecutor().submit( (Callable<Void>) () ->
         {
-            @Override
-            public Void call() throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    node.addLabel( label( "ABC" ) );
-                    nodeLockedLatch.countDown();
-                    Thread.sleep( 1_000 ); // Let the second thread attempt to lock same node
-                    db.shutdown();
-                    tx.success();
-                }
-                return null;
+                node.addLabel( label( "ABC" ) );
+                nodeLockedLatch.countDown();
+                Thread.sleep( 1_000 ); // Let the second thread attempt to lock same node
+                db.shutdown();
+                tx.success();
             }
+            return null;
         } );
 
         // other thread tries to lock the same node while it has been locked and graph db is being shutdown
-        Future<Void> secondTxResult = newSingleThreadExecutor().submit( new Callable<Void>()
+        Future<Void> secondTxResult = newSingleThreadExecutor().submit( () ->
         {
-            @Override
-            public Void call() throws Exception
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    nodeLockedLatch.await();
-                    node.addLabel( label( "DEF" ) );
-                    tx.success();
-                }
-                return null;
+                nodeLockedLatch.await();
+                node.addLabel( label( "DEF" ) );
+                tx.success();
             }
+            return null;
         } );
 
         // THEN

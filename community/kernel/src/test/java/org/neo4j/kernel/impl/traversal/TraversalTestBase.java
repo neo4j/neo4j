@@ -120,13 +120,8 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     protected static final Representation<PropertyContainer> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
 
-    protected static final Representation<Relationship> RELATIONSHIP_TYPE_REPRESENTATION = new Representation<Relationship>()
-    {
-        public String represent( Relationship item )
-        {
-            return item.getType().name();
-        }
-    };
+    protected static final Representation<Relationship> RELATIONSHIP_TYPE_REPRESENTATION =
+            item -> item.getType().name();
 
     protected interface Representation<T>
     {

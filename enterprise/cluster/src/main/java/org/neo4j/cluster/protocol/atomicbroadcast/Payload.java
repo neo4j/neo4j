@@ -94,12 +94,7 @@ public class Payload
         {
             return false;
         }
-        if ( !Arrays.equals( buf, payload.buf ) )
-        {
-            return false;
-        }
-
-        return true;
+        return Arrays.equals( buf, payload.buf );
     }
 
     @Override

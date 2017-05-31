@@ -57,7 +57,7 @@ public class PropertyRecordTest
         record.setPropertyBlock( blockB );
 
         // Then the record should only contain a single block, because blockB overwrote blockA
-        List<PropertyBlock> propertyBlocks = Iterables.asList( (Iterable<PropertyBlock>) record );
+        List<PropertyBlock> propertyBlocks = Iterables.asList( record );
         assertThat( propertyBlocks, hasItem( blockB ) );
         assertThat( propertyBlocks, hasSize( 1 ) );
     }

@@ -145,12 +145,7 @@ public class TxStateVisitorTest
                 {
                     return false;
                 }
-                if ( !removed.equals( that.removed ) )
-                {
-                    return false;
-                }
-
-                return true;
+                return removed.equals( that.removed );
             }
 
             @Override

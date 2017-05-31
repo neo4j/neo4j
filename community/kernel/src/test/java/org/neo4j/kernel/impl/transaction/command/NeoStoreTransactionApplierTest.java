@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
@@ -74,6 +73,8 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.storageengine.api.Token;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -129,9 +130,9 @@ public class NeoStoreTransactionApplierTest
         when( neoStores.getPropertyKeyTokenStore() ).thenReturn( propertyKeyTokenStore );
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( nodeStore.getDynamicLabelStore() ).thenReturn( dynamicLabelStore );
-        when( lockService.acquireNodeLock( anyLong(), Matchers.<LockService.LockType>any() ) )
+        when( lockService.acquireNodeLock( anyLong(), Matchers.any() ) )
                 .thenReturn( LockService.NO_LOCK );
-        when( lockService.acquireRelationshipLock( anyLong(), Matchers.<LockService.LockType>any() ) )
+        when( lockService.acquireRelationshipLock( anyLong(), Matchers.any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
     }
@@ -144,10 +145,10 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( false );
         final NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 42, Arrays.asList( one, two ) );
+        before.setLabelField( 42, asList( one, two ) );
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
-        after.setLabelField( 42, Arrays.asList( one, two, three ) );
+        after.setLabelField( 42, asList( one, two, three ) );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
@@ -166,10 +167,10 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( false );
         final NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 42, Arrays.asList( one, two ) );
+        before.setLabelField( 42, asList( one, two ) );
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( false );
-        after.setLabelField( 42, Arrays.asList( one, two, three ) );
+        after.setLabelField( 42, asList( one, two, three ) );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
@@ -188,10 +189,10 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( true );
         final NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 42, Arrays.asList( one, two ) );
+        before.setLabelField( 42, asList( one, two ) );
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
-        after.setLabelField( 42, Arrays.asList( one, two, three ) );
+        after.setLabelField( 42, asList( one, two, three ) );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
@@ -212,13 +213,13 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( false );
         final NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 42, Arrays.asList( one ) );
+        before.setLabelField( 42, singletonList( one ) );
         before.setInUse( true );
         before.setDense( false );
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
         after.setDense( true );
-        after.setLabelField( 42, Arrays.asList( one, two, three ) );
+        after.setLabelField( 42, asList( one, two, three ) );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
@@ -562,10 +563,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -585,10 +586,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -608,11 +609,11 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule =
                 constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -631,11 +632,11 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule =
                 constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -659,11 +660,11 @@ public class NeoStoreTransactionApplierTest
         doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( anyLong() );
 
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule =
                 constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         try
@@ -687,10 +688,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -710,10 +711,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final IndexRule rule = indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -734,10 +735,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplier( false );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -757,10 +758,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplier( true );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -780,10 +781,10 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( false );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -802,10 +803,10 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( true );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -826,10 +827,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplier( false );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -849,10 +850,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplier( true );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
+        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );

@@ -952,7 +952,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     @SafeVarargs
     private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String,Object>... rows )
     {
-        return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
+        return mockExecutionResult( planDescription, Collections.emptyList(), rows );
     }
 
     @SafeVarargs
@@ -969,22 +969,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         when( executionResult.columns() ).thenReturn( new ArrayList<>( keys ) );
 
         final Iterator<Map<String, Object>> inner = asList( rows ).iterator();
-        when( executionResult.hasNext() ).thenAnswer( new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return inner.hasNext();
-            }
-        } );
-        when( executionResult.next() ).thenAnswer( new Answer<Map<String,Object>>()
-        {
-            @Override
-            public Map<String, Object> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return inner.next();
-            }
-        } );
+        when( executionResult.hasNext() ).thenAnswer( invocation -> inner.hasNext() );
+        when( executionResult.next() ).thenAnswer( invocation -> inner.next() );
 
         when( executionResult.getQueryExecutionType() )
                 .thenReturn( null != planDescription
@@ -1003,21 +989,17 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
     private static void mockAccept( Result mock )
     {
-        doAnswer( new Answer<Void>()
+        doAnswer( invocation ->
         {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
+            Result result = (Result) invocation.getMock();
+            Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
+            while ( result.hasNext() )
             {
-                Result result = (Result) invocation.getMock();
-                Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
-                while ( result.hasNext() )
-                {
-                    visitor.visit( new MapRow( result.next() ) );
-                }
-                return null;
+                visitor.visit( new MapRow( result.next() ) );
             }
+            return null;
         } ).when( mock )
-           .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
+               .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,

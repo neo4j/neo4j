@@ -180,36 +180,33 @@ public class OutputFormat
 
     private Object stream( final Representation representation, final StreamingFormat streamingFormat, final boolean mustFail )
     {
-        return new StreamingOutput()
+        return (StreamingOutput) output ->
         {
-            public void write( OutputStream output ) throws IOException, WebApplicationException
+            RepresentationFormat outputStreamFormat = streamingFormat.writeTo( output );
+            try
             {
-                RepresentationFormat outputStreamFormat = streamingFormat.writeTo( output );
-                try
-                {
-                    representation.serialize( outputStreamFormat, baseUri, extensions );
+                representation.serialize( outputStreamFormat, baseUri, extensions );
 
-                    if ( !mustFail )
-                    {
-                        representationWriteHandler.onRepresentationWritten();
-                    }
-                }
-                catch ( Exception e )
+                if ( !mustFail )
                 {
-                    if ( e instanceof NodeNotFoundException || e instanceof RelationshipNotFoundException )
-                    {
-                        throw new WebApplicationException( notFound( e ) );
-                    }
-                    if ( e instanceof BadInputException )
-                    {
-                        throw new WebApplicationException( badRequest( e ) );
-                    }
-                    throw new WebApplicationException( e, serverError( e ) );
+                    representationWriteHandler.onRepresentationWritten();
                 }
-                finally
+            }
+            catch ( Exception e )
+            {
+                if ( e instanceof NodeNotFoundException || e instanceof RelationshipNotFoundException )
                 {
-                    representationWriteHandler.onRepresentationFinal();
+                    throw new WebApplicationException( notFound( e ) );
                 }
+                if ( e instanceof BadInputException )
+                {
+                    throw new WebApplicationException( badRequest( e ) );
+                }
+                throw new WebApplicationException( e, serverError( e ) );
+            }
+            finally
+            {
+                representationWriteHandler.onRepresentationFinal();
             }
         };
     }

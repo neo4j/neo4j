@@ -264,35 +264,28 @@ public abstract class Service
 
     private static <T> Iterable<T> filterExceptions( final Iterable<T> iterable )
     {
-        return new Iterable<T>()
+        return () -> new PrefetchingIterator<T>()
         {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return new PrefetchingIterator<T>()
-                {
-                    final Iterator<T> iterator = iterable.iterator();
+            final Iterator<T> iterator = iterable.iterator();
 
-                    @Override
-                    protected T fetchNextOrNull()
+            @Override
+            protected T fetchNextOrNull()
+            {
+                while ( iterator.hasNext() )
+                {
+                    try
                     {
-                        while ( iterator.hasNext() )
-                        {
-                            try
-                            {
-                                return iterator.next();
-                            }
-                            catch ( Throwable e )
-                            {
-                                if ( printServiceLoaderStackTraces )
-                                {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                        return null;
+                        return iterator.next();
                     }
-                };
+                    catch ( Throwable e )
+                    {
+                        if ( printServiceLoaderStackTraces )
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                return null;
             }
         };
     }

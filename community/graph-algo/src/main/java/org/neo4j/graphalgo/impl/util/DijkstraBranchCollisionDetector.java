@@ -90,11 +90,7 @@ public class DijkstraBranchCollisionDetector extends StandardBranchCollisionDete
         {
             shortestSoFar.setValue( cost );
         }
-        if ( NoneStrictMath.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0 )
-        {
-            return true;
-        }
+        return NoneStrictMath.compare( cost, shortestSoFar.doubleValue(), epsilon ) <= 0;
 
-        return false;
     }
 }

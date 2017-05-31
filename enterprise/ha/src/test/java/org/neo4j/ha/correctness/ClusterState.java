@@ -175,12 +175,7 @@ class ClusterState
         {
             return false;
         }
-        if ( !pendingActions.equals( that.pendingActions ) )
-        {
-            return false;
-        }
-
-        return true;
+        return pendingActions.equals( that.pendingActions );
     }
 
     @Override

@@ -83,7 +83,7 @@ public class TransactionPropagatorTest
         };
         Log logger = mock( Log.class );
         Slaves slaves = mock( Slaves.class );
-        when( slaves.getSlaves() ).thenReturn( Collections.<Slave>emptyList() );
+        when( slaves.getSlaves() ).thenReturn( Collections.emptyList() );
         CommitPusher pusher = mock( CommitPusher.class );
         TransactionPropagator propagator = life.add( new TransactionPropagator( config, logger, slaves, pusher ) );
 

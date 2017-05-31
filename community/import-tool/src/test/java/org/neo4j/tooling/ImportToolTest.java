@@ -1056,7 +1056,7 @@ public class ImportToolTest
         {
             assertTrue( node.hasLabel( label1 ) );
             assertTrue( node.hasLabel( label2 ) );
-        }, Validators.<Relationship>emptyValidator() );
+        }, Validators.emptyValidator() );
     }
 
     @Test
@@ -1872,7 +1872,7 @@ public class ImportToolTest
 
     private void verifyData()
     {
-        verifyData( Validators.<Node>emptyValidator(), Validators.<Relationship>emptyValidator() );
+        verifyData( Validators.emptyValidator(), Validators.emptyValidator() );
     }
 
     private void verifyData(

@@ -116,7 +116,7 @@ public class NetworkMock
 
     public void addFutureWaiter( Future<?> future, Runnable toRun )
     {
-        futureWaiter.add( Pair.<Future<?>, Runnable>of( future, toRun ) );
+        futureWaiter.add( Pair.of( future, toRun ) );
     }
 
     public int tick()

@@ -105,7 +105,7 @@ public class MandatoryProperties
             return keys != null
                     ? new RealCheck<>( node, ConsistencyReport.NodeConsistencyReport.class, reporter,
                             RecordType.NODE, keys )
-                    : MandatoryProperties.<NodeRecord,ConsistencyReport.NodeConsistencyReport>noCheck();
+                    : MandatoryProperties.noCheck();
         };
     }
 

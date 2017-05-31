@@ -61,13 +61,6 @@ public class BackupImplTest
 
     private static Supplier<StoreId> defaultStoreIdSupplier()
     {
-        return new Supplier<StoreId>()
-        {
-            @Override
-            public StoreId get()
-            {
-                return StoreId.DEFAULT;
-            }
-        };
+        return () -> StoreId.DEFAULT;
     }
 }

@@ -45,14 +45,7 @@ import org.neo4j.function.Factory;
  */
 class BufferReusingChunkingChannelBuffer extends ChunkingChannelBuffer
 {
-    private static final Factory<ChannelBuffer> DEFAULT_CHANNEL_BUFFER_FACTORY = new Factory<ChannelBuffer>()
-    {
-        @Override
-        public ChannelBuffer newInstance()
-        {
-            return ChannelBuffers.dynamicBuffer();
-        }
-    };
+    private static final Factory<ChannelBuffer> DEFAULT_CHANNEL_BUFFER_FACTORY = () -> ChannelBuffers.dynamicBuffer();
 
     private final Factory<ChannelBuffer> bufferFactory;
     private final Queue<ChannelBuffer> freeBuffers = new LinkedBlockingQueue<>( MAX_WRITE_AHEAD_CHUNKS );
@@ -81,15 +74,11 @@ class BufferReusingChunkingChannelBuffer extends ChunkingChannelBuffer
     @Override
     protected ChannelFutureListener newChannelFutureListener( final ChannelBuffer buffer )
     {
-        return new ChannelFutureListener()
+        return future ->
         {
-            @Override
-            public void operationComplete( ChannelFuture future ) throws Exception
-            {
-                buffer.clear();
-                freeBuffers.offer( buffer );
-                BufferReusingChunkingChannelBuffer.super.operationComplete( future );
-            }
+            buffer.clear();
+            freeBuffers.offer( buffer );
+            BufferReusingChunkingChannelBuffer.super.operationComplete( future );
         };
     }
 }

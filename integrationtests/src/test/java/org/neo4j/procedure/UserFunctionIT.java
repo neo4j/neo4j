@@ -471,7 +471,7 @@ public class UserFunctionIT
         }
     }
 
-    private static List<Exception> exceptionsInFunction = Collections.<Exception>synchronizedList( new ArrayList<>() );
+    private static List<Exception> exceptionsInFunction = Collections.synchronizedList( new ArrayList<>() );
 
     @Test
     public void shouldPreserveSecurityContextWhenSpawningThreadsCreatingTransactionInFunctions() throws Throwable

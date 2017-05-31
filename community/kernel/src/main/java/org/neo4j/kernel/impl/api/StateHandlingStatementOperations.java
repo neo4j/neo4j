@@ -1584,16 +1584,9 @@ public class StateHandlingStatementOperations implements
             final long relationship, final String key, final Object value )
             throws EntityNotFoundException, LegacyIndexNotFoundKernelException
     {
-        relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-        {
-            @Override
-            public void visit( long relId, int type, long startNode, long endNode )
-                    throws LegacyIndexNotFoundKernelException
-            {
-                statement.legacyIndexTxState().relationshipChanges( indexName ).addRelationship(
-                        relationship, key, value, startNode, endNode );
-            }
-        } );
+        relationshipVisit( statement, relationship,
+                ( relId, type, startNode, endNode ) -> statement.legacyIndexTxState().relationshipChanges( indexName ).addRelationship(
+                        relationship, key, value, startNode, endNode ) );
     }
 
     @Override
@@ -1605,16 +1598,9 @@ public class StateHandlingStatementOperations implements
     {
         try
         {
-            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                        throws LegacyIndexNotFoundKernelException
-                {
+            relationshipVisit( statement, relationship, ( relId, type, startNode, endNode ) ->
                     statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
-                            relId, key, value, startNode, endNode );
-                }
-            } );
+                            relId, key, value, startNode, endNode ) );
         }
         catch ( EntityNotFoundException e )
         {   // Apparently this is OK
@@ -1629,16 +1615,9 @@ public class StateHandlingStatementOperations implements
     {
         try
         {
-            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                        throws LegacyIndexNotFoundKernelException
-                {
+            relationshipVisit( statement, relationship, ( relId, type, startNode, endNode ) ->
                     statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
-                            relId, key, startNode, endNode );
-                }
-            } );
+                            relId, key, startNode, endNode ) );
         }
         catch ( EntityNotFoundException e )
         {   // Apparently this is OK
@@ -1653,16 +1632,9 @@ public class StateHandlingStatementOperations implements
     {
         try
         {
-            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                        throws LegacyIndexNotFoundKernelException
-                {
+            relationshipVisit( statement, relationship, ( relId, type, startNode, endNode ) ->
                     statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
-                            relId, startNode, endNode );
-                }
-            } );
+                            relId, startNode, endNode ) );
         }
         catch ( EntityNotFoundException e )
         {

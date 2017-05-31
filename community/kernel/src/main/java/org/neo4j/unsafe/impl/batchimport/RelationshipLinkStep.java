@@ -139,10 +139,6 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
             return false;
         }
         // Here we have a special case where we want to filter on type, but only for dense nodes
-        if ( isDense && filter != null && !filter.test( record ) )
-        {
-            return false;
-        }
-        return true;
+        return !(isDense && filter != null && !filter.test( record ));
     }
 }

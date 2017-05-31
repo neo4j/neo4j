@@ -45,9 +45,7 @@ public interface EntityWriteOperations
     void relationshipDelete( KernelStatement state, long relationshipId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
 
-    int nodeDetachDelete( KernelStatement state, long nodeId )
-            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException,
-            KernelException;
+    int nodeDetachDelete( KernelStatement state, long nodeId ) throws KernelException;
 
     /**
      * Labels a node with the label corresponding to the given label id.

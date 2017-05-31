@@ -48,11 +48,11 @@ public class FilteringIterable<T> implements Iterable<T>
 
     public static <T> Iterable<T> notNull( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, Predicates.<T>notNull() );
+        return new FilteringIterable<T>( source, Predicates.notNull() );
     }
 
     public static <T> Iterable<T> noDuplicates( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, Predicates.<T>noDuplicates() );
+        return new FilteringIterable<T>( source, Predicates.noDuplicates() );
     }
 }

@@ -34,12 +34,9 @@ public class ExceptionHandlingIterableTest
     @Test( expected = IllegalStateException.class )
     public void testHandleExceptionOnIteratorCreation()
     {
-        Iterables.count( new ExceptionHandlingIterable( new Iterable()
+        Iterables.count( new ExceptionHandlingIterable( () ->
         {
-            public Iterator iterator()
-            {
-                throw new RuntimeException( "exception on iterator" );
-            }
+            throw new RuntimeException( "exception on iterator" );
         } )
         {
             protected Iterator exceptionOnIterator( Throwable t )
@@ -53,26 +50,20 @@ public class ExceptionHandlingIterableTest
     @Test( expected = IllegalStateException.class )
     public void testHandleExceptionOnNext()
     {
-        Iterables.count( new ExceptionHandlingIterable( new Iterable()
+        Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
         {
-            public Iterator iterator()
+            public boolean hasNext()
             {
-                return new Iterator()
-                {
-                    public boolean hasNext()
-                    {
-                        return true;
-                    }
+                return true;
+            }
 
-                    public Object next()
-                    {
-                        throw new RuntimeException( "exception on next" );
-                    }
+            public Object next()
+            {
+                throw new RuntimeException( "exception on next" );
+            }
 
-                    public void remove()
-                    {
-                    }
-                };
+            public void remove()
+            {
             }
         } )
         {
@@ -88,26 +79,20 @@ public class ExceptionHandlingIterableTest
     @Test( expected = IllegalStateException.class )
     public void testHandleExceptionOnHasNext()
     {
-        Iterables.count( new ExceptionHandlingIterable( new Iterable()
+        Iterables.count( new ExceptionHandlingIterable( () -> new Iterator()
         {
-            public Iterator iterator()
+            public boolean hasNext()
             {
-                return new Iterator()
-                {
-                    public boolean hasNext()
-                    {
-                        throw new RuntimeException( "exception on next" );
-                    }
+                throw new RuntimeException( "exception on next" );
+            }
 
-                    public Object next()
-                    {
-                        return null;
-                    }
+            public Object next()
+            {
+                return null;
+            }
 
-                    public void remove()
-                    {
-                    }
-                };
+            public void remove()
+            {
             }
         } )
         {

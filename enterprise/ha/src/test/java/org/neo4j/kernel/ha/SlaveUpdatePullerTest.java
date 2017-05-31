@@ -123,7 +123,7 @@ public class SlaveUpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( master, times( 1 ) ).pullUpdates( Matchers.any() );
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
@@ -143,7 +143,7 @@ public class SlaveUpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
-        verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( master, times( 1 ) ).pullUpdates( Matchers.any() );
         verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
@@ -152,7 +152,7 @@ public class SlaveUpdatePullerTest
         // THEN
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
-        verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( master, times( 2 ) ).pullUpdates( Matchers.any() );
         verify( monitor, times( 2 ) ).pulledUpdates( anyLong() );
     }
 
@@ -194,14 +194,10 @@ public class SlaveUpdatePullerTest
         // GIVEN
         Condition condition = mock( Condition.class );
 
-        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( new Answer<Boolean>()
+        when( condition.evaluate( anyInt(), anyInt() ) ).thenAnswer( invocation ->
         {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                updatePuller.stop();
-                return false;
-            }
+            updatePuller.stop();
+            return false;
         } );
 
         // WHEN

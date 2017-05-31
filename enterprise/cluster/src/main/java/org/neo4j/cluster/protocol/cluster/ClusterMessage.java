@@ -87,12 +87,7 @@ public enum ClusterMessage
             {
                 return false;
             }
-            if ( !joiningUri.equals( that.joiningUri ) )
-            {
-                return false;
-            }
-
-            return true;
+            return joiningUri.equals( that.joiningUri );
         }
 
         @Override
@@ -200,12 +195,7 @@ public enum ClusterMessage
             {
                 return false;
             }
-            if ( roles != null ? !roles.equals( that.roles ) : that.roles != null )
-            {
-                return false;
-            }
-
-            return true;
+            return roles != null ? roles.equals( that.roles ) : that.roles == null;
         }
 
         @Override
@@ -381,12 +371,7 @@ public enum ClusterMessage
             {
                 return false;
             }
-            if ( winner != null ? !winner.equals( that.winner ) : that.winner != null )
-            {
-                return false;
-            }
-
-            return true;
+            return winner != null ? winner.equals( that.winner ) : that.winner == null;
         }
 
         @Override
@@ -487,12 +472,7 @@ public enum ClusterMessage
 
             ConfigurationTimeoutState that = (ConfigurationTimeoutState) o;
 
-            if ( remainingPings != that.remainingPings )
-            {
-                return false;
-            }
-
-            return true;
+            return remainingPings == that.remainingPings;
         }
 
         @Override

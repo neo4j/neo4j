@@ -193,7 +193,7 @@ public class TraversalDescriptionBuilder
     private enum Order
     {
         BREADTH_FIRST,
-        DEPTH_FIRST;
+        DEPTH_FIRST
     }
 
     private TraversalDescription describeOrder( TraversalDescription result, Map<String, Object> description )

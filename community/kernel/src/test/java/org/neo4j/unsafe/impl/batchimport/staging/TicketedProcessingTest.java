@@ -73,20 +73,16 @@ public class TicketedProcessingTest
             processing.processors( processorCount - processing.processors( 0 ) );
 
             // WHEN
-            assertions = t2.execute( new WorkerCommand<Void,Void>()
+            assertions = t2.execute( state ->
             {
-                @Override
-                public Void doWork( Void state ) throws Exception
+                for ( int i = 0; i < items; i++ )
                 {
-                    for ( int i = 0; i < items; i++ )
-                    {
-                        Integer next = processing.next();
-                        assertNotNull( next );
-                        assertEquals( i * 2, next.intValue() );
-                    }
-                    assertNull( processing.next() );
-                    return null;
+                    Integer next = processing.next();
+                    assertNotNull( next );
+                    assertEquals( i * 2, next.intValue() );
                 }
+                assertNull( processing.next() );
+                return null;
             } );
             for ( int i = 0; i < items; i++ )
             {
@@ -126,14 +122,10 @@ public class TicketedProcessingTest
 
             StringJob fifthJob = new StringJob( "5" );
             fifthJob.latch.countDown();
-            Future<Void> fifthSubmit = t2.execute( new WorkerCommand<Void,Void>()
+            Future<Void> fifthSubmit = t2.execute( state ->
             {
-                @Override
-                public Void doWork( Void state ) throws Exception
-                {
-                    processing.submit( fifthJob );
-                    return null;
-                }
+                processing.submit( fifthJob );
+                return null;
             } );
             t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
             firstJob.latch.countDown();

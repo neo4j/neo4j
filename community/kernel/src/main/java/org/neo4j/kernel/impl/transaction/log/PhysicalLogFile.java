@@ -284,9 +284,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
             assert header != null && header.logVersion == version;
-            PhysicalLogVersionedStoreChannel result =
-                    new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
-            return result;
+            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
         }
         catch ( FileNotFoundException cause )
         {

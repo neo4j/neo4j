@@ -206,7 +206,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
-    private void removeFromCache( long entityId ) throws IOException, CorruptIndexException
+    private void removeFromCache( long entityId ) throws IOException
     {
         IndexSearcher searcher = searcherManager.acquire();
         try
@@ -342,12 +342,12 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             LegacyIndexHits primitiveHits = null;
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
-                primitiveHits = new DocToIdIterator( result, Collections.<EntityId>emptyList(), null,
+                primitiveHits = new DocToIdIterator( result, Collections.emptyList(), null,
                         PrimitiveLongCollections.emptySet() );
             }
             else
             {
-                primitiveHits = new DocToIdIterator( result, Collections.<EntityId>emptyList(), null,
+                primitiveHits = new DocToIdIterator( result, Collections.emptyList(), null,
                         PrimitiveLongCollections.emptySet() )
                 {
                     private final Collection<EntityId> ids = new ArrayList<>();

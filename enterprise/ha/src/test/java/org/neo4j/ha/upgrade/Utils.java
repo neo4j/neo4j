@@ -52,14 +52,7 @@ public class Utils
     public static String assembleClassPathFromPackage( File directory )
     {
         List<File> jarFiles = new ArrayList<File>();
-        FileFilter jarFilter = new FileFilter()
-        {
-            @Override
-            public boolean accept( File file )
-            {
-                return file.isFile() && file.getName().endsWith( ".jar" );
-            }
-        };
+        FileFilter jarFilter = file -> file.isFile() && file.getName().endsWith( ".jar" );
         gatherFiles( jarFiles, directory, jarFilter );
 
         StringBuilder classpath = new StringBuilder();

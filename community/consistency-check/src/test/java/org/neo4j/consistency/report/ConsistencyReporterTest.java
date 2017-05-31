@@ -277,27 +277,20 @@ public class ConsistencyReporterTest
         }
 
         @Rule
-        public final TestRule logFailure = new TestRule()
+        public final TestRule logFailure = ( base, description ) -> new Statement()
         {
             @Override
-            public Statement apply( final Statement base, org.junit.runner.Description description )
+            public void evaluate() throws Throwable
             {
-                return new Statement()
+                try
                 {
-                    @Override
-                    public void evaluate() throws Throwable
-                    {
-                        try
-                        {
-                            base.evaluate();
-                        }
-                        catch ( Throwable failure )
-                        {
-                            System.err.println( "Failure in " + TestAllReportMessages.this + ": " + failure );
-                            throw failure;
-                        }
-                    }
-                };
+                    base.evaluate();
+                }
+                catch ( Throwable failure )
+                {
+                    System.err.println( "Failure in " + TestAllReportMessages.this + ": " + failure );
+                    throw failure;
+                }
             }
         };
 

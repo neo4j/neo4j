@@ -23,12 +23,12 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -75,25 +75,18 @@ public class PhysicalLogFilesTest
         final List<File> seenFiles = new ArrayList<>();
         final List<Long> seenVersions = new ArrayList<>();
 
-        files.accept( new PhysicalLogFiles.LogVersionVisitor()
+        files.accept( ( file, logVersion ) ->
         {
-            @Override
-            public void visit( File file, long logVersion )
-            {
-                seenFiles.add( file );
-                seenVersions.add( logVersion );
-            }
+            seenFiles.add( file );
+            seenVersions.add( logVersion );
         } );
 
         // then
-        assertEquals( Arrays.asList(
+        assertEquals( asList(
                 new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "1" ),
                 new File( tmpDirectory, filename + DEFAULT_VERSION_SUFFIX + "3" )
         ), seenFiles );
-        assertEquals( Arrays.asList(
-                1L,
-                3L
-        ), seenVersions );
+        assertEquals( asList( 1L, 3L ), seenVersions );
     }
 
     @Test

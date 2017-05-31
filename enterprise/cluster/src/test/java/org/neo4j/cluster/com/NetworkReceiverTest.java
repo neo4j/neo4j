@@ -87,14 +87,7 @@ public class NetworkReceiverTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when( ctx.getChannel() ).thenReturn( channel );
 
-        final Message message = Message.to( new MessageType()
-        {
-            @Override
-            public String name()
-            {
-                return "test";
-            }
-        }, new URI( "cluster://anywhere" ) );
+        final Message message = Message.to( () -> "test", new URI( "cluster://anywhere" ) );
 
         MessageEvent messageEvent = mock( MessageEvent.class );
         when( messageEvent.getRemoteAddress() ).thenReturn( inetSocketAddress );

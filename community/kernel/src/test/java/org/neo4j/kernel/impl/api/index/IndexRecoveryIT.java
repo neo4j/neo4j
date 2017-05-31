@@ -272,7 +272,7 @@ public class IndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
+        factory.addKernelExtensions( Arrays.asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
@@ -291,14 +291,10 @@ public class IndexRecoveryIT
     private Future<Void> killDbInSeparateThread()
     {
         ExecutorService executor = newSingleThreadExecutor();
-        Future<Void> result = executor.submit( new Callable<Void>()
+        Future<Void> result = executor.submit( () ->
         {
-            @Override
-            public Void call() throws Exception
-            {
-                killDb();
-                return null;
-            }
+            killDb();
+            return null;
         } );
         executor.shutdown();
         return result;
@@ -397,14 +393,10 @@ public class IndexRecoveryIT
                 @Override
                 public void remove( PrimitiveLongSet nodeIds ) throws IOException
                 {
-                    nodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
+                    nodeIds.visitKeys( nodeId ->
                     {
-                        @Override
-                        public boolean visited( long nodeId ) throws RuntimeException
-                        {
-                            recoveredNodes.add( nodeId );
-                            return false;
-                        }
+                        recoveredNodes.add( nodeId );
+                        return false;
                     } );
                 }
             };

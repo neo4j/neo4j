@@ -366,7 +366,7 @@ public class ExecutionResultSerializer
             ensureDocumentOpen();
             if ( currentState != State.ERRORS_WRITTEN )
             {
-                errors( Collections.<Neo4jError>emptyList() );
+                errors( Collections.emptyList() );
             }
             out.writeEndObject();
             out.flush();

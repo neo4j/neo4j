@@ -168,15 +168,11 @@ public class MainWindow extends JFrame
 
     private JButton createOptionsButton()
     {
-        return Components.createTextButton( ellipsis( "Options" ), new ActionListener()
+        return Components.createTextButton( ellipsis( "Options" ), e ->
         {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                JDialog settingsDialog = new SettingsDialog( MainWindow.this, model );
-                settingsDialog.setLocationRelativeTo( null );
-                settingsDialog.setVisible( true );
-            }
+            JDialog settingsDialog = new SettingsDialog( MainWindow.this, model );
+            settingsDialog.setLocationRelativeTo( null );
+            settingsDialog.setVisible( true );
         } );
     }
 
@@ -231,23 +227,15 @@ public class MainWindow extends JFrame
 
     private JButton createStopButton()
     {
-        return Components.createTextButton( "Stop", new ActionListener()
+        return Components.createTextButton( "Stop", e ->
         {
-            @Override
-            public void actionPerformed( ActionEvent e )
-            {
-                updateStatus( DatabaseStatus.STOPPING );
+            updateStatus( DatabaseStatus.STOPPING );
 
-                invokeLater( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        databaseActions.stop();
-                        updateStatus( STOPPED );
-                    }
-                } );
-            }
+            invokeLater( () ->
+            {
+                databaseActions.stop();
+                updateStatus( STOPPED );
+            } );
         } );
     }
 

@@ -31,7 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -237,61 +236,35 @@ public class TestLogPruning
 
     private int logCount() throws IOException
     {
-        return aggregateLogData( new Extractor()
-        {
-            @Override
-            public int extract( long from )
-            {
-                return 1;
-            }
-        } );
+        return aggregateLogData( from -> 1 );
     }
 
     private int logFileSize() throws IOException
     {
-        return aggregateLogData( new Extractor()
-        {
-            @Override
-            public int extract( long from )
-            {
-                return (int) fs.getFileSize( files.getLogFileForVersion( from ) );
-            }
-        } );
+        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFileForVersion( from ) ) );
     }
 
     private int transactionCount() throws IOException
     {
-        return aggregateLogData( new Extractor()
+        return aggregateLogData( version ->
         {
-            @Override
-            public int extract( long version ) throws IOException
+            int counter = 0;
+            LogVersionBridge bridge = channel -> channel;
+            LogVersionedStoreChannel versionedStoreChannel =
+                    PhysicalLogFile.openForVersion( files, fs, version, false );
+            try ( ReadableLogChannel channel =
+                          new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
             {
-                int counter = 0;
-                LogVersionBridge bridge = new LogVersionBridge()
+                try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
+                        new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
                 {
-                    @Override
-                    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
+                    while ( physicalTransactionCursor.next() )
                     {
-                        return channel;
-                    }
-                };
-                StoreChannel storeChannel = fs.open( files.getLogFileForVersion( version ), "r" );
-                LogVersionedStoreChannel versionedStoreChannel =
-                        PhysicalLogFile.openForVersion( files, fs, version, false );
-                try ( ReadableLogChannel channel =
-                              new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
-                {
-                    try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
-                            new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
-                    {
-                        while ( physicalTransactionCursor.next() )
-                        {
-                            counter++;
-                        }
+                        counter++;
                     }
                 }
-                return counter;
             }
+            return counter;
         } );
     }
 }

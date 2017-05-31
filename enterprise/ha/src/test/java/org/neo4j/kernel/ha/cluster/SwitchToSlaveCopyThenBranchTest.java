@@ -302,14 +302,10 @@ public class SwitchToSlaveCopyThenBranchTest
 
         when( pullerFactory.createUpdatePullerScheduler( updatePuller ) ).thenReturn( pullerScheduler );
         // emulate lifecycle start call on scheduler
-        doAnswer( new Answer()
+        doAnswer( invocationOnMock ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                pullerScheduler.init();
-                return null;
-            }
+            pullerScheduler.init();
+            return null;
         } ).when( communicationLife ).start();
 
         switchToSlave.switchToSlave( communicationLife, localhost, localhost, mock( CancellationRequest.class ) );

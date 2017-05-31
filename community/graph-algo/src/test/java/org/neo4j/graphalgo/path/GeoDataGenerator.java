@@ -221,7 +221,7 @@ public class GeoDataGenerator
 
     public enum RelationshipTypes implements RelationshipType
     {
-        CONNECTION;
+        CONNECTION
     }
 
     public static EstimateEvaluator<Double> estimateEvaluator()
@@ -250,5 +250,5 @@ public class GeoDataGenerator
             double deltaY = abs( y - cachedGoal[1] );
             return sqrt( pow( deltaX, 2 ) + pow( deltaY, 2 ) );
         }
-    };
+    }
 }

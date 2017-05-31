@@ -160,7 +160,7 @@ public class NodeStoreTest
         NodeRecord record =
                 new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
-        record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
+        record.setLabelField( labels, Collections.emptyList() );
         nodeStore.updateRecord( record );
 
         // WHEN
@@ -179,7 +179,7 @@ public class NodeStoreTest
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
 
         // WHEN
-        record.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
+        record.setLabelField( 0, Collections.emptyList() );
 
         // THEN
         assertTrue( record.isLight() );
@@ -250,15 +250,11 @@ public class NodeStoreTest
         // ...WHEN we now have an interesting set of node records, and we
         // visit each and remove that node from our nextRelSet...
 
-        Visitor<NodeRecord,IOException> scanner = new Visitor<NodeRecord,IOException>()
+        Visitor<NodeRecord,IOException> scanner = record ->
         {
-            @Override
-            public boolean visit( NodeRecord record ) throws IOException
-            {
-                // ...THEN we should observe that no nextRel is ever removed twice...
-                assertTrue( nextRelSet.remove( record.getNextRel() ) );
-                return false;
-            }
+            // ...THEN we should observe that no nextRel is ever removed twice...
+            assertTrue( nextRelSet.remove( record.getNextRel() ) );
+            return false;
         };
         nodeStore.scanAllRecords( scanner );
 

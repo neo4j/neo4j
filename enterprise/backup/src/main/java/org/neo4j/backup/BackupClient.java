@@ -19,9 +19,6 @@
  */
 package org.neo4j.backup;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.Client;
@@ -31,7 +28,6 @@ import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
-import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
@@ -65,14 +61,9 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     @Override
     public Response<Void> fullBackup( StoreWriter storeWriter, final boolean forensics )
     {
-        return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeByte( forensics ? (byte) 1 : (byte) 0 );
-            }
-        }, new Protocol.FileStreamsDeserializer310( storeWriter ) );
+        return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY,
+                buffer -> buffer.writeByte( forensics ? (byte) 1 : (byte) 0 ),
+                new Protocol.FileStreamsDeserializer310( storeWriter ) );
     }
 
     @Override

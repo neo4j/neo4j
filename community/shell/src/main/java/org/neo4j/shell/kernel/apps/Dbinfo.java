@@ -214,7 +214,7 @@ public class Dbinfo extends NonTransactionProvidingApp
             {
                 Object[] arrayValue = (Object[]) attributeValue;
                 JSONArray array = new JSONArray();
-                for ( Object item : (Object[]) arrayValue )
+                for ( Object item : arrayValue )
                 {
                     if ( item instanceof CompositeData )
                     {
@@ -241,7 +241,7 @@ public class Dbinfo extends NonTransactionProvidingApp
     private Map<?, ?> compositeDataAsMap( CompositeData item )
     {
         Map<String, Object> result = new HashMap<String, Object>();
-        CompositeData compositeData = (CompositeData) item;
+        CompositeData compositeData = item;
         for ( String key : compositeData.getCompositeType().keySet() )
         {
             result.put( key, compositeData.get( key ) );

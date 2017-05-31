@@ -229,14 +229,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         }
 
         List<DirectRecordProxy> directRecordProxies = new ArrayList<>( batch.values() );
-        Collections.sort(directRecordProxies, new Comparator<DirectRecordProxy>()
-        {
-            @Override
-            public int compare( DirectRecordProxy o1, DirectRecordProxy o2 )
-            {
-                return -o1.getKey().compareTo( o2.getKey() );
-            }
-        } );
+        Collections.sort(directRecordProxies, ( o1, o2 ) -> -o1.getKey().compareTo( o2.getKey() ) );
         for ( DirectRecordProxy proxy : directRecordProxies )
         {
             proxy.store();

@@ -43,7 +43,7 @@ public class TestJavascriptExecutor
 
         // Then
         assertThat( out, not(nullValue()));
-        assertThat( (Integer) out, is( 1337 ) );
+        assertThat( out, is( 1337 ) );
     }
 
     @Test
@@ -60,7 +60,7 @@ public class TestJavascriptExecutor
 
         // Then
         assertThat( out, not( nullValue() ));
-        assertThat( (Integer) out, is( 1338 ));
+        assertThat( out, is( 1338 ));
     }
 
     @Test
@@ -74,8 +74,8 @@ public class TestJavascriptExecutor
         Object out2 = executor.execute( null );
 
         // Then
-        assertThat( (Integer) out1, is( 1337 ) );
-        assertThat( (Integer) out2, is( 1337 ) );
+        assertThat( out1, is( 1337 ) );
+        assertThat( out2, is( 1337 ) );
     }
 
     @Test
@@ -99,7 +99,7 @@ public class TestJavascriptExecutor
         Object out2 = executor.execute( ctx );
 
         // Then
-        assertThat( (String) out1, is( "boo" ) );
+        assertThat( out1, is( "boo" ) );
         assertThat( out2, is( nullValue()) );
     }
 

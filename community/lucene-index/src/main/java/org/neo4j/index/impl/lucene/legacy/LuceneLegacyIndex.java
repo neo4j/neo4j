@@ -279,7 +279,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
                         removedIdsFromTransactionState, searcher, idsModifiedInTransactionState );
 
                 idIterator = simpleTransactionStateIds.isEmpty() ? hits : new CombinedIndexHits(
-                        Arrays.<LegacyIndexHits>asList( hits,
+                        Arrays.asList( hits,
                                 new ConstantScoreIterator( simpleTransactionStateIds, Float.NaN ) ) );
             }
             catch ( IOException e )

@@ -127,7 +127,6 @@ public class DynamicIndexStoreViewTest
     {
         when( labelScanStore.newReader() ).thenThrow( new RuntimeException( "Should not be used" ) );
 
-        PrimitiveLongIterator labeledNodesIterator = PrimitiveLongCollections.iterator( 1, 2, 3, 4, 5, 6, 7, 8 );
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 200L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
 

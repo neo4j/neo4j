@@ -248,16 +248,12 @@ public class TestBranchedData
 
     private Listener<Node> andIndexInto( final String indexName )
     {
-        return new Listener<Node>()
+        return node ->
         {
-            @Override
-            public void receive( Node node )
+            Index<Node> index = node.getGraphDatabase().index().forNodes( indexName );
+            for ( String key : node.getPropertyKeys() )
             {
-                Index<Node> index = node.getGraphDatabase().index().forNodes( indexName );
-                for ( String key : node.getPropertyKeys() )
-                {
-                    index.add( node, key, node.getProperty( key ) );
-                }
+                index.add( node, key, node.getProperty( key ) );
             }
         };
     }

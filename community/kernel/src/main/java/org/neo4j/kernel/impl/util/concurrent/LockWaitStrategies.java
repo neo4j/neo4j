@@ -78,5 +78,5 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
                 throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Interrupted );
             }
         }
-    };
+    }
 }

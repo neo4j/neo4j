@@ -352,22 +352,8 @@ public class ExportTest
         };
 
         Mockito.when( result.iterator() ).thenReturn( iterator );
-        Mockito.when( result.hasNext() ).thenAnswer( new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return iterator.hasNext();
-            }
-        } );
-        Mockito.when( result.next() ).thenAnswer( new Answer<Map<String,Object>>()
-        {
-            @Override
-            public Map<String, Object> answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return iterator.next();
-            }
-        } );
+        Mockito.when( result.hasNext() ).thenAnswer( invocation -> iterator.hasNext() );
+        Mockito.when( result.next() ).thenAnswer( invocation -> iterator.next() );
         return result;
     }
 

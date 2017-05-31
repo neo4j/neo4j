@@ -118,19 +118,15 @@ public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
      */
     public static <V> Factory<V> values( final Class<V> valueType )
     {
-        return new Factory<V>()
+        return () ->
         {
-            @Override
-            public V newInstance()
+            try
             {
-                try
-                {
-                    return valueType.newInstance();
-                }
-                catch ( InstantiationException | IllegalAccessException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                return valueType.newInstance();
+            }
+            catch ( InstantiationException | IllegalAccessException e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }
@@ -141,37 +137,16 @@ public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
      */
     public static <K,V> Factory<Map<K,V>> nested( Class<K> keyClass, final Factory<V> nested )
     {
-        return new Factory<Map<K,V>>()
-        {
-            @Override
-            public Map<K,V> newInstance()
-            {
-                return new AutoCreatingHashMap<>( nested );
-            }
-        };
+        return () -> new AutoCreatingHashMap<>( nested );
     }
 
     public static <V> Factory<V> dontCreate()
     {
-        return new Factory<V>()
-        {
-            @Override
-            public V newInstance()
-            {
-                return null;
-            }
-        };
+        return () -> null;
     }
 
     public static <V> Factory<Set<V>> valuesOfTypeHashSet()
     {
-        return new Factory<Set<V>>()
-        {
-            @Override
-            public Set<V> newInstance()
-            {
-                return new HashSet<>();
-            }
-        };
+        return () -> new HashSet<>();
     }
 }

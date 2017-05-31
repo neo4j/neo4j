@@ -236,7 +236,7 @@ public class NodeLabelsFieldTest
         // WHEN
         List<DynamicRecord> changedDynamicRecords = Iterables.addToCollection(
                 nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
-                new ArrayList<DynamicRecord>() );
+                new ArrayList<>() );
 
         // THEN
         assertEquals( initialRecords, changedDynamicRecords );
@@ -255,7 +255,7 @@ public class NodeLabelsFieldTest
 
         List<DynamicRecord> changedDynamicRecords = Iterables.addToCollection(
                 nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
-                new ArrayList<DynamicRecord>() );
+                new ArrayList<>() );
 
         // WHEN
         Pair<Long,long[]> changedPair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( changedDynamicRecords,
@@ -535,7 +535,7 @@ public class NodeLabelsFieldTest
         NodeRecord node = new NodeRecord( 0, false, 0, 0 );
         if ( labels.length > 0 )
         {
-            node.setLabelField( inlinedLabelsLongRepresentation( labels ), Collections.<DynamicRecord>emptyList() );
+            node.setLabelField( inlinedLabelsLongRepresentation( labels ), Collections.emptyList() );
         }
         return node;
     }

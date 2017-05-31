@@ -27,14 +27,7 @@ import static org.junit.Assert.assertEquals;
 
 public class VariableSubstitutorTest
 {
-    private static final Function<String, String> TO_UPPER_CASE = new Function<String, String>()
-    {
-        @Override
-        public String apply( String s )
-        {
-            return s.toUpperCase();
-        }
-    };
+    private static final Function<String, String> TO_UPPER_CASE = s -> s.toUpperCase();
 
     private final VariableSubstitutor substitutor = new VariableSubstitutor( );
 

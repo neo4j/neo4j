@@ -136,12 +136,7 @@ public class PaxosInstanceStore
         {
             return false;
         }
-        if ( !instances.equals( that.instances ) )
-        {
-            return false;
-        }
-
-        return true;
+        return instances.equals( that.instances );
     }
 
     @Override

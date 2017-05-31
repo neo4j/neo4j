@@ -110,21 +110,16 @@ public class RecordAccessStub implements RecordAccess
                 final RecordReference<REFERRED> other,
                 final ComparativeRecordChecker<RECORD, ? super REFERRED, REPORT> checker )
         {
-            deferredTasks.add( new Runnable()
+            deferredTasks.add( () ->
             {
-                @Override
-                @SuppressWarnings( "unchecked" )
-                public void run()
-                {
-                    PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
-                    DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
-                    doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
+                PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
+                DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
+                doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
+                                                               any( RecordAccess.class ) );
+                doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),
+                                                                   any( AbstractBaseRecord.class ),
                                                                    any( RecordAccess.class ) );
-                    doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),
-                                                                       any( AbstractBaseRecord.class ),
-                                                                       any( RecordAccess.class ) );
-                    other.dispatch( mock );
-                }
+                other.dispatch( mock );
             } );
         }
 

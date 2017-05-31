@@ -181,11 +181,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
             return false;
         }
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
-        if ( id != other.id )
-        {
-            return false;
-        }
-        return true;
+        return id == other.id;
     }
 
     @Override

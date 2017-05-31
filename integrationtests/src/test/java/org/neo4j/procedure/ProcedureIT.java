@@ -866,7 +866,7 @@ public class ProcedureIT
         }
     }
 
-    private static List<Exception> exceptionsInProcedure = Collections.<Exception>synchronizedList( new ArrayList<>() );
+    private static List<Exception> exceptionsInProcedure = Collections.synchronizedList( new ArrayList<>() );
 
     @Test
     public void shouldBeAbleToSpawnThreadsCreatingTransactionInProcedures() throws Throwable

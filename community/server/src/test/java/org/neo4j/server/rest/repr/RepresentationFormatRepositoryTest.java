@@ -113,14 +113,10 @@ public class RepresentationFormatRepositoryTest
     {
         final Response.ResponseBuilder responseBuilder = mock( Response.ResponseBuilder.class );
         when( responseBuilder.entity( Matchers.isA( StreamingOutput.class ) ) ).thenAnswer(
-                new Answer<Response.ResponseBuilder>()
+                invocationOnMock ->
                 {
-                    @Override
-                    public Response.ResponseBuilder answer( InvocationOnMock invocationOnMock ) throws Throwable
-                    {
-                        ref.set( (StreamingOutput) invocationOnMock.getArguments()[0] );
-                        return responseBuilder;
-                    }
+                    ref.set( (StreamingOutput) invocationOnMock.getArguments()[0] );
+                    return responseBuilder;
                 } );
         when( responseBuilder.type( Matchers.<MediaType>any() ) ).thenReturn( responseBuilder );
         when( responseBuilder.build() ).thenReturn( response );

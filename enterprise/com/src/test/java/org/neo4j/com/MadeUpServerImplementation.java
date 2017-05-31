@@ -80,17 +80,13 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
     @Override
     public Response<Integer> streamBackTransactions( int responseToSendBack, final int txCount )
     {
-        TransactionStream transactions = new TransactionStream()
+        TransactionStream transactions = visitor ->
         {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+            for ( int i = 1; i <= txCount; i++ )
             {
-                for ( int i = 1; i <= txCount; i++ )
-                {
-                    CommittedTransactionRepresentation transaction =
-                            createTransaction( TransactionIdStore.BASE_TX_ID + i );
-                    visitor.visit( transaction );
-                }
+                CommittedTransactionRepresentation transaction =
+                        createTransaction( TransactionIdStore.BASE_TX_ID + i );
+                visitor.visit( transaction );
             }
         };
 

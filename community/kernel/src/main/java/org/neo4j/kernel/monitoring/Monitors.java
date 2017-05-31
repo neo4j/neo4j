@@ -102,7 +102,7 @@ public class Monitors
 
     public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
-        Iterable<String> tagIer = append( owningClass.getName(), Iterables.<String,String>iterable( tags ) );
+        Iterable<String> tagIer = append( owningClass.getName(), Iterables.iterable( tags ) );
         String[] tagArray = asArray( String.class, tagIer );
         return newMonitor( monitorClass, tagArray );
     }

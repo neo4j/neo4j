@@ -76,19 +76,15 @@ public class IndexSamplingJobTracker
             }
 
             executingJobs.add( indexId );
-            jobScheduler.schedule( JobScheduler.Groups.indexSampling, new Runnable()
+            jobScheduler.schedule( JobScheduler.Groups.indexSampling, () ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        samplingJob.run();
-                    }
-                    finally
-                    {
-                        samplingJobCompleted( samplingJob );
-                    }
+                    samplingJob.run();
+                }
+                finally
+                {
+                    samplingJobCompleted( samplingJob );
                 }
             } );
         }

@@ -61,7 +61,7 @@ public class ClusterConfigurationTest
     {
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId, InstanceId>iterable( NEO4J_SERVER_ID ) ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.iterable( NEO4J_SERVER_ID ) ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( NEO4J_SERVER1_URI ) );
         assertThat( configuration.getMemberURIs(), equalTo( Arrays.asList( NEO4J_SERVER1_URI ) ) );
     }
@@ -72,7 +72,7 @@ public class ClusterConfigurationTest
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId, InstanceId>iterable( NEO4J_SERVER_ID ) ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.iterable( NEO4J_SERVER_ID ) ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( NEO4J_SERVER1_URI ) );
         assertThat( configuration.getMemberURIs(), equalTo( Arrays.asList( NEO4J_SERVER1_URI ) ) );
     }
@@ -83,7 +83,7 @@ public class ClusterConfigurationTest
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.left( NEO4J_SERVER_ID );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId>empty() ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.empty() ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( null ) );
         assertThat( configuration.getMemberURIs(), equalTo( Collections.<URI>emptyList() ) );
 
@@ -96,7 +96,7 @@ public class ClusterConfigurationTest
         configuration.left( NEO4J_SERVER_ID );
         configuration.left( NEO4J_SERVER_ID );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId>empty() ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.empty() ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( null ) );
         assertThat( configuration.getMemberURIs(), equalTo( Collections.<URI>emptyList() ) );
 

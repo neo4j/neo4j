@@ -392,7 +392,7 @@ public class UnsafeUtilTest
         Obj obj = new Obj();
         long objectOffset = getFieldOffset( Obj.class, "object" );
         assertThat( getAndSetObject( obj, objectOffset, obj ), is( nullValue() ) );
-        assertThat( getAndSetObject( obj, objectOffset, null ), sameInstance( (Object) obj ) );
+        assertThat( getAndSetObject( obj, objectOffset, null ), sameInstance( obj ) );
         assertThat( obj, is( new Obj() ) );
     }
 
@@ -472,7 +472,7 @@ public class UnsafeUtilTest
         base = arrayBaseOffset( objects.getClass() );
         putObject( objects, arrayOffset( 1, base, scale ), objects );
         assertThat( objects[0], is( nullValue() ) );
-        assertThat( objects[1], is( sameInstance( (Object) objects ) ) );
+        assertThat( objects[1], is( sameInstance( objects ) ) );
         assertThat( objects[2], is( nullValue() ) );
     }
 

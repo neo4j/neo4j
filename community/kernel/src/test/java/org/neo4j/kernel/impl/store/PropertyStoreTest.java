@@ -97,15 +97,11 @@ public class PropertyStoreTest
             PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
             record.setPropertyBlock( propertyBlock );
 
-            doAnswer( new Answer()
+            doAnswer( invocation ->
             {
-                @Override
-                public Object answer( InvocationOnMock invocation ) throws Throwable
-                {
-                    PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
-                    assertFalse( recordBeforeWrite.inUse() );
-                    return null;
-                }
+                PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
+                assertFalse( recordBeforeWrite.inUse() );
+                return null;
             } ).when( stringPropertyStore ).updateRecord( dynamicRecord );
 
             // when

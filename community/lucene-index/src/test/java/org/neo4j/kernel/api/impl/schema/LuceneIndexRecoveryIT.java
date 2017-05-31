@@ -219,7 +219,7 @@ public class LuceneIndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
+        factory.addKernelExtensions( Arrays.asList( indexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
@@ -227,14 +227,10 @@ public class LuceneIndexRecoveryIT
     {
         if ( db != null )
         {
-            fs.snapshot( new Runnable()
+            fs.snapshot( () ->
             {
-                @Override
-                public void run()
-                {
-                    db.shutdown();
-                    db = null;
-                }
+                db.shutdown();
+                db = null;
             } );
         }
     }

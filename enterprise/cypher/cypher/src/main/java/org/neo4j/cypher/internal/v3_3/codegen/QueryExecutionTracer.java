@@ -26,13 +26,5 @@ public interface QueryExecutionTracer
 {
     QueryExecutionEvent executeOperator( Id queryId );
 
-    QueryExecutionTracer
-            NONE = new QueryExecutionTracer()
-    {
-        @Override
-        public QueryExecutionEvent executeOperator( Id queryId )
-        {
-            return QueryExecutionEvent.NONE;
-        }
-    };
+    QueryExecutionTracer NONE = queryId -> QueryExecutionEvent.NONE;
 }

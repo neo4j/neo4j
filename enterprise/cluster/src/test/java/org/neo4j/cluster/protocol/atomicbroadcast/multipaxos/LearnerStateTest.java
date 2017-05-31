@@ -73,7 +73,7 @@ public class LearnerStateTest
 
         // Then
 
-        assertThat( newState, equalTo( (State) LearnerState.learner ) );
+        assertThat( newState, equalTo( LearnerState.learner ) );
         verify( outgoing ).offer( Message.to( LearnerMessage.learnRequest, new URI( "c:/1" ),
                 new LearnerMessage.LearnRequestState() ).setHeader(
                 org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE,

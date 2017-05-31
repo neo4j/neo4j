@@ -33,12 +33,8 @@ import static org.junit.Assert.fail;
 
 public class FuturesTest
 {
-    private static final Runnable NOOP = new Runnable()
+    private static final Runnable NOOP = () ->
     {
-        @Override
-        public void run()
-        {
-        }
     };
 
     @Test

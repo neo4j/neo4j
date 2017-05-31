@@ -423,7 +423,7 @@ public class BoltConnectionIT
         // Then
         assertTrue( pullAllCallbackCalled.await( 30, TimeUnit.SECONDS ) );
         final Neo4jError err = error.get();
-        assertThat( err.status(), equalTo( (Status) Status.General.UnknownError ) );
+        assertThat( err.status(), equalTo( Status.General.UnknownError ) );
         assertThat( err.message(), CoreMatchers.containsString( "Ooopsies!" ) );
     }
 
@@ -448,7 +448,7 @@ public class BoltConnectionIT
 
         // Then the two should not have interfered with each other
         stream = runAndPull( secondMachine, "MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)" );
-        assertThat( ((Record) stream[0]).fields()[0], equalTo( (Object) 1L ) );
+        assertThat( ((Record) stream[0]).fields()[0], equalTo( 1L ) );
     }
 
     @Test
@@ -545,7 +545,7 @@ public class BoltConnectionIT
         Object[] stream = runAndPull( machine, "RETURN 1" );
 
         // Then
-        assertThat( ((Record) stream[0]).fields()[0], equalTo( (Object) 1L ) );
+        assertThat( ((Record) stream[0]).fields()[0], equalTo( 1L ) );
     }
 
     private String createLocalIrisData( BoltStateMachine machine ) throws Exception

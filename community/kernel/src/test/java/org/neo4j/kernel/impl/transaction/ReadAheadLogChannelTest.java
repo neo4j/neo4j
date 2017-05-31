@@ -59,20 +59,16 @@ public class ReadAheadLogChannelTest
         final float floatValue = 12.12345f;
         final double doubleValue = 3548.45748D;
         final byte[] byteArrayValue = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
-        writeSomeData( file, new Visitor<ByteBuffer, IOException>()
+        writeSomeData( file, element ->
         {
-            @Override
-            public boolean visit( ByteBuffer element ) throws IOException
-            {
-                element.put( byteValue );
-                element.putShort( shortValue );
-                element.putInt( intValue );
-                element.putLong( longValue );
-                element.putFloat( floatValue );
-                element.putDouble( doubleValue );
-                element.put( byteArrayValue );
-                return true;
-            }
+            element.put( byteValue );
+            element.putShort( shortValue );
+            element.putInt( intValue );
+            element.putLong( longValue );
+            element.putFloat( floatValue );
+            element.putDouble( doubleValue );
+            element.put( byteArrayValue );
+            return true;
         } );
 
         StoreChannel storeChannel = fileSystemRule.get().open( file, "r" );
@@ -98,29 +94,21 @@ public class ReadAheadLogChannelTest
     public void shouldReadFromMultipleChannels() throws Exception
     {
         // GIVEN
-        writeSomeData( file( 0 ), new Visitor<ByteBuffer, IOException>()
+        writeSomeData( file( 0 ), element ->
         {
-            @Override
-            public boolean visit( ByteBuffer element ) throws IOException
+            for ( int i = 0; i < 10; i++ )
             {
-                for ( int i = 0; i < 10; i++ )
-                {
-                    element.putLong( i );
-                }
-                return true;
+                element.putLong( i );
             }
+            return true;
         } );
-        writeSomeData( file( 1 ), new Visitor<ByteBuffer, IOException>()
+        writeSomeData( file( 1 ), element ->
         {
-            @Override
-            public boolean visit( ByteBuffer element ) throws IOException
+            for ( int i = 10; i < 20; i++ )
             {
-                for ( int i = 10; i < 20; i++ )
-                {
-                    element.putLong( i );
-                }
-                return true;
+                element.putLong( i );
             }
+            return true;
         } );
 
         StoreChannel storeChannel = fileSystemRule.get().open( file( 0 ), "r" );

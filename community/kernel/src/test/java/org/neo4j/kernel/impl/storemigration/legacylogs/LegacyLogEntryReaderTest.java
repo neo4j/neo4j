@@ -90,14 +90,7 @@ public class LegacyLogEntryReaderTest
         final LogEntryReader<ReadableLogChannel> logEntryReader = mock( LogEntryReader.class );
         when( logEntryReader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( null );
         final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs,
-                new Function<LogHeader,LogEntryReader<ReadableLogChannel>>()
-        {
-            @Override
-            public LogEntryReader<ReadableLogChannel> apply( LogHeader from ) throws RuntimeException
-            {
-                return logEntryReader;
-            }
-        } );
+                from -> logEntryReader );
 
         // when
         final IOCursor<LogEntry> cursor = reader.openReadableChannel( input ).other();

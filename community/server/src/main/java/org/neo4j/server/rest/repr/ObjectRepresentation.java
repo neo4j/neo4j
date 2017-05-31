@@ -118,7 +118,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
             {
                 throw new IllegalStateException( "Property getter method may not have any parameters." );
             }
-            if ( !Representation.class.isAssignableFrom( (Class<?>) method.getReturnType() ) )
+            if ( !Representation.class.isAssignableFrom( method.getReturnType() ) )
             {
                 throw new IllegalStateException( "Property getter must return Representation object." );
             }

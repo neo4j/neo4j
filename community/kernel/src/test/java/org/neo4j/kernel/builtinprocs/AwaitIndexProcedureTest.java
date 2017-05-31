@@ -162,14 +162,7 @@ public class AwaitIndexProcedureTest
         when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( new Answer<InternalIndexState>()
-        {
-            @Override
-            public InternalIndexState answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                return state.get();
-            }
-        } );
+        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
 
         AtomicBoolean done = new AtomicBoolean( false );
         new Thread( () ->

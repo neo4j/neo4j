@@ -89,21 +89,17 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try ( Transaction ignored = graphDatabaseService.beginTx() )
-                {
-                    assertThat(
-                            graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ).size(),
-                            is( 0 ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                assertThat(
+                        graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ).size(),
+                        is( 0 ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();
@@ -119,19 +115,15 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try ( Transaction ignored = graphDatabaseService.beginTx() )
-                {
-                    assertThat( commonNode.hasProperty( PROPERTY_NAME ), is( false ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                assertThat( commonNode.hasProperty( PROPERTY_NAME ), is( false ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();
@@ -147,21 +139,17 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try ( Transaction ignored = graphDatabaseService.beginTx() )
-                {
-                    Node node = graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE )
-                            .getSingle();
-                    assertThat( node, is( commonNode ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                Node node = graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE )
+                        .getSingle();
+                assertThat( node, is( commonNode ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();
@@ -177,19 +165,15 @@ public class TestDatasourceCommitOrderDataVisibility
     {
         final Collection<Exception> problems = new HashSet<>();
 
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction ignored = graphDatabaseService.beginTx() )
             {
-                try ( Transaction ignored = graphDatabaseService.beginTx() )
-                {
-                    assertThat( (Integer) commonNode.getProperty( PROPERTY_NAME ), is( PROPERTY_VALUE ) );
-                }
-                catch ( Throwable t )
-                {
-                    problems.add( new Exception( t ) );
-                }
+                assertThat( commonNode.getProperty( PROPERTY_NAME ), is( PROPERTY_VALUE ) );
+            }
+            catch ( Throwable t )
+            {
+                problems.add( new Exception( t ) );
             }
         } );
         thread.start();

@@ -393,15 +393,11 @@ public class HopScotchHashingAlgorithm
      * It performs exceptionally poorly for sequences of numbers, as the sequence increments all end up in the same
      * stripe, generating hash values that will end up in the same buckets in collections.
      */
-    public static final HashFunction JUL_HASHING = new HashFunction()
+    public static final HashFunction JUL_HASHING = value ->
     {
-        @Override
-        public int hash( long value )
-        {
-            int h = (int) ((value >>> 32) ^ value);
-            h ^= (h >>> 20) ^ (h >>> 12);
-            return h ^ (h >>> 7) ^ (h >>> 4);
-        }
+        int h = (int) ((value >>> 32) ^ value);
+        h ^= (h >>> 20) ^ (h >>> 12);
+        return h ^ (h >>> 7) ^ (h >>> 4);
     };
 
     /**
@@ -409,17 +405,13 @@ public class HopScotchHashingAlgorithm
      * to the generator. This is very fast, and performs well for most input data. However, it is not guaranteed to
      * generate a superb distribution, only a "decent" one.
      */
-    public static final HashFunction DEFAULT_HASHING = new HashFunction()
+    public static final HashFunction DEFAULT_HASHING = value ->
     {
-        @Override
-        public int hash( long value )
-        {
-            value ^= value << 21;
-            value ^= value >>> 35;
-            value ^= value << 4;
+        value ^= value << 21;
+        value ^= value >>> 35;
+        value ^= value << 4;
 
-            return (int) ((value >>> 32) ^ value);
-        }
+        return (int) ((value >>> 32) ^ value);
     };
 
     public interface ResizeMonitor<VALUE>

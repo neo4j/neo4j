@@ -261,7 +261,7 @@ public class FileUtils
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
         try ( FileInputStream input = new FileInputStream( srcFile );
-              FileOutputStream output = new FileOutputStream( dstFile ); )
+              FileOutputStream output = new FileOutputStream( dstFile ) )
         {
             int bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];
@@ -426,19 +426,12 @@ public class FileUtils
 
     public static LineListener echo( final PrintStream target )
     {
-        return new LineListener()
-        {
-            @Override
-            public void line( String line )
-            {
-                target.println( line );
-            }
-        };
+        return line -> target.println( line );
     }
 
     public static void readTextFile( File file, LineListener listener ) throws IOException
     {
-        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ); )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
         {
             String line;
             while ( (line = reader.readLine()) != null )

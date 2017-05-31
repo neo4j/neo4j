@@ -56,7 +56,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             ParkStrategy parkStrategy, String processorThreadNamePrefix )
     {
         this( initialProcessorCount, maxProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
-                Suppliers.<LOCAL>singleton( null ) );
+                Suppliers.singleton( null ) );
     }
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,

@@ -44,7 +44,7 @@ public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implem
     {
         try
         {
-            return Iterators.singleOrNull( (Iterator<T>) this );
+            return Iterators.singleOrNull( this );
         }
         finally
         {

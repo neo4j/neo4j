@@ -76,36 +76,28 @@ public class ClusterTransactionIT
         cluster.sync();
 
         // When
-        final FutureTask<Boolean> result = new FutureTask<>( new Callable<Boolean>()
+        final FutureTask<Boolean> result = new FutureTask<>( () ->
         {
-            @Override
-            public Boolean call() throws Exception
+            try ( Transaction tx = slave.beginTx() )
             {
-                try ( Transaction tx = slave.beginTx() )
-                {
-                    tx.acquireWriteLock( slave.getNodeById( nodeId ) );
-                }
-                catch ( Exception e )
-                {
-                    return contains( e, TransactionFailureException.class );
-                }
-                // Fail otherwise
-                return false;
+                tx.acquireWriteLock( slave.getNodeById( nodeId ) );
             }
+            catch ( Exception e )
+            {
+                return contains( e, TransactionFailureException.class );
+            }
+            // Fail otherwise
+            return false;
         } );
 
         master.getDependencyResolver()
                 .resolveDependency( LifeSupport.class )
-                .addLifecycleListener( new LifecycleListener()
+                .addLifecycleListener( ( instance, from, to ) ->
                 {
-                    @Override
-                    public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
+                    if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
+                         to == LifecycleStatus.STOPPED )
                     {
-                        if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
-                             to == LifecycleStatus.STOPPED )
-                        {
-                            result.run();
-                        }
+                        result.run();
                     }
                 } );
 

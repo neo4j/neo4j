@@ -140,7 +140,7 @@ public class CheckPointerIntegrationTest
         try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( 0, LOG_HEADER_SIZE ) ) )
         {
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogEntry entry = null;
+            LogEntry entry;
             while ( (entry = logEntryReader.readLogEntry( reader )) != null )
             {
                 if ( entry instanceof CheckPoint )
@@ -268,7 +268,7 @@ public class CheckPointerIntegrationTest
                         LogEntry entry = cursor.get();
                         if ( entry instanceof CheckPoint )
                         {
-                            checkPoints.add( entry.<CheckPoint>as() );
+                            checkPoints.add( entry.as() );
                         }
                     }
                 }

@@ -41,14 +41,10 @@ class UniqueInMemoryIndex extends InMemoryIndex
 {
     private final LabelSchemaDescriptor schema;
 
-    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
+    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = nodeId ->
     {
-        @Override
-        public boolean visited( long nodeId )
-        {
-            UniqueInMemoryIndex.this.remove( nodeId );
-            return false;
-        }
+        UniqueInMemoryIndex.this.remove( nodeId );
+        return false;
     };
 
     UniqueInMemoryIndex( LabelSchemaDescriptor schema )

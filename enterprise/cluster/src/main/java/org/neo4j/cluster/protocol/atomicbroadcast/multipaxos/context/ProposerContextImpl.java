@@ -163,14 +163,7 @@ class ProposerContextImpl
     @Override
     public List<URI> getAcceptors()
     {
-        Iterable<URI> aliveMembers = Iterables.map( new Function<org.neo4j.cluster.InstanceId, URI>()
-        {
-            @Override
-            public URI apply( org.neo4j.cluster.InstanceId instanceId ) throws RuntimeException
-            {
-                return heartbeatContext.getUriForId( instanceId );
-            }
-        }, heartbeatContext.getAlive() );
+        Iterable<URI> aliveMembers = Iterables.map( instanceId -> heartbeatContext.getUriForId( instanceId ), heartbeatContext.getAlive() );
 
         return asList( limit( (int) Math.min(Iterables.count( aliveMembers ), commonState.getMaxAcceptors()), aliveMembers ) );
     }
@@ -259,12 +252,7 @@ class ProposerContextImpl
         {
             return false;
         }
-        if ( pendingValues != null ? !pendingValues.equals( that.pendingValues ) : that.pendingValues != null )
-        {
-            return false;
-        }
-
-        return true;
+        return pendingValues != null ? pendingValues.equals( that.pendingValues ) : that.pendingValues == null;
     }
 
     @Override

@@ -89,7 +89,7 @@ public class TransactionLogAppendAndRotateIT
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
         LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, rotationThreshold,
-                () -> txIdStore.getLastCommittedTransactionId(), logVersionRepository, monitoring, logHeaderCache ) );
+                txIdStore::getLastCommittedTransactionId, logVersionRepository, monitoring, logHeaderCache ) );
         monitoring.setLogFile( logFile );
         DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogRotation rotation = new LogRotationImpl( monitoring, logFile, health );
@@ -100,23 +100,19 @@ public class TransactionLogAppendAndRotateIT
         Race race = new Race();
         for ( int i = 0; i < 10; i++ )
         {
-            race.addContestant( new Runnable()
+            race.addContestant( () ->
             {
-                @Override
-                public void run()
+                while ( !end.get() )
                 {
-                    while ( !end.get() )
+                    try
                     {
-                        try
-                        {
-                            appender.append( new TransactionToApply( sillyTransaction( 1_000 ) ), NULL );
-                        }
-                        catch ( Exception e )
-                        {
-                            e.printStackTrace( System.out );
-                            end.set( true );
-                            fail( e.getMessage() );
-                        }
+                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ) ), NULL );
+                    }
+                    catch ( Exception e )
+                    {
+                        e.printStackTrace( System.out );
+                        end.set( true );
+                        fail( e.getMessage() );
                     }
                 }
             } );
@@ -130,19 +126,14 @@ public class TransactionLogAppendAndRotateIT
 
     private Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end )
     {
-        return new Runnable()
+        return () ->
         {
-
-            @Override
-            public void run()
+            long endTime = currentTimeMillis() + unit.toMillis( time );
+            while ( currentTimeMillis() < endTime && !end.get() )
             {
-                long endTime = currentTimeMillis() + unit.toMillis( time );
-                while ( currentTimeMillis() < endTime && !end.get() )
-                {
-                    parkNanos( MILLISECONDS.toNanos( 50 ) );
-                }
-                end.set( true );
+                parkNanos( MILLISECONDS.toNanos( 50 ) );
             }
+            end.set( true );
         };
     }
 

@@ -102,7 +102,7 @@ public interface SecurityContext
         {
             return new AuthDisabled( mode );
         }
-    };
+    }
 
     final class Frozen implements SecurityContext
     {

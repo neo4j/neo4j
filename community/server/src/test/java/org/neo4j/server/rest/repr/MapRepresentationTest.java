@@ -52,9 +52,9 @@ public class MapRepresentationTest
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( map.get( "nulls" ), is( nullValue() ) );
-        assertThat( (String) map.get( "strings" ), is( "a string" ) );
-        assertThat( (Integer) map.get( "numbers" ), is( 42 ) );
-        assertThat( (Boolean) map.get( "booleans" ), is( true ) );
+        assertThat( map.get( "strings" ), is( "a string" ) );
+        assertThat( map.get( "numbers" ), is( 42 ) );
+        assertThat( map.get( "booleans" ), is( true ) );
     }
 
     @Test
@@ -72,10 +72,10 @@ public class MapRepresentationTest
         String serializedMap = format.assemble( rep );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
-        assertThat( (List<String>) map.get( "strings" ), is( asList( "a string", "another string" ) ) );
-        assertThat( (List<Integer>) map.get( "numbers" ), is( asList( 42, 87 ) ) );
-        assertThat( (List<Boolean>) map.get( "booleans" ), is( asList( true, false ) ) );
-        assertThat( (List<Boolean>) map.get( "Booleans" ), is( asList( true, false ) ) );
+        assertThat( map.get( "strings" ), is( asList( "a string", "another string" ) ) );
+        assertThat( map.get( "numbers" ), is( asList( 42, 87 ) ) );
+        assertThat( map.get( "booleans" ), is( asList( true, false ) ) );
+        assertThat( map.get( "Booleans" ), is( asList( true, false ) ) );
     }
 
     @Test
@@ -90,10 +90,10 @@ public class MapRepresentationTest
         String serializedMap = format.assemble( rep );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
-        assertThat( (List<Object>) map.get( "lists of nulls" ), is( asList( null, null ) ) );
-        assertThat( (List<String>) map.get( "lists of strings" ), is( asList( "a string", "another string" ) ) );
-        assertThat( (List<Integer>) map.get( "lists of numbers" ), is( asList( 23, 87, 42 ) ) );
-        assertThat( (List<Boolean>) map.get( "lists of booleans" ), is( asList( true, false, true ) ) );
+        assertThat( map.get( "lists of nulls" ), is( asList( null, null ) ) );
+        assertThat( map.get( "lists of strings" ), is( asList( "a string", "another string" ) ) );
+        assertThat( map.get( "lists of numbers" ), is( asList( 23, 87, 42 ) ) );
+        assertThat( map.get( "lists of booleans" ), is( asList( true, false, true ) ) );
     }
 
     @Test
@@ -109,9 +109,9 @@ public class MapRepresentationTest
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( ((Map) map.get( "maps with nulls" )).get( "nulls" ), is( nullValue() ) );
-        assertThat( (String) ((Map) map.get( "maps with strings" )).get( "strings" ), is( "a string" ) );
-        assertThat( (Integer) ((Map) map.get( "maps with numbers" )).get( "numbers" ), is( 42 ) );
-        assertThat( (Boolean) ((Map) map.get( "maps with booleans" )).get( "booleans" ), is( true ) );
+        assertThat( ((Map) map.get( "maps with strings" )).get( "strings" ), is( "a string" ) );
+        assertThat( ((Map) map.get( "maps with numbers" )).get( "numbers" ), is( 42 ) );
+        assertThat( ((Map) map.get( "maps with booleans" )).get( "booleans" ), is( true ) );
     }
 
     @Test
@@ -129,10 +129,10 @@ public class MapRepresentationTest
         String serializedMap = format.assemble( rep );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
-        assertThat( (List<Integer>) ((Map) map.get( "a map with a list in it" )).get( "a list" ), is( asList( 42,
+        assertThat( ((Map) map.get( "a map with a list in it" )).get( "a list" ), is( asList( 42,
                 87 ) ) );
-        assertThat( (String) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "foo" ), is( "bar" ) );
-        assertThat( (Boolean) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "baz" ),
+        assertThat( ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "foo" ), is( "bar" ) );
+        assertThat( ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "baz" ),
                 is( false ) );
     }
 

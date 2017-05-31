@@ -63,7 +63,7 @@ public class HtmlIT extends AbstractRestFunctionalTestBase
         long knowsRelationshipId = helper.createRelationship( "KNOWS", thomasAnderson, trinity );
         thomasAndersonLovesTrinity = helper.createRelationship( "LOVES", thomasAnderson, trinity );
         helper.setRelationshipProperties( thomasAndersonLovesTrinity,
-                Collections.singletonMap( "strength", (Object) 100 ) );
+                Collections.singletonMap( "strength", 100 ) );
         helper.createRelationship( "KNOWS", thomasAnderson, tank );
         helper.createRelationship( "KNOWS", trinity, tank );
 
@@ -79,7 +79,7 @@ public class HtmlIT extends AbstractRestFunctionalTestBase
     private long createAndIndexNode( String name )
     {
         long id = helper.createNode();
-        helper.setNodeProperties( id, Collections.singletonMap( "name", (Object) name ) );
+        helper.setNodeProperties( id, Collections.singletonMap( "name", name ) );
         helper.addNodeToIndex( "node", "name", name, id );
         return id;
     }

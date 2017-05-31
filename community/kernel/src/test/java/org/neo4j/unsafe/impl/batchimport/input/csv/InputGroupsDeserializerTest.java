@@ -79,17 +79,13 @@ public class InputGroupsDeserializerTest
                     @SuppressWarnings( "unchecked" )
                     InputEntityDeserializer<InputNode> result = mock( InputEntityDeserializer.class );
                     when( result.sourceDescription() ).thenReturn( String.valueOf( flips.get() ) );
-                    doAnswer( new Answer<Void>()
+                    doAnswer( invocation ->
                     {
-                        @Override
-                        public Void answer( InvocationOnMock invocation ) throws Throwable
-                        {
-                            stream.close();
-                            return null;
-                        }
+                        stream.close();
+                        return null;
                     } ).when( result ).close();
                     return result;
-                }, Validators.<InputNode>emptyValidator(), InputNode.class );
+                }, Validators.emptyValidator(), InputNode.class );
         deserializerTestHack.set( deserializer );
 
         // WHEN running through the iterator
@@ -122,7 +118,7 @@ public class InputGroupsDeserializerTest
         DeserializerFactory<InputNode> factory = defaultNodeDeserializer( groups, config, idType, badCollector );
         try ( InputGroupsDeserializer<InputNode> deserializer = new InputGroupsDeserializer<>(
                 data.iterator(), defaultFormatNodeFileHeader(), config, idType,
-                processors, processors, factory, Validators.<InputNode>emptyValidator(), InputNode.class ) )
+                processors, processors, factory, Validators.emptyValidator(), InputNode.class ) )
         {
             // WHEN
             count( deserializer );

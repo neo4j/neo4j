@@ -61,7 +61,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -154,19 +154,15 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
     {
-        return new Runnable()
+        return () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    appender.forceAfterAppend( logAppendEvent );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                appender.forceAfterAppend( logAppendEvent );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }
@@ -324,8 +320,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         NodeRecord after = new NodeRecord( 0 );
         after.setInUse( true );
         Command.NodeCommand nodeCommand = new Command.NodeCommand( before, after );
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
-                asList( (Command) nodeCommand ) );
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( nodeCommand ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return new TransactionToApply( tx );
     }

@@ -210,24 +210,20 @@ public class StoreCopyCheckPointMutexTest
         Barrier.Control barrier = new Barrier.Control();
         IOException controlledFailure = new IOException( "My own fault" );
         AtomicReference<Future<Object>> secondRequest = new AtomicReference<>();
-        ThrowingAction<IOException> controllableAndFailingAction = new ThrowingAction<IOException>()
+        ThrowingAction<IOException> controllableAndFailingAction = () ->
         {
-            @Override
-            public void apply() throws IOException
+            // Now that we know we're first, start the second request...
+            secondRequest.set( t3.execute( state -> mutex.storeCopy( ASSERT_NOT_CALLED ) ) );
+            // ...and wait for it to reach its destination
+            barrier.awaitUninterruptibly();
+            try
             {
-                // Now that we know we're first, start the second request...
-                secondRequest.set( t3.execute( state -> mutex.storeCopy( ASSERT_NOT_CALLED ) ) );
-                // ...and wait for it to reach its destination
-                barrier.awaitUninterruptibly();
-                try
-                {
-                    // OK, second request has made progress into the request, so we can now produce our failure
-                    throw controlledFailure;
-                }
-                finally
-                {
-                    barrier.release();
-                }
+                // OK, second request has made progress into the request, so we can now produce our failure
+                throw controlledFailure;
+            }
+            finally
+            {
+                barrier.release();
             }
         };
 

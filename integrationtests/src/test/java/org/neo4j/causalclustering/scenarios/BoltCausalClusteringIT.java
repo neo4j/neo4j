@@ -593,19 +593,15 @@ public class BoltCausalClusteringIT
                 {
                     executeReadQuery( bookmark, session );
 
-                    session.readTransaction( new TransactionWork<Void>()
+                    session.readTransaction( (TransactionWork<Void>) tx ->
                     {
-                        @Override
-                        public Void execute( Transaction tx )
-                        {
-                            StatementResult result = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" );
+                        StatementResult result = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" );
 
-                            assertEquals( 1, result.next().get( "count" ).asInt() );
+                        assertEquals( 1, result.next().get( "count" ).asInt() );
 
-                            readReplicas.remove( result.summary().server().address() );
+                        readReplicas.remove( result.summary().server().address() );
 
-                            return null;
-                        }
+                        return null;
                     } );
 
                 }

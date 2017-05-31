@@ -75,7 +75,7 @@ public abstract class AbstractShellIT
 
     protected SameJvmClient newShellClient( ShellServer server ) throws ShellException, RemoteException
     {
-        return newShellClient( server, Collections.<String,Serializable>singletonMap( "quiet", true ) );
+        return newShellClient( server, Collections.singletonMap( "quiet", true ) );
     }
 
     protected SameJvmClient newShellClient( ShellServer server, Map<String,Serializable> session )

@@ -185,27 +185,23 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
-        return new ResourceIterable<Relationship>()
+        return () ->
         {
-            @Override
-            public ResourceIterator<Relationship> iterator()
+            final ResourceIterator<Relationship> iterator = actual.getAllRelationships().iterator();
+            return new PrefetchingResourceIterator<Relationship>()
             {
-                final ResourceIterator<Relationship> iterator = actual.getAllRelationships().iterator();
-                return new PrefetchingResourceIterator<Relationship>()
+                @Override
+                protected Relationship fetchNextOrNull()
                 {
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        return new ReadOnlyRelationshipProxy( iterator.next() );
-                    }
+                    return new ReadOnlyRelationshipProxy( iterator.next() );
+                }
 
-                    @Override
-                    public void close()
-                    {
-                        iterator.close();
-                    }
-                };
-            }
+                @Override
+                public void close()
+                {
+                    iterator.close();
+                }
+            };
         };
     }
 

@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -273,14 +271,10 @@ public class BatchingTransactionAppenderTest
         FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
         IOException failure = new IOException( failureMessage );
         final Flushable flushable = mock( Flushable.class );
-        doAnswer( new Answer<Flushable>()
+        doAnswer( invocation ->
         {
-            @Override
-            public Flushable answer( InvocationOnMock invocation ) throws Throwable
-            {
-                invocation.callRealMethod();
-                return flushable;
-            }
+            invocation.callRealMethod();
+            return flushable;
         } ).when( channel ).prepareForFlush();
         doThrow( failure ).when( flushable ).flush();
         LogFile logFile = mock( LogFile.class );

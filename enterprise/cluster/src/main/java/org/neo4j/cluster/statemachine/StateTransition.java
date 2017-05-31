@@ -76,12 +76,7 @@ public class StateTransition
         {
             return false;
         }
-        if ( !oldState.equals( that.oldState ) )
-        {
-            return false;
-        }
-
-        return true;
+        return oldState.equals( that.oldState );
     }
 
     @Override

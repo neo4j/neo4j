@@ -379,7 +379,7 @@ public class Jetty9WebServer implements WebServer
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<>( (Comparator<String>) ( o1, o2 ) -> o2.compareTo( o1 ) );
+        final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> o2.compareTo( o1 ) );
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );

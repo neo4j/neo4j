@@ -700,14 +700,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertTrue( rel.isType( MyRelTypes.TEST ) );
-        assertTrue( rel.isType( new RelationshipType()
-        {
-            @Override
-            public String name()
-            {
-                return MyRelTypes.TEST.name();
-            }
-        } ) );
+        assertTrue( rel.isType( () -> MyRelTypes.TEST.name() ) );
         assertFalse( rel.isType( MyRelTypes.TEST_TRAVERSAL ) );
         rel.delete();
         node1.delete();

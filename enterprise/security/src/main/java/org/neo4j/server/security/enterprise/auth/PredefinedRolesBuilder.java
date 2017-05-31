@@ -77,24 +77,20 @@ public class PredefinedRolesBuilder implements RolesBuilder
         return roles;
     }
 
-    public static final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
+    public static final RolePermissionResolver rolePermissionResolver = roleString ->
     {
-        @Override
-        public Collection<Permission> resolvePermissionsInRole( String roleString )
+        if ( roleString == null )
         {
-            if ( roleString == null )
-            {
-                return Collections.emptyList();
-            }
-            SimpleRole role = roles.get( roleString );
-            if ( role != null )
-            {
-                return role.getPermissions();
-            }
-            else
-            {
-                return Collections.emptyList();
-            }
+            return Collections.emptyList();
+        }
+        SimpleRole role = roles.get( roleString );
+        if ( role != null )
+        {
+            return role.getPermissions();
+        }
+        else
+        {
+            return Collections.emptyList();
         }
     };
 

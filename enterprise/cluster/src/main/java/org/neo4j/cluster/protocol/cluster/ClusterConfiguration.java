@@ -255,12 +255,7 @@ public class ClusterConfiguration
         {
             return false;
         }
-        if ( !roles.equals( that.roles ) )
-        {
-            return false;
-        }
-
-        return true;
+        return roles.equals( that.roles );
     }
 
     @Override

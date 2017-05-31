@@ -558,7 +558,7 @@ public class GraphDatabaseSettings implements LoadableConfig
         /**
          * Selects which ever label index is present in a store, or the default (NATIVE) if no label index present.
          */
-        AUTO;
+        AUTO
     }
 
     @Description( "Backend to use for label --> nodes index" )

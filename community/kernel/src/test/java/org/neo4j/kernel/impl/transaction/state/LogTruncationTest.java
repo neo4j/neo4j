@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +62,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
@@ -95,8 +95,8 @@ public class LogTruncationTest
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
         permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
-                asList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
-                asList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ),
+                singletonList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
+                singletonList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ),
                 IndexRule.indexRule( 1, IndexDescriptorFactory.forLabel( 3, 4 ),
                         new SchemaIndexProvider.Descriptor( "1", "2" ) ) ) } );
         permutations
@@ -132,8 +132,8 @@ public class LogTruncationTest
         permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
 
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();
-        indexDefineCommand.init( MapUtil.<String, Integer>genericMap(
-                "string1", 45, "key1", 2 ), MapUtil.<String, Integer>genericMap( "string", 2 ) );
+        indexDefineCommand.init( MapUtil.genericMap(
+                "string1", 45, "key1", 2 ), MapUtil.genericMap( "string", 2 ) );
         permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
 
         // Counts commands
@@ -194,7 +194,7 @@ public class LogTruncationTest
     private void assertHandlesLogTruncation( Command cmd ) throws IOException
     {
         inMemoryChannel.reset();
-        writer.serialize( new PhysicalTransactionRepresentation( Arrays.asList( cmd ) ) );
+        writer.serialize( new PhysicalTransactionRepresentation( singletonList( cmd ) ) );
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
         try
         {
@@ -210,7 +210,7 @@ public class LogTruncationTest
         while ( bytesSuccessfullyWritten-- > 0 )
         {
             inMemoryChannel.reset();
-            writer.serialize( new PhysicalTransactionRepresentation( Arrays.asList( cmd ) ) );
+            writer.serialize( new PhysicalTransactionRepresentation( singletonList( cmd ) ) );
             inMemoryChannel.truncateTo( bytesSuccessfullyWritten );
             LogEntry deserialized = logEntryReader.readLogEntry( inMemoryChannel );
             assertNull( "Deserialization did not detect log truncation!" +

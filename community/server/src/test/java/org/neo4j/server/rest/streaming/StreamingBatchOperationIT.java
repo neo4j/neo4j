@@ -660,7 +660,7 @@ public class StreamingBatchOperationIT extends AbstractRestFunctionalTestBase
     {
         try ( Transaction transaction = graphdb().beginTx() )
         {
-            return Iterables.count( (Iterable) graphdb().getAllNodes() );
+            return Iterables.count( graphdb().getAllNodes() );
         }
     }
 }

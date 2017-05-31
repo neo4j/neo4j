@@ -84,12 +84,8 @@ public class Dijkstra<CostType> implements
         {
             return true;
         }
-        if ( maxNodesToTraverse >= 0
-             && numberOfNodesTraversed >= maxNodesToTraverse )
-        {
-            return true;
-        }
-        return false;
+        return maxNodesToTraverse >= 0
+               && numberOfNodesTraversed >= maxNodesToTraverse;
     }
 
     protected boolean limitReached( CostType cost1, CostType cost2 )

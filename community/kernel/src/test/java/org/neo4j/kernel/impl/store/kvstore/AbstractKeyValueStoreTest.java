@@ -208,16 +208,12 @@ public class AbstractKeyValueStoreTest
                 KeyValueStoreFile old = file.other();
                 final int data = txId;
                 file = rotation.next( file.first(), Headers.headersBuilder().put( TX_ID, (long) txId ).headers(), data(
-                        new Entry()
+                        (Entry) ( key, value ) ->
                         {
-                            @Override
-                            public void write( WritableBuffer key, WritableBuffer value )
-                            {
-                                key.putByte( 0, (byte) 'f' );
-                                key.putByte( 1, (byte) 'o' );
-                                key.putByte( 2, (byte) 'o' );
-                                value.putInt( 0, data );
-                            }
+                            key.putByte( 0, (byte) 'f' );
+                            key.putByte( 1, (byte) 'o' );
+                            key.putByte( 2, (byte) 'o' );
+                            value.putInt( 0, data );
                         }
                 ) );
                 old.close();
@@ -273,42 +269,31 @@ public class AbstractKeyValueStoreTest
 
         Pair<File,KeyValueStoreFile> file = store.rotationStrategy.create( EMPTY_DATA_PROVIDER, 1 );
         Pair<File,KeyValueStoreFile> next = store.rotationStrategy
-                .next( file.first(), Headers.headersBuilder().put( TX_ID, (long) 42 ).headers(), data( new Entry()
-                {
-                    @Override
-                    public void write( WritableBuffer key, WritableBuffer value )
-                    {
-                        key.putByte( 0, (byte) 'f' );
-                        key.putByte( 1, (byte) 'o' );
-                        key.putByte( 2, (byte) 'o' );
-                        value.putInt( 0, 42 );
-                    }
-                } ) );
+                .next( file.first(), Headers.headersBuilder().put( TX_ID, (long) 42 ).headers(), data(
+                        (Entry) ( key, value ) ->
+                        {
+                            key.putByte( 0, (byte) 'f' );
+                            key.putByte( 1, (byte) 'o' );
+                            key.putByte( 2, (byte) 'o' );
+                            value.putInt( 0, 42 );
+                        } ) );
         file.other().close();
         File correct = next.first();
 
         Pair<File,KeyValueStoreFile> nextNext = store.rotationStrategy
-                .next( correct, Headers.headersBuilder().put( TX_ID, (long) 43 ).headers(), data( new Entry()
+                .next( correct, Headers.headersBuilder().put( TX_ID, (long) 43 ).headers(), data( ( key, value ) ->
                 {
-                    @Override
-                    public void write( WritableBuffer key, WritableBuffer value )
-                    {
-                        key.putByte( 0, (byte) 'f' );
-                        key.putByte( 1, (byte) 'o' );
-                        key.putByte( 2, (byte) 'o' );
-                        value.putInt( 0, 42 );
-                    }
-                }, new Entry()
+                    key.putByte( 0, (byte) 'f' );
+                    key.putByte( 1, (byte) 'o' );
+                    key.putByte( 2, (byte) 'o' );
+                    value.putInt( 0, 42 );
+                }, ( key, value ) ->
                 {
-                    @Override
-                    public void write( WritableBuffer key, WritableBuffer value )
-                    {
-                        key.putByte( 0, (byte) 'b' );
-                        key.putByte( 1, (byte) 'a' );
-                        key.putByte( 2, (byte) 'r' );
-                        value.putInt( 0, 4242 );
-                    }
-                }) );
+                    key.putByte( 0, (byte) 'b' );
+                    key.putByte( 1, (byte) 'a' );
+                    key.putByte( 2, (byte) 'r' );
+                    value.putInt( 0, 4242 );
+                } ) );
         next.other().close();
         File corrupted = nextNext.first();
         nextNext.other().close();
@@ -482,14 +467,7 @@ public class AbstractKeyValueStoreTest
 
     private static ValueUpdate longValue( long value )
     {
-        return new ValueUpdate()
-        {
-            @Override
-            public void update( WritableBuffer target )
-            {
-                target.putLong( 0, value );
-            }
-        };
+        return target -> target.putLong( 0, value );
     }
 
     private Store createTestStore()

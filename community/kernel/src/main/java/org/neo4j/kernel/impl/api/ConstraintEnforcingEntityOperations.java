@@ -287,8 +287,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException,
-            AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws KernelException
     {
         return entityWriteOperations.nodeDetachDelete( state, nodeId );
     }
@@ -317,9 +316,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state,
-            long relationshipId,
-            DefinedProperty property ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+    public Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
     }

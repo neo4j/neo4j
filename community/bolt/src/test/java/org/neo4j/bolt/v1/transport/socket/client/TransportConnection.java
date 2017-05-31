@@ -25,7 +25,7 @@ import org.neo4j.helpers.HostnamePort;
 
 public interface TransportConnection
 {
-    TransportConnection connect( HostnamePort address ) throws IOException, Exception;
+    TransportConnection connect( HostnamePort address ) throws Exception;
 
     TransportConnection send( byte[] rawBytes ) throws IOException;
 

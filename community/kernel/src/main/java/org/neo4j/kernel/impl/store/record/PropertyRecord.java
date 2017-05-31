@@ -208,7 +208,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
     public List<DynamicRecord> getDeletedRecords()
     {
-        return deletedRecords != null ? deletedRecords : Collections.<DynamicRecord>emptyList();
+        return deletedRecords != null ? deletedRecords : Collections.emptyList();
     }
 
     public void addDeletedRecord( DynamicRecord record )

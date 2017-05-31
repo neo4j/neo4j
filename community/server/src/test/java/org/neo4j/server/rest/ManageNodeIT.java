@@ -338,14 +338,10 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
                     .withClock( clock )
                     .build();
 
-            suppressAll().call( new Callable<Void>()
+            suppressAll().call( (Callable<Void>) () ->
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    server.start();
-                    return null;
-                }
+                server.start();
+                return null;
             } );
             functionalTestHelper = new FunctionalTestHelper( server );
         }
@@ -359,14 +355,10 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         @AfterClass
         public static void stopServer() throws Exception
         {
-            suppressAll().call( new Callable<Void>()
+            suppressAll().call( (Callable<Void>) () ->
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    server.stop();
-                    return null;
-                }
+                server.stop();
+                return null;
             } );
         }
 

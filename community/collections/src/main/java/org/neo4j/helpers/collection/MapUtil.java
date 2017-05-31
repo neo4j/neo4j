@@ -143,6 +143,7 @@ public abstract class MapUtil
     {
         Properties props = new Properties();
         props.load( reader );
+        //noinspection unchecked
         return new HashMap<>( (Map) props );
     }
 

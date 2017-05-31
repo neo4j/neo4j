@@ -243,14 +243,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
             final ThirdPartyFileSystem fileSystem,
             Class<K> clazz )
     {
-        InvocationHandler handler = new InvocationHandler()
+        InvocationHandler handler = ( proxy, method, args ) ->
         {
-            @Override
-            public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
-            {
-                adversary.injectFailure( (Class<? extends Throwable>[]) method.getExceptionTypes() );
-                return method.invoke( fileSystem, args );
-            }
+            adversary.injectFailure( (Class<? extends Throwable>[]) method.getExceptionTypes() );
+            return method.invoke( fileSystem, args );
         };
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         return (ThirdPartyFileSystem) Proxy.newProxyInstance( loader, new Class[] { clazz }, handler );

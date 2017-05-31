@@ -115,7 +115,7 @@ public class PrimitiveLongCollectionsTest
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, (LongPredicate) item -> item != 2 );
+        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
@@ -392,14 +392,7 @@ public class PrimitiveLongCollectionsTest
     public void itemAt() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
 
         // THEN
         try
@@ -432,14 +425,7 @@ public class PrimitiveLongCollectionsTest
     public void itemAtWithDefault() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
         long defaultValue = 55;
 
         // THEN
@@ -457,14 +443,7 @@ public class PrimitiveLongCollectionsTest
     public void indexOf() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 10, 20, 30 );
-            }
-        };
+        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
 
         // THEN
         assertEquals( -1, PrimitiveLongCollections.indexOf( items.iterator(), 55 ) );
@@ -477,38 +456,10 @@ public class PrimitiveLongCollectionsTest
     public void iteratorsEqual() throws Exception
     {
         // GIVEN
-        PrimitiveLongIterable items1 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 2, 3 );
-            }
-        };
-        PrimitiveLongIterable items2 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 20, 3 );
-            }
-        };
-        PrimitiveLongIterable items3 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 2, 3, 4 );
-            }
-        };
-        PrimitiveLongIterable items4 = new PrimitiveLongIterable()
-        {
-            @Override
-            public PrimitiveLongIterator iterator()
-            {
-                return PrimitiveLongCollections.iterator( 1, 2, 3 );
-            }
-        };
+        PrimitiveLongIterable items1 = () -> PrimitiveLongCollections.iterator( 1, 2, 3 );
+        PrimitiveLongIterable items2 = () -> PrimitiveLongCollections.iterator( 1, 20, 3 );
+        PrimitiveLongIterable items3 = () -> PrimitiveLongCollections.iterator( 1, 2, 3, 4 );
+        PrimitiveLongIterable items4 = () -> PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // THEN
         assertFalse( PrimitiveLongCollections.equals( items1.iterator(), items2.iterator() ) );
@@ -604,7 +555,7 @@ public class PrimitiveLongCollectionsTest
             @Override
             protected boolean fetchNext()
             {
-                return count.decrementAndGet() >= 0 ? next( count.get() ) : false;
+                return count.decrementAndGet() >= 0 && next( count.get() );
             }
         };
 

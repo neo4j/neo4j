@@ -154,7 +154,7 @@ public class Commands
         record.setInUse( true );
         record.setCreated();
         record.setData( rule.serialize() );
-        return new SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), singletonList( record ), rule );
+        return new SchemaRuleCommand( Collections.emptyList(), singletonList( record ), rule );
     }
 
     public static PropertyCommand createProperty( long id, PropertyType type, int key,

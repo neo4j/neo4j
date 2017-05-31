@@ -67,9 +67,9 @@ public class ThresholdBasedPruneStrategyTest
         when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
 
-        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
+        when( fileSystem.getFileSize( Matchers.any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
 
-        when( threshold.reached( Matchers.<File>any(), anyLong(), Matchers.<LogFileInformation>any() ) ).thenReturn( false );
+        when( threshold.reached( Matchers.any(), anyLong(), Matchers.any() ) ).thenReturn( false );
 
         final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, threshold );
 
@@ -78,20 +78,20 @@ public class ThresholdBasedPruneStrategyTest
 
         // Then
         verify( threshold, times( 1 ) ).init();
-        verify( fileSystem, times( 0 ) ).deleteFile( Matchers.<File>any() );
+        verify( fileSystem, times( 0 ) ).deleteFile( Matchers.any() );
     }
 
     @Test
     public void shouldDeleteJustWhatTheThresholdSays() throws Exception
     {
         // Given
-        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 6L ), Matchers.<LogFileInformation>any() ) )
+        when( threshold.reached( Matchers.any(), Matchers.eq( 6L ), Matchers.any() ) )
                 .thenReturn( false );
-        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 5L ), Matchers.<LogFileInformation>any() ) )
+        when( threshold.reached( Matchers.any(), Matchers.eq( 5L ), Matchers.any() ) )
                 .thenReturn( false );
-        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 4L ), Matchers.<LogFileInformation>any() ) )
+        when( threshold.reached( Matchers.any(), Matchers.eq( 4L ), Matchers.any() ) )
                 .thenReturn( false );
-        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 3L ), Matchers.<LogFileInformation>any() ) )
+        when( threshold.reached( Matchers.any(), Matchers.eq( 3L ), Matchers.any() ) )
                 .thenReturn( true );
 
         File fileName1 = new File( "logical.log.v1" );
@@ -115,7 +115,7 @@ public class ThresholdBasedPruneStrategyTest
         when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
         when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
 
-        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
+        when( fileSystem.getFileSize( Matchers.any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
 
         final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(
                 fileSystem, logFileInfo, files, threshold

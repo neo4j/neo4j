@@ -71,7 +71,7 @@ public class ElectionStateTest
         MessageHolder holder = mock( MessageHolder.class );
 
         election.handle( context,
-                Message.<ElectionMessage>internal( performRoleElections ), holder );
+                Message.internal( performRoleElections ), holder );
 
         verifyZeroInteractions( holder );
     }
@@ -89,7 +89,7 @@ public class ElectionStateTest
         MessageHolder holder = mock( MessageHolder.class );
 
         election.handle( context,
-                Message.<ElectionMessage>internal( demote ), holder );
+                Message.internal( demote ), holder );
 
         verifyZeroInteractions( holder );
     }
@@ -124,7 +124,7 @@ public class ElectionStateTest
         final String role = "master";
         ElectionContext.VoteRequest voteRequest = new ElectionContext.VoteRequest( role, 13 );
         when( context.getPossibleRoles() ).thenReturn(
-                Collections.<ElectionRole>singletonList( new ElectionRole( role ) ) );
+                Collections.singletonList( new ElectionRole( role ) ) );
         when( context.getElected( role ) ).thenReturn( myInstanceId );
         when( context.voteRequestForRole( new ElectionRole( role ) ) ).thenReturn( voteRequest );
 
@@ -133,7 +133,7 @@ public class ElectionStateTest
 
         // When
         election.handle( context,
-                Message.<ElectionMessage>internal( performRoleElections ), holder );
+                Message.internal( performRoleElections ), holder );
 
         // Then
           // Make sure that we asked ourselves to vote for that role and that no timer was set
@@ -222,14 +222,7 @@ public class ElectionStateTest
     public void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
     {
         final List<Message> messages = new ArrayList<Message>( 1 );
-        MessageHolder holder = new MessageHolder()
-        {
-            @Override
-            public void offer( Message<? extends MessageType> message )
-            {
-                messages.add( message );
-            }
-        };
+        MessageHolder holder = message -> messages.add( message );
 
         ElectionContext context = mock( ElectionContext.class );
 
@@ -256,14 +249,7 @@ public class ElectionStateTest
         InstanceId winner = new InstanceId( 2 );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder holder = new MessageHolder()
-        {
-            @Override
-            public void offer( Message<? extends MessageType> message )
-            {
-                messages.add( message );
-            }
-        };
+        MessageHolder holder = message -> messages.add( message );
         ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext electionContext = mock( ElectionContext.class );

@@ -150,12 +150,7 @@ class CommonContextState
         {
             return false;
         }
-        if ( configuration != null ? !configuration.equals( that.configuration ) : that.configuration != null )
-        {
-            return false;
-        }
-
-        return true;
+        return configuration != null ? configuration.equals( that.configuration ) : that.configuration == null;
     }
 
     @Override

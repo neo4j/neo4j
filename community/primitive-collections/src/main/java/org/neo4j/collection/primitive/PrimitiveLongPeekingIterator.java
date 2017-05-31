@@ -45,7 +45,7 @@ public class PrimitiveLongPeekingIterator extends PrimitiveLongCollections.Primi
             hasFirstValue = false;
             return next( firstValue );
         }
-        return actual.hasNext() ? next( actual.next() ) : false;
+        return actual.hasNext() && next( actual.next() );
     }
 
     public boolean hasMultipleValues()

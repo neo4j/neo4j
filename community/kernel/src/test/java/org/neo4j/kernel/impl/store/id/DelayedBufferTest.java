@@ -64,19 +64,15 @@ public class DelayedBufferTest
         for ( int i = 0; i < numberOfAdders; i++ )
         {
             final int finalI = i;
-            adders.addContestant( new Runnable()
+            adders.addContestant( () ->
             {
-                @Override
-                public void run()
+                for ( int j = 0; j < size; j++ )
                 {
-                    for ( int j = 0; j < size; j++ )
+                    if ( j % numberOfAdders == finalI )
                     {
-                        if ( j % numberOfAdders == finalI )
-                        {
-                            buffer.offer( j );
-                            offeredIds[j] = 1;
-                            parkNanos( MILLISECONDS.toNanos( current().nextInt( 2 ) ) );
-                        }
+                        buffer.offer( j );
+                        offeredIds[j] = 1;
+                        parkNanos( MILLISECONDS.toNanos( current().nextInt( 2 ) ) );
                     }
                 }
             } );
@@ -177,7 +173,7 @@ public class DelayedBufferTest
     {
         // GIVEN
         Consumer<long[]> consumer = mock( Consumer.class );
-        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), Predicates.<Long>alwaysTrue(),
+        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), Predicates.alwaysTrue(),
                 10, consumer );
         buffer.offer( 0 );
         buffer.offer( 1 );

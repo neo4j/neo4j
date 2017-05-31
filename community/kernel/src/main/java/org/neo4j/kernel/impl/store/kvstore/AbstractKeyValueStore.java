@@ -226,14 +226,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             ProgressiveState<Key> prior = state;
             if ( prior.storedVersion() == version && !prior.hasChanges() )
             {
-                return new PreparedRotation()
-                {
-                    @Override
-                    public long rotate() throws IOException
-                    {
-                        return version;
-                    }
-                };
+                return () -> version;
             }
             return new RotationTask( version );
         }

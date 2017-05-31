@@ -76,12 +76,7 @@ public enum AcceptorMessage
 
             PrepareState that = (PrepareState) o;
 
-            if ( ballot != that.ballot )
-            {
-                return false;
-            }
-
-            return true;
+            return ballot == that.ballot;
         }
 
         @Override
@@ -133,12 +128,7 @@ public enum AcceptorMessage
             {
                 return false;
             }
-            if ( value != null ? !value.equals( that.value ) : that.value != null )
-            {
-                return false;
-            }
-
-            return true;
+            return value != null ? value.equals( that.value ) : that.value == null;
         }
 
         @Override

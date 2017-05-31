@@ -107,7 +107,7 @@ public class HTTP
 
         private Builder()
         {
-            this( Collections.<String, String>emptyMap(), "" );
+            this( Collections.emptyMap(), "" );
         }
 
         private Builder( Map<String, String> headers, String baseUri )

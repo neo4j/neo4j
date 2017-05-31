@@ -38,14 +38,7 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
             RelationshipType... relTypes )
     {
         return new Dijkstra<Double>( 0.0, graph.getNode( startNode ),
-                graph.getNode( endNode ), new CostEvaluator<Double>()
-                {
-                    public Double getCost( Relationship relationship,
-                            Direction direction )
-                    {
-                        return 1.0;
-                    }
-                }, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+                graph.getNode( endNode ), ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
                 relTypes );
     }
 

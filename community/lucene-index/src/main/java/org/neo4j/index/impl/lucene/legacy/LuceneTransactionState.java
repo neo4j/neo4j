@@ -96,7 +96,7 @@ class LuceneTransactionState implements Closeable
             return Collections.emptySet();
         }
         Collection<EntityId> ids = removed.query( query, null );
-        return ids != null ? ids : Collections.<EntityId>emptySet();
+        return ids != null ? ids : Collections.emptySet();
     }
 
     Collection<EntityId> getRemovedIds( LuceneLegacyIndex index,
@@ -147,7 +147,7 @@ class LuceneTransactionState implements Closeable
             return Collections.emptySet();
         }
         Collection<EntityId> ids = added.get( key, value );
-        return ids != null ? ids : Collections.<EntityId>emptySet();
+        return ids != null ? ids : Collections.emptySet();
     }
 
     TxDataHolder addedTxDataOrNull( LuceneLegacyIndex index )

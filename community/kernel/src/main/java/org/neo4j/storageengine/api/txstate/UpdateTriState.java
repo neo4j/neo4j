@@ -32,5 +32,5 @@ public enum UpdateTriState
 {
     ADDED,
     REMOVED,
-    UNTOUCHED;
+    UNTOUCHED
 }

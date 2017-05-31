@@ -50,14 +50,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class PartitionedIndexStorage
 {
-    private static final Comparator<File> FILE_COMPARATOR = new Comparator<File>()
-    {
-        @Override
-        public int compare( File o1, File o2 )
-        {
-            return NumberAwareStringComparator.INSTANCE.compare( o1.getName(), o2.getName() );
-        }
-    };
+    private static final Comparator<File> FILE_COMPARATOR =
+            ( o1, o2 ) -> NumberAwareStringComparator.INSTANCE.compare( o1.getName(), o2.getName() );
 
     private final DirectoryFactory directoryFactory;
     private final FileSystemAbstraction fileSystem;

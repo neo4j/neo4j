@@ -54,14 +54,7 @@ public class BinaryLatchTest
     public void releaseMustUnblockAwaiters() throws Exception
     {
         final BinaryLatch latch = new BinaryLatch();
-        Runnable awaiter = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                latch.await();
-            }
-        };
+        Runnable awaiter = () -> latch.await();
         int awaiters = 24;
         Future<?>[] futures = new Future<?>[awaiters];
         for ( int i = 0; i < awaiters; i++ )
@@ -91,16 +84,12 @@ public class BinaryLatchTest
     public void stressLatch() throws Exception
     {
         final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );
-        Runnable awaiter = new Runnable()
+        Runnable awaiter = () ->
         {
-            @Override
-            public void run()
+            BinaryLatch latch;
+            while ( (latch = latchRef.get()) != null )
             {
-                BinaryLatch latch;
-                while ( (latch = latchRef.get()) != null )
-                {
-                    latch.await();
-                }
+                latch.await();
             }
         };
 

@@ -148,7 +148,7 @@ public class RelationshipChangesForNode
                             protected boolean fetchNext()
                             {
                                 Iterator<Long> iterator = currentSetOfAddedRels();
-                                return iterator.hasNext() ? next( iterator.next() ) : false;
+                                return iterator.hasNext() && next( iterator.next() );
                             }
 
                             private Iterator<Long> currentSetOfAddedRels()

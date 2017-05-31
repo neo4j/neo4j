@@ -362,43 +362,39 @@ public class PropertyConstraintsStressIT
     private WorkerCommand<Object,Integer> performInserts( final HighlyAvailableGraphDatabase slave,
             final boolean constraintCompliant )
     {
-        return new WorkerCommand<Object,Integer>()
+        return state ->
         {
-            @Override
-            public Integer doWork( Object state ) throws Exception
-            {
-                int i = 0;
+            int i = 0;
 
-                try
+            try
+            {
+                for (; i < 100; i++ )
                 {
-                    for (; i < 100; i++ )
+                    try ( Transaction tx = slave.beginTx() )
                     {
-                        try ( Transaction tx = slave.beginTx() )
-                        {
-                            constraintOps.createEntity( slave, labelOrRelType, property, "value" + i,
-                                    constraintCompliant );
-                            tx.success();
-                        }
+                        constraintOps.createEntity( slave, labelOrRelType, property, "value" + i,
+                                constraintCompliant );
+                        tx.success();
                     }
                 }
-                catch ( TransactionFailureException | TransientTransactionFailureException e )
-                {
-                    // Swallowed on purpose, we except it to fail sometimes due to either
-                    //  - constraint violation on master
-                    //  - concurrent schema operation on master
-                }
-                catch ( ConstraintViolationException e )
-                {
-                    // Constraint violation detected on slave while building transaction
-                }
-                catch ( ComException e )
-                {
-                    // Happens sometimes, cause:
-                    // - The lock session requested to start is already in use.
-                    //   Please retry your request in a few seconds.
-                }
-                return i;
             }
+            catch ( TransactionFailureException | TransientTransactionFailureException e )
+            {
+                // Swallowed on purpose, we except it to fail sometimes due to either
+                //  - constraint violation on master
+                //  - concurrent schema operation on master
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // Constraint violation detected on slave while building transaction
+            }
+            catch ( ComException e )
+            {
+                // Happens sometimes, cause:
+                // - The lock session requested to start is already in use.
+                //   Please retry your request in a few seconds.
+            }
+            return i;
         };
     }
 
@@ -463,26 +459,22 @@ public class PropertyConstraintsStressIT
         public WorkerCommand<Object,Boolean> createConstraint( final HighlyAvailableGraphDatabase db, final String type,
                 final String property )
         {
-            return new WorkerCommand<Object,Boolean>()
+            return state ->
             {
-                @Override
-                public Boolean doWork( Object state ) throws Exception
+                boolean constraintCreationFailed = false;
+
+                try ( Transaction tx = db.beginTx() )
                 {
-                    boolean constraintCreationFailed = false;
-
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( property ).create();
-                        tx.success();
-                    }
-                    catch ( ConstraintViolationException e )
-                    {
-                    /* Unable to create constraint since it is not consistent with existing data. */
-                        constraintCreationFailed = true;
-                    }
-
-                    return constraintCreationFailed;
+                    db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( property ).create();
+                    tx.success();
                 }
+                catch ( ConstraintViolationException e )
+                {
+                /* Unable to create constraint since it is not consistent with existing data. */
+                    constraintCreationFailed = true;
+                }
+
+                return constraintCreationFailed;
             };
         }
 
@@ -592,39 +584,35 @@ public class PropertyConstraintsStressIT
     private static WorkerCommand<Object,Boolean> createPropertyExistenceConstraintCommand(
             final GraphDatabaseService db, final String query )
     {
-        return new WorkerCommand<Object,Boolean>()
+        return state ->
         {
-            @Override
-            public Boolean doWork( Object state ) throws Exception
+            boolean constraintCreationFailed = false;
+
+            try ( Transaction tx = db.beginTx() )
             {
-                boolean constraintCreationFailed = false;
-
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.execute( query );
-                    tx.success();
-                }
-                catch ( QueryExecutionException e )
-                {
-                    System.out.println( "Constraint failed: " + e.getMessage() );
-                    if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
-                    {
-                        // Unable to create constraint since it is not consistent with existing data
-                        constraintCreationFailed = true;
-                    }
-                    else
-                    {
-                        throw e;
-                    }
-                }
-
-                if ( !constraintCreationFailed )
-                {
-                    System.out.println( "Constraint created: " + query );
-                }
-
-                return constraintCreationFailed;
+                db.execute( query );
+                tx.success();
             }
+            catch ( QueryExecutionException e )
+            {
+                System.out.println( "Constraint failed: " + e.getMessage() );
+                if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
+                {
+                    // Unable to create constraint since it is not consistent with existing data
+                    constraintCreationFailed = true;
+                }
+                else
+                {
+                    throw e;
+                }
+            }
+
+            if ( !constraintCreationFailed )
+            {
+                System.out.println( "Constraint created: " + query );
+            }
+
+            return constraintCreationFailed;
         };
     }
 }

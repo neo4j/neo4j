@@ -63,15 +63,11 @@ public class NestedTransactionLocksIT
 
     private WorkerCommand<Void, Lock> acquireWriteLock( final Node resource )
     {
-        return new WorkerCommand<Void, Lock>()
+        return state ->
         {
-            @Override
-            public Lock doWork( Void state )
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    return tx.acquireWriteLock( resource );
-                }
+                return tx.acquireWriteLock( resource );
             }
         };
     }

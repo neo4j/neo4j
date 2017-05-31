@@ -75,32 +75,11 @@ public class PropertyLoaderTest
     public void setUpMocking() throws Exception
     {
         doReturn( nodeStore ).when( neoStores ).getNodeStore();
-        when( nodeStore.newRecord() ).thenAnswer( new Answer<NodeRecord>()
-        {
-            @Override
-            public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new NodeRecord( -1 );
-            }
-        } );
+        when( nodeStore.newRecord() ).thenAnswer( invocation -> new NodeRecord( -1 ) );
         doReturn( relationshipStore ).when( neoStores ).getRelationshipStore();
-        when( relationshipStore.newRecord() ).thenAnswer( new Answer<RelationshipRecord>()
-        {
-            @Override
-            public RelationshipRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipRecord( -1 );
-            }
-        } );
+        when( relationshipStore.newRecord() ).thenAnswer( invocation -> new RelationshipRecord( -1 ) );
         doReturn( propertyStore ).when( neoStores ).getPropertyStore();
-        when( propertyStore.newRecord() ).thenAnswer( new Answer<PropertyRecord>()
-        {
-            @Override
-            public PropertyRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new PropertyRecord( -1 );
-            }
-        } );
+        when( propertyStore.newRecord() ).thenAnswer( invocation -> new PropertyRecord( -1 ) );
     }
 
     @Test
@@ -190,16 +169,12 @@ public class PropertyLoaderTest
     private <R extends PrimitiveRecord> void setUpPropertyChain( long id, Class<R> recordClass,
             CommonAbstractStore<R,? extends StoreHeader> store, int... propertyValues )
     {
-        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( new Answer<R>()
+        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( invocation ->
         {
-            @Override
-            public R answer( InvocationOnMock invocation ) throws Throwable
-            {
-                R record = (R) invocation.getArguments()[1];
-                record.setId( ((Number)invocation.getArguments()[0]).longValue() );
-                record.setNextProp( 1 );
-                return record;
-            }
+            R record = (R) invocation.getArguments()[1];
+            record.setId( ((Number)invocation.getArguments()[0]).longValue() );
+            record.setNextProp( 1 );
+            return record;
         } );
         List<PropertyRecord> propertyChain = new ArrayList<>( propertyValues.length );
         for ( int i = 0; i < propertyValues.length; i++ )

@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public DatabaseRule db = new ImpermanentDatabaseRule(  );
+    public DatabaseRule db = new ImpermanentDatabaseRule();
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
     @Rule
@@ -172,41 +172,29 @@ public class ManualAcquireLockTest
 
         void beginTx() throws Exception
         {
-            execute( new WorkerCommand<State, Void>()
+            execute( (WorkerCommand<State,Void>) state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.tx = state.graphDb.beginTx();
-                    return null;
-                }
+                state.tx = state.graphDb.beginTx();
+                return null;
             } );
         }
 
         void finishTx() throws Exception
         {
-            execute( new WorkerCommand<State, Void>()
+            execute( (WorkerCommand<State,Void>) state ->
             {
-                @Override
-                public Void doWork( State state )
-                {
-                    state.tx.success();
-                    state.tx.close();
-                    return null;
-                }
+                state.tx.success();
+                state.tx.close();
+                return null;
             } );
         }
 
         void setProperty( final Node node, final String key, final Object value ) throws Exception
         {
-            execute( new WorkerCommand<State, Object>()
+            execute( state ->
             {
-                @Override
-                public Object doWork( State state )
-                {
-                    node.setProperty( key, value );
-                    return null;
-                }
+                node.setProperty( key, value );
+                return null;
             }, 200, MILLISECONDS );
         }
     }

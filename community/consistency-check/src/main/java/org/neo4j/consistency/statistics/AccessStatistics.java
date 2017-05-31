@@ -156,11 +156,7 @@ public class AccessStatistics
             {
                 return true;
             }
-            if ( Math.abs( id2 - id1 ) < this.proximityValue )
-            {
-                return true;
-            }
-            return false;
+            return Math.abs( id2 - id1 ) < this.proximityValue;
         }
 
         public void upWrite( long id )

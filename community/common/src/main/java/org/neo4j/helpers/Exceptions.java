@@ -197,7 +197,7 @@ public class Exceptions
 
     public static boolean contains( Throwable cause, Class... anyOfTheseClasses )
     {
-        return contains( cause, org.neo4j.function.Predicates.<Throwable>instanceOfAny( anyOfTheseClasses ) );
+        return contains( cause, org.neo4j.function.Predicates.instanceOfAny( anyOfTheseClasses ) );
     }
 
     public static boolean contains( Throwable cause, Predicate<Throwable> toLookFor )

@@ -72,55 +72,47 @@ public class ConsistentPropertyReadsIT
         for ( int i = 0; i < updaters; i++ )
         {
             // Changers
-            race.addContestant( new Runnable()
+            race.addContestant( () ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
+                    ThreadLocalRandom random = ThreadLocalRandom.current();
+                    for ( int j = 0; j < 100; j++ )
                     {
-                        ThreadLocalRandom random = ThreadLocalRandom.current();
-                        for ( int j = 0; j < 100; j++ )
+                        Node node = nodes[random.nextInt( nodes.length )];
+                        String key = keys[random.nextInt( keys.length )];
+                        try ( Transaction tx = db.beginTx() )
                         {
-                            Node node = nodes[random.nextInt( nodes.length )];
-                            String key = keys[random.nextInt( keys.length )];
-                            try ( Transaction tx = db.beginTx() )
-                            {
-                                node.removeProperty( key );
-                                tx.success();
-                            }
-                            try ( Transaction tx = db.beginTx() )
-                            {
-                                node.setProperty( key, values[random.nextInt( values.length )] );
-                                tx.success();
-                            }
+                            node.removeProperty( key );
+                            tx.success();
+                        }
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            node.setProperty( key, values[random.nextInt( values.length )] );
+                            tx.success();
                         }
                     }
-                    finally
-                    {
-                        updatersDone.decrementAndGet();
-                    }
+                }
+                finally
+                {
+                    updatersDone.decrementAndGet();
                 }
             } );
         }
         for ( int i = 0; i < 100; i++ )
         {
             // Readers
-            race.addContestant( new Runnable()
+            race.addContestant( () ->
             {
-                @Override
-                public void run()
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                while ( updatersDone.get() > 0 )
                 {
-                    ThreadLocalRandom random = ThreadLocalRandom.current();
-                    while ( updatersDone.get() > 0 )
+                    try ( Transaction tx = db.beginTx() )
                     {
-                        try ( Transaction tx = db.beginTx() )
-                        {
-                            String value = (String) nodes[random.nextInt( nodes.length )]
-                                    .getProperty( keys[random.nextInt( keys.length )], null );
-                            assertTrue( value, value == null || ArrayUtil.contains( values, value ) );
-                            tx.success();
-                        }
+                        String value = (String) nodes[random.nextInt( nodes.length )]
+                                .getProperty( keys[random.nextInt( keys.length )], null );
+                        assertTrue( value, value == null || ArrayUtil.contains( values, value ) );
+                        tx.success();
                     }
                 }
             } );

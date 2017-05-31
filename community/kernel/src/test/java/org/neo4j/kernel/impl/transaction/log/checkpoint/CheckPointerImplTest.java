@@ -203,25 +203,21 @@ public class CheckPointerImplTest
 
         Thread checkPointerThread = new CheckPointerThread( checkPointing, startSignal, completed );
 
-        Thread forceCheckPointThread = new Thread()
+        Thread forceCheckPointThread = new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    startSignal.countDown();
-                    startSignal.await();
-                    checkPointing.forceCheckPoint( INFO );
+                startSignal.countDown();
+                startSignal.await();
+                checkPointing.forceCheckPoint( INFO );
 
-                    completed.countDown();
-                }
-                catch ( Throwable e )
-                {
-                    throw new RuntimeException( e );
-                }
+                completed.countDown();
             }
-        };
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
 
         // when
         checkPointerThread.start();

@@ -60,14 +60,7 @@ public class StateMachinesTest
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ),
                 Mockito.mock( MessageSender.class ), Mockito.mock( Timeouts.class ),
-                Mockito.mock( DelayedDirectExecutor.class ), new Executor()
-        {
-            @Override
-            public void execute( Runnable command )
-            {
-                command.run();
-            }
-        }, mock( InstanceId.class )
+                Mockito.mock( DelayedDirectExecutor.class ), command -> command.run(), mock( InstanceId.class )
         );
 
         ArrayList<TestMessage> handleOrder = new ArrayList<>();
@@ -97,50 +90,28 @@ public class StateMachinesTest
         // Given
         MessageSender sender = mock( MessageSender.class );
         // The sender, which adds messages outgoing to the list above.
-        doAnswer( new Answer()
+        doAnswer( invocation ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                sentOut.addAll( (Collection<? extends Message>) invocation.getArguments()[0] );
-                return null;
-            }
+            sentOut.addAll( (Collection<? extends Message>) invocation.getArguments()[0] );
+            return null;
         } ).when( sender ).process( Matchers.<List<Message<? extends MessageType>>>any() );
 
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ), sender,
-                mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), new Executor()
-        {
-            @Override
-            public void execute( Runnable command )
-            {
-                command.run();
-            }
-        }, me
+                mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), command -> command.run(), me
         );
 
         // The state machine, which has a TestMessage message type and simply adds a TO header to the messages it
         // is handed to handle.
         StateMachine machine = mock( StateMachine.class );
-        when( machine.getMessageType() ).then( new Answer<Object>()
+        when( machine.getMessageType() ).then( (Answer<Object>) invocation -> TestMessage.class );
+        doAnswer( invocation ->
         {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return TestMessage.class;
-            }
-        } );
-        doAnswer( new Answer<Object>()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                Message message = (Message) invocation.getArguments()[0];
-                MessageHolder holder = (MessageHolder) invocation.getArguments()[1];
-                message.setHeader( Message.TO, "to://neverland" );
-                holder.offer( message );
-                return null;
-            }
+            Message message = (Message) invocation.getArguments()[0];
+            MessageHolder holder = (MessageHolder) invocation.getArguments()[1];
+            message.setHeader( Message.TO, "to://neverland" );
+            holder.offer( message );
+            return null;
         } ).when( machine ).handle( any( Message.class ), any( MessageHolder.class ) );
         stateMachines.addStateMachine( machine );
 
@@ -158,7 +129,7 @@ public class StateMachinesTest
     public enum TestMessage
             implements MessageType
     {
-        message1, message2, message3, message4, message5;
+        message1, message2, message3, message4, message5
     }
 
     public enum TestState

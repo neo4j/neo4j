@@ -103,12 +103,7 @@ public class User
         {
             return false;
         }
-        if ( name != null ? !name.equals( user.name ) : user.name != null )
-        {
-            return false;
-        }
-
-        return true;
+        return name != null ? name.equals( user.name ) : user.name == null;
     }
 
     @Override

@@ -404,7 +404,7 @@ public class ImportTool
         boolean success = false;
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
+            storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
             Config config = Config.defaults();
             config.augment( stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
@@ -441,7 +441,7 @@ public class ImportTool
             Collector badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
                     skipBadEntriesLogging, badOutput );
 
-            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
+            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
             configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
@@ -546,7 +546,7 @@ public class ImportTool
                 try
                 {
                     StoreFile.fileOperation( FileOperation.DELETE, fs, storeDir, null,
-                            Iterables.<StoreFile,StoreFile>iterable( StoreFile.values() ),
+                            Iterables.iterable( StoreFile.values() ),
                             false, ExistingTargetStrategy.FAIL, StoreFileType.values() );
                 }
                 catch ( IOException e )
@@ -564,10 +564,10 @@ public class ImportTool
     public static Collection<Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
     {
         return args
-                .interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
+                .interpretOptionsWithMetadata( key, Converters.optional(),
                         Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), filesExist(
                                 err ),
-                        Validators.<File>atLeast( "--" + key, 1 ) );
+                        Validators.atLeast( "--" + key, 1 ) );
     }
 
     private static Validator<File[]> filesExist( PrintStream err )
@@ -865,10 +865,10 @@ public class ImportTool
     {
         final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter = args.interpretOption( Options.DELIMITER.key(),
-                Converters.<Character>optional(), CHARACTER_CONVERTER );
+                Converters.optional(), CHARACTER_CONVERTER );
         final Character specificArrayDelimiter = args.interpretOption( Options.ARRAY_DELIMITER.key(),
-                Converters.<Character>optional(), CHARACTER_CONVERTER );
-        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(),
+                Converters.optional(), CHARACTER_CONVERTER );
+        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.optional(),
                 CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );

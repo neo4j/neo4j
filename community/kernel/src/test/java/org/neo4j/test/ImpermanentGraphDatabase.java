@@ -69,7 +69,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase()
     {
-        this( new HashMap<String, String>() );
+        this( new HashMap<>() );
     }
 
     /*
@@ -83,7 +83,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     public ImpermanentGraphDatabase( File storeDir )
     {
-        this( storeDir, new HashMap<String, String>() );
+        this( storeDir, new HashMap<>() );
     }
 
     /**
@@ -102,8 +102,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
     {
         this( storeDir, params,
-                Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
-                        KernelExtensionFactory.class ) ) );
+                Iterables.cast( Service.load( KernelExtensionFactory.class ) ) );
     }
 
     /**

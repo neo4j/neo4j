@@ -291,7 +291,7 @@ public class BatchInsertTest
         batchInserter.setNodeProperty( id2, "array", array2 );
 
         // Then
-        assertThat( (String[]) batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
+        assertThat( batchInserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
     }
 
     @Test
@@ -383,8 +383,8 @@ public class BatchInsertTest
     {
         BatchInserter inserter = newBatchInserter();
 
-        long from = inserter.createNode( Collections.<String,Object>emptyMap() );
-        long to = inserter.createNode( Collections.<String,Object>emptyMap() );
+        long from = inserter.createNode( Collections.emptyMap() );
+        long to = inserter.createNode( Collections.emptyMap() );
         long theRel = inserter.createRelationship( from, to,
                 RelationshipType.withName( "TestingPropsHere" ),
                 MapUtil.map( "foo", "bar" ) );
@@ -429,7 +429,7 @@ public class BatchInsertTest
         BatchInserter inserter = globalInserter;
 
         long theNode = inserter.createNode( properties );
-        long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
+        long anotherNode = inserter.createNode( Collections.emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
                 RelationshipType.withName( "foo" ), properties );
         for ( String key : properties.keySet() )
@@ -447,7 +447,7 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         long theNode = inserter.createNode( properties );
-        long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
+        long anotherNode = inserter.createNode( Collections.emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
                 RelationshipType.withName( "foo" ), properties );
 
@@ -1373,8 +1373,8 @@ public class BatchInsertTest
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
 
-        inserter.createNode( Collections.<String,Object>singletonMap( property, value ), label );
-        inserter.createNode( Collections.<String,Object>singletonMap( property, value ), label );
+        inserter.createNode( Collections.singletonMap( property, value ), label );
+        inserter.createNode( Collections.singletonMap( property, value ), label );
 
         // Then
         try

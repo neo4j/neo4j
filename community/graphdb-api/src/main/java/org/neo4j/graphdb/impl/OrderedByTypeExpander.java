@@ -40,12 +40,12 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
 
     public OrderedByTypeExpander()
     {
-        this( Collections.<Pair<RelationshipType, Direction>>emptyList() );
+        this( Collections.emptyList() );
     }
 
     OrderedByTypeExpander( Collection<Pair<RelationshipType, Direction>> orderedTypes )
     {
-        super( Collections.<Direction, RelationshipType[]>emptyMap() );
+        super( Collections.emptyMap() );
         this.orderedTypes = orderedTypes;
     }
 

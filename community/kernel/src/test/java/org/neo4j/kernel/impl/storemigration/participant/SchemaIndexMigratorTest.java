@@ -58,6 +58,6 @@ public class SchemaIndexMigratorTest
         migrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_0.STORE_VERSION );
 
         verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
-        verify( fs ).deleteRecursively( labelScanStoreProvider.getStoreDirectory( storeDir ) );
+        verify( fs ).deleteRecursively( LabelScanStoreProvider.getStoreDirectory( storeDir ) );
     }
 }

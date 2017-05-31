@@ -408,14 +408,8 @@ public class RaftMachineTest
         final MemberId newMember = member( 99 );
         DirectNetworking.Inbound newMemberInbound = network.new Inbound( newMember );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
-        newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage>()
-        {
-            @Override
-            public void handle( RaftMessages.RaftMessage message )
-            {
-                messages.send( newMember, message );
-            }
-        } );
+        newMemberInbound.registerHandler(
+                (Inbound.MessageHandler<RaftMessages.RaftMessage>) message -> messages.send( newMember, message ) );
 
         FakeClock fakeClock = Clocks.fakeClock();
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService( fakeClock );

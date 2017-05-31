@@ -283,7 +283,7 @@ public class HighAvailabilityBeanTest
     {
         URI uri = HighAvailabilityModeSwitcher.UNKNOWN.equals( role ) ? null : new URI( "ha://" + role + ":" + port );
         return new ClusterMember( new InstanceId( serverId ),
-                MapUtil.<String,URI>genericMap( role, uri ), DEFAULT, alive );
+                MapUtil.genericMap( role, uri ), DEFAULT, alive );
     }
 
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception

@@ -45,7 +45,7 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     public void shouldHandleEmptySource()
     {
         topFetcher = new TopFetchingWeightedPathIterator(
-                Collections.<Path>emptyIterator(), evaluator );
+                Collections.emptyIterator(), evaluator );
 
         assertFalse( "Expected iterator to be empty", topFetcher.hasNext() );
         assertNull( "Expected null after report has no next", topFetcher.fetchNextOrNull() );
@@ -95,10 +95,7 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
         Path e = graph.makePathWithRelProperty( length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
 
         List<Path> list = Arrays.asList(
-                new Path[]{
-                        a,b,c,d,e
-                }
-        );
+                a,b,c,d,e );
         topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
 
         List<Path> result = new ArrayList<>(  );

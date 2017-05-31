@@ -112,14 +112,10 @@ public class MarshlandPoolTest
 
     private void claimAndReleaseInSeparateThread( final MarshlandPool<Object> pool ) throws InterruptedException
     {
-        Thread thread = new Thread( new Runnable()
+        Thread thread = new Thread( () ->
         {
-            @Override
-            public void run()
-            {
-                Object obj = pool.acquire();
-                pool.release( obj );
-            }
+            Object obj = pool.acquire();
+            pool.release( obj );
         } );
         thread.start();
         thread.join();

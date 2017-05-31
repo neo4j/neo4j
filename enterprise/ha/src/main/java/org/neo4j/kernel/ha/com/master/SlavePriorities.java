@@ -49,14 +49,7 @@ public abstract class SlavePriorities
      */
     public static SlavePriority givenOrder()
     {
-        return new SlavePriority()
-        {
-            @Override
-            public Iterable<Slave> prioritize( Iterable<Slave> slaves )
-            {
-                return slaves;
-            }
-        };
+        return slaves -> slaves;
     }
 
     /**
@@ -79,23 +72,16 @@ public abstract class SlavePriorities
                 {
                     return Iterables.empty();
                 }
-                return new Iterable<Slave>()
+                return () -> new PrefetchingIterator<Slave>()
                 {
-                    @Override
-                    public Iterator<Slave> iterator()
-                    {
-                        return new PrefetchingIterator<Slave>()
-                        {
-                            private int start = index.getAndIncrement() % slaveList.size();
-                            private int count;
+                    private int start = index.getAndIncrement() % slaveList.size();
+                    private int count;
 
-                            @Override
-                            protected Slave fetchNextOrNull()
-                            {
-                                int id = count++;
-                                return id <= slaveList.size() ? slaveList.get( (start + id) % slaveList.size() ) : null;
-                            }
-                        };
+                    @Override
+                    protected Slave fetchNextOrNull()
+                    {
+                        int id = count++;
+                        return id <= slaveList.size() ? slaveList.get( (start + id) % slaveList.size() ) : null;
                     }
                 };
             }
@@ -108,14 +94,7 @@ public abstract class SlavePriorities
      */
     public static SlavePriority fixedDescending()
     {
-        return new SlavePriority()
-        {
-            @Override
-            public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
-            {
-                return sortSlaves( slaves, false );
-            }
-        };
+        return slaves -> sortSlaves( slaves, false );
     }
 
     /**
@@ -134,14 +113,7 @@ public abstract class SlavePriorities
      */
     public static SlavePriority fixedAscending()
     {
-        return new SlavePriority()
-        {
-            @Override
-            public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
-            {
-                return sortSlaves( slaves, true );
-            }
-        };
+        return slaves -> sortSlaves( slaves, true );
     }
 
     private static List<Slave> sortSlaves( final Iterable<Slave> slaves, boolean asc )
@@ -151,13 +123,8 @@ public abstract class SlavePriorities
         return slaveList;
     }
 
-    private static final Comparator<Slave> SERVER_ID_COMPARATOR = new Comparator<Slave>()
-    {
-        public int compare( Slave first, Slave second )
-        {
-            return first.getServerId() - second.getServerId();
-        }
-    };
+    private static final Comparator<Slave> SERVER_ID_COMPARATOR =
+            ( first, second ) -> first.getServerId() - second.getServerId();
 
     private static final Comparator<Slave> REVERSE_SERVER_ID_COMPARATOR = reverseOrder( SERVER_ID_COMPARATOR );
 }

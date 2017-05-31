@@ -251,7 +251,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
-        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
+        final List<Object> idList = Arrays.asList( "10", "9", "10" );
         InputIterable<Object> ids = wrap( "source", idList );
 
         Group group = new Group.Adapter( GLOBAL.id(), "global" );
@@ -457,49 +457,42 @@ public class EncodingIdMapperTest
         final int idsPerGroup = 20;
         int groups = 5;
         final AtomicReference<Group> group = new AtomicReference<>();
-        InputIterable<Object> ids = SimpleInputIteratorWrapper.wrap( "source", new Iterable<Object>()
+        InputIterable<Object> ids = SimpleInputIteratorWrapper.wrap( "source", () -> new PrefetchingIterator<Object>()
         {
+            private int i;
+
             @Override
-            public Iterator<Object> iterator()
+            protected Object fetchNextOrNull()
             {
-                return new PrefetchingIterator<Object>()
+                // Change group every <idsPerGroup> id
+                if ( i % idsPerGroup == 0 )
                 {
-                    private int i;
-
-                    @Override
-                    protected Object fetchNextOrNull()
+                    int groupId = i / idsPerGroup;
+                    if ( groupId == groups )
                     {
-                        // Change group every <idsPerGroup> id
-                        if ( i % idsPerGroup == 0 )
-                        {
-                            int groupId = i / idsPerGroup;
-                            if ( groupId == groups )
-                            {
-                                return null;
-                            }
-                            group.set( new Group.Adapter( groupId, "Group " + groupId ) );
-                        }
-                        try
-                        {
-                            // Let the first 10% in each group be accidental collisions with each other
-                            // i.e. all first 10% in each group collides with all other first 10% in each group
-                            if ( i % idsPerGroup < 2 )
-                            {   // Let these colliding values encode into the same eId as well,
-                                // so that they are definitely marked as collisions
-                                encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 1234567 ) );
-                                return Long.valueOf( i % idsPerGroup );
-                            }
-
-                            // The other 90% will be accidental collisions for something else
-                            encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456 - group.get().id() ) );
-                            return Long.valueOf( i );
-                        }
-                        finally
-                        {
-                            i++;
-                        }
+                        return null;
                     }
-                };
+                    group.set( new Group.Adapter( groupId, "Group " + groupId ) );
+                }
+                try
+                {
+                    // Let the first 10% in each group be accidental collisions with each other
+                    // i.e. all first 10% in each group collides with all other first 10% in each group
+                    if ( i % idsPerGroup < 2 )
+                    {   // Let these colliding values encode into the same eId as well,
+                        // so that they are definitely marked as collisions
+                        encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 1234567 ) );
+                        return Long.valueOf( i % idsPerGroup );
+                    }
+
+                    // The other 90% will be accidental collisions for something else
+                    encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456 - group.get().id() ) );
+                    return Long.valueOf( i );
+                }
+                finally
+                {
+                    i++;
+                }
             }
         } );
 
@@ -626,16 +619,10 @@ public class EncodingIdMapperTest
                 1_000, processors, comparator );
     }
 
-    private static final TrackerFactory RANDOM_TRACKER_FACTORY = new TrackerFactory()
-    {
-        @Override
-        public Tracker create( NumberArrayFactory arrayFactory, long size )
-        {
-            return System.currentTimeMillis() % 2 == 0
+    private static final TrackerFactory RANDOM_TRACKER_FACTORY =
+            ( arrayFactory, size ) -> System.currentTimeMillis() % 2 == 0
                     ? new IntTracker( arrayFactory.newIntArray( size, AbstractTracker.DEFAULT_VALUE ) )
                     : new LongTracker( arrayFactory.newLongArray( size, AbstractTracker.DEFAULT_VALUE ) );
-        }
-    };
 
     private class ValueGenerator implements InputIterable<Object>
     {
@@ -708,14 +695,7 @@ public class EncodingIdMapperTest
             @Override
             Factory<Object> data( final Random random )
             {
-                return new Factory<Object>()
-                {
-                    @Override
-                    public Object newInstance()
-                    {
-                        return random.nextInt( 1_000_000_000 );
-                    }
-                };
+                return () -> random.nextInt( 1_000_000_000 );
             }
         },
         LONGS_AS_STRINGS
@@ -735,14 +715,7 @@ public class EncodingIdMapperTest
             @Override
             Factory<Object> data( final Random random )
             {
-                return new Factory<Object>()
-                {
-                    @Override
-                    public Object newInstance()
-                    {
-                        return String.valueOf( random.nextInt( 1_000_000_000 ) );
-                    }
-                };
+                return () -> String.valueOf( random.nextInt( 1_000_000_000 ) );
             }
         },
         VERY_LONG_STRINGS
