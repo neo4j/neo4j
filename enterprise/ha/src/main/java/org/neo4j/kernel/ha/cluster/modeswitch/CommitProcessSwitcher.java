@@ -28,7 +28,6 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -41,18 +40,15 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     private final RequestContextFactory requestContextFactory;
     private final DependencyResolver dependencyResolver;
     private final MasterTransactionCommitProcess.Monitor monitor;
-    private final Locks locks;
 
     public CommitProcessSwitcher( TransactionPropagator txPropagator, Master master,
             DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
-            Locks locks,
             Monitors monitors, DependencyResolver dependencyResolver )
     {
         super( delegate );
         this.txPropagator = txPropagator;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.locks = locks;
         this.dependencyResolver = dependencyResolver;
         this.monitor = monitors.newMonitor( MasterTransactionCommitProcess.Monitor.class );
     }
@@ -71,6 +67,6 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
                 dependencyResolver.resolveDependency( StorageEngine.class ) );
 
         IntegrityValidator validator = dependencyResolver.resolveDependency( IntegrityValidator.class );
-        return new MasterTransactionCommitProcess( commitProcess, txPropagator, validator, monitor, locks );
+        return new MasterTransactionCommitProcess( commitProcess, txPropagator, validator, monitor );
     }
 }

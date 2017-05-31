@@ -40,10 +40,10 @@ public class DatabaseSchemaStateTest
         stateStore.apply( map( "key", ExpirableStringContainer.of( "created_value" ) ) );
 
         // WHEN
-        String result = stateStore.get( "key" );
+        ExpirableStringContainer result = stateStore.get( "key" );
 
         // THEN
-        assertEquals( "created_value", result );
+        assertEquals( "created_value", result.getValue() );
     }
 
     @Test

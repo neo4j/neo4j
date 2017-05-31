@@ -173,7 +173,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             // Client is not holding locks, use a temporary lock client
             try ( Conversation conversation = conversationManager.acquire() )
             {
-                return commit0( context, preparedTransaction, conversation.getLocks() );
+                return commit0( context, preparedTransaction );
             }
         }
         else
@@ -185,7 +185,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
                 Locks.Client locks = conversation.getLocks();
                 try
                 {
-                    return commit0( context, preparedTransaction, locks );
+                    return commit0( context, preparedTransaction );
                 }
                 finally
                 {
@@ -199,21 +199,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
-    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction, Locks.Client locks ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
+    private Response<Long> commit0( RequestContext context, TransactionRepresentation preparedTransaction )
+            throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
-        //TODO: why do we need it?
-//        if ( locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) )
-//        {
-            long txId = spi.applyPreparedTransaction( preparedTransaction );
-            return spi.packTransactionObligationResponse( context, txId );
-//        }
-//        else
-//        {
-//            throw new TransactionFailureException( Status.Schema.SchemaModifiedConcurrently,
-//                    "Failed to commit, because another transaction is making " +
-//                            "schema changes. Slave commits are disallowed while schema changes are being committed. " +
-//                            "Retrying the transaction should yield a successful result." );
-//        }
+        long txId = spi.applyPreparedTransaction( preparedTransaction );
+        return spi.packTransactionObligationResponse( context, txId );
     }
 
     @Override

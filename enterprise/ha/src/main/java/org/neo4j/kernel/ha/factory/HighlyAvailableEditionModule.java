@@ -635,7 +635,7 @@ public class HighlyAvailableEditionModule
                 TransactionCommitProcess.class );
 
         CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, lockManager, monitors, dependencies );
+                master, commitProcessDelegate, requestContextFactory, monitors, dependencies );
         componentSwitcherContainer.add( commitProcessSwitcher );
 
         return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );

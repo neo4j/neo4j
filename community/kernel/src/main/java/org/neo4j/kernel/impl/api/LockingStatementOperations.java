@@ -63,7 +63,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class LockingStatementOperations implements
         EntityWriteOperations,
@@ -72,9 +71,6 @@ public class LockingStatementOperations implements
         SchemaStateOperations,
         LockOperations
 {
-    private static final boolean SCHEMA_WRITES_DISABLE =
-            flag( LockingStatementOperations.class, "schemaWritesDisable", false );
-
     private final EntityReadOperations entityReadDelegate;
     private final EntityWriteOperations entityWriteDelegate;
     private final SchemaReadOperations schemaReadDelegate;
@@ -502,7 +498,7 @@ public class LockingStatementOperations implements
     {
         if ( !state.hasTxStateWithChanges() || !state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeId );
+            exclusiveLock( state, ResourceTypes.NODE, nodeId );
         }
     }
 
@@ -510,7 +506,7 @@ public class LockingStatementOperations implements
     {
         if ( !state.hasTxStateWithChanges() || !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+            exclusiveLock( state, ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 
@@ -543,12 +539,4 @@ public class LockingStatementOperations implements
     {
         statement.locks().optimistic().acquireExclusive( statement.lockTracer(), resource, resourceId );
     }
-
-//    private void acquireSharedSchemaLock( KernelStatement state )
-//    {
-//        if ( !SCHEMA_WRITES_DISABLE )
-//        {
-//            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
-//        }
-//    }
 }

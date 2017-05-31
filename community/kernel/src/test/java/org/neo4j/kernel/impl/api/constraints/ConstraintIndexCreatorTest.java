@@ -203,10 +203,10 @@ public class ConstraintIndexCreatorTest
 
         // then
         verify( state.locks().pessimistic() )
-                .releaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+                .releaseExclusive( ResourceTypes.LABEL, descriptor.getLabelId() );
 
         verify( state.locks().pessimistic() )
-                .acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+                .acquireExclusive( state.lockTracer(), ResourceTypes.LABEL, descriptor.getLabelId() );
     }
 
     @Test

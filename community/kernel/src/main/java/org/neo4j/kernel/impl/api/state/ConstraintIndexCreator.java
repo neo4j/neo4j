@@ -30,14 +30,14 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -54,7 +54,6 @@ import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationExcepti
 import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class ConstraintIndexCreator
 {
@@ -110,7 +109,7 @@ public class ConstraintIndexCreator
         }
 
         boolean success = false;
-        boolean reacquiredSchemaLock = false;
+        boolean reacquiredLabelLock = false;
         Client locks = state.locks().pessimistic();
         try
         {
@@ -120,7 +119,7 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            releaseLabelLock( locks );
+            releaseLabelLock( locks, descriptor.getLabelId() );
 
             awaitConstrainIndexPopulation( constraint, indexId );
 
@@ -128,8 +127,8 @@ public class ConstraintIndexCreator
             // Acquire SCHEMA WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
-            acquireLabelLock( state, locks );
-            reacquiredSchemaLock = true;
+            acquireLabelLock( state, locks, descriptor.getLabelId() );
+            reacquiredLabelLock = true;
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
             success = true;
             return indexId;
@@ -151,23 +150,23 @@ public class ConstraintIndexCreator
         {
             if ( !success )
             {
-                if ( !reacquiredSchemaLock )
+                if ( !reacquiredLabelLock )
                 {
-                    acquireLabelLock( state, locks );
+                    acquireLabelLock( state, locks, descriptor.getLabelId() );
                 }
                 dropUniquenessConstraintIndex( index );
             }
         }
     }
 
-    private void acquireLabelLock( KernelStatement state, Client locks )
+    private void acquireLabelLock( KernelStatement state, Client locks, int labelId )
     {
-        locks.acquireExclusive( state.lockTracer(), LABEL, schemaResource() );
+        locks.acquireExclusive( state.lockTracer(), LABEL, labelId );
     }
 
-    private void releaseLabelLock( Client locks )
+    private void releaseLabelLock( Client locks, int labelId )
     {
-        locks.releaseExclusive( LABEL, schemaResource() );
+        locks.releaseExclusive( LABEL, labelId );
     }
 
     /**

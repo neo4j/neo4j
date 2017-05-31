@@ -74,7 +74,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.impl.api.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
 {
@@ -136,11 +135,12 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
     {
         // when
-        lockingOps.nodeAddLabel( state, 123, 456 );
+        int labelId = 456;
+        lockingOps.nodeAddLabel( state, 123, labelId );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        order.verify( entityWriteOps ).nodeAddLabel( state, 123, labelId );
     }
 
     @Test
@@ -182,7 +182,8 @@ public class LockingStatementOperationsTest
         lockingOps.nodeSetProperty( state, 123, property );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+//        TODO:
+//        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
@@ -223,7 +224,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( index, result );
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
         order.verify( schemaWriteOps ).indexCreate( state, descriptor );
     }
 
@@ -237,24 +238,8 @@ public class LockingStatementOperationsTest
         lockingOps.indexDrop( state, index );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, index.schema().getLabelId() );
         order.verify( schemaWriteOps ).indexDrop( state, index );
-    }
-
-    @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingIndexRules() throws Exception
-    {
-        // given
-        Iterator<IndexDescriptor> rules = emptyIterator();
-        when( schemaReadOps.indexesGetAll( state ) ).thenReturn( rules );
-
-        // when
-        Iterator<IndexDescriptor> result = lockingOps.indexesGetAll( state );
-
-        // then
-        assertSame( rules, result );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaReadOps ).indexesGetAll( state );
     }
 
     @Test
@@ -269,7 +254,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( constraint, result );
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
         order.verify( schemaWriteOps ).uniquePropertyConstraintCreate( state, descriptor );
     }
 
@@ -283,7 +268,7 @@ public class LockingStatementOperationsTest
         lockingOps.constraintDrop( state, constraint );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
         order.verify( schemaWriteOps ).constraintDrop( state, constraint );
     }
 
@@ -298,7 +283,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
         order.verify( schemaReadOps ).constraintsGetForSchema( state, descriptor );
     }
 
@@ -306,30 +291,16 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
     {
         // given
-        when( schemaReadOps.constraintsGetForLabel( state, 123 ) ).thenReturn( emptyIterator() );
+        int labelId = 123;
+        when( schemaReadOps.constraintsGetForLabel( state, labelId ) ).thenReturn( emptyIterator() );
 
         // when
-        Iterator<ConstraintDescriptor> result = lockingOps.constraintsGetForLabel( state, 123 );
+        Iterator<ConstraintDescriptor> result = lockingOps.constraintsGetForLabel( state, labelId );
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaReadOps ).constraintsGetForLabel( state, 123 );
-    }
-
-    @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints() throws Exception
-    {
-        // given
-        when( schemaReadOps.constraintsGetAll( state ) ).thenReturn( emptyIterator() );
-
-        // when
-        Iterator<ConstraintDescriptor> result = lockingOps.constraintsGetAll( state );
-
-        // then
-        assertThat( asList( result ), empty() );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaReadOps ).constraintsGetAll( state );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        order.verify( schemaReadOps ).constraintsGetForLabel( state, labelId );
     }
 
     @Test
@@ -342,7 +313,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateGetOrCreate( state, null, creator );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+//        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateGetOrCreate( state, null, creator );
     }
 
@@ -353,7 +324,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateFlush( state );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+//        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateFlush( state );
     }
 
