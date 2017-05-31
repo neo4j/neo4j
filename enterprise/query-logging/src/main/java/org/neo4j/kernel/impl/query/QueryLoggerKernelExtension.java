@@ -39,7 +39,6 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
-import static java.lang.String.format;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
@@ -86,7 +85,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             @Override
             public void init() throws Throwable
             {
-                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold ).toMillis();
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
                 EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );

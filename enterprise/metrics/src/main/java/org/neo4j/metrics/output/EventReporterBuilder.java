@@ -66,7 +66,7 @@ public class EventReporterBuilder
         if ( config.get( graphiteEnabled ) )
         {
             HostnamePort server = config.get( graphiteServer );
-            long period = config.get( graphiteInterval );
+            long period = config.get( graphiteInterval ).toMillis();
             GraphiteOutput graphiteOutput = new GraphiteOutput( server, period, registry, logger, prefix );
             reporter.add( graphiteOutput );
             life.add( graphiteOutput );

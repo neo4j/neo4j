@@ -86,17 +86,17 @@ public class ClusterClientModule
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging ) );
 
         TimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
-                new FixedTimeoutStrategy( config.get( ClusterSettings.default_timeout ) ) )
-                .timeout( HeartbeatMessage.sendHeartbeat, config.get( ClusterSettings.heartbeat_interval ) )
-                .timeout( HeartbeatMessage.timed_out, config.get( ClusterSettings.heartbeat_timeout ) )
-                .timeout( AtomicBroadcastMessage.broadcastTimeout, config.get( ClusterSettings.broadcast_timeout ) )
-                .timeout( LearnerMessage.learnTimedout, config.get( ClusterSettings.learn_timeout ) )
-                .timeout( ProposerMessage.phase1Timeout, config.get( ClusterSettings.phase1_timeout ) )
-                .timeout( ProposerMessage.phase2Timeout, config.get( ClusterSettings.phase2_timeout ) )
-                .timeout( ClusterMessage.joiningTimeout, config.get( ClusterSettings.join_timeout ) )
-                .timeout( ClusterMessage.configurationTimeout, config.get( ClusterSettings.configuration_timeout ) )
-                .timeout( ClusterMessage.leaveTimedout, config.get( ClusterSettings.leave_timeout ) )
-                .timeout( ElectionMessage.electionTimeout, config.get( ClusterSettings.election_timeout ) );
+                new FixedTimeoutStrategy( config.get( ClusterSettings.default_timeout ).toMillis() ) )
+                .timeout( HeartbeatMessage.sendHeartbeat, config.get( ClusterSettings.heartbeat_interval ).toMillis() )
+                .timeout( HeartbeatMessage.timed_out, config.get( ClusterSettings.heartbeat_timeout ).toMillis() )
+                .timeout( AtomicBroadcastMessage.broadcastTimeout, config.get( ClusterSettings.broadcast_timeout ).toMillis() )
+                .timeout( LearnerMessage.learnTimedout, config.get( ClusterSettings.learn_timeout ).toMillis() )
+                .timeout( ProposerMessage.phase1Timeout, config.get( ClusterSettings.phase1_timeout ).toMillis() )
+                .timeout( ProposerMessage.phase2Timeout, config.get( ClusterSettings.phase2_timeout ).toMillis() )
+                .timeout( ClusterMessage.joiningTimeout, config.get( ClusterSettings.join_timeout ).toMillis() )
+                .timeout( ClusterMessage.configurationTimeout, config.get( ClusterSettings.configuration_timeout ).toMillis() )
+                .timeout( ClusterMessage.leaveTimedout, config.get( ClusterSettings.leave_timeout ).toMillis() )
+                .timeout( ElectionMessage.electionTimeout, config.get( ClusterSettings.election_timeout ).toMillis() );
 
         MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory(
                 new ClusterConfiguration( config.get( ClusterSettings.cluster_name ), logging ),
@@ -213,7 +213,7 @@ public class ClusterClientModule
             @Override
             public long getClusterJoinTimeout()
             {
-                return config.get( ClusterSettings.join_timeout );
+                return config.get( ClusterSettings.join_timeout ).toMillis();
             }
         }, server, logService ) );
 

@@ -651,7 +651,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
                 new CountCommittedTransactionThreshold( txThreshold );
 
-        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time );
+        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time ).toMillis();
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, clock );
 
         CheckPointThreshold threshold =

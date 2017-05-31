@@ -430,8 +430,8 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
     {
         JndiLdapContextFactory contextFactory = new JndiLdapContextFactory();
         Map<String,Object> environment = contextFactory.getEnvironment();
-        Long connectionTimeoutMillis = config.get( SecuritySettings.ldap_connection_timeout );
-        Long readTimeoutMillis = config.get( SecuritySettings.ldap_read_timeout );
+        Long connectionTimeoutMillis = config.get( SecuritySettings.ldap_connection_timeout ).toMillis();
+        Long readTimeoutMillis = config.get( SecuritySettings.ldap_read_timeout ).toMillis();
         environment.put( JNDI_LDAP_CONNECT_TIMEOUT, connectionTimeoutMillis.toString() );
         environment.put( JNDI_LDAP_READ_TIMEOUT, readTimeoutMillis.toString() );
         contextFactory.setEnvironment( environment );

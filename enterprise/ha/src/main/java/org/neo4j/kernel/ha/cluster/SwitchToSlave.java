@@ -180,7 +180,7 @@ public abstract class SwitchToSlave
         // Wait a short while for current transactions to stop first, just to be nice.
         // We can't wait forever since switching to our designated role is quite important.
         Clock clock = Clocks.systemClock();
-        long deadline = clock.millis() + config.get( HaSettings.internal_state_switch_timeout );
+        long deadline = clock.millis() + config.get( HaSettings.internal_state_switch_timeout ).toMillis();
         while ( transactionCounters.getNumberOfActiveTransactions() > 0 && clock.millis() < deadline )
         {
             parkNanos( MILLISECONDS.toNanos( 10 ) );

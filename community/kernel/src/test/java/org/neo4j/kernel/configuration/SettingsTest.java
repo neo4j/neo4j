@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -254,22 +255,22 @@ public class SettingsTest
     public void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
-        Setting<Long> setting = setting( "foo.bar", DURATION, "1s", min( DURATION.apply( "3s" ) ) );
+        Setting<Duration> setting = setting( "foo.bar", DURATION, "1s", min( DURATION.apply( "3s" ) ) );
         setting.apply( map( stringMap() ) );
     }
 
     @Test( expected = InvalidSettingException.class )
     public void testDurationWithValueNotWithinConstraint()
     {
-        Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
+        Setting<Duration> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
         setting.apply( map( stringMap( "foo.bar", "2s" ) ) );
     }
 
     @Test
     public void testDuration()
     {
-        Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
-        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( 4000L ) );
+        Setting<Duration> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
+        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
     }
 
     @Test
@@ -306,7 +307,7 @@ public class SettingsTest
         Setting<File> config = setting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath(),
                 basePath( home ), isFile );
         assertThat( config.apply( map( stringMap() ) ).getAbsolutePath(),
-            equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
+                equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
     }
 
     @Test
@@ -375,7 +376,7 @@ public class SettingsTest
         assertThat( uri.apply( always -> null ).toString(), equalTo( "/db/data" ) );
     }
 
-    public static <From, To> Function<From, To> map( final Map<From, To> map )
+    public static <From, To> Function<From,To> map( final Map<From,To> map )
     {
         return from -> map.get( from );
     }

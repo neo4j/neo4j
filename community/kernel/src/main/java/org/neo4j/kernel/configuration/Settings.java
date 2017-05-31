@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -499,12 +500,12 @@ public class Settings
         }
     };
 
-    public static final Function<String, Long> DURATION = new Function<String, Long>()
+    public static final Function<String,Duration> DURATION = new Function<String, Duration>()
     {
         @Override
-        public Long apply( String value )
+        public Duration apply( String value )
         {
-            return TimeUtil.parseTimeMillis.apply( value );
+            return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value ) );
         }
 
         @Override

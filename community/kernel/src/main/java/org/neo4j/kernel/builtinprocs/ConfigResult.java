@@ -31,6 +31,6 @@ public class ConfigResult
     {
         this.name = configValue.name();
         this.description = configValue.description().orElse( "" );
-        this.value = configValue.value().map( Object::toString ).orElse( "" );
+        this.value = configValue.valueAsString().orElse( "" );
     }
 }

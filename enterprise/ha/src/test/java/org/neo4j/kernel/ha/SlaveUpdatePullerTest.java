@@ -28,6 +28,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.stubbing.OngoingStubbing;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -88,7 +89,7 @@ public class SlaveUpdatePullerTest
     public void setUp() throws Throwable
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000L );
+        when( config.get( HaSettings.pull_interval ) ).thenReturn( Duration.ofSeconds( 1 ) );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( instanceId );
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
         jobScheduler.init();

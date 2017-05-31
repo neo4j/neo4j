@@ -74,8 +74,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.scheduler = new RobustJobSchedulerWrapper( scheduler, log );
         this.connectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
         this.transactionSource = config.get( CausalClusteringSettings.transaction_advertised_address );
-        this.timeToLive = config.get( CausalClusteringSettings.read_replica_time_to_live );
-        this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh );
+        this.timeToLive = config.get( CausalClusteringSettings.read_replica_time_to_live ).toMillis();
+        this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.myself = myself;
         this.groups = config.get( CausalClusteringSettings.server_groups );
     }

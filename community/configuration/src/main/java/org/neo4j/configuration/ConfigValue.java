@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration;
 
+import java.time.Duration;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
@@ -69,10 +70,16 @@ public class ConfigValue
         return value;
     }
 
+    @Nonnull
+    public Optional<String> valueAsString()
+    {
+        return value.map( ConfigValue::valueToString );
+    }
+
     @Override
     public String toString()
     {
-        return value.map( Object::toString ).orElse( "null" );
+        return valueAsString().orElse( "null" );
     }
 
     public boolean deprecated()
@@ -101,5 +108,15 @@ public class ConfigValue
     public String valueDescription()
     {
         return valueDescription;
+    }
+
+    static String valueToString( Object v )
+    {
+        if ( v != null && v instanceof Duration )
+        {
+            Duration d = (Duration) v;
+            return String.format( "%dms", d.toMillis() );
+        }
+        return String.valueOf( v );
     }
 }

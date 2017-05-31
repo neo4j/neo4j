@@ -97,7 +97,7 @@ public class LegacyGetServersProcedure implements CallableProcedure
 
         return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build(
                 new LoadBalancingResult( routeEndpoints, writeEndpoints, readEndpoints,
-                        config.get( CausalClusteringSettings.cluster_routing_ttl ) ) ) );
+                        config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis() ) ) );
     }
 
     private Optional<AdvertisedSocketAddress> leaderBoltAddress()

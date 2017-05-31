@@ -74,7 +74,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.health = health;
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
-        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout );
+        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
     }
 
     @Override

@@ -215,7 +215,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
     private static CacheManager createCacheManager( Config config )
     {
-        long ttl = config.get( SecuritySettings.auth_cache_ttl );
+        long ttl = config.get( SecuritySettings.auth_cache_ttl ).toMillis();
         int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
         return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
     }

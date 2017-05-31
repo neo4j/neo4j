@@ -230,14 +230,14 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
-        final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time );
+        final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time ).toMillis();
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( dependencies,
                         config.get( HaSettings.pull_apply_batch_size ), idReuseSafeZone ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
-        transactionStartTimeout = config.get( HaSettings.state_switch_timeout );
+        transactionStartTimeout = config.get( HaSettings.state_switch_timeout ).toMillis();
 
         DelegateInvocationHandler<ClusterMemberEvents> clusterEventsDelegateInvocationHandler =
                 new DelegateInvocationHandler<>( ClusterMemberEvents.class );
@@ -383,8 +383,8 @@ public class HighlyAvailableEditionModule
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
                 invalidEpochHandler,
-                config.get( HaSettings.read_timeout ).intValue(),
-                config.get( HaSettings.lock_read_timeout ).intValue(),
+                (int) config.get( HaSettings.read_timeout ).toMillis(),
+                (int) config.get( HaSettings.lock_read_timeout ).toMillis(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue(),
                 logEntryReader );
@@ -399,7 +399,7 @@ public class HighlyAvailableEditionModule
 
         PullerFactory pullerFactory = new PullerFactory( requestContextFactory, master, lastUpdateTime,
                 logging.getInternalLogProvider(), serverId, invalidEpochHandler,
-                config.get( HaSettings.pull_interval ), platformModule.jobScheduler,
+                config.get( HaSettings.pull_interval ).toMillis(), platformModule.jobScheduler,
                 dependencies, platformModule.availabilityGuard, memberStateMachine, monitors );
 
         dependencies.satisfyDependency( paxosLife.add( pullerFactory.createObligationFulfiller( updatePullerProxy ) ) );
@@ -863,7 +863,7 @@ public class HighlyAvailableEditionModule
             @Override
             public long getOldChannelThreshold()
             {
-                return config.get( HaSettings.lock_read_timeout );
+                return config.get( HaSettings.lock_read_timeout ).toMillis();
             }
 
             @Override
