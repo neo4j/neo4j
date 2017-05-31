@@ -19,32 +19,35 @@
  */
 package org.neo4j.values;
 
-/**
- * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
- * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
- */
-public enum ValueGroup
+public class MyVirtualValue extends VirtualValue
 {
-    NO_VALUE( -1 ),
-    TEXT( 0 ),
-    BOOLEAN( 1 ),
-    INTEGER( 2 ),
-    FLOAT( 2 ),
-    INTEGER_ARRAY( 3 ),
-    FLOAT_ARRAY( 3 ),
-    TEXT_ARRAY( 4 ),
-    BOOLEAN_ARRAY( 5 ),
-    VIRTUAL( 6 );
+    private final int hashCode;
 
-    private final int comparabilityGroup;
-
-    ValueGroup( int comparabilityGroup )
+    MyVirtualValue( int hashCode )
     {
-        this.comparabilityGroup = comparabilityGroup;
+        this.hashCode = hashCode;
     }
 
-    public int comparabilityGroup()
+    @Override
+    public boolean equals( VirtualValue other )
     {
-        return comparabilityGroup;
+        return this == other;
+    }
+
+    @Override
+    public int hash()
+    {
+        return hashCode;
+    }
+
+    @Override
+    public void writeTo( ValueWriter writer )
+    {
+    }
+
+    @Override
+    public Object asPublic()
+    {
+        return this;
     }
 }

@@ -29,10 +29,14 @@ import static java.lang.String.format;
 class ValueComparator implements Comparator<Value>
 {
     private final Comparator<ValueGroup> valueGroupComparator;
+    private final Comparator<VirtualValue> virtualValueComparator;
 
-    ValueComparator( Comparator<ValueGroup> valueGroupComparator )
+    ValueComparator(
+            Comparator<ValueGroup> valueGroupComparator,
+            Comparator<VirtualValue> virtualValueComparator )
     {
         this.valueGroupComparator = valueGroupComparator;
+        this.virtualValueComparator = virtualValueComparator;
     }
 
     @Override
@@ -75,6 +79,9 @@ class ValueComparator implements Comparator<Value>
 
             case BOOLEAN_ARRAY:
                 return ((BooleanArray) v1).compareTo( (BooleanArray) v2 );
+
+            case VIRTUAL:
+                return virtualValueComparator.compare( (VirtualValue)v1, (VirtualValue)v2 );
 
             default:
                 throw new UnsupportedOperationException( format( "Unknown ValueGroup id '%s'", id1 ) );

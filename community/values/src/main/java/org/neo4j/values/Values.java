@@ -20,6 +20,7 @@
 package org.neo4j.values;
 
 import java.lang.reflect.Array;
+import java.util.Comparator;
 
 /**
  * Entry point to the values library.
@@ -48,6 +49,16 @@ public class Values
     public class ValueLoadException extends RuntimeException
     {
     }
+
+    /**
+     * Default value comparator. Will correctly compare all storable values and order the value groups according the
+     * to comparability group. Virtual values are sorted in a random but deterministic fashion (by hashCode).
+     */
+    public static final ValueComparator VALUE_COMPARATOR =
+            new ValueComparator(
+                    Comparator.comparingInt( ValueGroup::comparabilityGroup ),
+                    Comparator.comparingInt( VirtualValue::hashCode )
+                );
 
     // DIRECT FACTORY METHODS
 

@@ -25,6 +25,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -33,8 +35,7 @@ public class ValueComparisonTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    private ValueComparator comparator = new ValueComparator(
-            Comparator.comparingInt( ValueGroup::comparabilityGroup ) );
+    private ValueComparator comparator = Values.VALUE_COMPARATOR;
 
     private Object[] objs = new Object[]{
             // OTHER
@@ -92,14 +93,16 @@ public class ValueComparisonTest
     @Test
     public void shouldOrderValuesCorrectly()
     {
-        Value[] values = Arrays.stream( objs ).map( Values::of ).toArray( Value[]::new );
+        List<Value> values = Arrays.stream( objs ).map( Values::of ).collect( Collectors.toList() );
+        values.add( new MyVirtualValue( 0 ) );
+        values.add( new MyVirtualValue( 1 ) );
 
-        for ( int i = 0; i < values.length; i++ )
+        for ( int i = 0; i < values.size(); i++ )
         {
-            for ( int j = 0; j < values.length; j++ )
+            for ( int j = 0; j < values.size(); j++ )
             {
-                Value left = values[i];
-                Value right = values[j];
+                Value left = values.get( i );
+                Value right = values.get( j );
 
                 int cmpPos = sign( i - j );
                 int cmpVal = sign( compare( comparator, left, right ) );
