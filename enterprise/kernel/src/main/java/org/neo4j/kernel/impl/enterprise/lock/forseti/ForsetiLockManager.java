@@ -285,7 +285,7 @@ public class ForsetiLockManager implements Locks
             {
                 id = clientIds.getAndIncrement();
             }
-            long lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout );
+            long lockAcquisitionTimeoutMillis = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toMillis();
             ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this,
                     deadlockResolutionStrategy, clientsById::get, lockAcquisitionTimeoutMillis, clock );
             clientsById.put( id, client );

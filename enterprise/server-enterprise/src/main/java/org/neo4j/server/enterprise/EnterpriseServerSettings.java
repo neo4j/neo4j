@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.time.Duration;
+
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
@@ -35,7 +37,8 @@ public class EnterpriseServerSettings implements LoadableConfig
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to time out logged in users after this idle period. " +
                   "Setting this to 0 indicates no limit." )
-    public static final Setting<Long> browser_credentialTimeout = setting( "browser.credential_timeout", DURATION, "0" );
+    public static final Setting<Duration> browser_credentialTimeout = setting( "browser.credential_timeout", DURATION,
+            "0" );
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )

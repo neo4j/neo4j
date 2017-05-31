@@ -124,7 +124,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
         }, new RotationTimerFactory( clock,
-                config.get( counts_store_rotation_timeout ) ), 16, 16, HEADER_FIELDS );
+                config.get( counts_store_rotation_timeout ).toMillis() ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )

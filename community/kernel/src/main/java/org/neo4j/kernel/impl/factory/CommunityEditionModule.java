@@ -121,7 +121,7 @@ public class CommunityEditionModule extends EditionModule
 
         schemaWriteGuard = createSchemaWriteGuard();
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = createSchemaRuleVerifier();
 

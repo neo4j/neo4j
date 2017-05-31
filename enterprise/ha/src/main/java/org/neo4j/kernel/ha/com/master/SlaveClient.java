@@ -54,7 +54,7 @@ public class SlaveClient extends Client<Slave> implements Slave
                         LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
-                Protocol.DEFAULT_FRAME_LENGTH, HaSettings.read_timeout.apply( from -> null ), maxConcurrentChannels,
+                Protocol.DEFAULT_FRAME_LENGTH, HaSettings.read_timeout.apply( from -> null ).toMillis(), maxConcurrentChannels,
                 chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor, entryReader );
         this.machineId = machineId;
     }

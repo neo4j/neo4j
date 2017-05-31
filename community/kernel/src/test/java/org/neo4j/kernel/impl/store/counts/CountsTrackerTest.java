@@ -374,7 +374,7 @@ public class CountsTrackerTest
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
         }
-        clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ) * 2, MILLISECONDS );
+        clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ).toMillis() * 2, MILLISECONDS );
         try
         {
             rotation.get();

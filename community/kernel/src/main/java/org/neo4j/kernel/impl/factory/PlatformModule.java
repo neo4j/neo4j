@@ -253,7 +253,7 @@ public class PlatformModule
     protected LogService createLogService( LogProvider userLogProvider )
     {
         long internalLogRotationThreshold = config.get( GraphDatabaseSettings.store_internal_log_rotation_threshold );
-        long internalLogRotationDelay = config.get( GraphDatabaseSettings.store_internal_log_rotation_delay );
+        long internalLogRotationDelay = config.get( GraphDatabaseSettings.store_internal_log_rotation_delay ).toMillis();
         int internalLogMaxArchives = config.get( GraphDatabaseSettings.store_internal_log_max_archives );
 
         final StoreLogService.Builder builder =

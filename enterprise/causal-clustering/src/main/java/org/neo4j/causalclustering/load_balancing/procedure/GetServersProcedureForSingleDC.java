@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.load_balancing.procedure;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -33,7 +32,6 @@ import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -54,9 +52,7 @@ import static org.neo4j.causalclustering.load_balancing.Util.extractBoltAddress;
 import static org.neo4j.causalclustering.load_balancing.procedure.ParameterNames.CONTEXT;
 import static org.neo4j.causalclustering.load_balancing.procedure.ParameterNames.SERVERS;
 import static org.neo4j.causalclustering.load_balancing.procedure.ParameterNames.TTL;
-import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V1;
 import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V2;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 /**
  * Returns endpoints and their capabilities.
@@ -106,7 +102,7 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
 
         return RawIterator.<Object[],ProcedureException>of( ResultFormatV1.build(
                 new LoadBalancingResult( routeEndpoints, writeEndpoints, readEndpoints,
-                        config.get( CausalClusteringSettings.cluster_routing_ttl ) ) ) );
+                        config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis() ) ) );
     }
 
     private Optional<AdvertisedSocketAddress> leaderBoltAddress()

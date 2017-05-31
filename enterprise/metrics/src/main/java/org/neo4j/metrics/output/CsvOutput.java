@@ -19,11 +19,6 @@
  */
 package org.neo4j.metrics.output;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.Gauge;
@@ -33,6 +28,11 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -81,7 +81,7 @@ public class CsvOutput implements Lifecycle, EventReporter
     @Override
     public void start()
     {
-        csvReporter.start( config.get( csvInterval ), TimeUnit.MILLISECONDS );
+        csvReporter.start( config.get( csvInterval ).toMillis(), TimeUnit.MILLISECONDS );
         logger.info( "Sending metrics to CSV file at " + outputPath );
     }
 

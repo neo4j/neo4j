@@ -19,12 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -36,6 +30,12 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -92,7 +92,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.log = logProvider.getLog( getClass() );
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
-        this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh );
+        this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
     }
 
     @Override
@@ -203,7 +203,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         networkConfig.setPortAutoIncrement( false );
 
         // We'll use election_timeout as a base value to calculate HC timeouts. We multiply by 1.5
-        Long electionTimeoutMillis = config.get( CausalClusteringSettings.leader_election_timeout );
+        Long electionTimeoutMillis = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
         Long baseHazelcastTimeoutMillis = ( 3 * electionTimeoutMillis ) / 2;
         /*
          * Some HC settings require the value in seconds. Adding the divider and subtracting 1 is equivalent to the

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import java.time.Duration;
+
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -31,8 +33,10 @@ public class MonitorGc implements Lifecycle
 {
     public static class Configuration
     {
-        public static final Setting<Long> gc_monitor_wait_time = setting( "unsupported.dbms.gc_monitor_wait_time", DURATION, "100ms" );
-        public static final Setting<Long> gc_monitor_threshold = setting("unsupported.dbms.gc_monitor_threshold", DURATION, "200ms" );
+        public static final Setting<Duration> gc_monitor_wait_time = setting( "unsupported.dbms.gc_monitor_wait_time",
+                DURATION, "100ms" );
+        public static final Setting<Duration> gc_monitor_threshold = setting("unsupported.dbms.gc_monitor_threshold",
+                DURATION, "200ms" );
     }
 
     private final Config config;
@@ -53,8 +57,8 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        monitorGc = new MeasureDoNothing( "neo4j.PauseMonitor", log, config.get( Configuration.gc_monitor_wait_time ),
-                config.get( Configuration.gc_monitor_threshold ) );
+        monitorGc = new MeasureDoNothing( "neo4j.PauseMonitor", log, config.get( Configuration.gc_monitor_wait_time ).toMillis(),
+                config.get( Configuration.gc_monitor_threshold ).toMillis() );
         monitorGc.start();
     }
 

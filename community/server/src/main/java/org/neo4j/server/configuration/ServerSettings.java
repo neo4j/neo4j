@@ -21,6 +21,7 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -81,8 +82,8 @@ public class ServerSettings implements LoadableConfig
             "Please use dbms.transaction.timeout instead." )
     @Internal
     @Deprecated
-    public static final Setting<Long> webserver_limit_execution_time =
-            setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
+    public static final Setting<Duration> webserver_limit_execution_time = setting( "unsupported.dbms" +
+            ".executiontime_limit.time", DURATION, NO_DEFAULT );
 
     @Internal
     public static final Setting<List<String>> console_module_engines = setting(
@@ -188,7 +189,8 @@ public class ServerSettings implements LoadableConfig
     public static final Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
     @Description( "Timeout for idle transactions in the REST endpoint." )
-    public static final Setting<Long> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout", DURATION, "60s" );
+    public static final Setting<Duration> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout",
+            DURATION, "60s" );
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +

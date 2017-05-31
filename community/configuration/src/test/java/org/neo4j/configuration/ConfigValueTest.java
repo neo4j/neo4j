@@ -21,11 +21,13 @@ package org.neo4j.configuration;
 
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.ConfigValue.valueToString;
 
 public class ConfigValueTest
 {
@@ -92,5 +94,29 @@ public class ConfigValueTest
         assertEquals( "new_name", value.replacement().get() );
         assertFalse( value.internal() );
         assertEquals( "a simple integer", value.valueDescription() );
+    }
+
+    @Test
+    public void durationValueIsRepresentedWithUnit() throws Exception
+    {
+        assertEquals( "120000ms", valueToString( Duration.ofMinutes( 2 ) ) );
+    }
+
+    @Test
+    public void stringValueIsRepresentedAsString() throws Exception
+    {
+        assertEquals( "bob", valueToString( "bob" ) );
+    }
+
+    @Test
+    public void intValueIsRepresentedAsInt() throws Exception
+    {
+        assertEquals( "7", valueToString( 7 ) );
+    }
+
+    @Test
+    public void nullIsHandled() throws Exception
+    {
+        assertEquals( "null", valueToString( null ) );
     }
 }

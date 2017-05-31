@@ -20,6 +20,7 @@
 package org.neo4j.metrics;
 
 import java.io.File;
+import java.time.Duration;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
@@ -107,7 +108,7 @@ public class MetricsSettings implements LoadableConfig
 
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )
-    public static Setting<Long> csvInterval = setting( "metrics.csv.interval", Settings.DURATION, "3s" );
+    public static Setting<Duration> csvInterval = setting( "metrics.csv.interval", Settings.DURATION, "3s" );
 
     // Graphite settings
     @Description( "Set to `true` to enable exporting metrics to Graphite." )
@@ -115,5 +116,5 @@ public class MetricsSettings implements LoadableConfig
     @Description( "The hostname or IP address of the Graphite server" )
     public static Setting<HostnamePort> graphiteServer = setting( "metrics.graphite.server", Settings.HOSTNAME_PORT, ":2003" );
     @Description( "The reporting interval for Graphite. That is, how often to send updated metrics to Graphite." )
-    public static Setting<Long> graphiteInterval = setting( "metrics.graphite.interval", Settings.DURATION, "3s" );
+    public static Setting<Duration> graphiteInterval = setting( "metrics.graphite.interval", Settings.DURATION, "3s" );
 }

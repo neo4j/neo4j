@@ -361,7 +361,7 @@ public class GetServersProcedureV1Test
     private ClusterView run( LegacyGetServersProcedure proc ) throws ProcedureException
     {
         final Object[] rows = asList( proc.apply( null, new Object[0] ) ).get( 0 );
-        assertEquals( config.get( cluster_routing_ttl ) / 1000, /* ttl */(long) rows[0] );
+        assertEquals( config.get( cluster_routing_ttl ).getSeconds(), /* ttl */(long) rows[0] );
         return ClusterView.parse( (List<Map<String,Object>>) rows[1] );
     }
 

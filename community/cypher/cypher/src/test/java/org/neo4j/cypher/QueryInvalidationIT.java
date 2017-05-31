@@ -90,7 +90,7 @@ public class QueryInvalidationIT
         // GIVEN
         Config config = db.getConfigCopy();
         double divergenceThreshold = config.get( GraphDatabaseSettings.query_statistics_divergence_threshold );
-        long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval );
+        long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval ).toMillis();
 
         TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );

@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,11 +61,11 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class CausalClusteringSettings implements LoadableConfig
 {
     @Description( "Time out for a new member to catch up" )
-    public static final Setting<Long> join_catch_up_timeout =
+    public static final Setting<Duration> join_catch_up_timeout =
             setting( "causal_clustering.join_catch_up_timeout", DURATION, "10m" );
 
     @Description( "The time limit within which a new leader election will occur if no messages are received." )
-    public static final Setting<Long> leader_election_timeout =
+    public static final Setting<Duration> leader_election_timeout =
             setting( "causal_clustering.leader_election_timeout", DURATION, "7s" );
 
     @Description( "Prevents the current instance from volunteering to become Raft leader. Defaults to false, and " +
@@ -185,7 +186,7 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.raft_log_reader_pool_size", INTEGER, "8" );
 
     @Description( "RAFT log pruning frequency" )
-    public static final Setting<Long> raft_log_pruning_frequency =
+    public static final Setting<Duration> raft_log_pruning_frequency =
             setting( "causal_clustering.raft_log_pruning_frequency", DURATION, "10m" );
 
     @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
@@ -200,16 +201,16 @@ public class CausalClusteringSettings implements LoadableConfig
                     ( logs ) -> new File( logs, "raft-messages.log" ), PATH );
 
     @Description( "Interval of pulling updates from cores." )
-    public static final Setting<Long> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
+    public static final Setting<Duration> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
 
     @Description( "The catch up protocol times out if the given duration elapses with not network activity. " +
             "Every message received by the client from the server extends the time out duration." )
     @Internal
-    public static final Setting<Long> catch_up_client_inactivity_timeout =
+    public static final Setting<Duration> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "5s" );
 
     @Description( "Throttle limit for logging unknown cluster member address" )
-    public static final Setting<Long> unknown_address_logging_throttle =
+    public static final Setting<Duration> unknown_address_logging_throttle =
             setting( "causal_clustering.unknown_address_logging_throttle", DURATION, "10000ms" );
 
     @Description( "Maximum transaction batch size for read replicas when applying transactions pulled from core " +
@@ -219,12 +220,12 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.read_replica_transaction_applier_batch_size", INTEGER, "64" );
 
     @Description( "Time To Live before read replica is considered unavailable" )
-    public static final Setting<Long> read_replica_time_to_live =
-            setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min( 60_000L ) );
+    public static final Setting<Duration> read_replica_time_to_live =
+            setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min( Duration.ofSeconds( 60 ) ) );
 
     @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure." )
-    public static final Setting<Long> cluster_routing_ttl =
-            setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min( 1_000L ) );
+    public static final Setting<Duration> cluster_routing_ttl =
+            setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min( Duration.ofSeconds( 1 ) ) );
 
     @Description( "Configure if the `dbms.cluster.routing.getServers()` procedure should include followers as read " +
             "endpoints or return only read replicas. Note: if there are no read replicas in the cluster, followers " +
@@ -324,8 +325,8 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.relationship_group_id_allocation_size", INTEGER, "1024" );
 
     @Description( "Time between scanning the cluster to refresh current server's view of topology" )
-    public static final Setting<Long> cluster_topology_refresh =
-            setting( "causal_clustering.cluster_topology_refresh", DURATION, "5s", min( 1_000L ) );
+    public static final Setting<Duration> cluster_topology_refresh =
+            setting( "causal_clustering.cluster_topology_refresh", DURATION, "5s", min( Duration.ofSeconds( 1 ) ) );
 
     @Description( "An ordered list in descending preference of the strategy which read replicas use to choose " +
             "upstream database server from which to pull transactional updates." )

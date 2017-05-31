@@ -84,7 +84,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     {
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
-        this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl );
+        this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
         this.allowReadsOnFollowers = config.get( CausalClusteringSettings.cluster_allow_reads_on_followers );
         this.policies = load( config, PLUGIN_NAME, logProvider.getLog( getClass() ) );
     }

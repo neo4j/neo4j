@@ -53,6 +53,7 @@ public final class ConfigurationBean extends Neo4jMBean
     {
         return config.get( param ).description().orElse( "Configuration attribute" );
     }
+
     private MBeanAttributeInfo[] keys()
     {
         List<MBeanAttributeInfo> keys = new ArrayList<>();
@@ -68,7 +69,7 @@ public final class ConfigurationBean extends Neo4jMBean
     public Object getAttribute( String attribute ) throws AttributeNotFoundException, MBeanException,
             ReflectionException
     {
-        return config.get( attribute ).value().orElse( null );
+        return config.get( attribute ).valueAsString().orElse( null );
     }
 
     @Override

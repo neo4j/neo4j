@@ -25,6 +25,8 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.time.Duration;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -54,7 +56,7 @@ public class ConversationManagerTest
     public void testStart() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
@@ -70,7 +72,7 @@ public class ConversationManagerTest
     public void testStop() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
@@ -86,7 +88,7 @@ public class ConversationManagerTest
     public void testConversationWorkflow() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         RequestContext requestContext = getRequestContext();

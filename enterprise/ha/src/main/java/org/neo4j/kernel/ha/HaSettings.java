@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.time.Duration;
+
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
@@ -50,18 +52,18 @@ public class HaSettings implements LoadableConfig
     public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
     @Description( "How long a slave will wait for response from master before giving up." )
-    public static final Setting<Long> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" );
+    public static final Setting<Duration> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" );
 
     @Description( "Timeout for request threads waiting for instance to become master or slave." )
-    public static final Setting<Long> state_switch_timeout = setting( "ha.role_switch_timeout", DURATION, "120s" );
+    public static final Setting<Duration> state_switch_timeout = setting( "ha.role_switch_timeout", DURATION, "120s" );
 
     @Description( "Timeout for waiting for internal conditions during state switch, like for transactions "
             + "to complete, before switching to master or slave." )
-    public static final Setting<Long> internal_state_switch_timeout =
+    public static final Setting<Duration> internal_state_switch_timeout =
             setting( "ha.internal_role_switch_timeout", DURATION, "10s" );
 
     @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.slave_read_timeout." )
-    public static final Setting<Long> lock_read_timeout = setting( "ha.slave_lock_timeout", DURATION, read_timeout );
+    public static final Setting<Duration> lock_read_timeout = setting( "ha.slave_lock_timeout", DURATION, read_timeout );
 
     @Description( "Maximum number of connections a slave can have to the master." )
     public static final Setting<Integer> max_concurrent_channels_per_slave =
@@ -88,7 +90,7 @@ public class HaSettings implements LoadableConfig
     public static final Setting<Long> com_chunk_size = setting( "ha.data_chunk_size", BYTES, "2M", min( 1024L ) );
 
     @Description( "Interval of pulling updates from master." )
-    public static final Setting<Long> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
+    public static final Setting<Duration> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
 
     @Description( "The amount of slaves the master will ask to replicate a committed transaction. " )
     public static final Setting<Integer> tx_push_factor = setting( "ha.tx_push_factor", INTEGER, "1", min( 0 ) );
@@ -113,7 +115,8 @@ public class HaSettings implements LoadableConfig
                   "applying received transaction stream, to make sure they do not read potentially " +
                   "inconsistent/reused records." )
     @Internal
-    public static final Setting<Long> id_reuse_safe_zone_time = setting( "unsupported.dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
+    public static final Setting<Duration> id_reuse_safe_zone_time = setting( "unsupported.dbms.id_reuse_safe_zone",
+            Settings.DURATION, "1h" );
 
     public enum BranchedDataCopyingStrategy
     {

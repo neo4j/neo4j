@@ -85,7 +85,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             @Override
             public void init() throws Throwable
             {
-                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold ).toMillis();
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
                 EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );

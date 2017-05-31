@@ -20,6 +20,7 @@
 package org.neo4j.server.security.enterprise.configuration;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -143,12 +144,12 @@ public class SecuritySettings implements LoadableConfig
     @Description( "The timeout for establishing an LDAP connection. If a connection with the LDAP server cannot be " +
                   "established within the given time the attempt is aborted. " +
                   "A value of 0 means to use the network protocol's (i.e., TCP's) timeout value." )
-    public static Setting<Long> ldap_connection_timeout =
+    public static Setting<Duration> ldap_connection_timeout =
             setting( "dbms.security.ldap.connection_timeout", DURATION, "30s" );
 
     @Description( "The timeout for an LDAP read request (i.e. search). If the LDAP server does not respond within " +
                   "the given time the request will be aborted. A value of 0 means wait for a response indefinitely." )
-    public static Setting<Long> ldap_read_timeout =
+    public static Setting<Duration> ldap_read_timeout =
             setting( "dbms.security.ldap.read_timeout", DURATION, "30s" );
 
     //-----------------------------------------------------
@@ -258,7 +259,7 @@ public class SecuritySettings implements LoadableConfig
                   "external auth providers (LDAP or plugin). Setting the TTL to 0 will disable auth caching. " +
                   "Disabling caching while using the LDAP auth provider requires the use of an LDAP system account " +
                   "for resolving authorization information." )
-    public static final Setting<Long> auth_cache_ttl =
+    public static final Setting<Duration> auth_cache_ttl =
             setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
 
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
@@ -291,7 +292,7 @@ public class SecuritySettings implements LoadableConfig
             setting( "dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
     @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
-    public static final Setting<Long> store_security_log_rotation_delay =
+    public static final Setting<Duration> store_security_log_rotation_delay =
             setting( "dbms.logs.security.rotation.delay", DURATION, "300s" );
 
     @Description( "Maximum number of history files for the security log." )

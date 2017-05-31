@@ -192,7 +192,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule, clusterStateDirectory.get() );
         topologyService = clusteringModule.topologyService();
 
-        long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle );
+        long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
         int maxQueueSize = config.get( CausalClusteringSettings.outgoing_queue_size );
 
         final SenderService raftSender = new SenderService(
@@ -279,7 +279,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         schemaWriteGuard = createSchemaWriteGuard();
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 

@@ -153,7 +153,7 @@ public class ConversationManager extends LifecycleAdapter
     protected TimedRepository<RequestContext,Conversation> createConversationStore()
     {
         return new TimedRepository<>( getConversationFactory(), getConversationReaper(),
-                config.get( lock_read_timeout ) + lockTimeoutAddition, Clocks.systemClock() );
+                config.get( lock_read_timeout ).toMillis() + lockTimeoutAddition, Clocks.systemClock() );
     }
 
     protected Consumer<Conversation> getConversationReaper()
