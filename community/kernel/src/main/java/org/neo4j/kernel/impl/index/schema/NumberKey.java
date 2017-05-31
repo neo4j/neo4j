@@ -24,7 +24,7 @@ import org.neo4j.values.Value;
 /**
  * Key in a native schema index for numbers.
  */
-interface SchemaNumberKey
+interface NumberKey
 {
     void from( long entityId, Value[] values );
 

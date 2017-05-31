@@ -22,39 +22,33 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.values.Value;
 
 import static java.lang.String.format;
-
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.toValue;
+import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertValidSingleNumber;
+import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.toValue;
 
 /**
- * Adds entity id because its unique key counterpart doesn't have it. The gain of having entity id in value
- * is that keys in internal tree nodes becomes smaller so that internal tree nodes can contain more keys.
+ * Relies on its key counterpart to supply entity id, since the key needs entity id anyway.
  */
-class UniqueSchemaNumberValue extends SchemaNumberValue
+class NonUniqueNumberValue extends NumberValue
 {
     static final int SIZE =
             Byte.SIZE + /* type */
-            Long.SIZE + /* value bits */
-            Long.SIZE;  /* entity id TODO 7 bytes could be enough. Also combine with the type byte thing*/
-
-    long entityId;
+            Long.SIZE;  /* value bits */
 
     @Override
     public void from( long entityId, Value[] values )
     {
         extractValue( assertValidSingleNumber( values ) );
-        this.entityId = entityId;
     }
 
     @Override
     public long getEntityId()
     {
-        return entityId;
+        throw new UnsupportedOperationException( "entity id should be retrieved from key for non-unique index" );
     }
 
     @Override
     public String toString()
     {
-        return format( "type=%d,value=%s,entityId=%d", type, toValue( type, rawValueBits ), entityId );
+        return format( "type=%d,value=%s", type, toValue( type, rawValueBits ) );
     }
 }

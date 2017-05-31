@@ -41,24 +41,24 @@ import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.impl.index.schema.FullScanNonUniqueIndexSamplerTest.countUniqueValues;
 
-public class NonUniqueNativeSchemaIndexPopulatorTest
-        extends NativeSchemaIndexPopulatorTest<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue>
+public class NativeNonUniqueSchemaNumberIndexPopulatorTest
+        extends NativeSchemaIndexPopulatorTest<NonUniqueNumberKey,NonUniqueNumberValue>
 {
     @Override
-    Layout<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> createLayout()
+    Layout<NonUniqueNumberKey,NonUniqueNumberValue> createLayout()
     {
-        return new NonUniqueSchemaNumberIndexLayout();
+        return new NonUniqueNumberLayout();
     }
 
     @Override
-    NativeSchemaIndexPopulator<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> createPopulator( PageCache pageCache, File indexFile,
-            Layout<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaNumberIndexPopulator<NonUniqueNumberKey,NonUniqueNumberValue> createPopulator( PageCache pageCache, File indexFile,
+            Layout<NonUniqueNumberKey,NonUniqueNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NonUniqueNativeSchemaIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE, samplingConfig );
+        return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE, samplingConfig );
     }
 
     @Override
-    protected int compareValue( NonUniqueSchemaNumberValue value1, NonUniqueSchemaNumberValue value2 )
+    protected int compareValue( NonUniqueNumberValue value1, NonUniqueNumberValue value2 )
     {
         return compareIndexedPropertyValue( value1, value2 );
     }
@@ -188,7 +188,7 @@ public class NonUniqueNativeSchemaIndexPopulatorTest
     }
 
     @Override
-    protected void copyValue( NonUniqueSchemaNumberValue value, NonUniqueSchemaNumberValue intoValue )
+    protected void copyValue( NonUniqueNumberValue value, NonUniqueNumberValue intoValue )
     {
         intoValue.type = value.type;
         intoValue.rawValueBits = value.rawValueBits;

@@ -37,22 +37,21 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public class UniqueNativeSchemaIndexPopulatorTest
-        extends NativeSchemaIndexPopulatorTest<UniqueSchemaNumberKey,UniqueSchemaNumberValue>
+public class NativeUniqueSchemaNumberIndexPopulatorTest
+        extends NativeSchemaIndexPopulatorTest<UniqueNumberKey,UniqueNumberValue>
 {
     @Override
-    NativeSchemaIndexPopulator<UniqueSchemaNumberKey,UniqueSchemaNumberValue> createPopulator(
+    NativeSchemaNumberIndexPopulator<UniqueNumberKey,UniqueNumberValue> createPopulator(
             PageCache pageCache, File indexFile,
-            Layout<UniqueSchemaNumberKey,UniqueSchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
+            Layout<UniqueNumberKey,UniqueNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new UniqueNativeSchemaIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE );
+        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE );
     }
 
     @Override
-    protected int compareValue( UniqueSchemaNumberValue value1, UniqueSchemaNumberValue value2 )
+    protected int compareValue( UniqueNumberValue value1, UniqueNumberValue value2 )
     {
         int valueCompare = compareIndexedPropertyValue( value1, value2 );
         if ( valueCompare == 0 )
@@ -63,9 +62,9 @@ public class UniqueNativeSchemaIndexPopulatorTest
     }
 
     @Override
-    Layout<UniqueSchemaNumberKey,UniqueSchemaNumberValue> createLayout()
+    Layout<UniqueNumberKey,UniqueNumberValue> createLayout()
     {
-        return new UniqueSchemaNumberIndexLayout();
+        return new UniqueNumberLayout();
     }
 
     @Test
@@ -179,7 +178,7 @@ public class UniqueNativeSchemaIndexPopulatorTest
     }
 
     @Override
-    protected void copyValue( UniqueSchemaNumberValue value, UniqueSchemaNumberValue into )
+    protected void copyValue( UniqueNumberValue value, UniqueNumberValue into )
     {
         into.type = value.type;
         into.rawValueBits = value.rawValueBits;

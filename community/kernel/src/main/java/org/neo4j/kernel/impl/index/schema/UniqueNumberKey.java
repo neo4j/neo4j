@@ -21,35 +21,51 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.Value;
 
-import static java.lang.String.format;
-
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.toValue;
+import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertValidSingleNumber;
 
 /**
- * Relies on its key counterpart to supply entity id, since the key needs entity id anyway.
+ * Contains only comparison value, which means that all values needs to be unique.
+ * Comparison value is basically any number as a double, a conversion which is lossy by nature,
+ * especially for higher decimal values. Actual value is stored in {@link NumberValue}
+ * for ability to filter accidental coersions directly internally.
  */
-class NonUniqueSchemaNumberValue extends SchemaNumberValue
+class UniqueNumberKey implements NumberKey
 {
-    static final int SIZE =
-            Byte.SIZE + /* type */
-            Long.SIZE;  /* value bits */
+    static final int SIZE = Long.SIZE;
+
+    double value;
+    boolean isHighest;
 
     @Override
     public void from( long entityId, Value[] values )
     {
-        extractValue( assertValidSingleNumber( values ) );
+        value = assertValidSingleNumber( values ).doubleValue();
+        isHighest = false;
     }
 
     @Override
-    public long getEntityId()
+    public String propertiesAsString()
     {
-        throw new UnsupportedOperationException( "entity id should be retrieved from key for non-unique index" );
+        throw new UnsupportedOperationException( "Implement me" );
+    }
+
+    @Override
+    public void initAsLowest()
+    {
+        value = Double.NEGATIVE_INFINITY;
+        isHighest = false;
+    }
+
+    @Override
+    public void initAsHighest()
+    {
+        value = Double.POSITIVE_INFINITY;
+        isHighest = true;
     }
 
     @Override
     public String toString()
     {
-        return format( "type=%d,value=%s", type, toValue( type, rawValueBits ) );
+        return "compareValue=" + value;
     }
 }

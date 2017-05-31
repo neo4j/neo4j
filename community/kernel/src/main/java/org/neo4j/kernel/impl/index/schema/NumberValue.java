@@ -26,7 +26,7 @@ import org.neo4j.values.Value;
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
  * Contains actual number for internal filtering after accidental query hits due to double value coersion.
  */
-abstract class SchemaNumberValue
+abstract class NumberValue
 {
     static final byte LONG = 0;
     static final byte FLOAT = 1;

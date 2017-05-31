@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.FLOAT;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.LONG;
+import static org.neo4j.kernel.impl.index.schema.NumberValue.DOUBLE;
+import static org.neo4j.kernel.impl.index.schema.NumberValue.FLOAT;
+import static org.neo4j.kernel.impl.index.schema.NumberValue.LONG;
 
 /**
  * Utilities for converting number values to and from different representations.
  */
-class SchemaNumberValueConversion
+class NumberValueConversion
 {
     static Number assertValidSingleNumber( Value[] values )
     {

@@ -47,10 +47,10 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
  *
- * @param <KEY> type of {@link SchemaNumberKey}.
- * @param <VALUE> type of {@link SchemaNumberValue}.
+ * @param <KEY> type of {@link NumberKey}.
+ * @param <VALUE> type of {@link NumberValue}.
  */
-public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
         implements IndexPopulator
 {
     static final byte BYTE_ONLINE = 1;
@@ -70,7 +70,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
 
     GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
+    NativeSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         this.pageCache = pageCache;

@@ -21,51 +21,51 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.Value;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
-
 /**
- * Contains only comparison value, which means that all values needs to be unique.
+ * Includes comparison value and entity id (to be able to handle non-unique values).
  * Comparison value is basically any number as a double, a conversion which is lossy by nature,
- * especially for higher decimal values. Actual value is stored in {@link SchemaNumberValue}
+ * especially for higher decimal values. Actual value is stored in {@link NumberValue}
  * for ability to filter accidental coersions directly internally.
  */
-class UniqueSchemaNumberKey implements SchemaNumberKey
+class NonUniqueNumberKey implements NumberKey
 {
-    static final int SIZE = Long.SIZE;
+    static final int SIZE =
+            Long.SIZE + /* compare value (double represented by long) */
+            Long.SIZE;  /* entityId */
 
     double value;
-    boolean isHighest;
+    long entityId;
 
     @Override
     public void from( long entityId, Value[] values )
     {
-        value = assertValidSingleNumber( values ).doubleValue();
-        isHighest = false;
+        this.value = NumberValueConversion.assertValidSingleNumber( values ).doubleValue();
+        this.entityId = entityId;
     }
 
     @Override
     public String propertiesAsString()
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        return String.valueOf( value );
     }
 
     @Override
     public void initAsLowest()
     {
         value = Double.NEGATIVE_INFINITY;
-        isHighest = false;
+        entityId = Long.MIN_VALUE;
     }
 
     @Override
     public void initAsHighest()
     {
         value = Double.POSITIVE_INFINITY;
-        isHighest = true;
+        entityId = Long.MAX_VALUE;
     }
 
     @Override
     public String toString()
     {
-        return "compareValue=" + value;
+        return "compareValue=" + value + ",entityId=" + entityId;
     }
 }

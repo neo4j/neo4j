@@ -75,14 +75,14 @@ import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.FLOAT;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.LONG;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NumberValue.DOUBLE;
+import static org.neo4j.kernel.impl.index.schema.NumberValue.FLOAT;
+import static org.neo4j.kernel.impl.index.schema.NumberValue.LONG;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue>
+public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE extends NumberValue>
 {
     static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
     private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 42, 666 );
@@ -98,7 +98,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     private Layout<KEY,VALUE> layout;
     private File indexFile;
     private PageCache pageCache;
-    NativeSchemaIndexPopulator<KEY,VALUE> populator;
+    NativeSchemaNumberIndexPopulator<KEY,VALUE> populator;
 
     @Before
     public void setup()
@@ -112,7 +112,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
 
     abstract Layout<KEY,VALUE> createLayout();
 
-    abstract NativeSchemaIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, File indexFile,
+    abstract NativeSchemaNumberIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, File indexFile,
             Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig );
 
     @Test
@@ -695,7 +695,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     }
 
     private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,
-            NativeSchemaIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
+            NativeSchemaNumberIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
     {
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
@@ -755,7 +755,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
 
     protected abstract int compareValue( VALUE value1, VALUE value2 );
 
-    int compareIndexedPropertyValue( SchemaNumberValue value1, SchemaNumberValue value2 )
+    int compareIndexedPropertyValue( NumberValue value1, NumberValue value2 )
     {
         int typeCompare = Byte.compare( value1.type(), value2.type() );
         if ( typeCompare == 0 )
@@ -838,7 +838,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         public void read( ByteBuffer headerData )
         {
             state = headerData.get();
-            if ( state == NativeSchemaIndexPopulator.BYTE_FAILED )
+            if ( state == NativeSchemaNumberIndexPopulator.BYTE_FAILED )
             {
                 short messageLength = headerData.getShort();
                 byte[] failureMessageBytes = new byte[messageLength];

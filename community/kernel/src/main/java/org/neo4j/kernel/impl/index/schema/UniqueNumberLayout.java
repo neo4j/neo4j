@@ -25,18 +25,18 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers need to be unique.
  */
-class UniqueSchemaNumberIndexLayout implements Layout<UniqueSchemaNumberKey,UniqueSchemaNumberValue>
+class UniqueNumberLayout implements Layout<UniqueNumberKey,UniqueNumberValue>
 {
     private static final String IDENTIFIER_NAME = "UNI";
 
     @Override
-    public UniqueSchemaNumberKey newKey()
+    public UniqueNumberKey newKey()
     {
-        return new UniqueSchemaNumberKey();
+        return new UniqueNumberKey();
     }
 
     @Override
-    public UniqueSchemaNumberKey copyKey( UniqueSchemaNumberKey key, UniqueSchemaNumberKey into )
+    public UniqueNumberKey copyKey( UniqueNumberKey key, UniqueNumberKey into )
     {
         into.value = key.value;
         into.isHighest = key.isHighest;
@@ -44,37 +44,37 @@ class UniqueSchemaNumberIndexLayout implements Layout<UniqueSchemaNumberKey,Uniq
     }
 
     @Override
-    public UniqueSchemaNumberValue newValue()
+    public UniqueNumberValue newValue()
     {
-        return new UniqueSchemaNumberValue();
+        return new UniqueNumberValue();
     }
 
     @Override
     public int keySize()
     {
-        return UniqueSchemaNumberKey.SIZE;
+        return UniqueNumberKey.SIZE;
     }
 
     @Override
     public int valueSize()
     {
-        return UniqueSchemaNumberValue.SIZE;
+        return UniqueNumberValue.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, UniqueSchemaNumberKey key )
+    public void writeKey( PageCursor cursor, UniqueNumberKey key )
     {
         cursor.putLong( Double.doubleToRawLongBits( key.value ) );
     }
 
     @Override
-    public void readKey( PageCursor cursor, UniqueSchemaNumberKey into )
+    public void readKey( PageCursor cursor, UniqueNumberKey into )
     {
         into.value = Double.longBitsToDouble( cursor.getLong() );
     }
 
     @Override
-    public void writeValue( PageCursor cursor, UniqueSchemaNumberValue value )
+    public void writeValue( PageCursor cursor, UniqueNumberValue value )
     {
         cursor.putByte( value.type );
         cursor.putLong( value.rawValueBits );
@@ -82,7 +82,7 @@ class UniqueSchemaNumberIndexLayout implements Layout<UniqueSchemaNumberKey,Uniq
     }
 
     @Override
-    public void readValue( PageCursor cursor, UniqueSchemaNumberValue into )
+    public void readValue( PageCursor cursor, UniqueNumberValue into )
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
@@ -92,7 +92,7 @@ class UniqueSchemaNumberIndexLayout implements Layout<UniqueSchemaNumberKey,Uniq
     @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, UniqueSchemaNumberValue.SIZE );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, UniqueNumberValue.SIZE );
     }
 
     @Override
@@ -108,7 +108,7 @@ class UniqueSchemaNumberIndexLayout implements Layout<UniqueSchemaNumberKey,Uniq
     }
 
     @Override
-    public int compare( UniqueSchemaNumberKey o1, UniqueSchemaNumberKey o2 )
+    public int compare( UniqueNumberKey o1, UniqueNumberKey o2 )
     {
         int comparison = Double.compare( o1.value, o2.value );
         if ( comparison == 0 )

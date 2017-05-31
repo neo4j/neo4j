@@ -25,19 +25,19 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-public class NonUniqueSchemaNumberIndexLayout implements Layout<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue>
+public class NonUniqueNumberLayout implements Layout<NonUniqueNumberKey,NonUniqueNumberValue>
 {
     private static final String IDENTIFIER_NAME = "NUNI";
 
     @Override
-    public NonUniqueSchemaNumberKey newKey()
+    public NonUniqueNumberKey newKey()
     {
-        return new NonUniqueSchemaNumberKey();
+        return new NonUniqueNumberKey();
     }
 
     @Override
-    public NonUniqueSchemaNumberKey copyKey( NonUniqueSchemaNumberKey key,
-            NonUniqueSchemaNumberKey into )
+    public NonUniqueNumberKey copyKey( NonUniqueNumberKey key,
+            NonUniqueNumberKey into )
     {
         into.value = key.value;
         into.entityId = key.entityId;
@@ -45,46 +45,46 @@ public class NonUniqueSchemaNumberIndexLayout implements Layout<NonUniqueSchemaN
     }
 
     @Override
-    public NonUniqueSchemaNumberValue newValue()
+    public NonUniqueNumberValue newValue()
     {
-        return new NonUniqueSchemaNumberValue();
+        return new NonUniqueNumberValue();
     }
 
     @Override
     public int keySize()
     {
-        return NonUniqueSchemaNumberKey.SIZE;
+        return NonUniqueNumberKey.SIZE;
     }
 
     @Override
     public int valueSize()
     {
-        return NonUniqueSchemaNumberValue.SIZE;
+        return NonUniqueNumberValue.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, NonUniqueSchemaNumberKey key )
+    public void writeKey( PageCursor cursor, NonUniqueNumberKey key )
     {
         cursor.putLong( Double.doubleToRawLongBits( key.value ) );
         cursor.putLong( key.entityId );
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NonUniqueSchemaNumberValue key )
+    public void writeValue( PageCursor cursor, NonUniqueNumberValue key )
     {
         cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
     }
 
     @Override
-    public void readKey( PageCursor cursor, NonUniqueSchemaNumberKey into )
+    public void readKey( PageCursor cursor, NonUniqueNumberKey into )
     {
         into.value = Double.longBitsToDouble( cursor.getLong() );
         into.entityId = cursor.getLong();
     }
 
     @Override
-    public void readValue( PageCursor cursor, NonUniqueSchemaNumberValue into )
+    public void readValue( PageCursor cursor, NonUniqueNumberValue into )
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
@@ -93,7 +93,7 @@ public class NonUniqueSchemaNumberIndexLayout implements Layout<NonUniqueSchemaN
     @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, NonUniqueSchemaNumberValue.SIZE );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, NonUniqueNumberValue.SIZE );
     }
 
     @Override
@@ -109,7 +109,7 @@ public class NonUniqueSchemaNumberIndexLayout implements Layout<NonUniqueSchemaN
     }
 
     @Override
-    public int compare( NonUniqueSchemaNumberKey o1, NonUniqueSchemaNumberKey o2 )
+    public int compare( NonUniqueNumberKey o1, NonUniqueNumberKey o2 )
     {
         int compare = Double.compare( o1.value, o2.value );
         return compare != 0 ? compare : Long.compare( o1.entityId, o2.entityId );

@@ -21,53 +21,39 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.values.Value;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertValidSingleNumber;
+import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.toValue;
 
 /**
- * Includes comparison value and entity id (to be able to handle non-unique values).
- * Comparison value is basically any number as a double, a conversion which is lossy by nature,
- * especially for higher decimal values. Actual value is stored in {@link SchemaNumberValue}
- * for ability to filter accidental coersions directly internally.
+ * Adds entity id because its unique key counterpart doesn't have it. The gain of having entity id in value
+ * is that keys in internal tree nodes becomes smaller so that internal tree nodes can contain more keys.
  */
-class NonUniqueSchemaNumberKey implements SchemaNumberKey
+class UniqueNumberValue extends NumberValue
 {
     static final int SIZE =
-            Long.SIZE + /* compare value (double represented by long) */
-            Long.SIZE;  /* entityId */
+            Byte.SIZE + /* type */
+            Long.SIZE + /* value bits */
+            Long.SIZE;  /* entity id TODO 7 bytes could be enough. Also combine with the type byte thing*/
 
-    double value;
     long entityId;
 
     @Override
     public void from( long entityId, Value[] values )
     {
-        this.value = assertValidSingleNumber( values ).doubleValue();
+        extractValue( assertValidSingleNumber( values ) );
         this.entityId = entityId;
     }
 
     @Override
-    public String propertiesAsString()
+    public long getEntityId()
     {
-        return String.valueOf( value );
-    }
-
-    @Override
-    public void initAsLowest()
-    {
-        value = Double.NEGATIVE_INFINITY;
-        entityId = Long.MIN_VALUE;
-    }
-
-    @Override
-    public void initAsHighest()
-    {
-        value = Double.POSITIVE_INFINITY;
-        entityId = Long.MAX_VALUE;
+        return entityId;
     }
 
     @Override
     public String toString()
     {
-        return "compareValue=" + value + ",entityId=" + entityId;
+        return format( "type=%d,value=%s,entityId=%d", type, toValue( type, rawValueBits ), entityId );
     }
 }

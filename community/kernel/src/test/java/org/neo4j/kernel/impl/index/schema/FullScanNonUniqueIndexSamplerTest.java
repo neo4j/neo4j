@@ -40,6 +40,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
 
@@ -59,7 +60,7 @@ public class FullScanNonUniqueIndexSamplerTest
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
-    private final NonUniqueSchemaNumberIndexLayout layout = new NonUniqueSchemaNumberIndexLayout();
+    private final NonUniqueNumberLayout layout = new NonUniqueNumberLayout();
 
     @Test
     public void shouldIncludeAllValuesInTree() throws Exception
@@ -70,10 +71,10 @@ public class FullScanNonUniqueIndexSamplerTest
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> gbpTree = newTree( layout ) )
+        try ( GBPTree<NonUniqueNumberKey,NonUniqueNumberValue> gbpTree = newTree( layout ) )
         {
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            FullScanNonUniqueIndexSampler<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> sampler =
+            FullScanNonUniqueIndexSampler<NonUniqueNumberKey,NonUniqueNumberValue> sampler =
                     new FullScanNonUniqueIndexSampler<>( gbpTree, layout, samplingConfig );
             sample = sampler.result();
         }
@@ -111,12 +112,12 @@ public class FullScanNonUniqueIndexSamplerTest
 
     private void buildTree( List<Number> values ) throws IOException
     {
-        try ( GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> gbpTree = newTree( layout ) )
+        try ( GBPTree<NonUniqueNumberKey,NonUniqueNumberValue> gbpTree = newTree( layout ) )
         {
-            try ( Writer<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> writer = gbpTree.writer() )
+            try ( Writer<NonUniqueNumberKey,NonUniqueNumberValue> writer = gbpTree.writer() )
             {
-                NonUniqueSchemaNumberKey key = layout.newKey();
-                NonUniqueSchemaNumberValue value = layout.newValue();
+                NonUniqueNumberKey key = layout.newKey();
+                NonUniqueNumberValue value = layout.newValue();
                 long nodeId = 0;
                 for ( Number number : values )
                 {
@@ -130,8 +131,8 @@ public class FullScanNonUniqueIndexSamplerTest
         }
     }
 
-    private GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue>
-            newTree( NonUniqueSchemaNumberIndexLayout layout ) throws IOException
+    private GBPTree<NonUniqueNumberKey,NonUniqueNumberValue>
+            newTree( NonUniqueNumberLayout layout ) throws IOException
     {
         return new GBPTree<>(
                 pageCacheRule.getPageCache( fs ), directory.file( "tree" ), layout,

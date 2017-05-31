@@ -29,14 +29,14 @@ import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
- * {@link NativeSchemaIndexPopulator} which can enforces unique values.
+ * {@link NativeSchemaNumberIndexPopulator} which can enforces unique values.
  */
-class UniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-        extends NativeSchemaIndexPopulator<KEY,VALUE>
+class NativeUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
+        extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
 {
     private final UniqueIndexSampler sampler;
 
-    UniqueNativeSchemaIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
+    NativeUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         super( pageCache, storeFile, layout, recoveryCleanupWorkCollector );
