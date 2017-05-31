@@ -25,6 +25,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -54,7 +55,16 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
     @Override
     public GraphDatabaseService apply( Context context ) throws ProcedureException
     {
-        SecurityContext securityContext = context.getOrElse( Context.SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
+        KernelTransaction tx = context.getOrElse( Context.KERNEL_TRANSACTION, null );
+        SecurityContext securityContext;
+        if ( tx != null )
+        {
+            securityContext = tx.securityContext();
+        }
+        else
+        {
+            securityContext = context.get( Context.SECURITY_CONTEXT );
+        }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init(
             new ProcedureGDBFacadeSPI(
