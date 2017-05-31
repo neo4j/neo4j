@@ -66,7 +66,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
         String attr = getAttribute( name, transaction_timeout.name() );
-        assertThat( attr, equalTo( "10s" ) );
+        assertThat( attr, equalTo( "10000ms" ) );
     }
 
     @Test
@@ -82,8 +82,8 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        File attr = getAttribute( name, ServerSettings.run_directory.name() );
-        assertThat( attr.toString(), equalTo( configValue ) );
+        String attr = getAttribute( name, ServerSettings.run_directory.name() );
+        assertThat( attr, equalTo( configValue ) );
     }
 
     @Test
