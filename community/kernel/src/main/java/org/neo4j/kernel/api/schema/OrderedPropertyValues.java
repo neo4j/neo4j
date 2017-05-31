@@ -100,7 +100,7 @@ public class OrderedPropertyValues
 
         for ( int i = 0; i < properties.length; i++ )
         {
-            if ( !properties[i].valueEquals( that.properties[i].value() ) )
+            if ( !properties[i].hasEqualValue( that.properties[i] ) )
             {
                 return false;
             }

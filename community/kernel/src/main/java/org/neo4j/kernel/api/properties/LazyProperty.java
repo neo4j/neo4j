@@ -32,7 +32,7 @@ abstract class LazyProperty<T> extends DefinedProperty
     }
 
     @Override
-    final boolean hasEqualValue( DefinedProperty that )
+    public final boolean hasEqualValue( DefinedProperty that )
     {
         return valueEquals( that.value() );
     }

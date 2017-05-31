@@ -58,7 +58,7 @@ abstract class IntegralNumberProperty extends NumberProperty implements DefinedP
     }
 
     @Override
-    final boolean hasEqualValue( DefinedProperty other )
+    public final boolean hasEqualValue( DefinedProperty other )
     {
         if ( other instanceof IntegralNumberProperty )
         {

@@ -62,7 +62,7 @@ final class CharProperty extends DefinedProperty implements DefinedProperty.With
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty that )
+    public boolean hasEqualValue( DefinedProperty that )
     {
         if ( that instanceof CharProperty )
         {

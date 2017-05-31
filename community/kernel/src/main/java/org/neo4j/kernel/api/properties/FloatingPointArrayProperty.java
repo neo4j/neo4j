@@ -99,7 +99,7 @@ abstract class FloatingPointArrayProperty extends DefinedProperty implements Arr
     }
 
     @Override
-    final boolean hasEqualValue( DefinedProperty other )
+    public final boolean hasEqualValue( DefinedProperty other )
     {
         if ( other instanceof FloatingPointArrayProperty )
         {

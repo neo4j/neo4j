@@ -82,7 +82,7 @@ class BooleanArrayProperty extends DefinedProperty
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty that )
+    public boolean hasEqualValue( DefinedProperty that )
     {
         return that instanceof BooleanArrayProperty && Arrays.equals( this.value, ((BooleanArrayProperty) that).value );
     }

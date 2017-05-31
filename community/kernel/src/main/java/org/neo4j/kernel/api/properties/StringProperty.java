@@ -63,7 +63,7 @@ final class  StringProperty extends DefinedProperty implements DefinedProperty.W
     }
 
     @Override
-    boolean hasEqualValue( DefinedProperty other )
+    public boolean hasEqualValue( DefinedProperty other )
     {
         if ( other instanceof StringProperty )
         {
