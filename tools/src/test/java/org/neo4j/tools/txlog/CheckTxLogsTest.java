@@ -21,9 +21,11 @@ package org.neo4j.tools.txlog;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
@@ -59,6 +62,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.CHECK_TYPES;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.NEO_STORE;
@@ -905,6 +909,23 @@ public class CheckTxLogsTest
         assertTrue( handler.txIdSequenceInconsistencies.isEmpty() );
     }
 
+    @Test
+    public void closeLogEntryCursorAfterValidation() throws IOException
+    {
+        ensureLogExists( logFile( 1 ) );
+        writeCheckPoint( logFile( 2 ), 1, 42 );
+        LogEntryCursor entryCursor = Mockito.mock( LogEntryCursor.class );
+
+        CheckTxLogsWithCustomLogEntryCursor checkTxLogs =
+                new CheckTxLogsWithCustomLogEntryCursor( System.out, fsRule.get(), entryCursor );
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fsRule.get() );
+        boolean logsValidity = checkTxLogs.validateCheckPoints( logFiles, handler );
+
+        assertTrue("empty logs should be valid", logsValidity);
+        verify( entryCursor ).close();
+    }
+
     private File logFile( long version )
     {
         fsRule.get().mkdirs( storeDirectory );
@@ -973,6 +994,24 @@ public class CheckTxLogsTest
             LogHeaderWriter.writeLogHeader( fs, log, PhysicalLogFiles.getLogVersion( log ), 0 );
         }
         return fs;
+    }
+
+    private class CheckTxLogsWithCustomLogEntryCursor extends CheckTxLogs
+    {
+
+        private final LogEntryCursor logEntryCursor;
+
+        CheckTxLogsWithCustomLogEntryCursor( PrintStream out, FileSystemAbstraction fs, LogEntryCursor logEntryCursor )
+        {
+            super( out, fs );
+            this.logEntryCursor = logEntryCursor;
+        }
+
+        @Override
+        LogEntryCursor openLogEntryCursor( PhysicalLogFiles logFiles ) throws IOException
+        {
+            return logEntryCursor;
+        }
     }
 
     private static class CapturingInconsistenciesHandler implements InconsistenciesHandler
