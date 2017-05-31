@@ -22,6 +22,7 @@ package org.neo4j.server.plugins;
 import org.junit.Test;
 
 import java.net.URI;
+import java.time.Duration;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
@@ -80,7 +81,8 @@ public class ConfigAdapterTest
         Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
-        assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
+        assertEquals( Duration.ofSeconds( 60 ),
+                wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
     }
 
     @Test
@@ -90,6 +92,7 @@ public class ConfigAdapterTest
                 ServerSettings.transaction_idle_timeout.name(), "600ms" ) );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
-        assertEquals( 600L, wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
+        assertEquals( Duration.ofMillis( 600 ),
+                wrappingConfiguration.getProperty( ServerSettings.transaction_idle_timeout.name() ) );
     }
 }
