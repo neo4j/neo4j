@@ -177,13 +177,13 @@ public class Race
             }
             else
             {
+                long time = currentTimeMillis();
+                contestant.join( maxWaitTimeMillis - waitedSoFar );
+                waitedSoFar += currentTimeMillis() - time;
                 if ( waitedSoFar >= maxWaitTimeMillis )
                 {
                     throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );
                 }
-                long time = currentTimeMillis();
-                contestant.join( maxWaitTimeMillis - waitedSoFar );
-                waitedSoFar += currentTimeMillis() - time;
             }
             if ( contestant.error != null )
             {
