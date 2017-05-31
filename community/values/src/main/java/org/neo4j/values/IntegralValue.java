@@ -64,8 +64,9 @@ abstract class IntegralValue extends NumberValue
         return NumberValues.compareLongAgainstDouble( longValue(), other.doubleValue() );
     }
 
-    public ValueGroup valueGroup()
+    @Override
+    public NumberType numberType()
     {
-        return ValueGroup.INTEGER;
+        return NumberType.INTEGRAL;
     }
 }

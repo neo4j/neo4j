@@ -56,11 +56,19 @@ class ValueComparator implements Comparator<Value>
             case NO_VALUE:
                 return x;
 
-            case INTEGER:
-                return compareNumberScalar( (IntegralValue)v1, v2 );
+            case NUMBER:
+                switch ( v1.numberType() )
+                {
+                case INTEGRAL:
+                    return compareNumberScalar( (IntegralValue)v1, v2 );
 
-            case FLOAT:
-                return compareNumberScalar( (FloatingPointValue)v1, v2 );
+                case FLOATING_POINT:
+                    return compareNumberScalar( (FloatingPointValue)v1, v2 );
+
+                default:
+                    throw new UnsupportedOperationException(
+                        format( "Cannot handle ValueGroup id '%s' that is not Integral of FloatingPoint", id1 ) );
+                }
 
             case TEXT:
                 return ((TextValue) v1).compareTo( (TextValue) v2 );
@@ -68,11 +76,19 @@ class ValueComparator implements Comparator<Value>
             case BOOLEAN:
                 return ((BooleanValue) v1).compareTo( (BooleanValue) v2 );
 
-            case INTEGER_ARRAY:
-                return compareNumberArray( (IntegralArray)v1, v2 );
+            case NUMBER_ARRAY:
+                switch ( v1.numberType() )
+                {
+                case INTEGRAL:
+                    return compareNumberArray( (IntegralArray)v1, v2 );
 
-            case FLOAT_ARRAY:
-                return compareNumberArray( (FloatingPointArray)v1, v2 );
+                case FLOATING_POINT:
+                    return compareNumberArray( (FloatingPointArray)v1, v2 );
+
+                default:
+                    throw new UnsupportedOperationException(
+                        format( "Cannot handle ValueGroup id '%s' that is not Integral of FloatingPoint", id1 ) );
+                }
 
             case TEXT_ARRAY:
                 return ((TextArray) v1).compareTo( (TextArray) v2 );
@@ -94,15 +110,23 @@ class ValueComparator implements Comparator<Value>
     {
         switch ( v2.valueGroup() )
         {
-        case INTEGER:
-            return v1.compareTo( (IntegralValue)v2 );
+        case NUMBER:
+            switch ( v2.numberType() )
+            {
+            case INTEGRAL:
+                return v1.compareTo( (IntegralValue)v2 );
 
-        case FLOAT:
-            return v1.compareTo( (FloatingPointValue)v2 );
+            case FLOATING_POINT:
+                return v1.compareTo( (FloatingPointValue)v2 );
+
+            default:
+                throw new UnsupportedOperationException( format(
+                        "Cannot compare values of type %s with type %s", NumberType.INTEGRAL, v2.valueGroup() ) );
+            }
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.INTEGER, v2.valueGroup() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.NUMBER, v2.valueGroup() ) );
         }
     }
 
@@ -110,15 +134,23 @@ class ValueComparator implements Comparator<Value>
     {
         switch ( v2.valueGroup() )
         {
-        case INTEGER:
-            return v1.compareTo( (IntegralValue)v2 );
+        case NUMBER:
+            switch ( v2.numberType() )
+            {
+            case INTEGRAL:
+                return v1.compareTo( (IntegralValue)v2 );
 
-        case FLOAT:
-            return v1.compareTo( (FloatingPointValue)v2 );
+            case FLOATING_POINT:
+                return v1.compareTo( (FloatingPointValue)v2 );
+
+            default:
+                throw new UnsupportedOperationException( format(
+                        "Cannot compare values of type %s with type %s", NumberType.FLOATING_POINT, v2.valueGroup() ) );
+            }
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.FLOAT, v2.valueGroup() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.NUMBER, v2.valueGroup() ) );
         }
     }
 
@@ -126,15 +158,23 @@ class ValueComparator implements Comparator<Value>
     {
         switch ( v2.valueGroup() )
         {
-        case INTEGER_ARRAY:
-            return v1.compareTo( (IntegralArray)v2 );
+        case NUMBER_ARRAY:
+            switch ( v2.numberType() )
+            {
+            case INTEGRAL:
+                return v1.compareTo( (IntegralArray)v2 );
 
-        case FLOAT_ARRAY:
-            return v1.compareTo( (FloatingPointArray)v2 );
+            case FLOATING_POINT:
+                return v1.compareTo( (FloatingPointArray)v2 );
+
+            default:
+                throw new UnsupportedOperationException( format(
+                        "Cannot compare values of type %s with type %s", NumberType.FLOATING_POINT, v2.valueGroup() ) );
+            }
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.INTEGER_ARRAY, v2.valueGroup() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.NUMBER, v2.valueGroup() ) );
         }
     }
 
@@ -142,15 +182,23 @@ class ValueComparator implements Comparator<Value>
     {
         switch ( v2.valueGroup() )
         {
-        case INTEGER_ARRAY:
-            return v1.compareTo( (IntegralArray)v2 );
+        case NUMBER_ARRAY:
+            switch ( v2.numberType() )
+            {
+            case INTEGRAL:
+                return v1.compareTo( (IntegralArray)v2 );
 
-        case FLOAT_ARRAY:
-            return v1.compareTo( (FloatingPointArray)v2 );
+            case FLOATING_POINT:
+                return v1.compareTo( (FloatingPointArray)v2 );
+
+            default:
+                throw new UnsupportedOperationException( format(
+                        "Cannot compare values of type %s with type %s", NumberType.FLOATING_POINT, v2.valueGroup() ) );
+            }
 
         default:
             throw new UnsupportedOperationException( format(
-                    "Cannot compare values of type %s with type %s", ValueGroup.FLOAT_ARRAY, v2.valueGroup() ) );
+                    "Cannot compare values of type %s with type %s", ValueGroup.NUMBER, v2.valueGroup() ) );
         }
     }
 

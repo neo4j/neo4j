@@ -25,26 +25,12 @@ package org.neo4j.values;
  */
 public enum ValueGroup
 {
-    NO_VALUE( -1 ),
-    TEXT( 0 ),
-    BOOLEAN( 1 ),
-    INTEGER( 2 ),
-    FLOAT( 2 ),
-    INTEGER_ARRAY( 3 ),
-    FLOAT_ARRAY( 3 ),
-    TEXT_ARRAY( 4 ),
-    BOOLEAN_ARRAY( 5 ),
-    VIRTUAL( 6 );
-
-    private final int comparabilityGroup;
-
-    ValueGroup( int comparabilityGroup )
-    {
-        this.comparabilityGroup = comparabilityGroup;
-    }
-
-    public int comparabilityGroup()
-    {
-        return comparabilityGroup;
-    }
+    NO_VALUE,
+    TEXT,
+    BOOLEAN,
+    NUMBER,
+    NUMBER_ARRAY,
+    TEXT_ARRAY,
+    BOOLEAN_ARRAY,
+    VIRTUAL;
 }

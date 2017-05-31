@@ -35,9 +35,9 @@ abstract class IntegralArray extends NumberArray
         return NumberValues.compareIntegerVsFloatArrays( this, other );
     }
 
-    public ValueGroup valueGroup()
+    @Override
+    public NumberType numberType()
     {
-        return ValueGroup.INTEGER_ARRAY;
+        return NumberType.INTEGRAL;
     }
-
 }

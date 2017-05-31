@@ -124,4 +124,10 @@ public abstract class VirtualValue extends Value
     {
         return ValueGroup.VIRTUAL;
     }
+
+    @Override
+    public final NumberType numberType()
+    {
+        return NumberType.NO_NUMBER;
+    }
 }

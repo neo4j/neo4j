@@ -54,6 +54,12 @@ abstract class FloatingPointValue extends NumberValue
         }
     }
 
+    @Override
+    public NumberType numberType()
+    {
+        return NumberType.FLOATING_POINT;
+    }
+
     public int compareTo( IntegralValue other )
     {
         return NumberValues.compareDoubleAgainstLong( doubleValue(), other.longValue() );
@@ -62,10 +68,5 @@ abstract class FloatingPointValue extends NumberValue
     public int compareTo( FloatingPointValue other )
     {
         return Double.compare( doubleValue(), other.doubleValue() );
-    }
-
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.FLOAT;
     }
 }

@@ -56,7 +56,7 @@ public class Values
      */
     public static final ValueComparator VALUE_COMPARATOR =
             new ValueComparator(
-                    Comparator.comparingInt( ValueGroup::comparabilityGroup ),
+                    ValueGroup::compareTo,
                     Comparator.comparingInt( VirtualValue::hashCode )
                 );
 

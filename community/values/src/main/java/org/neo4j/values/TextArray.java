@@ -74,4 +74,10 @@ abstract class TextArray extends ArrayValue
     {
         return ValueGroup.TEXT_ARRAY;
     }
+
+    @Override
+    public NumberType numberType()
+    {
+        return NumberType.NO_NUMBER;
+    }
 }

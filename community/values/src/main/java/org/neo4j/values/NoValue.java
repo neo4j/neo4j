@@ -140,4 +140,10 @@ final class NoValue extends Value
     {
         return ValueGroup.NO_VALUE;
     }
+
+    @Override
+    public NumberType numberType()
+    {
+        return NumberType.NO_NUMBER;
+    }
 }

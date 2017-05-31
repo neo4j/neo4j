@@ -58,4 +58,6 @@ public abstract class Value
     public abstract Object asPublic();
 
     public abstract ValueGroup valueGroup();
+
+    public abstract NumberType numberType();
 }

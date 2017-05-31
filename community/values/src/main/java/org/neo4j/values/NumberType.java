@@ -19,26 +19,12 @@
  */
 package org.neo4j.values;
 
-abstract class TextValue extends ScalarValue
+/**
+ * Differentiates between integral numbers, floating point numbers, and values that are not numbers.
+ */
+public enum NumberType
 {
-    abstract String stringValue();
-
-    abstract int compareTo( TextValue other );
-
-    @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.TEXT;
-    }
-
-    @Override
-    public NumberType numberType()
-    {
-        return NumberType.NO_NUMBER;
-    }
+    NO_NUMBER,
+    INTEGRAL,
+    FLOATING_POINT;
 }

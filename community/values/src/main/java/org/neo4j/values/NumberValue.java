@@ -42,4 +42,9 @@ abstract class NumberValue extends ScalarValue
     {
         return false;
     }
+
+    public ValueGroup valueGroup()
+    {
+        return ValueGroup.NUMBER;
+    }
 }

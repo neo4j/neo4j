@@ -42,4 +42,9 @@ abstract class NumberArray extends ArrayValue
     {
         return false;
     }
+
+    public ValueGroup valueGroup()
+    {
+        return ValueGroup.NUMBER_ARRAY;
+    }
 }

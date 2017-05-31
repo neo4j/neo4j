@@ -132,6 +132,12 @@ abstract class BooleanArray extends ArrayValue
         return ValueGroup.BOOLEAN_ARRAY;
     }
 
+    @Override
+    public NumberType numberType()
+    {
+        return NumberType.NO_NUMBER;
+    }
+
     static final class Direct extends BooleanArray
     {
         private final boolean[] value;

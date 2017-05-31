@@ -102,4 +102,10 @@ final class BooleanValue extends ScalarValue
     {
         return ValueGroup.BOOLEAN;
     }
+
+    @Override
+    public NumberType numberType()
+    {
+        return NumberType.NO_NUMBER;
+    }
 }

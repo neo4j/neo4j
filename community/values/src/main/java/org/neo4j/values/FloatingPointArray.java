@@ -35,9 +35,9 @@ abstract class FloatingPointArray extends NumberArray
         return NumberValues.compareFloatArrays( this, other );
     }
 
-    public ValueGroup valueGroup()
+    @Override
+    public NumberType numberType()
     {
-        return ValueGroup.FLOAT_ARRAY;
+        return NumberType.FLOATING_POINT;
     }
-
 }
