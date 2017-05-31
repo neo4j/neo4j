@@ -321,8 +321,7 @@ class SlaveLocksClient implements Locks.Client
     private void acquireSharedOnMaster( ResourceType resourceType, long... resourceIds )
     {
         //TODO: why?
-        if ( resourceType == ResourceTypes.SCHEMA ||
-             resourceType == ResourceTypes.INDEX_ENTRY )
+        if ( resourceType == ResourceTypes.INDEX_ENTRY )
         {
             return;
         }

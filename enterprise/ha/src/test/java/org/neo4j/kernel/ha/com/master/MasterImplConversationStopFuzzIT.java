@@ -55,13 +55,13 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.time.Clocks;
 
@@ -95,7 +95,7 @@ public class MasterImplConversationStopFuzzIT
     private final JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
     private final Config config = Config.embeddedDefaults( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
     private final Locks locks = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(),
-            ResourceTypes.NODE, ResourceTypes.SCHEMA );
+            ResourceTypes.NODE, ResourceTypes.LABEL );
 
     private static MasterExecutionStatistic executionStatistic = new MasterExecutionStatistic();
 

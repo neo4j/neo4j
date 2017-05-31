@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -343,7 +343,7 @@ public class DeferringLockClientTest
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 3 );
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
         client.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 2 );
-        client.acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, 1 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 1 );
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 42 );
 
         // WHEN
@@ -357,7 +357,7 @@ public class DeferringLockClientTest
                         new LockUnit( ResourceTypes.RELATIONSHIP, 1, true ),
                         new LockUnit( ResourceTypes.NODE, 1, false ),
                         new LockUnit( ResourceTypes.RELATIONSHIP, 2, false ),
-                        new LockUnit( ResourceTypes.SCHEMA, 1, false ) )
+                        new LockUnit( ResourceTypes.LABEL, 1, false ) )
         );
 
         actualClient.assertRegisteredLocks( expectedLocks );
