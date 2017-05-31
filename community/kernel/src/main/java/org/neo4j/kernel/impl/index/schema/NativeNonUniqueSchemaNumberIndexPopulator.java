@@ -44,7 +44,7 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE ext
     NativeNonUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexSamplingConfig samplingConfig )
     {
-        super( pageCache, storeFile, layout, recoveryCleanupWorkCollector );
+        super( pageCache, storeFile, layout );
         this.samplingConfig = samplingConfig;
     }
 

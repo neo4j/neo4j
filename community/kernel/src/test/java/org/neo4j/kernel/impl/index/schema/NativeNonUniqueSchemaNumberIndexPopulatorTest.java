@@ -176,7 +176,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
-    protected LayoutTestUtil createLayoutTestUtil()
+    protected LayoutTestUtil<NonUniqueNumberKey,NonUniqueNumberValue> createLayoutTestUtil()
     {
         return new NonUniqueLayoutTestUtil();
     }

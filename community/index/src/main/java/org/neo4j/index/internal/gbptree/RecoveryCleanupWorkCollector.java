@@ -46,6 +46,11 @@ public interface RecoveryCleanupWorkCollector extends Lifecycle
     RecoveryCleanupWorkCollector IMMEDIATE = new ImmediateRecoveryCleanupWorkCollector();
 
     /**
+     * Ignore all clean jobs.
+     */
+    RecoveryCleanupWorkCollector NULL = new NullRecoveryCleanupWorkCollector();
+
+    /**
      * {@link RecoveryCleanupWorkCollector} which runs added {@link CleanupJob} as part of the {@link #add(CleanupJob)}
      * call in the caller thread.
      */
@@ -55,6 +60,14 @@ public interface RecoveryCleanupWorkCollector extends Lifecycle
         public void add( CleanupJob job )
         {
             job.run();
+        }
+    }
+
+    class NullRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
+    {
+        @Override
+        public void add( CleanupJob job )
+        {   // no-op
         }
     }
 }

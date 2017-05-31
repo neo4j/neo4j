@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -38,11 +36,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.index.GBPTreeUtil;
-import org.neo4j.values.ValueTuple;
-
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -51,55 +44,41 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
  * @param <VALUE> type of {@link NumberValue}.
  */
 public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
-        implements IndexPopulator
+        extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexPopulator
 {
     static final byte BYTE_ONLINE = 1;
     static final byte BYTE_FAILED = 0;
 
-    private final PageCache pageCache;
-    private final File storeFile;
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final ConflictDetectingValueMerger<VALUE> conflictDetectingValueMerger;
-    protected final Layout<KEY,VALUE> layout;
+    private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
 
-    private Writer<KEY,VALUE> singleWriter;
+    private Writer<KEY,VALUE> singleTreeWriter;
     private byte[] failureBytes;
     private boolean dropped;
 
-    GBPTree<KEY,VALUE> tree;
-
-    NativeSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    NativeSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout )
     {
-        this.pageCache = pageCache;
-        this.storeFile = storeFile;
-        this.layout = layout;
+        super( pageCache, storeFile, layout );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
-        this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
+        singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
     }
 
     @Override
     public synchronized void create() throws IOException
     {
         GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
-        instantiateTree();
+        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE );
         instantiateWriter();
-    }
-
-    private void instantiateTree() throws IOException
-    {
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER_READER,
-                NO_HEADER_WRITER, recoveryCleanupWorkCollector );
     }
 
     void instantiateWriter() throws IOException
     {
-        assert singleWriter == null;
-        singleWriter = tree.writer();
+        assert singleTreeWriter == null;
+        singleTreeWriter = tree.writer();
     }
 
     @Override
@@ -129,15 +108,8 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
     @Override
     public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
     {
-        treeKey.from( update.getEntityId(), update.values() );
-        treeValue.from( update.getEntityId(), update.values() );
-        singleWriter.merge( treeKey, treeValue, conflictDetectingValueMerger );
-        if ( conflictDetectingValueMerger.wasConflict() )
-        {
-            long existingNodeId = conflictDetectingValueMerger.existingNodeId();
-            long addedNodeId = conflictDetectingValueMerger.addedNodeId();
-            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( update.values() ) );
-        }
+        NativeSchemaNumberIndexUpdater
+                .processAdd( treeKey, treeValue, update, singleTreeWriter, conflictDetectingValueMerger );
     }
 
     @Override
@@ -150,7 +122,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        return new NativeSchemaIndexUpdater();
+        return singleUpdater.initialize( singleTreeWriter, false );
     }
 
     @Override
@@ -199,7 +171,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
     {
         if ( tree == null )
         {
-            instantiateTree();
+            instantiateTree( RecoveryCleanupWorkCollector.NULL );
         }
     }
 
@@ -225,49 +197,8 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
         tree.checkpoint( IOLimiter.unlimited(), ( pc ) -> pc.putByte( BYTE_ONLINE ) );
     }
 
-    private <T extends Closeable> T closeIfPresent( T closeable ) throws IOException
-    {
-        if ( closeable != null )
-        {
-            closeable.close();
-        }
-        return null;
-    }
-
     void closeWriter() throws IOException
     {
-        singleWriter = closeIfPresent( singleWriter );
-    }
-
-    private void closeTree() throws IOException
-    {
-        tree = closeIfPresent( tree );
-    }
-
-    private class NativeSchemaIndexUpdater implements IndexUpdater
-    {
-        private boolean closed;
-
-        @Override
-        public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
-        {
-            if ( closed )
-            {
-                throw new IllegalStateException( "Index updater has been closed." );
-            }
-            add( update );
-        }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Implement me" );
-        }
-
-        @Override
-        public void close() throws IOException, IndexEntryConflictException
-        {
-            closed = true;
-        }
+        singleTreeWriter = closeIfPresent( singleTreeWriter );
     }
 }

@@ -51,7 +51,7 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
-    protected LayoutTestUtil createLayoutTestUtil()
+    protected LayoutTestUtil<UniqueNumberKey,UniqueNumberValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil();
     }
@@ -59,7 +59,7 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest
     @Override
     protected int compareValue( UniqueNumberValue value1, UniqueNumberValue value2 )
     {
-        int valueCompare = compareIndexedPropertyValue( value1, value2 );
+        int valueCompare = layoutUtil.compareIndexedPropertyValue( value1, value2 );
         if ( valueCompare == 0 )
         {
             return Long.compare( value1.getEntityId(), value2.getEntityId() );

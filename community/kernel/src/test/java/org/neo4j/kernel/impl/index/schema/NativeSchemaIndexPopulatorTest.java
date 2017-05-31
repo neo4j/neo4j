@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.rule.RandomRule;
@@ -69,7 +68,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
     static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
-    private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 42, 666 );
     static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
     {
         throw new RuntimeException( "Did not expect an attempt to go to store" );
@@ -502,26 +500,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         assertFalse( fs.fileExists( indexFile ) );
     }
 
-    static IndexEntryUpdate[] someIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE )
-        };
-    }
-
     int interleaveLargeAmountOfUpdates( Random updaterRandom,
             Iterator<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
     {
@@ -590,41 +568,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
             {
                 return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
             }
-        };
-    }
-
-    @SuppressWarnings( "rawtypes" )
-    static IndexEntryUpdate[] someDuplicateIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE ),
-                add( 14, 0 ),
-                add( 15, 4 ),
-                add( 16, Double.MAX_VALUE ),
-                add( 17, -Double.MAX_VALUE ),
-                add( 18, Float.MAX_VALUE ),
-                add( 19, -Float.MAX_VALUE ),
-                add( 20, Long.MAX_VALUE ),
-                add( 21, Long.MIN_VALUE ),
-                add( 22, Integer.MAX_VALUE ),
-                add( 23, Integer.MIN_VALUE ),
-                add( 24, Short.MAX_VALUE ),
-                add( 25, Short.MIN_VALUE ),
-                add( 26, Byte.MAX_VALUE ),
-                add( 27, Byte.MIN_VALUE )
         };
     }
 
@@ -711,11 +654,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
                 failureMessage = new String( failureMessageBytes, Charsets.UTF_8 );
             }
         }
-    }
-
-    protected static IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
-    {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
     }
 
     private byte[] fileWithContent() throws IOException

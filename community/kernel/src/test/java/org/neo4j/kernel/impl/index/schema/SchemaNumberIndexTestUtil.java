@@ -39,18 +39,20 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.kernel.impl.index.schema.NumberValue.DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.NumberValue.FLOAT;
-import static org.neo4j.kernel.impl.index.schema.NumberValue.LONG;
+
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE extends NumberValue>
@@ -63,6 +65,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     LayoutTestUtil<KEY,VALUE> layoutUtil;
+    private IndexDescriptor indexDescriptor;
     Layout<KEY,VALUE> layout;
     File indexFile;
     PageCache pageCache;
@@ -71,6 +74,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     public void setup()
     {
         layoutUtil = createLayoutTestUtil();
+        indexDescriptor = createIndexDescriptor();
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
@@ -78,7 +82,12 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
 
     protected abstract LayoutTestUtil<KEY,VALUE> createLayoutTestUtil();
 
-    protected void copyValue( VALUE value, VALUE intoValue )
+    private IndexDescriptor createIndexDescriptor()
+    {
+        return IndexDescriptorFactory.forLabel( 42, 666 );
+    }
+
+    private void copyValue( VALUE value, VALUE intoValue )
     {
         layoutUtil.copyValue( value, intoValue );
     }
@@ -120,7 +129,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     GBPTree<KEY,VALUE> getTree() throws IOException
     {
         return new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
-                GBPTree.NO_HEADER, RecoveryCleanupWorkCollector.IMMEDIATE );
+                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
@@ -130,32 +139,6 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
         KEY highest = layout.newKey();
         highest.initAsHighest();
         return tree.seek( lowest, highest );
-    }
-
-    int compareIndexedPropertyValue( NumberValue value1, NumberValue value2 )
-    {
-        int typeCompare = Byte.compare( value1.type(), value2.type() );
-        if ( typeCompare == 0 )
-        {
-            switch ( value1.type() )
-            {
-            case LONG:
-                return Long.compare( value1.rawValueBits(), value2.rawValueBits() );
-            case FLOAT:
-                return Float.compare(
-                        Float.intBitsToFloat( (int) value1.rawValueBits() ),
-                        Float.intBitsToFloat( (int) value2.rawValueBits() ) );
-            case DOUBLE:
-                return Double.compare(
-                        Double.longBitsToDouble( value1.rawValueBits() ),
-                        Double.longBitsToDouble( value2.rawValueBits() ) );
-            default:
-                throw new IllegalArgumentException(
-                        "Expected type to be LONG, FLOAT or DOUBLE (" + LONG + "," + FLOAT + "," + DOUBLE +
-                                "). But was " + value1.type() );
-            }
-        }
-        return typeCompare;
     }
 
     private void assertSameHits( Hit<KEY, VALUE>[] expectedHits, Hit<KEY, VALUE>[] actualHits,
@@ -254,5 +237,71 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
         {
             return "[" + key + "," + value + "]";
         }
+    }
+
+    IndexEntryUpdate[] someIndexEntryUpdates()
+    {
+        return new IndexEntryUpdate[]{
+                add( 0, 0 ),
+                add( 1, 4 ),
+                add( 2, Double.MAX_VALUE ),
+                add( 3, -Double.MAX_VALUE ),
+                add( 4, Float.MAX_VALUE ),
+                add( 5, -Float.MAX_VALUE ),
+                add( 6, Long.MAX_VALUE ),
+                add( 7, Long.MIN_VALUE ),
+                add( 8, Integer.MAX_VALUE ),
+                add( 9, Integer.MIN_VALUE ),
+                add( 10, Short.MAX_VALUE ),
+                add( 11, Short.MIN_VALUE ),
+                add( 12, Byte.MAX_VALUE ),
+                add( 13, Byte.MIN_VALUE ),
+                add( 14, Double.POSITIVE_INFINITY ),
+                add( 15, Double.NEGATIVE_INFINITY ),
+        };
+    }
+
+    @SuppressWarnings( "rawtypes" )
+    IndexEntryUpdate[] someDuplicateIndexEntryUpdates()
+    {
+        return new IndexEntryUpdate[]{
+                add( 0, 0 ),
+                add( 1, 4 ),
+                add( 2, Double.MAX_VALUE ),
+                add( 3, -Double.MAX_VALUE ),
+                add( 4, Float.MAX_VALUE ),
+                add( 5, -Float.MAX_VALUE ),
+                add( 6, Long.MAX_VALUE ),
+                add( 7, Long.MIN_VALUE ),
+                add( 8, Integer.MAX_VALUE ),
+                add( 9, Integer.MIN_VALUE ),
+                add( 10, Short.MAX_VALUE ),
+                add( 11, Short.MIN_VALUE ),
+                add( 12, Byte.MAX_VALUE ),
+                add( 13, Byte.MIN_VALUE ),
+                add( 14, 0 ),
+                add( 15, 4 ),
+                add( 16, Double.MAX_VALUE ),
+                add( 17, -Double.MAX_VALUE ),
+                add( 18, Float.MAX_VALUE ),
+                add( 19, -Float.MAX_VALUE ),
+                add( 20, Long.MAX_VALUE ),
+                add( 21, Long.MIN_VALUE ),
+                add( 22, Integer.MAX_VALUE ),
+                add( 23, Integer.MIN_VALUE ),
+                add( 24, Short.MAX_VALUE ),
+                add( 25, Short.MIN_VALUE ),
+                add( 26, Byte.MAX_VALUE ),
+                add( 27, Byte.MIN_VALUE ),
+                add( 28, Double.POSITIVE_INFINITY ),
+                add( 29, Double.NEGATIVE_INFINITY ),
+                add( 30, Double.POSITIVE_INFINITY ),
+                add( 31, Double.NEGATIVE_INFINITY )
+        };
+    }
+
+    protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
+    {
+        return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
     }
 }

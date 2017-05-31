@@ -39,7 +39,7 @@ class NativeUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extend
     NativeUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        super( pageCache, storeFile, layout, recoveryCleanupWorkCollector );
+        super( pageCache, storeFile, layout );
         this.sampler = new UniqueIndexSampler();
     }
 
