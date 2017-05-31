@@ -81,12 +81,6 @@ abstract class StringArray extends TextArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "StringArray(%s)", Arrays.toString( value() ) );
-    }
-
     public int compareTo( TextArray other )
     {
         return TextValues.compareTextArrays( this, other );
@@ -106,6 +100,12 @@ abstract class StringArray extends TextArray
         String[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "StringArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -134,6 +134,13 @@ abstract class StringArray extends TextArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "StringArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

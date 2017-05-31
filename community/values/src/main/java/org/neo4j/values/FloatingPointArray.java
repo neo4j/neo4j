@@ -21,40 +21,6 @@ package org.neo4j.values;
 
 abstract class FloatingPointArray extends NumberArray
 {
-//    @Override
-//    public boolean equals( Object other )
-//    {
-//        return other != null && other instanceof Value && equals( (Value) other );
-//    }
-//
-//    @Override
-//    public final boolean equals( Value other )
-//    {
-//        if ( other instanceof ValueGroup.VIntegerArray )
-//        {
-//            ValueGroup.VIntegerArray that = (ValueGroup.VIntegerArray) other;
-//            return NumberValues.numbersEqual( this, that );
-//        }
-//        else if ( other instanceof ValueGroup.VFloatingPointArray )
-//        {
-//            ValueGroup.VFloatingPointArray that = (ValueGroup.VFloatingPointArray) other;
-//            return NumberValues.numbersEqual( that, this );
-//        }
-//        return false;
-//    }
-//
-//    @Override
-//    public final int hashCode()
-//    {
-//        int result = 1;
-//        for ( int i = 0, len = length(); i < len; i++ )
-//        {
-//            int elementHash = NumberValues.hash( longValue( i ) );
-//            result = 31 * result + elementHash;
-//        }
-//        return result;
-//    }
-
     abstract double doubleValue( int offset );
 
     @Override

@@ -105,12 +105,6 @@ abstract class ByteArray extends IntegralArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "ByteArray(%s)", Arrays.toString( value() ) );
-    }
-
     static final class Direct extends ByteArray
     {
         final byte[] value;
@@ -125,6 +119,12 @@ abstract class ByteArray extends IntegralArray
         byte[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "ByteArray%s", Arrays.toString( value ) );
         }
     }
 
@@ -153,6 +153,13 @@ abstract class ByteArray extends IntegralArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "ByteArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

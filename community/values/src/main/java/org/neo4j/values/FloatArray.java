@@ -105,12 +105,6 @@ abstract class FloatArray extends FloatingPointArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "FloatArray(%s)", Arrays.toString( value() ) );
-    }
-
     static final class Direct extends FloatArray
     {
         final float[] value;
@@ -125,6 +119,12 @@ abstract class FloatArray extends FloatingPointArray
         float[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "FloatArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -153,6 +153,13 @@ abstract class FloatArray extends FloatingPointArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "FloatArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

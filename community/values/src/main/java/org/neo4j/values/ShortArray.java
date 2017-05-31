@@ -105,12 +105,6 @@ abstract class ShortArray extends IntegralArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "ShortArray(%s)", Arrays.toString( value() ) );
-    }
-
     static final class Direct extends ShortArray
     {
         final short[] value;
@@ -125,6 +119,12 @@ abstract class ShortArray extends IntegralArray
         short[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "ShortArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -153,6 +153,13 @@ abstract class ShortArray extends IntegralArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "ShortArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

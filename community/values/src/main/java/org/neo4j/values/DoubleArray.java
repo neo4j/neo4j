@@ -105,12 +105,6 @@ abstract class DoubleArray extends FloatingPointArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "DoubleArray(%s)", Arrays.toString( value() ) );
-    }
-
     static final class Direct extends DoubleArray
     {
         final double[] value;
@@ -125,6 +119,12 @@ abstract class DoubleArray extends FloatingPointArray
         double[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "DoubleArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -153,6 +153,13 @@ abstract class DoubleArray extends FloatingPointArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "DoubleArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

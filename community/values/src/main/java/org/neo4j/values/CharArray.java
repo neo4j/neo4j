@@ -88,12 +88,6 @@ abstract class CharArray extends TextArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "CharArray(%s)", Arrays.toString( value() ) );
-    }
-
     static final class Direct extends CharArray
     {
         final char[] value;
@@ -108,6 +102,12 @@ abstract class CharArray extends TextArray
         char[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "CharArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -136,6 +136,13 @@ abstract class CharArray extends TextArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "CharArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

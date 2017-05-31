@@ -51,7 +51,7 @@ public class Values
 
     // DIRECT FACTORY METHODS
 
-    public static Value NO_VALUE = NoValue.NO_VALUE;
+    public static final Value NO_VALUE = NoValue.NO_VALUE;
 
     public static Value stringValue( String value )
     {
@@ -231,6 +231,9 @@ public class Values
      * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
      * make testing convenient. Passing a Value and in parameter should never be needed, and will throw an
      * UnsupportedOperationException.
+     *
+     * This method does defensive copying of arrays, while the explicit *Array() factory methods do not.
+     *
      * @param value Object to convert to Value
      * @return the created Value
      */

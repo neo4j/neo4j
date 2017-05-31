@@ -105,12 +105,6 @@ abstract class IntArray extends IntegralArray
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "IntArray(%s)", Arrays.toString( value() ) );
-    }
-
     static final class Direct extends IntArray
     {
         final int[] value;
@@ -125,6 +119,12 @@ abstract class IntArray extends IntegralArray
         int[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "IntArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -153,6 +153,13 @@ abstract class IntArray extends IntegralArray
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "IntArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

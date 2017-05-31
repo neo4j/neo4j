@@ -122,12 +122,6 @@ abstract class BooleanArray extends ArrayValue
         return value().clone();
     }
 
-    @Override
-    public String toString()
-    {
-        return format( "BooleanArray(%s)", Arrays.toString( value() ) );
-    }
-
     public int compareTo( BooleanArray other )
     {
         return NumberValues.compareBooleanArrays( this, other );
@@ -152,6 +146,12 @@ abstract class BooleanArray extends ArrayValue
         boolean[] value()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "BooleanArray%s", Arrays.toString( value() ) );
         }
     }
 
@@ -180,6 +180,13 @@ abstract class BooleanArray extends ArrayValue
         public Object getMaybeValue()
         {
             return field;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "BooleanArray%s",
+                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
         }
     }
 }

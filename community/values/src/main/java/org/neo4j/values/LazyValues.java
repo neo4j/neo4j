@@ -23,30 +23,6 @@ import org.neo4j.values.Values.ValueLoader;
 
 class LazyValues
 {
-//    ALTERNATIVE REFLECTIVE SOLUTION:
-//    ================================
-//
-//    static <Owner> Object getOrLoad(
-//            Owner owner,
-//            AtomicReferenceFieldUpdater<Owner, Object> updater
-//    ) throws Values.ValueLoadException
-//    {
-//        Object value = updater.get( owner );
-//        if ( value instanceof ValueLoader )
-//        {
-//            synchronized ( owner ) {
-//                value = updater.get( owner );
-//                if ( value instanceof ValueLoader )
-//                {
-//                    ValueLoader callable = (ValueLoader) value;
-//                    value = callable.load();
-//                    updater.set( owner, value );
-//                }
-//            }
-//        }
-//        return value;
-//    }
-
     /**
      * Get or loads the value.
      */

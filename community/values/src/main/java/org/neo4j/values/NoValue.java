@@ -37,19 +37,19 @@ final class NoValue extends Value
     @Override
     public boolean equals( Object other )
     {
-        return false;
+        return this == other;
     }
 
     @Override
     public int hashCode()
     {
-        return 123456789;
+        return System.identityHashCode( this );
     }
 
     @Override
     public boolean equals( Value other )
     {
-        return false;
+        return this == other;
     }
 
     @Override
