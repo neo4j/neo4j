@@ -93,13 +93,20 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout ) throws
-            TransactionFailureException
+    public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
+            throws TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, securityContext, timeout );
         transactionMonitor.transactionStarted();
-        return transaction;
+        try
+        {
+            return transactions.newInstance( type, securityContext, timeout );
+        }
+        catch ( Throwable t )
+        {
+            transactionMonitor.transactionFinished( false, false );
+            throw t;
+        }
     }
 
     @Override

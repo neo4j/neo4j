@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -75,6 +75,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class NeoStoreDataSourceRule extends ExternalResource
 {
     private NeoStoreDataSource dataSource;
+    private TransactionStats transactionMonitor;
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
@@ -108,13 +109,14 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
+        transactionMonitor = mock( TransactionStats.class );
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
                 idConfigurationProvider,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
-                fs, mock( TransactionMonitor.class ), databaseHealth,
+                fs, transactionMonitor, databaseHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), null,
                 new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
@@ -124,6 +126,11 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 IOLimiter.unlimited(), Clock.systemUTC(), new CanWrite() );
 
         return dataSource;
+    }
+
+    public TransactionStats getTransactionMonitor()
+    {
+        return transactionMonitor;
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
