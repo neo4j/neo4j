@@ -25,9 +25,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -70,14 +72,58 @@ public abstract class CompiledConversionUtils
         {
             return Collections.emptyList();
         }
-        if ( value instanceof Collection<?> )
+        else if ( value instanceof Collection<?> )
         {
             return (Collection<?>) value;
         }
-        // TODO: Handle primitive streams
+        else if ( value instanceof LongStream)
+        {
+            LongStream stream = (LongStream) value;
+            return stream.boxed().collect( Collectors.toList());
+        }
+        else if ( value instanceof IntStream )
+        {
+            IntStream stream = (IntStream) value;
+            return stream.boxed().collect( Collectors.toList());
+        }
+        else if ( value instanceof DoubleStream )
+        {
+            DoubleStream stream = (DoubleStream) value;
+            return stream.boxed().collect( Collectors.toList());
+        }
 
         throw new CypherTypeException(
                 "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
+    }
+
+    public static Set<?> toSet( Object value )
+    {
+        if ( value == null )
+        {
+            return Collections.emptySet();
+        }
+        else if ( value instanceof Collection<?> )
+        {
+            return new HashSet<>(  (Collection< ? >) value);
+        }
+        else if ( value instanceof LongStream)
+        {
+            LongStream stream = (LongStream) value;
+            return stream.boxed().collect( Collectors.toSet());
+        }
+        else if ( value instanceof IntStream )
+        {
+            IntStream stream = (IntStream) value;
+            return stream.boxed().collect( Collectors.toSet());
+        }
+        else if ( value instanceof DoubleStream )
+        {
+            DoubleStream stream = (DoubleStream) value;
+            return stream.boxed().collect( Collectors.toSet());
+        }
+
+        throw new CypherTypeException(
+                "Don't know how to create a set out of " + value.getClass().getSimpleName(), null );
     }
 
     public static CompositeKey compositeKey( long... keys )

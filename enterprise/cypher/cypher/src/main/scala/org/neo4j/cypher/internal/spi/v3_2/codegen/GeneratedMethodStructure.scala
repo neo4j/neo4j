@@ -619,7 +619,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     invoke(iterator, method[java.util.Iterator[_], Boolean]("hasNext"))
 
   override def toSet(value: Expression) =
-    createNewInstance(typeRef[util.HashSet[Object]], (typeRef[util.Collection[_]], value))
+    invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[java.util.Set[Object]], "toSet", typeRef[Object]),
+           value)
 
   override def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType]) = {
     if (codeGenTypes.size == 1 && codeGenTypes.head.repr == LongType) {

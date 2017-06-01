@@ -28,6 +28,36 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
  */
 class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
+  test("should handle OR when using index") {
+    // Given
+    graph.createIndex("L", "prop")
+    val node1 = createLabeledNode(Map("prop" -> 1), "L")
+    val node2 = createLabeledNode(Map("prop" -> 2), "L")
+    createLabeledNode(Map("prop" -> 3), "L")
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 OR n.prop = 2 RETURN n")
+
+    // Then
+    result should useOperationTimes("NodeIndexSeek", 1)
+    result.toList should equal(List(Map("n" -> node1), Map("n" -> node2)))
+  }
+
+  test("should handle AND when using index") {
+    // Given
+    graph.createIndex("L", "prop")
+    createLabeledNode(Map("prop" -> 1), "L")
+    createLabeledNode(Map("prop" -> 2), "L")
+    createLabeledNode(Map("prop" -> 3), "L")
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 AND n.prop = 2 RETURN n")
+
+    // Then
+    result should useOperationTimes("NodeIndexSeek", 1)
+    result.toList shouldBe empty
+  }
+
   test("Should allow AND and OR with index and equality predicates") {
     graph.createIndex("User", "prop1")
     graph.createIndex("User", "prop2")
