@@ -34,7 +34,7 @@ public class MathUtil
     /**
      * Calculates the portion of the first value to all values passed
      * @param n The values in the set
-     * @return the ratio of n[1] to the sum all n, 0 if result is {@link Double#NaN}
+     * @return the ratio of n[0] to the sum all n, 0 if result is {@link Double#NaN}
      */
     public static double portion( double... n )
     {
