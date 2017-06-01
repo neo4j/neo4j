@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 public class IdFile
 {
-    static final long NO_RESULT = -1;
+    public static final long NO_RESULT = -1;
 
     // sticky(byte), nextFreeId(long)
     static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
@@ -52,7 +52,7 @@ public class IdFile
 
     private long initialHighId;
 
-    IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
+    public IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
     {
         if ( grabSize < 1 )
         {
@@ -66,10 +66,15 @@ public class IdFile
     }
 
     // initialize the id generator and performs a simple validation
-    void init()
+    public void init()
     {
         try
         {
+            if ( !fs.fileExists( file ) )
+            {
+                createEmptyIdFile( fs, file, 0, false );
+            }
+
             fileChannel = fs.open( file, "rw" );
             initialHighId = readAndValidateHeader();
             markAsSticky();
@@ -216,7 +221,7 @@ public class IdFile
     /**
      * @return next free id or {@link IdFile#NO_RESULT} if not available
      */
-    long getReusableId()
+    public long getReusableId()
     {
         return freeIdKeeper.getId();
     }
@@ -226,7 +231,7 @@ public class IdFile
         freeIdKeeper.freeId( id );
     }
 
-    long getFreeIdCount()
+    public long getFreeIdCount()
     {
         return freeIdKeeper.getCount();
     }

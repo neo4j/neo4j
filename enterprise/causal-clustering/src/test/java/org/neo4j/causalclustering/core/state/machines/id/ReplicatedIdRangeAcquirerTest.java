@@ -19,8 +19,11 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,16 +31,26 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.replication.DirectReplicator;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class ReplicatedIdRangeAcquirerTest
 {
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public FileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
+
     private final MemberId memberA =
             new MemberId( UUID.randomUUID() );
     private final MemberId memberB =
@@ -69,10 +82,11 @@ public class ReplicatedIdRangeAcquirerTest
         Set<Long> idAllocations = new HashSet<>();
         int idRangeLength = 8;
 
+        FileSystemAbstraction fs = defaultFileSystemRule.get();
         ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength(
-                memberA, initialHighId, idRangeLength );
+                memberA, initialHighId, idRangeLength, fs, testDirectory.file( "gen1" ) );
         ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength(
-                memberB, initialHighId, idRangeLength );
+                memberB, initialHighId, idRangeLength, fs, testDirectory.file( "gen2" ) );
 
         // First iteration is bootstrapping the set, so we do it outside the loop to avoid an if check in there
         long newId = generatorOne.nextId();
@@ -95,15 +109,17 @@ public class ReplicatedIdRangeAcquirerTest
         }
     }
 
-    private ReplicatedIdGenerator createForMemberWithInitialIdAndRangeLength(
-            MemberId member, long initialHighId, int idRangeLength )
+    private ReplicatedIdGenerator createForMemberWithInitialIdAndRangeLength( MemberId member, long initialHighId,
+            int idRangeLength, FileSystemAbstraction fs, File file )
     {
         Map<IdType,Integer> allocationSizes =
                 Arrays.stream( IdType.values() ).collect( Collectors.toMap( idType -> idType, idType -> idRangeLength ) );
         ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine,
                 allocationSizes, member, NullLogProvider.getInstance() );
 
-        return new ReplicatedIdGenerator( IdType.ARRAY_BLOCK, initialHighId, acquirer,
-                NullLogProvider.getInstance() );
+        LeaderLocator leaderLocator = Mockito.mock( LeaderLocator.class );
+
+        return new ReplicatedIdGenerator( fs, file, IdType.ARRAY_BLOCK, initialHighId, acquirer,
+                NullLogProvider.getInstance(), 10, true, () -> false );
     }
 }

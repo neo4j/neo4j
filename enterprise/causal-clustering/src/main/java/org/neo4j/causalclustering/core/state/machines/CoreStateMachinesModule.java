@@ -23,12 +23,14 @@ import java.io.File;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
+import org.neo4j.causalclustering.core.state.machines.id.IdReusabilityCondition;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdRangeAcquirer;
@@ -132,11 +134,10 @@ public class CoreStateMachinesModule
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
 
+        BooleanSupplier freeIdCondition = new IdReusabilityCondition( dependencies, leaderLocator, myself );
         this.idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem,
                 idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider ) );
-
-        life.add( this.idGeneratorFactory );
+                idTypeConfigurationProvider, freeIdCondition ) );
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
@@ -214,14 +215,12 @@ public class CoreStateMachinesModule
         return allocationSizes;
     }
 
-    private ReplicatedIdGeneratorFactory createIdGeneratorFactory(
-            FileSystemAbstraction fileSystem,
-            final ReplicatedIdRangeAcquirer idRangeAcquirer,
-            final LogProvider logProvider,
-            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    private ReplicatedIdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
+            final ReplicatedIdRangeAcquirer idRangeAcquirer, final LogProvider logProvider,
+            IdTypeConfigurationProvider idTypeConfigurationProvider, BooleanSupplier freeIdCondition )
     {
         return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider );
+                idTypeConfigurationProvider, freeIdCondition );
     }
 
     private Locks createLockManager( final Config config, Clock clock, final LogService logging,

@@ -19,16 +19,30 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.BooleanSupplier;
 
+import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.IdGeneratorContractTest;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.util.Collections.max;
 import static java.util.Collections.min;
@@ -41,7 +55,27 @@ import static org.mockito.Mockito.when;
 
 public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
 {
+    private static final BooleanSupplier NO_REUSE = () -> false;
+    private static final BooleanSupplier ALWAYS_REUSE = () -> true;
+
     private NullLogProvider logProvider = NullLogProvider.getInstance();
+
+    @Rule
+    public FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    private File file;
+    private FileSystemAbstraction fs;
+    private MemberId myself = new MemberId( UUID.randomUUID() );
+    private LeaderLocator leaderLocator = Mockito.mock( LeaderLocator.class );
+    private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+
+    @Before
+    public void setUp() throws Exception
+    {
+        file = testDirectory.file( "idgen" );
+        fs = fileSystemRule.get();
+    }
 
     @Override
     protected IdGenerator createIdGenerator( int grabSize )
@@ -52,7 +86,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     @Override
     protected IdGenerator openIdGenerator( int grabSize )
     {
-        return new ReplicatedIdGenerator( IdType.NODE, 0, stubAcquirer(), logProvider );
+        return new ReplicatedIdGenerator( fs, file, IdType.NODE, 0, stubAcquirer(), logProvider, grabSize,
+                true, NO_REUSE );
     }
 
     @Test
@@ -60,7 +95,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     {
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
-        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( IdType.NODE, 0, rangeAcquirer, logProvider );
+        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, 0, rangeAcquirer, logProvider,
+                10, true, NO_REUSE );
 
         Set<Long> idsGenerated = collectGeneratedIds( idGenerator, 1024 );
 
@@ -77,7 +113,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
 
         int burnedIds = 23;
-        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( IdType.NODE, burnedIds, rangeAcquirer, logProvider );
+        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, burnedIds, rangeAcquirer, logProvider,
+                10, true, NO_REUSE );
 
         Set<Long> idsGenerated = collectGeneratedIds( idGenerator, 1024 - burnedIds );
 
@@ -94,9 +131,87 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
         when( rangeAcquirer.acquireIds( IdType.NODE ) ).thenReturn( allocation( 3, 21, 21 ) );
         ReplicatedIdGenerator idGenerator =
-                new ReplicatedIdGenerator( IdType.NODE, 42, rangeAcquirer, logProvider );
+                new ReplicatedIdGenerator( fs, file, IdType.NODE, 42, rangeAcquirer, logProvider, 10,
+                        true, NO_REUSE );
 
         idGenerator.nextId();
+    }
+
+    @Test
+    public void shouldReuseIdOnlyWhenLeader() throws Exception
+    {
+        ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
+
+        IdReusabilityCondition idReusabilityCondition = getIdReusabilityCondition();
+
+        int burnedIds = 23;
+        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, burnedIds, rangeAcquirer, logProvider,
+                10, true, idReusabilityCondition );
+
+        idGenerator.freeId( 10 );
+        assertEquals( 0, idGenerator.getDefragCount() );
+        assertEquals( 23, idGenerator.nextId() );
+
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 6L ); // gap-free
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        idReusabilityCondition.receive( myself );
+
+        idGenerator.freeId( 10 );
+        assertEquals( 1, idGenerator.getDefragCount() );
+        assertEquals( 10, idGenerator.nextId() );
+        assertEquals( 0, idGenerator.getDefragCount() );
+    }
+
+    @Test
+    public void shouldReuseIdBeforeHighId() throws Exception
+    {
+        ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
+
+        int burnedIds = 23;
+        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, burnedIds, rangeAcquirer, logProvider,
+                10, true, ALWAYS_REUSE );
+
+        assertEquals( 23, idGenerator.nextId() );
+
+        idGenerator.freeId( 10 );
+        idGenerator.freeId( 5 );
+
+        assertEquals( 10, idGenerator.nextId() );
+        assertEquals( 5, idGenerator.nextId() );
+        assertEquals( 24, idGenerator.nextId() );
+    }
+
+    @Test
+    public void freeIdOnlyWhenReusabilityConditionAllows() throws Exception
+    {
+        ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
+
+        IdReusabilityCondition idReusabilityCondition = getIdReusabilityCondition();
+
+        int burnedIds = 23;
+        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, burnedIds, rangeAcquirer, logProvider,
+                10, true, idReusabilityCondition );
+
+        idGenerator.freeId( 10 );
+        assertEquals( 0, idGenerator.getDefragCount() );
+        assertEquals( 23, idGenerator.nextId() );
+
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 4L, 6L ); // gap-free
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        idReusabilityCondition.receive( myself );
+
+        assertEquals( 24, idGenerator.nextId() );
+        idGenerator.freeId( 11 );
+        assertEquals( 25, idGenerator.nextId() );
+        idGenerator.freeId( 6 );
+        assertEquals( 6, idGenerator.nextId() );
+    }
+
+    private IdReusabilityCondition getIdReusabilityCondition()
+    {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( transactionIdStore );
+        return new IdReusabilityCondition( dependencies, leaderLocator, myself );
     }
 
     private Set<Long> collectGeneratedIds( ReplicatedIdGenerator idGenerator, int expectedIds )

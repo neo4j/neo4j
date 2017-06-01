@@ -19,6 +19,11 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import java.io.File;
+import java.util.function.BooleanSupplier;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.id.IdFile;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -34,27 +39,38 @@ class ReplicatedIdGenerator implements IdGenerator
     private final IdType idType;
     private final Log log;
     private final ReplicatedIdRangeAcquirer acquirer;
+    private final BooleanSupplier freeIdCondition;
     private volatile long highId;
-    private volatile long defragCount;
     private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
 
-    ReplicatedIdGenerator( IdType idType, long highId, ReplicatedIdRangeAcquirer acquirer, LogProvider
-            logProvider )
+    private IdFile idFile;
+
+    ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
+            ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse,
+            BooleanSupplier freeIdCondition )
     {
         this.idType = idType;
         this.highId = highId;
         this.acquirer = acquirer;
         this.log = logProvider.getLog( getClass() );
+        this.freeIdCondition = freeIdCondition;
+        idFile = new IdFile( fs, file, grabSize, aggressiveReuse );
+        idFile.init();
     }
 
     @Override
     public void close()
     {
+        idFile.close( highId );
     }
 
     @Override
     public void freeId( long id )
     {
+        if ( freeIdCondition.getAsBoolean() )
+        {
+            idFile.freeId( id );
+        }
     }
 
     @Override
@@ -78,17 +94,22 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public long getNumberOfIdsInUse()
     {
-        return highId - defragCount;
+        return highId - idFile.getFreeIdCount();
     }
 
     @Override
     public synchronized long nextId()
     {
+        long id = idFile.getReusableId();
+        if ( id != IdFile.NO_RESULT )
+        {
+            return id;
+        }
+
         long nextId = idQueue.next();
         if ( nextId == VALUE_REPRESENTING_NULL )
         {
-            IdAllocation allocation;
-            allocation = acquirer.acquireIds( idType );
+            IdAllocation allocation = acquirer.acquireIds( idType );
 
             assert allocation.getIdRange().getRangeLength() > 0;
             log.debug( "Received id allocation " + allocation + " for " + idType );
@@ -107,7 +128,6 @@ class ReplicatedIdGenerator implements IdGenerator
     private long storeLocally( IdAllocation allocation )
     {
         setHighId( allocation.getHighestIdInUse() + 1 ); // high id is certainly bigger than the highest id in use
-        this.defragCount = allocation.getDefragCount();
         this.idQueue = new IdRangeIterator( respectingHighId( allocation.getIdRange() ) );
         return idQueue.next();
     }
@@ -134,12 +154,13 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public long getDefragCount()
     {
-        return this.defragCount;
+        return idFile.getFreeIdCount();
     }
 
     @Override
     public void delete()
     {
+        idFile.delete();
     }
 
     @Override
