@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.IteratorSupport._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningSupport._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
@@ -96,9 +98,19 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         Set(pattern) -> bestAccessor
       }
   }
+}
 
-  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan])
-                               (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
+trait SingleComponentPlannerTrait {
+  def planComponent(qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan
+}
+
+
+object SingleComponentPlanner {
+  def DEFAULT_SOLVERS: Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
+    Seq(joinSolverStep(_), expandSolverStep(_))
+
+  def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan])
+                       (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     leaves.flatMap {
       case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
@@ -110,17 +122,29 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         val (start, end) = pattern.nodes
         val leftExpand = planSinglePatternSide(qg, pattern, plan, start)
         val rightExpand = planSinglePatternSide(qg, pattern, plan, end)
-        leftExpand.toSet ++ rightExpand.toSet
+
+        val startJoinNodes = Set(start)
+        val endJoinNodes = Set(end)
+        val maybeStartPlan = leaves.find(_.availableSymbols == startJoinNodes)
+        val maybeEndPlan = leaves.find(_.availableSymbols == endJoinNodes)
+        val extraPlans: Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
+          case (Some(startPlan), Some(endPlan)) =>
+            val cartesianProduct = planSinglePatternSide(qg, pattern, context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan), start)
+            val joinPlans: Iterable[LogicalPlan] = if (qg.hints.nonEmpty && qg.size == 1) {
+              val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
+              val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
+              val join1a = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints))
+              val join1b = leftExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, endPlan, expand, endJoinHints))
+              val join2a = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, startPlan, expand, startJoinHints))
+              val join2b = rightExpand.map(expand => context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, expand, startPlan, startJoinHints))
+              join1a ++ join1b ++ join2a ++ join2b
+            } else
+              None
+            cartesianProduct ++ joinPlans
+          case _ =>
+            None
+        }
+        leftExpand ++ rightExpand ++ extraPlans
     }
   }
-}
-
-trait SingleComponentPlannerTrait {
-  def planComponent(qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan
-}
-
-
-object SingleComponentPlanner {
-  def DEFAULT_SOLVERS: Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
-    Seq(joinSolverStep(_), expandSolverStep(_))
 }
