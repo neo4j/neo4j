@@ -63,6 +63,9 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE extends NumberValue>
 {
+    static final long NON_EXISTENT_VALUE = 123456789;
+    static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
+
     final FileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );

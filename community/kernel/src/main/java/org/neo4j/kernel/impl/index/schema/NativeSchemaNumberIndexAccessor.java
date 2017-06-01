@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
@@ -119,6 +122,9 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
 
     private class NativeSchemaNumberIndexReader implements IndexReader
     {
+        private final KEY treeKeyFrom = layout.newKey();
+        private final KEY treeKeyTo = layout.newKey();
+
         @Override
         public void close()
         {
@@ -128,7 +134,16 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
         @Override
         public long countIndexedNodes( long nodeId, Object... propertyValues )
         {
-            throw new UnsupportedOperationException( "Implement me" );
+            treeKeyFrom.from( nodeId, propertyValues );
+            treeKeyTo.from( nodeId, propertyValues );
+            try ( RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
+            {
+                return Cursors.count( seeker );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         @Override

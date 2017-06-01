@@ -34,9 +34,9 @@ import org.neo4j.values.Value;
 public interface IndexReader extends Resource
 {
     /**
-     * @param nodeId node if to match.
+     * @param nodeId node id to match.
      * @param propertyValues property values to match.
-     * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
+     * @return number of index entries for the given {@code nodeId} and {@code propertyValues}.
      */
     long countIndexedNodes( long nodeId, Value... propertyValues );
 

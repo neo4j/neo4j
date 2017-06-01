@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.RawCursor;
 
 public class Cursors
 {
@@ -54,7 +55,7 @@ public class Cursors
         return (Cursor<T>) EMPTY;
     }
 
-    public static int count( Cursor<?> cursor )
+    public static <E extends Exception> int count( RawCursor<?,E> cursor ) throws E
     {
         try
         {

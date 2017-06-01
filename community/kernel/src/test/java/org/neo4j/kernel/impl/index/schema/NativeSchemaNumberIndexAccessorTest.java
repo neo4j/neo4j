@@ -35,6 +35,9 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.storageengine.api.schema.IndexReader;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
@@ -222,6 +225,68 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         }
     }
 
+    // === READER ===
+
+    @Test
+    public void shouldReturnZeroCountForEmptyIndex() throws Exception
+    {
+        // given
+        IndexReader reader = accessor.newReader();
+
+        // when
+        long count = reader.countIndexedNodes( 123, 456 );
+
+        // then
+        assertEquals( 0, count );
+    }
+
+    @Test
+    public void shouldReturnCountOneForExistingData() throws Exception
+    {
+        // given
+        IndexEntryUpdate[] updates = someIndexEntryUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        for ( IndexEntryUpdate update : updates )
+        {
+            long count = reader.countIndexedNodes( update.getEntityId(), update.values() );
+
+            // then
+            assertEquals( 1, count );
+        }
+
+        // and when
+        long count = reader.countIndexedNodes( 123, 456 );
+
+        // then
+        assertEquals( 0, count );
+    }
+
+    @Test
+    public void shouldReturnCountZeroForMismatchingData() throws Exception
+    {
+        // given
+        IndexEntryUpdate[] updates = someIndexEntryUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+
+        for ( IndexEntryUpdate update : updates )
+        {
+            long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, update.values() );
+            long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, update.values() );
+            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), NON_EXISTENT_VALUE );
+
+            // then
+            assertEquals( 0, countWithMismatchingData );
+            assertEquals( 0, countWithNonExistentEntityId );
+            assertEquals( 0, countWithNonExistentValue );
+        }
+    }
+
     private void applyUpdatesToExpectedData( Set<IndexEntryUpdate<IndexDescriptor>> expectedData,
             IndexEntryUpdate<IndexDescriptor>[] batch )
     {
@@ -326,6 +391,22 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     }
 
     // READER
+
+    // shouldReturnZeroCountForEmptyIndex
+    // shouldReturnCountOneForExistingData
+    // shouldReturnCountZeroForMismatchingData
+
+    // TODO: shouldReturnAllEntriesForExistsPredicate
+    // TODO: shouldReturnNoEntriesForExistsPredicateForEmptyIndex
+    // TODO: shouldReturnMatchingEntriesForExactPredicate
+    // TODO: shouldReturnNoEntriesForMismatchingExactPredicate
+    // TODO: shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd
+    // TODO: shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd
+    // TODO: shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd
+    // TODO: shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd
+    // TODO: shouldReturnNoEntriesForRangePredicateOutsideAnyMatch
+
+    // TODO: SAMPLER
 
 //    long countIndexedNodes( long nodeId, Object... propertyValues )
 //    IndexSampler createSampler()
