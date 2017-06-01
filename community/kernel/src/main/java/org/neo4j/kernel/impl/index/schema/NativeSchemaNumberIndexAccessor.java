@@ -21,15 +21,18 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.IndexQuery;
@@ -37,8 +40,19 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-public class NativeSchemaNumberIndexAccessor implements IndexAccessor
+public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extends NumberValue>
+        extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
 {
+    private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
+
+    NativeSchemaNumberIndexAccessor( PageCache pageCache, File storeFile,
+            Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
+    {
+        super( pageCache, storeFile, layout );
+        singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
+        instantiateTree( recoveryCleanupWorkCollector );
+    }
+
     @Override
     public void drop() throws IOException
     {
@@ -48,25 +62,34 @@ public class NativeSchemaNumberIndexAccessor implements IndexAccessor
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new NativeSchemaNumberIndexUpdater();
+        try
+        {
+            return singleUpdater.initialize( tree.writer(), true );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
     public void flush() throws IOException
     {
+        // todo remove this from interface completely
         throw new UnsupportedOperationException( "Implement me" );
     }
 
     @Override
     public void force() throws IOException
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        // TODO add IOLimiter arg
+        tree.checkpoint( IOLimiter.unlimited() );
     }
 
     @Override
     public void close() throws IOException
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        closeTree();
     }
 
     @Override
@@ -94,31 +117,8 @@ public class NativeSchemaNumberIndexAccessor implements IndexAccessor
         throw new UnsupportedOperationException( "Implement me" );
     }
 
-    private class NativeSchemaNumberIndexUpdater implements IndexUpdater
-    {
-
-        @Override
-        public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
-        {
-            throw new UnsupportedOperationException( "Implement me" );
-        }
-
-        @Override
-        public void close() throws IOException, IndexEntryConflictException
-        {
-            throw new UnsupportedOperationException( "Implement me" );
-        }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds ) throws IOException
-        {
-            throw new UnsupportedOperationException( "Implement me" );
-        }
-    }
-
     private class NativeSchemaNumberIndexReader implements IndexReader
     {
-
         @Override
         public void close()
         {

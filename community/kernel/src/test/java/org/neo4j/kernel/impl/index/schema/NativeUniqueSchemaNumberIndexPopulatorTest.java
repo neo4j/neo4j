@@ -114,7 +114,7 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaInde
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0.01f );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( 0.01f );
         Number failSafeDuplicateValue = 12345.6789D;
 
         // when

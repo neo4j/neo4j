@@ -23,6 +23,7 @@ package org.neo4j.index.internal.gbptree;
  * Decides what to do when inserting key which already exists in index. Different implementations of
  * {@link ValueMerger} can result in unique/non-unique indexes for example.
  *
+ * @param <KEY> type of keys to merge.
  * @param <VALUE> type of values to merge.
  */
 public interface ValueMerger<KEY,VALUE>

@@ -94,7 +94,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0.1f );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( 0.1f );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -102,7 +102,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( randomUniqueUpdateGenerator( random, 0.1f ), count );
+        verifyUpdates( randomUniqueUpdateGenerator( 0.1f ), count );
     }
 
     @Test

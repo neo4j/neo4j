@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.Value;
 
+import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.toValue;
+
 /**
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
  * Contains actual number for internal filtering after accidental query hits due to double value coersion.
@@ -71,5 +73,11 @@ class NumberValue
             type = LONG;
             rawValueBits = value.longValue();
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "type=" + type + ",rawValue=" + rawValueBits + ",value=" + toValue( type, rawValueBits );
     }
 }

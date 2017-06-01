@@ -72,7 +72,8 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
             processChange( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
             break;
         case REMOVED:
-            throw new UnsupportedOperationException( "Implement me" );
+            processRemove( treeKey, update, writer );
+            break;
         default:
             throw new IllegalArgumentException();
         }
@@ -102,29 +103,38 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
         }
     }
 
+    private static <KEY extends NumberKey, VALUE extends NumberValue> void processRemove( KEY treeKey,
+            IndexEntryUpdate update, Writer<KEY,VALUE> writer ) throws IOException
+    {
+        // todo Do we need to verify that we actually removed something at all?
+        // todo Difference between online and recovery?
+        treeKey.from( update.getEntityId(), update.values() );
+        writer.remove( treeKey );
+    }
+
     private static <KEY extends NumberKey, VALUE extends NumberValue> void processChange( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate update, Writer<KEY,VALUE> singleWriter,
+            IndexEntryUpdate update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
         // Remove old entry
         treeKey.from( update.getEntityId(), update.beforeValues() );
-        singleWriter.remove( treeKey );
-        // Insert new entrty
+        writer.remove( treeKey );
+        // Insert new entry
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
-        singleWriter.merge( treeKey, treeValue, conflictDetectingValueMerger );
+        writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
         assertNoConflict( update, conflictDetectingValueMerger );
     }
 
     static <KEY extends NumberKey, VALUE extends NumberValue> void processAdd( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate update, Writer<KEY,VALUE> singleWriter,
+            IndexEntryUpdate update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
-        singleWriter.merge( treeKey, treeValue, conflictDetectingValueMerger );
+        writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
         assertNoConflict( update, conflictDetectingValueMerger );
     }
 

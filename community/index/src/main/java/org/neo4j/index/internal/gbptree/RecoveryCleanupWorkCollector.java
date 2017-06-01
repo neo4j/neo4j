@@ -63,6 +63,9 @@ public interface RecoveryCleanupWorkCollector extends Lifecycle
         }
     }
 
+    /**
+     * {@link RecoveryCleanupWorkCollector} ignoring all {@link CleanupJob} added to it.
+     */
     class NullRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
     {
         @Override

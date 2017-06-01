@@ -28,10 +28,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -53,6 +57,8 @@ import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static java.lang.String.format;
+
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE extends NumberValue>
@@ -132,6 +138,52 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( float fractionDuplicates )
+    {
+        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
+        {
+            private final Set<Double> uniqueCompareValues = new HashSet<>();
+            private final List<Number> uniqueValues = new ArrayList<>();
+            private long currentEntityId;
+
+            @Override
+            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
+            {
+                Number value;
+                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
+                        random.nextFloat() < fractionDuplicates )
+                {
+                    value = existingNonUniqueValue( random );
+                }
+                else
+                {
+                    value = newUniqueValue( random );
+                }
+
+                return add( currentEntityId++, value );
+            }
+
+            private Number newUniqueValue( RandomRule randomRule )
+            {
+                Number value;
+                Double compareValue;
+                do
+                {
+                    value = randomRule.numberPropertyValue();
+                    compareValue = value.doubleValue();
+                }
+                while ( !uniqueCompareValues.add( compareValue ) );
+                uniqueValues.add( value );
+                return value;
+            }
+
+            private Number existingNonUniqueValue( RandomRule randomRule )
+            {
+                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
+            }
+        };
+    }
+
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
     {
         KEY lowest = layout.newKey();
@@ -146,7 +198,9 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     {
         Arrays.sort( expectedHits, comparator );
         Arrays.sort( actualHits, comparator );
-        assertEquals( "Array length differ", expectedHits.length, actualHits.length );
+        assertEquals( format( "Array length differ%nExpected:%s%nActual:%s",
+                Arrays.toString( expectedHits ), Arrays.toString( actualHits ) ),
+                expectedHits.length, actualHits.length );
 
         for ( int i = 0; i < expectedHits.length; i++ )
         {
@@ -239,6 +293,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
         }
     }
 
+    @SuppressWarnings( "rawtypes" )
     IndexEntryUpdate[] someIndexEntryUpdates()
     {
         return new IndexEntryUpdate[]{

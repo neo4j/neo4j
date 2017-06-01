@@ -26,17 +26,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -51,8 +47,6 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -376,7 +370,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0 );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( 0 );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -384,7 +378,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( randomUniqueUpdateGenerator( random, 0 ), count );
+        verifyUpdates( randomUniqueUpdateGenerator( 0 ), count );
     }
 
     @Test
@@ -522,53 +516,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
             count++;
         }
         return count;
-    }
-
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( RandomRule randomRule,
-            float fractionDuplicates )
-    {
-        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
-        {
-            private final Set<Double> uniqueCompareValues = new HashSet<>();
-            private final List<Number> uniqueValues = new ArrayList<>();
-            private long currentEntityId;
-
-            @Override
-            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
-            {
-                Number value;
-                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        randomRule.nextFloat() < fractionDuplicates )
-                {
-                    value = existingNonUniqueValue( randomRule );
-                }
-                else
-                {
-                    value = newUniqueValue( randomRule );
-                }
-
-                return add( currentEntityId++, value );
-            }
-
-            private Number newUniqueValue( RandomRule randomRule )
-            {
-                Number value;
-                Double compareValue;
-                do
-                {
-                    value = randomRule.numberPropertyValue();
-                    compareValue = value.doubleValue();
-                }
-                while ( !uniqueCompareValues.add( compareValue ) );
-                uniqueValues.add( value );
-                return value;
-            }
-
-            private Number existingNonUniqueValue( RandomRule randomRule )
-            {
-                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
-            }
-        };
     }
 
     private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
