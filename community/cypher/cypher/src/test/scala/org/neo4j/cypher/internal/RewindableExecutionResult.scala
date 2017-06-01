@@ -105,7 +105,12 @@ object RewindableExecutionResult {
   }
 
   private case class InternalExecutionResultCompatibilityWrapperFor2_3(inner: v2_3.executionplan.InternalExecutionResult) extends InternalExecutionResult {
-    override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
+
+    private val cache = inner.toList
+
+    override def toList: List[Map[String, Any]] = cache
+
+    override def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
 
     override def executionType: InternalQueryType = inner.executionType.queryType() match {
       case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY
@@ -222,7 +227,11 @@ object RewindableExecutionResult {
   }
 
   private case class InternalExecutionResultCompatibilityWrapperFor3_1(inner: v3_1.executionplan.InternalExecutionResult) extends InternalExecutionResult {
-    override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
+    private val cache = inner.toList
+
+    override def toList: List[Map[String, Any]] = cache
+
+    override def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
 
     override def executionType: InternalQueryType = inner.executionType match {
       case v3_1.executionplan.READ_ONLY => READ_ONLY
