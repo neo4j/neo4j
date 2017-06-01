@@ -179,6 +179,11 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.PlannerUnavailableWarning,
         "CREATE UNIQUE is unsupported for current CYPHER version, the query has been execute by an older CYPHER version"
+    ),
+    START_UNAVAILABLE_FALLBACK(
+            SeverityLevel.WARNING,
+            Status.Statement.PlannerUnavailableWarning,
+            "START is unsupported for current CYPHER version, the query has been execute by an older CYPHER version"
     );
 
     private final Status status;

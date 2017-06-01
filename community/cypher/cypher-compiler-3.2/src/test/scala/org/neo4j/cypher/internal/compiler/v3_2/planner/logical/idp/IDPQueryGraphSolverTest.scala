@@ -520,13 +520,14 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         implicit val x = ctx
         try {
           val plan = queryGraphSolver.plan(cfg.qg)
-          val minJoinsExpected = solverConfig match {
-            case ExpandOnlyIDPSolverConfig => 0
-            case ExpandOnlyWhenPatternIsLong => 0
-            case ExpandOnlyWhenPatternIsLongShortIterationLimit => 0
-            case _ => 1
+          // We disallow joins in a couple of configurations
+          val joinsPossible: Boolean= solverConfig match {
+            case ExpandOnlyIDPSolverConfig => false
+            case ExpandOnlyWhenPatternIsLong => false
+            case ExpandOnlyWhenPatternIsLongShortIterationLimit => numberOfPatternRelationships > 10
+            case _ => true
           }
-          assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> minJoinsExpected))
+          assertMinExpandsAndJoins(plan, numberOfPatternRelationships, joinsPossible, numberOfPatternRelationships)
         } catch {
           case e: TestFailedException => fail(s"Failed to plan with config '$solverConfig': ${e.getMessage}")
           case e: Throwable => throw new RuntimeException(s"Failed to plan with config '$solverConfig'", e)
@@ -535,12 +536,15 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
-  def assertMinExpandsAndJoins(plan: LogicalPlan, minCounts: Map[String, Int]) = {
+  private def assertMinExpandsAndJoins(plan: LogicalPlan, numberOfExpands: Int, joinsPossible: Boolean, numberOfPatternRelationships: Int) = {
     val counts = countExpandsAndJoins(plan)
-    Seq("expands", "joins").foreach { op =>
-      counts(op) should be >= minCounts(op)
+    withClue("Expected expands: ") {
+      counts("expands") should be >= numberOfExpands
     }
-    counts
+
+    if(!joinsPossible) withClue(s"No joins expected: $numberOfPatternRelationships") {
+      counts("joins") should equal(0)
+    }
   }
 
   def countExpandsAndJoins(plan: LogicalPlan) = {

@@ -128,7 +128,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.dumpToString()
   }
 
-  test("shouldFindNodesByExactIndexLookup") {
+  test("should Find Nodes By Exact Index Lookup") {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -137,9 +137,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = s"start n=node:$idxName($key = '$value') return n"
 
-    graph.inTx {
-      executeWithAllPlannersAndCompatibilityMode(query).toList should equal(List(Map("n" -> n)))
-    }
+    executeWithAllPlannersAndCompatibilityMode(query).toList should equal(List(Map("n" -> n)))
   }
 
   test("shouldFindNodesByIndexQuery") {
@@ -151,9 +149,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = s"start n=node:$idxName('$key: $value') return n"
 
-    graph.inTx {
-      executeWithAllPlannersAndCompatibilityMode(query).toList should equal(List(Map("n" -> n)))
-    }
+    executeWithAllPlannersAndCompatibilityMode(query).toList should equal(List(Map("n" -> n)))
   }
 
   test("shouldFindNodesByIndexParameters") {
@@ -164,9 +160,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = s"start n=node:$idxName(key = {value}) return n"
 
-    graph.inTx {
-      executeWithAllPlannersAndCompatibilityMode(query, "value" -> "Andres").toList should equal(List(Map("n" -> n)))
-    }
+    executeWithAllPlannersAndCompatibilityMode(query, "value" -> "Andres").toList should equal(List(Map("n" -> n)))
   }
 
   test("shouldFindNodesByIndexWildcardQuery") {
@@ -178,9 +172,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = s"start n=node:$idxName('$key:andr*') return n"
 
-    graph.inTx {
-      executeWithAllPlannersAndCompatibilityMode(query).toList should equal(List(Map("n" -> n)))
-    }
+    executeWithAllPlannersAndCompatibilityMode(query).toList should equal(List(Map("n" -> n)))
   }
 
   test("shouldHandleOrFilters") {
