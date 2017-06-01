@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -847,11 +848,11 @@ public class GBPTreeTest
         ControlledRecoveryCleanupWorkCollector collector = new ControlledRecoveryCleanupWorkCollector();
         collector.init();
 
-        Future<?> cleanJob;
+        Future<List<CleanupJob>> cleanJob;
         try ( GBPTree<MutableLong, MutableLong> index = index().with( pageCache ).with( collector ).build() )
         {
             blockOnNextIO.set( true );
-            cleanJob = executor.submit( ThrowingRunnable.throwing( collector::start ) );
+            cleanJob = executor.submit( startAndReturnStartedJobs( collector ) );
 
             // WHEN
             // ... cleaner is still alive
@@ -862,16 +863,7 @@ public class GBPTreeTest
 
         // THEN
         control.release();
-        try
-        {
-            cleanJob.get();
-            fail( "Expected clean job to fail after index has been closed" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getMessage(),
-                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
-        }
+        assertFailedDueToUnmappedFile( cleanJob );
     }
 
     @Test
@@ -886,11 +878,11 @@ public class GBPTreeTest
         ControlledRecoveryCleanupWorkCollector collector = new ControlledRecoveryCleanupWorkCollector();
         collector.init();
 
-        Future<?> cleanJob;
-        try ( GBPTree<MutableLong, MutableLong> index = index().with( pageCache ).with( collector ).build() )
+        Future<List<CleanupJob>> cleanJob;
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( pageCache ).with( collector ).build() )
         {
             blockOnNextIO.set( true );
-            cleanJob = executor.submit( ThrowingRunnable.throwing( collector::start ) );
+            cleanJob = executor.submit( startAndReturnStartedJobs( collector ) );
 
             // WHEN
             // ... cleaner is still alive
@@ -901,24 +893,92 @@ public class GBPTreeTest
 
         // THEN
         control.release();
-        try
-        {
-            cleanJob.get();
-            fail( "Expected clean job to fail after index has been closed" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getMessage(),
-                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
-        }
+        assertFailedDueToUnmappedFile( cleanJob );
 
         MonitorDirty monitor = new MonitorDirty();
-        try ( GBPTree<MutableLong, MutableLong> index = index().with( monitor ).build() )
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).build() )
         {
-            assertTrue( monitor.called );
-            assertFalse( monitor.cleanOnStart);
+            assertFalse( monitor.cleanOnStart() );
         }
     }
+
+    private Callable<List<CleanupJob>> startAndReturnStartedJobs(
+            ControlledRecoveryCleanupWorkCollector collector )
+    {
+        return () ->
+        {
+            try
+            {
+                collector.start();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
+            return collector.allStartedJobs();
+        };
+    }
+
+    private void assertFailedDueToUnmappedFile( Future<List<CleanupJob>> cleanJob )
+            throws InterruptedException, ExecutionException
+    {
+        for ( CleanupJob job : cleanJob.get() )
+        {
+            assertTrue( job.hasFailed() );
+            assertThat( job.getCause().getMessage(),
+                    allOf( containsString( "File" ), containsString( "unmapped" ) ) );
+        }
+    }
+
+    @Test
+    public void checkpointMustRecognizeFailedCleaning() throws Exception
+    {
+        // given
+        makeDirty();
+        RuntimeException cleanupException = new RuntimeException( "Fail cleaning job" );
+        CleanJobControlledMonitor cleanupMonitor = new CleanJobControlledMonitor()
+        {
+            @Override
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers,
+                    long durationMillis )
+            {
+                super.cleanupFinished( numberOfPagesVisited, numberOfCleanedCrashPointers, durationMillis );
+                throw cleanupException;
+            }
+        };
+        ControlledRecoveryCleanupWorkCollector collector = new ControlledRecoveryCleanupWorkCollector();
+
+        // when
+        try ( GBPTree<MutableLong,MutableLong> index = index()
+                .with( cleanupMonitor )
+                .with( collector )
+                .build() )
+        {
+            index.writer().close(); // Changes since last checkpoint
+
+            Future<?> cleanup = executor.submit( throwing( collector::start ) );
+            shouldWait( cleanup );
+
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            shouldWait( checkpoint );
+
+            cleanupMonitor.barrier.release();
+            cleanup.get();
+
+            // then
+            try
+            {
+                checkpoint.get();
+                fail( "Expected checkpoint to fail because of failed cleaning job" );
+            }
+            catch ( ExecutionException e )
+            {
+                assertThat( e.getMessage(), allOf( containsString( "cleaning" ), containsString( "failed" ) ) );
+            }
+        }
+    }
+
+    // todo checkpointMustRecognizeFailedCleaning
 
     /* Insertion and read tests */
 
@@ -1354,6 +1414,7 @@ public class GBPTreeTest
             implements RecoveryCleanupWorkCollector
     {
         Queue<CleanupJob> jobs = new LinkedList<>();
+        List<CleanupJob> startedJobs = new LinkedList<>();
 
         @Override
         public void start() throws Throwable
@@ -1362,6 +1423,7 @@ public class GBPTreeTest
             while ( (job = jobs.poll()) != null )
             {
                 job.run();
+                startedJobs.add( job );
             }
         }
 
@@ -1369,6 +1431,11 @@ public class GBPTreeTest
         public void add( CleanupJob job )
         {
             jobs.add( job );
+        }
+
+        List<CleanupJob> allStartedJobs()
+        {
+            return startedJobs;
         }
     }
 
