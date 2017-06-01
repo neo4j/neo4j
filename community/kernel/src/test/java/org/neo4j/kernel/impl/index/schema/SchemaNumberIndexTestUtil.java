@@ -28,14 +28,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -43,27 +39,24 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
-import org.neo4j.values.Values;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static java.lang.String.format;
-
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE extends NumberValue>
 {
-    static final long NON_EXISTENT_VALUE = 123456789;
+    static final long NON_EXISTENT_VALUE = Short.MAX_VALUE + 1;
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
 
     final FileSystemRule fs = new DefaultFileSystemRule();
@@ -74,7 +67,6 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     LayoutTestUtil<KEY,VALUE> layoutUtil;
-    private IndexDescriptor indexDescriptor;
     Layout<KEY,VALUE> layout;
     File indexFile;
     PageCache pageCache;
@@ -83,18 +75,12 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     public void setup()
     {
         layoutUtil = createLayoutTestUtil();
-        indexDescriptor = createIndexDescriptor();
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
     }
 
-    protected abstract LayoutTestUtil<KEY,VALUE> createLayoutTestUtil();
-
-    private IndexDescriptor createIndexDescriptor()
-    {
-        return IndexDescriptorFactory.forLabel( 42, 666 );
-    }
+    abstract LayoutTestUtil<KEY,VALUE> createLayoutTestUtil();
 
     private void copyValue( VALUE value, VALUE intoValue )
     {
@@ -139,52 +125,6 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     {
         return new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
-    }
-
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( float fractionDuplicates )
-    {
-        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
-        {
-            private final Set<Double> uniqueCompareValues = new HashSet<>();
-            private final List<Number> uniqueValues = new ArrayList<>();
-            private long currentEntityId;
-
-            @Override
-            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
-            {
-                Number value;
-                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        random.nextFloat() < fractionDuplicates )
-                {
-                    value = existingNonUniqueValue( random );
-                }
-                else
-                {
-                    value = newUniqueValue( random );
-                }
-
-                return add( currentEntityId++, value );
-            }
-
-            private Number newUniqueValue( RandomRule randomRule )
-            {
-                Number value;
-                Double compareValue;
-                do
-                {
-                    value = randomRule.numberPropertyValue();
-                    compareValue = value.doubleValue();
-                }
-                while ( !uniqueCompareValues.add( compareValue ) );
-                uniqueValues.add( value );
-                return value;
-            }
-
-            private Number existingNonUniqueValue( RandomRule randomRule )
-            {
-                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
-            }
-        };
     }
 
     private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
@@ -294,72 +234,5 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
         {
             return "[" + key + "," + value + "]";
         }
-    }
-
-    @SuppressWarnings( "rawtypes" )
-    IndexEntryUpdate[] someIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE ),
-                add( 14, Double.POSITIVE_INFINITY ),
-                add( 15, Double.NEGATIVE_INFINITY ),
-        };
-    }
-
-    @SuppressWarnings( "rawtypes" )
-    IndexEntryUpdate[] someDuplicateIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE ),
-                add( 14, 0 ),
-                add( 15, 4 ),
-                add( 16, Double.MAX_VALUE ),
-                add( 17, -Double.MAX_VALUE ),
-                add( 18, Float.MAX_VALUE ),
-                add( 19, -Float.MAX_VALUE ),
-                add( 20, Long.MAX_VALUE ),
-                add( 21, Long.MIN_VALUE ),
-                add( 22, Integer.MAX_VALUE ),
-                add( 23, Integer.MIN_VALUE ),
-                add( 24, Short.MAX_VALUE ),
-                add( 25, Short.MIN_VALUE ),
-                add( 26, Byte.MAX_VALUE ),
-                add( 27, Byte.MIN_VALUE ),
-                add( 28, Double.POSITIVE_INFINITY ),
-                add( 29, Double.NEGATIVE_INFINITY ),
-                add( 30, Double.POSITIVE_INFINITY ),
-                add( 31, Double.NEGATIVE_INFINITY )
-        };
-    }
-
-    protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
-    {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
     }
 }

@@ -128,7 +128,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         // given
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
             // when
@@ -145,7 +145,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         // given
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         for ( int i = 0; i < updates.length; i++ )
@@ -155,13 +155,13 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
             switch ( i % 3 )
             {
             case 0:
-                newValue = (long) i;
+                newValue = NON_EXISTENT_VALUE + i;
                 break;
             case 1:
-                newValue = (float) i;
+                newValue = (float) NON_EXISTENT_VALUE + i;
                 break;
             case 2:
-                newValue = (double) i;
+                newValue = (double) NON_EXISTENT_VALUE + i;
                 break;
             default:
                 throw new IllegalArgumentException();
@@ -182,7 +182,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         // given
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         for ( int i = 0; i < updates.length; i++ )
@@ -205,7 +205,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         // given
         Set<IndexEntryUpdate<IndexDescriptor>> expectedData = new HashSet<>();
-        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = randomUniqueUpdateGenerator( 0 );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = layoutUtil.randomUniqueUpdateGenerator( random );
 
         // when
         int rounds = 50;
@@ -244,7 +244,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void shouldReturnCountOneForExistingData() throws Exception
     {
         // given
-        IndexEntryUpdate[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
@@ -268,7 +268,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void shouldReturnCountZeroForMismatchingData() throws Exception
     {
         // given
-        IndexEntryUpdate[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
@@ -297,14 +297,14 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
             switch ( update.updateMode() )
             {
             case ADDED:
-                addition = add( update.getEntityId(), update.values()[0] );
+                addition = layoutUtil.add( update.getEntityId(), update.values()[0] );
                 break;
             case CHANGED:
-                addition = add( update.getEntityId(), update.values()[0] );
-                removal = add( update.getEntityId(), update.beforeValues()[0] );
+                addition = layoutUtil.add( update.getEntityId(), update.values()[0] );
+                removal = layoutUtil.add( update.getEntityId(), update.beforeValues()[0] );
                 break;
             case REMOVED:
-                removal = add( update.getEntityId(), update.values()[0] );
+                removal = layoutUtil.add( update.getEntityId(), update.values()[0] );
                 break;
             default:
                 throw new IllegalArgumentException( update.updateMode().name() );

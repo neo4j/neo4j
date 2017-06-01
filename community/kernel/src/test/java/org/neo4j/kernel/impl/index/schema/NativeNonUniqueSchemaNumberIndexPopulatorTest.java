@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
@@ -57,7 +57,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someDuplicateIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -74,7 +74,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         populator.create();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someDuplicateIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -85,24 +85,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         // then
         populator.close( true );
         verifyUpdates( updates );
-    }
-
-    @Test
-    public void shouldApplyLargeAmountOfInterleavedRandomUpdatesWithDuplicates() throws Exception
-    {
-        // given
-        populator.create();
-        random.reset();
-        Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( 0.1f );
-
-        // when
-        int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
-
-        // then
-        populator.close( true );
-        random.reset();
-        verifyUpdates( randomUniqueUpdateGenerator( 0.1f ), count );
     }
 
     @Test
@@ -131,7 +113,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         populator.create();
         populator.configureSampling( false );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( updates ) );
 
         // WHEN
@@ -139,9 +121,19 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
 
         // THEN
         assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( updates.length, sample.uniqueValues() );
+        assertEquals( countUniqueValuesAmongUpdates( updates ), sample.uniqueValues() );
         assertEquals( updates.length, sample.indexSize() );
         populator.close( true );
+    }
+
+    private long countUniqueValuesAmongUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        Set<Double> uniqueValues = new HashSet<>();
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        {
+            uniqueValues.add( ((Number)update.values()[0]).doubleValue() );
+        }
+        return uniqueValues.size();
     }
 
     @Test
@@ -151,7 +143,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         populator.create();
         populator.configureSampling( true );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] scanUpdates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( scanUpdates ) );
         Number[] updates = array( 101, 102, 102, 103, 103 );
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
@@ -159,7 +151,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
             long nodeId = 1000;
             for ( Number number : updates )
             {
-                IndexEntryUpdate<IndexDescriptor> update = add( nodeId++, number );
+                IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, number );
                 updater.process( update );
                 populator.includeSample( update );
             }

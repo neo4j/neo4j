@@ -20,12 +20,31 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 class NonUniqueLayoutTestUtil extends LayoutTestUtil<NumberKey,NumberValue>
 {
+    NonUniqueLayoutTestUtil()
+    {
+        super( IndexDescriptorFactory.forLabel( 42, 666 ) );
+    }
+
     @Override
     Layout<NumberKey,NumberValue> createLayout()
     {
         return new NonUniqueNumberLayout();
+    }
+
+    @Override
+    IndexEntryUpdate[] someUpdates()
+    {
+        return someUpdatesWithDuplicateValues();
+    }
+
+    @Override
+    protected double fractionDuplicates()
+    {
+        return 0.1;
     }
 }

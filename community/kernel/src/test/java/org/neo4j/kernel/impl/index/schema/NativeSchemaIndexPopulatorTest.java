@@ -159,7 +159,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -176,7 +176,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         populator.create();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -202,7 +202,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         // then
         try
         {
-            updater.process( add( 1, Long.MAX_VALUE ) );
+            updater.process( layoutUtil.add( 1, Long.MAX_VALUE ) );
             fail( "Expected process to throw on closed updater" );
         }
         catch ( IllegalStateException e )
@@ -219,7 +219,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         populator.create();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         applyInterleaved( updates, updater, populator );
@@ -370,7 +370,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( 0 );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = layoutUtil.randomUniqueUpdateGenerator( random );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -378,7 +378,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( randomUniqueUpdateGenerator( 0 ), count );
+        verifyUpdates( layoutUtil.randomUniqueUpdateGenerator( random ), count );
     }
 
     @Test

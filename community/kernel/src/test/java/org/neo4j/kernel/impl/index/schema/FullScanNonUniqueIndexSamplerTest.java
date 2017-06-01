@@ -93,7 +93,7 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
     private List<Number> generateNumberValues()
     {
         List<Number> result = new ArrayList<>();
-        for ( IndexEntryUpdate<?> update : someDuplicateIndexEntryUpdates() )
+        for ( IndexEntryUpdate<?> update : layoutUtil.someUpdates() )
         {
             result.add( (Number) update.values()[0].asObject() );
         }

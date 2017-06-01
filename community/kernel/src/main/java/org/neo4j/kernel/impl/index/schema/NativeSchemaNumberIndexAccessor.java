@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
@@ -138,7 +137,15 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
             treeKeyTo.from( nodeId, propertyValues );
             try ( RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo ) )
             {
-                return Cursors.count( seeker );
+                long count = 0;
+                while ( seeker.next() )
+                {
+                    if ( seeker.get().key().entityId == nodeId )
+                    {
+                        count++;
+                    }
+                }
+                return count;
             }
             catch ( IOException e )
             {
