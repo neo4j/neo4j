@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.IntFunction;
 
@@ -102,6 +104,12 @@ public class ForsetiClient implements Locks.Client
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock( this );
 
     private volatile boolean hasLocks;
+
+    /**
+     * When we *wait* for a specific lock to be released to us, we assign it to this field. This helps us during the
+     * secondary deadlock verification process, where we traverse the waiter/lock-owner dependency graph.
+     */
+    private volatile ForsetiLockManager.Lock waitingForLock;
 
     public ForsetiClient( int id,
                           ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
@@ -223,10 +231,8 @@ public class ForsetiClient implements Locks.Client
                         throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
                     }
 
-                    applyWaitStrategy( resourceType, tries++ );
-
                     // And take note of who we are waiting for. This is used for deadlock detection.
-                    markAsWaitingFor( existingLock, resourceType, resourceId );
+                    waitFor( existingLock, resourceType, resourceId, tries++ );
                 }
 
                 // Got the lock, no longer waiting for anyone.
@@ -283,8 +289,7 @@ public class ForsetiClient implements Locks.Client
                         }
                     }
 
-                    applyWaitStrategy( resourceType, tries++ );
-                    markAsWaitingFor( existingLock, resourceType, resourceId );
+                    waitFor( existingLock, resourceType, resourceId, tries++ );
                 }
 
                 clearWaitList();
@@ -598,13 +603,10 @@ public class ForsetiClient implements Locks.Client
     public void copyWaitListTo( SimpleBitSet other )
     {
         other.put( waitList );
-        // TODO It might make sense to somehow put a StoreLoad barrier here,
-        // TODO to expedite the observation of the updated waitList in other clients.
     }
 
     public boolean isWaitingFor( int clientId )
     {
-        // TODO Similarly to the above, make reading the waitList a volatile load.
         return clientId != this.clientId && waitList.contains( clientId );
     }
 
@@ -730,8 +732,7 @@ public class ForsetiClient implements Locks.Client
                 // Now we just wait for all clients to release the the share lock
                 while ( sharedLock.numberOfHolders() > 1 )
                 {
-                    applyWaitStrategy( resourceType, tries++ );
-                    markAsWaitingFor( sharedLock, resourceType, resourceId );
+                    waitFor( sharedLock, resourceType, resourceId, tries++ );
                 }
 
                 return true;
@@ -770,10 +771,12 @@ public class ForsetiClient implements Locks.Client
         waitList.put( clientId );
     }
 
-    private void markAsWaitingFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId )
+    private void waitFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId, int tries )
     {
+        waitingForLock = lock;
         clearWaitList();
         lock.copyHolderWaitListsInto( waitList );
+        applyWaitStrategy( type, tries );
 
         int b = lock.detectDeadlock( id() );
         if ( b != -1 && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( b ) ) )
@@ -791,10 +794,61 @@ public class ForsetiClient implements Locks.Client
             // after we've generated a description of it.
             if ( lock.detectDeadlock( id() ) != -1 )
             {
-                waitList.clear();
-                throw new DeadlockDetectedException( message );
+                // If the deadlock is real, then an owner of this lock must be (transitively) waiting on a lock that
+                // we own. So to verify the deadlock, we traverse the lock owners and their `waitingForLock` fields,
+                // to find a lock that has us among the owners.
+                // We only act upon the result of this method if the `tries` count is above some threshold. The reason
+                // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
+                // reduces the probably of a false positive, but does not eliminate them.
+                if ( isDeadlockReal( lock ) && tries > 10 )
+                {
+                    // After checking several times, this really does look like a real deadlock.
+                    waitList.clear();
+                    waitingForLock = null;
+                    throw new DeadlockDetectedException( message );
+                }
             }
         }
+        waitingForLock = null;
+    }
+
+    private boolean isDeadlockReal( ForsetiLockManager.Lock lock )
+    {
+        Set<ForsetiLockManager.Lock> waitedUpon = new HashSet<>();
+        Set<ForsetiClient> owners = new HashSet<>();
+        Set<ForsetiLockManager.Lock> nextWaitedUpon = new HashSet<>();
+        Set<ForsetiClient> nextOwners = new HashSet<>();
+        lock.collectOwners( owners );
+
+        do
+        {
+            waitedUpon.addAll( nextWaitedUpon );
+            nextWaitedUpon.clear();
+            for ( ForsetiClient owner : owners )
+            {
+                ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
+                if ( waitingForLock != null && !waitedUpon.contains( waitingForLock ) )
+                {
+                    nextWaitedUpon.add( waitingForLock );
+                }
+            }
+            for ( ForsetiLockManager.Lock lck : nextWaitedUpon )
+            {
+                lck.collectOwners( nextOwners );
+            }
+            if ( nextOwners.contains( this ) )
+            {
+                // Yes, deadlock looks real.
+                return true;
+            }
+            owners.clear();
+            Set<ForsetiClient> ownersTmp = owners;
+            owners = nextOwners;
+            nextOwners = ownersTmp;
+        }
+        while ( !nextWaitedUpon.isEmpty() );
+        // Nope, we didn't find any real wait cycles.
+        return false;
     }
 
     /**
