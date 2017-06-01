@@ -40,20 +40,19 @@ class NumberKey
     long entityId;
 
     /**
-     * Explicitly defines this key as higher than any other if {@code true}.
-     * The {@link GBPTree} only supports exclusive end of range for range scans which means highest possible
-     * double value can not be found in the tree because it will always fall outside of range.
-     * But if {@code isHighest} is used as end of range, it will be effectively unbound and thus include all values.
+     * Marks that comparisons with this key requires also comparing entityId, this allows functionality
+     * of inclusive/exclusive bounds of range queries.
+     * This is because {@link GBPTree} only support from inclusive and to exclusive.
      * <p>
-     * Note that {@code isHighest} is only an in memory state.
+     * Note that {@code entityIdIsSpecialTieBreaker} is only an in memory state.
      */
-    boolean isHighest;
+    boolean entityIdIsSpecialTieBreaker;
 
     public void from( long entityId, Value[] values )
     {
         this.value = assertValidSingleNumber( values ).doubleValue();
         this.entityId = entityId;
-        this.isHighest = false;
+        entityIdIsSpecialTieBreaker = false;
     }
 
     String propertiesAsString()
@@ -65,14 +64,14 @@ class NumberKey
     {
         value = Double.NEGATIVE_INFINITY;
         entityId = Long.MIN_VALUE;
-        isHighest = false;
+        entityIdIsSpecialTieBreaker = true;
     }
 
     void initAsHighest()
     {
         value = Double.POSITIVE_INFINITY;
         entityId = Long.MAX_VALUE;
-        isHighest = true;
+        entityIdIsSpecialTieBreaker = true;
     }
 
     @Override

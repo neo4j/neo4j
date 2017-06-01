@@ -370,7 +370,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = layoutUtil.randomUniqueUpdateGenerator( random );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = layoutUtil.randomUpdateGenerator( random );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -378,7 +378,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NumberKey,VALUE
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( layoutUtil.randomUniqueUpdateGenerator( random ), count );
+        verifyUpdates( layoutUtil.randomUpdateGenerator( random ), count );
     }
 
     @Test

@@ -49,7 +49,7 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
 
     abstract Layout<KEY,VALUE> createLayout();
 
-    abstract IndexEntryUpdate[] someUpdates();
+    abstract IndexEntryUpdate<IndexDescriptor>[] someUpdates();
 
     protected abstract double fractionDuplicates();
 
@@ -90,7 +90,7 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
         return typeCompare;
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( RandomRule random )
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
     {
         double fractionDuplicates = fractionDuplicates();
         return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
@@ -137,21 +137,20 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
         };
     }
 
-    @SuppressWarnings( "rawtypes" )
-    IndexEntryUpdate[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
-    @SuppressWarnings( "rawtypes" )
-    IndexEntryUpdate[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 
-    private IndexEntryUpdate[] generateAddUpdatesFor( Number[] values )
+    private IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Number[] values )
     {
-        IndexEntryUpdate[] indexEntryUpdates = new IndexEntryUpdate[values.length];
+        @SuppressWarnings( "unchecked" )
+        IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
         for ( int i = 0; i < indexEntryUpdates.length; i++ )
         {
             indexEntryUpdates[i] = add( i, values[i] );

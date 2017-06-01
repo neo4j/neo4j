@@ -28,17 +28,27 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.function.Predicates.all;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.function.Predicates.in;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
@@ -127,7 +137,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void shouldIndexAdd() throws Exception
     {
         // given
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
@@ -144,7 +153,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void shouldIndexChange() throws Exception
     {
         // given
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
@@ -181,7 +189,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void shouldIndexRemove() throws Exception
     {
         // given
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
@@ -205,7 +212,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         // given
         Set<IndexEntryUpdate<IndexDescriptor>> expectedData = new HashSet<>();
-        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = layoutUtil.randomUniqueUpdateGenerator( random );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = layoutUtil.randomUpdateGenerator( random );
 
         // when
         int rounds = 50;
@@ -231,50 +238,53 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void shouldReturnZeroCountForEmptyIndex() throws Exception
     {
         // given
-        IndexReader reader = accessor.newReader();
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            // when
+            long count = reader.countIndexedNodes( 123, 456 );
 
-        // when
-        long count = reader.countIndexedNodes( 123, 456 );
-
-        // then
-        assertEquals( 0, count );
+            // then
+            assertEquals( 0, count );
+        }
     }
 
     @Test
     public void shouldReturnCountOneForExistingData() throws Exception
     {
         // given
-        IndexEntryUpdate[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
-        IndexReader reader = accessor.newReader();
-        for ( IndexEntryUpdate update : updates )
+        try ( IndexReader reader = accessor.newReader() )
         {
-            long count = reader.countIndexedNodes( update.getEntityId(), update.values() );
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            {
+                long count = reader.countIndexedNodes( update.getEntityId(), update.values() );
+
+                // then
+                assertEquals( 1, count );
+            }
+
+            // and when
+            long count = reader.countIndexedNodes( 123, 456 );
 
             // then
-            assertEquals( 1, count );
+            assertEquals( 0, count );
         }
-
-        // and when
-        long count = reader.countIndexedNodes( 123, 456 );
-
-        // then
-        assertEquals( 0, count );
     }
 
     @Test
     public void shouldReturnCountZeroForMismatchingData() throws Exception
     {
         // given
-        IndexEntryUpdate[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
 
         // when
         IndexReader reader = accessor.newReader();
 
-        for ( IndexEntryUpdate update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, update.values() );
             long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, update.values() );
@@ -285,6 +295,168 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
             assertEquals( 0, countWithNonExistentEntityId );
             assertEquals( 0, countWithNonExistentValue );
         }
+    }
+
+    @Test
+    public void shouldReturnAllEntriesForExistsPredicate() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query( IndexQuery.exists( 0 ) );
+
+        // then
+        assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
+    }
+
+    @Test
+    public void shouldReturnNoEntriesForExistsPredicateForEmptyIndex() throws Exception
+    {
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query( IndexQuery.exists( 0 ) );
+
+        // then
+        long[] actual = PrimitiveLongCollections.asArray( result );
+        assertEquals( 0, actual.length );
+    }
+
+    @Test
+    public void shouldReturnMatchingEntriesForExactPredicate() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        {
+            Object value = update.values()[0];
+            PrimitiveLongIterator result = reader.query( IndexQuery.exact( 0, value ) );
+            assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
+        }
+    }
+
+    @Test
+    public void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        Object value = NON_EXISTENT_VALUE;
+        PrimitiveLongIterator result = reader.query( IndexQuery.exact( 0, value ) );
+        assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+    }
+
+    @Test
+    public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query(
+                IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, false ) );
+        assertEntityIdHits( extractEntityIds( updates, lessThan( Double.POSITIVE_INFINITY ) ), result );
+    }
+
+    @Test
+    public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query(
+                IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true ) );
+        assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
+    }
+
+    @Test
+    public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query(
+                IndexQuery.range( 0, Double.NEGATIVE_INFINITY, false, Double.POSITIVE_INFINITY, false ) );
+        assertEntityIdHits( extractEntityIds( updates,
+                all( greaterThan( Double.NEGATIVE_INFINITY ), lessThan( Double.POSITIVE_INFINITY ) ) ), result );
+    }
+
+    @Test
+    public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query(
+                IndexQuery.range( 0, Double.NEGATIVE_INFINITY, false, Double.POSITIVE_INFINITY, true ) );
+        assertEntityIdHits( extractEntityIds( updates,
+                all( greaterThan( Double.NEGATIVE_INFINITY ), greaterThan( Double.NEGATIVE_INFINITY ) ) ), result );
+    }
+
+    @Test
+    public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        PrimitiveLongIterator result = reader.query(
+                IndexQuery.range( 0, NON_EXISTENT_VALUE, true, NON_EXISTENT_VALUE + 10, true ) );
+        assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+    }
+
+    private static Predicate<Object> lessThan( Double value )
+    {
+        return t -> ((Number)t).doubleValue() < value;
+    }
+
+    private static Predicate<Object> greaterThan( Double value )
+    {
+        return t -> ((Number)t).doubleValue() > value;
+    }
+
+    private void assertEntityIdHits( long[] expected, PrimitiveLongIterator result )
+    {
+        long[] actual = PrimitiveLongCollections.asArray( result );
+        Arrays.sort( actual );
+        Arrays.sort( expected );
+        assertArrayEquals( expected, actual );
+    }
+
+    private long[] extractEntityIds( IndexEntryUpdate<?>[] updates, Predicate<Object> valueFilter )
+    {
+        long[] entityIds = new long[updates.length];
+        int cursor = 0;
+        for ( int i = 0; i < updates.length; i++ )
+        {
+            if ( valueFilter.test( updates[i].values()[0] ) )
+            {
+                entityIds[cursor++] = updates[i].getEntityId();
+            }
+        }
+        return Arrays.copyOf( entityIds, cursor );
     }
 
     private void applyUpdatesToExpectedData( Set<IndexEntryUpdate<IndexDescriptor>> expectedData,
@@ -310,18 +482,19 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
                 throw new IllegalArgumentException( update.updateMode().name() );
             }
 
-            if ( addition != null )
-            {
-                expectedData.add( addition );
-            }
             if ( removal != null )
             {
                 expectedData.remove( removal );
             }
+            if ( addition != null )
+            {
+                expectedData.add( addition );
+            }
         }
     }
 
-    private IndexEntryUpdate<IndexDescriptor>[] generateRandomUpdates( Set<IndexEntryUpdate<IndexDescriptor>> expectedData,
+    private IndexEntryUpdate<IndexDescriptor>[] generateRandomUpdates(
+            Set<IndexEntryUpdate<IndexDescriptor>> expectedData,
             Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator, int count, float removeFactor )
     {
         @SuppressWarnings( "unchecked" )
@@ -396,21 +569,25 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     // shouldReturnCountOneForExistingData
     // shouldReturnCountZeroForMismatchingData
 
-    // TODO: shouldReturnAllEntriesForExistsPredicate
-    // TODO: shouldReturnNoEntriesForExistsPredicateForEmptyIndex
-    // TODO: shouldReturnMatchingEntriesForExactPredicate
-    // TODO: shouldReturnNoEntriesForMismatchingExactPredicate
-    // TODO: shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd
-    // TODO: shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd
-    // TODO: shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd
-    // TODO: shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd
-    // TODO: shouldReturnNoEntriesForRangePredicateOutsideAnyMatch
+    // shouldReturnAllEntriesForExistsPredicate
+    // shouldReturnNoEntriesForExistsPredicateForEmptyIndex
+    // shouldReturnMatchingEntriesForExactPredicate
+    // shouldReturnNoEntriesForMismatchingExactPredicate
+    // shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd
+    // shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd
+    // shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd
+    // shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd
+    // shouldReturnNoEntriesForRangePredicateOutsideAnyMatch
+    // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
+    //       so perhaps we should wait with this until we know exactly how this works and which combinations
+    //       that should be optimized.
 
     // TODO: SAMPLER
 
 //    long countIndexedNodes( long nodeId, Object... propertyValues )
 //    IndexSampler createSampler()
 //    PrimitiveLongIterator query( IndexQuery... predicates )
+//    close
 
     // ACCESSOR
     // todo shouldHandleMultipleConsecutiveUpdaters

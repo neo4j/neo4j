@@ -41,15 +41,10 @@ class UniqueNumberLayout extends NumberLayout
         int comparison = Double.compare( o1.value, o2.value );
         if ( comparison == 0 )
         {
-            // This is a special case where we need to check if o2 is the unbounded max key.
-            // This needs to be checked to be able to support storing Double.MAX_VALUE and retrieve it later.
-            if ( o2.isHighest )
+            // This is a special case where we need also compare entityId support inclusive/exclusive
+            if ( o1.entityIdIsSpecialTieBreaker || o2.entityIdIsSpecialTieBreaker )
             {
-                return -1;
-            }
-            if ( o1.isHighest )
-            {
-                return 1;
+                return Long.compare( o1.entityId, o2.entityId );
             }
         }
         return comparison;

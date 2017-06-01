@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
@@ -38,6 +37,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.NumberRangePredicate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -123,11 +124,12 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     {
         private final KEY treeKeyFrom = layout.newKey();
         private final KEY treeKeyTo = layout.newKey();
+        private RawCursor<Hit<KEY,VALUE>,IOException> openSeeker;
 
         @Override
         public void close()
         {
-            throw new UnsupportedOperationException( "Implement me" );
+            ensureOpenSeekerClosed();
         }
 
         @Override
@@ -162,7 +164,66 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
         @Override
         public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
         {
-            throw new UnsupportedOperationException( "Implement me" );
+            if ( predicates.length != 1 )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            ensureOpenSeekerClosed();
+            IndexQuery predicate = predicates[0];
+            switch ( predicate.type() )
+            {
+            case exists:
+                treeKeyFrom.initAsLowest();
+                treeKeyTo.initAsHighest();
+                return startSeekForInitializedRange();
+            case exact:
+                ExactPredicate exactPredicate = (ExactPredicate) predicate;
+                Object[] values = new Object[] {exactPredicate.value()};
+                treeKeyFrom.from( Long.MIN_VALUE, values );
+                treeKeyTo.from( Long.MAX_VALUE, values );
+                return startSeekForInitializedRange();
+            case rangeNumeric:
+                NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
+                treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE,
+                        new Object[] {rangePredicate.from()} );
+                treeKeyFrom.entityIdIsSpecialTieBreaker = true;
+                treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE,
+                        new Object[] {rangePredicate.to()} );
+                treeKeyTo.entityIdIsSpecialTieBreaker = true;
+                return startSeekForInitializedRange();
+            default:
+                throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+            }
+        }
+
+        private PrimitiveLongIterator startSeekForInitializedRange()
+        {
+            try
+            {
+                openSeeker = tree.seek( treeKeyFrom, treeKeyTo );
+                return new NumberHitIterator<>( openSeeker );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        private void ensureOpenSeekerClosed()
+        {
+            if ( openSeeker != null )
+            {
+                try
+                {
+                    openSeeker.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+                openSeeker = null;
+            }
         }
     }
 }

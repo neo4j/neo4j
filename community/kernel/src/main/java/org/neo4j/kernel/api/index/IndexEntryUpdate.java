@@ -129,8 +129,9 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
     @Override
     public String toString()
     {
-        return format( "IndexEntryUpdate[id=%d, mode=%s, %s, values=%s]", entityId, updateMode, indexKey().schema()
-                .userDescription( SchemaUtil.idTokenNameLookup ), Arrays.toString(values) );
+        return format( "IndexEntryUpdate[id=%d, mode=%s, %s, beforeValues=%s, values=%s]", entityId, updateMode,
+                indexKey().schema().userDescription( SchemaUtil.idTokenNameLookup ),
+                Arrays.toString( before ), Arrays.toString( values ) );
     }
 
     public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> add(

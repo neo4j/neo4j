@@ -39,7 +39,7 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     {
         into.value = key.value;
         into.entityId = key.entityId;
-        into.isHighest = key.isHighest;
+        into.entityIdIsSpecialTieBreaker = key.entityIdIsSpecialTieBreaker;
         return into;
     }
 
