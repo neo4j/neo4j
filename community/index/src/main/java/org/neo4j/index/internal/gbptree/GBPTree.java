@@ -1095,7 +1095,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         @Override
-        public void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException
+        public void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger ) throws IOException
         {
             try
             {

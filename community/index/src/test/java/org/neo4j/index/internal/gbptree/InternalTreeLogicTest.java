@@ -52,7 +52,7 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 @RunWith( Parameterized.class )
 public class InternalTreeLogicTest
 {
-    private static final ValueMerger<MutableLong> ADDER = ( base, add ) ->
+    private static final ValueMerger<MutableLong,MutableLong> ADDER = ( existingKey, newKey, base, add ) ->
     {
         base.add( add.longValue() );
         return base;
@@ -1601,7 +1601,7 @@ public class InternalTreeLogicTest
         insert( key, value, overwrite() );
     }
 
-    private void insert( long key, long value, ValueMerger<MutableLong> valueMerger ) throws IOException
+    private void insert( long key, long value, ValueMerger<MutableLong,MutableLong> valueMerger ) throws IOException
     {
         structurePropagation.hasRightKeyInsert = false;
         structurePropagation.hasMidChildUpdate = false;

@@ -20,95 +20,23 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * {@link Layout} for numbers where numbers need to be unique.
  */
-class UniqueNumberLayout implements Layout<UniqueNumberKey,UniqueNumberValue>
+class UniqueNumberLayout extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "UNI";
 
     @Override
-    public UniqueNumberKey newKey()
-    {
-        return new UniqueNumberKey();
-    }
-
-    @Override
-    public UniqueNumberKey copyKey( UniqueNumberKey key, UniqueNumberKey into )
-    {
-        into.value = key.value;
-        into.isHighest = key.isHighest;
-        return into;
-    }
-
-    @Override
-    public UniqueNumberValue newValue()
-    {
-        return new UniqueNumberValue();
-    }
-
-    @Override
-    public int keySize()
-    {
-        return UniqueNumberKey.SIZE;
-    }
-
-    @Override
-    public int valueSize()
-    {
-        return UniqueNumberValue.SIZE;
-    }
-
-    @Override
-    public void writeKey( PageCursor cursor, UniqueNumberKey key )
-    {
-        cursor.putLong( Double.doubleToRawLongBits( key.value ) );
-    }
-
-    @Override
-    public void readKey( PageCursor cursor, UniqueNumberKey into )
-    {
-        into.value = Double.longBitsToDouble( cursor.getLong() );
-    }
-
-    @Override
-    public void writeValue( PageCursor cursor, UniqueNumberValue value )
-    {
-        cursor.putByte( value.type );
-        cursor.putLong( value.rawValueBits );
-        cursor.putLong( value.entityId );
-    }
-
-    @Override
-    public void readValue( PageCursor cursor, UniqueNumberValue into )
-    {
-        into.type = cursor.getByte();
-        into.rawValueBits = cursor.getLong();
-        into.entityId = cursor.getLong();
-    }
-
-    @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, UniqueNumberValue.SIZE );
+        // todo Is Number.Value.SIZE a good checksum?
+        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberValue.SIZE );
     }
 
     @Override
-    public int majorVersion()
-    {
-        return 0;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 1;
-    }
-
-    @Override
-    public int compare( UniqueNumberKey o1, UniqueNumberKey o2 )
+    public int compare( NumberKey o1, NumberKey o2 )
     {
         int comparison = Double.compare( o1.value, o2.value );
         if ( comparison == 0 )

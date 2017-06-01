@@ -20,96 +20,20 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.pagecache.PageCursor;
 
-/**
- * {@link Layout} for numbers where numbers doesn't need to be unique.
- */
-public class NonUniqueNumberLayout implements Layout<NonUniqueNumberKey,NonUniqueNumberValue>
+public class NonUniqueNumberLayout extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "NUNI";
 
     @Override
-    public NonUniqueNumberKey newKey()
-    {
-        return new NonUniqueNumberKey();
-    }
-
-    @Override
-    public NonUniqueNumberKey copyKey( NonUniqueNumberKey key,
-            NonUniqueNumberKey into )
-    {
-        into.value = key.value;
-        into.entityId = key.entityId;
-        return into;
-    }
-
-    @Override
-    public NonUniqueNumberValue newValue()
-    {
-        return new NonUniqueNumberValue();
-    }
-
-    @Override
-    public int keySize()
-    {
-        return NonUniqueNumberKey.SIZE;
-    }
-
-    @Override
-    public int valueSize()
-    {
-        return NonUniqueNumberValue.SIZE;
-    }
-
-    @Override
-    public void writeKey( PageCursor cursor, NonUniqueNumberKey key )
-    {
-        cursor.putLong( Double.doubleToRawLongBits( key.value ) );
-        cursor.putLong( key.entityId );
-    }
-
-    @Override
-    public void writeValue( PageCursor cursor, NonUniqueNumberValue key )
-    {
-        cursor.putByte( key.type );
-        cursor.putLong( key.rawValueBits );
-    }
-
-    @Override
-    public void readKey( PageCursor cursor, NonUniqueNumberKey into )
-    {
-        into.value = Double.longBitsToDouble( cursor.getLong() );
-        into.entityId = cursor.getLong();
-    }
-
-    @Override
-    public void readValue( PageCursor cursor, NonUniqueNumberValue into )
-    {
-        into.type = cursor.getByte();
-        into.rawValueBits = cursor.getLong();
-    }
-
-    @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, NonUniqueNumberValue.SIZE );
+        // todo Is Number.Value.SIZE a good checksum?
+        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberValue.SIZE );
     }
 
     @Override
-    public int majorVersion()
-    {
-        return 0;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 1;
-    }
-
-    @Override
-    public int compare( NonUniqueNumberKey o1, NonUniqueNumberKey o2 )
+    public int compare( NumberKey o1, NumberKey o2 )
     {
         int compare = Double.compare( o1.value, o2.value );
         return compare != 0 ? compare : Long.compare( o1.entityId, o2.entityId );

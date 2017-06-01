@@ -33,7 +33,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
 {
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<VALUE> conflictDetectingValueMerger;
+    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
     private Writer<KEY,VALUE> writer;
 
     private boolean closed = true;
@@ -43,7 +43,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
     {
         this.treeKey = treeKey;
         this.treeValue = treeValue;
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<VALUE>();
+        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
     }
 
     NativeSchemaNumberIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
@@ -63,7 +63,19 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
     public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
     {
         assertOpen();
-        processAdd( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+        switch ( update.updateMode() )
+        {
+        case ADDED:
+            processAdd( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+            break;
+        case CHANGED:
+            processChange( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+            break;
+        case REMOVED:
+            throw new UnsupportedOperationException( "Implement me" );
+        default:
+            throw new IllegalArgumentException();
+        }
     }
 
     @Override
@@ -90,14 +102,35 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
         }
     }
 
+    private static <KEY extends NumberKey, VALUE extends NumberValue> void processChange( KEY treeKey, VALUE treeValue,
+            IndexEntryUpdate update, Writer<KEY,VALUE> singleWriter,
+            ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+            throws IOException, IndexEntryConflictException
+    {
+        // Remove old entry
+        treeKey.from( update.getEntityId(), update.beforeValues() );
+        singleWriter.remove( treeKey );
+        // Insert new entrty
+        treeKey.from( update.getEntityId(), update.values() );
+        treeValue.from( update.values() );
+        singleWriter.merge( treeKey, treeValue, conflictDetectingValueMerger );
+        assertNoConflict( update, conflictDetectingValueMerger );
+    }
+
     static <KEY extends NumberKey, VALUE extends NumberValue> void processAdd( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate update, Writer<KEY,VALUE> singleWriter,
-            ConflictDetectingValueMerger<VALUE> conflictDetectingValueMerger )
+            ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
         treeKey.from( update.getEntityId(), update.values() );
-        treeValue.from( update.getEntityId(), update.values() );
+        treeValue.from( update.values() );
         singleWriter.merge( treeKey, treeValue, conflictDetectingValueMerger );
+        assertNoConflict( update, conflictDetectingValueMerger );
+    }
+
+    private static <KEY extends NumberKey, VALUE extends NumberValue> void assertNoConflict( IndexEntryUpdate update,
+            ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger ) throws IndexEntryConflictException
+    {
         if ( conflictDetectingValueMerger.wasConflict() )
         {
             long existingNodeId = conflictDetectingValueMerger.existingNodeId();

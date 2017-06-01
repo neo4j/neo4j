@@ -26,18 +26,23 @@ import org.neo4j.values.Value;
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
  * Contains actual number for internal filtering after accidental query hits due to double value coersion.
  */
-abstract class NumberValue
+class NumberValue
 {
+    static final int SIZE =
+            Byte.SIZE + /* type */
+            Long.SIZE;  /* value bits */
+
     static final byte LONG = 0;
     static final byte FLOAT = 1;
     static final byte DOUBLE = 2;
 
-    protected byte type;
-    protected long rawValueBits;
+    byte type;
+    long rawValueBits;
 
-    abstract void from( long entityId, Value[] values );
-
-    abstract long getEntityId();
+    void from( Value[] values )
+    {
+        extractValue( NumberValueConversion.assertValidSingleNumber( values ) );
+    }
 
     byte type()
     {
@@ -49,7 +54,7 @@ abstract class NumberValue
         return rawValueBits;
     }
 
-    void extractValue( Number value )
+    private void extractValue( Number value )
     {
         if ( value instanceof Double )
         {

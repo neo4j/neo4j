@@ -24,9 +24,9 @@ package org.neo4j.index.internal.gbptree;
  */
 public class ValueMergers
 {
-    private static final ValueMerger OVERWRITE = ( existingValue, newValue ) -> newValue;
+    private static final ValueMerger OVERWRITE = ( existingKey, newKey, existingValue, newValue ) -> newValue;
 
-    private static final ValueMerger KEEP_EXISTING = ( existingValue, newValue ) -> null;
+    private static final ValueMerger KEEP_EXISTING = ( existingKey, newKey, existingValue, newValue ) -> null;
 
     private ValueMergers()
     {
@@ -37,7 +37,7 @@ public class ValueMergers
      * This merger guarantees unique keys in index.
      */
     @SuppressWarnings( "unchecked" )
-    public static <VALUE> ValueMerger<VALUE> overwrite()
+    public static <KEY,VALUE> ValueMerger<KEY,VALUE> overwrite()
     {
         return OVERWRITE;
     }
@@ -47,7 +47,7 @@ public class ValueMergers
      * This merger guarantees unique keys in index.
      */
     @SuppressWarnings( "unchecked" )
-    public static <VALUE> ValueMerger<VALUE> keepExisting()
+    public static <KEY,VALUE> ValueMerger<KEY,VALUE> keepExisting()
     {
         return KEEP_EXISTING;
     }

@@ -51,7 +51,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
 
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<VALUE> conflictDetectingValueMerger;
+    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
 
     private Writer<KEY,VALUE> singleTreeWriter;

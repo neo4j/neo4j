@@ -21,19 +21,11 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 
-public class UniqueLayoutTestUtil extends LayoutTestUtil<UniqueNumberKey,UniqueNumberValue>
+public class UniqueLayoutTestUtil extends LayoutTestUtil<NumberKey,NumberValue>
 {
     @Override
-    public Layout<UniqueNumberKey,UniqueNumberValue> createLayout()
+    public Layout<NumberKey,NumberValue> createLayout()
     {
         return new UniqueNumberLayout();
-    }
-
-    @Override
-    protected void copyValue( UniqueNumberValue value, UniqueNumberValue into )
-    {
-        into.type = value.type;
-        into.rawValueBits = value.rawValueBits;
-        into.entityId = value.entityId;
     }
 }

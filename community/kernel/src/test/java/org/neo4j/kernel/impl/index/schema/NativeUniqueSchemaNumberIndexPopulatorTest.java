@@ -39,32 +39,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public class NativeUniqueSchemaNumberIndexPopulatorTest
-        extends NativeSchemaIndexPopulatorTest<UniqueNumberKey,UniqueNumberValue>
+public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaIndexPopulatorTest<NumberKey,NumberValue>
 {
     @Override
-    NativeSchemaNumberIndexPopulator<UniqueNumberKey,UniqueNumberValue> createPopulator(
+    NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator(
             PageCache pageCache, File indexFile,
-            Layout<UniqueNumberKey,UniqueNumberValue> layout, IndexSamplingConfig samplingConfig )
+            Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
     {
         return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE );
     }
 
     @Override
-    protected LayoutTestUtil<UniqueNumberKey,UniqueNumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil();
     }
 
     @Override
-    protected int compareValue( UniqueNumberValue value1, UniqueNumberValue value2 )
+    protected int compareValue( NumberValue value1, NumberValue value2 )
     {
-        int valueCompare = layoutUtil.compareIndexedPropertyValue( value1, value2 );
-        if ( valueCompare == 0 )
-        {
-            return Long.compare( value1.getEntityId(), value2.getEntityId() );
-        }
-        return valueCompare;
+        return layoutUtil.compareIndexedPropertyValue( value1, value2 );
     }
 
     @Test

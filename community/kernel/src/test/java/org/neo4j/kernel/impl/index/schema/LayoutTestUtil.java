@@ -29,7 +29,11 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
 {
     abstract Layout<KEY,VALUE> createLayout();
 
-    abstract void copyValue( VALUE value, VALUE intoValue );
+    void copyValue( VALUE value, VALUE intoValue )
+    {
+        intoValue.type = value.type;
+        intoValue.rawValueBits = value.rawValueBits;
+    }
 
     int compareValue( VALUE value1, VALUE value2 )
     {

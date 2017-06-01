@@ -42,11 +42,11 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMME
 import static org.neo4j.kernel.impl.index.schema.FullScanNonUniqueIndexSamplerTest.countUniqueValues;
 
 public class NativeNonUniqueSchemaNumberIndexPopulatorTest
-        extends NativeSchemaIndexPopulatorTest<NonUniqueNumberKey,NonUniqueNumberValue>
+        extends NativeSchemaIndexPopulatorTest<NumberKey,NumberValue>
 {
     @Override
-    NativeSchemaNumberIndexPopulator<NonUniqueNumberKey,NonUniqueNumberValue> createPopulator( PageCache pageCache, File indexFile,
-            Layout<NonUniqueNumberKey,NonUniqueNumberValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator( PageCache pageCache, File indexFile,
+            Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
     {
         return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE, samplingConfig );
     }
@@ -176,7 +176,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
-    protected LayoutTestUtil<NonUniqueNumberKey,NonUniqueNumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
     {
         return new NonUniqueLayoutTestUtil();
     }
