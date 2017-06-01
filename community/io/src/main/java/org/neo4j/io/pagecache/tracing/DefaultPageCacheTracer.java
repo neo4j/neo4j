@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
 
 /**
@@ -228,6 +229,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public long evictionExceptions()
     {
         return evictionExceptions.sum();
+    }
+
+    @Override
+    public double hitRatio()
+    {
+        return MathUtil.portion( hits(), faults() );
     }
 
     @Override

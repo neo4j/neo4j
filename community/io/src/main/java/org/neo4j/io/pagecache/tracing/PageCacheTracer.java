@@ -131,6 +131,12 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public double hitRatio()
+        {
+            return 0d;
+        }
+
+        @Override
         public void pins( long pins )
         {
         }

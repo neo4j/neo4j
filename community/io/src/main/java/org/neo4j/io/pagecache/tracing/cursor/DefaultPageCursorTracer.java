@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.tracing.cursor;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -156,6 +157,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public long flushes()
     {
         return flushes;
+    }
+
+    @Override
+    public double hitRatio()
+    {
+        return MathUtil.portion( hits(), faults() );
     }
 
     @Override

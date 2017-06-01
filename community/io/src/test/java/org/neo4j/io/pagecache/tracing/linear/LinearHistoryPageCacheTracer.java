@@ -145,6 +145,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public double hitRatio()
+    {
+        return 0d;
+    }
+
+    @Override
     public void pins( long pins )
     {
     }

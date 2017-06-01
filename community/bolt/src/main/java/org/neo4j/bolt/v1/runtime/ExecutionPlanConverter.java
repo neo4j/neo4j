@@ -46,6 +46,7 @@ class ExecutionPlanConverter
             out.put( "dbHits", profile.getDbHits() );
             out.put( "pageCacheHits", profile.getPageCacheHits() );
             out.put( "pageCacheMisses", profile.getPageCacheMisses() );
+            out.put( "pageCacheHitRatio", profile.getPageCacheHitRatio() );
             out.put( "rows", profile.getRows() );
         }
         return out;

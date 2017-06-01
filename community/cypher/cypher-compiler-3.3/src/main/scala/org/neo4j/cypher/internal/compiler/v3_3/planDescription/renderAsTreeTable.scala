@@ -31,11 +31,13 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val HITS = "DB Hits"
   private val PAGE_CACHE_HITS = "Page Cache Hits"
   private val PAGE_CACHE_MISSES = "Page Cache Misses"
+  private val PAGE_CACHE_HIT_RATIO = "Page Cache Hit Ratio"
   private val TIME = "Time (ms)"
   val VARIABLES = "Variables"
   val MAX_VARIABLE_COLUMN_WIDTH = 100
   private val OTHER = "Other"
-  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, TIME, VARIABLES, OTHER)
+  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, PAGE_CACHE_HITS, PAGE_CACHE_MISSES, PAGE_CACHE_HIT_RATIO, TIME,
+    VARIABLES, OTHER)
   private val newLine = System.lineSeparator()
 
   def apply(plan: InternalPlanDescription): String = {
@@ -134,6 +136,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case DbHits(count) => mapping(HITS, Right(count.toString))
     case PageCacheHits(count) => mapping(PAGE_CACHE_HITS, Right(count.toString))
     case PageCacheMisses(count) => mapping(PAGE_CACHE_MISSES, Right(count.toString))
+    case PageCacheHitRatio(ratio) => mapping(PAGE_CACHE_HIT_RATIO, Right("%.4f".format(ratio)))
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)))
     case _ => None
   }.toMap + (
@@ -154,6 +157,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         !x.isInstanceOf[DbHits] &&
         !x.isInstanceOf[PageCacheHits] &&
         !x.isInstanceOf[PageCacheMisses] &&
+        !x.isInstanceOf[PageCacheHitRatio] &&
         !x.isInstanceOf[EstimatedRows] &&
         !x.isInstanceOf[Planner] &&
         !x.isInstanceOf[PlannerImpl] &&

@@ -96,6 +96,12 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public double hitRatio()
+    {
+        return 0d;
+    }
+
+    @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         return tracer.add( new HEvents.PinHEvent( tracer, writeLock, filePageId, swapper ) );

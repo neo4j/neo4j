@@ -20,10 +20,34 @@
 package org.neo4j.helpers;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 
-public abstract class MathUtil
+public class MathUtil
 {
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
+
+    private MathUtil()
+    {
+        throw new AssertionError();
+    }
+
+    /**
+     * Calculates the portion of the first value to all values passed
+     * @param n The values in the set
+     * @return the ratio of n[0] to the sum all n, 0 if result is {@link Double#NaN}
+     */
+    public static double portion( double... n )
+    {
+        assert n.length > 0;
+
+        double first = n[0];
+        if ( numbersEqual( first, 0 ) )
+        {
+            return 0d;
+        }
+        double total = Arrays.stream(n).sum();
+        return first / total;
+    }
 
     public static boolean numbersEqual( double fpn, long in )
     {

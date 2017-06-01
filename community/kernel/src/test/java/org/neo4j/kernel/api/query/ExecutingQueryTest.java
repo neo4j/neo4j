@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -517,6 +518,12 @@ public class ExecutingQueryTest
         public void flushes( long increment )
         {
             flushes += increment;
+        }
+
+        @Override
+        public double hitRatio()
+        {
+            return MathUtil.portion( hits(), faults() );
         }
     }
 }

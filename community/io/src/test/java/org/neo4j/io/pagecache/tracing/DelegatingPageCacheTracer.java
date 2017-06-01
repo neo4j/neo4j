@@ -37,26 +37,31 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         this.delegate = delegate;
     }
 
+    @Override
     public void mappedFile( File file )
     {
         delegate.mappedFile( file );
     }
 
+    @Override
     public long bytesRead()
     {
         return delegate.bytesRead();
     }
 
+    @Override
     public MajorFlushEvent beginFileFlush( PageSwapper swapper )
     {
         return delegate.beginFileFlush( swapper );
     }
 
+    @Override
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
     {
         return delegate.beginPageEvictions( pageCountToEvict );
     }
 
+    @Override
     public long unpins()
     {
         return delegate.unpins();
@@ -68,34 +73,46 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         return delegate.hits();
     }
 
+    @Override
     public MajorFlushEvent beginCacheFlush()
     {
         return delegate.beginCacheFlush();
     }
 
+    @Override
     public long bytesWritten()
     {
         return delegate.bytesWritten();
     }
 
+    @Override
     public long pins()
     {
         return delegate.pins();
     }
 
+    @Override
     public long filesUnmapped()
     {
         return delegate.filesUnmapped();
     }
 
+    @Override
     public void unmappedFile( File file )
     {
         delegate.unmappedFile( file );
     }
 
+    @Override
     public long evictionExceptions()
     {
         return delegate.evictionExceptions();
+    }
+
+    @Override
+    public double hitRatio()
+    {
+        return delegate.hitRatio();
     }
 
     @Override
@@ -152,21 +169,25 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         delegate.flushes( flushes );
     }
 
+    @Override
     public long filesMapped()
     {
         return delegate.filesMapped();
     }
 
+    @Override
     public long flushes()
     {
         return delegate.flushes();
     }
 
+    @Override
     public long faults()
     {
         return delegate.faults();
     }
 
+    @Override
     public long evictions()
     {
         return delegate.evictions();

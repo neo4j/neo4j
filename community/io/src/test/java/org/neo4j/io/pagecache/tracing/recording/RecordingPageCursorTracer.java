@@ -106,6 +106,12 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public double hitRatio()
+    {
+        return 0d;
+    }
+
+    @Override
     public PinEvent beginPin( boolean writeLock, final long filePageId, final PageSwapper swapper )
     {
         return new PinEvent()

@@ -200,6 +200,32 @@ public class DefaultPageCursorTracerTest
         assertEquals( 450, cacheTracer.bytesRead() );
     }
 
+    @Test
+    public void shouldCalculateHitRatio() throws Exception
+    {
+        assertEquals( 0d, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pinFaultAndHit();
+
+        assertEquals( 0.0 / 1, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pinAndHit();
+
+        assertEquals( 1.0 / 2, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pinFaultAndHit();
+        pinFaultAndHit();
+        pinFaultAndHit();
+        pinAndHit();
+        pinAndHit();
+
+        assertEquals( 3.0 / 7, pageCursorTracer.hitRatio(), 0.0001 );
+
+        pageCursorTracer.reportEvents();
+
+        assertEquals( 3.0 / 7, cacheTracer.hitRatio(), 0.0001 );
+    }
+
     private void generateEventSet()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );

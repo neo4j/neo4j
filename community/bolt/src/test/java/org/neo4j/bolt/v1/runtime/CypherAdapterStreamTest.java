@@ -38,12 +38,14 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
@@ -125,9 +127,19 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "plan" ).toString(),
-                equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], " +
-                        "identifiers=[id2], operatorType=Scan}], identifiers=[id1], operatorType=Join}" ) );
+        Map<String,Object> expectedChild = map(
+                "args", map( "arg2", 1 ),
+                "identifiers", Iterators.asSet("id2"),
+                "operatorType", "Scan",
+                "children", Collections.EMPTY_LIST
+        );
+        Map<String,Object> expectedPlan = map(
+                "args", map( "arg1", 1 ),
+                "identifiers", Iterators.asSet("id1"),
+                "operatorType", "Join",
+                "children", Arrays.asList( expectedChild )
+        );
+        assertThat( meta.get( "plan" ), equalTo( expectedPlan ) );
     }
 
     @Test
@@ -151,10 +163,31 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, pageCacheMisses=3, " +
-                "children=[{args={arg2=1}, pageCacheMisses=7, " +
-                "children=[], dbHits=2, identifiers=[id2], operatorType=Scan, rows=1, pageCacheHits=4}], dbHits=2, " +
-                "identifiers=[id1], operatorType=Join, rows=1, pageCacheHits=4}" ));
+        Map<String,Object> expectedChild = map(
+                "args", map( "arg2", 1 ),
+                "identifiers", Iterators.asSet("id2"),
+                "operatorType", "Scan",
+                "children", Collections.EMPTY_LIST,
+                "rows", 1L,
+                "dbHits", 2L,
+                "pageCacheHits", 4L,
+                "pageCacheMisses", 7L,
+                "pageCacheHitRatio", 4.0 / 11
+        );
+
+        Map<String,Object> expectedProfile = map(
+                "args", map( "arg1", 1 ),
+                "identifiers", Iterators.asSet("id1"),
+                "operatorType", "Join",
+                "children", Arrays.asList( expectedChild ),
+                "rows", 1L,
+                "dbHits", 2L,
+                "pageCacheHits", 4L,
+                "pageCacheMisses", 3L,
+                "pageCacheHitRatio", 4.0 / 7
+        );
+
+        assertMapEqualsWithDelta( (Map<String,Object>)meta.get( "profile" ), expectedProfile, 0.0001 );
     }
 
     @Test
@@ -180,14 +213,21 @@ public class CypherAdapterStreamTest
         Map<String,Object> meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get( "notifications" ).toString(), equalTo(
-         "[{severity=WARNING, description=The hinted index does not exist, please check the schema, " +
-                 "code=Neo.ClientError.Schema.IndexNotFound, title=The request (directly or indirectly) referred to an " +
-                 "index that does not exist.}, {severity=WARNING, description=Using COST planner is unsupported for " +
-                 "this query, please use RULE planner instead, " +
-                 "code=Neo.ClientNotification.Statement.PlannerUnsupportedWarning, position={offset=4, column=6, line=5}, " +
-                 "title=This query is not supported by the COST planner.}]"
-        ) );
+        Map<String,Object> msg1 = map(
+                "severity", "WARNING",
+                "code", "Neo.ClientError.Schema.IndexNotFound",
+                "title", "The request (directly or indirectly) referred to an index that does not exist.",
+                "description", "The hinted index does not exist, please check the schema"
+        );
+        Map<String,Object> msg2 = map(
+                "severity", "WARNING",
+                "code", "Neo.ClientNotification.Statement.PlannerUnsupportedWarning",
+                "title", "This query is not supported by the COST planner.",
+                "description", "Using COST planner is unsupported for this query, please use RULE planner instead",
+                "position", map( "offset", 4, "column", 6, "line", 5 )
+        );
+
+        assertThat( meta.get( "notifications" ), equalTo( Arrays.asList( msg1, msg2 ) ) );
     }
 
     private Map<String,Object> metadataOf( CypherAdapterStream stream ) throws Exception
@@ -208,6 +248,31 @@ public class CypherAdapterStreamTest
             }
         } );
         return meta;
+    }
+
+    private static void assertMapEqualsWithDelta( Map<String,Object> a, Map<String,Object> b, double delta )
+    {
+        assertThat( "Map should have same size", a.size(), equalTo(b.size()) );
+        for ( Map.Entry<String,Object> entry : a.entrySet() )
+        {
+            String key = entry.getKey();
+            assertThat( "Missing key", b.get( key ) != null );
+            Object aValue = entry.getValue();
+            Object bValue = b.get( key );
+            if ( aValue instanceof Map )
+            {
+                assertThat( "Value mismatch", bValue instanceof Map );
+                assertMapEqualsWithDelta( (Map<String,Object>)aValue, (Map<String,Object>)bValue, delta);
+            }
+            else if ( aValue instanceof Double )
+            {
+                assertThat( "Value mismatch", (double)aValue, closeTo( (double)bValue, delta ) );
+            }
+            else
+            {
+                assertThat( "Value mismatch", aValue, equalTo( bValue ) );
+            }
+        }
     }
 
     private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final long dbHits,
