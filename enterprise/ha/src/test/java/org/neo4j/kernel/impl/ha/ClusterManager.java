@@ -142,8 +142,8 @@ public class ClusterManager
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
-            boltConnector( "0" ).type.name(), "BOLT",
-            boltConnector( "0" ).enabled.name(), "false"
+            boltConnector( "bolt" ).type.name(), "BOLT",
+            boltConnector( "bolt" ).enabled.name(), "false"
     ) );
 
     public interface StoreDirInitializer
@@ -173,6 +173,7 @@ public class ClusterManager
     private final boolean consistencyCheck;
     private final int firstInstanceId;
     private LifeSupport life;
+    private int baseBoltPort;
 
     private ClusterManager( Builder builder )
     {
@@ -186,6 +187,7 @@ public class ClusterManager
         this.availabilityChecks = builder.availabilityChecks;
         this.consistencyCheck = builder.consistencyCheck;
         this.firstInstanceId = builder.firstInstanceId;
+        this.baseBoltPort = builder.baseBoltPort;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -760,6 +762,12 @@ public class ClusterManager
         SELF withInstanceConfig( Map<String,IntFunction<String>> commonConfig );
 
         /**
+         * Enables bolt across the cluster, which is off by default. The port argument specifies the base port to
+         * use for calculating per instance ports.
+         */
+        SELF withBolt( int port );
+
+        /**
          * Like {@link #withInstanceConfig(Map)}, but for individual settings, conveniently using
          * {@link Setting} instance as key as well.
          */
@@ -815,6 +823,7 @@ public class ClusterManager
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
         private boolean consistencyCheck;
         private int firstInstanceId = FIRST_SERVER_ID;
+        private int baseBoltPort = -1; // -1 stands for no bolt enabled, anything > 0 means bolt enabled
 
         public Builder( File root )
         {
@@ -869,6 +878,12 @@ public class ClusterManager
         public Builder withInstanceConfig( Map<String,IntFunction<String>> commonConfig )
         {
             this.commonConfig.putAll( commonConfig );
+            return this;
+        }
+
+        public Builder withBolt( int basePort )
+        {
+            this.baseBoltPort = basePort;
             return this;
         }
 
@@ -1323,9 +1338,9 @@ public class ClusterManager
             };
         }
 
-        private AdvertisedSocketAddress socketAddressForServer( String advertisedAddress, InstanceId id )
+        private AdvertisedSocketAddress socketAddressForServer( String advertisedAddress, int listenPort, InstanceId id )
         {
-            return new AdvertisedSocketAddress( advertisedAddress, ( 5000 + id.toIntegerIndex() ) );
+            return new AdvertisedSocketAddress( advertisedAddress, listenPort );
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
@@ -1370,20 +1385,24 @@ public class ClusterManager
                 builder.setConfig( HaSettings.ha_server, clusterUri.getHost() + ":" + haPort );
                 builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
-                String listenAddress = "127.0.0.1";
-                int boltPort = 8000 + serverId.toIntegerIndex();
-                AdvertisedSocketAddress advertisedSocketAddress = socketAddressForServer( listenAddress, serverId );
-                String advertisedAddress = advertisedSocketAddress.getHostname();
-                String boltAdvertisedAddress = advertisedAddress + ":" + boltPort;
-
-                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).type, "BOLT" );
-                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled, "true" );
-                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address, listenAddress + ":" + boltPort );
-                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
-
                 for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
                 {
                     builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
+                }
+
+                // Default for bolt is off, set in the common config above. Here we override if requested
+                if ( baseBoltPort > 0 )
+                {
+                    String listenAddress = "127.0.0.1";
+                    int boltPort = baseBoltPort + serverId.toIntegerIndex();
+                    AdvertisedSocketAddress advertisedSocketAddress = socketAddressForServer( listenAddress, boltPort, serverId );
+                    String advertisedAddress = advertisedSocketAddress.getHostname();
+                    String boltAdvertisedAddress = advertisedAddress + ":" + boltPort;
+
+                    builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).type, "BOLT" );
+                    builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled, "true" );
+                    builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address, listenAddress + ":" + boltPort );
+                    builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address, boltAdvertisedAddress );
                 }
 
                 final HighlyAvailableGraphDatabaseProxy graphDatabase =
