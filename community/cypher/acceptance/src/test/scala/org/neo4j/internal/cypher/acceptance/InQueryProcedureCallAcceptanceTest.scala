@@ -26,6 +26,18 @@ import org.neo4j.kernel.api.proc.Neo4jTypes
 
 class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
+  test("should work inside FOREACH") {
+    val query = """WITH [1, 2, 3] AS list
+                  |FOREACH (i IN list |
+                  |  CALL db.labels() YIELD label
+                  |)
+                """.stripMargin
+
+    val result = execute(query)
+
+    result.toList shouldBe empty
+  }
+
   test("should be able to find labels from built-in-procedure") {
     // Given
     createLabeledNode("A")
