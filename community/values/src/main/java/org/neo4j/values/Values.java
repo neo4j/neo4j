@@ -119,36 +119,6 @@ public class Values
         return new BooleanArray.Lazy( producer );
     }
 
-    public static Value numberValue( Number number )
-    {
-        if ( number instanceof Long )
-        {
-            return longValue( number.longValue() );
-        }
-        if ( number instanceof Integer )
-        {
-            return intValue( number.intValue() );
-        }
-        if ( number instanceof Double )
-        {
-            return doubleValue( number.doubleValue() );
-        }
-        if ( number instanceof Byte )
-        {
-            return byteValue( number.byteValue() );
-        }
-        if ( number instanceof Float )
-        {
-            return floatValue( number.floatValue() );
-        }
-        if ( number instanceof Short )
-        {
-            return shortValue( number.shortValue() );
-        }
-
-        throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
-    }
-
     public static Value longValue( long value )
     {
         return new LongValue( value );
@@ -258,33 +228,13 @@ public class Values
         {
             return arrayValue( (Object[]) value );
         }
-        if ( value instanceof Long )
+        if ( value instanceof Number )
         {
-            return longValue( (Long) value );
-        }
-        if ( value instanceof Integer )
-        {
-            return intValue( (Integer) value );
+            return numberValue( (Number)value );
         }
         if ( value instanceof Boolean )
         {
             return booleanValue( (Boolean) value );
-        }
-        if ( value instanceof Double )
-        {
-            return doubleValue( (Double) value );
-        }
-        if ( value instanceof Float )
-        {
-            return floatValue( (Float) value );
-        }
-        if ( value instanceof Short )
-        {
-            return shortValue( (Short) value );
-        }
-        if ( value instanceof Byte )
-        {
-            return byteValue( (Byte) value );
         }
         if ( value instanceof Character )
         {
@@ -335,6 +285,36 @@ public class Values
         // otherwise fail
         throw new IllegalArgumentException(
                     String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+    }
+
+    public static Value numberValue( Number number )
+    {
+        if ( number instanceof Long )
+        {
+            return longValue( number.longValue() );
+        }
+        if ( number instanceof Integer )
+        {
+            return intValue( number.intValue() );
+        }
+        if ( number instanceof Double )
+        {
+            return doubleValue( number.doubleValue() );
+        }
+        if ( number instanceof Byte )
+        {
+            return byteValue( number.byteValue() );
+        }
+        if ( number instanceof Float )
+        {
+            return floatValue( number.floatValue() );
+        }
+        if ( number instanceof Short )
+        {
+            return shortValue( number.shortValue() );
+        }
+
+        throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
     }
 
     private static Value arrayValue( Object[] value )
