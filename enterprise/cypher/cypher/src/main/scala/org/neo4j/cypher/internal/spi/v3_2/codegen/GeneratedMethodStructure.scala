@@ -272,7 +272,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     onError.throwException(onError.load("e"))
   }
 
-
   override def materializeNode(nodeIdVar: String, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive)
       invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
@@ -312,8 +311,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def relationship(relIdVar: String, codeGenType: CodeGenType) =
     generator.load(relIdVar)
 
-  override def materializeAny(variable: String) =
-    invoke(materializeAnyResult, nodeManager, generator.load(variable))
+  override def materializeAny(expression: Expression) =
+    invoke(materializeAnyResult, nodeManager, expression)
 
   override def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {

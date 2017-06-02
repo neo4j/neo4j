@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir
 
-import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compiled_runtime.v3_2.codegen.{CodeGenContext, Variable}
 
@@ -39,7 +39,8 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
       variables.foreach {
         case (variable, expr) =>
           body.declare(variable.name, variable.codeGenType)
-          body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
+          if (variable.codeGenType == CodeGenType.Any) body.assign(variable.name, variable.codeGenType, body.materializeAny(expr.generateExpression(body)))
+          else body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
       }
       action.body(body)
     }
