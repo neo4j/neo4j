@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_2.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_2.symbols._
+import Foldable._
 
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
@@ -67,7 +68,9 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   override def name = "START"
 
-  override def semanticCheck = items.semanticCheck chain where.semanticCheck
+  override def semanticCheck =
+    SemanticError("START is no longer supported. You can accomplish the same thing using MATCH and WHERE", position)
+
 }
 
 case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {

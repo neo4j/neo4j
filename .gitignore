@@ -2,6 +2,7 @@
 \#*
 target
 out
+.floo*
 .project
 .classpath
 .settings
