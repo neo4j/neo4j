@@ -214,11 +214,6 @@ class InMemoryIndex
         }
 
         @Override
-        public void flush()
-        {
-        }
-
-        @Override
         public void drop()
         {
             indexData.drop();

@@ -84,12 +84,6 @@ public class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        luceneIndex.maybeRefreshBlocking();
-    }
-
-    @Override
     public void close() throws IOException
     {
         luceneIndex.close();

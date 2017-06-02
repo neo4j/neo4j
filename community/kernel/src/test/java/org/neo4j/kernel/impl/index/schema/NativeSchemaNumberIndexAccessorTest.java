@@ -634,7 +634,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
 
 //    void drop()
 //    IndexUpdater newUpdater( IndexUpdateMode mode )
-//    void flush()
 //    void force()
 //    void close()
 //    IndexReader newReader()

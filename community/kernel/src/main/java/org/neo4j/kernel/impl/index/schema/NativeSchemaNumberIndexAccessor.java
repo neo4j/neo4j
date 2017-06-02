@@ -76,13 +76,6 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        // todo remove this from interface completely
-        throw new UnsupportedOperationException( "Implement me" );
-    }
-
-    @Override
     public void force() throws IOException
     {
         // TODO add IOLimiter arg
