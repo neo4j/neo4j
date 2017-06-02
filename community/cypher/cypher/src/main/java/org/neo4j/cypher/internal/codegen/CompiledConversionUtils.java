@@ -76,20 +76,20 @@ public abstract class CompiledConversionUtils
         {
             return (Collection<?>) value;
         }
-        else if ( value instanceof LongStream)
+        else if ( value instanceof LongStream )
         {
             LongStream stream = (LongStream) value;
-            return stream.boxed().collect( Collectors.toList());
+            return stream.boxed().collect( Collectors.toList() );
         }
         else if ( value instanceof IntStream )
         {
             IntStream stream = (IntStream) value;
-            return stream.boxed().collect( Collectors.toList());
+            return stream.boxed().collect( Collectors.toList() );
         }
         else if ( value instanceof DoubleStream )
         {
             DoubleStream stream = (DoubleStream) value;
-            return stream.boxed().collect( Collectors.toList());
+            return stream.boxed().collect( Collectors.toList() );
         }
 
         throw new CypherTypeException(
@@ -104,22 +104,22 @@ public abstract class CompiledConversionUtils
         }
         else if ( value instanceof Collection<?> )
         {
-            return new HashSet<>(  (Collection< ? >) value);
+            return new HashSet<>( (Collection<?>) value );
         }
-        else if ( value instanceof LongStream)
+        else if ( value instanceof LongStream )
         {
             LongStream stream = (LongStream) value;
-            return stream.boxed().collect( Collectors.toSet());
+            return stream.boxed().collect( Collectors.toSet() );
         }
         else if ( value instanceof IntStream )
         {
             IntStream stream = (IntStream) value;
-            return stream.boxed().collect( Collectors.toSet());
+            return stream.boxed().collect( Collectors.toSet() );
         }
         else if ( value instanceof DoubleStream )
         {
             DoubleStream stream = (DoubleStream) value;
-            return stream.boxed().collect( Collectors.toSet());
+            return stream.boxed().collect( Collectors.toSet() );
         }
 
         throw new CypherTypeException(
@@ -221,7 +221,7 @@ public abstract class CompiledConversionUtils
 
     public static Object loadParameter( Object value )
     {
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -233,19 +233,19 @@ public abstract class CompiledConversionUtils
         {
             return new RelationshipIdWrapperImpl( ((Relationship) value).getId() );
         }
-        else if ( value instanceof List<?>)
+        else if ( value instanceof List<?> )
         {
             List<?> list = (List<?>) value;
             ArrayList<Object> copy = new ArrayList<>( list.size() );
             for ( Object o : list )
             {
-                copy.add( loadParameter( o ));
+                copy.add( loadParameter( o ) );
             }
             return copy;
         }
-        else if ( value instanceof Map<?, ?>)
+        else if ( value instanceof Map<?,?> )
         {
-            Map<String, ?> map = (Map<String, ?>) value;
+            Map<String,?> map = (Map<String,?>) value;
             HashMap<String,Object> copy = new HashMap<>( map.size() );
             for ( Map.Entry<String,?> entry : map.entrySet() )
             {
@@ -253,13 +253,13 @@ public abstract class CompiledConversionUtils
             }
             return copy;
         }
-        else if ( value.getClass().isArray())
+        else if ( value.getClass().isArray() )
         {
             int length = Array.getLength( value );
             Object[] copy = new Object[length];
             for ( int i = 0; i < length; i++ )
             {
-                copy[i] = Array.get(value, i);
+                copy[i] = Array.get( value, i );
             }
             return copy;
         }
@@ -467,27 +467,28 @@ public abstract class CompiledConversionUtils
     }
 
     @SuppressWarnings( "unused" ) // called from compiled code
-    public static long extractLong(Object obj)
+    public static long extractLong( Object obj )
     {
-        if (obj == null)
+        if ( obj == null )
         {
             return -1L;
         }
-        else if (obj instanceof NodeIdWrapper)
+        else if ( obj instanceof NodeIdWrapper )
         {
             return ((NodeIdWrapper) obj).id();
         }
-        else if (obj instanceof RelationshipIdWrapper)
+        else if ( obj instanceof RelationshipIdWrapper )
         {
             return ((RelationshipIdWrapper) obj).id();
         }
-        else if (obj instanceof Long)
+        else if ( obj instanceof Long )
         {
             return (Long) obj;
         }
         else
         {
-            throw new IllegalArgumentException( format( "Can not be converted to long: %s", obj.getClass().getName() ) );
+            throw new IllegalArgumentException(
+                    format( "Can not be converted to long: %s", obj.getClass().getName() ) );
         }
     }
 
