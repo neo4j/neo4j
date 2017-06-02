@@ -291,4 +291,20 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.toSet should equal(Set(Map("b" -> c), Map("b" -> b)))
   }
+
+  test("should return correct results on combined node and relationship index starts") {
+    val node = createNode()
+    val resultNode = createNode()
+    val rel = relate(node, resultNode)
+    relate(node, createNode())
+
+    graph.inTx {
+      graph.index.forNodes("nodes").add(node, "key", "A")
+      graph.index.forRelationships("rels").add(rel, "key", "B")
+    }
+
+    val result = innerExecute("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b")
+    result.toList should equal(List(Map("b" -> resultNode)))
+  }
+
 }
