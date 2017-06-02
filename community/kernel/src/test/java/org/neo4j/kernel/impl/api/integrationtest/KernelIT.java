@@ -66,8 +66,6 @@ import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelIT extends KernelIntegrationTest
 {
-    // TODO: Split this into area-specific tests, see PropertyIT.
-
     @Test
     public void mixingBeansApiWithKernelAPI() throws Exception
     {

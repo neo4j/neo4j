@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -60,6 +62,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -271,6 +274,23 @@ public class NeoStoreDataSourceTest
             // Then
             assertEquals( ex, e.getCause() );
         }
+    }
+
+    @Test
+    public void checkTransactionStatsWhenStopDataSource() throws IOException
+    {
+        NeoStoreDataSource dataSource =
+                dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs ), emptyMap() );
+        TransactionStats transactionMonitor = dsRule.getTransactionMonitor();
+        dataSource.start();
+
+        Mockito.verifyZeroInteractions(transactionMonitor);
+
+        dataSource.stop();
+        verify( transactionMonitor, times( 2 ) ).getNumberOfTerminatedTransactions();
+        verify( transactionMonitor, times( 2 ) ).getNumberOfRolledBackTransactions();
+        verify( transactionMonitor, times( 2 ) ).getNumberOfStartedTransactions();
+        verify( transactionMonitor, times( 2 ) ).getNumberOfCommittedTransactions();
     }
 
     private NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( PhysicalLogFiles files )

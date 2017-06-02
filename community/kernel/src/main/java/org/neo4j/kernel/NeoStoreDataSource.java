@@ -98,7 +98,7 @@ import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
@@ -280,7 +280,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final LockService lockService;
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
-    private final TransactionMonitor transactionMonitor;
+    private final TransactionStats transactionMonitor;
     private final DatabaseHealth databaseHealth;
     private final PhysicalLogFile.Monitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
@@ -330,7 +330,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             TransactionEventHandlers transactionEventHandlers,
             IndexingService.Monitor indexingServiceMonitor,
             FileSystemAbstraction fs,
-            TransactionMonitor transactionMonitor,
+            TransactionStats transactionMonitor,
             DatabaseHealth databaseHealth,
             PhysicalLogFile.Monitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
@@ -905,11 +905,19 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
         // otherwise if there has been a panic transactions will not be applied properly anyway.
         TransactionIdStore txIdStore = getDependencyResolver().resolveDependency( TransactionIdStore.class );
-        while ( databaseHealth.isHealthy() &&
+        while ( databaseHealth.isHealthy() && getNumberOfOngoingTransactions() > 0 &&
                 !txIdStore.closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
             LockSupport.parkNanos( 10_000_000 ); // 10 ms
         }
+    }
+
+    private long getNumberOfOngoingTransactions()
+    {
+        return transactionMonitor.getNumberOfStartedTransactions() -
+               transactionMonitor.getNumberOfCommittedTransactions() -
+               transactionMonitor.getNumberOfRolledBackTransactions() -
+               transactionMonitor.getNumberOfTerminatedTransactions();
     }
 
     private Lifecycle lifecycleToTriggerCheckPointOnShutdown()
