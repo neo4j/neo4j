@@ -27,8 +27,15 @@ class OpenCypherAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     val query = "LOAD GRAPH 'test' RETURN 1"
 
     a[SyntaxException] shouldBe thrownBy {
-      eengine.execute(query, Map.empty[String, AnyRef])
+      executeWithAllPlanners(query)
     }
   }
 
+  test("emit graph") {
+    val query = "MATCH ()--() EMIT GRAPH 'test' RETURN *"
+
+    a[SyntaxException] shouldBe thrownBy {
+      executeWithAllPlanners(query)
+    }
+  }
 }

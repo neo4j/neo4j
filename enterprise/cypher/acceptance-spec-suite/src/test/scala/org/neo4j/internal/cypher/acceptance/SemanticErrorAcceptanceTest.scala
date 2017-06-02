@@ -33,6 +33,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("emit graph should generate error") {
+    executeAndEnsureError(
+      "MATCH ()--() EMIT GRAPH 'test' RETURN *",
+      "EMIT GRAPH is not supported by Neo4j (line 1, column 25 (offset: 24))"
+    )
+  }
+
   test("return node that's not there") {
     executeAndEnsureError(
       "match (n) where id(n) = 0 return bar",

@@ -46,6 +46,12 @@ trait Clauses extends Parser
       (ast.LoadGraph(_))
   }
 
+  def EmitGraph: Rule1[ast.EmitGraph] = rule("EMIT GRAPH") {
+    keyword("EMIT GRAPH") ~~
+      Expression ~~>>
+      (ast.EmitGraph(_))
+  }
+
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)

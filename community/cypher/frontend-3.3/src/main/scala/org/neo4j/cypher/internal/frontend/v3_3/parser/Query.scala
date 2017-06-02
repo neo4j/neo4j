@@ -50,6 +50,7 @@ trait Query extends Parser
   def Clause: Rule1[ast.Clause] = (
       LoadCSV
     | LoadGraph
+    | EmitGraph
     | Start
     | Match
     | Unwind
