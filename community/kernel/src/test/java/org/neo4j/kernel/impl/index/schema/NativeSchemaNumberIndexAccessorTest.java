@@ -59,7 +59,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
  * <ul>
  *     <li>{@link NativeSchemaNumberIndexAccessor}</li>
  *     <li>{@link NativeSchemaNumberIndexUpdater}</li>
- *     <li>{@link NativeSchemaNumberIndexAccessor.NativeSchemaNumberIndexReader}</li>
+ *     <li>{@link NativeSchemaNumberIndexReader}</li>
  * </ul>
  */
 public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey, VALUE extends NumberValue>
@@ -466,6 +466,16 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         }
     }
 
+    @Test
+    public void dropShouldDeleteAndCloseIndex() throws Exception
+    {
+        // GIVEN
+
+        // WHEN
+        // THEN
+        fail( "Test not fully implemented yet" );
+    }
+
     private static Predicate<Object> lessThan( Double value )
     {
         return t -> ((Number)t).doubleValue() < value;
@@ -631,6 +641,12 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     // ACCESSOR
     // shouldHandleMultipleConsecutiveUpdaters
     // requestForSecondUpdaterMustThrow
+    // TODO: dropShouldDeleteAndCloseIndex
+    // TODO: anyUsageAfterDropShouldThrow
+    // TODO: forceShouldCheckpointTree
+    // TODO: closeShouldCloseTreeWithoutCheckpoint
+    // TODO: anyUsageAfterCloseShouldThrow
+    // TODO: snapshotFilesShouldReturnIndexFile
 
 //    void drop()
 //    IndexUpdater newUpdater( IndexUpdateMode mode )
