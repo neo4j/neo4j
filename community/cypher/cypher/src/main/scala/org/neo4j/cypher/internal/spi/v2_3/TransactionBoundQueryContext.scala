@@ -308,24 +308,24 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asPublic()
+      tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asLegacyObject()
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
     }
 
-    def hasProperty(id: Long, propertyKey: Int) = try {
+    def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       tc.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => false
     }
 
-    def removeProperty(id: Long, propertyKeyId: Int) = try {
+    def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
       tc.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
     }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
+    def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
       tc.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
@@ -378,24 +378,24 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+      tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asLegacyObject()
     } catch {
       case _: exceptions.EntityNotFoundException => null
     }
 
-    override def hasProperty(id: Long, propertyKey: Int) = try {
+    override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       tc.statement.readOperations().relationshipHasProperty(id, propertyKey)
     } catch {
       case _: exceptions.EntityNotFoundException => false
     }
 
-    override def removeProperty(id: Long, propertyKeyId: Int) = try {
+    override def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
       tc.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
     } catch {
       case _: exceptions.EntityNotFoundException => //ignore
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
       tc.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
     } catch {
       case _: exceptions.EntityNotFoundException => //ignore

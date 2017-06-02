@@ -311,7 +311,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asPublic()
+      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asLegacyObject()
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
@@ -320,13 +320,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           null
     }
 
-    override def hasProperty(id: Long, propertyKey: Int) = try {
+    override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       transactionalContext.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
       case _: exceptions.EntityNotFoundException => false
     }
 
-    override def removeProperty(id: Long, propertyKeyId: Int) {
+    override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
         transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
       } catch {
@@ -334,7 +334,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = {
       try {
         transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
       } catch {
@@ -385,7 +385,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asLegacyObject()
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
@@ -394,13 +394,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           null
     }
 
-    override def hasProperty(id: Long, propertyKey: Int) = try {
+    override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       transactionalContext.statement.readOperations().relationshipHasProperty(id, propertyKey)
     } catch {
       case _: exceptions.EntityNotFoundException => false
     }
 
-    override def removeProperty(id: Long, propertyKeyId: Int) {
+    override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
         transactionalContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
       } catch {
@@ -408,7 +408,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = {
       try {
         transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
       } catch {

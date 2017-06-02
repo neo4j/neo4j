@@ -365,6 +365,12 @@ public class Values
                     String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
     }
 
+    @Deprecated
+    public static Object asLegacyObject( Value value )
+    {
+        return value == null ? null : value.asLegacyObject();
+    }
+
     public static Value[] values( Object... objects )
     {
         Value[] values = new Value[objects.length];

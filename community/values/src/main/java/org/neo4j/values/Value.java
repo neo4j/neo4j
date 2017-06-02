@@ -57,6 +57,12 @@ public abstract class Value
 
     public abstract Object asPublic();
 
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return asPublic();
+    }
+
     public abstract ValueGroup valueGroup();
 
     public abstract NumberType numberType();

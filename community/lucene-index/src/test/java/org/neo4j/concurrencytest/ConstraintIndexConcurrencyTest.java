@@ -110,7 +110,7 @@ public class ConstraintIndexConcurrencyTest
             {
                 assertEquals( ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), e.constraint() );
                 IndexEntryConflictException conflict = Iterators.single( e.conflicts().iterator() );
-                assertEquals( conflictingValue, conflict.getSinglePropertyValue() );
+                assertEquals( Values.stringValue( conflictingValue ), conflict.getSinglePropertyValue() );
             }
 
             tx.success();
