@@ -31,6 +31,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.NumberRangePredicate;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
@@ -38,6 +40,7 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
         implements IndexReader
 {
     private final GBPTree<KEY,VALUE> tree;
+    private final Layout<KEY,VALUE> layout;
     private final KEY treeKeyFrom;
     private final KEY treeKeyTo;
     private RawCursor<Hit<KEY,VALUE>,IOException> openSeeker;
@@ -45,6 +48,7 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
     NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
     {
         this.tree = tree;
+        this.layout = layout;
         this.treeKeyFrom = layout.newKey();
         this.treeKeyTo = layout.newKey();
     }
@@ -53,6 +57,15 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
     public void close()
     {
         ensureOpenSeekerClosed();
+    }
+
+    @Override
+    public IndexSampler createSampler()
+    {
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+        FullScanNonUniqueIndexSampler<KEY,VALUE> sampler =
+                new FullScanNonUniqueIndexSampler<>( tree, layout, indexSamplingConfig );
+        return sampler::result;
     }
 
     @Override
@@ -76,12 +89,6 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    @Override
-    public IndexSampler createSampler()
-    {
-        throw new UnsupportedOperationException( "Implement me" );
     }
 
     @Override

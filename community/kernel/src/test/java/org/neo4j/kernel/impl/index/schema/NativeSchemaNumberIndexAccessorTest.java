@@ -40,8 +40,9 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -69,14 +70,17 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey, VALUE extends NumberValue>
         extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
-    private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 42, 666 );
-    private NativeSchemaNumberIndexAccessor<KEY,VALUE> accessor;
+    private IndexDescriptor indexDescriptor;
+    NativeSchemaNumberIndexAccessor<KEY,VALUE> accessor;
 
     @Before
     public void setupAccessor() throws IOException
     {
-        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, indexFile, layout, IMMEDIATE );
+        indexDescriptor = createIndexDescriptor();
+        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, indexFile, layout, IMMEDIATE, indexDescriptor );
     }
+
+    abstract IndexDescriptor createIndexDescriptor();
 
     @After
     public void closeAccessor() throws IOException
@@ -525,6 +529,36 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         assertFalse( files.hasNext() );
     }
 
+    @Test
+    public void shouldSampleIndex() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            IndexSampler sampler = reader.createSampler();
+
+            // when
+            IndexSample sample = sampler.sampleIndex();
+
+            // then
+            assertEquals( updates.length, sample.indexSize() );
+            assertEquals( updates.length, sample.sampleSize() );
+            assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
+        }
+    }
+
+    private int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        Set<Double> seen = new HashSet<>();
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        {
+            seen.add( ((Number) update.values()[0]).doubleValue() );
+        }
+        return seen.size();
+    }
+
     private static Predicate<Object> lessThan( Double value )
     {
         return t -> ((Number)t).doubleValue() < value;
@@ -680,7 +714,8 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     //       so perhaps we should wait with this until we know exactly how this works and which combinations
     //       that should be supported/optimized for.
 
-    // TODO: SAMPLER
+    // SAMPLER
+    // TODO: shouldSampleIndex
 
 //    long countIndexedNodes( long nodeId, Object... propertyValues )
 //    IndexSampler createSampler()
