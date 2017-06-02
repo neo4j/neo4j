@@ -91,6 +91,16 @@ public abstract class CompiledConversionUtils
             DoubleStream stream = (DoubleStream) value;
             return stream.boxed().collect( Collectors.toList() );
         }
+        else if (value.getClass().isArray() )
+        {
+            int len = Array.getLength( value );
+            ArrayList<Object> collection = new ArrayList<>( len );
+            for ( int i = 0; i < len; i++ )
+            {
+                collection.add( Array.get( value, i ) );
+            }
+            return collection;
+        }
 
         throw new CypherTypeException(
                 "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
@@ -120,6 +130,16 @@ public abstract class CompiledConversionUtils
         {
             DoubleStream stream = (DoubleStream) value;
             return stream.boxed().collect( Collectors.toSet() );
+        }
+        else if (value.getClass().isArray() )
+        {
+            int len = Array.getLength( value );
+            HashSet<Object> collection = new HashSet<>( len );
+            for ( int i = 0; i < len; i++ )
+            {
+                collection.add( Array.get( value, i ) );
+            }
+            return collection;
         }
 
         throw new CypherTypeException(
@@ -223,6 +243,7 @@ public abstract class CompiledConversionUtils
         throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
     }
 
+    @SuppressWarnings( "unchecked" )
     public static Object loadParameter( Object value )
     {
         if ( value == null )
@@ -259,15 +280,26 @@ public abstract class CompiledConversionUtils
         }
         else if ( value.getClass().isArray() )
         {
+            Class<?> componentType = value.getClass().getComponentType();
             int length = Array.getLength( value );
-            Object[] copy = new Object[length];
-            for ( int i = 0; i < length; i++ )
-            {
-                copy[i] = Array.get( value, i );
-            }
-            return copy;
-        }
 
+            if (componentType.isPrimitive())
+            {
+                Object copy = Array.newInstance( componentType, length );
+                //noinspection SuspiciousSystemArraycopy
+                System.arraycopy( value, 0, copy, 0, length );
+                return copy;
+            }
+            else
+            {
+                Object[] copy = new Object[length];
+                for ( int i = 0; i < length; i++ )
+                {
+                    copy[i] = loadParameter( Array.get(value, i) );
+                }
+                return copy;
+            }
+        }
         else
         {
             return value;
