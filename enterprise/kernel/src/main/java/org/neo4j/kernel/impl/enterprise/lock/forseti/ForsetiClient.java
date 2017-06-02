@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntFunction;
 
 import org.neo4j.collection.pool.Pool;
@@ -800,7 +802,7 @@ public class ForsetiClient implements Locks.Client
                 // We only act upon the result of this method if the `tries` count is above some threshold. The reason
                 // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
                 // reduces the probably of a false positive, but does not eliminate them.
-                if ( isDeadlockReal( lock ) && tries > 10 )
+                if ( isDeadlockReal( lock, tries ) )
                 {
                     // After checking several times, this really does look like a real deadlock.
                     waitList.clear();
@@ -812,7 +814,7 @@ public class ForsetiClient implements Locks.Client
         waitingForLock = null;
     }
 
-    private boolean isDeadlockReal( ForsetiLockManager.Lock lock )
+    private boolean isDeadlockReal( ForsetiLockManager.Lock lock, int tries )
     {
         Set<ForsetiLockManager.Lock> waitedUpon = new HashSet<>();
         Set<ForsetiClient> owners = new HashSet<>();
@@ -823,23 +825,19 @@ public class ForsetiClient implements Locks.Client
         do
         {
             waitedUpon.addAll( nextWaitedUpon );
-            nextWaitedUpon.clear();
-            for ( ForsetiClient owner : owners )
+            collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
+            if ( nextOwners.contains( this ) && tries > 20 )
             {
-                ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
-                if ( waitingForLock != null && !waitedUpon.contains( waitingForLock ) )
+                // Worrying... let's take a deep breath
+                nextOwners.clear();
+                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+                // ... and check again
+                collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
+                if ( nextOwners.contains( this ) )
                 {
-                    nextWaitedUpon.add( waitingForLock );
+                    // Yes, this deadlock looks real.
+                    return true;
                 }
-            }
-            for ( ForsetiLockManager.Lock lck : nextWaitedUpon )
-            {
-                lck.collectOwners( nextOwners );
-            }
-            if ( nextOwners.contains( this ) )
-            {
-                // Yes, deadlock looks real.
-                return true;
             }
             owners.clear();
             Set<ForsetiClient> ownersTmp = owners;
@@ -849,6 +847,24 @@ public class ForsetiClient implements Locks.Client
         while ( !nextWaitedUpon.isEmpty() );
         // Nope, we didn't find any real wait cycles.
         return false;
+    }
+
+    private void collectNextOwners( Set<ForsetiLockManager.Lock> waitedUpon, Set<ForsetiClient> owners,
+                                    Set<ForsetiLockManager.Lock> nextWaitedUpon, Set<ForsetiClient> nextOwners )
+    {
+        nextWaitedUpon.clear();
+        for ( ForsetiClient owner : owners )
+        {
+            ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
+            if ( waitingForLock != null && !waitedUpon.contains( waitingForLock ) )
+            {
+                nextWaitedUpon.add( waitingForLock );
+            }
+        }
+        for ( ForsetiLockManager.Lock lck : nextWaitedUpon )
+        {
+            lck.collectOwners( nextOwners );
+        }
     }
 
     /**
