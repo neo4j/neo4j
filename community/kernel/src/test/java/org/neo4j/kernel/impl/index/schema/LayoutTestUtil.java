@@ -53,6 +53,11 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
 
     protected abstract double fractionDuplicates();
 
+    IndexDescriptor indexDescriptor()
+    {
+        return indexDescriptor;
+    }
+
     void copyValue( VALUE value, VALUE intoValue )
     {
         intoValue.type = value.type;

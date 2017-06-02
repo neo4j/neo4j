@@ -38,7 +38,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.impl.index.schema.FullScanNonUniqueIndexSamplerTest.countUniqueValues;
 
 public class NativeNonUniqueSchemaNumberIndexPopulatorTest
@@ -48,7 +47,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator( PageCache pageCache, File indexFile,
             Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE, samplingConfig );
+        return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, samplingConfig );
     }
 
     @Test

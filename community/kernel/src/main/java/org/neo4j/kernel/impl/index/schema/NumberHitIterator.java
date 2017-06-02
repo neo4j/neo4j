@@ -40,7 +40,7 @@ public class NumberHitIterator<KEY extends NumberKey, VALUE extends NumberValue>
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
 
-    public NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker )
+    NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker )
     {
         this.seeker = seeker;
     }
@@ -50,7 +50,7 @@ public class NumberHitIterator<KEY extends NumberKey, VALUE extends NumberValue>
     {
         try
         {
-            return seeker.next() ? next( seeker.get().key().entityId ) : false;
+            return seeker.next() && next( seeker.get().key().entityId );
         }
         catch ( IOException e )
         {

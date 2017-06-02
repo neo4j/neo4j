@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.GBPTreeUtil;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -45,14 +44,11 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
 {
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
-    private final IndexDescriptor indexDescriptor;
 
     NativeSchemaNumberIndexAccessor( PageCache pageCache, File storeFile,
-            Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IndexDescriptor indexDescriptor ) throws IOException
+            Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
     {
         super( pageCache, storeFile, layout );
-        this.indexDescriptor = indexDescriptor;
         singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
         instantiateTree( recoveryCleanupWorkCollector );
     }
@@ -93,7 +89,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     @Override
     public IndexReader newReader()
     {
-        return new NativeSchemaNumberIndexReader<>( tree, layout, indexDescriptor );
+        return new NativeSchemaNumberIndexReader<>( tree, layout );
     }
 
     @Override

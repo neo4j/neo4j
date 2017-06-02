@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -36,8 +35,7 @@ class NativeUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extend
 {
     private final UniqueIndexSampler sampler;
 
-    NativeUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    NativeUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout )
     {
         super( pageCache, storeFile, layout );
         this.sampler = new UniqueIndexSampler();

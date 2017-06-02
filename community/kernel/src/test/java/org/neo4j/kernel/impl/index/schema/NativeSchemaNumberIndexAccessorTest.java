@@ -49,7 +49,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.all;
 import static org.neo4j.function.Predicates.alwaysTrue;
@@ -70,17 +69,13 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey, VALUE extends NumberValue>
         extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
-    private IndexDescriptor indexDescriptor;
-    NativeSchemaNumberIndexAccessor<KEY,VALUE> accessor;
+    private NativeSchemaNumberIndexAccessor<KEY,VALUE> accessor;
 
     @Before
     public void setupAccessor() throws IOException
     {
-        indexDescriptor = createIndexDescriptor();
-        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, indexFile, layout, IMMEDIATE, indexDescriptor );
+        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, indexFile, layout, IMMEDIATE );
     }
-
-    abstract IndexDescriptor createIndexDescriptor();
 
     @After
     public void closeAccessor() throws IOException
@@ -459,7 +454,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     public void requestForSecondUpdaterMustThrow() throws Exception
     {
         // given
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
+        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE ) )
         {
             // when
             try
@@ -581,11 +576,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         long[] entityIds = new long[updates.length];
         int cursor = 0;
-        for ( int i = 0; i < updates.length; i++ )
+        for ( IndexEntryUpdate<?> update : updates )
         {
-            if ( valueFilter.test( updates[i].values()[0] ) )
+            if ( valueFilter.test( update.values()[0] ) )
             {
-                entityIds[cursor++] = updates[i].getEntityId();
+                entityIds[cursor++] = update.getEntityId();
             }
         }
         return Arrays.copyOf( entityIds, cursor );

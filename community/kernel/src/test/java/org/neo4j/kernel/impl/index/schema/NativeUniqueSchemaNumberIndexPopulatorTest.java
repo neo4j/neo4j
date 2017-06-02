@@ -35,7 +35,6 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
 public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
 {
@@ -44,7 +43,7 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
             PageCache pageCache, File indexFile,
             Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE );
+        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout );
     }
 
     @Override

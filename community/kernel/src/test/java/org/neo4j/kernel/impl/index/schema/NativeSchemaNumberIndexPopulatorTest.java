@@ -61,7 +61,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulato
 public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends NumberKey,VALUE extends NumberValue>
         extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
-    static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
+    private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
     static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
     {
         throw new RuntimeException( "Did not expect an attempt to go to store" );
@@ -484,7 +484,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends NumberKey
         }
     }
 
-    int interleaveLargeAmountOfUpdates( Random updaterRandom,
+    private int interleaveLargeAmountOfUpdates( Random updaterRandom,
             Iterator<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
     {
         int count = 0;
@@ -562,7 +562,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends NumberKey
         }
     }
 
-    void verifyUpdates( Iterator<IndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
+    private void verifyUpdates( Iterator<IndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
             throws IOException
     {
         @SuppressWarnings( "unchecked" )

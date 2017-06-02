@@ -67,6 +67,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
+    IndexDescriptor indexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
     Layout<KEY,VALUE> layout;
     File indexFile;
@@ -76,6 +77,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     public void setup()
     {
         layoutUtil = createLayoutTestUtil();
+        indexDescriptor = layoutUtil.indexDescriptor();
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
@@ -184,12 +186,12 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
         return new SimpleHit( key, value );
     }
 
-    protected void assertFilePresent()
+    void assertFilePresent()
     {
         assertTrue( fs.fileExists( indexFile ) );
     }
 
-    protected void assertFileNotPresent()
+    void assertFileNotPresent()
     {
         assertFalse( fs.fileExists( indexFile ) );
     }
