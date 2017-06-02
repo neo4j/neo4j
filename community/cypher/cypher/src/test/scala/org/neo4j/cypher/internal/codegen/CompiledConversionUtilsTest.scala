@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.codegen
 
 import java.util
+import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
@@ -75,6 +76,15 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
     //when/then
     theMap(theKey) should equal(theObject)
+  }
+
+  test("should handle toSet") {
+    import scala.collection.JavaConverters._
+    CompiledConversionUtils.toSet(null) should equal(Set.empty.asJava)
+    CompiledConversionUtils.toSet(List(1,1,2,3).asJava) should equal(Set(1,2,3).asJava)
+    CompiledConversionUtils.toSet(IntStream.of(1,2,3,1)) should equal(Set(1,2,3).asJava)
+    CompiledConversionUtils.toSet(LongStream.of(1L,2L,3L,1L)) should equal(Set(1L,2L,3L).asJava)
+    CompiledConversionUtils.toSet(DoubleStream.of(1.1,2.2,3.3,1.1)) should equal(Set(1.1,2.2,3.3).asJava)
   }
 
   val testEquality = Seq(
