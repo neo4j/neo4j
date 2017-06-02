@@ -27,6 +27,9 @@ import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
+import scala.collection.JavaConverters._
+
+
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
   val testPredicates = Seq(
@@ -52,8 +55,6 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   }
 
   test("should convert List") {
-    import scala.collection.JavaConverters._
-
     val col = CompiledConversionUtils.toCollection(List("a", "b", "c").asJava)
 
     col shouldBe a[java.util.Collection[_]]
@@ -66,6 +67,19 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
   test("should handle null") {
     CompiledConversionUtils.toCollection(null) shouldBe empty
+  }
+
+  test("should be able to turn an array into a collection") {
+    CompiledConversionUtils.toCollection(Array("a", 42L)).asScala.toList should equal(List("a", 42))
+  }
+
+  test("should be able to turn a primitive array into a collection") {
+    CompiledConversionUtils.toCollection(Array(1337L, 42L)).asScala.toList should equal(List(1337L, 42))
+  }
+
+  test("should preserve primitiveness when loading parameter") {
+    CompiledConversionUtils.loadParameter(Array(1L, 2L, 13L)).getClass.getComponentType.isPrimitive shouldBe true
+    CompiledConversionUtils.loadParameter(Array(1L, 2L, "Hello")).getClass.getComponentType.isPrimitive shouldBe false
   }
 
   test("should be able to use a composite key in a hash map") {
@@ -85,6 +99,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     CompiledConversionUtils.toSet(IntStream.of(1,2,3,1)) should equal(Set(1,2,3).asJava)
     CompiledConversionUtils.toSet(LongStream.of(1L,2L,3L,1L)) should equal(Set(1L,2L,3L).asJava)
     CompiledConversionUtils.toSet(DoubleStream.of(1.1,2.2,3.3,1.1)) should equal(Set(1.1,2.2,3.3).asJava)
+    CompiledConversionUtils.toSet(Array(1, 1 ,3, 2)) should equal(Set(1, 2, 3).asJava)
   }
 
   val testEquality = Seq(
@@ -151,15 +166,16 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  val node = mock[Node]
+  private val node = mock[Node]
   when(node.getId).thenReturn(11L)
-  val rel = mock[Relationship]
+  private val rel = mock[Relationship]
   when(rel.getId).thenReturn(13L)
 
   val testLoadParameter = Seq(
     (null, null),
     (node, new NodeIdWrapperImpl(11L)),
-    (rel, new RelationshipIdWrapperImpl(13L))
+    (rel, new RelationshipIdWrapperImpl(13L)),
+    (Array(node, rel), Array( new NodeIdWrapperImpl(11L), new RelationshipIdWrapperImpl(13L)))
   )
 
   testLoadParameter.foreach {
