@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ import java.util.function.Predicate;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -43,6 +45,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -469,11 +473,56 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     @Test
     public void dropShouldDeleteAndCloseIndex() throws Exception
     {
-        // GIVEN
+        // given
+        assertFilePresent();
 
-        // WHEN
-        // THEN
-        fail( "Test not fully implemented yet" );
+        // when
+        accessor.drop();
+
+        // then
+        assertFileNotPresent();
+    }
+
+    @Test
+    public void forceShouldCheckpointTree() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] data = layoutUtil.someUpdates();
+        processAll( data );
+
+        // when
+        accessor.force();
+        accessor.close();
+
+        // then
+        verifyUpdates( data );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void closeShouldCloseTreeWithoutCheckpoint() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] data = layoutUtil.someUpdates();
+        processAll( data );
+
+        // when
+        accessor.close();
+
+        // then
+        verifyUpdates( new IndexEntryUpdate[0] );
+    }
+
+    @Test
+    public void snapshotFilesShouldReturnIndexFile() throws Exception
+    {
+        // when
+        ResourceIterator<File> files = accessor.snapshotFiles();
+
+        // then
+        assertTrue( files.hasNext() );
+        assertEquals( indexFile, files.next() );
+        assertFalse( files.hasNext() );
     }
 
     private static Predicate<Object> lessThan( Double value )
@@ -629,24 +678,24 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     // shouldReturnNoEntriesForRangePredicateOutsideAnyMatch
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
     //       so perhaps we should wait with this until we know exactly how this works and which combinations
-    //       that should be optimized.
+    //       that should be supported/optimized for.
 
     // TODO: SAMPLER
 
 //    long countIndexedNodes( long nodeId, Object... propertyValues )
 //    IndexSampler createSampler()
 //    PrimitiveLongIterator query( IndexQuery... predicates )
-//    close
+//    close()
 
     // ACCESSOR
     // shouldHandleMultipleConsecutiveUpdaters
     // requestForSecondUpdaterMustThrow
-    // TODO: dropShouldDeleteAndCloseIndex
+    // dropShouldDeleteAndCloseIndex
     // TODO: anyUsageAfterDropShouldThrow
-    // TODO: forceShouldCheckpointTree
-    // TODO: closeShouldCloseTreeWithoutCheckpoint
+    // forceShouldCheckpointTree
+    // closeShouldCloseTreeWithoutCheckpoint
     // TODO: anyUsageAfterCloseShouldThrow
-    // TODO: snapshotFilesShouldReturnIndexFile
+    // snapshotFilesShouldReturnIndexFile
 
 //    void drop()
 //    IndexUpdater newUpdater( IndexUpdateMode mode )

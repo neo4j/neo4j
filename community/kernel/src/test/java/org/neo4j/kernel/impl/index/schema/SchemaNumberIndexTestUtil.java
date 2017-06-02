@@ -47,6 +47,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
 
@@ -181,6 +182,16 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
     private Hit<KEY,VALUE> hit( final KEY key, final VALUE value )
     {
         return new SimpleHit( key, value );
+    }
+
+    protected void assertFilePresent()
+    {
+        assertTrue( fs.fileExists( indexFile ) );
+    }
+
+    protected void assertFileNotPresent()
+    {
+        assertFalse( fs.fileExists( indexFile ) );
     }
 
     private class SimpleHit implements Hit<KEY,VALUE>

@@ -42,7 +42,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMME
 import static org.neo4j.kernel.impl.index.schema.FullScanNonUniqueIndexSamplerTest.countUniqueValues;
 
 public class NativeNonUniqueSchemaNumberIndexPopulatorTest
-        extends NativeSchemaIndexPopulatorTest<NumberKey,NumberValue>
+        extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
 {
     @Override
     NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator( PageCache pageCache, File indexFile,

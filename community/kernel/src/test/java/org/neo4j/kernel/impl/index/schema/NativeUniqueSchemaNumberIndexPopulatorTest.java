@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaIndexPopulatorTest<NumberKey,NumberValue>
+public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
 {
     @Override
     NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator(

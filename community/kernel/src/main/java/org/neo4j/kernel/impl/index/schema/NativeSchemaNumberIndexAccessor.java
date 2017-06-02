@@ -34,7 +34,11 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.GBPTreeUtil;
 import org.neo4j.storageengine.api.schema.IndexReader;
+
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extends NumberValue>
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
@@ -52,7 +56,8 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     @Override
     public void drop() throws IOException
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        closeTree();
+        GBPTreeUtil.delete( pageCache, storeFile );
     }
 
     @Override
@@ -96,7 +101,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        return asResourceIterator( iterator( storeFile ) );
     }
 
     @Override
