@@ -427,6 +427,45 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
 
+    @Test
+    public void shouldHandleMultipleConsecutiveUpdaters() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+
+        // when
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        {
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
+            {
+                updater.process( update );
+            }
+        }
+
+        // then
+        forceAndCloseAccessor();
+        verifyUpdates( updates );
+    }
+
+    @Test
+    public void requestForSecondUpdaterMustThrow() throws Exception
+    {
+        // given
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
+        {
+            // when
+            try
+            {
+                accessor.newUpdater( ONLINE );
+                fail( "Should have failed" );
+            }
+            catch ( IllegalStateException e )
+            {
+                // then good
+            }
+        }
+    }
+
     private static Predicate<Object> lessThan( Double value )
     {
         return t -> ((Number)t).doubleValue() < value;
@@ -590,8 +629,8 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
 //    close
 
     // ACCESSOR
-    // todo shouldHandleMultipleConsecutiveUpdaters
-    // todo requestForSecondUpdaterMustThrow
+    // shouldHandleMultipleConsecutiveUpdaters
+    // requestForSecondUpdaterMustThrow
 
 //    void drop()
 //    IndexUpdater newUpdater( IndexUpdateMode mode )
