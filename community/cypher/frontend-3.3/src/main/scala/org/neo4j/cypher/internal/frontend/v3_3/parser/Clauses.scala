@@ -40,6 +40,12 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
+  def LoadGraph: Rule1[ast.LoadGraph] = rule("LOAD GRAPH") {
+    keyword("LOAD GRAPH") ~~
+      Expression ~~>>
+      (ast.LoadGraph(_))
+  }
+
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)

@@ -26,6 +26,13 @@ import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
+  test("load graph should generate error") {
+    executeAndEnsureError(
+      "LOAD GRAPH 'test' RETURN 1",
+      "LOAD GRAPH is not supported by Neo4j (line 1, column 12 (offset: 11))"
+    )
+  }
+
   test("return node that's not there") {
     executeAndEnsureError(
       "match (n) where id(n) = 0 return bar",
