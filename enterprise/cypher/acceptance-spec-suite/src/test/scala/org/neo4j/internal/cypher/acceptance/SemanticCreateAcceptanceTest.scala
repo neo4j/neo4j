@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen}
+import org.neo4j.graphdb.{ResourceIterator, Result}
 import org.scalacheck.{Gen, Shrink}
 
 /*
@@ -46,14 +47,22 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
 
           //find created pattern (cannot return * since everything might be unnamed)
-          val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH $patternString RETURN 42")
-          result.toList should have size 1
+          val result1: Result = graph.execute(s"MATCH $patternString RETURN 42")
+          hasSingleRow(result1)
+          val result2 = graph.execute(s"CYPHER runtime=interpreted MATCH $patternString RETURN 42")
+          hasSingleRow(result2)
 
           //clean up
           updateWithBothPlannersAndCompatibilityMode(s"MATCH (n) DETACH DELETE n")
         }
       }
     }
+  }
+
+  private def hasSingleRow(in: ResourceIterator[_]) = {
+    in.hasNext should equal(true)
+    in.next()
+    in.hasNext should equal(false)
   }
 
   override protected def numberOfTestRuns: Int = 20

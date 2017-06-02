@@ -44,7 +44,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     // then
     val plan1 = Expand(aPlan, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
     val plan2 = Expand(bPlan, IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r1"), ExpandAll)(solved)
-    assertPlansMatch(Set(plan1, plan2), logicalPlans.toSet)
+    val plan3 = Expand(CartesianProduct(aPlan, bPlan)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandInto)(solved)
+    assertPlansMatch(Set(plan1, plan2, plan3), logicalPlans.toSet)
   }
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and multiple index hints") {
