@@ -197,7 +197,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   private def getUnionQueryFrom(query: String): UnionQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
     val mkException = new SyntaxExceptionCreator(query, Some(DummyPosition(0)))
-    val semanticState = SemanticChecker.check(ast, mkException)
+    val semanticState = SemanticChecker.check(ast, SyntaxExceptionCreator.throwOnError(mkException))
     val table = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
     toUnionQuery(ast.asInstanceOf[Query], table)
   }

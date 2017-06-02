@@ -41,7 +41,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val semanticState = SemanticChecker.check(cleanedStatement, mkException)
+    val semanticState = SemanticChecker.check(cleanedStatement, SyntaxExceptionCreator.throwOnError(mkException))
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val state = LogicalPlanState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))

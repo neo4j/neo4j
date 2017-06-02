@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticError, SyntaxException}
 
 class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPosition]) extends ((String, InputPosition) => CypherException) {
   override def apply(message: String, position: InputPosition): CypherException = {
     val adjustedPosition = position.withOffset(preParserOffset)
     new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition)
   }
+}
+
+object SyntaxExceptionCreator {
+  def throwOnError(mkException: SyntaxExceptionCreator): (Seq[SemanticError]) => Unit =
+    (errors: Seq[SemanticError]) => errors.foreach(e => throw mkException(e.msg, e.position))
 }
