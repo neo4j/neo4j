@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.values.Value;
 
 /**
  * A {@link LuceneIndexPopulatingUpdater} used for unique Lucene schema indexes.
@@ -42,7 +43,7 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     private final PropertyAccessor propertyAccessor;
     private final UniqueIndexSampler sampler;
 
-    private final List<Object> updatedPropertyValues = new ArrayList<>();
+    private final List<Value[]> updatedValueTuples = new ArrayList<>();
 
     public UniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, int[] propertyKeyIds,
             SchemaIndex luceneIndex, PropertyAccessor propertyAccessor, UniqueIndexSampler sampler )
@@ -58,13 +59,13 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     protected void added( IndexEntryUpdate update )
     {
         sampler.increment( 1 );
-        updatedPropertyValues.add( update.values()[0] );
+        updatedValueTuples.add( update.values() );
     }
 
     @Override
     protected void changed( IndexEntryUpdate update )
     {
-        updatedPropertyValues.add( update.values()[0] );
+        updatedValueTuples.add( update.values() );
     }
 
     @Override
@@ -76,6 +77,6 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( propertyAccessor, propertyKeyIds, updatedPropertyValues );
+        luceneIndex.verifyUniqueness( propertyAccessor, propertyKeyIds, updatedValueTuples );
     }
 }

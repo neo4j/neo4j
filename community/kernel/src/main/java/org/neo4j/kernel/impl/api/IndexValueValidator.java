@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.impl.util.Validator;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
-public class IndexValueValidator implements Validator
+public class IndexValueValidator implements Validator<Value>
 {
     public static IndexValueValidator INSTANCE = new IndexValueValidator();
 
@@ -31,10 +33,10 @@ public class IndexValueValidator implements Validator
     }
 
     @Override
-    public void validate( Object value )
+    public void validate( Value value )
     {
         IndexSimpleValueValidator.INSTANCE.validate( value );
-        if ( value.getClass().isArray() )
+        if ( Values.isArrayValue( value ) )
         {
             IndexValueLengthValidator.INSTANCE.validate( ArrayEncoder.encode( value ).getBytes() );
         }

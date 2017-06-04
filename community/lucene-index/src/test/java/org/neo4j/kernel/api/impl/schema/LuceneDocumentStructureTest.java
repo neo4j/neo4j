@@ -37,8 +37,9 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Array;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Bool;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Number;
@@ -54,7 +55,7 @@ public class LuceneDocumentStructureTest
     public void stringWithMaximumLengthShouldBeAllowed()
     {
         String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, longestString );
+        Document document = documentRepresentingProperties( (long) 123, longestString );
         assertEquals( longestString, document.getField( String.key( 0 ) ).stringValue() );
     }
 
@@ -62,7 +63,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, "hello" );
+        Document document = documentRepresentingProperties( (long) 123, "hello" );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -74,7 +75,7 @@ public class LuceneDocumentStructureTest
     {
         // given
         String[] values = new String[]{"hello", "world"};
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( 123, values );
+        Document document = documentRepresentingProperties( 123, values );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -87,7 +88,7 @@ public class LuceneDocumentStructureTest
     {
         // given
         Object[] values = new Object[]{"hello", 789};
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( 123, values );
+        Document document = documentRepresentingProperties( 123, values );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -99,7 +100,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, true );
+        Document document = documentRepresentingProperties( (long) 123, true );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -110,7 +111,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure.documentRepresentingProperties( (long) 123, 12 );
+        Document document = documentRepresentingProperties( (long) 123, 12 );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -121,8 +122,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
     {
         // given
-        Document document = LuceneDocumentStructure
-                .documentRepresentingProperties( (long) 123, new Object[]{new Integer[]{1, 2, 3}} );
+        Document document = documentRepresentingProperties( (long) 123, new Object[]{new Integer[]{1, 2, 3}} );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );

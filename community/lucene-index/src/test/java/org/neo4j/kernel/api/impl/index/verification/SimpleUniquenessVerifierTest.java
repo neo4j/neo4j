@@ -60,6 +60,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
 public class SimpleUniquenessVerifierTest
 {
@@ -139,7 +140,7 @@ public class SimpleUniquenessVerifierTest
 
         insert( data );
 
-        assertNoDuplicatesCreated( propertyAccessor, asList( 1337975550, 'c', (byte) 12 ) );
+        assertNoDuplicatesCreated( propertyAccessor, valueTupleList( 1337975550, 'c', (byte) 12 ) );
     }
 
     @Test
@@ -150,7 +151,7 @@ public class SimpleUniquenessVerifierTest
 
         insert( data );
 
-        assertDuplicatesCreated( propertyAccessor, asList( "aa", 'u', -100 ) );
+        assertDuplicatesCreated( propertyAccessor, valueTupleList( "aa", 'u', -100 ) );
     }
 
     @Test
@@ -161,7 +162,7 @@ public class SimpleUniquenessVerifierTest
 
         insert( data );
 
-        assertDuplicatesCreated( propertyAccessor, asList( (float) -99.99999, 'a', -10, "div" ) );
+        assertDuplicatesCreated( propertyAccessor, valueTupleList( (float) -99.99999, 'a', -10, "div" ) );
     }
 
     @Test
@@ -241,7 +242,7 @@ public class SimpleUniquenessVerifierTest
         }
     }
 
-    private void assertNoDuplicatesCreated( PropertyAccessor propertyAccessor, List<Object> updatedPropertyValues )
+    private void assertNoDuplicatesCreated( PropertyAccessor propertyAccessor, List<Value[]> updatedPropertyValues )
             throws Exception
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
@@ -263,7 +264,7 @@ public class SimpleUniquenessVerifierTest
         }
     }
 
-    private void assertDuplicatesCreated( PropertyAccessor propertyAccessor, List<Object> updatedPropertyValues )
+    private void assertDuplicatesCreated( PropertyAccessor propertyAccessor, List<Value[]> updatedPropertyValues )
     {
         try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
         {
@@ -280,7 +281,7 @@ public class SimpleUniquenessVerifierTest
     {
         for ( int i = 0; i < data.size(); i++ )
         {
-            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, data.get( i ) );
+            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, Values.of( data.get( i ) ) );
             writer.addDocument( doc );
         }
         searcherManager.maybeRefreshBlocking();

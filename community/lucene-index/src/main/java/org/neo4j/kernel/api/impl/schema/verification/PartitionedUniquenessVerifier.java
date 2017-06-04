@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.Value;
 
 import static java.util.stream.Collectors.toList;
 
@@ -93,12 +94,12 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
+    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
             throws IndexEntryConflictException, IOException
     {
-        for ( Object propertyValue : updatedPropertyValues )
+        for ( Value[] valueTuple : updatedValueTuples )
         {
-            Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
+            Query query = LuceneDocumentStructure.newSeekQuery( valueTuple );
             searchForDuplicates( query, accessor, propKeyIds );
         }
     }

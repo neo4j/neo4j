@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
 
 /**
  * Writable schema index
@@ -77,10 +78,10 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
      * {@inheritDoc}
      */
     @Override
-    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Object> updatedPropertyValues )
+    public void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
             throws IOException, IndexEntryConflictException
     {
-        luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedPropertyValues );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedValueTuples );
     }
 
     /**

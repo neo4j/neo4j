@@ -53,6 +53,8 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
@@ -244,12 +246,12 @@ public class LuceneSchemaIndexPopulatorTest
 
     private static class Hit
     {
-        private final Object value;
+        private final Value value;
         private final Long[] nodeIds;
 
         Hit( Object value, Long... nodeIds )
         {
-            this.value = value;
+            this.value = Values.of( value );
             this.nodeIds = nodeIds;
         }
     }

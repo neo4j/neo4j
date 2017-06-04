@@ -20,21 +20,23 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.Value;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -44,6 +46,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
@@ -82,8 +86,7 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         verifyZeroInteractions( index );
 
         updater.close();
-        verify( index ).verifyUniqueness(
-                any(), eq( descriptor.getPropertyIds() ), eq( Arrays.asList( "foo", "bar", "baz" ) ) );
+        verifyVerifyUniqueness( index, descriptor, "foo", "bar", "baz" );
     }
 
     @Test
@@ -99,8 +102,8 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         verifyZeroInteractions( index );
 
         updater.close();
-        verify( index ).verifyUniqueness(
-                any(), eq( descriptor.getPropertyIds() ), eq( Arrays.asList( "foo2", "bar2", "baz2" ) ) );
+
+        verifyVerifyUniqueness( index, descriptor, "foo2", "bar2", "baz2" );
     }
 
     @Test
@@ -119,9 +122,7 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
 
         updater.close();
 
-        List<Object> toBeVerified = Arrays.asList( "added1", "added2", "after1", "after2" );
-        verify( index ).verifyUniqueness(
-                any(), eq( descriptor.getPropertyIds() ), eq( toBeVerified ) );
+        verifyVerifyUniqueness( index, descriptor, "added1", "added2", "after1", "after2" );
     }
 
     @Test
@@ -191,11 +192,11 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( add( 3, descriptor, "qux" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
-                LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "foo" ) );
+                documentRepresentingProperties( (long) 1, "foo" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
-                LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "bar" ) );
+                documentRepresentingProperties( (long) 2, "bar" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
-                LuceneDocumentStructure.documentRepresentingProperties( (long) 3, "qux" ) );
+                documentRepresentingProperties( (long) 3, "qux" ) );
     }
 
     @Test
@@ -208,9 +209,9 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 2, descriptor, "before2", "after2" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
-                LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "after1" ) );
+                documentRepresentingProperties( (long) 1, "after1" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
-                LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "after2" ) );
+                documentRepresentingProperties( (long) 2, "after2" ) );
     }
 
     @Test
@@ -262,5 +263,19 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.getPropertyIds(), index,
                 mock( PropertyAccessor.class ), sampler );
+    }
+
+    private void verifyVerifyUniqueness( SchemaIndex index, LabelSchemaDescriptor descriptor, Object... values )
+            throws IOException, IndexEntryConflictException
+    {
+        @SuppressWarnings( "unchecked" )
+        ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass((Class)List.class);
+        verify( index ).verifyUniqueness(
+                any(), eq( descriptor.getPropertyIds() ), captor.capture() );
+
+        assertThat( captor.getValue(),
+                containsInAnyOrder(
+                        valueTupleList( values ).toArray()
+                ) );
     }
 }

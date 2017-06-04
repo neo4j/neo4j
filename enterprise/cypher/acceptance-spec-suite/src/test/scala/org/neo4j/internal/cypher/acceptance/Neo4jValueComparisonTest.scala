@@ -129,15 +129,17 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
         if (compiledL2R != interpretedL2R) fail(s"compiled[$compiledL2R] = interpreted[$interpretedL2R]")
 
         if (l != null && r != null) {
-          val propertyL2R = Values.of(l).equals(Values.of(r))
-          val propertyR2L = Values.of(r).equals(Values.of(l))
+          val lValue = Values.of(l)
+          val rValue = Values.of(r)
+          val propertyL2R = lValue.equals(rValue)
+          val propertyR2L = rValue.equals(lValue)
           if (propertyL2R != propertyR2L) fail(s"property (l = r)[$propertyL2R] = (r = l)[$propertyR2L]")
           if (propertyL2R != interpretedL2R) fail(s"property[$propertyL2R] = interpreted[$interpretedL2R]")
 
           if (propertyL2R && notKnownLuceneBug(l,r)) {
-            val value1 = LuceneDocumentStructure.encodeValueField(l).stringValue()
-            val value2 = LuceneDocumentStructure.encodeValueField(r).stringValue()
-            val index = value1.equals(value2)
+            val lString = LuceneDocumentStructure.encodeValueField(lValue).stringValue()
+            val rString = LuceneDocumentStructure.encodeValueField(rValue).stringValue()
+            val index = lString.equals(rString)
 
             if (!index)
               fail(s"if property comparison yields true ($propertyL2R), the index string comparison must also yield true ($index)")

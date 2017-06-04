@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -166,7 +167,7 @@ public class AccessUniqueDatabaseIndexTest
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
     {
         return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ),
-                propertyValue );
+                Values.stringValue( propertyValue ) );
     }
 
     private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate> updates )

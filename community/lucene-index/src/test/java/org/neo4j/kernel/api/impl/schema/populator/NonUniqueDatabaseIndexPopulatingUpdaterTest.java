@@ -25,9 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
@@ -43,6 +41,7 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newTermForChangeOrRemove;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
@@ -222,11 +221,10 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        String expectedString1 = LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "foo" ).toString();
-        String expectedString2 = LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "bar" ).toString();
-        String expectedString3 = LuceneDocumentStructure.documentRepresentingProperties( (long) 3, "qux" ).toString();
-        String expectedString4 = LuceneDocumentStructure.documentRepresentingProperties( (long) 4, "git", "bit" )
-                .toString();
+        String expectedString1 = documentRepresentingProperties( (long) 1, "foo" ).toString();
+        String expectedString2 = documentRepresentingProperties( (long) 2, "bar" ).toString();
+        String expectedString3 = documentRepresentingProperties( (long) 3, "qux" ).toString();
+        String expectedString4 = documentRepresentingProperties( (long) 4, "git", "bit" ).toString();
 
         updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
         verifydocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );
@@ -247,12 +245,9 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        String expectedString1 = LuceneDocumentStructure.documentRepresentingProperties( (long) 1, "after1" )
-                .toString();
-        String expectedString2 = LuceneDocumentStructure.documentRepresentingProperties( (long) 2, "after2" )
-                .toString();
-        String expectedString3 = LuceneDocumentStructure.documentRepresentingProperties( (long) 3, "bit", "after2" )
-                .toString();
+        String expectedString1 = documentRepresentingProperties( (long) 1, "after1" ).toString();
+        String expectedString2 = documentRepresentingProperties( (long) 2, "after2" ).toString();
+        String expectedString3 = documentRepresentingProperties( (long) 3, "bit", "after2" ).toString();
 
         updater.process( change( 1, SCHEMA_DESCRIPTOR, "before1", "after1" ) );
         verifydocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );

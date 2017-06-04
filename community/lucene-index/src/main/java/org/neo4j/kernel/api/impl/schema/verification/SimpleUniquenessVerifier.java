@@ -25,7 +25,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 
@@ -36,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.Value;
 
 /**
  * A {@link UniquenessVerifier} that is able to verify value uniqueness inside a single index partition using
@@ -98,16 +98,16 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     }
 
     @Override
-    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
+    public void verify( PropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
             throws IndexEntryConflictException, IOException
     {
         try
         {
             DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
-            for ( Object propertyValue : updatedPropertyValues )
+            for ( Value[] valueTuple : updatedValueTuples )
             {
                 collector.reset();
-                Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
+                Query query = LuceneDocumentStructure.newSeekQuery( valueTuple );
                 indexSearcher().search( query, collector );
             }
         }

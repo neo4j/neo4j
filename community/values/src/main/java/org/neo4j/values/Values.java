@@ -20,7 +20,10 @@
 package org.neo4j.values;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Comparator;
+
+import static java.lang.String.format;
 
 /**
  * Entry point to the values library.
@@ -70,6 +73,11 @@ public class Values
         return value instanceof NumberValue;
     }
 
+    public static boolean isBooleanValue( Object value )
+    {
+        return value instanceof BooleanValue;
+    }
+
     public static boolean isTextValue( Object value )
     {
         return value instanceof TextValue;
@@ -78,6 +86,19 @@ public class Values
     public static boolean isArrayValue( Value value )
     {
         return value instanceof ArrayValue;
+    }
+
+    public static double coerceToDouble( Value value )
+    {
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue)value).longValue();
+        }
+        if ( value instanceof FloatingPointValue )
+        {
+            return ((FloatingPointValue)value).doubleValue();
+        }
+        throw new UnsupportedOperationException( format( "Cannot coerce %s to double", value ) );
     }
 
     // DIRECT FACTORY METHODS
@@ -268,7 +289,7 @@ public class Values
      * Generic value factory method.
      *
      * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
-     * make testing convenient. Passing a Value and in parameter should never be needed, and will throw an
+     * make testing convenient. Passing a Value as in parameter should never be needed, and will throw an
      * UnsupportedOperationException.
      *
      * This method does defensive copying of arrays, while the explicit *Array() factory methods do not.
@@ -362,7 +383,19 @@ public class Values
 
         // otherwise fail
         throw new IllegalArgumentException(
-                    String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+                    format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+    }
+
+    /**
+     * Generic value factory method.
+     *
+     * Converts an array of object values to the internal Value type. See {@Values.of}.
+     */
+    public static Value[] values( Object[] objects )
+    {
+        return Arrays.stream( objects )
+                        .map( Values::of )
+                        .toArray( Value[]::new );
     }
 
     @Deprecated
@@ -420,7 +453,7 @@ public class Values
             return shortArray( copy( value, new short[value.length] ) );
         }
         throw new IllegalArgumentException(
-                String.format( "%s[] is not a supported property value type",
+                format( "%s[] is not a supported property value type",
                                value.getClass().getComponentType().getName() ) );
     }
 

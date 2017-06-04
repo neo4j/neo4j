@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.values.Value;
-import org.neo4j.values.Values;
 
 public class TestPropertyAccessor implements PropertyAccessor
 {
@@ -37,6 +36,6 @@ public class TestPropertyAccessor implements PropertyAccessor
     @Override
     public Value getPropertyValue( long nodeId, int propertyKeyId )
     {
-        return Values.of( propertyValues.get( (int)nodeId ) );
+        return propertyValues.get( (int)nodeId );
     }
 }

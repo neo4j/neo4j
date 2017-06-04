@@ -94,7 +94,7 @@ public class SimpleIndexReader implements IndexReader
         switch ( predicate.type() )
         {
         case exact:
-            Object[] values = new Object[predicates.length];
+            Value[] values = new Value[predicates.length];
             for ( int i = 0; i < predicates.length; i++ )
             {
                 assert predicates[i].type() == exact :
@@ -143,7 +143,7 @@ public class SimpleIndexReader implements IndexReader
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";
     }
 
-    private PrimitiveLongIterator seek( Object... values )
+    private PrimitiveLongIterator seek( Value... values )
     {
         return query( LuceneDocumentStructure.newSeekQuery( values ) );
     }
