@@ -88,6 +88,13 @@ abstract class CharArray extends TextArray
         return value().clone();
     }
 
+    @Override
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return value();
+    }
+
     static final class Direct extends CharArray
     {
         final char[] value;

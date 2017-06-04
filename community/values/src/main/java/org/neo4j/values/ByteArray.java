@@ -105,6 +105,13 @@ abstract class ByteArray extends IntegralArray
         return value().clone();
     }
 
+    @Override
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return value();
+    }
+
     static final class Direct extends ByteArray
     {
         final byte[] value;

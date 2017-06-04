@@ -105,6 +105,13 @@ abstract class DoubleArray extends FloatingPointArray
         return value().clone();
     }
 
+    @Override
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return value();
+    }
+
     static final class Direct extends DoubleArray
     {
         final double[] value;

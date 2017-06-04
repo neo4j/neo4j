@@ -160,7 +160,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 if ( propertyKeysToInclude.get().contains( name ) )
                 {
                     ensureIndexExists( ops );
-                    type.add( ops, entityId, name, value.asPublic() );
+                    type.add( ops, entityId, name, value.asLegacyObject() );
                 }
             }
             catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException e )
@@ -189,8 +189,8 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                 if ( propertyKeysToInclude.get().contains( name ) )
                 {
                     ensureIndexExists( ops );
-                    type.remove( ops, entityId, name, oldValue.asPublic() );
-                    type.add( ops, entityId, name, newValue.asPublic() );
+                    type.remove( ops, entityId, name, oldValue.asLegacyObject() );
+                    type.add( ops, entityId, name, newValue.asLegacyObject() );
                 }
             }
             catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException e )

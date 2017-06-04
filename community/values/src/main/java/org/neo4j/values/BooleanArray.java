@@ -122,6 +122,13 @@ abstract class BooleanArray extends ArrayValue
         return value().clone();
     }
 
+    @Override
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return value();
+    }
+
     public int compareTo( BooleanArray other )
     {
         return NumberValues.compareBooleanArrays( this, other );

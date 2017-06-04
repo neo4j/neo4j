@@ -105,6 +105,13 @@ abstract class IntArray extends IntegralArray
         return value().clone();
     }
 
+    @Override
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return value();
+    }
+
     static final class Direct extends IntArray
     {
         final int[] value;

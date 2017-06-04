@@ -215,7 +215,7 @@ public final class ArrayEncoder
             case DOUBLE: return 'D';
             case CHAR: return 'L';
             case STRING: return 'L';
-            default: throw new UnsupportedOperationException( "Not supported array type: "+arrayType );
+            default: throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
             }
         }
     }

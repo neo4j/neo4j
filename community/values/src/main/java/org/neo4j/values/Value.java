@@ -55,8 +55,20 @@ public abstract class Value
 
     public abstract void writeTo( ValueWriter writer );
 
+    /**
+     * Return this value as a regular java boxed primitive, String or primitive array. This method performs defensive
+     * copying when needed, so the returned value is safe to modify.
+     *
+     * @return the object version of the current value
+     */
     public abstract Object asPublic();
 
+    /**
+     * Return this value as a regular java boxed primitive, String or primitive array. This method does not clone
+     * primitive arrays.
+     *
+     * @return the object version of the current value
+     */
     @Deprecated
     public Object asLegacyObject()
     {

@@ -111,7 +111,7 @@ public enum ResourceTypes implements ResourceType
     {
         if ( null != Values.NO_VALUE )
         {
-            return Strings.prettyPrint( value.asPublic() );
+            return Strings.prettyPrint( value.asLegacyObject() );
         }
         return "";
     }

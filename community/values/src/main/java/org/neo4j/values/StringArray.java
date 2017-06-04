@@ -81,6 +81,13 @@ abstract class StringArray extends TextArray
         return value().clone();
     }
 
+    @Override
+    @Deprecated
+    public Object asLegacyObject()
+    {
+        return value();
+    }
+
     public int compareTo( TextArray other )
     {
         return TextValues.compareTextArrays( this, other );
