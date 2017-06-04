@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.test.rule.TestDirectory;
 
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
@@ -76,6 +77,7 @@ public class RandomPageCacheTestHarness
     private Phase preparation;
     private Phase verification;
     private RecordFormat recordFormat;
+    private File baseDirectory;
 
     public RandomPageCacheTestHarness()
     {
@@ -285,6 +287,7 @@ public class RandomPageCacheTestHarness
         out.println( "failureRate = " + failureRate );
         out.println( "errorRate = " + errorRate );
         out.println( "Command probability factors:" );
+        out.println( "baseDirectory = " + baseDirectory );
         Command[] commands = Command.values();
         for ( int i = 0; i < commands.length; i++ )
         {
@@ -330,6 +333,7 @@ public class RandomPageCacheTestHarness
             {
                 runIteration( iterationTimeout, unit );
             }
+            fs.deleteRecursively( baseDirectory );
         }
         catch ( Exception e )
         {
@@ -445,11 +449,15 @@ public class RandomPageCacheTestHarness
 
     private File[] buildFileNames() throws IOException
     {
+        String base = Math.abs( ThreadLocalRandom.current().nextLong() ) + "";
+        TestDirectory testDirectory = TestDirectory.testDirectory( RandomPageCacheTestHarness.class, fs );
+        baseDirectory = testDirectory.cleanDirectory( base );
         String s = "abcdefghijklmnopqrstuvwxyz";
+
         File[] files = new File[s.length()];
         for ( int i = 0; i < s.length(); i++ )
         {
-            files[i] = new File( s.substring( i, i+1 ) ).getCanonicalFile();
+            files[i] = new File( baseDirectory, s.substring( i, i+1 ) ).getCanonicalFile();
             fs.mkdirs( files[i].getParentFile()  );
             fs.open( files[i], "rw" ).close();
         }
