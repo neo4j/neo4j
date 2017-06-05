@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.frontend.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 
 object SemanticChecker {
-  def check(statement: Statement, mkException: (String, InputPosition) => CypherException): SemanticState = {
+  def check(statement: Statement, onError: Seq[SemanticError] => Unit): SemanticState = {
 
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
 
@@ -30,7 +30,7 @@ object SemanticChecker {
     if (scopeTreeIssues.nonEmpty)
       throw new InternalException(scopeTreeIssues.mkString(s"\n"))
 
-    semanticErrors.map { error => throw mkException(error.msg, error.position) }
+    onError(semanticErrors)
 
     semanticState
   }

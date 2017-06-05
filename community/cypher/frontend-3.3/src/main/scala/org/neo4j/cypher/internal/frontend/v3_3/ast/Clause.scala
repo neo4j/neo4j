@@ -65,6 +65,24 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
   }
 }
 
+case class LoadGraph(graphUrl: Expression)(val position: InputPosition) extends Clause with SemanticChecking {
+  override def name = "LOAD GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    graphUrl.semanticCheck(Expression.SemanticContext.Simple) chain
+      graphUrl.expectType(CTString.covariant) chain
+      SemanticError("LOAD GRAPH is not supported by Neo4j", position)
+}
+
+case class EmitGraph(graphName: Expression)(val position: InputPosition) extends Clause with SemanticChecking {
+  override def name = "EMIT GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    graphName.semanticCheck(Expression.SemanticContext.Simple) chain
+      graphName.expectType(CTString.covariant) chain
+      SemanticError("EMIT GRAPH is not supported by Neo4j", position)
+}
+
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   override def name = "START"
 
