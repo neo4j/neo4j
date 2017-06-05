@@ -23,9 +23,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -34,11 +31,10 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.kernel.impl.index.schema.FullScanNonUniqueIndexSamplerTest.countUniqueValues;
+import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
 public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
@@ -117,15 +113,9 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
 
         // THEN
         assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( countUniqueValuesAmongUpdates( updates ), sample.uniqueValues() );
+        assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
         assertEquals( updates.length, sample.indexSize() );
         populator.close( true );
-    }
-
-    private long countUniqueValuesAmongUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
-    {
-        return Stream.of( updates ).map( update -> ((Number) update.values()[0]).doubleValue() )
-                .collect( Collectors.toSet() ).size();
     }
 
     @Test
@@ -153,7 +143,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
 
         // THEN
         assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( countUniqueValues( asList( updates ) ), sample.uniqueValues() );
+        assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
         assertEquals( updates.length, sample.indexSize() );
         populator.close( true );
     }

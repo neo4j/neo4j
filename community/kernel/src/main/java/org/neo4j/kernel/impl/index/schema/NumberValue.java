@@ -22,62 +22,28 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.Value;
 
-import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.toValue;
-
 /**
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
- * Contains actual number for internal filtering after accidental query hits due to double value coersion.
+ *
+ * NOTE:  For the time being no data exists in {@link NumberValue}, but since the layout is under development
+ * it's very convenient to have this class still exist so that it's very easy to try out different types
+ * of layouts without changing the entire stack of arguments. In the end it may just be that this class
+ * will be deleted, but for now it sticks around.
  */
 class NumberValue
 {
-    static final int SIZE =
-            Byte.SIZE + /* type */
-            Long.SIZE;  /* value bits */
+    static final int SIZE = 0;
 
-    static final byte LONG = 0;
-    static final byte FLOAT = 1;
-    static final byte DOUBLE = 2;
-
-    byte type;
-    long rawValueBits;
+    static final NumberValue INSTANCE = new NumberValue();
 
     void from( Value[] values )
     {
-        extractValue( NumberValueConversion.assertValidSingleNumber( values ) );
-    }
-
-    byte type()
-    {
-        return type;
-    }
-
-    long rawValueBits()
-    {
-        return rawValueBits;
-    }
-
-    private void extractValue( Number value )
-    {
-        if ( value instanceof Double )
-        {
-            type = DOUBLE;
-            rawValueBits = Double.doubleToLongBits( (Double) value );
-        }
-        else if ( value instanceof Float )
-        {
-            type = FLOAT;
-            rawValueBits = Float.floatToIntBits( (Float) value );
-        }
-        else
-        {
-            type = LONG;
-            rawValueBits = value.longValue();
-        }
+        // not needed a.t.m.
     }
 
     @Override
     public String toString()
     {
-        return "type=" + type + ",rawValue=" + rawValueBits + ",value=" + toValue( type, rawValueBits );
+        return "[no value]";
     }
 }

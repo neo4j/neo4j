@@ -32,16 +32,16 @@ class UniqueNumberLayout extends NumberLayout
     public long identifier()
     {
         // todo Is Number.Value.SIZE a good checksum?
-        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberValue.SIZE );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberKey.SIZE );
     }
 
     @Override
     public int compare( NumberKey o1, NumberKey o2 )
     {
-        int comparison = Double.compare( o1.value, o2.value );
+        int comparison = o1.compareValueTo( o2 );
         if ( comparison == 0 )
         {
-            // This is a special case where we need also compare entityId support inclusive/exclusive
+            // This is a special case where we need also compare entityId to support inclusive/exclusive
             if ( o1.entityIdIsSpecialTieBreaker || o2.entityIdIsSpecialTieBreaker )
             {
                 return Long.compare( o1.entityId, o2.entityId );

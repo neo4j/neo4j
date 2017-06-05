@@ -80,8 +80,6 @@ public class ConflictDetectingValueMergerTest
 
     private static NumberValue value( Object value )
     {
-        NumberValue result = new NumberValue();
-        result.from( new Object[] {value} );
-        return result;
+        return NumberValue.INSTANCE;
     }
 }

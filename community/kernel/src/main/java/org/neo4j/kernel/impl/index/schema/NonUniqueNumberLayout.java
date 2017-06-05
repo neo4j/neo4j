@@ -35,7 +35,7 @@ public class NonUniqueNumberLayout extends NumberLayout
     @Override
     public int compare( NumberKey o1, NumberKey o2 )
     {
-        int compare = Double.compare( o1.value, o2.value );
-        return compare != 0 ? compare : Long.compare( o1.entityId, o2.entityId );
+        int comparison = o1.compareValueTo( o2 );
+        return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );
     }
 }

@@ -37,7 +37,8 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     public NumberKey copyKey( NumberKey key,
             NumberKey into )
     {
-        into.value = key.value;
+        into.type = key.type;
+        into.rawValueBits = key.rawValueBits;
         into.entityId = key.entityId;
         into.entityIdIsSpecialTieBreaker = key.entityIdIsSpecialTieBreaker;
         return into;
@@ -46,7 +47,7 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     @Override
     public NumberValue newValue()
     {
-        return new NumberValue();
+        return NumberValue.INSTANCE;
     }
 
     @Override
@@ -64,29 +65,27 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     @Override
     public void writeKey( PageCursor cursor, NumberKey key )
     {
-        cursor.putLong( Double.doubleToRawLongBits( key.value ) );
+        cursor.putByte( key.type );
+        cursor.putLong( key.rawValueBits );
         cursor.putLong( key.entityId );
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NumberValue key )
+    public void writeValue( PageCursor cursor, NumberValue value )
     {
-        cursor.putByte( key.type );
-        cursor.putLong( key.rawValueBits );
     }
 
     @Override
     public void readKey( PageCursor cursor, NumberKey into )
     {
-        into.value = Double.longBitsToDouble( cursor.getLong() );
+        into.type = cursor.getByte();
+        into.rawValueBits = cursor.getLong();
         into.entityId = cursor.getLong();
     }
 
     @Override
     public void readValue( PageCursor cursor, NumberValue into )
     {
-        into.type = cursor.getByte();
-        into.rawValueBits = cursor.getLong();
     }
 
     @Override

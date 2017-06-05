@@ -62,6 +62,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMME
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
 /**
  * Tests for
@@ -649,12 +650,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         assertEquals( expectedIds, ids );
     }
 
-    private int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )
-    {
-        return Stream.of( updates ).map( update -> ((Number) update.values()[0]).doubleValue() )
-                .collect( Collectors.toSet() ).size();
-    }
-
     private static Predicate<Object> lessThan( Double value )
     {
         return t -> ((Number)t).doubleValue() < value;
@@ -767,7 +762,10 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     {
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
-            processAll( updater, updates );
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            {
+                updater.process( update );
+            }
         }
     }
 

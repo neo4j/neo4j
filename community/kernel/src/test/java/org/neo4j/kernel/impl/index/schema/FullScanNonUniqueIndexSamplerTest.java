@@ -22,14 +22,12 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -47,7 +45,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulatorTest.someDuplicateIndexEntryUpdates;
+import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.values.Values.values;
 
 public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil<NumberKey,NumberValue>
@@ -56,7 +54,7 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
     public void shouldIncludeAllValuesInTree() throws Exception
     {
         // GIVEN
-        List<Number> values = generateNumberValues();
+        Number[] values = generateNumberValues();
         buildTree( values );
 
         // WHEN
@@ -70,27 +68,23 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
         }
 
         // THEN
-        assertEquals( values.size(), sample.sampleSize() );
+        assertEquals( values.length, sample.sampleSize() );
         assertEquals( countUniqueValues( values ), sample.uniqueValues() );
-        assertEquals( values.size(), sample.indexSize() );
+        assertEquals( values.length, sample.indexSize() );
     }
 
-    static int countUniqueValues( List<Number> values )
+    private Number[] generateNumberValues()
     {
-        return values.stream().map( Number::doubleValue ).collect( Collectors.toSet() ).size();
-    }
-
-    private List<Number> generateNumberValues()
-    {
-        List<Number> result = new ArrayList<>();
-        for ( IndexEntryUpdate<?> update : layoutUtil.someUpdates() )
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        Number[] result = new Number[updates.length];
+        for ( int i = 0; i < updates.length; i++ )
         {
-            result.add( (Number) update.values()[0].asObject() );
+            result[i] = (Number) updates[i].values()[0].asObject();
         }
         return result;
     }
 
-    private void buildTree( List<Number> values ) throws IOException
+    private void buildTree( Number[] values ) throws IOException
     {
         try ( GBPTree<NumberKey,NumberValue> gbpTree = getTree() )
         {

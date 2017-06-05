@@ -52,18 +52,11 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
         return new UniqueLayoutTestUtil();
     }
 
-    @Override
-    protected int compareValue( NumberValue value1, NumberValue value2 )
-    {
-        return layoutUtil.compareIndexedPropertyValue( value1, value2 );
-    }
-
     @Test
     public void addShouldThrowOnDuplicateValues() throws Exception
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
@@ -85,7 +78,6 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
@@ -110,7 +102,6 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
         // GIVEN
         populator.create();
         populator.configureSampling( true ); // has no effect, really
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN

@@ -90,11 +90,6 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
         layoutUtil.copyValue( value, intoValue );
     }
 
-    protected int compareValue( VALUE value1, VALUE value2 )
-    {
-        return layoutUtil.compareValue( value1, value2 );
-    }
-
     void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException
     {
@@ -114,7 +109,7 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE exte
             int keyCompare = layout.compare( h1.key(), h2.key() );
             if ( keyCompare == 0 )
             {
-                return compareValue( h1.value(), h2.value() );
+                return layoutUtil.compareIndexedPropertyValue( h1.key(), h2.key() );
             }
             else
             {

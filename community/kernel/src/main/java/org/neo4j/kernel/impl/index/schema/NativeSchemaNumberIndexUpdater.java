@@ -104,7 +104,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
     }
 
     private static <KEY extends NumberKey, VALUE extends NumberValue> void processRemove( KEY treeKey,
-            IndexEntryUpdate update, Writer<KEY,VALUE> writer ) throws IOException
+            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer ) throws IOException
     {
         // todo Do we need to verify that we actually removed something at all?
         // todo Difference between online and recovery?
@@ -113,7 +113,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
     }
 
     private static <KEY extends NumberKey, VALUE extends NumberValue> void processChange( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate update, Writer<KEY,VALUE> writer,
+            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
@@ -128,7 +128,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
     }
 
     static <KEY extends NumberKey, VALUE extends NumberValue> void processAdd( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate update, Writer<KEY,VALUE> writer,
+            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
@@ -138,7 +138,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends NumberKey, VALUE extends Number
         assertNoConflict( update, conflictDetectingValueMerger );
     }
 
-    private static <KEY extends NumberKey, VALUE extends NumberValue> void assertNoConflict( IndexEntryUpdate update,
+    private static <KEY extends NumberKey, VALUE extends NumberValue> void assertNoConflict( IndexEntryUpdate<?> update,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger ) throws IndexEntryConflictException
     {
         if ( conflictDetectingValueMerger.wasConflict() )

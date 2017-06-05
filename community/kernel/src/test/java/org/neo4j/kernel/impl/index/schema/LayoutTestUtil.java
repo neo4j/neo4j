@@ -26,6 +26,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.Layout;
@@ -33,10 +35,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.Values;
-
-import static org.neo4j.kernel.impl.index.schema.NumberValue.DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.NumberValue.FLOAT;
-import static org.neo4j.kernel.impl.index.schema.NumberValue.LONG;
 
 abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
 {
@@ -60,37 +58,14 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
 
     void copyValue( VALUE value, VALUE intoValue )
     {
-        intoValue.type = value.type;
-        intoValue.rawValueBits = value.rawValueBits;
     }
 
-    int compareValue( VALUE value1, VALUE value2 )
+    int compareIndexedPropertyValue( NumberKey key1, NumberKey key2 )
     {
-        return compareIndexedPropertyValue( value1, value2 );
-    }
-
-    int compareIndexedPropertyValue( NumberValue value1, NumberValue value2 )
-    {
-        int typeCompare = Byte.compare( value1.type(), value2.type() );
+        int typeCompare = Byte.compare( key1.type, key2.type );
         if ( typeCompare == 0 )
         {
-            switch ( value1.type() )
-            {
-            case LONG:
-                return Long.compare( value1.rawValueBits(), value2.rawValueBits() );
-            case FLOAT:
-                return Float.compare(
-                        Float.intBitsToFloat( (int) value1.rawValueBits() ),
-                        Float.intBitsToFloat( (int) value2.rawValueBits() ) );
-            case DOUBLE:
-                return Double.compare(
-                        Double.longBitsToDouble( value1.rawValueBits() ),
-                        Double.longBitsToDouble( value2.rawValueBits() ) );
-            default:
-                throw new IllegalArgumentException(
-                        "Expected type to be LONG, FLOAT or DOUBLE (" + LONG + "," + FLOAT + "," + DOUBLE +
-                                "). But was " + value1.type() );
-            }
+            return Long.compare( key1.rawValueBits, key2.rawValueBits );
         }
         return typeCompare;
     }
@@ -179,11 +154,24 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
                     -Double.MAX_VALUE,
                     Double.POSITIVE_INFINITY,
                     Double.NEGATIVE_INFINITY,
-                    0
+                    0,
+                    // These two values below coerce to the same double
+                    1234567890123456788L,
+                    1234567890123456789L
             };
 
     protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
     {
         return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
+    }
+
+    static int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        return Stream.of( updates ).map( update -> update.values()[0] ).collect( Collectors.toSet() ).size();
+    }
+
+    static int countUniqueValues( Number[] updates )
+    {
+        return Stream.of( updates ).collect( Collectors.toSet() ).size();
     }
 }
