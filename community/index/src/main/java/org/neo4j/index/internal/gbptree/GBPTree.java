@@ -24,6 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -200,7 +201,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    static final Header.Reader NO_HEADER = ( cursor, length ) ->
+    public static final Header.Reader NO_HEADER = headerData ->
     {
     };
 
@@ -402,7 +403,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             {
                 close();
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
                 t.addSuppressed( e );
             }
@@ -491,13 +492,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
         {
             PageCursorUtil.goTo( cursor, "header data", state.pageId() );
-            do
-            {
-                TreeState.read( cursor );
-                int length = cursor.getInt();
-                headerReader.read( cursor, length );
-            }
-            while ( cursor.shouldRetry() );
+            readHeader( headerReader, cursor );
         }
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
         setRoot( state.rootId(), state.rootGeneration() );
@@ -509,6 +504,28 @@ public class GBPTree<KEY,VALUE> implements Closeable
         int freeListReadPos = state.freeListReadPos();
         freeList.initialize( lastId, freeListWritePageId, freeListReadPageId, freeListWritePos, freeListReadPos );
         clean = state.isClean();
+    }
+
+    private static void readHeader( Header.Reader headerReader, PageCursor cursor ) throws IOException
+    {
+        int headerDataLength;
+        do
+        {
+            TreeState.read( cursor );
+            headerDataLength = cursor.getInt();
+        }
+        while ( cursor.shouldRetry() );
+
+        int headerDataOffset = cursor.getOffset();
+        byte[] headerDataBytes = new byte[headerDataLength];
+        do
+        {
+            cursor.setOffset( headerDataOffset );
+            cursor.getBytes( headerDataBytes );
+        }
+        while ( cursor.shouldRetry() );
+
+        headerReader.read( ByteBuffer.wrap( headerDataBytes ) );
     }
 
     private void writeState( PagedFile pagedFile, Header.Writer headerWriter ) throws IOException
@@ -936,7 +953,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     // Utility method
-    void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
+    /**
+     * Prints the contents of the tree to System.out.
+     *
+     * @param printValues whether or not to print values in the leaf nodes.
+     * @param printPosition whether or not to print position for each key.
+     * @param printState whether or not to print the tree state.
+     * @throws IOException on I/O error.
+     */
+    public void printTree( boolean printValues, boolean printPosition, boolean printState ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {

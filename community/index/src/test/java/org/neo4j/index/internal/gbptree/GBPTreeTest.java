@@ -577,10 +577,10 @@ public class GBPTreeTest
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
         AtomicInteger length = new AtomicInteger();
-        Header.Reader headerReader = ( cursor, len ) ->
+        Header.Reader headerReader = headerData ->
         {
-            length.set( len );
-            cursor.getBytes( readHeader );
+            length.set( headerData.limit() );
+            headerData.get( readHeader );
         };
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( headerReader ).build() )
         {   // open/close is enough to read header

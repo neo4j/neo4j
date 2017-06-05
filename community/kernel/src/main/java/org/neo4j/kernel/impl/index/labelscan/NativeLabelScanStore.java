@@ -26,19 +26,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 import java.util.function.Consumer;
-import java.util.Optional;
 import java.util.function.IntFunction;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
-import org.neo4j.io.fs.FileHandle;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -46,6 +44,7 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.index.GBPTreeUtil;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -337,19 +336,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public boolean hasStore() throws IOException
     {
-        try
-        {
-            return storeFileHandle().isPresent();
-        }
-        catch ( NoSuchFileException e )
-        {
-            return false;
-        }
-    }
-
-    private Optional<FileHandle> storeFileHandle() throws IOException
-    {
-        return  pageCache.getCachedFileSystem().streamFilesRecursive( storeFile ).findFirst() ;
+        return GBPTreeUtil.storeFileExists( pageCache, storeFile );
     }
 
     /**
@@ -361,7 +348,7 @@ public class NativeLabelScanStore implements LabelScanStore
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class, NATIVE_LABEL_INDEX_TAG );
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
-                ( pageCursor, length ) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
+                headerData -> isRebuilding.setValue( headerData.get() == REBUILDING );
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
                 recoveryCleanupWorkCollector );
         return isRebuilding.getValue();
@@ -403,11 +390,7 @@ public class NativeLabelScanStore implements LabelScanStore
             index.close();
             index = null;
         }
-        Optional<FileHandle> fileHandle = storeFileHandle();
-        if ( fileHandle.isPresent() )
-        {
-            fileHandle.get().delete();
-        }
+        GBPTreeUtil.delete( pageCache, storeFile );
     }
 
     /**

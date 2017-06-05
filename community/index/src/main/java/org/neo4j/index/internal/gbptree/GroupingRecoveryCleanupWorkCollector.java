@@ -36,6 +36,9 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
 
+    /**
+     * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
+     */
     public GroupingRecoveryCleanupWorkCollector( JobScheduler jobScheduler )
     {
         this.jobScheduler = jobScheduler;

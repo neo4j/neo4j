@@ -177,6 +177,11 @@ public class RandomRule implements TestRule
         return randoms.among( among );
     }
 
+    public Number numberPropertyValue()
+    {
+        return randoms.numberPropertyValue();
+    }
+
     public Object propertyValue()
     {
         return randoms.propertyValue();

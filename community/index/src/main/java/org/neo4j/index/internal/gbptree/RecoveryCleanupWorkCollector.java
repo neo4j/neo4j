@@ -45,6 +45,10 @@ public interface RecoveryCleanupWorkCollector extends Lifecycle
      */
     RecoveryCleanupWorkCollector IMMEDIATE = new ImmediateRecoveryCleanupWorkCollector();
 
+    /**
+     * {@link RecoveryCleanupWorkCollector} which runs added {@link CleanupJob} as part of the {@link #add(CleanupJob)}
+     * call in the caller thread.
+     */
     class ImmediateRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
     {
         @Override
