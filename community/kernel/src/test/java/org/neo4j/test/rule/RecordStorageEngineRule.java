@@ -34,6 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -116,7 +117,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider(), pageCache, fs,
                 NullLogProvider.getInstance(),
                 mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
-                mock( RelationshipTypeTokenHolder.class ), Runnables.EMPTY_RUNNABLE, new StandardConstraintSemantics(),
+                mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
@@ -200,7 +201,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 IdTypeConfigurationProvider idTypeConfigurationProvider,
                 PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
                 PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
-                RelationshipTypeTokenHolder relationshipTypeTokens, Runnable schemaStateChangeCallback,
+                RelationshipTypeTokenHolder relationshipTypeTokens, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler,
                 TokenNameLookup tokenNameLookup, LockService lockService,
                 SchemaIndexProvider indexProvider,
@@ -214,7 +215,7 @@ public class RecordStorageEngineRule extends ExternalResource
         {
             super( storeDir, config, idGeneratorFactory, eligibleForReuse, idTypeConfigurationProvider,
                     pageCache, fs, logProvider, propertyKeyTokenHolder,
-                    labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
+                    labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
                     tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, databaseHealth,
                     labelScanStoreProvider,
                     legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,

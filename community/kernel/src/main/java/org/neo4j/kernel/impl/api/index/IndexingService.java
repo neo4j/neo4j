@@ -51,17 +51,18 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -101,7 +102,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final Monitor monitor;
     private final PrimitiveLongSet recoveredNodeIds = Primitive.longSet( 20 );
     private final JobScheduler scheduler;
-    private final Runnable schemaStateChangeCallback;
+    private final SchemaState schemaState;
 
     enum State
     {
@@ -172,7 +173,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
-            Runnable schemaStateChangeCallback,
+            SchemaState schemaState,
             MultiPopulatorFactory multiPopulatorFactory,
             LogProvider logProvider,
             Monitor monitor )
@@ -185,7 +186,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
         this.scheduler = scheduler;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.schemaState = schemaState;
         this.multiPopulatorFactory = multiPopulatorFactory;
         this.logProvider = logProvider;
         this.monitor = monitor;
@@ -739,7 +740,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private IndexPopulationJob newIndexPopulationJob()
     {
         MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider );
-        return new IndexPopulationJob( storeView, multiPopulator, monitor, schemaStateChangeCallback );
+        return new IndexPopulationJob( multiPopulator, monitor, schemaState );
     }
 
     private void startIndexPopulation( IndexPopulationJob job )

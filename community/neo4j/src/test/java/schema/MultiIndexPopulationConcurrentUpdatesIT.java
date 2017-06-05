@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
@@ -246,7 +247,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
             indexService = IndexingServiceFactory.createIndexingService( Config.empty(), scheduler,
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
-                    NullLogProvider.getInstance(), IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE );
+                    NullLogProvider.getInstance(), IndexingService.NO_MONITOR, getSchemaState() );
             indexService.start();
 
             IndexRule[] rules = createIndexRules( labelNameIdMap, propertyId );
@@ -369,19 +370,24 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return recordStorageEngine.testAccessNeoStores();
     }
 
+    private SchemaState getSchemaState()
+    {
+        return embeddedDatabase.resolveDependency( SchemaState.class );
+    }
+
     private ThreadToStatementContextBridge getTransactionStatementContextBridge()
     {
-        return embeddedDatabase.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        return embeddedDatabase.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     private SchemaIndexProvider getSchemaIndexProvider()
     {
-        return embeddedDatabase.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
+        return embeddedDatabase.resolveDependency( SchemaIndexProvider.class );
     }
 
     private JobScheduler getJobScheduler()
     {
-        return embeddedDatabase.getDependencyResolver().resolveDependency( JobScheduler.class );
+        return embeddedDatabase.resolveDependency( JobScheduler.class );
     }
 
     private class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView

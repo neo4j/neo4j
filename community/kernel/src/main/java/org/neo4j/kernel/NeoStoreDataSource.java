@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
@@ -136,7 +137,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -158,6 +158,7 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -439,7 +440,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
+                    indexConfigStore, updateableSchemaState, legacyIndexTransactionOrdering );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
@@ -572,7 +573,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            SchemaState schemaState, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
     {
         // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
         // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
@@ -581,7 +582,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 () -> kernelModule.kernelTransactions().get();
         RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
                 eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
+                labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
                 tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
                 transactionSnapshotSupplier );

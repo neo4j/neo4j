@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
@@ -44,21 +45,16 @@ public class IndexPopulationJob implements Runnable
 {
     private final IndexingService.Monitor monitor;
     private final MultipleIndexPopulator multiPopulator;
-    private final IndexStoreView storeView;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
-    private final Runnable schemaStateChangeCallback;
+    private final SchemaState schemaState;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( IndexStoreView storeView,
-                               MultipleIndexPopulator multiPopulator,
-                               IndexingService.Monitor monitor,
-                               Runnable schemaStateChangeCallback )
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, SchemaState schemaState )
     {
         this.multiPopulator = multiPopulator;
-        this.storeView = storeView;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.schemaState = schemaState;
         this.monitor = monitor;
     }
 
@@ -118,7 +114,7 @@ public class IndexPopulationJob implements Runnable
 
                 multiPopulator.flipAfterPopulation();
 
-                schemaStateChangeCallback.run();
+                schemaState.clear();
             }
             catch ( Throwable t )
             {
