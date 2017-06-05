@@ -96,7 +96,7 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
                 for ( Number number : values )
                 {
                     key.from( nodeId, values( number ) );
-                    value.from( nodeId, values( number ) );
+                    value.from( values( number ) );
                     writer.put( key, value );
                     nodeId++;
                 }
