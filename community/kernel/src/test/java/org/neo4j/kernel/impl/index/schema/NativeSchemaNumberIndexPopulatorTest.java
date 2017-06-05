@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -537,13 +538,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends NumberKey
 
     private String longString( int length )
     {
-        String alphabet = "123xyz";
-        StringBuilder outputBuffer = new StringBuilder( length );
-        for ( int i = 0; i < length; i++ )
-        {
-            outputBuffer.append( alphabet.charAt( random.nextInt( alphabet.length() ) ) );
-        }
-        return outputBuffer.toString();
+        return RandomStringUtils.random( length, true, true );
     }
 
     private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,

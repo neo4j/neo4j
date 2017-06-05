@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 /**
@@ -30,14 +32,6 @@ class SamplingUtil
 
     static String encodedStringValuesForSampling( Object... values )
     {
-        StringBuilder sb = new StringBuilder();
-        String sep = "";
-        for ( Object value : values )
-        {
-            sb.append( sep );
-            sep = DELIMITER;
-            sb.append( value.toString() );
-        }
-        return sb.toString();
+        return StringUtils.join( values, DELIMITER );
     }
 }

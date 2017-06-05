@@ -23,9 +23,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -78,16 +77,7 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
 
     static int countUniqueValues( List<Number> values )
     {
-        int count = 0;
-        Set<Double> seenValues = new HashSet<>();
-        for ( Number number : values )
-        {
-            if ( seenValues.add( number.doubleValue() ) )
-            {
-                count++;
-            }
-        }
-        return count;
+        return values.stream().map( Number::doubleValue ).collect( Collectors.toSet() ).size();
     }
 
     private List<Number> generateNumberValues()
@@ -97,7 +87,6 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
         {
             result.add( (Number) update.values()[0].asObject() );
         }
-        // TODO: perhaps some more values?
         return result;
     }
 
@@ -127,6 +116,4 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
     {
         return new NonUniqueLayoutTestUtil();
     }
-
-    // TODO: shouldIncludeHighestAndLowestPossibleNumberValues
 }

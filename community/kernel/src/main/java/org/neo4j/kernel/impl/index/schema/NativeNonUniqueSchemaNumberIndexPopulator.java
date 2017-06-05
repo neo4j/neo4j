@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
@@ -77,7 +78,7 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE ext
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
 
         try
@@ -86,14 +87,16 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE ext
         }
         finally
         {
-            // Start the writer again (TODO may be unnecessary)
+            // Start the writer again (TODO may be unnecessary since this happens after all population is completed,
+            // however would be weird to have this sampling method close the writer and tree and keep them closed.
+            // Time will tell whether or not this could be avoided.
             try
             {
                 instantiateWriter();
             }
             catch ( IOException e )
             {
-                throw new RuntimeException( e );
+                throw new UncheckedIOException( e );
             }
         }
     }

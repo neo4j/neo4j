@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -70,7 +71,7 @@ class FullScanNonUniqueIndexSampler<KEY extends NumberKey, VALUE extends NumberV
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
