@@ -83,6 +83,15 @@ case class EmitGraph(graphName: Expression)(val position: InputPosition) extends
       UnsupportedOpenCypher(name, position)
 }
 
+case class ReturnGraph(graphName: Option[Expression])(val position: InputPosition) extends Clause with SemanticChecking {
+  override def name = "RETURN GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    graphName.semanticCheck(Expression.SemanticContext.Simple) chain
+      graphName.expectType(CTString.covariant) chain
+      UnsupportedOpenCypher(name, position)
+}
+
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   override def name = "START"
 

@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
-class OpenCypherAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("load graph") {
     val query = "LOAD GRAPH 'test' RETURN 1"
@@ -33,6 +33,22 @@ class OpenCypherAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
 
   test("emit graph") {
     val query = "MATCH ()--() EMIT GRAPH 'test' RETURN *"
+
+    a[SyntaxException] shouldBe thrownBy {
+      executeWithAllPlanners(query)
+    }
+  }
+
+  test("return named graph") {
+    val query = "MATCH ()--() RETURN GRAPH 'test'"
+
+    a[SyntaxException] shouldBe thrownBy {
+      executeWithAllPlanners(query)
+    }
+  }
+
+  test("return anonymous graph") {
+    val query = "MATCH ()--() RETURN GRAPH"
 
     a[SyntaxException] shouldBe thrownBy {
       executeWithAllPlanners(query)

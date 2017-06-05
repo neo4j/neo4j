@@ -40,6 +40,20 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("return named graph should generate error") {
+    executeAndEnsureError(
+      "MATCH ()--() RETURN GRAPH 'test'",
+      "The referenced clause RETURN GRAPH is not supported by Neo4j (line 1, column 27 (offset: 26))"
+    )
+  }
+
+  test("return anonymous graph should generate error") {
+    executeAndEnsureError(
+      "MATCH ()--() RETURN GRAPH",
+      "The referenced clause RETURN GRAPH is not supported by Neo4j (line 1, column 26 (offset: 25))"
+    )
+  }
+
   test("return node that's not there") {
     executeAndEnsureError(
       "match (n) where id(n) = 0 return bar",

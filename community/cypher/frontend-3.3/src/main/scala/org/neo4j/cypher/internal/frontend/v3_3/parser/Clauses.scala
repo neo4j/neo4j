@@ -52,6 +52,10 @@ trait Clauses extends Parser
       (ast.EmitGraph(_))
   }
 
+  def ReturnGraph: Rule1[ast.ReturnGraph] = rule("RETURN GRAPH") {
+    keyword("RETURN GRAPH") ~~ optional(Expression) ~~>> (ast.ReturnGraph(_))
+  }
+
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)
