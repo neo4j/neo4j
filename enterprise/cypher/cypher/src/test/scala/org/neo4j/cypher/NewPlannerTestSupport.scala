@@ -319,6 +319,18 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     compiledResult
   }
 
+  def executeWithAllPlannersAndRuntimes(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
+    val compiledSourceCodeResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled debug=generate_java_source $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
+    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
+
+    assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
+    assertResultsAreSame(compiledSourceCodeResult, compiledResult, queryText, "Diverging results between compiled source code mode and current")
+    interpretedResult.close()
+    compiledSourceCodeResult.close()
+    compiledResult
+  }
+
   protected def updateWithCompatibilityAndAssertSimilarPlans(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val compatibility = otherWriteVersion
     val ruleResult = graph.rollback(innerExecute(s"CYPHER $compatibility planner=RULE $queryText", params: _*))

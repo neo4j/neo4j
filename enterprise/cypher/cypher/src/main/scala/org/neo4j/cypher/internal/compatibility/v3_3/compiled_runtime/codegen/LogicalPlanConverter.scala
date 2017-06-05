@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import ExpressionConverter.createExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.aggregation.Distinct
@@ -46,6 +47,9 @@ object LogicalPlanConverter {
     case p: Expand => expandAsCodeGenPlan(p)
     case p: OptionalExpand => optionalExpandAsCodeGenPlan(p)
     case p: NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
+    case p: CartesianProduct if p.findByAllClass[NodeHashJoin].nonEmpty =>
+      throw new CantCompileQueryException(s"This logicalPlan is not yet supported: $logicalPlan")
+
     case p: CartesianProduct => cartesianProductAsCodeGenPlan(p)
     case p: Selection => selectionAsCodeGenPlan(p)
     case p: Top => topAsCodeGenPlan(p)

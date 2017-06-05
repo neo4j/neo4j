@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit, _}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, SimplePatternLength}
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -34,6 +35,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       cost = {
         case (_: AllNodesScan, _) => 2000000.0
         case (_: NodeByLabelScan, _) => 20.0
+        case (p: Expand, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _) => 10.0
         case (_: OuterHashJoin, _) => 20.0
         case (_: SingleRow, _) => 1.0

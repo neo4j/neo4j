@@ -132,6 +132,12 @@ sealed trait NonEmptyList[+T] {
     reverse.mapAndPrependReversedTo[X, X](identity, other)
 
   @tailrec
+  final def containsAnyOf[X >: T](x: X*): Boolean = self match {
+    case Last(elem) => x.contains(elem)
+    case Fby(elem, tail) => x.contains(elem) || tail.containsAnyOf(x:_*)
+  }
+
+  @tailrec
   final def foreach(f: T => Unit): Unit = self match {
     case Last(elem) => f(elem)
     case Fby(elem, tail) => f(elem); tail.foreach(f)

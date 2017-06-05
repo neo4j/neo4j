@@ -71,6 +71,24 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     ))
   }
 
+  test("can produce a join for a single pattern relationship") {
+    implicit val registry = IdRegistry[PatternRelationship]
+    val qg = QueryGraph.empty.addPatternNodes('a, 'b)
+
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+    when(plan2.availableSymbols).thenReturn(Set[IdName]('b))
+    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('b)))
+
+    table.put(register(pattern1), plan1)
+    table.put(register(pattern2), plan2)
+
+    joinSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
+      NodeHashJoin(Set('b), plan1, plan2)(PlannerQuery.empty),
+      NodeHashJoin(Set('b), plan2, plan1)(PlannerQuery.empty)
+    ))
+  }
+
   test("does not join plans that do not overlap") {
     implicit val registry = IdRegistry[PatternRelationship]
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)

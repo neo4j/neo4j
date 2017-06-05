@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{CartesianProduct, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -377,28 +375,32 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     }
   }
 
-  test("should notify unfulfillable when join hint is applied to the start node of a single hop pattern") {
+  test("should handle join hint on the start node of a single hop pattern") {
     val initQuery = "CREATE (a:A {prop: 'foo'})-[:R]->(b:B {prop: 'bar'})"
+    graph.execute(initQuery)
 
     val query =
       s"""MATCH (a:A)-->(b:B)
           |USING JOIN ON a
           |RETURN a.prop AS res""".stripMargin
 
-    // Should give either warning or error depending on configuration
-    verifyJoinHintUnfulfillableOnRunWithConfig(initQuery, query, expectedResult = List(Map("res" -> "foo")))
+    val result = executeWithAllPlannersAndRuntimes(query)
+    result.executionPlanDescription() should includeOnlyOneHashJoinOn("a")
+    result.toList should equal (List(Map("res" -> "foo")))
   }
 
-  test("should notify unfulfillable when join hint is applied to the end node of a single hop pattern") {
+  test("should handle join hint on the end node of a single hop pattern") {
     val initQuery = "CREATE (a:A {prop: 'foo'})-[:R]->(b:B {prop: 'bar'})"
+    graph.execute(initQuery)
 
     val query =
       s"""MATCH (a:A)-->(b:B)
           |USING JOIN ON b
           |RETURN b.prop AS res""".stripMargin
 
-    // Should give either warning or error depending on configuration
-    verifyJoinHintUnfulfillableOnRunWithConfig(initQuery, query, expectedResult = List(Map("res" -> "bar")))
+    val result = executeWithAllPlannersAndRuntimes(query)
+    result.executionPlanDescription() should includeOnlyOneHashJoinOn("b")
+    result.toList should equal (List(Map("res" -> "bar")))
   }
 
   val plannersThatSupportJoinHints = Seq(IDPPlannerName)
@@ -692,6 +694,62 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     }
   }
 
+  test("should handle using index hint on both ends of pattern") {
+    graph.createIndex("Person", "name")
+
+    val tom = createLabeledNode(Map("name" -> "Tom Hanks"), "Person")
+    val meg = createLabeledNode(Map("name" -> "Meg Ryan"), "Person")
+
+    val harrysally = createLabeledNode(Map("title" -> "When Harry Met Sally"), "Movie")
+
+    relate(tom, harrysally, "ACTS_IN")
+    relate(meg, harrysally, "ACTS_IN")
+
+    1 until 10 foreach { i =>
+      createLabeledNode(Map("name" -> s"Person $i"), "Person")
+    }
+
+    1 until 90 foreach { i =>
+      createLabeledNode("Person")
+    }
+
+    1 until 20 foreach { i =>
+      createLabeledNode("Movie")
+    }
+
+    val query =
+      """MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
+        |USING INDEX a:Person(name)
+        |USING INDEX b:Person(name)
+        |RETURN x""".stripMargin
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+
+    result.executionPlanDescription() should includeOnlyOneHashJoinOn("x")
+    result.executionPlanDescription().toString should not include "AllNodesScan"
+  }
+
+  test("Using index hints with two indexes should produce cartesian product"){
+    val startNode = createLabeledNode(Map("name" -> "Neo"), "Person")
+    val endNode = createLabeledNode(Map("name" -> "Trinity"), "Person")
+    relate(startNode, endNode, "knows")
+    graph.createIndex("Person","name")
+
+    val query =
+      """MATCH (k:Person {name: 'Neo'}), (t:Person {name: 'Trinity'})
+        |using index k:Person(name)
+        |using index t:Person(name)
+        |MATCH p=(k)-[:knows*0..5]-(t)
+        |RETURN count(p)
+        |""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "k")
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "t")
+    result.executionPlanDescription() should includeOnlyOne(classOf[CartesianProduct])
+    result.executionPlanDescription().toString should not include "AllNodesScan"
+  }
+
   test("USING INDEX hint should not clash with used variables") {
     graph.createIndex("PERSON", "id")
 
@@ -704,30 +762,44 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.toList should be(empty)
   }
 
-  test("Two hints and only a single relationship give good error message") {
-    graph.createIndex("PERSON", "id")
+  test("should accept two hints on a single relationship") {
+    val startNode = createLabeledNode(Map("prop" -> 1), "PERSON")
+    val endNode = createLabeledNode(Map("prop" -> 2), "PERSON")
+    relate(startNode, endNode)
+    graph.createIndex("PERSON", "prop")
 
-    val result = intercept[RuntimeException](graph.execute(
-      """MATCH (a:PERSON {id: 1})-->(b:PERSON {id: 1})
-        |USING INDEX a:PERSON(id)
-        |USING INDEX b:PERSON(id)
-        |RETURN *""".stripMargin)
-    )
+    val query =
+      """MATCH (a:PERSON {prop: 1})-->(b:PERSON {prop: 2})
+        |USING INDEX a:PERSON(prop)
+        |USING INDEX b:PERSON(prop)
+        |RETURN a, b""".stripMargin
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+    result.toList should equal(List(Map("a" -> startNode, "b" -> endNode)))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "a")
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "b")
+  }
 
-    val message = result.getMessage
+  test("should handle multiple hints on longer pattern") {
+    val initQuery = "CREATE (a:Node {prop: 'foo'})-[:R]->(b:Node {prop: 'bar'})-[:R]->(c:Node {prop: 'baz'})"
+    graph.execute(initQuery)
+    graph.createIndex("Node", "prop")
 
-    message should startWith("Failed to fulfil the hints of the query.")
-    message should (
-         include("Could not solve these hints: `USING INDEX a:PERSON(id)`")
-      or include("Could not solve these hints: `USING INDEX b:PERSON(id)`"))
+    val query =
+      s"""MATCH (a:Node)-->(b:Node)-->(c:Node)
+          |USING INDEX a:Node(prop)
+          |USING INDEX b:Node(prop)
+          |WHERE a.prop = 'foo' and b.prop = 'bar'
+          |RETURN b.prop AS res""".stripMargin
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
+    result.toList should equal (List(Map("res" -> "bar")))
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "a")
+    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "b")
   }
 
   test("should accept hint on composite index") {
     val node = createLabeledNode(Map("bar" -> 5, "baz" -> 3), "Foo")
     graph.createIndex("Foo", "bar", "baz")
-    graph.inTx {
-      graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
-    }
 
     val query =
       """ MATCH (f:Foo)
@@ -738,31 +810,5 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.columnAs[Node]("f").toList should equal(List(node))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
-  }
-
-
-
-  //---------------------------------------------------------------------------
-  // Verification helpers
-
-  private def verifyJoinHintUnfulfillableOnRunWithConfig(initQuery: String, query: String, expectedResult: Any): Unit = {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      db =>
-        db.execute(initQuery)
-        val result = db.execute(query)
-        shouldHaveNoWarnings(result)
-        import scala.collection.JavaConverters._
-        result.asScala.toList.map(_.asScala) should equal(expectedResult)
-
-        val explainResult = db.execute(s"EXPLAIN $query")
-        shouldHaveWarning(explainResult, Status.Statement.JoinHintUnfulfillableWarning)
-    }
-
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      db =>
-        db.execute(initQuery)
-        intercept[QueryExecutionException](db.execute(query)).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
-        intercept[QueryExecutionException](db.execute(s"EXPLAIN $query")).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
-    }
   }
 }
