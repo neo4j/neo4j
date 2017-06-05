@@ -1,0 +1,7 @@
+// unsupported YIELD -
+In-query call to procedure that takes no arguments and yields no results
+In-query call to procedure with explicit arguments that drops all result fields
+
+// type hierarchy bugs/coercion rules
+Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
+In-query call to procedure with argument of type INTEGER accepts value of type FLOAT

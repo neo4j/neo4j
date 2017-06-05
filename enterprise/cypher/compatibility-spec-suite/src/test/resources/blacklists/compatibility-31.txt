@@ -2,3 +2,11 @@
 Comparing strings and integers using > in an AND'd predicate
 Comparing strings and integers using > in a OR'd predicate
 Comparing across types yields null, except numbers
+
+// unsupported YIELD -
+In-query call to procedure that takes no arguments and yields no results
+In-query call to procedure with explicit arguments that drops all result fields
+
+// procedure call bugs
+Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
+In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
