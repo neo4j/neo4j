@@ -141,6 +141,24 @@ public class FormattedLogTest
     }
 
     @Test
+    public void logShouldWriteMessageAndThrowablePassedAsObject()
+    {
+        // Given
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer );
+
+        // When
+        Object throwable = newThrowable( "<message>", "<stacktrace>" );
+        log.info( "Hasta la vista, baby", throwable );
+
+        // Then
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [test] Hasta la vista, baby <message>%n<stacktrace>" ) )
+        );
+    }
+
+    @Test
     public void logShouldWriteMessageWithFormat()
     {
         // Given
