@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticError, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticErrorDef, SyntaxException}
 
 class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPosition]) extends ((String, InputPosition) => CypherException) {
   override def apply(message: String, position: InputPosition): CypherException = {
@@ -29,6 +29,6 @@ class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPos
 }
 
 object SyntaxExceptionCreator {
-  def throwOnError(mkException: SyntaxExceptionCreator): (Seq[SemanticError]) => Unit =
-    (errors: Seq[SemanticError]) => errors.foreach(e => throw mkException(e.msg, e.position))
+  def throwOnError(mkException: SyntaxExceptionCreator): (Seq[SemanticErrorDef]) => Unit =
+    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw mkException(e.msg, e.position))
 }

@@ -29,14 +29,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("load graph should generate error") {
     executeAndEnsureError(
       "LOAD GRAPH 'test' RETURN 1",
-      "LOAD GRAPH is not supported by Neo4j (line 1, column 12 (offset: 11))"
+      "The referenced clause LOAD GRAPH is not supported by Neo4j (line 1, column 12 (offset: 11))"
     )
   }
 
   test("emit graph should generate error") {
     executeAndEnsureError(
       "MATCH ()--() EMIT GRAPH 'test' RETURN *",
-      "EMIT GRAPH is not supported by Neo4j (line 1, column 25 (offset: 24))"
+      "The referenced clause EMIT GRAPH is not supported by Neo4j (line 1, column 25 (offset: 24))"
     )
   }
 

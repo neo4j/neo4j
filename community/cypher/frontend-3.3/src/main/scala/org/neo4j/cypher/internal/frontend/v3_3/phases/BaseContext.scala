@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.phases
 
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticError}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticErrorDef}
 
 trait BaseContext {
   def tracer: CompilationPhaseTracer
   def notificationLogger: InternalNotificationLogger
   def exceptionCreator: (String, InputPosition) => CypherException
   def monitors: Monitors
-  def errorHandler: (Seq[SemanticError] => Unit)
+  def errorHandler: (Seq[SemanticErrorDef] => Unit)
 }

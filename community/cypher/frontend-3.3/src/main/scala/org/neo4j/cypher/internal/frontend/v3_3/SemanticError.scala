@@ -19,4 +19,16 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3
 
-case class SemanticError(msg: String, position: InputPosition, references: InputPosition*)
+sealed trait SemanticErrorDef {
+  def msg: String
+  def position: InputPosition
+  def references: Seq[InputPosition]
+}
+
+final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
+
+final case class UnsupportedOpenCypher(clause: String, position: InputPosition) extends SemanticErrorDef {
+
+  override val msg: String = s"The referenced clause $clause is not supported by Neo4j"
+  override val references = Seq.empty
+}

@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.frontend.v3_3
 
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
-  def error(state: SemanticState, error: SemanticError): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
-  def error(state: SemanticState, error: Option[SemanticError]): SemanticCheckResult = SemanticCheckResult(state, error.toVector)
+  def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
+  def error(state: SemanticState, error: Option[SemanticErrorDef]): SemanticCheckResult = SemanticCheckResult(state, error.toVector)
 }
 
-case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
+case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
 
 trait SemanticChecking {
   protected def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>

@@ -71,7 +71,7 @@ case class LoadGraph(graphUrl: Expression)(val position: InputPosition) extends 
   override def semanticCheck: SemanticCheck =
     graphUrl.semanticCheck(Expression.SemanticContext.Simple) chain
       graphUrl.expectType(CTString.covariant) chain
-      SemanticError("LOAD GRAPH is not supported by Neo4j", position)
+      UnsupportedOpenCypher(name, position)
 }
 
 case class EmitGraph(graphName: Expression)(val position: InputPosition) extends Clause with SemanticChecking {
@@ -80,7 +80,7 @@ case class EmitGraph(graphName: Expression)(val position: InputPosition) extends
   override def semanticCheck: SemanticCheck =
     graphName.semanticCheck(Expression.SemanticContext.Simple) chain
       graphName.expectType(CTString.covariant) chain
-      SemanticError("EMIT GRAPH is not supported by Neo4j", position)
+      UnsupportedOpenCypher(name, position)
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
@@ -406,10 +406,10 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
-  private def checkSkip: SemanticState => Seq[SemanticError] =
+  private def checkSkip: SemanticState => Seq[SemanticErrorDef] =
     s => skip.semanticCheck(SemanticState.clean).errors
 
-  private def checkLimit: SemanticState => Seq[SemanticError] =
+  private def checkLimit: SemanticState => Seq[SemanticErrorDef] =
     s => limit.semanticCheck(SemanticState.clean).errors
 
   private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
