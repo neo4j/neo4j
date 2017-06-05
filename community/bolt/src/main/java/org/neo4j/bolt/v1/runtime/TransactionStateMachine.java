@@ -36,6 +36,8 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 
+import static org.neo4j.function.ThrowingAction.noop;
+
 public class TransactionStateMachine implements StatementProcessor
 {
     private static final String BEGIN = "BEGIN";
@@ -187,7 +189,7 @@ public class TransactionStateMachine implements StatementProcessor
                             }
                             if ( spi.isPeriodicCommit( statement ) )
                             {
-                                BoltResultHandle resultHandle = executeQuery( ctx, spi, statement, params, () -> {} );
+                                BoltResultHandle resultHandle = executeQuery( ctx, spi, statement, params, noop() );
                                 ctx.currentResultHandle = resultHandle;
                                 ctx.currentResult = resultHandle.start();
                                 ctx.currentTransaction = null; // Periodic commit will change the current transaction, so

@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.IndexQuery;
@@ -357,6 +358,6 @@ public class IndexQueryTransactionStateTest
 
     private static PrimitiveLongResourceIterator asPrimitiveResourceIterator( long... values )
     {
-        return PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( values ), () -> {} );
+        return PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( values ), Resource.EMPTY );
     }
 }

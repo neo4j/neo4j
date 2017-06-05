@@ -36,6 +36,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
@@ -47,14 +48,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
+import static org.neo4j.function.ThrowingAction.noop;
 import static org.neo4j.test.Race.throwing;
 
 public class StoreCopyCheckPointMutexTest
 {
-    private static final ThrowingAction<IOException> NO_OP = () -> {};
     private static final ThrowingAction<IOException> ASSERT_NOT_CALLED = () -> fail( "Should not be called" );
 
     @Rule
@@ -71,7 +69,7 @@ public class StoreCopyCheckPointMutexTest
         try ( Resource lock = mutex.checkPoint() )
         {
             // WHEN
-            t2.execute( state -> mutex.storeCopy( NO_OP ) );
+            t2.execute( state -> mutex.storeCopy( noop() ) );
 
             // THEN
             t2.get().waitUntilWaiting( details -> details.isAt( StoreCopyCheckPointMutex.class, "storeCopy" ) );
@@ -96,7 +94,7 @@ public class StoreCopyCheckPointMutexTest
     public void storeCopyShouldBlockCheckPoint() throws Exception
     {
         // GIVEN
-        try ( Resource lock = mutex.storeCopy( NO_OP ) )
+        try ( Resource lock = mutex.storeCopy( noop() ) )
         {
             // WHEN
             t2.execute( state -> mutex.checkPoint() );
@@ -110,7 +108,7 @@ public class StoreCopyCheckPointMutexTest
     public void storeCopyShouldHaveTryCheckPointBackOff() throws Exception
     {
         // GIVEN
-        try ( Resource lock = mutex.storeCopy( NO_OP ) )
+        try ( Resource lock = mutex.storeCopy( noop() ) )
         {
             // WHEN
             assertNull( mutex.tryCheckPoint() );
@@ -121,10 +119,10 @@ public class StoreCopyCheckPointMutexTest
     public void storeCopyShouldAllowAnotherStoreCopy() throws Exception
     {
         // GIVEN
-        try ( Resource lock = mutex.storeCopy( NO_OP ) )
+        try ( Resource lock = mutex.storeCopy( noop() ) )
         {
             // WHEN
-            try ( Resource otherLock = mutex.storeCopy( NO_OP ) )
+            try ( Resource otherLock = mutex.storeCopy( noop() ) )
             {
                 // THEN good
             }

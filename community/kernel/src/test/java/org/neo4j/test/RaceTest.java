@@ -24,6 +24,8 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.concurrent.Runnables;
+
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static org.junit.Assert.assertEquals;
@@ -83,7 +85,7 @@ public class RaceTest
         ControlledBooleanSupplier endCondition3 = spy( new ControlledBooleanSupplier( false ) );
         Race race = new Race().withEndCondition( endCondition1, endCondition2, endCondition3 );
         race.addContestant( () -> endCondition2.set( true ) );
-        race.addContestants( 3, () -> {} );
+        race.addContestants( 3, Runnables.EMPTY_RUNNABLE );
 
         // WHEN
         race.go();

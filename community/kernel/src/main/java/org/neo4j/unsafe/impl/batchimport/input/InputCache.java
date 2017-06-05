@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.concurrent.Runnables;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -196,7 +197,7 @@ public class InputCache implements Closeable
     {
         if ( !deleteAfterUse )
         {
-            return () -> {};
+            return Runnables.EMPTY_RUNNABLE;
         }
 
         return () ->

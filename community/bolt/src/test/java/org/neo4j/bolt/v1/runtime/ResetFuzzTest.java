@@ -40,6 +40,7 @@ import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.concurrent.Runnables;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -119,7 +120,7 @@ public class ResetFuzzTest
             public void onSuccess( Map metadata ) throws IOException
             {
             }
-        }, () -> {} );
+        }, Runnables.EMPTY_RUNNABLE );
 
         // Test random combinations of messages within a small budget of testing time.
         long deadline = System.currentTimeMillis() + 2 * 1000;
