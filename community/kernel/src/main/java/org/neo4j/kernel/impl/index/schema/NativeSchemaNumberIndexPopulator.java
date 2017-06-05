@@ -128,13 +128,14 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
+        closeWriter();
+        if ( populationCompletedSuccessfully && failureBytes != null )
+        {
+            throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
+        }
+
         try
         {
-            closeWriter();
-            if ( populationCompletedSuccessfully && failureBytes != null )
-            {
-                throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
-            }
             if ( populationCompletedSuccessfully )
             {
                 assertPopulatorOpen();
