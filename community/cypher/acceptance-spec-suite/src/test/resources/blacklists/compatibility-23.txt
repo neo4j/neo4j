@@ -51,9 +51,3 @@ Explanation of   in-query procedure call
 Pattern expression inside list comprehension
 Get node degree via length of pattern expression
 Get node degree via length of pattern expression that specifies a relationship type
-
-// ReturnAcceptance.feature
-Accessing a list with null should return null
-Accessing a list with null as lower bound should return null
-Accessing a list with null as upper bound should return null
-Accessing a map with null should return null
