@@ -6,14 +6,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.1.5-SNAPSHOT</version>
+    <version>3.1.6-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-compatibility-spec-suite</artifactId>
   <packaging>jar</packaging>
-  <version>3.1.5-SNAPSHOT</version>
+  <version>3.1.6-SNAPSHOT</version>
   <name>Neo4j - Cypher Compatibility Specification Suite</name>
   <description>Neo4j query language compatibility suite</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
