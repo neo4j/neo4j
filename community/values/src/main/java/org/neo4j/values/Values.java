@@ -413,14 +413,16 @@ public class Values
         return value == null ? null : value.asLegacyObject();
     }
 
-    public static Value[] values( Object... objects )
+    public static Object[] asPublic( Value[] propertyValues )
     {
-        Value[] values = new Value[objects.length];
-        for ( int i = 0; i < objects.length; i++ )
+        Object[] legacy = new Object[propertyValues.length];
+
+        for ( int i = 0; i <propertyValues.length ; i++ )
         {
-            values[i] = Values.of( objects[i] );
+            legacy[i] = propertyValues[i].asPublic();
         }
-        return values;
+
+        return legacy;
     }
 
     private static Value arrayValue( Object[] value )
