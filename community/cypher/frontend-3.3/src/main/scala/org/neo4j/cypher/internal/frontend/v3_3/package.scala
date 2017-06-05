@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
 
+import scala.language.implicitConversions
+
 package object v3_3 {
   type Rewriter = (AnyRef => AnyRef)
 
@@ -31,16 +33,16 @@ package object v3_3 {
   type TypeGenerator = SemanticState => TypeSpec
 
   // Allows joining of two (SemanticState => SemanticCheckResult) funcs together (using then)
-  implicit def chainableSemanticCheck(check: SemanticCheck) = new ChainableSemanticCheck(check)
+  implicit def chainableSemanticCheck(check: SemanticCheck): ChainableSemanticCheck = new ChainableSemanticCheck(check)
 
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Either[SemanticError, SemanticState]) func
-  implicit def chainableSemanticEitherFunc(func: SemanticState => Either[SemanticError, SemanticState]) = new ChainableSemanticCheck(func)
+  implicit def chainableSemanticEitherFunc(func: SemanticState => Either[SemanticError, SemanticState]): ChainableSemanticCheck = new ChainableSemanticCheck(func)
 
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Seq[SemanticError]) func
-  implicit def chainableSemanticErrorsFunc(func: SemanticState => Seq[SemanticError]) = new ChainableSemanticCheck(func)
+  implicit def chainableSemanticErrorsFunc(func: SemanticState => Seq[SemanticError]): ChainableSemanticCheck = new ChainableSemanticCheck(func)
 
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Option[SemanticError]) func
-  implicit def chainableSemanticOptionFunc(func: SemanticState => Option[SemanticError]) = new ChainableSemanticCheck(func)
+  implicit def chainableSemanticOptionFunc(func: SemanticState => Option[SemanticError]): ChainableSemanticCheck = new ChainableSemanticCheck(func)
 
   // Allows using a (SemanticState => Either[SemanticError, SemanticState]) func, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticEitherFunc(func: SemanticState => Either[SemanticError, SemanticState]): SemanticCheck = state => {
@@ -76,13 +78,13 @@ package object v3_3 {
   implicit def liftSemanticErrorOptionAndChain(error: Option[SemanticError]): ChainableSemanticCheck = liftSemanticErrorOption(error)
 
   // Allows folding a semantic checking func over a collection
-  implicit def optionSemanticChecking[A](option: Option[A]) = new OptionSemanticChecking(option)
+  implicit def optionSemanticChecking[A](option: Option[A]): OptionSemanticChecking[A] = new OptionSemanticChecking(option)
 
-  implicit def traversableOnceSemanticChecking[A](traversable: TraversableOnce[A]) = new TraversableOnceSemanticChecking(traversable)
+  implicit def traversableOnceSemanticChecking[A](traversable: TraversableOnce[A]): TraversableOnceSemanticChecking[A] = new TraversableOnceSemanticChecking(traversable)
 
   // Allows calling semanticCheck on an optional SemanticCheckable object
-  implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]) = new SemanticCheckableOption(option)
+  implicit def semanticCheckableOption[A <: SemanticCheckable](option: Option[A]): SemanticCheckableOption[A] = new SemanticCheckableOption(option)
 
   // Allows calling semanticCheck on a traversable sequence of SemanticCheckable objects
-  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) = new SemanticCheckableTraversableOnce(traversable)
+  implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]): SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
 }
