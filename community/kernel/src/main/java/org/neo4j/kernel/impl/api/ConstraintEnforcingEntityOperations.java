@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -153,6 +154,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, propertyKeyId,
                     ( constraint, propertyIds ) ->
                     {
+                        state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.LABEL,
+                                constraint.schema().getLabelId() );
 
                         if ( propertyIds.contains( propertyKeyId ) )
                         {

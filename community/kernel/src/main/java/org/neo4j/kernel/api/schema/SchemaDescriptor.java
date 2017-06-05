@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.schema;
 import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * Internal representation of one schema unit, for example a label-property pair.
@@ -70,6 +72,24 @@ public interface SchemaDescriptor
      * @return the property ids
      */
     int[] getPropertyIds();
+
+    /**
+     * Id of underlying schema descriptor key.
+     * Key is part of schema unit that determines which resources with specified properties are applicable.
+     * So far {@link ResourceTypes#LABEL label} and {@link ResourceTypes#RELATIONSHIP_TYPE relationship type}
+     * are supported as keys types.
+     * @return id of underlying key
+     */
+    int keyId();
+
+    /**
+     * Type of underlying schema descriptor key.
+     * Key is part of schema unit that determines which resources with specified properties are applicable.
+     * So far {@link ResourceTypes#LABEL label} and {@link ResourceTypes#RELATIONSHIP_TYPE relationship type}
+     * are supported as keys types.
+     * @return type of underlying key
+     */
+    ResourceType keyType();
 
     /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.

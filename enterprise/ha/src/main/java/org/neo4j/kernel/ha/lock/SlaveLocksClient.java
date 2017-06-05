@@ -20,9 +20,6 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -59,10 +56,6 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class SlaveLocksClient implements Locks.Client
 {
-    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
-            EXCLUSIVE_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.EXCLUSIVE_LOCK );
-    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
-            SHARED_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.SHARED_LOCK );
     private final Master master;
     private final Locks.Client client;
     private final Locks localLockManager;
@@ -230,16 +223,6 @@ class SlaveLocksClient implements Locks.Client
         return client.activeLockCount();
     }
 
-    private static Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>> activeLocks(
-            ActiveLock.Factory activeLock )
-    {
-        return entry -> entry.getValue().keySet().stream().map( resourceId ->
-        {
-            ResourceType resourceType = entry.getKey();
-            return activeLock.create( resourceType, resourceId );
-        } );
-    }
-
     private void stopLockSessionOnMaster()
     {
         try
@@ -337,22 +320,20 @@ class SlaveLocksClient implements Locks.Client
 
     private void acquireSharedOnMaster( ResourceType resourceType, long... resourceIds )
     {
-        if ( resourceType == ResourceTypes.NODE
-                || resourceType == ResourceTypes.RELATIONSHIP
-                || resourceType == ResourceTypes.GRAPH_PROPS
-                || resourceType == ResourceTypes.LEGACY_INDEX )
+        if ( resourceType == ResourceTypes.INDEX_ENTRY )
         {
-            makeSureTxHasBeenInitialized();
+            return;
+        }
+        makeSureTxHasBeenInitialized();
 
-            RequestContext requestContext = newRequestContextFor( this );
-            try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceIds ) )
-            {
-                receiveLockResponse( response );
-            }
-            catch ( ComException e )
-            {
-                throw new DistributedLockFailureException( "Cannot get shared lock(s) on master", master, e );
-            }
+        RequestContext requestContext = newRequestContextFor( this );
+        try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceIds ) )
+        {
+            receiveLockResponse( response );
+        }
+        catch ( ComException e )
+        {
+            throw new DistributedLockFailureException( "Cannot get shared lock(s) on master", master, e );
         }
     }
 

@@ -47,6 +47,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
     }
 
     @SuppressWarnings( "unchecked" )
+    @Override
     public <K, V> V get( K key )
     {
         lock.readLock().lock();
@@ -93,6 +94,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public void replace( Map<Object,Object> replacement )
     {
         lock.writeLock().lock();
@@ -106,6 +108,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public <K, V> void apply( Map<K,V> updates )
     {
         lock.writeLock().lock();
@@ -119,6 +122,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public void clear()
     {
         lock.writeLock().lock();

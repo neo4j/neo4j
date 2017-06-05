@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -64,7 +64,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
@@ -95,7 +94,7 @@ public class ConstraintIndexCreatorTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         when( constraintCreationContext.schemaReadOperations().indexGetForSchema( state, descriptor ) )
                 .thenReturn( null );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
@@ -131,7 +130,7 @@ public class ConstraintIndexCreatorTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         when( constraintCreationContext.schemaReadOperations().indexGetForSchema( state, descriptor ) )
                 .thenReturn( null );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         try
@@ -168,7 +167,7 @@ public class ConstraintIndexCreatorTest
 
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         creator.dropUniquenessConstraintIndex( index );
@@ -180,7 +179,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldReleaseSchemaLockWhileAwaitingIndexPopulation() throws Exception
+    public void shouldReleaseLabelLockWhileAwaitingIndexPopulation() throws Exception
     {
         // given
         StubKernel kernel = new StubKernel();
@@ -198,17 +197,17 @@ public class ConstraintIndexCreatorTest
         when( constraintCreationContext.schemaReadOperations().indexGetForSchema( state, descriptor ) )
                 .thenReturn( null );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, true );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
 
         // then
         verify( state.locks().pessimistic() )
-                .releaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+                .releaseExclusive( ResourceTypes.LABEL, descriptor.getLabelId() );
 
         verify( state.locks().pessimistic() )
-                .acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+                .acquireExclusive( state.lockTracer(), ResourceTypes.LABEL, descriptor.getLabelId() );
     }
 
     @Test
@@ -233,7 +232,7 @@ public class ConstraintIndexCreatorTest
                 .thenReturn( index );
         when( constraintCreationContext.schemaReadOperations().indexGetOwningUniquenessConstraintId(
                 state, index ) ).thenReturn( null ); // which means it has no owner
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state,
@@ -277,7 +276,7 @@ public class ConstraintIndexCreatorTest
                 state, index ) ).thenReturn( constraintIndexOwnerId ); // which means there's an owner
         when( state.readOperations().labelGetName( LABEL_ID ) ).thenReturn( "MyLabel" );
         when( state.readOperations().propertyKeyGetName( PROPERTY_KEY_ID ) ).thenReturn( "MyKey" );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         // when
         try

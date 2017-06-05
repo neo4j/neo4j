@@ -36,7 +36,7 @@ public class LockUnitTest
         LockUnit unit2 = new LockUnit( ResourceTypes.NODE, 2, false );
         LockUnit unit3 = new LockUnit( ResourceTypes.RELATIONSHIP, 1, false );
         LockUnit unit4 = new LockUnit( ResourceTypes.RELATIONSHIP, 2, true );
-        LockUnit unit5 = new LockUnit( ResourceTypes.SCHEMA, 1, false );
+        LockUnit unit5 = new LockUnit( ResourceTypes.RELATIONSHIP_TYPE, 1, false );
 
         List<LockUnit> list = asList( unit1, unit2, unit3, unit4, unit5 );
         Collections.sort( list );
@@ -50,7 +50,7 @@ public class LockUnitTest
         LockUnit unit1 = new LockUnit( ResourceTypes.NODE, 1, true );
         LockUnit unit2 = new LockUnit( ResourceTypes.RELATIONSHIP, 1, true );
         LockUnit unit3 = new LockUnit( ResourceTypes.NODE, 2, true );
-        LockUnit unit4 = new LockUnit( ResourceTypes.SCHEMA, 1, true );
+        LockUnit unit4 = new LockUnit( ResourceTypes.RELATIONSHIP_TYPE, 1, true );
         LockUnit unit5 = new LockUnit( ResourceTypes.RELATIONSHIP, 2, true );
 
         List<LockUnit> list = asList( unit1, unit2, unit3, unit4, unit5 );
