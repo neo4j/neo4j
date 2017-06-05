@@ -59,7 +59,7 @@ class ProcedureSignatureParser extends Parser with Base with Expressions with Li
   }
 
   private def ProcedureSignatureOutputs: Rule1[Option[Seq[(String, CypherType)]]] = rule("procedure signature outputs") {
-    group(ProcedureSignatureFields ~~> { Some(_) }) | VoidProcedure
+    group(ProcedureSignatureFields ~~> { outputs => if (outputs.isEmpty) None else Some(outputs) }) | VoidProcedure
   }
 
   private def ProcedureSignatureFields: Rule1[Seq[(String, CypherType)]] = rule("procedure signature columns") {

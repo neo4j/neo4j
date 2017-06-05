@@ -45,7 +45,7 @@ import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.reflect.io.Path
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
 
@@ -104,7 +104,10 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     scenarioBuilder.procedureRegistration { g: GraphDatabaseAPI =>
       val parsedSignature = ProcedureSignature.parse(signatureText)
       val kernelProcedure = buildProcedure(parsedSignature, values)
-      g.getDependencyResolver.resolveDependency(classOf[KernelAPI]).registerProcedure(kernelProcedure)
+      Try(g.getDependencyResolver.resolveDependency(classOf[KernelAPI]).registerProcedure(kernelProcedure)) match {
+        case Success(_) =>
+        case Failure(e) => System.err.println(s"\nRegistration of procedure $signatureText failed: " + e.getMessage)
+      }
     }
   }
 
