@@ -63,6 +63,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
+        assertOpen();
         try
         {
             return singleUpdater.initialize( tree.writer(), true );
@@ -89,6 +90,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     @Override
     public IndexReader newReader()
     {
+        assertOpen();
         return new NativeSchemaNumberIndexReader<>( tree, layout );
     }
 

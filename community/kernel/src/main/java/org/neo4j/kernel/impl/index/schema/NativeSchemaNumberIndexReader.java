@@ -62,6 +62,13 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
     @Override
     public IndexSampler createSampler()
     {
+        // For an unique index there's an optimization, knowing that all values in it are unique, to simply count
+        // the number of indexes values and create a sample for that count. The GBPTree doesn't have an O(1)
+        // count mechanism, it will have to manually count the indexed values in it to get it.
+        // For that reason this implementation opts for keeping complexity down by just using the existing
+        // non-unique sampler which scans the index and counts (potentially duplicates, of which there will
+        // be none in a unique index).
+
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         FullScanNonUniqueIndexSampler<KEY,VALUE> sampler =
                 new FullScanNonUniqueIndexSampler<>( tree, layout, indexSamplingConfig );

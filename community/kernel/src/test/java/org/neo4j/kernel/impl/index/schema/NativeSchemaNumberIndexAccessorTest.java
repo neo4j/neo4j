@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -544,6 +545,78 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         }
     }
 
+    @Test
+    public void readingAfterDropShouldThrow() throws Exception
+    {
+        // given
+        accessor.drop();
+
+        try
+        {
+            // when
+            accessor.newReader();
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void writingAfterDropShouldThrow() throws Exception
+    {
+        // given
+        accessor.drop();
+
+        try
+        {
+            // when
+            accessor.newUpdater( IndexUpdateMode.ONLINE );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void readingAfterCloseShouldThrow() throws Exception
+    {
+        // given
+        accessor.close();
+
+        try
+        {
+            // when
+            accessor.newReader();
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void writingAfterCloseShouldThrow() throws Exception
+    {
+        // given
+        accessor.close();
+
+        try
+        {
+            // when
+            accessor.newUpdater( IndexUpdateMode.ONLINE );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // then good
+        }
+    }
+
     private int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Set<Double> seen = new HashSet<>();
@@ -690,49 +763,10 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         return IndexEntryUpdate.add( 0, indexDescriptor, 0 );
     }
 
-    // READER
-
-    // shouldReturnZeroCountForEmptyIndex
-    // shouldReturnCountOneForExistingData
-    // shouldReturnCountZeroForMismatchingData
-
-    // shouldReturnAllEntriesForExistsPredicate
-    // shouldReturnNoEntriesForExistsPredicateForEmptyIndex
-    // shouldReturnMatchingEntriesForExactPredicate
-    // shouldReturnNoEntriesForMismatchingExactPredicate
-    // shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd
-    // shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd
-    // shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd
-    // shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd
-    // shouldReturnNoEntriesForRangePredicateOutsideAnyMatch
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
     //       so perhaps we should wait with this until we know exactly how this works and which combinations
     //       that should be supported/optimized for.
 
-    // SAMPLER
-    // TODO: shouldSampleIndex
-
-//    long countIndexedNodes( long nodeId, Object... propertyValues )
-//    IndexSampler createSampler()
-//    PrimitiveLongIterator query( IndexQuery... predicates )
-//    close()
-
     // ACCESSOR
-    // shouldHandleMultipleConsecutiveUpdaters
-    // requestForSecondUpdaterMustThrow
-    // dropShouldDeleteAndCloseIndex
-    // TODO: anyUsageAfterDropShouldThrow
-    // forceShouldCheckpointTree
-    // closeShouldCloseTreeWithoutCheckpoint
-    // TODO: anyUsageAfterCloseShouldThrow
-    // snapshotFilesShouldReturnIndexFile
-
-//    void drop()
-//    IndexUpdater newUpdater( IndexUpdateMode mode )
-//    void force()
-//    void close()
-//    IndexReader newReader()
 //    BoundedIterable<Long> newAllEntriesReader()
-//    ResourceIterator<File> snapshotFiles()
-//    void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
 }

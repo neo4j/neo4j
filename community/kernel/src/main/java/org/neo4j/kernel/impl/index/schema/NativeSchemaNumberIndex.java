@@ -66,4 +66,12 @@ class NativeSchemaNumberIndex<KEY extends NumberKey, VALUE extends NumberValue>
         }
         return null;
     }
+
+    void assertOpen()
+    {
+        if ( tree == null )
+        {
+            throw new IllegalStateException( "Index has been closed" );
+        }
+    }
 }
