@@ -59,6 +59,12 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
+    public boolean hasFullNumberPrecision()
+    {
+        return delegate.hasFullNumberPrecision();
+    }
+
+    @Override
     public String toString()
     {
         return delegate.toString();

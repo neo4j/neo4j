@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -65,12 +66,14 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -88,8 +91,8 @@ public class StateHandlingStatementOperationsTest
 
     StoreReadLayer inner = mock( StoreReadLayer.class );
 
-    private LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 10, 66 );
-    private IndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 2 );
+    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 10, 66 );
+    private final IndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 2 );
 
     @Test
     public void shouldNeverDelegateWrites() throws Exception
@@ -583,6 +586,40 @@ public class StateHandlingStatementOperationsTest
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );
+    }
+
+    @Test
+    public void shouldNotDecorateNumberQuerResultsWIthLookupFilterIfIndexHasFullNumberPrecision() throws Exception
+    {
+        // given
+        int propertyKeyId = 5;
+        long nodeId = 567;
+        AtomicBoolean nodeCursorCalled = new AtomicBoolean();
+        KernelStatement kernelStatement = mock( KernelStatement.class );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        when( storeStatement.acquireSingleNodeCursor( nodeId ) ).thenAnswer( invocation ->
+        {
+            nodeCursorCalled.set( true );
+            return null;
+        } );
+        when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        IndexReader indexReader = mock( IndexReader.class );
+        when( indexReader.hasFullNumberPrecision() ).thenReturn( true );
+        when( indexReader.query( anyVararg() ) )
+                .thenAnswer( invocation -> PrimitiveLongCollections.iterator( nodeId ) );
+        when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );
+        when( storeStatement.getIndexReader( any() ) ).thenReturn( indexReader );
+
+        StateHandlingStatementOperations operations = newTxStateOps( inner );
+
+        // when
+        operations.nodeGetFromUniqueIndexSeek( kernelStatement, index, IndexQuery.exact( propertyKeyId, 12345L ) );
+        operations.indexQuery( kernelStatement, index, IndexQuery.exact( propertyKeyId, 12345L ) );
+        operations.indexQuery( kernelStatement, index,
+                IndexQuery.range( propertyKeyId, Long.MIN_VALUE, true, Long.MAX_VALUE, false ) );
+
+        // then
+        assertFalse( nodeCursorCalled.get() );
     }
 
     private Cursor<NodeItem> nodeCursorWithProperty( long propertyKeyId )

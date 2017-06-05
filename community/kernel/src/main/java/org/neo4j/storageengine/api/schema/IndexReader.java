@@ -50,6 +50,15 @@ public interface IndexReader extends Resource
      */
     PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
 
+    /**
+     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}
+     * when calling with predicates involving numbers, such as {@link IndexQuery#exact(int, Object)}
+     * w/ a {@link Number} or {@link IndexQuery#range(int, Number, boolean, Number, boolean)}.
+     * If {@code false} is returned this means that the caller of {@link #query(IndexQuery...)} will have to
+     * do additional filtering, double-checking of actual property values, externally.
+     */
+    boolean hasFullNumberPrecision();
+
     IndexReader EMPTY = new IndexReader()
     {
         // Used for checking index correctness
@@ -74,6 +83,12 @@ public interface IndexReader extends Resource
         @Override
         public void close()
         {
+        }
+
+        @Override
+        public boolean hasFullNumberPrecision()
+        {
+            return true;
         }
     };
 }

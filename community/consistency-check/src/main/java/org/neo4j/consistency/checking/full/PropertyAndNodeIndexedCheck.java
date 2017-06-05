@@ -242,8 +242,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     Arrays.toString( query ) ), e );
         }
 
-        indexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
-        return indexedNodeIds;
+        return reader.hasFullNumberPrecision()
+                ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
     }
 
     private static boolean nodeHasSchemaProperties(
