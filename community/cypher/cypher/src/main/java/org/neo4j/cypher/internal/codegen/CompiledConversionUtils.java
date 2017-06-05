@@ -91,7 +91,7 @@ public abstract class CompiledConversionUtils
             DoubleStream stream = (DoubleStream) value;
             return stream.boxed().collect( Collectors.toList() );
         }
-        else if (value.getClass().isArray() )
+        else if ( value.getClass().isArray() )
         {
             int len = Array.getLength( value );
             ArrayList<Object> collection = new ArrayList<>( len );
@@ -131,7 +131,7 @@ public abstract class CompiledConversionUtils
             DoubleStream stream = (DoubleStream) value;
             return stream.boxed().collect( Collectors.toSet() );
         }
-        else if (value.getClass().isArray() )
+        else if ( value.getClass().isArray() )
         {
             int len = Array.getLength( value );
             HashSet<Object> collection = new HashSet<>( len );
@@ -283,7 +283,7 @@ public abstract class CompiledConversionUtils
             Class<?> componentType = value.getClass().getComponentType();
             int length = Array.getLength( value );
 
-            if (componentType.isPrimitive())
+            if ( componentType.isPrimitive() )
             {
                 Object copy = Array.newInstance( componentType, length );
                 //noinspection SuspiciousSystemArraycopy
@@ -295,7 +295,7 @@ public abstract class CompiledConversionUtils
                 Object[] copy = new Object[length];
                 for ( int i = 0; i < length; i++ )
                 {
-                    copy[i] = loadParameter( Array.get(value, i) );
+                    copy[i] = loadParameter( Array.get( value, i ) );
                 }
                 return copy;
             }
@@ -361,12 +361,12 @@ public abstract class CompiledConversionUtils
             // IntStream is only used for list of primitive booleans
             return ((IntStream) anyValue).mapToObj( i -> i != 0 ).collect( Collectors.toList() );
         }
-        else if ( anyValue.getClass().isArray())
+        else if ( anyValue.getClass().isArray() )
         {
             Class<?> componentType = anyValue.getClass().getComponentType();
             int length = Array.getLength( anyValue );
 
-            if (componentType.isPrimitive())
+            if ( componentType.isPrimitive() )
             {
                 Object copy = Array.newInstance( componentType, length );
                 //noinspection SuspiciousSystemArraycopy
@@ -378,7 +378,7 @@ public abstract class CompiledConversionUtils
                 Object[] copy = new Object[length];
                 for ( int i = 0; i < length; i++ )
                 {
-                    copy[i] = materializeAnyResult( nodeManager, Array.get(anyValue, i) );
+                    copy[i] = materializeAnyResult( nodeManager, Array.get( anyValue, i ) );
                 }
                 return copy;
             }
