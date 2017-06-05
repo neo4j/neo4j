@@ -121,7 +121,6 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         }
     }
 
-
     @Test
     public void createDropRelationshipLongStringProperty()
     {

@@ -113,7 +113,8 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeAddPropertyWithNullKey(){
+    public void testNodeAddPropertyWithNullKey()
+    {
         Node node1 = getGraphDb().createNode();
         try
         {
@@ -126,11 +127,12 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeAddPropertyWithNullValue(){
+    public void testNodeAddPropertyWithNullValue()
+    {
         Node node1 = getGraphDb().createNode();
         try
         {
-            node1.setProperty( "foo", null);
+            node1.setProperty( "foo", null );
             fail( "Null value should result in exception." );
         }
         catch ( IllegalArgumentException ignored )
@@ -230,7 +232,7 @@ public class NodeTest
         {
             // must mark as rollback only
         }
- //       getTransaction().failure();
+        //       getTransaction().failure();
     }
 
     @Test
@@ -339,7 +341,7 @@ public class NodeTest
         keys.next();
         keys.next();
         keys.next();
-        Map<String, Object> properties = node1.getAllProperties();
+        Map<String,Object> properties = node1.getAllProperties();
         assertTrue( properties.get( key1 ).equals( int1 ) );
         assertTrue( properties.get( key2 ).equals( int2 ) );
         assertTrue( properties.get( key3 ).equals( string ) );

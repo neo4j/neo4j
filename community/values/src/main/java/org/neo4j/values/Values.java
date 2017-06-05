@@ -417,7 +417,7 @@ public class Values
     {
         Object[] legacy = new Object[propertyValues.length];
 
-        for ( int i = 0; i <propertyValues.length ; i++ )
+        for ( int i = 0; i < propertyValues.length; i++ )
         {
             legacy[i] = propertyValues[i].asPublic();
         }
