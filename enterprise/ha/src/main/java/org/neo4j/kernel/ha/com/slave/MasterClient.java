@@ -48,20 +48,16 @@ import static org.neo4j.com.Protocol.writeString;
 
 public interface MasterClient extends Master
 {
-    static final ObjectSerializer<LockResult> LOCK_SERIALIZER = new ObjectSerializer<LockResult>()
+    ObjectSerializer<LockResult> LOCK_SERIALIZER = ( responseObject, result ) ->
     {
-        @Override
-        public void write( LockResult responseObject, ChannelBuffer result ) throws IOException
+        result.writeByte( responseObject.getStatus().ordinal() );
+        if ( responseObject.getStatus().hasMessage() )
         {
-            result.writeByte( responseObject.getStatus().ordinal() );
-            if ( responseObject.getStatus().hasMessage() )
-            {
-                writeString( result, responseObject.getMessage() );
-            }
+            writeString( result, responseObject.getMessage() );
         }
     };
 
-    static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
+    Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
     {
         @Override
         public LockResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
@@ -78,7 +74,7 @@ public interface MasterClient extends Master
                 throw Exceptions.withMessage( e, format( "%s | read invalid ordinal %d. First %db of this channel buffer is:%n%s",
                         e.getMessage(), statusOrdinal, maxBytesToPrint, beginningOfBufferAsHexString( buffer, maxBytesToPrint ) ) );
             }
-            return status.hasMessage() ? new LockResult( LockStatus.DEAD_LOCKED, readString( buffer ) ) : new LockResult( status );
+            return status.hasMessage() ? new LockResult( status, readString( buffer ) ) : new LockResult( status );
         }
 
         private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
@@ -105,26 +101,26 @@ public interface MasterClient extends Master
         }
     };
 
-    public static final ProtocolVersion CURRENT = MasterClient310.PROTOCOL_VERSION;
+    ProtocolVersion CURRENT = MasterClient310.PROTOCOL_VERSION;
 
     @Override
-    public Response<Integer> createRelationshipType( RequestContext context, final String name );
+    Response<Integer> createRelationshipType( RequestContext context, final String name );
 
     @Override
-    public Response<Void> newLockSession( RequestContext context );
+    Response<Void> newLockSession( RequestContext context );
 
     @Override
-    public Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
+    Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
 
     @Override
-    public Response<Void> pullUpdates( RequestContext context );
+    Response<Void> pullUpdates( RequestContext context );
 
-    public Response<Void> pullUpdates( RequestContext context, TxHandler txHandler );
+    Response<Void> pullUpdates( RequestContext context, TxHandler txHandler );
 
     @Override
-    public Response<Void> copyStore( RequestContext context, final StoreWriter writer );
+    Response<Void> copyStore( RequestContext context, final StoreWriter writer );
 
-    public void setComExceptionHandler( ComExceptionHandler handler );
+    void setComExceptionHandler( ComExceptionHandler handler );
 
-    public ProtocolVersion getProtocolVersion();
+    ProtocolVersion getProtocolVersion();
 }

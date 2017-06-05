@@ -21,19 +21,19 @@ package org.neo4j.kernel.ha.lock;
 
 public enum LockStatus
 {
-    OK_LOCKED,
-    NOT_LOCKED,
-    DEAD_LOCKED
+    OK_LOCKED( false ),
+    NOT_LOCKED( true ),
+    DEAD_LOCKED( true );
+
+    private final boolean hasMessage;
+
+    LockStatus( boolean hasMessage )
     {
-        @Override
-        public boolean hasMessage()
-        {
-            return true;
-        }
-    };
+        this.hasMessage = hasMessage;
+    }
 
     public boolean hasMessage()
     {
-        return false;
+        return hasMessage;
     }
 }
