@@ -271,6 +271,42 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result.executionPlanDescription().toString shouldNot include("Index")
   }
 
+  test("should handle array as parameter when using index") {
+    // Given
+    graph.createIndex("Company", "uuid")
+    val root1 = createLabeledNode(Map("uuid" -> "b"), "Company")
+    val root2 = createLabeledNode(Map("uuid" -> "a"), "Company")
+    val root3 = createLabeledNode(Map("uuid" -> "c"), "Company")
+    createLabeledNode(Map("uuid" -> "z"), "Company")
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
+      "uuids" -> Array("a", "b", "c"))
+
+    //Then
+    result should useOperationTimes("NodeIndexSeek", 1)
+    result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
+  }
+
+  test("should handle primitive array as parameter when using index") {
+    // Given
+    graph.createIndex("Company", "uuid")
+    val root1 = createLabeledNode(Map("uuid" -> 1), "Company")
+    val root2 = createLabeledNode(Map("uuid" -> 2), "Company")
+    val root3 = createLabeledNode(Map("uuid" -> 3), "Company")
+    createLabeledNode(Map("uuid" -> 6), "Company")
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
+      "uuids" -> Array(1, 2, 3))
+
+    //Then
+    result should useOperationTimes("NodeIndexSeek", 1)
+    result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
+  }
+
   private def setUpDatabaseForTests() {
     updateWithBothPlannersAndCompatibilityMode(
       """CREATE (architect:Matrix { name:'The Architect' }),
