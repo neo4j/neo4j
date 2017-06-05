@@ -154,14 +154,14 @@ public final class ArrayEncoder
         @Override
         public void writeString( String value )
         {
-            builder.append( value );
+            builder.append( base64Encoder.encodeToString( UTF8.encode( value ) ) );
             builder.append( '|' );
         }
 
         @Override
         public void writeString( char value )
         {
-            builder.append( value );
+            builder.append( base64Encoder.encodeToString( UTF8.encode( Character.toString( value ) ) ) );
             builder.append( '|' );
         }
 

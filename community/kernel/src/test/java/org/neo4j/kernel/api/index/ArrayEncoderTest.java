@@ -22,9 +22,12 @@ package org.neo4j.kernel.api.index;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.function.Function;
+
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -83,9 +86,9 @@ public class ArrayEncoderTest
     @Test
     public void shouldEncodeArrays() throws Exception
     {
-        assertEquals( "D1.0|2.0|3.0|", ArrayEncoder.encode( new int[]{1, 2, 3} ) );
-        assertEquals( "Ztrue|false|", ArrayEncoder.encode( new boolean[]{true, false} ) );
-        assertEquals( "LYWxp|YXJl|eW91|b2s=|", ArrayEncoder.encode( new String[]{"ali", "are", "you", "ok"} ) );
+        assertEncoding( "D1.0|2.0|3.0|", new int[]{1, 2, 3} );
+        assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
+        assertEncoding( "LYWxp|YXJl|eW91|b2s=|", new String[]{"ali", "are", "you", "ok"} );
     }
 
     @Test
@@ -104,21 +107,35 @@ public class ArrayEncoderTest
                 "Since my imagination for coming up with test data is usually poor, I figured I'd do something useful.",
                 "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."};
 
+        raceEncode( INPUT, ArrayEncoder::encode );
+        raceEncode( INPUT, stringArray -> ArrayEncoder.encode( Values.of( stringArray ) ) );
+    }
+
+    private void raceEncode( String[] INPUT, Function<String[], String> encodeFunction ) throws Throwable
+    {
         Race race = new Race();
         for ( String input : INPUT )
         {
             final String[] inputArray = new String[] {input};
             race.addContestant( () ->
             {
-                String first = ArrayEncoder.encode( inputArray );
+                String first = encodeFunction.apply( inputArray );
                 for ( int i = 0; i < 1000; i++ )
                 {
-                    String encoded = ArrayEncoder.encode( inputArray );
+                    String encoded = encodeFunction.apply( inputArray );
                     assertEquals( "Each attempt at encoding should yield the same result. Turns out that first one was '"
                             + first + "', yet another one was '" + encoded + "'", first, encoded );
                 }
             } );
         }
         race.go();
+    }
+
+    private void assertEncoding( String expected, Object toEncode )
+    {
+        String objectEncoded = ArrayEncoder.encode( toEncode );
+        String valueEncoded = ArrayEncoder.encode( Values.of( toEncode ) );
+        assertEquals( expected, objectEncoded );
+        assertEquals( expected, valueEncoded );
     }
 }
