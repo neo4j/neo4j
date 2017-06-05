@@ -113,18 +113,38 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeAddProperty()
-    {
+    public void testNodeAddPropertyWithNullKey(){
         Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
         try
         {
-            node1.setProperty( null, null );
-            fail( "Null argument should result in exception." );
+            node1.setProperty( null, "bar" );
+            fail( "Null key should result in exception." );
         }
         catch ( IllegalArgumentException ignored )
         {
         }
+    }
+
+    @Test
+    public void testNodeAddPropertyWithNullValue(){
+        Node node1 = getGraphDb().createNode();
+        try
+        {
+            node1.setProperty( "foo", null);
+            fail( "Null value should result in exception." );
+        }
+        catch ( IllegalArgumentException ignored )
+        {
+        }
+        tx.failure();
+    }
+
+    @Test
+    public void testNodeAddProperty()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+
         String key1 = "key1";
         String key2 = "key2";
         String key3 = "key3";

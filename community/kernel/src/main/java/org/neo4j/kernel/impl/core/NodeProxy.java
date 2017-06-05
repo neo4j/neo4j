@@ -275,7 +275,7 @@ public class NodeProxy implements Node
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value ) );
+                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
             }
             catch ( ConstraintValidationException e )
             {

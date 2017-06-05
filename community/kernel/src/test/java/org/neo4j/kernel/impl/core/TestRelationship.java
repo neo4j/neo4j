@@ -343,20 +343,48 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
+    public void testRelationshipAddPropertyWithNullKey(){
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+
+        try
+        {
+            rel1.setProperty( null, "bar" );
+            fail( "Null key should result in exception." );
+        }
+        catch ( IllegalArgumentException e )
+        {   // OK
+        }
+
+    }
+
+    @Test
+    public void testRelationshipAddPropertyWithNullValue(){
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+
+        try
+        {
+            rel1.setProperty( "foo", null );
+            fail( "Null value should result in exception." );
+        }
+        catch ( IllegalArgumentException e )
+        {   // OK
+        }
+
+        getTransaction().failure();
+    }
+
+    @Test
     public void testRelationshipAddProperty()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
-        try
-        {
-            rel1.setProperty( null, null );
-            fail( "Null argument should result in exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
+
         Integer int1 = new Integer( 1 );
         Integer int2 = new Integer( 2 );
         String string1 = new String( "1" );

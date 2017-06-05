@@ -299,6 +299,11 @@ public class Values
      */
     public static Value of( Object value )
     {
+        return of( value, true );
+    }
+
+    public static Value of( Object value, boolean allowNull )
+    {
         if ( value instanceof String )
         {
             return stringValue( (String) value );
@@ -373,7 +378,11 @@ public class Values
         }
         if ( value == null )
         {
-            return NoValue.NO_VALUE;
+            if ( allowNull )
+            {
+                return NoValue.NO_VALUE;
+            }
+            throw new IllegalArgumentException( "[null] is not a supported property value" );
         }
         if ( value instanceof Value )
         {

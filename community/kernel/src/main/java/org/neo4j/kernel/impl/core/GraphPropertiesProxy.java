@@ -140,7 +140,7 @@ public class GraphPropertiesProxy implements GraphProperties
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().graphSetProperty( propertyKeyId, Values.of( value ) );
+                statement.dataWriteOperations().graphSetProperty( propertyKeyId, Values.of( value, false ) );
             }
             catch ( IllegalArgumentException e )
             {

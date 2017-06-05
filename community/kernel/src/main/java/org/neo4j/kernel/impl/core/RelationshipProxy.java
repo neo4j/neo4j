@@ -400,7 +400,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            statement.dataWriteOperations().relationshipSetProperty( getId(), propertyKeyId, Values.of( value ) );
+            statement.dataWriteOperations()
+                    .relationshipSetProperty( getId(), propertyKeyId, Values.of( value, false ) );
         }
         catch ( IllegalArgumentException e )
         {
