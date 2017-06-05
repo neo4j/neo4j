@@ -97,7 +97,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extend
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        throw new UnsupportedOperationException( "Implement me" );
+        return new NumberAllEntriesReader<>( tree, layout );
     }
 
     @Override

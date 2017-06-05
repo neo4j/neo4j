@@ -26,10 +26,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -54,6 +57,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 import static org.neo4j.function.Predicates.all;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
+import static org.neo4j.helpers.collection.Iterables.asUniqueSet;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
@@ -617,14 +621,38 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         }
     }
 
+    @Test
+    public void shouldSeeAllEntriesInAllEntriesReader() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        processAll( updates );
+
+        // when
+        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader() );
+
+        // then
+        Set<Long> expectedIds = Stream.of( updates )
+                .map( update -> update.getEntityId() )
+                .collect( Collectors.toCollection( HashSet::new ) );
+        assertEquals( expectedIds, ids );
+    }
+
+    @Test
+    public void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex() throws Exception
+    {
+        // when
+        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader() );
+
+        // then
+        Set<Long> expectedIds = Collections.emptySet();
+        assertEquals( expectedIds, ids );
+    }
+
     private int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
-        Set<Double> seen = new HashSet<>();
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            seen.add( ((Number) update.values()[0]).doubleValue() );
-        }
-        return seen.size();
+        return Stream.of( updates ).map( update -> ((Number) update.values()[0]).doubleValue() )
+                .collect( Collectors.toSet() ).size();
     }
 
     private static Predicate<Object> lessThan( Double value )
@@ -766,7 +794,4 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
     //       so perhaps we should wait with this until we know exactly how this works and which combinations
     //       that should be supported/optimized for.
-
-    // ACCESSOR
-//    BoundedIterable<Long> newAllEntriesReader()
 }

@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
@@ -55,7 +55,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
@@ -72,7 +71,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         // given
         populator.create();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
@@ -111,7 +109,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         // GIVEN
         populator.create();
         populator.configureSampling( false );
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( updates ) );
 
@@ -127,12 +124,8 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
 
     private long countUniqueValuesAmongUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
-        Set<Double> uniqueValues = new HashSet<>();
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            uniqueValues.add( ((Number)update.values()[0]).doubleValue() );
-        }
-        return uniqueValues.size();
+        return Stream.of( updates ).map( update -> ((Number) update.values()[0]).doubleValue() )
+                .collect( Collectors.toSet() ).size();
     }
 
     @Test
@@ -141,7 +134,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
         // GIVEN
         populator.create();
         populator.configureSampling( true );
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( scanUpdates ) );
         Number[] updates = array( 101, 102, 102, 103, 103 );
