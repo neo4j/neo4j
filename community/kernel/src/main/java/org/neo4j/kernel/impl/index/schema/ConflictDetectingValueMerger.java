@@ -39,9 +39,12 @@ class ConflictDetectingValueMerger<KEY extends NumberKey, VALUE extends NumberVa
     @Override
     public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
     {
-        conflict = true;
-        existingNodeId = existingKey.entityId;
-        addedNodeId = newKey.entityId;
+        if ( existingKey.entityId != newKey.entityId )
+        {
+            conflict = true;
+            existingNodeId = existingKey.entityId;
+            addedNodeId = newKey.entityId;
+        }
         return null;
     }
 
