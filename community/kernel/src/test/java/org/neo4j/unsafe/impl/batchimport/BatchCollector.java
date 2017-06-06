@@ -17,11 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.unsafe.impl.batchimport;
 
-public interface IdSequence
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+
+public class BatchCollector<T> implements BatchSender
 {
-    long nextId();
+    private final List<T> batches = new ArrayList<>();
 
-    IdRange nextIdBatch( int size );
+    @Override
+    public synchronized void send( Object batch )
+    {
+        batches.add( (T) batch );
+    }
+
+    public List<T> getBatches()
+    {
+        return batches;
+    }
 }

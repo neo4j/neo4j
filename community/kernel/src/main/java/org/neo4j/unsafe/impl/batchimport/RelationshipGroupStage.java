@@ -17,11 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.unsafe.impl.batchimport;
 
-public interface IdSequence
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+
+public class RelationshipGroupStage extends Stage
 {
-    long nextId();
-
-    IdRange nextIdBatch( int size );
+    public RelationshipGroupStage( String topic, Configuration config,
+            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
+    {
+        super( "RelationshipGroup" + topic, config );
+        add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );
+        add( new UpdateRecordsStep<>( control(), config, store ) );
+    }
 }

@@ -51,13 +51,19 @@ public class PrimitiveLongCollections
      */
     public abstract static class PrimitiveLongBaseIterator implements PrimitiveLongIterator
     {
+        private boolean hasNextDecided;
         private boolean hasNext;
         protected long next;
 
         @Override
         public boolean hasNext()
         {
-            return hasNext ? true : (hasNext = fetchNext());
+            if ( !hasNextDecided )
+            {
+                hasNext = fetchNext();
+                hasNextDecided = true;
+            }
+            return hasNext;
         }
 
         @Override
@@ -67,7 +73,7 @@ public class PrimitiveLongCollections
             {
                 throw new NoSuchElementException( "No more elements in " + this );
             }
-            hasNext = false;
+            hasNextDecided = false;
             return next;
         }
 

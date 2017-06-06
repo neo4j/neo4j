@@ -43,7 +43,7 @@ public interface Configuration
      * database directory of the imported database, i.e. <into>/bad.log.
      */
     String BAD_FILE_NAME = "bad.log";
-    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 240 );
+    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 480 );
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**
@@ -127,6 +127,37 @@ public interface Configuration
         return true;
     }
 
+    /**
+     * Controls whether or not to write records in parallel. Multiple threads writing records in parallel
+     * doesn't necessarily mean concurrent I/O because writing is separate from page cache eviction/flushing.
+     */
+    default boolean parallelRecordWrites()
+    {
+        // Defaults to true since this benefits virtually all environments
+        return true;
+    }
+
+    /**
+     * Controls whether or not to read records in parallel in stages where there's no record writing.
+     * Enabling this may result in multiple pages being read from underlying storage concurrently.
+     */
+    default boolean parallelRecordReads()
+    {
+        // Defaults to true since this benefits most environments
+        return true;
+    }
+
+    /**
+     * Controls whether or not to read records in parallel in stages where there's concurrent record writing.
+     * Enabling will probably increase concurrent I/O to a point which reduces performance if underlying storage
+     * isn't great at concurrent I/O, especially if also {@link #parallelRecordWrites()} is enabled.
+     */
+    default boolean parallelRecordReadsWhenWriting()
+    {
+        // Defaults to false since some environments sees less performance with this enabled
+        return false;
+    }
+
     Configuration DEFAULT = new Configuration()
     {
     };
@@ -179,6 +210,36 @@ public interface Configuration
         public boolean sequentialBackgroundFlushing()
         {
             return defaults.sequentialBackgroundFlushing();
+        }
+
+        @Override
+        public int batchSize()
+        {
+            return defaults.batchSize();
+        }
+
+        @Override
+        public int maxNumberOfProcessors()
+        {
+            return defaults.maxNumberOfProcessors();
+        }
+
+        @Override
+        public boolean parallelRecordWrites()
+        {
+            return defaults.parallelRecordWrites();
+        }
+
+        @Override
+        public boolean parallelRecordReads()
+        {
+            return defaults.parallelRecordReads();
+        }
+
+        @Override
+        public boolean parallelRecordReadsWhenWriting()
+        {
+            return defaults.parallelRecordReadsWhenWriting();
         }
     }
 

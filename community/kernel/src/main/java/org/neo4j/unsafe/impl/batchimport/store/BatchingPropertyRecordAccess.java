@@ -30,6 +30,8 @@ public class BatchingPropertyRecordAccess extends BatchingRecordAccess<Long,Prop
     @Override
     protected PropertyRecord createRecord( Long key, PrimitiveRecord additionalData )
     {
-        return new PropertyRecord( key.longValue(), additionalData );
+        return additionalData != null
+                ? new PropertyRecord( key.longValue(), additionalData )
+                : new PropertyRecord( key.longValue() );
     }
 }

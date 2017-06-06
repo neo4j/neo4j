@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
@@ -38,7 +39,8 @@ public class NodeCountsStage extends Stage
             int highLabelId, CountsAccessor.Updater countsUpdater, StatsProvider... additionalStatsProviders )
     {
         super( "Node counts", config );
-        add( new ReadRecordsStep<>( control(), config, nodeStore, allIn( nodeStore, config ) ) );
+        add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
+        add( new ReadRecordsStep<>( control(), config, false, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater ), true, additionalStatsProviders ) );
     }

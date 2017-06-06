@@ -24,9 +24,13 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 
 import static java.util.Arrays.asList;
+
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -575,6 +579,32 @@ public class PrimitiveLongCollectionsTest
 
         // THEN
         assertTrue( Arrays.equals( new long[] { 1, 2, 3 }, array ) );
+    }
+
+    @Test
+    public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
+    {
+        // GIVEN
+        AtomicLong count = new AtomicLong( 2 );
+        PrimitiveLongIterator iterator = new PrimitiveLongBaseIterator()
+        {
+            @Override
+            protected boolean fetchNext()
+            {
+                return count.decrementAndGet() >= 0 ? next( count.get() ) : false;
+            }
+        };
+
+        // WHEN/THEN
+        assertTrue( iterator.hasNext() );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 1L, iterator.next() );
+        assertTrue( iterator.hasNext() );
+        assertTrue( iterator.hasNext() );
+        assertEquals( 0L, iterator.next() );
+        assertFalse( iterator.hasNext() );
+        assertFalse( iterator.hasNext() );
+        assertEquals( -1L, count.get() );
     }
 
     private void assertNoMoreItems( PrimitiveLongIterator iterator )
