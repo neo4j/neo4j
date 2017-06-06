@@ -61,6 +61,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -165,6 +166,7 @@ public class ClusterManager
     private final boolean consistencyCheck;
     private final int firstInstanceId;
     private LifeSupport life;
+    private int baseBoltPort;
 
     private ClusterManager( Builder builder )
     {
@@ -178,6 +180,7 @@ public class ClusterManager
         this.availabilityChecks = builder.availabilityChecks;
         this.consistencyCheck = builder.consistencyCheck;
         this.firstInstanceId = builder.firstInstanceId;
+        this.baseBoltPort = builder.baseBoltPort;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -707,6 +710,12 @@ public class ClusterManager
         SELF withInstanceConfig( Map<String,IntFunction<String>> commonConfig );
 
         /**
+         * Enables bolt across the cluster, which is off by default. The port argument specifies the base port to
+         * use for calculating per instance ports.
+         */
+        SELF withBolt( int port );
+
+        /**
          * Like {@link #withInstanceConfig(Map)}, but for individual settings, conveniently using
          * {@link Setting} instance as key as well.
          */
@@ -762,6 +771,7 @@ public class ClusterManager
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
         private boolean consistencyCheck;
         private int firstInstanceId = FIRST_SERVER_ID;
+        private int baseBoltPort = -1; // -1 stands for no bolt enabled, anything > 0 means bolt enabled
 
         public Builder( File root )
         {
@@ -817,6 +827,12 @@ public class ClusterManager
         public Builder withInstanceConfig( Map<String,IntFunction<String>> commonConfig )
         {
             this.commonConfig.putAll( commonConfig );
+            return this;
+        }
+
+        public Builder withBolt( int basePort )
+        {
+            this.baseBoltPort = basePort;
             return this;
         }
 
@@ -1004,6 +1020,12 @@ public class ClusterManager
             }
         }
 
+        public String getBoltAddress( HighlyAvailableGraphDatabase db )
+        {
+            return "bolt://" + db.getDependencyResolver().resolveDependency( Config.class ).get(
+                    new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address ).toString();
+        }
+
         /**
          * @return the current master in the cluster.
          * @throws IllegalStateException if there's no current master.
@@ -1179,6 +1201,11 @@ public class ClusterManager
             };
         }
 
+        private AdvertisedSocketAddress socketAddressForServer( String advertisedAddress, int listenPort, InstanceId id )
+        {
+            return new AdvertisedSocketAddress( advertisedAddress, listenPort );
+        }
+
         private HighlyAvailableGraphDatabase startMemberNow( InstanceId serverId )
                 throws IOException, URISyntaxException
         {
@@ -1188,6 +1215,7 @@ public class ClusterManager
             int haPort = ports.findFreePort( HA_MIN_PORT, HA_MAX_PORT );
             File storeDir = new File( parent, "server" + serverId );
             if ( storeDirInitializer != null )
+
             {
                 storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
             }
@@ -1201,6 +1229,20 @@ public class ClusterManager
             for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
             {
                 builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
+            }
+
+            if ( baseBoltPort > 0 )
+            {
+                String listenAddress = "127.0.0.1";
+                int boltPort = baseBoltPort + serverId.toIntegerIndex();
+                AdvertisedSocketAddress advertisedSocketAddress = socketAddressForServer( listenAddress, boltPort, serverId );
+                String advertisedAddress = advertisedSocketAddress.getHostname();
+                String boltAdvertisedAddress = advertisedAddress + ":" + boltPort;
+
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).type, "BOLT" );
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled, "true" );
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address, listenAddress + ":" + boltPort );
+                builder.setConfig( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address, boltAdvertisedAddress );
             }
 
             HighlyAvailableGraphDatabase graphDatabase = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
