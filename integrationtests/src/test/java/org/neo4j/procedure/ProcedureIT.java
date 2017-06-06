@@ -57,6 +57,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -1188,6 +1189,13 @@ public class ProcedureIT
         result.next();
     }
 
+    @Test
+    public void shouldUseReadOperations() throws Throwable
+    {
+        Result result = db.execute( "CALL org.neo4j.procedure.readOperationTest" );
+        assertThat( result.next().get( "someVal" ), equalTo( 0L ) );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1333,6 +1341,9 @@ public class ProcedureIT
         public Log log;
 
         @Context
+        public ReadOperations read;
+
+        @Context
         public TerminationGuard guard;
 
         @Context
@@ -1350,6 +1361,12 @@ public class ProcedureIT
         public Stream<Output> integrationTestMe()
         {
             return Stream.of( new Output() );
+        }
+
+        @Procedure
+        public  Stream<Output> readOperationTest()
+        {
+            return Stream.of( new Output(read.countsForNode( 0 )) );
         }
 
         @Procedure

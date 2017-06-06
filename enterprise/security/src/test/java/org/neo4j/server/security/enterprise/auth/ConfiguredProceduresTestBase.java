@@ -305,6 +305,15 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         assertListProceduresHasRoles( readSubject, expected, call );
     }
 
+    @Test
+    public void shouldAllowReadForReaderWithReadOperations() throws Throwable
+    {
+        configuredSetup( stringMap(
+                SecuritySettings.default_allowed.name(), "default" ) );
+        assertSuccess( readSubject, "CALL test.readOperations",  r -> r.next().containsKey( "0" ));
+        assertFail( noneSubject, "CALL test.readOperations",  "Read operations are not allowed for user 'noneSubject' with no roles.");
+    }
+
     private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected, String call )
     {
         assertSuccess( subject, call, itr ->

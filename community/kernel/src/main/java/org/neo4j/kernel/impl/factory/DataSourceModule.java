@@ -40,6 +40,7 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
@@ -373,6 +374,8 @@ public class DataSourceModule
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
         procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
         procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ), true );
+        procedures.registerComponent( ReadOperations.class,
+                ( ctx ) -> ctx.get( KERNEL_TRANSACTION ).acquireStatement().readOperations(), true );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following
