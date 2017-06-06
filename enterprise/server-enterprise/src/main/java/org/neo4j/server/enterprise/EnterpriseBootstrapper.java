@@ -28,6 +28,7 @@ import org.neo4j.configuration.HaConfigurationValidator;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
+import org.neo4j.kernel.configuration.ServerConfigurationValidator;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
@@ -48,6 +49,7 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         ArrayList<ConfigurationValidator> validators = new ArrayList<>();
         validators.addAll( super.configurationValidators() );
         validators.add( new HaConfigurationValidator() );
+        validators.add( new ServerConfigurationValidator() );
         validators.add( new CausalClusterConfigurationValidator() );
         return validators;
     }
