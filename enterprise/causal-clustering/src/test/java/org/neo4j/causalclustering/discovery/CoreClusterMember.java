@@ -62,6 +62,7 @@ public class CoreClusterMember implements ClusterMember
     private final int serverId;
     private final String boltAdvertisedAddress;
     private CoreGraphDatabase database;
+    private File dataDir;
 
     public CoreClusterMember( int serverId, int clusterSize,
                               List<AdvertisedSocketAddress> addresses,
@@ -119,7 +120,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
-        File dataDir = new File( neo4jHome, "data" );
+        dataDir = new File( neo4jHome, "data" );
         clusterStateDir = ClusterStateDirectory.withoutInitializing( dataDir ).get();
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
@@ -168,6 +169,12 @@ public class CoreClusterMember implements ClusterMember
     public File storeDir()
     {
         return storeDir;
+    }
+
+
+    public File dataDir()
+    {
+        return dataDir;
     }
 
     public RaftLogPruner raftLogPruner()

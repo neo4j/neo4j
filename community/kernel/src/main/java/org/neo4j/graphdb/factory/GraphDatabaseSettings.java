@@ -516,6 +516,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
+    @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
+            "same data directory." )
+    public static final Setting<File> data_directory = pathSetting( "dbms.directories.data", "data" );
+
     public enum LabelIndex
     {
         /**

@@ -52,6 +52,7 @@ public class ReadReplica implements ClusterMember
     private final File storeDir;
     private final int serverId;
     private final String boltAdvertisedAddress;
+    private final File dataDir;
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
 
@@ -97,7 +98,8 @@ public class ReadReplica implements ClusterMember
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
-        storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+        dataDir = new File( neo4jHome, "data" );
+        storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
         storeDir.mkdirs();
 
         this.monitors = monitors;

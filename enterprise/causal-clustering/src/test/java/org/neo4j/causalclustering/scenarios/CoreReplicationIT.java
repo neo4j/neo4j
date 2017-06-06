@@ -25,18 +25,26 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
+import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.commandline.dbms.UnbindFromClusterCommand;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.VerboseTimeout;
 
@@ -82,6 +90,45 @@ public class CoreReplicationIT
         // then
         assertEquals( 1, countNodes( leader ) );
         dataMatchesEventually( leader, cluster.coreMembers() );
+    }
+
+    @Test
+    public void shouldRefuseToStartClusterMemberInSingleModeUnlessUnbindCommandIsExecuted() throws Exception
+    {
+        // when
+        CoreClusterMember leader = cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        cluster.shutdown();
+
+        // then
+        File storeDir = leader.storeDir();
+        File dataDir = leader.dataDir();
+
+        try
+        {
+            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                    .setConfig( GraphDatabaseSettings.data_directory, leader.dataDir().getAbsolutePath() )
+                    .newGraphDatabase();
+
+            fail( "Should have thrown an exception" );
+        }
+        catch ( Exception e )
+        {
+            // excepted
+        }
+
+        // unbind cluster state
+        // can't use the unbind command as we don't have the config saved anywhere
+        ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir );
+        clusterStateDirectory.initialize( new DefaultFileSystemAbstraction() );
+        FileUtils.deleteRecursively( clusterStateDirectory.get() );
+
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     @Test
