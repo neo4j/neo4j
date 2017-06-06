@@ -848,6 +848,32 @@ public class ImportToolTest
     }
 
     @Test
+    public void reportCorrectLinesInExceptionWhenQuotesAreUsed() throws Exception
+    {
+        int nodeId = 1;
+        String labelName = "marker";
+        List<String> lines = new ArrayList<>();
+        lines.add( ":ID,name,:LABEL" );
+        lines.add( nodeId++ + "," + "abcdefghi" + "," + labelName );
+        lines.add( nodeId + "," + "abc_defghi" + "," + labelName );
+        lines.add( nodeId + "," + "abcdefghi" + "," + labelName );
+
+        try
+        {
+            importTool( "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--quote", "_",
+                    "--nodes", data( lines.toArray( new String[lines.size()] ) ).getAbsolutePath(),
+                    "--stacktrace" );
+        }
+        catch ( Exception e )
+        {
+            // THEN
+            assertExceptionContains( e, ".csv:3", DuplicateInputIdException.class );
+            assertExceptionContains( e, ".csv:4", DuplicateInputIdException.class );
+        }
+    }
+
+    @Test
     public void shouldSkipDuplicateNodesIfToldTo() throws Exception
     {
         // GIVEN
