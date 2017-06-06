@@ -19,16 +19,20 @@
  */
 package org.neo4j.ha;
 
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
@@ -42,10 +46,10 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 public class BoltHAIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withCluster( clusterOfSize( 3 ) );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withBolt( 8000 ).withCluster( clusterOfSize( 3 ) );
 
     @Test
-    public void shouldContinueServingBoltRequestsBetweenInteralRestarts() throws Throwable
+    public void shouldContinueServingBoltRequestsBetweenInternalRestarts() throws Throwable
     {
         // given
         /*
@@ -67,18 +71,16 @@ public class BoltHAIT
          * switched during an internal restart are actually refreshed. Technically, this is not necessary, since the
          * bolt server makes such use for every request. But this puts a nice bow on top of it.
          */
-        String lastBookmark;
-
-        try ( Session session = driver.session() )
+        String lastBookmark = inExpirableSession( driver, Driver::session, s ->
         {
-            try ( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = s.beginTransaction() )
             {
                 tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
                         parameters( "name", "Webber", "title", "Mr" ) );
                 tx.success();
             }
-            lastBookmark = session.lastBookmark();
-        }
+            return s.lastBookmark();
+        } );
 
         // when
         ClusterManager.RepairKit slaveFailRK = cluster.fail( slave1 );
@@ -88,14 +90,37 @@ public class BoltHAIT
         cluster.await( masterSeesMembers( 3 ) );
 
         // then
-        try ( Session session = driver.session( AccessMode.READ ) )
+        Integer count = inExpirableSession( driver, Driver::session, s ->
         {
-            try ( Transaction tx = session.beginTransaction( lastBookmark ) )
+            Record record;
+            try ( Transaction tx = s.beginTransaction( lastBookmark ) )
             {
-                Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 tx.success();
-                assertEquals( 1, record.get( "count" ).asInt() );
+            }
+            return record.get( "count" ).asInt();
+        } );
+        assertEquals( 1, count.intValue() );
+    }
+
+    private static <T> T inExpirableSession( Driver driver, Function<Driver,Session> acquirer, Function<Session,T> op )
+            throws TimeoutException, InterruptedException
+    {
+        long endTime = System.currentTimeMillis() + 15_000;
+
+        do
+        {
+            try ( Session session = acquirer.apply( driver ) )
+            {
+                return op.apply( session );
+            }
+            catch ( TransientException | SessionExpiredException e )
+            {
+                // role might have changed; try again;
             }
         }
+        while ( System.currentTimeMillis() < endTime );
+
+        throw new TimeoutException( "Transaction did not succeed in time" );
     }
 }

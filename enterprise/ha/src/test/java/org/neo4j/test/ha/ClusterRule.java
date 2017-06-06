@@ -19,18 +19,18 @@
  */
 package org.neo4j.test.ha;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.cluster.client.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -129,6 +129,12 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     public ClusterRule withInstanceConfig( Map<String,IntFunction<String>> commonConfig )
     {
         return set( clusterManagerBuilder.withInstanceConfig( commonConfig ) );
+    }
+
+    @Override
+    public ClusterRule withBolt( int port )
+    {
+        return set( clusterManagerBuilder.withBolt( port ) );
     }
 
     @Override
