@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_1.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LockNodes, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
@@ -53,9 +54,20 @@ case object PlanUpdates
                         (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
-      query.allPlannerQueries.foldLeft((plan, true)) {
+      val pair: (LogicalPlan, Boolean) = query.allPlannerQueries.foldLeft((plan, true)) {
         case ((accPlan, innerFirst), plannerQuery) => (this.apply(plannerQuery, accPlan, innerFirst), false)
-      }._1
+      }
+
+      planAllForeachProcedureCalls(query, pair._1)
+    }
+
+    def planAllForeachProcedureCalls(query: PlannerQuery, plan: LogicalPlan) = {
+      query.allPlannerQueries.foldLeft(plan) {
+        case (accPlan, next) => next.horizon match {
+          case _: ResolvedCall => PlanEventHorizon(next, accPlan)
+          case _ => plan
+        }
+      }
     }
 
     pattern match {

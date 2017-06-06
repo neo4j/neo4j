@@ -21,14 +21,34 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
+import org.neo4j.kernel.api.DataWriteOperations
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
+import org.neo4j.kernel.api.proc.{Context, Mode, Neo4jTypes, ProcedureSignature}
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
+
+  protected def registerProcedureWithSideEffects() = {
+    registerProcedure("test.createSmallPattern") { builder =>
+      builder.out(ProcedureSignature.VOID)
+      builder.mode(Mode.READ_WRITE)
+
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+          val operations: DataWriteOperations = ctx.get(Context.KERNEL_TRANSACTION).acquireStatement().dataWriteOperations()
+          val a = operations.nodeCreate()
+          operations.nodeAddLabel(a, operations.labelGetOrCreateForName("A"))
+          val b = operations.nodeCreate()
+          operations.nodeAddLabel(b, operations.labelGetOrCreateForName("B"))
+          operations.relationshipCreate(operations.relationshipTypeGetOrCreateForName("T"), a, b)
+          RawIterator.empty()
+        }
+      }
+    }
+  }
 
   protected def registerDummyInOutProcedure(types: Neo4jTypes.AnyType*) =
     registerProcedure("my.first.proc") { builder =>
