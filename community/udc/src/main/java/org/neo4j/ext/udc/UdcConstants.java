@@ -31,26 +31,27 @@ public class UdcConstants
     public static final String SERVER_ID = "serverid";
 
     public static final String FEATURES = "features";
-
     public static final String USER_AGENTS = "ua";
+
     public static final String VERSION = "v";
     public static final String REVISION = "revision";
     public static final String EDITION = "edition";
     public static final String SOURCE = "source";
-
     public static final String MAC = "mac";
+
     public static final String NUM_PROCESSORS = "numprocs";
     public static final String TOTAL_MEMORY = "totalmem";
     public static final String HEAP_SIZE = "heapsize";
-
     public static final String NODE_IDS_IN_USE = "nodeids";
+
     public static final String RELATIONSHIP_IDS_IN_USE = "relids";
     public static final String PROPERTY_IDS_IN_USE = "propids";
     public static final String LABEL_IDS_IN_USE = "labelids";
-
     public static final String UDC_PROPERTY_PREFIX = "unsupported.dbms.udc";
+
     public static final String OS_PROPERTY_PREFIX = "os";
     public static final String UNKNOWN_DIST = "unknown";
-
     public static final String STORE_SIZE = "storesize";
+
+    public static final String MULTI_DC = "multi.dc";
 }

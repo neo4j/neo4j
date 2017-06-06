@@ -56,6 +56,7 @@ import static org.neo4j.ext.udc.UdcConstants.HEAP_SIZE;
 import static org.neo4j.ext.udc.UdcConstants.ID;
 import static org.neo4j.ext.udc.UdcConstants.LABEL_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.MULTI_DC;
 import static org.neo4j.ext.udc.UdcConstants.NODE_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.NUM_PROCESSORS;
 import static org.neo4j.ext.udc.UdcConstants.OS_PROPERTY_PREFIX;
@@ -72,6 +73,9 @@ import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
 import static org.neo4j.ext.udc.UdcConstants.UNKNOWN_DIST;
 import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
 import static org.neo4j.ext.udc.UdcConstants.VERSION;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class DefaultUdcInformationCollector implements UdcInformationCollector
 {
@@ -159,6 +163,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, PROPERTY_IDS_IN_USE, determinePropertyIdsInUse() );
 
         add( udcFields, FEATURES, usageData.get( UsageDataKeys.features ).asHex() );
+
+        add(udcFields, MULTI_DC, config.get( setting( "causal_clustering.multi_dc_license", BOOLEAN, FALSE )) );
 
         addStoreFileSizes( udcFields );
 
