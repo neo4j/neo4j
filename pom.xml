@@ -336,6 +336,26 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>skip-findbugs</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>skipFindbugs</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>findbugs-maven-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <dependencyManagement>
