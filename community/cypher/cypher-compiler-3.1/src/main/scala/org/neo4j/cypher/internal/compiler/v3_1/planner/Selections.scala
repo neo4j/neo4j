@@ -38,7 +38,8 @@ object Predicate {
 }
 
 object Selections {
-  def from(expressions: Expression*): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Traversable[Expression]): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Expression): Selections = new Selections(expressions.asPredicates)
 }
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {
@@ -97,6 +98,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     }
   }
 
+  def variableDependencies: Set[IdName] = predicates.flatMap(_.dependencies)
+
   def labelsOnNode(id: IdName): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
 
   lazy val labelInfo: Map[IdName, Set[LabelName]] =
@@ -129,7 +132,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
          r.dependencies != l.dependencies => e
   }.toSet
 
-  def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
+  def ++(expressions: Traversable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
   def nonEmpty: Boolean = !isEmpty
 }

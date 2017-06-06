@@ -166,7 +166,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     val pred2 = Equals(x_id1, z_id)(pos)
     val pred3 = Equals(x_id2, lit)(pos)
 
-    val selections = Selections.from(pred1, pred2, pred3)
+    val selections = Selections.from(Seq(pred1, pred2, pred3))
 
     // when
     val result = selections.valueJoins

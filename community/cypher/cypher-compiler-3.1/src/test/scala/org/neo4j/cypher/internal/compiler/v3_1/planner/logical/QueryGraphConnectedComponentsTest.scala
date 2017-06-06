@@ -123,10 +123,10 @@ class QueryGraphConnectedComponentsTest
   test("two disconnected pattern nodes with each one predicate") {
     val graph = QueryGraph(
       patternNodes = Set(A, B),
-      selections = Selections.from(
+      selections = Selections.from(Seq(
         identHasLabel("a", "Label"),
         identHasLabel("b", "Label"))
-    )
+    ))
 
     graph.connectedComponents should equal(Seq(
       QueryGraph(patternNodes = Set(A), selections = Selections.from(identHasLabel("a", "Label"))),
