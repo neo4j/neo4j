@@ -207,6 +207,22 @@ public class BuiltInProcedures
         return query.stream().map( NodeResult::new );
     }
 
+    @Description( "Search nodes from legacy index. Replaces `START n=node:nodes('key:foo*')`" )
+    @Procedure( name = "db.nodeLegacyIndexSearch", mode = SCHEMA )
+    public Stream<NodeResult> nodeLegacyIndexSearch( @Name("indexName") String legacyIndexName,
+            @Name("query") Object query )
+            throws ProcedureException
+    {
+        IndexManager index = graphDatabaseAPI.index();
+        if ( !index.existsForNodes( legacyIndexName ) )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    legacyIndexName );
+        }
+        IndexHits<Node> nodes = index.forNodes( legacyIndexName ).query( query );
+        return nodes.stream().map( NodeResult::new );
+    }
+
     private IndexProcedures indexProcedures()
     {
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
