@@ -47,27 +47,27 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
         ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices,
           planContext.notificationLogger().notifications, publicTypeConverter)
 
-      // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
-      case CreateUniquePropertyConstraint(node, label, prop) =>
-        PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
+      // CREATE CONSTRAINT ON (node:Label_0:...:Label_n) ASSERT node.prop IS UNIQUE
+      case CreateUniquePropertyConstraint(node, labels, prop) =>
+        for (label <- labels) PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
-      // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
-      case DropUniquePropertyConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
+      // DROP CONSTRAINT ON (node:Label_0:...:Label_n) ASSERT node.prop IS UNIQUE
+      case DropUniquePropertyConstraint(_, labels, prop) =>
+        for (label <- labels) PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
-      // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
-      case CreateNodePropertyExistenceConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+      // CREATE CONSTRAINT ON (node:Label_0:...:Label_n) ASSERT node.prop EXISTS
+      case CreateNodePropertyExistenceConstraint(_, labels, prop) =>
+        for (label <- labels) PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
-      // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
-      case DropNodePropertyExistenceConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+      // DROP CONSTRAINT ON (node:Label_0:...:Label_n) ASSERT node.prop EXISTS
+      case DropNodePropertyExistenceConstraint(_, labels, prop) =>
+        for (label <- labels) PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 

@@ -80,10 +80,10 @@ trait Command extends Parser
     ) ~~> (_.toIndexedSeq))
   }
 
-  private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabels ~~ ")" ~~
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabels ~~ ")" ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~

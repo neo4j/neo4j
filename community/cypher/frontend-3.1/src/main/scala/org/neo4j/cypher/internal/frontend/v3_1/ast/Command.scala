@@ -53,7 +53,7 @@ trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
 
   val entityType = symbols.CTNode
 
-  def label: LabelName
+  def labels: Seq[LabelName]
 }
 
 trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
@@ -63,13 +63,13 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
   def relType: RelTypeName
 }
 
-case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateUniquePropertyConstraint(variable: Variable, labels: Seq[LabelName], property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropUniquePropertyConstraint(variable: Variable, labels: Seq[LabelName], property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateNodePropertyExistenceConstraint(variable: Variable, labels: Seq[LabelName], property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropNodePropertyExistenceConstraint(variable: Variable, labels: Seq[LabelName], property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
 case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
