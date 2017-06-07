@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,9 +39,11 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.test.rule.RandomRule;
 
-import static java.lang.Integer.max;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.Integer.max;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
@@ -78,7 +81,7 @@ public class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ) ) );
+            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>() ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }

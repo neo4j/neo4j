@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -61,9 +62,14 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
      */
     private long prevRange = -1;
 
-    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
+    private final Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenExhausted;
+    private boolean closed;
+
+    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
+            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenExhausted )
     {
         this.cursor = cursor;
+        this.toRemoveFromWhenExhausted = toRemoveFromWhenExhausted;
     }
 
     /**
@@ -85,6 +91,7 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             {
                 if ( !cursor.next() )
                 {
+                    ensureCursorClosed();
                     return false;
                 }
             }
@@ -98,6 +105,16 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
             bits = hit.value().bits;
 
             assert keysInOrder( hit.key() );
+        }
+    }
+
+    private void ensureCursorClosed() throws IOException
+    {
+        if ( !closed )
+        {
+            cursor.close();
+            toRemoveFromWhenExhausted.remove( cursor );
+            closed = true;
         }
     }
 
