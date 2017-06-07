@@ -27,7 +27,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -48,6 +51,7 @@ import org.neo4j.procedure.Procedure;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.SCHEMA;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
@@ -186,6 +190,23 @@ public class BuiltInProcedures
                 .onClose( statement::close );
     }
 
+    @Description( "Get node from legacy index. Replaces `START n=node:nodes(key = 'A')`" )
+    @Procedure( name = "db.nodeLegacyIndexSeek", mode = SCHEMA )
+    public Stream<NodeResult> nodeLegacyIndexSeek( @Name( "indexName" ) String legacyIndexName,
+            @Name("key") String key,
+            @Name("value") Object value )
+            throws ProcedureException
+    {
+        IndexManager index = graphDatabaseAPI.index();
+        if ( !index.existsForNodes( legacyIndexName ) )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    legacyIndexName );
+        }
+        IndexHits<Node> query = index.forNodes( legacyIndexName ).query( key, value );
+        return query.stream().map( NodeResult::new );
+    }
+
     private IndexProcedures indexProcedures()
     {
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
@@ -248,6 +269,17 @@ public class BuiltInProcedures
         {
             this.description = description;
         }
+    }
+
+    @SuppressWarnings( "unused" )
+    public class NodeResult
+    {
+        public NodeResult( Node node )
+        {
+            this.node = node;
+        }
+
+        public final Node node;
     }
 
     //When we have decided on what to call different indexes
