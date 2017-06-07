@@ -23,7 +23,9 @@ import org.junit.Test;
 
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
@@ -77,5 +79,24 @@ public class MemoryAllocatorTest
         assertThat( page1, is( not( 0L ) ) );
         assertThat( largeBlock, is( not( 0L ) ) );
         assertThat( page2, is( not( 0L ) ) );
+    }
+
+    @Test
+    public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() throws Exception
+    {
+        MemoryAllocator mman = createAllocator( 8192, 1 );
+        assertThat( mman.usedMemory(), is( 0L ) );
+        assertThat( mman.availableMemory(), is( 8192L ) );
+        assertThat( mman.usedMemory() + mman.availableMemory(), is( 8192L ) );
+
+        mman.allocateAligned( 32 );
+        assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 32L ) ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( 8192L - 32 ) ) );
+        assertThat( mman.usedMemory() + mman.availableMemory(), is( 8192L ) );
+
+        mman.allocateAligned( 32 );
+        assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 64L ) ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( 8192L - 32 - 32 ) ) );
+        assertThat( mman.usedMemory() + mman.availableMemory(), is( 8192L ) );
     }
 }

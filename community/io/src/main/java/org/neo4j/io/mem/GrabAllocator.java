@@ -60,7 +60,7 @@ public final class GrabAllocator implements MemoryAllocator
     }
 
     @Override
-    public synchronized long sumUsedMemory()
+    public synchronized long usedMemory()
     {
         long sum = 0;
         Grab grab = grabs;
@@ -70,6 +70,18 @@ public final class GrabAllocator implements MemoryAllocator
             grab = grab.next;
         }
         return sum;
+    }
+
+    @Override
+    public synchronized long availableMemory()
+    {
+        Grab grab = grabs;
+        long availableInCurrentGrab = 0;
+        if ( grab != null )
+        {
+            availableInCurrentGrab = grab.limit - grab.nextAlignedPointer;
+        }
+        return Math.max( memoryReserve, 0L ) + availableInCurrentGrab;
     }
 
     @Override

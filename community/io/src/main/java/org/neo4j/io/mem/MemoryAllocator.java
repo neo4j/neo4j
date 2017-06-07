@@ -32,7 +32,12 @@ public interface MemoryAllocator
     /**
      * @return The sum, in bytes, of all the memory currently allocating through this allocator.
      */
-    long sumUsedMemory();
+    long usedMemory();
+
+    /**
+     * @return The amount of available memory, in bytes.
+     */
+    long availableMemory();
 
     /**
      * Allocate a contiguous, aligned region of memory of the given size in bytes.

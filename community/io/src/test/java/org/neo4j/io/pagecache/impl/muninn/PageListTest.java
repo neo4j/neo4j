@@ -1206,9 +1206,9 @@ public class PageListTest
     @Test
     public void initialisingBufferMustConsumeMemoryFromMemoryManager() throws Exception
     {
-        long initialUsedMemory = mman.sumUsedMemory();
+        long initialUsedMemory = mman.usedMemory();
         pageList.initBuffer( pageRef );
-        long resultingUsedMemory = mman.sumUsedMemory();
+        long resultingUsedMemory = mman.usedMemory();
         int allocatedMemory = (int) (resultingUsedMemory - initialUsedMemory);
         assertThat( allocatedMemory, greaterThanOrEqualTo( pageSize ) );
         assertThat( allocatedMemory, lessThanOrEqualTo( pageSize + ALIGNMENT ) );
