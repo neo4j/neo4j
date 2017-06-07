@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite}
 
 class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
 
@@ -34,6 +34,11 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
     result should equal(List(Map("n" -> node)))
   }
 
+  test("should fail if index doesn't exist for node seek") {
+    a [CypherExecutionException] should be thrownBy
+      execute("""CALL db.nodeLegacyIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""")
+  }
+
   test("Node from query lucene index") {
     val node = createNode()
     graph.inTx {
@@ -43,6 +48,11 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
     val result = execute( """CALL db.nodeLegacyIndexSearch("index", "key:value") YIELD node as n RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
+  }
+
+  test("should fail if index doesn't exist for node search") {
+    a [CypherExecutionException] should be thrownBy
+      execute("""CALL db.nodeLegacyIndexSearch('index', 'key:value') YIELD node AS n RETURN n""")
   }
 
   test("legacy index + where") {
@@ -58,5 +68,26 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       """CALL db.nodeLegacyIndexSearch("index", "key:value") YIELD node AS n WHERE n.prop = 42 RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
+  }
+
+  test("Relationship legacy index seek ") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val relationship = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index().forRelationships("relIndex")
+      relationshipIndex.add(relationship, "key", "value")
+    }
+
+    val query = "CALL db.relationshipLegacyIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
+    val result = execute(query)
+
+    result.toList should equal(List(Map("r"-> relationship)))
+  }
+
+  test("should fail if index doesn't exist for relationship") {
+    a [CypherExecutionException] should be thrownBy
+      execute("""CALL db.relationshipLegacyIndexSeek('index', 'key', 'value') YIELD relationship AS r RETURN r""")
   }
 }

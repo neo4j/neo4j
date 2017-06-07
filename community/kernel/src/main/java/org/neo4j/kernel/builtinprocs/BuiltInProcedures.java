@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -223,6 +224,23 @@ public class BuiltInProcedures
         return nodes.stream().map( NodeResult::new );
     }
 
+    @Description( "Get relationship from legacy index. Replaces `START r=relationship:relIndex(key = 'A')`" )
+    @Procedure( name = "db.relationshipLegacyIndexSeek", mode = SCHEMA )
+    public Stream<RelationshipResult> relationshipLegacyIndexSeek( @Name( "indexName" ) String legacyIndexName,
+            @Name("key") String key,
+            @Name("value") Object value )
+            throws ProcedureException
+    {
+        IndexManager index = graphDatabaseAPI.index();
+        if ( !index.existsForRelationships( legacyIndexName ) )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    legacyIndexName );
+        }
+        IndexHits<Relationship> query = index.forRelationships( legacyIndexName ).query( key, value );
+        return query.stream().map( RelationshipResult::new );
+    }
+
     private IndexProcedures indexProcedures()
     {
         return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
@@ -296,6 +314,17 @@ public class BuiltInProcedures
         }
 
         public final Node node;
+    }
+
+    @SuppressWarnings( "unused" )
+    public class RelationshipResult
+    {
+        public RelationshipResult( Relationship relationship )
+        {
+            this.relationship = relationship;
+        }
+
+        public final Relationship relationship;
     }
 
     //When we have decided on what to call different indexes
