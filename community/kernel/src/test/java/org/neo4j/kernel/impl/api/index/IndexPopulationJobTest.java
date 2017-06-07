@@ -46,6 +46,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -599,7 +601,8 @@ public class IndexPopulationJobTest
         }
     }
 
-    private IndexPopulator inMemoryPopulator( boolean constraint ) throws TransactionFailureException
+    private IndexPopulator inMemoryPopulator( boolean constraint )
+            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
@@ -608,7 +611,7 @@ public class IndexPopulationJobTest
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator,
                                                       FlippableIndexProxy flipper, boolean constraint )
-                                                              throws TransactionFailureException
+            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         return newIndexPopulationJob( populator, flipper, indexStoreView,
                 NullLogProvider.getInstance(), constraint );
@@ -617,7 +620,8 @@ public class IndexPopulationJobTest
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       LogProvider logProvider,
-                                                      boolean constraint ) throws TransactionFailureException
+                                                      boolean constraint )
+            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         return newIndexPopulationJob(
                 mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, constraint );
@@ -627,7 +631,7 @@ public class IndexPopulationJobTest
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       LogProvider logProvider, boolean constraint )
-                                                              throws TransactionFailureException
+            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         long indexId = 0;
@@ -640,13 +644,14 @@ public class IndexPopulationJobTest
         return job;
     }
 
-    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint ) throws TransactionFailureException
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
+            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.AUTH_DISABLED );
               Statement statement = tx.acquireStatement() )
         {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
-            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
+            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
             IndexDescriptor descriptor = constraint ?
                                          IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
                                          IndexDescriptorFactory.forLabel( labelId, propertyKeyId );

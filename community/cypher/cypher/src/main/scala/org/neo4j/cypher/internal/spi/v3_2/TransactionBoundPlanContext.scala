@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.spi._
 import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_2.{CypherExecutionException, symbols}
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
+import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
@@ -49,12 +49,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toLabelSchemaDescriptor(tc, labelName, propertyKeys)
+    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
     getOnlineIndex(tc.statement.readOperations().indexGetForSchema(descriptor))
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val labelId = getLabelId(labelName)
 
     val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
                                   .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
@@ -70,7 +70,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toLabelSchemaDescriptor(tc, labelName, propertyKeys)
+    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
     getOnlineIndex(tc.statement.readOperations().indexGetForSchema(descriptor))
   }
 
@@ -78,7 +78,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       f
     } catch {
-      case _: SchemaKernelException => None
+      case _: KernelException => None
     }
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
@@ -88,10 +88,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+    constraintGet(labelName, propertyKey).isDefined
+  }
 
-    tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+  private def constraintGet(labelName: String, propertyKey: String): Option[Boolean] = evalOrNone {
+    val labelId = getLabelId(labelName)
+    val propertyKeyId = getPropertyKeyId(propertyKey)
+
+    Some(tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext)
   }
 
   def checkNodeIndex(idxName: String) {

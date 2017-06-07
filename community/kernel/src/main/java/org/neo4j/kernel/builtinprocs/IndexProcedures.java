@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 public class IndexProcedures implements AutoCloseable
 {
@@ -86,7 +87,7 @@ public class IndexProcedures implements AutoCloseable
     private int getLabelId( String labelName ) throws ProcedureException
     {
         int labelId = operations.labelGetForName( labelName );
-        if ( labelId == ReadOperations.NO_SUCH_LABEL )
+        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
         {
             throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
         }
@@ -100,7 +101,7 @@ public class IndexProcedures implements AutoCloseable
         {
 
             int propertyKeyId = operations.propertyKeyGetForName( propertyKeyNames[i] );
-            if ( propertyKeyId == ReadOperations.NO_SUCH_PROPERTY_KEY )
+            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
             {
                 throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s",
                         propertyKeyNames );

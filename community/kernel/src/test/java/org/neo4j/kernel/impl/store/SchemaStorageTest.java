@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -42,6 +41,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorPredicates;
@@ -86,8 +86,19 @@ public class SchemaStorageTest
     @BeforeClass
     public static void initStorage() throws Exception
     {
-        storage = new SchemaStorage( dependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getSchemaStore() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Statement statement = getStatement();
+            TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
+            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
+            tokenWriteOperations.labelGetOrCreateForName( LABEL1 );
+            tokenWriteOperations.labelGetOrCreateForName( LABEL2 );
+            tokenWriteOperations.relationshipTypeGetOrCreateForName( TYPE1 );
+            transaction.success();
+        }
+        SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
+        storage = new SchemaStorage( schemaStore );
     }
 
     @Before
@@ -357,12 +368,13 @@ public class SchemaStorageTest
                 PROVIDER_DESCRIPTOR );
     }
 
-    private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constaintId )
+    private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,
+            long constraintId )
     {
         return IndexRule.constraintIndexRule(
                 ruleId,
                 IndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
-                PROVIDER_DESCRIPTOR, constaintId );
+                PROVIDER_DESCRIPTOR, constraintId );
     }
 
     private ConstraintRule getUniquePropertyConstraintRule( long id, String label, String property )
@@ -371,22 +383,14 @@ public class SchemaStorageTest
                 ConstraintDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) ), 0L );
     }
 
-    private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, String type, String property )
+    private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, String type,
+            String property )
     {
         return ConstraintRule.constraintRule( id,
-                ConstraintDescriptorFactory.existsForRelType( labelId( type ), propId( property ) ) );
+                ConstraintDescriptorFactory.existsForRelType( typeId( type ), propId( property ) ) );
     }
 
-    private static void awaitIndexes()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
-        }
-    }
-
-    private int labelId( String labelName )
+    private static int labelId( String labelName )
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -402,7 +406,7 @@ public class SchemaStorageTest
         }
     }
 
-    private int typeId( String typeName )
+    private static int typeId( String typeName )
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -410,24 +414,28 @@ public class SchemaStorageTest
         }
     }
 
-    private ReadOperations readOps()
+    private static ReadOperations readOps()
     {
-        DependencyResolver dependencyResolver = dependencyResolver();
-        Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
+        Statement statement = getStatement();
         return statement.readOperations();
     }
 
-    private static DependencyResolver dependencyResolver()
+    private static Statement getStatement()
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver();
+        return resolveDependency( ThreadToStatementContextBridge.class ).get();
     }
 
-    private Consumer<GraphDatabaseService> index( String label, String prop )
+    private static <T> T resolveDependency( Class<T> clazz )
+    {
+        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( clazz );
+    }
+
+    private static Consumer<GraphDatabaseService> index( String label, String prop )
     {
         return db -> db.schema().indexFor( Label.label( label ) ).on( prop ).create();
     }
 
-    private Consumer<GraphDatabaseService> uniquenessConstraint( String label, String prop )
+    private static Consumer<GraphDatabaseService> uniquenessConstraint( String label, String prop )
     {
         return db -> db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( prop ).create();
     }
@@ -444,5 +452,14 @@ public class SchemaStorageTest
             tx.success();
         }
         awaitIndexes();
+    }
+
+    private static void awaitIndexes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.success();
+        }
     }
 }
