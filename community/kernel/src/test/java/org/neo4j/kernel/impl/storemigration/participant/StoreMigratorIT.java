@@ -157,7 +157,8 @@ public class StoreMigratorIT
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
         migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
-        migrator.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
+        migrator.rebuildCounts( storeDirectory, progressMonitor, versionToMigrateFrom,
+                upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =

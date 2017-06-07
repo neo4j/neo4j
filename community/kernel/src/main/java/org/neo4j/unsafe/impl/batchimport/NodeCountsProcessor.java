@@ -19,11 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import javax.swing.*;
+
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 
 /**
@@ -34,6 +37,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
 {
     private final NodeStore nodeStore;
     private final long[] labelCounts;
+    private MigrationProgressMonitor.Section progressMonitor;
     private final NodeLabelsCache cache;
     private final CountsAccessor.Updater counts;
     private final int anyLabel;
@@ -49,6 +53,18 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
         this.labelCounts = new long[highLabelId + 1];
     }
 
+    public NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
+            CountsAccessor.Updater counts, MigrationProgressMonitor.Section progressMonitor )
+    {
+        this.nodeStore = nodeStore;
+        this.cache = cache;
+        this.anyLabel = highLabelId;
+        this.counts = counts;
+        // Instantiate with high id + 1 since we need that extra slot for the ANY count
+        this.labelCounts = new long[highLabelId + 1];
+        this.progressMonitor = progressMonitor;
+    }
+
     @Override
     public boolean process( NodeRecord node )
     {
@@ -62,6 +78,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
             cache.put( node.getId(), labels );
         }
         labelCounts[anyLabel]++;
+        progressMonitor.progress( 1 );
 
         // No need to update the store, we're just reading things here
         return false;

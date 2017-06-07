@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
@@ -216,7 +215,8 @@ public class StoreUpgrader
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
+                participant.rebuildCounts( storeDirectory, progressMonitor, versionToMigrateFrom,
+                        upgradableDatabase.currentVersion() );
             }
         }
         catch ( IOException e )

@@ -67,13 +67,12 @@ public interface StoreMigrationParticipant
     /**
      * After a successful migration, and having moved all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, this will rebuild counts if needed.
-
      * @param storeDir directory the store directory of the to move the migrated files to.
+     * @param progressMonitor
      * @param versionToMigrateFrom the version we have migrated from
-     * @param versionToMigrateTo
-     * @throws IOException if unable to move one or more files.
-     */
-    void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
+     * @param versionToMigrateTo   @throws IOException if unable to move one or more files.
+     * */
+    void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
 
     /**
      * Delete any file from {@code migrationDir} produced during migration.

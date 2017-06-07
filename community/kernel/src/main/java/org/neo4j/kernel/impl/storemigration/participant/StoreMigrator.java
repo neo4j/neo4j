@@ -688,7 +688,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws
+    public void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom, String versionToMigrateTo ) throws
             IOException
     {
         if ( countStoreRebuildRequired( versionToMigrateFrom ) )
@@ -700,7 +700,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, versionToMigrateTo, pageCache );
+            rebuildCountsFromScratch( storeDir, lastTxId, progressMonitor, versionToMigrateTo, pageCache );
         }
     }
 
@@ -713,8 +713,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreVersion.HIGH_LIMIT_V3_1_0.versionString().equals( versionToMigrateFrom );
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, String versionToMigrateTo,
-                                           PageCache pageCache )
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, MigrationProgressMonitor progressMonitor,
+            String versionToMigrateTo, PageCache pageCache )
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
@@ -730,7 +730,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
                 int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
                 CountsComputer initializer = new CountsComputer( lastTxId, nodeStore, relationshipStore, highLabelId,
-                        highRelationshipTypeId );
+                        highRelationshipTypeId, progressMonitor );
                 life.add( new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config,
                         storeFileBase ).setInitializer( initializer ) );
             }
