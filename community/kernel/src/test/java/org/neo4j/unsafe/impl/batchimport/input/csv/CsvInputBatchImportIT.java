@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -310,8 +310,7 @@ public class CsvInputBatchImportIT
             // Verify counts, TODO how to get counts store other than this way?
             NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
                     RecordStorageEngine.class ).testAccessNeoStores();
-            Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
+            ToIntFunction<String> labelTranslationTable = translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
@@ -321,7 +320,7 @@ public class CsvInputBatchImportIT
                                 .readSecond() );
             }
 
-            Function<String, Integer> relationshipTypeTranslationTable =
+            ToIntFunction<String> relationshipTypeTranslationTable =
                     translationTable( neoStores.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
@@ -363,8 +362,8 @@ public class CsvInputBatchImportIT
     }
 
     private Iterable<Pair<RelationshipCountKey,Long>> allRelationshipCounts(
-            Function<String, Integer> labelTranslationTable,
-            Function<String, Integer> relationshipTypeTranslationTable,
+            ToIntFunction<String> labelTranslationTable,
+            ToIntFunction<String> relationshipTypeTranslationTable,
             Map<String, Map<String, Map<String, AtomicLong>>> counts )
     {
         Collection<Pair<RelationshipCountKey,Long>> result = new ArrayList<>();
@@ -375,9 +374,9 @@ public class CsvInputBatchImportIT
                 for ( Map.Entry<String, AtomicLong> endLabel : type.getValue().entrySet() )
                 {
                     RelationshipCountKey key = new RelationshipCountKey(
-                            labelTranslationTable.apply( startLabel.getKey() ),
-                            relationshipTypeTranslationTable.apply( type.getKey() ),
-                            labelTranslationTable.apply( endLabel.getKey() ) );
+                            labelTranslationTable.applyAsInt( startLabel.getKey() ),
+                            relationshipTypeTranslationTable.applyAsInt( type.getKey() ),
+                            labelTranslationTable.applyAsInt( endLabel.getKey() ) );
                     result.add( Pair.of( key, endLabel.getValue().longValue() ) );
                 }
             }
@@ -385,19 +384,19 @@ public class CsvInputBatchImportIT
         return result;
     }
 
-    private Iterable<Pair<Integer,Long>> allNodeCounts( Function<String, Integer> labelTranslationTable,
+    private Iterable<Pair<Integer,Long>> allNodeCounts( ToIntFunction<String> labelTranslationTable,
             Map<String, AtomicLong> counts )
     {
         Collection<Pair<Integer,Long>> result = new ArrayList<>();
         for ( Map.Entry<String, AtomicLong> count : counts.entrySet() )
         {
-            result.add( Pair.of( labelTranslationTable.apply( count.getKey() ), count.getValue().get() ) );
+            result.add( Pair.of( labelTranslationTable.applyAsInt( count.getKey() ), count.getValue().get() ) );
         }
         counts.put( null, new AtomicLong( counts.size() ) );
         return result;
     }
 
-    private Function<String, Integer> translationTable( TokenStore<?, ?> tokenStore, final int anyValue )
+    private ToIntFunction<String> translationTable(TokenStore<?, ?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
         for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )

@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core.consensus.log.segmented;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.util.function.Function;
+import java.util.function.LongUnaryOperator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -500,11 +500,11 @@ public class TermsTest
         assertTermInRange( from, to, ( index ) -> expectedTerm );
     }
 
-    private void assertTermInRange( long from, long to, Function<Long,Long> expectedTermFunction )
+    private void assertTermInRange( long from, long to, LongUnaryOperator expectedTermFunction )
     {
         for ( long index = from; index < to; index++ )
         {
-            assertEquals( "For index: " + index, (long) expectedTermFunction.apply( index ), terms.get( index ) );
+            assertEquals( "For index: " + index, (long) expectedTermFunction.applyAsLong( index ), terms.get( index ) );
         }
     }
 
@@ -513,11 +513,11 @@ public class TermsTest
         appendRange( from, to, ( index ) -> term );
     }
 
-    private void appendRange( long from, long to, Function<Long,Long> termFunction )
+    private void appendRange( long from, long to, LongUnaryOperator termFunction )
     {
         for ( long index = from; index < to; index++ )
         {
-            terms.append( index, termFunction.apply( index ) );
+            terms.append( index, termFunction.applyAsLong( index ) );
         }
     }
 }

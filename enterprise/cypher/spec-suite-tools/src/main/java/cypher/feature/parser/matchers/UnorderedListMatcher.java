@@ -21,7 +21,7 @@ package cypher.feature.parser.matchers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 public class UnorderedListMatcher extends ListMatcher
 {
@@ -31,7 +31,7 @@ public class UnorderedListMatcher extends ListMatcher
     }
 
     @Override
-    protected boolean sizeAndElements( int length, Function<Integer,Object> resultList )
+    protected boolean sizeAndElements( int length, IntFunction<Object> resultList )
     {
         if ( list.size() == length )
         {
