@@ -1893,18 +1893,40 @@ class CypherParserTest extends CypherFunSuite {
     })
   }
 
-  test("set property on node from expression") {
-    expectQuery(
-      "start a=node(0) with a set (a).hello = 'world'", {
-      val secondQ = Query.
-        updates(PropertySetAction(Property(Variable("a"), PropertyKey("hello")), Literal("world"))).
-        returns()
+  test("set property on node from expression should not be supported") {
+    intercept[SyntaxException](parser.parse("MATCH (n) SET (CASE WHEN true THEN n END).prop = 42"))
+    intercept[SyntaxException](parser.parse("MATCH (n) SET (n).prop = 42"))
+  }
 
-      Query.
-        start(NodeById("a", 0)).
-        tail(secondQ).
-        returns(ReturnItem(Variable("a"), "a"))
-    })
+  test("set property on relationship from expression should not be supported") {
+    intercept[SyntaxException](parser.parse("MATCH ()-[r]-() SET (CASE WHEN true THEN r END).prop = 42"))
+    intercept[SyntaxException](parser.parse("MATCH ()-[r]-() SET (r).prop = 42"))
+  }
+
+  test("set label on node from expression should not be supported") {
+    intercept[SyntaxException](parser.parse("MATCH (n) SET (CASE WHEN true THEN n END):Label = 42"))
+    intercept[SyntaxException](parser.parse("MATCH (n) SET (n):Label = 42"))
+  }
+
+  test("create unique index on property using expression should not be supported") {
+    intercept[SyntaxException](parser.parse("CREATE CONSTRAINT ON (n:Label) ASSERT (CASE WHEN true THEN n END).prop IS UNIQUE"))
+    intercept[SyntaxException](parser.parse("CREATE CONSTRAINT ON (n:Label) ASSERT (n).prop IS UNIQUE"))
+    intercept[SyntaxException](parser.parse("DROP CONSTRAINT ON (n:Label) ASSERT (CASE WHEN true THEN n END).prop IS UNIQUE"))
+    intercept[SyntaxException](parser.parse("DROP CONSTRAINT ON (n:Label) ASSERT (n).prop IS UNIQUE"))
+  }
+
+  test("create property constraint on node property using expression should not be supported") {
+    intercept[SyntaxException](parser.parse("CREATE CONSTRAINT ON (p:Label) ASSERT EXISTS((CASE WHEN true THEN n END).prop)"))
+    intercept[SyntaxException](parser.parse("CREATE CONSTRAINT ON (p:Label) ASSERT EXISTS((n).prop)"))
+    intercept[SyntaxException](parser.parse("DROP CONSTRAINT ON (p:Label) ASSERT EXISTS((CASE WHEN true THEN n END).prop)"))
+    intercept[SyntaxException](parser.parse("DROP CONSTRAINT ON (p:Label) ASSERT EXISTS((n).prop)"))
+  }
+
+  test("create property constraint on relationship property using expression should not be supported") {
+    intercept[SyntaxException](parser.parse("CREATE CONSTRAINT ON ()-[r:REL]-() ASSERT EXISTS((CASE WHEN true THEN r END).prop)"))
+    intercept[SyntaxException](parser.parse("CREATE CONSTRAINT ON ()-[r:REL]-() ASSERT EXISTS((r).prop)"))
+    intercept[SyntaxException](parser.parse("DROP CONSTRAINT ON ()-[r:REL]-() ASSERT EXISTS((CASE WHEN true THEN r END).prop)"))
+    intercept[SyntaxException](parser.parse("DROP CONSTRAINT ON ()-[r:REL]-() ASSERT EXISTS((r).prop)"))
   }
 
   test("set multiple properties on node") {

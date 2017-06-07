@@ -175,7 +175,7 @@ trait Expressions extends Parser
   def parenthesizedExpression: Rule1[ast.Expression] = "(" ~~ Expression ~~ ")"
 
   def PropertyExpression: Rule1[ast.Property] = rule {
-    Expression1 ~ oneOrMore(WS ~ PropertyLookup)
+    Variable ~ oneOrMore(WS ~ PropertyLookup)
   }
 
   private def PropertyLookup: ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
