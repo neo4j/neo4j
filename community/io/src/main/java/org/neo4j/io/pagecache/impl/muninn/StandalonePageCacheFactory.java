@@ -43,21 +43,16 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, null, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
     }
 
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize )
-    {
-        return createPageCache( fileSystem, pageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
-    }
-
-    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Integer pageSize,
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem,
             PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
 
-        int cachePageSize = pageSize != null ? pageSize : factory.getCachePageSizeHint();
+        int cachePageSize = factory.getCachePageSizeHint();
         long pageCacheMemory = ByteUnit.mebiBytes( 8 );
         long pageCount = pageCacheMemory / cachePageSize;
         return new MuninnPageCache( factory, (int) pageCount, cachePageSize, tracer, cursorTracerSupplier );

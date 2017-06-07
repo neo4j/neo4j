@@ -169,7 +169,6 @@ public class PageCacheRule extends ExternalResource
     {
         closeExistingPageCache();
         pageCache = StandalonePageCacheFactory.createPageCache( fs,
-                selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null ),
                 selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL ),
                 selectConfig( baseConfig.pageCursorTracerSupplier, overriddenConfig.pageCursorTracerSupplier,
                         DefaultPageCursorTracerSupplier.INSTANCE ));
