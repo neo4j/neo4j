@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -43,13 +44,13 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
+@Ignore
 public class FullScanNonUniqueIndexSamplerTest
 {
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
