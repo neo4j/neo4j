@@ -137,11 +137,11 @@ abstract class LogicalPlan
     import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, propertyKeys, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKeys.map(_.name))
+        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.nameId.id, label.name, propertyKeys.map(_.name))
       case NodeUniqueIndexSeek(idName, label, propertyKeys, _, _) =>
-        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKeys.map(_.name))
+        (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.nameId.id, label.name, propertyKeys.map(_.name))
       case NodeIndexScan(idName, label, propertyKey, _) =>
-        (acc) => acc :+ SchemaIndexScanUsage(idName.name, label.name, propertyKey.name)
+        (acc) => acc :+ SchemaIndexScanUsage(idName.name, label.nameId.id, label.name, propertyKey.name)
       }
   }
 }
@@ -172,7 +172,7 @@ sealed trait IndexUsage {
   def identifier:String
 }
 
-final case class SchemaIndexSeekUsage(identifier: String, label: String, propertyKeys: Seq[String]) extends IndexUsage
-final case class SchemaIndexScanUsage(identifier: String, label: String, propertyKey: String) extends IndexUsage
+final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
+final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
 final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage

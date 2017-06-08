@@ -25,9 +25,9 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 
 public class SchemaStateConcern implements SchemaStateOperations
 {
-    private final UpdateableSchemaState schemaState;
+    private final SchemaState schemaState;
 
-    public SchemaStateConcern( UpdateableSchemaState schemaState )
+    public SchemaStateConcern( SchemaState schemaState )
     {
         this.schemaState = schemaState;
     }
