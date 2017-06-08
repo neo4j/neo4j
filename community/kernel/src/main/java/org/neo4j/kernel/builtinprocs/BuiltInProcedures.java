@@ -204,8 +204,8 @@ public class BuiltInProcedures
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
                     legacyIndexName );
         }
-        IndexHits<Node> query = index.forNodes( legacyIndexName ).query( key, value );
-        return query.stream().map( NodeResult::new );
+        IndexHits<Node> nodes = index.forNodes( legacyIndexName ).query( key, value );
+        return nodes.stream().map( NodeResult::new );
     }
 
     @Description( "Search nodes from legacy index. Replaces `START n=node:nodes('key:foo*')`" )
@@ -237,8 +237,24 @@ public class BuiltInProcedures
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
                     legacyIndexName );
         }
-        IndexHits<Relationship> query = index.forRelationships( legacyIndexName ).query( key, value );
-        return query.stream().map( RelationshipResult::new );
+        IndexHits<Relationship> relationships = index.forRelationships( legacyIndexName ).query( key, value );
+        return relationships.stream().map( RelationshipResult::new );
+    }
+
+    @Description( "Search relationship from legacy index. Replaces `START r=relationship:relIndex('key:foo*')`" )
+    @Procedure( name = "db.relationshipLegacyIndexSearch", mode = SCHEMA )
+    public Stream<RelationshipResult> relationshipLegacyIndexSearch( @Name( "indexName" ) String legacyIndexName,
+            @Name("query") Object query )
+            throws ProcedureException
+    {
+        IndexManager index = graphDatabaseAPI.index();
+        if ( !index.existsForRelationships( legacyIndexName ) )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    legacyIndexName );
+        }
+        IndexHits<Relationship> relationships = index.forRelationships( legacyIndexName ).query( query );
+        return relationships.stream().map( RelationshipResult::new );
     }
 
     private IndexProcedures indexProcedures()

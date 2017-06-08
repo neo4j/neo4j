@@ -90,4 +90,59 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
     a [CypherExecutionException] should be thrownBy
       execute("""CALL db.relationshipLegacyIndexSeek('index', 'key', 'value') YIELD relationship AS r RETURN r""")
   }
+
+  test("Relationship legacy index search plus MATCH") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val relationship = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index().forRelationships("relIndex")
+      relationshipIndex.add(relationship, "key", "value")
+    }
+
+    val query = "CALL db.relationshipLegacyIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]-(b) RETURN r"
+    val result = execute(query)
+
+    result.toList should equal(List(
+      Map("r"-> relationship),
+      Map("r"-> relationship)
+    ))
+  }
+
+  test("Relationship legacy index search plus MATCH directed") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val relationship = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index().forRelationships("relIndex")
+      relationshipIndex.add(relationship, "key", "value")
+    }
+
+    val query = "CALL db.relationshipLegacyIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]->(b) RETURN r"
+    val result = execute(query)
+
+    result.toList should equal(List(
+      Map("r"-> relationship)
+    ))
+  }
+
+  test("should return correct results on combined node and relationship index starts") {
+    val node = createNode()
+    val resultNode = createNode()
+    val rel = relate(node, resultNode)
+    relate(node, createNode())
+
+    graph.inTx {
+      graph.index().forNodes("nodes").add(node, "key", "A")
+      graph.index().forRelationships("rels").add(rel, "key", "B")
+    }
+
+    val result = execute("CALL db.nodeLegacyIndexSeek('nodes', 'key', 'A') YIELD node AS n " +
+                           "CALL db.relationshipLegacyIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
+                           "MATCH (n)-[r]->(b) RETURN b")
+    result.toList should equal(List(Map("b" -> resultNode)))
+  }
+
 }
