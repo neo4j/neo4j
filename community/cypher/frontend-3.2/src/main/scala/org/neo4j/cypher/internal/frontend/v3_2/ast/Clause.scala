@@ -291,10 +291,7 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
 
   override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Results) chain
-      expression.expectType(CTList(CTAny).covariant) ifOkChain {
-      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
-      variable.declare(possibleInnerTypes)
-    }
+      variable.declare(CTAny.covariant)
 }
 
 abstract class CallClause extends Clause {

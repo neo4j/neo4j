@@ -20,6 +20,49 @@
 
 Feature: UnwindAcceptance
 
+  Scenario Outline: Unwind on non-lists
+    Given any graph
+    When executing query:
+      """
+      UNWIND <nonList> AS var
+      RETURN var
+      """
+    Then the result should be:
+      | var       |
+      | <nonList> |
+    And no side effects
+
+    Examples:
+      | nonList |
+      | 1       |
+      | 'foo'   |
+      | {k: 1}  |
+      | true    |
+
+  Scenario: Unwind treats null as normal value
+    Given any graph
+    When executing query:
+      """
+      UNWIND null AS var
+      RETURN var
+      """
+    Then the result should be:
+      | var  |
+      | null |
+    And no side effects
+
+  Scenario: Unwind on empty list eliminates cardinality
+    Given any graph
+    When executing query:
+      """
+      UNWIND [1, 2, 3] AS int
+      UNWIND [] AS var
+      RETURN var, int
+      """
+    Then the result should be:
+      | var | int |
+    And no side effects
+
   Scenario: Flat type support in list literal
     Given an empty graph
     And having executed:
