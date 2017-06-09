@@ -19,9 +19,13 @@
  */
 package org.neo4j.values;
 
-/**
- * Value that can be stored as a node, relationship or graph property.
- */
-abstract class StorableValue extends Value
+public abstract class AnyValue
 {
+    @Override
+    public abstract boolean equals( Object other );
+
+    @Override
+    public abstract int hashCode();
+
+    public abstract void writeTo( AnyValueWriter writer );
 }

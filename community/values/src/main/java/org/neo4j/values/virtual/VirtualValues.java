@@ -17,30 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.virtual;
+
+import org.neo4j.values.AnyValue;
 
 /**
- * Array of one of the storable primitives
+ * Entry point to the virtual values library.
  */
-abstract class ArrayValue extends Value
+@SuppressWarnings( "WeakerAccess" )
+public class VirtualValues
 {
-    abstract int length();
-
-    @Override
-    public boolean equals( boolean x )
+    private VirtualValues()
     {
-        return false;
     }
 
-    @Override
-    public boolean equals( char x )
+    // DIRECT FACTORY METHODS
+
+    public static ListValue list( AnyValue... values )
     {
-        return false;
+        return new ListValue( values );
     }
 
-    @Override
-    public boolean equals( String x )
+    public static MapValue map( int[] keys, AnyValue[] values )
     {
-        return false;
+        return new MapValue( keys, values );
     }
 }

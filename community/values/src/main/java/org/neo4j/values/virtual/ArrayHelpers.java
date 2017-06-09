@@ -17,30 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.virtual;
+
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.Values;
 
 /**
- * Array of one of the storable primitives
+ * This class is way too similar to org.neo4j.collection.primitive.PrimitiveArrays.
+ *
+ * Should we introduce dependency on primitive collections?
  */
-abstract class ArrayValue extends Value
+class ArrayHelpers
 {
-    abstract int length();
-
-    @Override
-    public boolean equals( boolean x )
+    static boolean isSortedSet( int[] keys )
     {
-        return false;
+        for ( int i = 0; i < keys.length - 1; i++ )
+        {
+            if ( keys[i] >= keys[i + 1] )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
-    @Override
-    public boolean equals( char x )
+    static boolean hasNullOrNoValue( AnyValue[] values )
     {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
+        for ( AnyValue value : values )
+        {
+            if ( value == null || value == Values.NO_VALUE )
+            {
+                return true;
+            }
+        }
         return false;
     }
 }

@@ -119,31 +119,10 @@ public class ValuesTest
         assertEqual( stringArray( new String[]{"hi"} ), lazyStringArray( () -> new String[]{"hi"} ) );
     }
 
-    @Test
-    public void shouldNotEqualVirtualValue()
-    {
-        VirtualValue virtual = new MyVirtualValue( 42 );
-
-        assertNotEqual( booleanValue( false ), virtual );
-        assertNotEqual( byteValue( (byte)0 ), virtual );
-        assertNotEqual( shortValue( (short)0 ), virtual );
-        assertNotEqual( intValue( 0 ), virtual );
-        assertNotEqual( longValue( 0 ), virtual );
-        assertNotEqual( floatValue( 0.0f ), virtual );
-        assertNotEqual( doubleValue( 0.0 ), virtual );
-        assertNotEqual( stringValue( "" ), virtual );
-    }
-
     private void assertEqual( Value a, Value b )
     {
         assertTrue( "should be equal", a.equals( b ) );
         assertTrue( "should be equal", b.equals( a ) );
         assertTrue( "should have same has", a.hashCode() == b.hashCode() );
-    }
-
-    private void assertNotEqual( Value a, Value b )
-    {
-        assertFalse( "should not be equal", a.equals( b ) );
-        assertFalse( "should not be equal", b.equals( a ) );
     }
 }

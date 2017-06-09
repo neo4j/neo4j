@@ -19,92 +19,17 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.values.virtual.VirtualValueGroup;
+
 /**
  * Value that can exist transiently during computations, but that cannot be stored as a property value. A Virtual
  * Value could be a NodeReference for example.
  */
-public abstract class VirtualValue extends Value
+public abstract class VirtualValue extends AnyValue
 {
-    @Override
-    public final boolean equals( byte[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( short[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( int[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( long[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( float[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( double[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( boolean[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( char[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean equals( String[] x )
-    {
-        return false;
-    }
 
     @Override
     public final boolean equals( Object other )
-    {
-        return other != null && other instanceof VirtualValue && equals( (VirtualValue) other );
-    }
-
-    @Override
-    public final boolean equals( Value other )
     {
         return other != null && other instanceof VirtualValue && equals( (VirtualValue) other );
     }
@@ -119,15 +44,5 @@ public abstract class VirtualValue extends Value
 
     public abstract boolean equals( VirtualValue other );
 
-    @Override
-    public final ValueGroup valueGroup()
-    {
-        return ValueGroup.VIRTUAL;
-    }
-
-    @Override
-    public final NumberType numberType()
-    {
-        return NumberType.NO_NUMBER;
-    }
+    public abstract VirtualValueGroup valueGroup();
 }

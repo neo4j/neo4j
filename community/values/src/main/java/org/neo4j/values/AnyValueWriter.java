@@ -20,27 +20,42 @@
 package org.neo4j.values;
 
 /**
- * Array of one of the storable primitives
+ * Writer of any values.
  */
-abstract class ArrayValue extends Value
+public interface AnyValueWriter extends ValueWriter
 {
-    abstract int length();
 
-    @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
+    void beginNode( long nodeId );
 
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
+    void endNode();
 
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
+    void beginLabels( int numberOfLabels );
+
+    void writeLabel( int labelId );
+
+    void endLabels();
+
+    void beginProperties( int numberOfProperties );
+
+    void writePropertyKeyId( int propertyKeyId );
+
+    void endProperties();
+
+    void beginEdge( long edgeId );
+
+    void endEdge();
+
+    void beginMap( int size );
+
+    void writeKeyId( int keyId );
+
+    void endMap();
+
+    void beginList( int size );
+
+    void endList();
+
+    void beginPath( int length );
+
+    void endPath();
 }

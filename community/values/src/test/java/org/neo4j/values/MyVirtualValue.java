@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.values.virtual.VirtualValueGroup;
+
 public class MyVirtualValue extends VirtualValue
 {
     private final int hashCode;
@@ -35,25 +37,18 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
+    public VirtualValueGroup valueGroup()
+    {
+        return null;
+    }
+
+    @Override
     public int hash()
     {
         return hashCode;
     }
 
-    @Override
-    public void writeTo( ValueWriter writer )
+    public void writeTo( AnyValueWriter writer )
     {
-    }
-
-    @Override
-    public Object asObjectCopy()
-    {
-        return this;
-    }
-
-    @Override
-    public String prettyPrint()
-    {
-        return null;
     }
 }

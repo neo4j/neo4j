@@ -88,7 +88,7 @@ public class BufferValueWriter implements ValueWriter
         }
     }
 
-    private List<Object> buffer = new ArrayList<>();
+    protected List<Object> buffer = new ArrayList<>();
 
     @SuppressWarnings( "WeakerAccess" )
     public void assertBuffer( Object... writeEvents )

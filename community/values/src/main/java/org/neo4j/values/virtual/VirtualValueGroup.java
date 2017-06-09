@@ -17,30 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.virtual;
 
 /**
- * Array of one of the storable primitives
+ * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
+ * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
  */
-abstract class ArrayValue extends Value
+public enum VirtualValueGroup
 {
-    abstract int length();
-
-    @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
+    NO_VALUE,
+    LIST,
+    MAP,
+    NODE,
+    EDGE,
+    PATH
 }

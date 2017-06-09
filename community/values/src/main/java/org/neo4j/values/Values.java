@@ -51,13 +51,9 @@ public class Values
 
     /**
      * Default value comparator. Will correctly compare all storable values and order the value groups according the
-     * to comparability group. Virtual values are sorted in a random but deterministic fashion (by hashCode).
+     * to comparability group.
      */
-    public static final ValueComparator VALUE_COMPARATOR =
-            new ValueComparator(
-                    ValueGroup::compareTo,
-                    Comparator.comparingInt( VirtualValue::hashCode )
-                );
+    public static final Comparator<Value> COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {

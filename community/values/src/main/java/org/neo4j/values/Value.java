@@ -19,14 +19,8 @@
  */
 package org.neo4j.values;
 
-public abstract class Value
+public abstract class Value extends AnyValue
 {
-    @Override
-    public abstract boolean equals( Object other );
-
-    @Override
-    public abstract int hashCode();
-
     public abstract boolean equals( Value other );
 
     public abstract boolean equals( byte[] x );
@@ -52,6 +46,11 @@ public abstract class Value
     public abstract boolean equals( char[] x );
 
     public abstract boolean equals( String[] x );
+
+    public void writeTo( AnyValueWriter writer )
+    {
+        writeTo( (ValueWriter)writer );
+    }
 
     public abstract void writeTo( ValueWriter writer );
 
