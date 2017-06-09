@@ -36,6 +36,7 @@
     <findbugs.version>3.0.1</findbugs.version>
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
+    <forkCounts>0</forkCounts>
   </properties>
 
   <modules>
@@ -52,6 +53,8 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <forkCount>${forkCounts}</forkCount>
+          <reuseForks>true</reuseForks>
           <argLine>${test.runner.jvm.settings}</argLine>
           <systemPropertyVariables>
             <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
@@ -62,6 +65,8 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
+          <forkCount>${forkCounts}</forkCount>
+          <reuseForks>true</reuseForks>
           <systemPropertyVariables>
             <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
           </systemPropertyVariables>
@@ -306,6 +311,17 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>forkTests</id>
+      <activation>
+        <property>
+          <name>!skipTestsFork</name>
+        </property>
+      </activation>
+      <properties>
+        <forkCounts>1C</forkCounts>
+      </properties>
+    </profile>
     <!--
      Git information extraction profiles.
      Activate by adding the required Git information to the environment, e.g. on *nix:
