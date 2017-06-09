@@ -75,6 +75,11 @@ public class TransactionStateMachine implements StatementProcessor
 
             return ctx.currentStatementMetadata;
         }
+        catch ( TransactionFailureException ex )
+        {
+            state = State.AUTO_COMMIT;
+            throw ex;
+        }
         finally
         {
             after();
