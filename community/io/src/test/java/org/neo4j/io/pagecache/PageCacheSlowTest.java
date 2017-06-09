@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -52,6 +53,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -276,7 +278,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    @RepeatRule.Repeat( times = 250 )
+    @RepeatRule.Repeat( times = 100 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdatesWhenOpeningMultiplePageCursorsPerThread() throws Exception
     {
@@ -368,7 +370,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         pagedFile.close();
     }
 
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatRule.Repeat( times = 50 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping() throws Exception
     {
@@ -480,7 +482,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    @RepeatRule.Repeat( times = 1000 )
+    @RepeatRule.Repeat( times = 100 )
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
@@ -628,10 +630,12 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     @Test
     public void mustNotRunOutOfSwapperAllocationSpace() throws Exception
     {
+        assumeTrue( "This test is file system agnostic, and too slow on a real file system",
+                fs instanceof EphemeralFileSystemAbstraction );
         configureStandardPageCache();
 
         File file = file( "a" );
-        int iterations = Short.MAX_VALUE * 20; // Integer.MAX_VALUE;
+        int iterations = Short.MAX_VALUE * 3; // Integer.MAX_VALUE;
         for ( int i = 0; i < iterations; i++ )
         {
             PagedFile pagedFile = pageCache.map( file, filePageSize );
