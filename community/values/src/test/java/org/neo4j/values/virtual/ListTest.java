@@ -27,6 +27,9 @@ import org.neo4j.values.VirtualValue;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 
 public class ListTest
 {
@@ -82,36 +85,5 @@ public class ListTest
         assertEqual(
                 list( "a", list( 'b', list( "c" ) ) ),
                 list( 'a', list( "b", list( 'c' ) ) ) );
-    }
-
-    private VirtualValue list( Object... objects )
-    {
-        AnyValue[] values = new AnyValue[objects.length];
-        for ( int i = 0; i < objects.length; i++ )
-        {
-            Object o = objects[i];
-            if ( o instanceof AnyValue )
-            {
-                values[i] = (AnyValue)o;
-            }
-            else
-            {
-                values[i] = Values.of( o );
-            }
-        }
-        return VirtualValues.list( values );
-    }
-
-    private void assertEqual( VirtualValue a, VirtualValue b )
-    {
-        assertTrue( "should be equal", a.equals( b ) );
-        assertTrue( "should be equal", b.equals( a ) );
-        assertTrue( "should have same has", a.hashCode() == b.hashCode() );
-    }
-
-    private void assertNotEqual( VirtualValue a, VirtualValue b )
-    {
-        assertFalse( "should not equal", a.equals( b ) );
-        assertFalse( "should not equal", b.equals( a ) );
     }
 }

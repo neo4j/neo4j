@@ -27,6 +27,8 @@ import org.neo4j.values.VirtualValue;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 
 public class MapTest
 {
@@ -76,53 +78,5 @@ public class MapTest
         assertEqual(
                 map( 1, map( 2, map( 3, 1.0 ) ) ),
                 map( 1, map( 2, map( 3, 1 ) ) ) );
-    }
-
-    private VirtualValue map( Object... keyOrVal )
-    {
-        assert keyOrVal.length % 2 == 0;
-        int[] keys = new int[keyOrVal.length / 2];
-        AnyValue[] values = new AnyValue[keyOrVal.length / 2];
-        for ( int i = 0; i < keyOrVal.length; i+=2 )
-        {
-            keys[i/2] = (Integer)keyOrVal[i];
-            values[i/2] = toAnyValue( keyOrVal[i+1] );
-        }
-        return VirtualValues.map( keys, values );
-    }
-
-    private VirtualValue list( Object... objects )
-    {
-        AnyValue[] values = new AnyValue[objects.length];
-        for ( int i = 0; i < objects.length; i++ )
-        {
-            values[i] = toAnyValue( objects[i] );
-        }
-        return VirtualValues.list( values );
-    }
-
-    private AnyValue toAnyValue( Object o )
-    {
-        if ( o instanceof AnyValue )
-        {
-            return (AnyValue)o;
-        }
-        else
-        {
-            return Values.of( o );
-        }
-    }
-
-    private void assertEqual( VirtualValue a, VirtualValue b )
-    {
-        assertTrue( "should be equal", a.equals( b ) );
-        assertTrue( "should be equal", b.equals( a ) );
-        assertTrue( "should have same has", a.hashCode() == b.hashCode() );
-    }
-
-    private void assertNotEqual( VirtualValue a, VirtualValue b )
-    {
-        assertFalse( "should not equal", a.equals( b ) );
-        assertFalse( "should not equal", b.equals( a ) );
     }
 }

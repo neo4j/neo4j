@@ -99,97 +99,97 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     @Override
     public void endNode()
     {
-        buffer.add( SpecialKind.EndNode );
+        buffer.add( Specials.endNode() );
     }
 
     @Override
     public void beginLabels( int numberOfLabels )
     {
-        buffer.add( SpecialKind.BeginLabels );
+        buffer.add( Specials.beginLabels( numberOfLabels ) );
     }
 
     @Override
     public void writeLabel( int labelId )
     {
-        buffer.add( SpecialKind.WriteLabel );
+        buffer.add( Specials.writeLabel( labelId ) );
     }
 
     @Override
     public void endLabels()
     {
-        buffer.add( SpecialKind.EndLabels );
+        buffer.add( Specials.endLabels() );
     }
 
     @Override
     public void beginProperties( int numberOfProperties )
     {
-        buffer.add( SpecialKind.BeginProperties );
+        buffer.add( Specials.beginProperties( numberOfProperties ) );
     }
 
     @Override
     public void writePropertyKeyId( int propertyKeyId )
     {
-        buffer.add( SpecialKind.WritePropertyKeyId );
+        buffer.add( Specials.writePropertyKeyId( propertyKeyId ) );
     }
 
     @Override
     public void endProperties()
     {
-        buffer.add( SpecialKind.EndProperties );
+        buffer.add( Specials.endProperties() );
     }
 
     @Override
     public void beginEdge( long edgeId )
     {
-        buffer.add( SpecialKind.BeginEdge );
+        buffer.add( Specials.beginEdge( edgeId ) );
     }
 
     @Override
     public void endEdge()
     {
-        buffer.add( SpecialKind.EndEdge );
+        buffer.add( Specials.endEdge() );
     }
 
     @Override
     public void beginMap( int size )
     {
-        buffer.add( SpecialKind.BeginMap );
+        buffer.add( Specials.beginMap( size ) );
     }
 
     @Override
     public void writeKeyId( int keyId )
     {
-        buffer.add( SpecialKind.WriteKeyId );
+        buffer.add( Specials.writeKeyId( keyId ) );
     }
 
     @Override
     public void endMap()
     {
-        buffer.add( SpecialKind.EndMap );
+        buffer.add( Specials.endMap() );
     }
 
     @Override
     public void beginList( int size )
     {
-        buffer.add( SpecialKind.BeginList );
+        buffer.add( Specials.beginList( size ) );
     }
 
     @Override
     public void endList()
     {
-        buffer.add( SpecialKind.EndList );
+        buffer.add( Specials.endList() );
     }
 
     @Override
     public void beginPath( int length )
     {
-        buffer.add( SpecialKind.BeginPath );
+        buffer.add( Specials.beginPath( length ) );
     }
 
     @Override
     public void endPath()
     {
-        buffer.add( SpecialKind.EndPath );
+        buffer.add( Specials.endPath() );
     }
 
     @SuppressWarnings( "WeakerAccess" )

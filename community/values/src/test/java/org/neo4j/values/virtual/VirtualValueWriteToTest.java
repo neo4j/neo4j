@@ -25,10 +25,15 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.BufferValueWriter;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueWriter;
 import org.neo4j.values.Values;
 
+import static org.neo4j.values.BufferValueWriter.Specials.beginArray;
+import static org.neo4j.values.BufferValueWriter.Specials.endArray;
+import static org.neo4j.values.ValueWriter.ArrayType.BYTE;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endList;
 
@@ -48,7 +53,9 @@ public class VirtualValueWriteToTest
                         Values.stringValue( "yo" )
                     ),
                         beginList( 3 ),
-                        false, new byte[]{3, 4, 5}, "yo",
+                        false,
+                        beginArray( 3, BYTE ), (byte)3, (byte)4, (byte)5, endArray(),
+                        "yo",
                         endList()
                     )
         );
@@ -66,7 +73,7 @@ public class VirtualValueWriteToTest
         return new WriteTest( Values.of( value ), expected );
     }
 
-    private static WriteTest shouldWrite( Value value, Object... expected )
+    private static WriteTest shouldWrite( AnyValue value, Object... expected )
     {
         return new WriteTest( value, expected );
     }
@@ -79,10 +86,10 @@ public class VirtualValueWriteToTest
 
     private static class WriteTest
     {
-        private final Value value;
+        private final AnyValue value;
         private final Object[] expected;
 
-        private WriteTest( Value value, Object... expected )
+        private WriteTest( AnyValue value, Object... expected )
         {
             this.value = value;
             this.expected = expected;
@@ -96,7 +103,7 @@ public class VirtualValueWriteToTest
 
         void verifyWriteTo()
         {
-            BufferValueWriter writer = new BufferValueWriter();
+            BufferAnyValueWriter writer = new BufferAnyValueWriter();
             value.writeTo( writer );
             writer.assertBuffer( expected );
         }
