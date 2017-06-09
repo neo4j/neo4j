@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -31,18 +32,17 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {
     private final SchemaCache schemaCache;
-    private final Runnable schemaStateChangeCallback;
+    private SchemaState schemaState;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
 
-    public BridgingCacheAccess( SchemaCache schemaCache, Runnable schemaStateChangeCallback,
-            PropertyKeyTokenHolder propertyKeyTokenHolder,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+    public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState,
+            PropertyKeyTokenHolder propertyKeyTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
             LabelTokenHolder labelTokenHolder )
     {
         this.schemaCache = schemaCache;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.schemaState = schemaState;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
@@ -58,7 +58,7 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     public void removeSchemaRuleFromCache( long id )
     {
         schemaCache.removeSchemaRule( id );
-        schemaStateChangeCallback.run();
+        schemaState.clear();
     }
 
     @Override

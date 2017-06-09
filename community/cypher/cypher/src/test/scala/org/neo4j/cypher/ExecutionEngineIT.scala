@@ -41,7 +41,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }
   }
 
-  test("by default when using cypher 2.3 some queries should default to COST") {
+  ignore("by default when using cypher 2.3 some queries should default to COST") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -59,7 +59,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("by default when using cypher 3.1 some queries should default to COST") {
+  ignore("by default when using cypher 3.1 some queries should default to COST") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -95,7 +95,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("should be able to set RULE as default when using cypher 2.3") {
+  ignore("should be able to set RULE as default when using cypher 2.3") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -111,7 +111,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("RULE")
   }
 
-  test("should be able to set RULE as default when using cypher 3.1") {
+  ignore("should be able to set RULE as default when using cypher 3.1") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -127,7 +127,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("RULE")
   }
 
-  test("should be able to force COST as default when using cypher 2.3") {
+  ignore("should be able to force COST as default when using cypher 2.3") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -143,7 +143,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should be able to force COST as default when using cypher 3.1") {
+  ignore("should be able to force COST as default when using cypher 3.1") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()

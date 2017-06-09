@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.query;
 import java.util.HashMap;
 import java.util.Map;
 
-class SchemaIndexUsage extends IndexUsage
+public class SchemaIndexUsage extends IndexUsage
 {
     private final String label;
     private final String[] propertyKeys;
@@ -32,6 +32,11 @@ class SchemaIndexUsage extends IndexUsage
         super( identifier );
         this.label = label;
         this.propertyKeys = propertyKeys;
+    }
+
+    public String getLabel()
+    {
+        return label;
     }
 
     public Map<String,String> asMap()

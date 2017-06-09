@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.schema;
 import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * Internal representation of one schema unit, for example a label-property pair.
@@ -70,6 +71,10 @@ public interface SchemaDescriptor
      * @return the property ids
      */
     int[] getPropertyIds();
+
+    int resourceId();
+
+    ResourceType resourceType();
 
     /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.

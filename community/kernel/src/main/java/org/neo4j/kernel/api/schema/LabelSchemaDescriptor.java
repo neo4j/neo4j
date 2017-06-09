@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.schema;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSupplier
 {
@@ -62,6 +64,18 @@ public class LabelSchemaDescriptor implements SchemaDescriptor, LabelSchemaSuppl
     public int[] getPropertyIds()
     {
         return propertyIds;
+    }
+
+    @Override
+    public int resourceId()
+    {
+        return labelId;
+    }
+
+    @Override
+    public ResourceType resourceType()
+    {
+        return ResourceTypes.LABEL;
     }
 
     public int getPropertyId()

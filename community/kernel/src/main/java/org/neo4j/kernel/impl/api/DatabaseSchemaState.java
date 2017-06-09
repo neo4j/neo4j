@@ -25,6 +25,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
+import org.neo4j.expirable.Expirable;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -33,20 +34,21 @@ import org.neo4j.logging.LogProvider;
  * Schema state is transient state that should be invalidated when the schema changes.
  * Examples of things stored in schema state is execution plans for cypher.
  */
-public class KernelSchemaStateStore implements UpdateableSchemaState
+public class DatabaseSchemaState implements SchemaState
 {
-    private Map<Object, Object> state;
+    private Map<Object,Expirable> state;
 
     private final Log log;
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
 
-    public KernelSchemaStateStore( LogProvider logProvider )
+    public DatabaseSchemaState( LogProvider logProvider )
     {
         this.state = new HashMap<>(  );
         this.log = logProvider.getLog( getClass() );
     }
 
     @SuppressWarnings( "unchecked" )
+    @Override
     public <K, V> V get( K key )
     {
         lock.readLock().lock();
@@ -74,7 +76,7 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
                 if ( lockedValue == null )
                 {
                     V newValue = creator.apply( key );
-                    state.put( key, newValue );
+                    state.put( key, (Expirable) newValue );
                     return newValue;
                 }
                 else
@@ -93,12 +95,13 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
-    public void replace( Map<Object,Object> replacement )
+    @Override
+    public <K, V> void replace( Map<K,V> replacement )
     {
         lock.writeLock().lock();
         try
         {
-            state = replacement;
+            state = (Map<Object,Expirable>) replacement;
         }
         finally
         {
@@ -106,12 +109,13 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public <K, V> void apply( Map<K,V> updates )
     {
         lock.writeLock().lock();
         try
         {
-            state.putAll( updates );
+            state.putAll( (Map<?,? extends Expirable>) updates );
         }
         finally
         {
@@ -119,11 +123,13 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         }
     }
 
+    @Override
     public void clear()
     {
         lock.writeLock().lock();
         try
         {
+            state.values().forEach( Expirable::expire );
             state.clear();
         }
         finally

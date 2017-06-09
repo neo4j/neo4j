@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.expirable.Expirable;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -470,7 +471,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         // GIVEN
         schemaWriteOperationsInNewTransaction();
-        getOrCreateSchemaState( "my key", "my state" );
+        getOrCreateSchemaState( "my key", ExpirableContainer.of( "my state" ) );
         commit();
 
         // WHEN
@@ -496,7 +497,7 @@ public class KernelIT extends KernelIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
-            getOrCreateSchemaState( "my key", "some state" );
+            getOrCreateSchemaState( "my key", ExpirableContainer.of( "some state" ) );
             tx.success();
         }
         // WHEN
@@ -635,12 +636,12 @@ public class KernelIT extends KernelIntegrationTest
                 statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "hepp" ) ) );
     }
 
-    private String getOrCreateSchemaState( String key, final String maybeSetThisState )
+    private <V extends Expirable> V getOrCreateSchemaState( String key, final V maybeSetThisState )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = statementContextSupplier.get();
-            String state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
+            V state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
         }
@@ -659,6 +660,40 @@ public class KernelIT extends KernelIntegrationTest
             } );
             tx.success();
             return result.get();
+        }
+    }
+
+    private static class ExpirableContainer implements Expirable
+    {
+
+        private String value;
+        private boolean expired;
+
+        static ExpirableContainer of( String value )
+        {
+            return new ExpirableContainer( value );
+        }
+
+        private ExpirableContainer( String value )
+        {
+            this.value = value;
+        }
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public void expire()
+        {
+            expired = true;
+        }
+
+        @Override
+        public boolean isExpired()
+        {
+            return expired;
         }
     }
 }

@@ -25,9 +25,9 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 
 public class SchemaStateConcern implements SchemaStateOperations
 {
-    private final UpdateableSchemaState schemaState;
+    private final SchemaState schemaState;
 
-    public SchemaStateConcern( UpdateableSchemaState schemaState )
+    public SchemaStateConcern( SchemaState schemaState )
     {
         this.schemaState = schemaState;
     }
@@ -36,12 +36,6 @@ public class SchemaStateConcern implements SchemaStateOperations
     public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
     {
         return schemaState.getOrCreate( key, creator );
-    }
-
-    @Override
-    public <K> boolean schemaStateContains( KernelStatement state, K key )
-    {
-        return schemaState.get( key ) != null;
     }
 
     @Override

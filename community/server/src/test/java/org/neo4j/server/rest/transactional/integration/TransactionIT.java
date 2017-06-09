@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -317,6 +318,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    @Ignore
     public void begin_and_execute_cypher_23_periodic_commit_that_returns_data_and_commit() throws Exception
     {
         // to get rid off the property key id creation in the actual test
@@ -867,6 +869,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    @Ignore
     public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
     {
         // begin and execute and commit

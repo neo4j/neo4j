@@ -34,9 +34,11 @@ import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
 import org.neo4j.procedure.Mode
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.scalatest.Ignore
 
 import scala.collection.immutable.Map
 
+@Ignore
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("should be possible to close compiled result after it is consumed") {

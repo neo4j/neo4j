@@ -19,12 +19,18 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
+import org.neo4j.expirable.Expirable
+
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
   def remove(cache: LFUCache[K, T])(key: K, userKey: String)
 }
 
-class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
+class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) extends Expirable {
+
+  @volatile
+  var expired = false
+
   def getOrElseUpdate(key: K, userKey: String, isStale: T => Boolean, produce: => T): (T, Boolean) = {
     if (cache.size == 0)
       (produce, false)
@@ -45,6 +51,14 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
         }
       }.next()
     }
+  }
+
+  override def expire(): Unit = {
+    expired = true
+  }
+
+  override def isExpired: Boolean = {
+    expired
   }
 }
 

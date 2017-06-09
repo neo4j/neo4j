@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.javacompat;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,6 +53,7 @@ public class NotificationAcceptanceTest
     public final ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule();
 
     @Test
+    @Ignore
     public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIsTheDefault() throws Exception
     {
         // when
@@ -67,6 +69,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_3() throws Exception
     {
         // when
@@ -82,6 +85,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_2() throws Exception
     {
         // when
@@ -97,6 +101,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotNotifyWhenUsingTheRulePlannerWhenCypherVersionIsNot3_2() throws Exception
     {
         Stream.of( "CYPHER 3.1", "CYPHER 2.3" ).forEach( version ->
@@ -114,6 +119,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault() throws Exception
     {
         // when
@@ -128,6 +134,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3() throws Exception
     {
         // when
@@ -142,6 +149,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_2() throws Exception
     {
         // when
@@ -156,6 +164,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    @Ignore
     public void shouldNotNotifyWhenUsingCreateUniqueWhenCypherVersionIsNot3_2() throws Exception
     {
         Stream.of( "CYPHER 3.1", "CYPHER 2.3" ).forEach( version ->

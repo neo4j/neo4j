@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.query.QueryPlanInfo;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
@@ -272,6 +273,10 @@ public interface ReadOperations
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
      */
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
+
+    void startQuery( QueryPlanInfo planInfo );
+
+    void stopQuery( QueryPlanInfo planInfo );
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 

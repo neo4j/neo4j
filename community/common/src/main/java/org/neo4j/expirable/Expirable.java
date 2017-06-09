@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.expirable;
 
-import java.util.Map;
-
-public interface UpdateableSchemaState extends SchemaState
+public interface Expirable
 {
-    void replace( Map<Object, Object> updates );
+    void expire();
 
-    <K, V> void apply( Map<K, V> updates );
+    boolean isExpired();
 }

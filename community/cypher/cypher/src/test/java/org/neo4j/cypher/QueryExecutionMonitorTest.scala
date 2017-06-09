@@ -199,7 +199,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(context)
   }
 
-  test("triggering monitor in 2.3") {
+  ignore("triggering monitor in 2.3") {
     // given
     val (query, result) = runQuery("CYPHER 2.3 RETURN [1, 2, 3, 4, 5]")
 
@@ -213,7 +213,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called when iterator closes in 2.3") {
+  ignore("monitor is called when iterator closes in 2.3") {
     // given
     val (query, result) = runQuery("CYPHER 2.3 RETURN 42")
 
@@ -225,7 +225,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called when next on empty iterator in 2.3") {
+  ignore("monitor is called when next on empty iterator in 2.3") {
     // given
     val (query, result) = runQuery("CYPHER 2.3 RETURN 42")
 
@@ -239,7 +239,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called directly when return is empty in 2.3") {
+  ignore("monitor is called directly when return is empty in 2.3") {
     // given
     val context = db.transactionalContext(query = "CYPHER 2.3 CREATE()" -> Map.empty)
 
@@ -251,7 +251,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(context)
   }
 
-  test("triggering monitor in 3.1") {
+  ignore("triggering monitor in 3.1") {
     // given
     val context = db.transactionalContext(query = "CYPHER 3.1 RETURN [1, 2, 3, 4, 5]" -> Map.empty)
 
@@ -267,7 +267,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(context)
   }
 
-  test("monitor is called when iterator closes in 3.1") {
+  ignore("monitor is called when iterator closes in 3.1") {
     // given
     val (query, result) = runQuery("CYPHER 3.1 RETURN 42")
 
@@ -280,7 +280,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called when next on empty iterator in 3.1") {
+  ignore("monitor is called when next on empty iterator in 3.1") {
     // given
     val (query, result) = runQuery("CYPHER 3.1 RETURN 42")
 
@@ -294,7 +294,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  test("monitor is called directly when return is empty in 3.1") {
+  ignore("monitor is called directly when return is empty in 3.1") {
     // given
     val (query, result) = runQuery("CYPHER 3.1 CREATE()")
 
@@ -306,9 +306,9 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  var db: GraphDatabaseQueryService = null
-  var monitor: QueryExecutionMonitor = null
-  var engine: ExecutionEngine = null
+  var db: GraphDatabaseQueryService = _
+  var monitor: QueryExecutionMonitor = _
+  var engine: ExecutionEngine = _
 
   override protected def beforeEach(): Unit = {
     db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())

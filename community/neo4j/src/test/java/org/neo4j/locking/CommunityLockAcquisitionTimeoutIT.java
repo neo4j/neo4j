@@ -28,12 +28,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -50,7 +50,11 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
+import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
@@ -148,12 +152,13 @@ public class CommunityLockAcquisitionTimeoutIT
                 "The transaction has been terminated. " +
                         "Retry your operation in a new transaction, and you should see a successful result. " +
                         "Unable to acquire lock within configured timeout. " +
-                        "Unable to acquire lock for resource: SCHEMA with id: 0 within 2000 millis." ) );
+                        "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." ) );
 
         try ( Transaction ignored = database.beginTx() )
         {
-            database.schema().indexFor( marker ).on( TEST_PROPERTY_NAME ).create();
-
+            DependencyResolver resolver = getDependencyResolver(database);
+            CommunityLockManger lockManager = resolver.resolveDependency( CommunityLockManger.class );
+            lockManager.newClient().acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL,1 );
             Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
             {
                 try ( Transaction nestedTransaction = database.beginTx() )
@@ -176,6 +181,11 @@ public class CommunityLockAcquisitionTimeoutIT
 
             fail( "Should throw termination exception." );
         }
+    }
+
+    private DependencyResolver getDependencyResolver( GraphDatabaseService database )
+    {
+        return ((GraphDatabaseAPI) database).getDependencyResolver();
     }
 
     protected Predicate<OtherThreadExecutor.WaitDetails> exclusiveLockWaitingPredicate()

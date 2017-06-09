@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
@@ -243,9 +244,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             JobScheduler scheduler = getJobScheduler();
             StatementTokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
 
+            NullLogProvider logProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( Config.empty(), scheduler,
-                    providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
-                    NullLogProvider.getInstance(), IndexingService.NO_MONITOR, () -> {} );
+                    providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ), logProvider,
+                    IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ) );
             indexService.start();
 
             IndexRule[] rules = createIndexRules( labelNameIdMap, propertyId );

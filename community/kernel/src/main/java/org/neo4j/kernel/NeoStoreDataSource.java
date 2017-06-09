@@ -52,13 +52,14 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
@@ -67,7 +68,6 @@ import org.neo4j.kernel.impl.api.StatementOperationContainer;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -136,7 +136,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -158,6 +157,7 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -433,13 +433,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         StorageEngine storageEngine = null;
         try
         {
-            UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
+            SchemaState schemaState = new DatabaseSchemaState( logProvider );
 
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
-            storageEngine = buildStorageEngine(
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
+            storageEngine = buildStorageEngine( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    legacyIndexProviderLookup, indexConfigStore, schemaState, legacyIndexTransactionOrdering );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
@@ -468,7 +467,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
-                    updateableSchemaState,
+                    schemaState,
                     dependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine,
                     indexConfigStore,
@@ -485,7 +484,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             this.kernelModule = kernelModule;
 
             dependencies.satisfyDependency( this );
-            dependencies.satisfyDependency( updateableSchemaState );
+            dependencies.satisfyDependency( schemaState );
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
@@ -572,19 +571,20 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            SchemaState schemaState, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
     {
         // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
         // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
         // TODO API
         Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
                 () -> kernelModule.kernelTransactions().get();
-        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
-                eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                transactionSnapshotSupplier );
+        RecordStorageEngine storageEngine =
+                new RecordStorageEngine( storeDir, config, idGeneratorFactory, eligibleForReuse,
+                        idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
+                        relationshipTypeTokens, schemaState, constraintSemantics,
+                        scheduler, tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor,
+                        databaseHealth, labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                        legacyIndexTransactionOrdering, transactionSnapshotSupplier );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which
@@ -711,7 +711,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private NeoStoreKernelModule buildKernel( TransactionAppender appender,
                                       IndexingService indexingService,
                                       StoreReadLayer storeLayer,
-                                      UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
+                                      SchemaState schemaState, LabelScanStore labelScanStore,
                                       StorageEngine storageEngine,
                                       IndexConfigStore indexConfigStore,
                                       TransactionIdStore transactionIdStore,
@@ -728,18 +728,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          */
         Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
 
-        boolean releaseSchemaLockWhenBuildingConstratinIndexes =
-                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint );
         ConstraintIndexCreator constraintIndexCreator =
-                new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor,
-                        releaseSchemaLockWhenBuildingConstratinIndexes );
+                new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor );
 
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );
 
         StatementOperationContainer statementOperationContainer = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore ) );
+                        constraintIndexCreator, schemaState, guard, legacyIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
@@ -854,7 +851,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private StatementOperationContainer buildStatementOperations(
             StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
-            ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
+            ConstraintIndexCreator constraintIndexCreator, SchemaState schemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
@@ -869,7 +866,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
+                new SchemaStateConcern( schemaState ), null, stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, queryRegistrationOperations );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =

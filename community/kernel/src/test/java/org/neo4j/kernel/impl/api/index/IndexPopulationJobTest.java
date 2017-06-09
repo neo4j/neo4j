@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.expirable.Expirable;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -58,7 +59,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
@@ -111,7 +112,7 @@ public class IndexPopulationJobTest
 
     private KernelAPI kernel;
     private IndexStoreView indexStoreView;
-    private KernelSchemaStateStore stateHolder;
+    private DatabaseSchemaState stateHolder;
     private final InternalSchemaActions actions = mock( InternalSchemaActions.class );
 
     private int labelId;
@@ -121,7 +122,7 @@ public class IndexPopulationJobTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
+        stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
 
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
@@ -171,7 +172,8 @@ public class IndexPopulationJobTest
         // GIVEN
         String value = "Taylor";
         createNode( map( name, value ), FIRST );
-        stateHolder.apply( MapUtil.stringMap( "key", "original_value" ) );
+        Map<String,SimpleExpirable> map = MapUtil.entry( "key", new SimpleExpirable() ).create();
+        stateHolder.apply( map );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
 
@@ -447,6 +449,23 @@ public class IndexPopulationJobTest
         }
     }
 
+    private static class SimpleExpirable implements Expirable
+    {
+        volatile boolean expired;
+
+        @Override
+        public void expire()
+        {
+            expired = true;
+        }
+
+        @Override
+        public boolean isExpired()
+        {
+            return expired;
+        }
+    }
+
     private class NodeChangingWriter extends IndexPopulator.Adapter
     {
         private final Set<Pair<Long, Object>> added = new HashSet<>();
@@ -632,7 +651,7 @@ public class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
-        IndexPopulationJob job = new IndexPopulationJob( storeView, multiPopulator, NO_MONITOR, stateHolder::clear );
+        IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
         job.addPopulator( populator, indexId, descriptor, PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
