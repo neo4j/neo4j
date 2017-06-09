@@ -30,7 +30,7 @@
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings.additional></test.runner.jvm.settings.additional>
-    <test.runner.jvm.settings>-Xmx2G -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}</test.runner.jvm.settings>
+    <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
     <jetty.version>9.2.9.v20150224</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
