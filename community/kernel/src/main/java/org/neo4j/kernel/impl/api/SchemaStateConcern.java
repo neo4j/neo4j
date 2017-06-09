@@ -39,6 +39,12 @@ public class SchemaStateConcern implements SchemaStateOperations
     }
 
     @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        return schemaState.get( key );
+    }
+
+    @Override
     public void schemaStateFlush( KernelStatement state )
     {
         schemaState.clear();

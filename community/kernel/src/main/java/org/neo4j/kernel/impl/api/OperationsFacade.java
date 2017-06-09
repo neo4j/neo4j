@@ -814,6 +814,12 @@ public class OperationsFacade
     }
 
     @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        return schemaState().schemaStateGet( key );
+    }
+
+    @Override
     public void schemaStateFlush()
     {
         schemaState().schemaStateFlush( statement );

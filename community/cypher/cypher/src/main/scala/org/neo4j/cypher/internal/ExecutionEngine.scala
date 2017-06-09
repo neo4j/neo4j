@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatibility.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compatibility.v3_3.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
 import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
@@ -153,7 +153,45 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         // create transaction and query context
         val tc = externalTransactionalContext.getOrBeginNewIfClosed()
 
-        val (plan: ExecutionPlan, extractedParameters: Map[String, Any], touched: Boolean) = planQuery(queryText, phaseTracer, preParsedQuery, cacheKey, tc)
+        // Temporarily change access mode during query planning
+        // NOTE: This will force read access mode if the current transaction did not have it
+        val revertable = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
+
+        val ((plan: ExecutionPlan, extractedParameters), touched) = try {
+          // fetch plan cache
+          val cache = getOrCreateFromSchemaState(tc.readOperations, {
+            cacheMonitor.cacheFlushDetected(tc.statement)
+            val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            new QueryCache(cacheAccessor, lruCache)
+          })
+
+          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
+
+          def producePlan() = {
+            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+            parsedQuery.plan(tc, phaseTracer)
+          }
+
+          val stateBefore = getSchemaState(tc)
+          var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          if (!touched) {
+            val labelIds: mutable.Seq[Int] = extractPlanLabels(plan)
+            lockPlanLabels(tc, labelIds)
+            val stateAfter = getSchemaState(tc)
+            if (stateBefore != stateAfter) {
+              releasePlanLabels(tc, labelIds)
+              touched = false
+            }
+          }
+          (plan, touched)
+        }
+        catch {
+          case (t: Throwable) =>
+            tc.close(success = false)
+            throw t
+        } finally {
+          revertable.close()
+        }
 
         if (touched) {
           tc.close(success = true)
@@ -170,55 +208,27 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
 
-  private def planQuery(queryText: String, phaseTracer: CompilationTracer.QueryCompilationEvent, preParsedQuery: PreParsedQuery, cacheKey: String, tc: TransactionalContextWrapper) = {
-    // Temporarily change access mode during query planning
-    // NOTE: This will force read access mode if the current transaction did not have it
-    val revertable = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
 
-    val ((plan: ExecutionPlan, extractedParameters), touched) = try {
-      // fetch plan cache
-      val cache = getOrCreateFromSchemaState(tc.readOperations, {
-        cacheMonitor.cacheFlushDetected(tc.statement)
-        val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-        new QueryCache(cacheAccessor, lruCache)
-      })
-
-      def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
-
-      def producePlan() = {
-        import scala.collection.JavaConverters._
-
-        val readOperations = tc.statement.readOperations()
-        var replan : Boolean = true
-        var plan: ExecutionPlan = null
-        var map: Map[String, Any] = null
-        var labelIds : mutable.Seq[Int] = null
-        while (replan) {
-          val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-          val tuple = parsedQuery.plan(tc, phaseTracer)
-          plan = tuple._1
-          map = tuple._2
-
-          labelIds = plan.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId }
-          labelIds.foreach { readOperations.acquireShared(ResourceTypes.LABEL, _) }
-//          replan = !cache.isValid
-          if (replan) {
-            labelIds.foreach { readOperations.releaseShared(ResourceTypes.LABEL, _) }
-          }
-        }
-        (plan, map)
-      }
-
-      cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+  private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: mutable.Seq[Int]) = {
+    labelIds.foreach {
+      tc.readOperations.releaseShared(ResourceTypes.LABEL, _)
     }
-    catch {
-      case (t: Throwable) =>
-        tc.close(success = false)
-        throw t
-    } finally {
-      revertable.close()
+  }
+
+  private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: mutable.Seq[Int]) = {
+    labelIds.foreach {
+      tc.readOperations.acquireShared(ResourceTypes.LABEL, _)
     }
-    (plan, extractedParameters, touched)
+  }
+
+  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any])) = {
+    import scala.collection.JavaConverters._
+    plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId }
+  }
+
+  private def getSchemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
+    (ExecutionPlan, Map[String, Any])], LFUCache[String, (ExecutionPlan, Map[String, Any])]] = {
+    tc.readOperations.schemaStateGet(this)
   }
 
   private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {

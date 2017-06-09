@@ -276,6 +276,8 @@ public interface ReadOperations
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 
+    <K, V> V schemaStateGet( K key );
+
     void schemaStateFlush();
 
     //===========================================

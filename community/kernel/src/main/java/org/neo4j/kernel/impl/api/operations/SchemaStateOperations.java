@@ -38,6 +38,8 @@ public interface SchemaStateOperations
      */
     <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator );
 
+    <K, V> V schemaStateGet( K key );
+
     /**
      * Flush the schema state.
      */

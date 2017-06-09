@@ -54,13 +54,16 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
-    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    indexExistsForLabelMaybe(labelName).getOrElse(false)
+  }
 
+  private def indexExistsForLabelMaybe(labelName: String): Option[Boolean] = evalOrNone {
+    val labelId = getLabelId(labelName)
     val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
-                                  .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
-                                  .flatMap(getOnlineIndex)
+      .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+      .flatMap(getOnlineIndex)
 
-    onlineIndexDescriptors.nonEmpty
+    Some(onlineIndexDescriptors.nonEmpty)
   }
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {

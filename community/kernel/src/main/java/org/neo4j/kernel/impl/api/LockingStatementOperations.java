@@ -143,6 +143,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        return schemaStateDelegate.schemaStateGet( key );
+    }
+
+    @Override
     public void schemaStateFlush( KernelStatement state )
     {
         state.assertOpen();
