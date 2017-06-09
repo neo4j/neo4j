@@ -33,6 +33,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -227,6 +228,143 @@ public class NotificationAcceptanceTest
                 containsString( "the missing property name is: NO_SUCH_THING)" ),
                 any( InputPosition.class ),
                 SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForAllNodeScan()
+    {
+        assertNotifications("EXPLAIN START n=node(*) RETURN n",
+                containsItem( notification(
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                containsString( "START has been deprecated and will be removed in a future version. (START is deprecated, use: `MATCH (n)`" ),
+                any( InputPosition.class ),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForNodeById()
+    {
+        assertNotifications("EXPLAIN START n=node(1337) RETURN n",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. (START is deprecated, use: `MATCH (n) WHERE id(n) = 1337`" ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForNodeByIds()
+    {
+        assertNotifications("EXPLAIN START n=node(42,1337) RETURN n",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. (START is deprecated, use: `MATCH (n) WHERE id(n) IN [42, 1337]`" ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForNodeIndexSeek()
+    {
+        try (Transaction ignore = db().beginTx())
+        {
+            db().index().forNodes( "index" );
+        }
+        assertNotifications("EXPLAIN START n=node:index(key = 'value') RETURN n",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. " +
+                                        "(START is deprecated, use: " +
+                                        "`CALL db.nodeLegacyIndexSeek('index', 'key', 'value') YIELD node AS n` instead." ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForNodeIndexSearch()
+    {
+        try (Transaction ignore = db().beginTx())
+        {
+            db().index().forNodes( "index" );
+        }
+        assertNotifications("EXPLAIN START n=node:index('key:value*') RETURN n",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. " +
+                                        "(START is deprecated, use: " +
+                                        "`CALL db.nodeLegacyIndexSearch('index', 'key:value*') YIELD node AS n` instead." ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+
+
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForAllRelScan()
+    {
+        assertNotifications("EXPLAIN START r=relationship(*) RETURN r",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. (START is deprecated, use: `MATCH ()-[r]->()`" ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForRelById()
+    {
+        assertNotifications("EXPLAIN START r=relationship(1337) RETURN r",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. (START is deprecated, use: `MATCH ()-[r]->() WHERE id(r) = 1337`" ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForRelByIds()
+    {
+        assertNotifications("EXPLAIN START r=relationship(42,1337) RETURN r",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. (START is deprecated, use: `MATCH ()-[r]->() WHERE id(r) IN [42, 1337]`" ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForRelIndexSeek()
+    {
+        try (Transaction ignore = db().beginTx())
+        {
+            db().index().forRelationships( "index" );
+        }
+        assertNotifications("EXPLAIN START r=relationship:index(key = 'value') RETURN r",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. " +
+                                        "(START is deprecated, use: " +
+                                        "`CALL db.relationshipLegacyIndexSeek('index', 'key', 'value') YIELD relationship AS r` instead." ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnThatStartIsDeprecatedForRelIndexSearch()
+    {
+        try (Transaction ignore = db().beginTx())
+        {
+            db().index().forRelationships( "index" );
+        }
+        assertNotifications("EXPLAIN START r=relationship:index('key:value*') RETURN r",
+                containsItem( notification(
+                        "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                        containsString( "START has been deprecated and will be removed in a future version. " +
+                                        "(START is deprecated, use: " +
+                                        "`CALL db.relationshipLegacyIndexSearch('index', 'key:value*') YIELD relationship AS r` instead." ),
+                        any( InputPosition.class ),
+                        SeverityLevel.WARNING ) ) );
     }
 
     private void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )

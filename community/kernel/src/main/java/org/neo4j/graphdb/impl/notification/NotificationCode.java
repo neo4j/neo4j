@@ -184,7 +184,12 @@ public enum NotificationCode
     START_UNAVAILABLE_FALLBACK(
             SeverityLevel.WARNING,
             Status.Statement.PlannerUnavailableWarning,
-            "START is unsupported for current CYPHER version, the query has been execute by an older CYPHER version"
+            "START is not supported for current CYPHER version, the query has been executed by an older CYPHER version"
+    ),
+    START_DEPRECATED(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "START has been deprecated and will be removed in a future version."
     );
 
     private final Status status;

@@ -22,14 +22,17 @@ package org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, containsNoNodesOfType}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticChecker, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheckResult, SemanticChecker, SemanticState}
 
 case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val semanticState = SemanticChecker.check(from.statement(), context.errorHandler)
-    if (warn) semanticState.notifications.foreach(context.notificationLogger.log)
-    from.withSemanticState(semanticState)
+    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement())
+    if (warn) state.notifications.foreach(context.notificationLogger.log)
+
+    context.errorHandler(errors)
+
+    from.withSemanticState(state)
   }
 
   override def phase = SEMANTIC_CHECK

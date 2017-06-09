@@ -102,6 +102,30 @@ public interface NotificationDetail
             return createNotificationDetail( labels, "indexed label", "indexed labels" );
         }
 
+        public static NotificationDetail startDeprecated( String message )
+        {
+            return new NotificationDetail()
+            {
+                @Override
+                public String name()
+                {
+                    return "START";
+                }
+
+                @Override
+                public String value()
+                {
+                    return message;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return message;
+                }
+            };
+        }
+
         public static NotificationDetail deprecatedField( final String procedure, final String field )
         {
             return new NotificationDetail()

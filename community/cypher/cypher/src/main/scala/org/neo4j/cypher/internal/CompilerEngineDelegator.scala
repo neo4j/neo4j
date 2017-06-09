@@ -23,13 +23,14 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.frontend.{v3_2, v3_3}
+import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, START_UNAVAILABLE_FALLBACK}
+import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
+import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.startDeprecated
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
@@ -164,12 +165,14 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
         parserQuery.onError {
           // if there is a create unique in the cypher 3.3 query try to fallback to 3.1
-          case ex: v3_3.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+          case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
-              createUniqueNotifiction(ex, preParsedQuery)
+              createUniqueNotification(ex, preParsedQuery)
             Left(CypherVersion.v3_1)
-          case ex: v3_3.SyntaxException if ex.getMessage.startsWith("START is no longer supported") =>
-            preParsingNotifications = preParsingNotifications + createStartNotifiction(ex, preParsedQuery)
+          case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
+            preParsingNotifications = preParsingNotifications +
+              createStartUnavailableNotification(ex, preParsedQuery) +
+              createStartDeprecatedNotification(ex, preParsedQuery)
             Left(CypherVersion.v3_1)
           case _ => Right(parserQuery)
         }.getOrElse(Right(parserQuery))
@@ -181,10 +184,13 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
         parserQuery.onError {
           // if there is a create unique in the cypher 3.2 query try to fallback to 3.1
           case ex: v3_2.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
-            preParsingNotifications = preParsingNotifications + createUniqueNotifiction(ex, preParsedQuery)
+            preParsingNotifications = preParsingNotifications + createUniqueNotification(ex, preParsedQuery)
             Left(CypherVersion.v3_1)
           case ex: v3_2.SyntaxException if ex.getMessage.startsWith("START is no longer supported") =>
-            preParsingNotifications = preParsingNotifications + createStartNotifiction(ex, preParsedQuery)
+            preParsingNotifications = preParsingNotifications +
+              createStartNotification(ex, preParsedQuery) +
+              createStartDeprecatedNotification(ex, preParsedQuery)
+
             Left(CypherVersion.v3_1)
           case _ => Right(parserQuery)
         }.getOrElse(Right(parserQuery))
@@ -206,25 +212,35 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     result.right.get
   }
 
-  private def createStartNotifiction(ex: v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartUnavailableNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
+
     START_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
+  private def createStartDeprecatedNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
+    START_DEPRECATED.notification(pos, startDeprecated(ex.getMessage))
+  }
 
-  private def createUniqueNotifiction(ex: v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createUniqueNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
-  private def createStartNotifiction(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(
       v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
     START_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
+  private def createStartDeprecatedNotification(ex: frontend.v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(
+      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
+    START_DEPRECATED.notification(pos, startDeprecated(ex.getMessage))
+  }
 
-  private def createUniqueNotifiction(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createUniqueNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(
       v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
@@ -255,7 +271,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   }
 
   private def getMinimumTimeBeforeReplanning: Long = {
-    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis().longValue()
+    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
     getSetting(graph, setting, DEFAULT_QUERY_PLAN_TTL)
   }
 

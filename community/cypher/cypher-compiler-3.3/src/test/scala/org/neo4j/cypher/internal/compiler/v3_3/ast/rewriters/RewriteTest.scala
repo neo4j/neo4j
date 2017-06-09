@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, Rewriter, SemanticChecker}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticChecker}
 
 trait RewriteTest {
   self: CypherFunSuite =>
@@ -34,14 +34,12 @@ trait RewriteTest {
   protected def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
-    val mkException = new SyntaxExceptionCreator(originalQuery, Some(DummyPosition(0)))
-    SemanticChecker.check(original, SyntaxExceptionCreator.throwOnError(mkException))
-
+    SemanticChecker.check(original)
     val result = rewrite(original)
     assert(result === expected, "\n" + originalQuery)
   }
 
-  protected def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"))
+  protected def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"))
 
   protected def rewrite(original: Statement): AnyRef =
     original.rewrite(rewriterUnderTest)
