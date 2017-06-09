@@ -42,4 +42,9 @@ public class VirtualValues
     {
         return new MapValue( keys, values );
     }
+
+    public static LabelSet labels( int... labelIds )
+    {
+        return new LabelSet.ArrayBasedLabelSet( labelIds );
+    }
 }

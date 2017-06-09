@@ -28,6 +28,7 @@ public enum VirtualValueGroup
     NO_VALUE,
     LIST,
     MAP,
+    LABEL_SET,
     NODE,
     EDGE,
     PATH

@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.Test;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Values;
 import org.neo4j.values.VirtualValue;
