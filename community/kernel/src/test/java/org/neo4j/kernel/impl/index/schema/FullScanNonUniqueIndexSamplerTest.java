@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -44,13 +43,13 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
+
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-@Ignore
 public class FullScanNonUniqueIndexSamplerTest
 {
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -112,18 +111,20 @@ public class FullScanNonUniqueIndexSamplerTest
 
     private void buildTree( List<Number> values ) throws IOException
     {
-        try ( GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> gbpTree = newTree( layout );
-              Writer<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> writer = gbpTree.writer() )
+        try ( GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> gbpTree = newTree( layout ) )
         {
-            NonUniqueSchemaNumberKey key = layout.newKey();
-            NonUniqueSchemaNumberValue value = layout.newValue();
-            long nodeId = 0;
-            for ( Number number : values )
+            try ( Writer<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> writer = gbpTree.writer() )
             {
-                key.from( nodeId, array( number ) );
-                value.from( nodeId, array( number ) );
-                writer.put( key, value );
-                nodeId++;
+                NonUniqueSchemaNumberKey key = layout.newKey();
+                NonUniqueSchemaNumberValue value = layout.newValue();
+                long nodeId = 0;
+                for ( Number number : values )
+                {
+                    key.from( nodeId, array( number ) );
+                    value.from( nodeId, array( number ) );
+                    writer.put( key, value );
+                    nodeId++;
+                }
             }
             gbpTree.checkpoint( IOLimiter.unlimited() );
         }
