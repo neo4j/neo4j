@@ -21,8 +21,9 @@ package org.neo4j.test.matchers.matchertests;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public class ByteArrayMatcherTest
@@ -34,15 +35,19 @@ public class ByteArrayMatcherTest
         byte[] b = new byte[] { 1, 3, -2 };
         assertThat( "a == a", a, byteArray( a ) );
 
-        boolean caughtError = false;
+        String caughtError = null;
         try
         {
             assertThat( "a != b", a, byteArray( b ) ); // this must fail
         }
         catch ( AssertionError error )
         {
-            caughtError = true;
+            caughtError = error.getMessage();
         }
-        assertTrue( "should have thrown on a != b", caughtError );
+        String expectedMessage = "Expected: byte[] { 01 03 FE }";
+        String butMessage = "     but: byte[] { 01 FE 03 }";
+        assertThat( "should have thrown on a != b", caughtError, allOf(
+                containsString( expectedMessage ),
+                containsString( butMessage ) ) );
     }
 }
