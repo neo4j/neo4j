@@ -29,15 +29,12 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
 
     enum SpecialKind
     {
-        BeginNode,
+        WriteNodeReference,
         EndNode,
         BeginLabels,
         WriteLabel,
         EndLabels,
-        BeginProperties,
-        WritePropertyKeyId,
-        EndProperties,
-        BeginEdge,
+        WriteEdgeReference,
         EndEdge,
         BeginMap,
         WriteKeyId,
@@ -45,7 +42,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         BeginList,
         EndList,
         BeginPath,
-        EndPath
+        EndPath,
+        BeginPoint,
+        EndPoint
     }
 
     public static class Special
@@ -91,15 +90,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void beginNode( long nodeId )
+    public void writeNodeReference( long nodeId )
     {
-        buffer.add( Specials.beginNode( nodeId ) );
-    }
-
-    @Override
-    public void endNode()
-    {
-        buffer.add( Specials.endNode() );
+        buffer.add( Specials.writeNodeReference( nodeId ) );
     }
 
     @Override
@@ -121,33 +114,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void beginProperties( int numberOfProperties )
+    public void writeEdgeReference( long edgeId )
     {
-        buffer.add( Specials.beginProperties( numberOfProperties ) );
-    }
-
-    @Override
-    public void writePropertyKeyId( int propertyKeyId )
-    {
-        buffer.add( Specials.writePropertyKeyId( propertyKeyId ) );
-    }
-
-    @Override
-    public void endProperties()
-    {
-        buffer.add( Specials.endProperties() );
-    }
-
-    @Override
-    public void beginEdge( long edgeId )
-    {
-        buffer.add( Specials.beginEdge( edgeId ) );
-    }
-
-    @Override
-    public void endEdge()
-    {
-        buffer.add( Specials.endEdge() );
+        buffer.add( Specials.writeEdgeReference( edgeId ) );
     }
 
     @Override
@@ -192,18 +161,25 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         buffer.add( Specials.endPath() );
     }
 
+    @Override
+    public void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem )
+    {
+        buffer.add( Specials.beginPoint( coordinateReferenceSystem ) );
+    }
+
+    @Override
+    public void endPoint()
+    {
+        buffer.add( Specials.endPoint() );
+    }
+
     @SuppressWarnings( "WeakerAccess" )
     public static class Specials
     {
 
-        public static Special beginNode( long nodeId )
+        public static Special writeNodeReference( long nodeId )
         {
-            return new Special( SpecialKind.BeginNode, (int)nodeId );
-        }
-
-        public static Special endNode()
-        {
-            return new Special( SpecialKind.EndNode, 0 );
+            return new Special( SpecialKind.WriteNodeReference, (int)nodeId );
         }
 
         public static Special beginLabels( int numberOfLabels )
@@ -221,29 +197,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
             return new Special( SpecialKind.EndLabels, 0 );
         }
 
-        public static Special beginProperties( int numberOfProperties )
+        public static Special writeEdgeReference( long edgeId )
         {
-            return new Special( SpecialKind.BeginProperties, numberOfProperties );
-        }
-
-        public static Special writePropertyKeyId( int propertyKeyId )
-        {
-            return new Special( SpecialKind.WritePropertyKeyId, propertyKeyId );
-        }
-
-        public static Special endProperties()
-        {
-            return new Special( SpecialKind.EndProperties, 0 );
-        }
-
-        public static Special beginEdge( long edgeId )
-        {
-            return new Special( SpecialKind.BeginEdge, (int)edgeId );
-        }
-
-        public static Special endEdge()
-        {
-            return new Special( SpecialKind.EndEdge, 0 );
+            return new Special( SpecialKind.WriteEdgeReference, (int)edgeId );
         }
 
         public static Special beginMap( int size )
@@ -279,6 +235,16 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         public static Special endPath()
         {
             return new Special( SpecialKind.EndPath, 0 );
+        }
+
+        public static Special beginPoint( CoordinateReferenceSystem crs )
+        {
+            return new Special( SpecialKind.BeginPoint, crs.code );
+        }
+
+        public static Special endPoint()
+        {
+            return new Special( SpecialKind.EndPoint, 0 );
         }
     }
 }

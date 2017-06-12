@@ -28,7 +28,7 @@ public abstract class PointValue extends VirtualValue
     private double xCoordinate;
     private double yCoordinate;
 
-    public PointValue(double x, double y)
+    PointValue( double x, double y )
     {
         this.xCoordinate = x;
         this.yCoordinate = y;
@@ -37,7 +37,13 @@ public abstract class PointValue extends VirtualValue
     @Override
     public void writeTo( AnyValueWriter writer )
     {
+        writer.beginPoint( getCoordinateReferenceSystem() );
+        writer.writeFloatingPoint( xCoordinate );
+        writer.writeFloatingPoint( yCoordinate );
+        writer.endPoint();
     }
+
+    abstract CoordinateReferenceSystem getCoordinateReferenceSystem();
 
     @Override
     public boolean equals( VirtualValue o )
@@ -71,21 +77,31 @@ public abstract class PointValue extends VirtualValue
         return VirtualValueGroup.POINT;
     }
 
-    public static class CarthesianPointValue extends PointValue{
+    static class CarthesianPointValue extends PointValue{
 
-        public CarthesianPointValue( double x, double y )
+        CarthesianPointValue( double x, double y )
         {
             super( x, y );
         }
 
+        @Override
+        CoordinateReferenceSystem getCoordinateReferenceSystem()
+        {
+            return CoordinateReferenceSystem.Cartesian;
+        }
     }
 
-    public static class GeographicPointValue extends PointValue{
+    static class GeographicPointValue extends PointValue{
 
-        public GeographicPointValue( double latitude, double longitude )
+        GeographicPointValue( double latitude, double longitude )
         {
             super( latitude, longitude );
         }
 
+        @Override
+        CoordinateReferenceSystem getCoordinateReferenceSystem()
+        {
+            return CoordinateReferenceSystem.WGS84;
+        }
     }
 }

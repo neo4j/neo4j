@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Arrays;
+
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Values;
 import org.neo4j.values.VirtualValue;
@@ -28,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 
 class VirtualValueTestUtil
 {
-    static AnyValue toAnyValue( Object o )
+    private static AnyValue toAnyValue( Object o )
     {
         if ( o instanceof AnyValue )
         {
@@ -88,5 +90,19 @@ class VirtualValueTestUtil
     {
         assertFalse( "should not equal", a.equals( b ) );
         assertFalse( "should not equal", b.equals( a ) );
+    }
+
+    static EdgeReference[] edges( long...ids )
+    {
+        return Arrays.stream( ids )
+                .mapToObj( VirtualValues::edge )
+                .toArray( EdgeReference[]::new );
+    }
+
+    static NodeReference[] nodes( long... ids )
+    {
+        return Arrays.stream( ids )
+                .mapToObj( VirtualValues::node )
+                .toArray( NodeReference[]::new );
     }
 }

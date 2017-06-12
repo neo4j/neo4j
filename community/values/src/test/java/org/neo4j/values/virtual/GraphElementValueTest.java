@@ -21,11 +21,11 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.fail;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.path;
 import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.node;
@@ -145,19 +145,5 @@ public class GraphElementValueTest
         {
             // ignore
         }
-    }
-
-    private EdgeReference[] edges( long...ids )
-    {
-        return Arrays.stream( ids )
-                .mapToObj( VirtualValues::edge )
-                .toArray( EdgeReference[]::new );
-    }
-
-    private static NodeReference[] nodes( long... ids )
-    {
-        return Arrays.stream( ids )
-                .mapToObj( VirtualValues::node )
-                .toArray( NodeReference[]::new );
     }
 }

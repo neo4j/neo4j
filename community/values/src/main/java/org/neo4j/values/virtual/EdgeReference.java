@@ -26,7 +26,7 @@ public class EdgeReference extends VirtualValue
 {
     private final long id;
 
-    public EdgeReference( long id )
+    EdgeReference( long id )
     {
         this.id = id;
     }
@@ -34,8 +34,7 @@ public class EdgeReference extends VirtualValue
     @Override
     public void writeTo( AnyValueWriter writer )
     {
-        writer.beginEdge( id );
-        writer.endEdge();
+        writer.writeEdgeReference( id );
     }
 
     @Override

@@ -26,7 +26,7 @@ public class NodeReference extends VirtualValue
 {
     private final long id;
 
-    public NodeReference( long id )
+    NodeReference( long id )
     {
         this.id = id;
     }
@@ -34,8 +34,7 @@ public class NodeReference extends VirtualValue
     @Override
     public void writeTo( AnyValueWriter writer )
     {
-        writer.beginNode( id );
-        writer.endNode();
+        writer.writeNodeReference( id );
     }
 
     @Override
