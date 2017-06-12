@@ -26,9 +26,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.BufferValueWriter;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueWriter;
 import org.neo4j.values.Values;
 
 import static org.neo4j.values.BufferValueWriter.Specials.beginArray;
@@ -45,7 +42,6 @@ public class VirtualValueWriteToTest
     public static Iterable<WriteTest> data()
     {
         return Arrays.asList(
-                // scalar properties
                 shouldWrite(
                     VirtualValues.list(
                         Values.booleanValue( false ),

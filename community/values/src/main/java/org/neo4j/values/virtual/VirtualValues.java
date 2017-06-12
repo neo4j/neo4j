@@ -62,4 +62,14 @@ public class VirtualValues
     {
         return new PathValue( nodes, edges );
     }
+
+    public static VirtualValue pointCartesian( double x, double y )
+    {
+        return new PointValue.CarthesianPointValue(x,y);
+    }
+
+    public static VirtualValue pointGeographic( double latitude, double longitude )
+    {
+        return new PointValue.GeographicPointValue(latitude,longitude);
+    }
 }
