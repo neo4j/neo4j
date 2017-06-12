@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
 import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -44,11 +45,13 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
+import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -529,6 +532,65 @@ public class BoltConnectionIT
     }
 
     @Test
+    public void shouldCloseTransactionOnCommit() throws Exception
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+
+        runAndPull( machine, "BEGIN" );
+        runAndPull( machine, "RETURN 1" );
+        runAndPull( machine, "COMMIT" );
+
+        assertFalse( machine.statementProcessor().hasTransaction() );
+    }
+
+    @Test
+    public void shouldCloseTransactionEvenIfCommitFails() throws Exception
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+
+        runAndPull( machine, "BEGIN" );
+        runAndPull( machine, "X", map(), IGNORED );
+        machine.ackFailure( nullResponseHandler() );
+        runAndPull( machine, "COMMIT", map(), IGNORED );
+        machine.ackFailure( nullResponseHandler() );
+
+        assertFalse( machine.statementProcessor().hasTransaction() );
+    }
+
+    @Test
+    public void shouldCloseTransactionOnRollback() throws Exception
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+
+        runAndPull( machine, "BEGIN" );
+        runAndPull( machine, "RETURN 1" );
+        runAndPull( machine, "ROLLBACK" );
+
+        assertFalse( machine.statementProcessor().hasTransaction() );
+    }
+
+    @Test
+    public void shouldCloseTransactionOnRollbackAfterFailure() throws Exception
+    {
+        // Given
+        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        machine.init( USER_AGENT, emptyMap(), null );
+
+        runAndPull( machine, "BEGIN" );
+        runAndPull( machine, "X", map(), IGNORED );
+        machine.ackFailure( nullResponseHandler() );
+        runAndPull( machine, "ROLLBACK" );
+
+        assertFalse( machine.statementProcessor().hasTransaction() );
+    }
+
+    @Test
     public void shouldAllowNewTransactionAfterFailure() throws Throwable
     {
         // Given
@@ -562,16 +624,21 @@ public class BoltConnectionIT
 
     private Object[] runAndPull( BoltStateMachine machine, String statement ) throws Exception
     {
-        return runAndPull( machine, statement, EMPTY_PARAMS );
+        return runAndPull( machine, statement, EMPTY_PARAMS, SUCCESS );
     }
 
     private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params ) throws Exception
+    {
+        return runAndPull( machine, statement, params, SUCCESS );
+    }
+
+    private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params, BoltResponseMessage expectedResponse ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.run( statement, params, nullResponseHandler() );
         machine.pullAll( recorder );
         RecordedBoltResponse response = recorder.nextResponse();
-        assertEquals( SUCCESS, response.message() );
+        assertEquals( expectedResponse, response.message() );
         return response.records();
     }
 
