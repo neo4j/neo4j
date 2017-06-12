@@ -635,7 +635,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         configureStandardPageCache();
 
         File file = file( "a" );
-        int iterations = Short.MAX_VALUE * 3; // Integer.MAX_VALUE;
+        int iterations = Short.MAX_VALUE * 3;
         for ( int i = 0; i < iterations; i++ )
         {
             PagedFile pagedFile = pageCache.map( file, filePageSize );
