@@ -565,3 +565,25 @@ Many CREATE clauses
 Comparing strings and integers using > in an AND'd predicate
 Comparing strings and integers using > in a OR'd predicate
 Comparing across types yields null, except numbers
+
+`labels()` failing on invalid arguments
+Undirected match in self-relationship graph, count
+Undirected match of self-relationship in self-relationship graph, count
+Undirected match on simple relationship graph, count
+Directed match of self-relationship on self-relationship graph, count
+Mixing directed and undirected pattern parts with self-relationship, count
+Mixing directed and undirected pattern parts with self-relationship, undirected count
+Direction of traversed relationship is not significant for path equality, simple
+In-query call to procedure that takes no arguments
+Calling the same procedure twice using the same outputs in each call
+In-query call to VOID procedure that takes no arguments
+In-query call to VOID procedure does not consume rows
+In-query call to procedure that takes no arguments and yields no results
+In-query call to procedure with explicit arguments
+In-query call to procedure with explicit arguments that drops all result fields
+In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
+In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
+In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
+Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
+In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
+In-query call to procedure with null argument
