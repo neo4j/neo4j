@@ -19,8 +19,13 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Comparator;
+
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
+
+import static java.lang.String.format;
 
 public class NodeReference extends VirtualValue
 {
@@ -58,5 +63,23 @@ public class NodeReference extends VirtualValue
     public VirtualValueGroup valueGroup()
     {
         return VirtualValueGroup.NODE;
+    }
+
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        if ( !(other instanceof NodeReference) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different virtual values" );
+        }
+
+        NodeReference otherNode = (NodeReference) other;
+        return Long.compare( id, otherNode.id );
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "(%s)", id );
     }
 }

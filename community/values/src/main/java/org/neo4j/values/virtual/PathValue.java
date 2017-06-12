@@ -20,7 +20,9 @@
 package org.neo4j.values.virtual;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 
@@ -83,6 +85,48 @@ final class PathValue extends VirtualValue
     public VirtualValueGroup valueGroup()
     {
         return VirtualValueGroup.PATH;
+    }
+
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        if ( !(other instanceof PathValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different virtual values" );
+        }
+
+        PathValue otherPath = (PathValue) other;
+
+        int x = Integer.compare( edges.length, otherPath.edges.length );
+        if ( x == 0 )
+        {
+            for ( int i = 0; i < edges.length; i++ )
+            {
+                x = edges[i].compareTo( otherPath.edges[i], comparator );
+                if ( x != 0 )
+                {
+                    return x;
+                }
+            }
+            x = nodes[0].compareTo( otherPath.nodes[0], comparator );
+        }
+
+        return x;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "Path{" );
+        int i = 0;
+        for ( ; i < edges.length; i++ )
+        {
+            sb.append( nodes[i] );
+            sb.append( edges[i] );
+        }
+        sb.append( nodes[i] );
+        sb.append( '}' );
+        return sb.toString();
     }
 
     public int size()

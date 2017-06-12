@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -86,6 +87,60 @@ final class MapValue extends VirtualValue
     public VirtualValueGroup valueGroup()
     {
         return VirtualValueGroup.MAP;
+    }
+
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        if ( !(other instanceof MapValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different virtual values" );
+        }
+        MapValue otherMap = (MapValue) other;
+        int x = Integer.compare( this.size(), otherMap.size() );
+
+        if ( x == 0 )
+        {
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                x = Integer.compare( this.keys[i], otherMap.keys[i] );
+                if ( x != 0 )
+                {
+                    return x;
+                }
+            }
+            for ( int i = 0; i < values.length; i++ )
+            {
+                x = comparator.compare( this.values[i], otherMap.values[i] );
+                if ( x != 0 )
+                {
+                    return x;
+                }
+            }
+        }
+        return x;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "Map{" );
+        int i = 0;
+        for ( ; i < keys.length - 1; i++ )
+        {
+            sb.append( keys[i] );
+            sb.append( " -> " );
+            sb.append( values[i] );
+            sb.append( ", " );
+        }
+        if ( keys.length > 0 )
+        {
+            sb.append( keys[i] );
+            sb.append( " -> " );
+            sb.append( values[i] );
+        }
+        sb.append( '}' );
+        return sb.toString();
     }
 
     public int size()

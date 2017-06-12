@@ -28,13 +28,14 @@ import org.neo4j.values.VirtualValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-class VirtualValueTestUtil
+@SuppressWarnings( "WeakerAccess" )
+public class VirtualValueTestUtil
 {
-    private static AnyValue toAnyValue( Object o )
+    public static AnyValue toAnyValue( Object o )
     {
         if ( o instanceof AnyValue )
         {
-            return (AnyValue)o;
+            return (AnyValue) o;
         }
         else
         {
@@ -42,21 +43,21 @@ class VirtualValueTestUtil
         }
     }
 
-    static VirtualValue path( VirtualValue... pathElements )
+    public static VirtualValue path( VirtualValue... pathElements )
     {
         assert pathElements.length % 2 == 1;
         NodeReference[] nodes = new NodeReference[pathElements.length / 2 + 1];
         EdgeReference[] edges = new EdgeReference[pathElements.length / 2];
-        nodes[0] = (NodeReference)pathElements[0];
-        for ( int i = 1; i < pathElements.length; i+=2 )
+        nodes[0] = (NodeReference) pathElements[0];
+        for ( int i = 1; i < pathElements.length; i += 2 )
         {
-            edges[i/2] = (EdgeReference)pathElements[i];
-            nodes[i/2 + 1] = (NodeReference)pathElements[i+1];
+            edges[i / 2] = (EdgeReference) pathElements[i];
+            nodes[i / 2 + 1] = (NodeReference) pathElements[i + 1];
         }
         return VirtualValues.path( nodes, edges );
     }
 
-    static VirtualValue list( Object... objects )
+    public static VirtualValue list( Object... objects )
     {
         AnyValue[] values = new AnyValue[objects.length];
         for ( int i = 0; i < objects.length; i++ )
@@ -66,43 +67,43 @@ class VirtualValueTestUtil
         return VirtualValues.list( values );
     }
 
-    static VirtualValue map( Object... keyOrVal )
+    public static VirtualValue map( Object... keyOrVal )
     {
         assert keyOrVal.length % 2 == 0;
         int[] keys = new int[keyOrVal.length / 2];
         AnyValue[] values = new AnyValue[keyOrVal.length / 2];
-        for ( int i = 0; i < keyOrVal.length; i+=2 )
+        for ( int i = 0; i < keyOrVal.length; i += 2 )
         {
-            keys[i/2] = (Integer)keyOrVal[i];
-            values[i/2] = toAnyValue( keyOrVal[i+1] );
+            keys[i / 2] = (Integer) keyOrVal[i];
+            values[i / 2] = toAnyValue( keyOrVal[i + 1] );
         }
         return VirtualValues.map( keys, values );
     }
 
-    static void assertEqual( VirtualValue a, VirtualValue b )
+    public static void assertEqual( VirtualValue a, VirtualValue b )
     {
         assertTrue( "should be equal", a.equals( b ) );
         assertTrue( "should be equal", b.equals( a ) );
         assertTrue( "should have same has", a.hashCode() == b.hashCode() );
     }
 
-    static void assertNotEqual( VirtualValue a, VirtualValue b )
+    public static void assertNotEqual( VirtualValue a, VirtualValue b )
     {
         assertFalse( "should not equal", a.equals( b ) );
         assertFalse( "should not equal", b.equals( a ) );
     }
 
-    static EdgeReference[] edges( long...ids )
-    {
-        return Arrays.stream( ids )
-                .mapToObj( VirtualValues::edge )
-                .toArray( EdgeReference[]::new );
-    }
-
-    static NodeReference[] nodes( long... ids )
+    public static NodeReference[] nodes( long... ids )
     {
         return Arrays.stream( ids )
                 .mapToObj( VirtualValues::node )
                 .toArray( NodeReference[]::new );
+    }
+
+    public static EdgeReference[] edges( long... ids )
+    {
+        return Arrays.stream( ids )
+                .mapToObj( VirtualValues::edge )
+                .toArray( EdgeReference[]::new );
     }
 }

@@ -65,11 +65,11 @@ public class VirtualValues
 
     public static VirtualValue pointCartesian( double x, double y )
     {
-        return new PointValue.CarthesianPointValue(x,y);
+        return new PointValue.CarthesianPointValue( x, y );
     }
 
     public static VirtualValue pointGeographic( double latitude, double longitude )
     {
-        return new PointValue.GeographicPointValue(latitude,longitude);
+        return new PointValue.GeographicPointValue( latitude, longitude );
     }
 }

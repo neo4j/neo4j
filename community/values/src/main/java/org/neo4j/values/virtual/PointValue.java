@@ -19,9 +19,14 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Comparator;
+
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.NumberValues;
 import org.neo4j.values.VirtualValue;
+
+import static java.lang.String.format;
 
 public abstract class PointValue extends VirtualValue
 {
@@ -77,7 +82,38 @@ public abstract class PointValue extends VirtualValue
         return VirtualValueGroup.POINT;
     }
 
-    static class CarthesianPointValue extends PointValue{
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        if ( !(other instanceof PointValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different virtual values" );
+        }
+        PointValue otherPoint = (PointValue) other;
+        int x = this.getCoordinateReferenceSystem().compareTo( otherPoint.getCoordinateReferenceSystem() );
+
+        if ( x == 0 )
+        {
+            x = Double.compare( xCoordinate, otherPoint.xCoordinate );
+
+            if ( x == 0 )
+            {
+                return Double.compare( yCoordinate, otherPoint.yCoordinate );
+            }
+        }
+
+        return x;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Point{ %s, %.3e, %.3e}",
+            getCoordinateReferenceSystem().name, xCoordinate, yCoordinate );
+    }
+
+    static class CarthesianPointValue extends PointValue
+    {
 
         CarthesianPointValue( double x, double y )
         {
@@ -91,7 +127,8 @@ public abstract class PointValue extends VirtualValue
         }
     }
 
-    static class GeographicPointValue extends PointValue{
+    static class GeographicPointValue extends PointValue
+    {
 
         GeographicPointValue( double latitude, double longitude )
         {

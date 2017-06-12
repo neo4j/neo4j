@@ -23,30 +23,12 @@ import java.util.Comparator;
 
 import org.neo4j.values.virtual.VirtualValueGroup;
 
-/**
- * Value that can exist transiently during computations, but that cannot be stored as a property value. A Virtual
- * Value could be a NodeReference for example.
- */
-public abstract class VirtualValue extends AnyValue
+@SuppressWarnings( "WeakerAccess" )
+public class AnyValues
 {
-
-    @Override
-    public final boolean equals( Object other )
-    {
-        return other != null && other instanceof VirtualValue && equals( (VirtualValue) other );
-    }
-
-    @Override
-    public final int hashCode()
-    {
-        return hash();
-    }
-
-    public abstract int hash();
-
-    public abstract boolean equals( VirtualValue other );
-
-    public abstract VirtualValueGroup valueGroup();
-
-    public abstract int compareTo( VirtualValue other, Comparator<AnyValue> comparator );
+    /**
+     * Default AnyValue comparator. Will correctly compare all storable and virtual values.
+     */
+    public static final Comparator<AnyValue> COMPARATOR =
+            new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
 }

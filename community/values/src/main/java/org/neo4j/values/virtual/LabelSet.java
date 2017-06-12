@@ -20,7 +20,9 @@
 package org.neo4j.values.virtual;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 
@@ -100,6 +102,32 @@ abstract class LabelSet extends VirtualValue
         public VirtualValueGroup valueGroup()
         {
             return LABEL_SET;
+        }
+
+        @Override
+        public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+        {
+            if ( !(other instanceof LabelSet) )
+            {
+                throw new IllegalArgumentException( "Cannot compare different virtual values" );
+            }
+
+            LabelSet otherSet = (LabelSet) other;
+            int x = Integer.compare( this.size(), otherSet.size() );
+
+            if ( x == 0 )
+            {
+                for ( int i = 0; i < size(); i++ )
+                {
+                    x = Integer.compare( this.labelIds[i], otherSet.getLabelId( i ) );
+                    if ( x != 0 )
+                    {
+                        return x;
+                    }
+                }
+            }
+
+            return x;
         }
     }
 }

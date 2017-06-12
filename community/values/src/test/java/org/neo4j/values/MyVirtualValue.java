@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import java.util.Comparator;
+
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 public class MyVirtualValue extends VirtualValue
@@ -40,6 +42,12 @@ public class MyVirtualValue extends VirtualValue
     public VirtualValueGroup valueGroup()
     {
         return null;
+    }
+
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        return 0;
     }
 
     @Override

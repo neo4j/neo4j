@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -71,7 +72,50 @@ final class ListValue extends VirtualValue
     @Override
     public VirtualValueGroup valueGroup()
     {
-        return VirtualValueGroup.MAP;
+        return VirtualValueGroup.LIST;
+    }
+
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        if ( !(other instanceof ListValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different virtual values" );
+        }
+        ListValue otherList = (ListValue) other;
+        int x = Integer.compare( this.size(), otherList.size() );
+
+        if ( x == 0 )
+        {
+            for ( int i = 0; i < size(); i++ )
+            {
+                x = comparator.compare( this.values[i], otherList.values[i] );
+                if ( x != 0 )
+                {
+                    return x;
+                }
+            }
+        }
+
+        return x;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "List{" );
+        int i = 0;
+        for ( ; i < values.length - 1; i++ )
+        {
+            sb.append( values[i] );
+            sb.append( ", " );
+        }
+        if ( values.length > 0 )
+        {
+            sb.append( values[i] );
+        }
+        sb.append( '}' );
+        return sb.toString();
     }
 
     public int size()
