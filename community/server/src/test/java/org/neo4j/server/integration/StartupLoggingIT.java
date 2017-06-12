@@ -79,7 +79,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
                 info( NEO4J_IS_STARTING_MESSAGE ),
                 info( "Starting..." ),
                 info( "Started." ),
-                info( "Remote interface available at http://.+:7474/" ),
+                info( "HTTP interface available at http://.+:7474/" ),
                 info( "Stopping..." ),
                 info( "Stopped." )
         ) );

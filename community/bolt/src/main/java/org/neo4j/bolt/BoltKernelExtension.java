@@ -210,7 +210,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             log.info( "Bolt Server extension loaded." );
             for ( ProtocolInitializer connector : connectors )
             {
-                logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
+                logService.getUserLog( WorkerFactory.class ).info( "Bolt interface available at bolt://%s", connector.address() );
             }
         }
 
