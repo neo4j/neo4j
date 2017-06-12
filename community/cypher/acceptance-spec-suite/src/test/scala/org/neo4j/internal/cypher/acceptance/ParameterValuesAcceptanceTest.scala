@@ -25,6 +25,16 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
 
   // Not TCK material below; sending graph types or characters as parameters is not supported
 
+  test("ANY should be able to use varibels from the horizon") {
+
+    val query =
+      """ WITH 1 AS node, [] AS nodes1
+        | RETURN ANY(n IN collect(distinct node) WHERE n IN nodes1) as exists """.stripMargin
+
+    val r = executeWithCostPlannerOnly(query)
+    r.next().apply("exists") should equal(false)
+  }
+
   test("should not erase the type of an empty array sent as parameter") {
     import Array._
 
