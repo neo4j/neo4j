@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_3
+package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
-sealed trait SemanticErrorDef {
-  def msg: String
-  def position: InputPosition
-  def references: Seq[InputPosition]
+object GraphletType {
+  val instance = new GraphletType() {
+    val parentType = CTAny
+    override val toString = "Graphlet"
+    override val toNeoTypeString = "GRAPHLET?"
+
+  }
 }
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
-
-sealed trait UnsupportedOpenCypher extends SemanticErrorDef
-
-final case class ClauseError(clause: String, position: InputPosition) extends UnsupportedOpenCypher {
-
-  override val msg: String = s"The referenced clause $clause is not supported by Neo4j"
-  override def references = Seq.empty
-}
-
-final case class PatternError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
-  override def references = Seq.empty
-}
+sealed abstract class GraphletType extends CypherType

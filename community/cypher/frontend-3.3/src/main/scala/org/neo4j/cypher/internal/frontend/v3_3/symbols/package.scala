@@ -32,6 +32,7 @@ package object symbols {
   val CTPoint: PointType = PointType.instance
   val CTGeometry: GeometryType = GeometryType.instance
   val CTPath: PathType = PathType.instance
+  val CTGraphlet: GraphletType = GraphletType.instance
   def CTList(inner: CypherType): ListType = ListType(inner)
 
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant

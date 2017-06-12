@@ -71,7 +71,7 @@ case class LoadGraph(graphUrl: Expression)(val position: InputPosition) extends 
   override def semanticCheck: SemanticCheck =
     graphUrl.semanticCheck(Expression.SemanticContext.Simple) chain
       graphUrl.expectType(CTString.covariant) chain
-      UnsupportedOpenCypher(name, position)
+      ClauseError(name, position)
 }
 
 case class EmitGraph(graphName: Expression)(val position: InputPosition) extends Clause with SemanticChecking {
@@ -80,7 +80,7 @@ case class EmitGraph(graphName: Expression)(val position: InputPosition) extends
   override def semanticCheck: SemanticCheck =
     graphName.semanticCheck(Expression.SemanticContext.Simple) chain
       graphName.expectType(CTString.covariant) chain
-      UnsupportedOpenCypher(name, position)
+      ClauseError(name, position)
 }
 
 case class ReturnGraph(graphName: Option[Expression])(val position: InputPosition) extends Clause with SemanticChecking {
@@ -89,7 +89,7 @@ case class ReturnGraph(graphName: Option[Expression])(val position: InputPositio
   override def semanticCheck: SemanticCheck =
     graphName.semanticCheck(Expression.SemanticContext.Simple) chain
       graphName.expectType(CTString.covariant) chain
-      UnsupportedOpenCypher(name, position)
+      ClauseError(name, position)
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
