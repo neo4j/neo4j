@@ -27,19 +27,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
-import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
 
 public class BadCollectorTest
 {
@@ -55,7 +51,7 @@ public class BadCollectorTest
         BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL );
 
         // when
-        badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+        badCollector.collectBadRelationship( "1", "a", "T", "2", "b", "1" );
 
         // then
         assertEquals( 1, badCollector.badEntries() );
@@ -72,7 +68,7 @@ public class BadCollectorTest
         // when
         try
         {
-            badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+            collectBadRelationship( badCollector );
             fail( "Should have thrown an InputException" );
         }
         catch ( InputException ignored )
@@ -90,7 +86,7 @@ public class BadCollectorTest
         BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL );
 
         // when
-        badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+        collectBadRelationship( badCollector );
         try
         {
             badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
@@ -114,7 +110,7 @@ public class BadCollectorTest
         badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
         try
         {
-            badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+            collectBadRelationship( badCollector );
             fail( "Should have thrown an InputException" );
         }
         catch ( InputException ignored )
@@ -135,7 +131,7 @@ public class BadCollectorTest
         badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
         try
         {
-            badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+            collectBadRelationship( badCollector );
         }
         catch ( InputException ignored )
         {
@@ -153,7 +149,7 @@ public class BadCollectorTest
         BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.BAD_RELATIONSHIPS );
 
         // when
-        badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+        collectBadRelationship( badCollector );
         try
         {
             badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
@@ -163,46 +159,6 @@ public class BadCollectorTest
             // then expect to end up here
             assertEquals( 1 /* only duplicate rel collected */, badCollector.badEntries() );
         }
-    }
-
-    @Test
-    public void shouldBeAbleToRetrieveDuplicateNodeIds() throws IOException
-    {
-        // given
-        int tolerance = 15;
-
-        BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL );
-
-        // when
-        for ( int i = 0; i < 15; i++ )
-        {
-            badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
-        }
-
-        // then
-        assertEquals( 15, PrimitiveLongCollections.count( badCollector.leftOverDuplicateNodesIds() ) );
-
-        PrimitiveLongSet longs = PrimitiveLongCollections.asSet( badCollector.leftOverDuplicateNodesIds() );
-        for ( int i = 0; i < 15; i++ )
-        {
-            assertTrue( longs.contains( i ) );
-        }
-    }
-
-    @Test
-    public void shouldProvideNodeIdsSorted() throws Exception
-    {
-        // GIVEN
-        BadCollector badCollector = new BadCollector( badOutputFile(), 10, BadCollector.DUPLICATE_NODES );
-        badCollector.collectDuplicateNode( "a", 10, "group", "source1", "source2" );
-        badCollector.collectDuplicateNode( "b", 8, "group", "source1", "source2" );
-        badCollector.collectDuplicateNode( "c", 12, "group", "source1", "source2" );
-
-        // WHEN
-        long[] nodeIds = PrimitiveLongCollections.asArray( badCollector.leftOverDuplicateNodesIds() );
-
-        // THEN
-        assertArrayEquals( new long[] {8, 10, 12}, nodeIds );
     }
 
     @Test
@@ -231,9 +187,14 @@ public class BadCollectorTest
         {
             badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
         }
-        badCollector.collectBadRelationship( inputRelationship().build(), 2 );
+        collectBadRelationship( badCollector );
         badCollector.collectExtraColumns( "a,b,c", 1, "a" );
         assertEquals( "Output stream should not have any reported entries", 0, outputStream.size() );
+    }
+
+    private void collectBadRelationship( Collector collector )
+    {
+        collector.collectBadRelationship( "A", Group.GLOBAL.name(), "TYPE", "B", Group.GLOBAL.name(), "A" );
     }
 
     private OutputStream badOutputFile() throws IOException
@@ -242,30 +203,6 @@ public class BadCollectorTest
         FileSystemAbstraction fileSystem = fs.get();
         File badDataFile = badDataFile( fileSystem, badDataPath );
         return fileSystem.openAsOutputStream( badDataFile, true );
-    }
-
-    static class InputRelationshipBuilder
-    {
-        private final String sourceDescription = "foo";
-        private final int lineNumber = 1;
-        private final int position = 1;
-        private final Object[] properties = new Object[]{};
-        private final long firstPropertyId = -1L;
-        private final Object startNode = null;
-        private final Object endNode = null;
-        private final String friend = "FRIEND";
-        private final int typeId = 1;
-
-        public static InputRelationshipBuilder inputRelationship()
-        {
-            return new InputRelationshipBuilder();
-        }
-
-        InputRelationship build()
-        {
-            return new InputRelationship( sourceDescription, lineNumber, position,
-                    properties, firstPropertyId, startNode, endNode, friend, typeId );
-        }
     }
 
     private File badDataFile( FileSystemAbstraction fileSystem, File badDataPath ) throws IOException

@@ -19,32 +19,124 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import org.neo4j.helpers.collection.Iterators;
+
+import static java.lang.Integer.max;
 
 /**
  * Keeps data about how relationships are distributed between different types.
  */
-public class RelationshipTypeDistribution implements Iterable<Map.Entry<Object,MutableLong>>
+public class RelationshipTypeDistribution implements Iterable<RelationshipTypeDistribution.RelationshipTypeCount>
 {
-    private final Map.Entry<Object,MutableLong>[] sortedTypes;
-
-    public RelationshipTypeDistribution( Map.Entry<Object,MutableLong>[] sortedTypes )
-    {
-        this.sortedTypes = sortedTypes;
-    }
+    private final List<Client> clients = new ArrayList<>();
+    private int opened;
+    private RelationshipTypeCount[] typeCounts;
 
     @Override
-    public Iterator<Map.Entry<Object,MutableLong>> iterator()
+    public Iterator<RelationshipTypeCount> iterator()
     {
-        return Iterators.iterator( sortedTypes );
+        return Iterators.iterator( typeCounts );
     }
 
     public int getNumberOfRelationshipTypes()
     {
-        return sortedTypes.length;
+        return typeCounts.length;
+    }
+
+    public synchronized Client newClient()
+    {
+        Client client = new Client();
+        clients.add( client );
+        opened++;
+        return client;
+    }
+
+    private synchronized void closeClient()
+    {
+        if ( --opened == 0 )
+        {
+            int highestTypeId = 0;
+            for ( Client client : clients )
+            {
+                highestTypeId = max( highestTypeId, client.highestTypeId );
+            }
+
+            long[] counts = new long[highestTypeId + 1];
+            for ( Client client : clients )
+            {
+                client.addTo( counts );
+            }
+            typeCounts = new RelationshipTypeCount[counts.length];
+            for ( int i = 0; i < counts.length; i++ )
+            {
+                typeCounts[i] = new RelationshipTypeCount( i, counts[i] );
+            }
+            Arrays.sort( typeCounts );
+        }
+    }
+
+    public static class RelationshipTypeCount implements Comparable<RelationshipTypeCount>
+    {
+        private final int typeId;
+        private final long count;
+
+        public RelationshipTypeCount( int typeId, long count )
+        {
+            this.typeId = typeId;
+            this.count = count;
+        }
+
+        public int getTypeId()
+        {
+            return typeId;
+        }
+
+        public long getCount()
+        {
+            return count;
+        }
+
+        @Override
+        public int compareTo( RelationshipTypeCount o )
+        {
+            return Long.compare( count, o.count );
+        }
+    }
+
+    public class Client implements AutoCloseable
+    {
+        private long[] counts = new long[8]; // index is relationship type id
+        private int highestTypeId;
+
+        public void increment( int typeId )
+        {
+            if ( typeId >= counts.length )
+            {
+                counts = Arrays.copyOf( counts, max( counts.length * 2, typeId ) );
+            }
+            counts[typeId]++;
+            if ( typeId > highestTypeId )
+            {
+                highestTypeId = typeId;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            closeClient();
+        }
+
+        private void addTo( long[] counts )
+        {
+            for ( int i = 0; i < highestTypeId; i++ )
+            {
+                counts[i] += this.counts[i];
+            }
+        }
     }
 }

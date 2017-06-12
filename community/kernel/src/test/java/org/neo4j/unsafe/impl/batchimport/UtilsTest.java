@@ -24,21 +24,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 public class UtilsTest
 {
@@ -149,26 +141,6 @@ public class UtilsTest
             Utils.mergeSortedInto( values, into, batchSize );
             assertArrayEquals( expectedMergedArray, into );
         }
-    }
-
-    @Test
-    public void shouldContinueIdIteratorThroughNulls() throws Exception
-    {
-        // GIVEN
-        Collection<InputNode> inputs = Arrays.asList(
-                new InputNode( "Source", 1, 1, "1", NO_PROPERTIES, null, NO_LABELS, null ),
-                new InputNode( "Source", 2, 2, null, NO_PROPERTIES, null, NO_LABELS, null ),
-                new InputNode( "Source", 3, 3, "3", NO_PROPERTIES, null, NO_LABELS, null ) );
-        InputIterable<InputNode> input = SimpleInputIteratorWrapper.wrap( "Source", inputs );
-
-        // WHEN
-        Iterator<Object> ids = Utils.idsOf( input ).iterator();
-
-        // THEN
-        assertEquals( "1", ids.next() );
-        assertNull( ids.next() );
-        assertEquals( "3", ids.next() );
-        assertFalse( ids.hasNext() );
     }
 
     private long[] manuallyMerge( long[] values, long[] into )

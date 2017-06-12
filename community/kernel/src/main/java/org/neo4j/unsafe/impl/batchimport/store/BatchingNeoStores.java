@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -223,10 +224,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getNodeStore().getHighId() > 0 || neoStores.getRelationshipStore().getHighId() > 0;
     }
 
-        private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
+    private StoreFactory newStoreFactory( String name, OpenOption... openOptions )
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
-                new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
                 openOptions );
     }
 

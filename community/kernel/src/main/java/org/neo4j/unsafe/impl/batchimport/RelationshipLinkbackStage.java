@@ -33,8 +33,7 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.backwards;
 /**
  * Sets {@link RelationshipRecord#setFirstPrevRel(long)} and {@link RelationshipRecord#setSecondPrevRel(long)}
  * by going through the {@link RelationshipStore} in reversed order. It uses the {@link NodeRelationshipCache}
- * the same way as {@link RelationshipStage} does to link chains together, but this time for the "prev"
- * pointers of {@link RelationshipRecord}. Steps:
+ * to link chains together. Steps:
  *
  * <ol>
  * <li>{@link ReadRecordsStep} reads records from store and passes on downwards to be processed.

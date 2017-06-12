@@ -60,21 +60,21 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.csv;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
@@ -83,7 +83,7 @@ public class CsvInputBatchImportIT
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
-    private String nameOf( InputNode node )
+    private String nameOf( CachingInputEntityVisitor node )
     {
         return (String) node.properties()[1];
     }
@@ -101,16 +101,15 @@ public class CsvInputBatchImportIT
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.empty() );
-        List<InputNode> nodeData = randomNodeData();
-        List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
+        List<CachingInputEntityVisitor> nodeData = randomNodeData();
+        List<CachingInputEntityVisitor> relationshipData = randomRelationshipData( nodeData );
 
         // WHEN
         boolean success = false;
         try
         {
             importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
-                    IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ),
-                    getRuntime().availableProcessors() ) );
+                    IdType.STRING, lowBufferSize( COMMAS ), silentBadCollector( 0 ) ) );
             // THEN
             verifyImportedData( nodeData, relationshipData );
             success = true;
@@ -141,15 +140,16 @@ public class CsvInputBatchImportIT
     // Below is code for generating import data
     // ======================================================
 
-    private List<InputNode> randomNodeData()
+    private List<CachingInputEntityVisitor> randomNodeData()
     {
-        List<InputNode> nodes = new ArrayList<>();
+        List<CachingInputEntityVisitor> nodes = new ArrayList<>();
         for ( int i = 0; i < 300; i++ )
         {
-            Object[] properties = new Object[] { "name", "Node " + i };
-            String id = UUID.randomUUID().toString();
-            nodes.add( new InputNode( "source", i, i, id, properties, null,
-                    randomLabels( random ), null ) );
+            CachingInputEntityVisitor node = new CachingInputEntityVisitor();
+            node.id( UUID.randomUUID().toString(), Group.GLOBAL );
+            node.property( "name", "Node " + i );
+            node.labels( randomLabels( random ) );
+            nodes.add( node );
         }
         return nodes;
     }
@@ -182,7 +182,7 @@ public class CsvInputBatchImportIT
         };
     }
 
-    private File relationshipDataAsFile( List<InputRelationship> relationshipData ) throws IOException
+    private File relationshipDataAsFile( List<CachingInputEntityVisitor> relationshipData ) throws IOException
     {
         File file = directory.file( "relationships.csv" );
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
@@ -191,15 +191,15 @@ public class CsvInputBatchImportIT
             println( writer, ":start_id,:end_id,:type" );
 
             // Data
-            for ( InputRelationship relationship : relationshipData )
+            for ( CachingInputEntityVisitor relationship : relationshipData )
             {
-                println( writer, relationship.startNode() + "," + relationship.endNode() + "," + relationship.type() );
+                println( writer, relationship.startId() + "," + relationship.endId() + "," + relationship.stringType );
             }
         }
         return file;
     }
 
-    private File nodeDataAsFile( List<InputNode> nodeData ) throws IOException
+    private File nodeDataAsFile( List<CachingInputEntityVisitor> nodeData ) throws IOException
     {
         File file = directory.file( "nodes.csv" );
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
@@ -208,11 +208,11 @@ public class CsvInputBatchImportIT
             println( writer, "id:ID,name,some-labels:LABEL" );
 
             // Data
-            for ( InputNode node : nodeData )
+            for ( CachingInputEntityVisitor node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                println( writer, node.id() + "," + node.properties()[1] +
-                        (csvLabels != null && csvLabels.length() > 0 ? "," + csvLabels : "") );
+                println( writer, node.id() + "," + node.properties()[1] + "," +
+                        (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
             }
         }
         return file;
@@ -237,17 +237,16 @@ public class CsvInputBatchImportIT
         writer.write( string + "\n" );
     }
 
-    private List<InputRelationship> randomRelationshipData( List<InputNode> nodeData )
+    private List<CachingInputEntityVisitor> randomRelationshipData( List<CachingInputEntityVisitor> nodeData )
     {
-        List<InputRelationship> relationships = new ArrayList<>();
+        List<CachingInputEntityVisitor> relationships = new ArrayList<>();
         for ( int i = 0; i < 1000; i++ )
         {
-            relationships.add( new InputRelationship(
-                    "source", i, i,
-                    NO_PROPERTIES, null,
-                    nodeData.get( random.nextInt( nodeData.size() ) ).id(),
-                    nodeData.get( random.nextInt( nodeData.size() ) ).id(),
-                    "TYPE_" + random.nextInt( 3 ), null ) );
+            CachingInputEntityVisitor relationship = new CachingInputEntityVisitor();
+            relationship.startId( nodeData.get( random.nextInt( nodeData.size() ) ).id(), Group.GLOBAL );
+            relationship.endId( nodeData.get( random.nextInt( nodeData.size() ) ).id(), Group.GLOBAL );
+            relationship.type( "TYPE_" + random.nextInt( 3 ) );
+            relationships.add( relationship );
         }
         return relationships;
     }
@@ -256,10 +255,11 @@ public class CsvInputBatchImportIT
     // Below is code for verifying the imported data
     // ======================================================
 
-    private void verifyImportedData( List<InputNode> nodeData, List<InputRelationship> relationshipData )
+    private void verifyImportedData( List<CachingInputEntityVisitor> nodeData,
+            List<CachingInputEntityVisitor> relationshipData )
     {
         // Build up expected data for the verification below
-        Map<String/*id*/, InputNode> expectedNodes = new HashMap<>();
+        Map<String/*id*/, CachingInputEntityVisitor> expectedNodes = new HashMap<>();
         Map<String,String[]> expectedNodeNames = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicInteger.class ) ) ) );
@@ -418,41 +418,41 @@ public class CsvInputBatchImportIT
     }
 
     private void buildUpExpectedData(
-            List<InputNode> nodeData,
-            List<InputRelationship> relationshipData,
-            Map<String, InputNode> expectedNodes,
+            List<CachingInputEntityVisitor> nodeData,
+            List<CachingInputEntityVisitor> relationshipData,
+            Map<String, CachingInputEntityVisitor> expectedNodes,
             Map<String, String[]> expectedNodeNames,
             Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
             Map<String, AtomicLong> nodeCounts,
             Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
     {
-        for ( InputNode node : nodeData )
+        for ( CachingInputEntityVisitor node : nodeData )
         {
             expectedNodes.put( (String) node.id(), node );
             expectedNodeNames.put( nameOf( node ), node.labels() );
             countNodeLabels( nodeCounts, node.labels() );
         }
-        for ( InputRelationship relationship : relationshipData )
+        for ( CachingInputEntityVisitor relationship : relationshipData )
         {
             // Expected relationship counts per node, type and direction
-            InputNode startNode = expectedNodes.get( relationship.startNode() );
-            InputNode endNode = expectedNodes.get( relationship.endNode() );
+            CachingInputEntityVisitor startNode = expectedNodes.get( relationship.startId() );
+            CachingInputEntityVisitor endNode = expectedNodes.get( relationship.endId() );
             {
                 expectedRelationships.get( nameOf( startNode ) )
                                      .get( nameOf( endNode ) )
-                                     .get( relationship.type() )
+                                     .get( relationship.stringType )
                                      .incrementAndGet();
             }
 
             // Expected counts per start/end node label ids
             // Let's do what CountsState#addRelationship does, roughly
             relationshipCounts.get( null ).get( null ).get( null ).incrementAndGet();
-            relationshipCounts.get( null ).get( relationship.type() ).get( null ).incrementAndGet();
+            relationshipCounts.get( null ).get( relationship.stringType ).get( null ).incrementAndGet();
             for ( String startNodeLabelName : asSet( startNode.labels() ) )
             {
                 Map<String, Map<String, AtomicLong>> startLabelCounts = relationshipCounts.get( startNodeLabelName );
                 startLabelCounts.get( null ).get( null ).incrementAndGet();
-                Map<String, AtomicLong> typeCounts = startLabelCounts.get( relationship.type() );
+                Map<String, AtomicLong> typeCounts = startLabelCounts.get( relationship.stringType );
                 typeCounts.get( null ).incrementAndGet();
                 if ( COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
                 {
@@ -466,7 +466,7 @@ public class CsvInputBatchImportIT
             for ( String endNodeLabelName : asSet( endNode.labels() ) )
             {
                 relationshipCounts.get( null ).get( null ).get( endNodeLabelName ).incrementAndGet();
-                relationshipCounts.get( null ).get( relationship.type() ).get( endNodeLabelName ).incrementAndGet();
+                relationshipCounts.get( null ).get( relationship.stringType ).get( endNodeLabelName ).incrementAndGet();
             }
         }
     }

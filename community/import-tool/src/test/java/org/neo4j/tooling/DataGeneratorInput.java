@@ -19,25 +19,20 @@
  */
 package org.neo4j.tooling;
 
-import java.util.function.Function;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
- * and then a function for generating {@link InputNode} and another for generating {@link InputRelationship}.
+ * and then a function for generating the nodes and another for generating the relationships.
  * Data can be generated in parallel and so those generator functions accepts a {@link Range} for which
  * an array of input objects are generated, everything else will be taken care of. So typical usage would be:
  *
@@ -65,72 +60,45 @@ public class DataGeneratorInput implements Input
 {
     private final long nodes;
     private final long relationships;
-    private final Function<Range,InputNode[]> nodeGenerator;
-    private final Function<Range,InputRelationship[]> relGenerator;
     private final IdType idType;
     private final Collector badCollector;
+    private final long seed;
+    private final Header nodeHeader;
+    private final Header relationshipHeader;
+    private final Distribution<String> labels;
+    private final Distribution<String> relationshipTypes;
 
-    public DataGeneratorInput( long nodes, long relationships,
-            Function<Range,InputNode[]> nodeGenerator,
-            Function<Range,InputRelationship[]> relGenerator,
-            IdType idType, Collector badCollector )
+    public DataGeneratorInput( long nodes, long relationships, IdType idType, Collector badCollector, long seed,
+            Header nodeHeader, Header relationshipHeader, int labelCount, int relationshipTypeCount )
     {
         this.nodes = nodes;
         this.relationships = relationships;
-        this.nodeGenerator = nodeGenerator;
-        this.relGenerator = relGenerator;
         this.idType = idType;
         this.badCollector = badCollector;
+        this.seed = seed;
+        this.nodeHeader = nodeHeader;
+        this.relationshipHeader = relationshipHeader;
+        this.labels = new Distribution<>( tokens( "Label", labelCount ) );
+        this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
     }
 
     @Override
-    public InputIterable<InputNode> nodes()
+    public InputIterator nodes()
     {
-        return new InputIterable<InputNode>()
-        {
-            @Override
-            public InputIterator<InputNode> iterator()
-            {
-                return new EntityDataGenerator<>( nodeGenerator, nodes );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, nodeHeader, labels, relationshipTypes );
     }
 
     @Override
-    public InputIterable<InputRelationship> relationships()
+    public InputIterator relationships()
     {
-        return new InputIterable<InputRelationship>()
-        {
-            @Override
-            public InputIterator<InputRelationship> iterator()
-            {
-                return new EntityDataGenerator<>( relGenerator, relationships );
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
-            }
-        };
+        return new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, relationshipHeader,
+                labels, relationshipTypes );
     }
 
     @Override
     public IdMapper idMapper()
     {
         return idType.idMapper();
-    }
-
-    @Override
-    public IdGenerator idGenerator()
-    {
-        return idType.idGenerator();
     }
 
     @Override
@@ -165,5 +133,15 @@ public class DataGeneratorInput implements Input
                 new Entry( null, Type.END_ID, null, idType.extractor( extractors ) ),
                 new Entry( null, Type.TYPE, null, extractors.string() )
         } );
+    }
+
+    private static String[] tokens( String prefix, int count )
+    {
+        String[] result = new String[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            result[i] = prefix + (i + 1);
+        }
+        return result;
     }
 }

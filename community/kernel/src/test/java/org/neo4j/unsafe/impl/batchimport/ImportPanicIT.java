@@ -44,7 +44,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
@@ -52,13 +51,13 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
+
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 public class ImportPanicIT
 {
@@ -82,15 +81,14 @@ public class ImportPanicIT
         BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs, Configuration.DEFAULT,
                 NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
                 Config.empty(), StandardV3_0.RECORD_FORMATS );
-        Iterable<DataFactory<InputNode>> nodeData =
-                nodeData( data( NO_NODE_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
+        Iterable<DataFactory> nodeData =
+                datas( data( NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
         Input brokenCsvInput = new CsvInput(
                 nodeData, defaultFormatNodeFileHeader(),
-                relationshipData(), defaultFormatRelationshipFileHeader(),
+                datas(), defaultFormatRelationshipFileHeader(),
                 IdType.ACTUAL,
                 csvConfigurationWithLowBufferSize(),
-                new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ),
-                Runtime.getRuntime().availableProcessors() );
+                new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ) );
 
         // WHEN
         try

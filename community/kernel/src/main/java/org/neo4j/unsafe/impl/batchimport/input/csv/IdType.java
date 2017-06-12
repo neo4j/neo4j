@@ -21,18 +21,14 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.
  *
- * @see InputNode#id()
  * @see Header.Entry#extractor()
  */
 public enum IdType
@@ -53,12 +49,6 @@ public enum IdType
         {
             return IdMappers.strings( AUTO );
         }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.startingFromTheBeginning();
-        }
     },
 
     /**
@@ -77,12 +67,6 @@ public enum IdType
         public IdMapper idMapper()
         {
             return IdMappers.longs( AUTO );
-        }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.startingFromTheBeginning();
         }
     },
 
@@ -103,12 +87,6 @@ public enum IdType
         {
             return IdMappers.actual();
         }
-
-        @Override
-        public IdGenerator idGenerator()
-        {
-            return IdGenerators.fromInput();
-        }
     };
 
     private final boolean idsAreExternal;
@@ -119,8 +97,6 @@ public enum IdType
     }
 
     public abstract IdMapper idMapper();
-
-    public abstract IdGenerator idGenerator();
 
     public boolean idsAreExternal()
     {

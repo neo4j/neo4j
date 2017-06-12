@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
 /**
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
@@ -37,8 +39,10 @@ public class Header implements Cloneable
          * to read at the very top of it.
          * @param configuration {@link Configuration} specific to the format of the data.
          * @param idType type of values we expect the ids to be.
+         * @param groups {@link Groups} to register groups in.
+         * @return the created {@link Header}.
          */
-        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType );
+        Header create( CharSeeker dataSeeker, Configuration configuration, IdType idType, Groups groups );
     }
 
     private final Entry[] entries;
@@ -91,14 +95,14 @@ public class Header implements Cloneable
     {
         private final String name;
         private final Type type;
-        private final String groupName;
+        private final Group group;
         private final Extractor<?> extractor;
 
-        public Entry( String name, Type type, String groupName, Extractor<?> extractor )
+        public Entry( String name, Type type, Group group, Extractor<?> extractor )
         {
             this.name = name;
             this.type = type;
-            this.groupName = groupName;
+            this.group = group;
             this.extractor = extractor;
         }
 
@@ -107,7 +111,7 @@ public class Header implements Cloneable
         {
             return (name != null ? name : "") +
                    ":" + (type == Type.PROPERTY ? extractor.toString().toLowerCase() : type.name()) +
-                   (groupName != null ? "(" + groupName + ")" : "");
+                   (group != null ? group : "");
         }
 
         public Extractor<?> extractor()
@@ -120,9 +124,9 @@ public class Header implements Cloneable
             return type;
         }
 
-        public String groupName()
+        public Group group()
         {
-            return groupName;
+            return group;
         }
 
         public String name()
@@ -140,9 +144,9 @@ public class Header implements Cloneable
                 result = prime * result + name.hashCode();
             }
             result = prime * result + type.hashCode();
-            if ( groupName != null )
+            if ( group != null )
             {
-                result = prime * result + groupName.hashCode();
+                result = prime * result + group.hashCode();
             }
             result = prime * result + extractor.hashCode();
             return result;
@@ -161,13 +165,13 @@ public class Header implements Cloneable
             }
             Entry other = (Entry) obj;
             return nullSafeEquals( name, other.name ) && type == other.type &&
-                    nullSafeEquals( groupName, other.groupName ) && extractorEquals( extractor, other.extractor );
+                    nullSafeEquals( group, other.group ) && extractorEquals( extractor, other.extractor );
         }
 
         @Override
         public Entry clone()
         {
-            return new Entry( name, type, groupName, extractor != null ? extractor.clone() : null );
+            return new Entry( name, type, group, extractor != null ? extractor.clone() : null );
         }
 
         private boolean nullSafeEquals( Object o1, Object o2 )

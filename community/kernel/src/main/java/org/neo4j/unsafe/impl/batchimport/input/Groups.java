@@ -27,9 +27,10 @@ import java.util.Map;
  */
 public class Groups
 {
+    static final int LOWEST_NONGLOBAL_ID = 1;
+
     private final Map<String,Group> byName = new HashMap<>();
-    private int nextId = 0;
-    private Boolean globalMode;
+    private int nextId = LOWEST_NONGLOBAL_ID;
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
@@ -40,20 +41,6 @@ public class Groups
      */
     public synchronized Group getOrCreate( String name )
     {
-        boolean global = name == null;
-        if ( globalMode == null )
-        {
-            globalMode = global;
-        }
-        else
-        {
-            if ( global != globalMode.booleanValue() )
-            {
-                throw new IllegalStateException( "Mixing specified and unspecified group belongings " +
-                        "in a single import isn't supported" );
-            }
-        }
-
         if ( name == null )
         {
             return Group.GLOBAL;

@@ -64,8 +64,6 @@ import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
@@ -75,6 +73,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
@@ -89,7 +88,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.canDetectFreeMemor
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -437,8 +436,7 @@ public class ImportTool
             configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
-                    configuration.maxNumberOfProcessors() );
+                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
 
             doImport( out, err, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration );
@@ -772,30 +770,30 @@ public class ImportTool
         }
     }
 
-    public static Iterable<DataFactory<InputRelationship>>
+    public static Iterable<DataFactory>
             relationshipData( final Charset encoding, Collection<Option<File[]>> relationshipsFiles )
     {
-        return new IterableWrapper<DataFactory<InputRelationship>,Option<File[]>>( relationshipsFiles )
+        return new IterableWrapper<DataFactory,Option<File[]>>( relationshipsFiles )
         {
             @Override
-            protected DataFactory<InputRelationship> underlyingObjectToObject( Option<File[]> group )
+            protected DataFactory underlyingObjectToObject( Option<File[]> group )
             {
                 return data( defaultRelationshipType( group.metadata() ), encoding, group.value() );
             }
         };
     }
 
-    public static Iterable<DataFactory<InputNode>> nodeData( final Charset encoding,
+    public static Iterable<DataFactory> nodeData( final Charset encoding,
             Collection<Option<File[]>> nodesFiles )
     {
-        return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( nodesFiles )
+        return new IterableWrapper<DataFactory,Option<File[]>>( nodesFiles )
         {
             @Override
-            protected DataFactory<InputNode> underlyingObjectToObject( Option<File[]> input )
+            protected DataFactory underlyingObjectToObject( Option<File[]> input )
             {
-                Decorator<InputNode> decorator = input.metadata() != null
+                Decorator decorator = input.metadata() != null
                         ? additiveLabels( input.metadata().split( ":" ) )
-                        : NO_NODE_DECORATOR;
+                        : NO_DECORATOR;
                 return data( decorator, encoding, input.value() );
             }
         };

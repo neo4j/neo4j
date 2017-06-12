@@ -26,6 +26,7 @@ import java.io.Reader;
 import org.neo4j.csv.reader.Source.Chunk;
 
 import static java.lang.String.format;
+
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**
@@ -234,9 +235,9 @@ public class BufferedCharSeeker implements CharSeeker
     @Override
     public boolean tryExtract( Mark mark, Extractor<?> extractor )
     {
-        long from = mark.startPosition();
-        long to = mark.position();
-        return extractor.extract( buffer, (int) from, (int) (to - from), mark.isQuoted() );
+        int from = mark.startPosition();
+        int to = mark.position();
+        return extractor.extract( buffer, from, to - from, mark.isQuoted() );
     }
 
     private int nextChar( int skippedChars ) throws IOException
@@ -271,7 +272,6 @@ public class BufferedCharSeeker implements CharSeeker
 
             if ( !first )
             {
-                currentChunk.close();
                 if ( bufferPos - seekStartPos >= dataCapacity )
                 {
                     throw new IllegalStateException( "Tried to read a field larger than buffer size " +
@@ -346,5 +346,10 @@ public class BufferedCharSeeker implements CharSeeker
     {
         return format( "%s[source:%s, position:%d, line:%d]", getClass().getSimpleName(),
                 sourceDescription(), position(), lineNumber() );
+    }
+
+    public static boolean isEolChar( char c )
+    {
+        return c == EOL_CHAR || c == EOL_CHAR_2;
     }
 }

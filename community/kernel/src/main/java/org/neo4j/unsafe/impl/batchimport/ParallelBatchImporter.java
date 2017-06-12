@@ -21,13 +21,11 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,19 +46,15 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputCache;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Long.max;
@@ -69,9 +63,8 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.ID_PROPERTY;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -163,64 +156,52 @@ public class ParallelBatchImporter implements BatchImporter
         NodeRelationshipCache nodeRelationshipCache = null;
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
-        CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStores neoStore = getBatchingNeoStores();
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                    neoStore.getLastCommittedTransactionId() );
-              InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
+                    neoStore.getLastCommittedTransactionId() ) )
         {
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
             IoMonitor writeMonitor = new IoMonitor( neoStore.getIoTracer() );
             IdMapper idMapper = input.idMapper();
-            IdGenerator idGenerator = input.idGenerator();
-            nodeRelationshipCache = new NodeRelationshipCache( AUTO, config.denseNodeThreshold() );
+            nodeRelationshipCache = new NodeRelationshipCache( NumberArrayFactory.HEAP, config.denseNodeThreshold() );
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
-            InputIterable<InputNode> nodes = input.nodes();
-            InputIterable<InputRelationship> relationships = input.relationships();
-            InputIterable<InputNode> cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
-
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
+            DataImporter.Monitor storeUpdateMonitor = new DataImporter.Monitor();
 
             // Import nodes, properties, labels
-            Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
-            NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
-                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
-                    storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
             neoStore.startFlushingPageCache();
-            executeStage( nodeStage );
+            DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
+                    nodeRelationshipCache, storeUpdateMonitor );
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
-                executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
+                LongFunction<Object> inputIdLookup = new NodeInputIdPropertyLookup(
+                        neoStore.getNodeStore(), neoStore.getPropertyStore(),
+                        neoStore.getPropertyKeyRepository().getOrCreateId( ID_PROPERTY ) );
+                executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup,
                         badCollector, memoryUsageStats ) );
-                PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
-                if ( duplicateNodeIds.hasNext() )
-                {
-                    executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
-                }
             }
 
             // Import relationships (unlinked), properties
-            Configuration relationshipConfig =
-                    configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
-            RelationshipStage unlinkedRelationshipStage =
-                    new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                            badCollector, inputCache, nodeRelationshipCache, neoStore, storeUpdateMonitor );
             neoStore.startFlushingPageCache();
-            executeStage( unlinkedRelationshipStage );
+            RelationshipTypeDistribution typeDistribution = DataImporter.importRelationships(
+                    config.maxNumberOfProcessors(), input, neoStore, idMapper, nodeRelationshipCache,
+                    badCollector, storeUpdateMonitor );
             neoStore.stopFlushingPageCache();
-
-            // Link relationships together with each other, their nodes and their relationship groups
-            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
-            linkData( nodeRelationshipCache, neoStore, unlinkedRelationshipStage.getDistribution(),
-                    availableMemory );
 
             // Release this potentially really big piece of cached data
             long peakMemoryUsage = totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
-            long highNodeId = nodeRelationshipCache.getHighNodeId();
             idMapper.close();
             idMapper = null;
+
+            // Link relationships together with each other, their nodes and their relationship groups
+            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, neoStore );
+            linkData( nodeRelationshipCache, neoStore, typeDistribution, availableMemory );
+
+            // Release this potentially really big piece of cached data
+            peakMemoryUsage = max( peakMemoryUsage, totalMemoryUsageOf( nodeRelationshipCache, neoStore ) );
+            long highNodeId = nodeRelationshipCache.getHighNodeId();
             nodeRelationshipCache.close();
             nodeRelationshipCache = null;
 
@@ -231,8 +212,9 @@ public class ParallelBatchImporter implements BatchImporter
             // Count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
             memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
-            executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                    neoStore.getLabelRepository().getHighId(), countsUpdater, memoryUsageStats ) );
+            executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                    neoStore.getLabelRepository().getHighId(), countsUpdater, neoStore.getLabelScanStore(),
+                    memoryUsageStats ) );
             // Count label-[type]->label
             executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
                     neoStore.getLabelRepository().getHighId(),
@@ -320,7 +302,7 @@ public class ParallelBatchImporter implements BatchImporter
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipStore() );
         Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
-        Iterator<Collection<Object>> rounds = nodeRelationshipCache.splitRelationshipTypesIntoRounds(
+        Iterator<PrimitiveIntSet> rounds = nodeRelationshipCache.splitRelationshipTypesIntoRounds(
                 typeDistribution.iterator(), freeMemoryForDenseNodeCache );
         Configuration groupConfig =
                 configWithRecordsPerPageBasedBatchSize( config, neoStore.getRelationshipGroupStore() );
@@ -334,7 +316,7 @@ public class ParallelBatchImporter implements BatchImporter
             // Figure out which types we can fit in node-->relationship cache memory.
             // Types go from biggest to smallest group and so towards the end there will be
             // smaller and more groups per round in this loop
-            Collection<Object> typesToLinkThisRound = rounds.next();
+            PrimitiveIntSet typesToLinkThisRound = rounds.next();
             boolean thisIsTheFirstRound = round == 0;
             boolean thisIsTheOnlyRound = thisIsTheFirstRound && !rounds.hasNext();
 
@@ -346,10 +328,10 @@ public class ParallelBatchImporter implements BatchImporter
             int nodeTypes = thisIsTheFirstRound ? NodeType.NODE_TYPE_ALL : NodeType.NODE_TYPE_DENSE;
             Predicate<RelationshipRecord> readFilter = thisIsTheFirstRound
                     ? null // optimization when all rels are imported in this round
-                    : typeIdFilter( typesToLinkThisRound, neoStore.getRelationshipTypeRepository() );
+                    : relationship -> typesToLinkThisRound.contains( relationship.getType() );
             Predicate<RelationshipRecord> denseChangeFilter = thisIsTheOnlyRound
                     ? null // optimization when all rels are imported in this round
-                    : typeIdFilter( typesToLinkThisRound, neoStore.getRelationshipTypeRepository() );
+                    : relationship -> typesToLinkThisRound.contains( relationship.getType() );
 
             // LINK Forward
             RelationshipLinkforwardStage linkForwardStage = new RelationshipLinkforwardStage( topic, relationshipConfig,
@@ -372,26 +354,6 @@ public class ParallelBatchImporter implements BatchImporter
                     nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes ) );
             typesImported += typesToLinkThisRound.size();
         }
-    }
-
-    private static Predicate<RelationshipRecord> typeIdFilter( Collection<Object> typesToLinkThisRound,
-            BatchingRelationshipTypeTokenRepository relationshipTypeRepository )
-    {
-        PrimitiveIntSet set = Primitive.intSet( typesToLinkThisRound.size() );
-        for ( Object type : typesToLinkThisRound )
-        {
-            int id;
-            if ( type instanceof Number )
-            {
-                id = ((Number) type).intValue();
-            }
-            else
-            {
-                id = relationshipTypeRepository.applyAsInt( type );
-            }
-            set.add( id );
-        }
-        return relationship -> set.contains( relationship.getType() );
     }
 
     private static Configuration configWithRecordsPerPageBasedBatchSize( Configuration source, RecordStore<?> store )

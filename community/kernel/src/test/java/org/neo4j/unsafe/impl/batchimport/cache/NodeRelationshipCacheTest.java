@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,16 +30,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 
@@ -58,6 +59,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 @RunWith( Parameterized.class )
 public class NodeRelationshipCacheTest
@@ -503,17 +505,16 @@ public class NodeRelationshipCacheTest
             cache.setCount( i, count, random.nextInt( numberOfTypes ), random.among( directions ) );
         }
         int numberOfDenseNodes = toIntExact( cache.calculateNumberOfDenseNodes() );
-        Map<Object,MutableLong> types = new HashMap<>();
+        List<RelationshipTypeCount> types = new ArrayList<>();
         for ( int i = 0; i < numberOfTypes; i++ )
         {
-            types.put( "TYPE" + i, new MutableLong( random.nextInt( 1, 1_000 ) ) );
+            types.add( new RelationshipTypeCount( i, random.nextInt( 1, 1_000 ) ) );
         }
 
         // WHEN enough memory for all types
         {
             long memory = numberOfDenseNodes * numberOfTypes * NodeRelationshipCache.GROUP_ENTRY_SIZE;
-            Collection<Object> fits =
-                    Iterators.single( cache.splitRelationshipTypesIntoRounds( types.entrySet().iterator(), memory ) );
+            PrimitiveIntSet fits = single( cache.splitRelationshipTypesIntoRounds( types.iterator(), memory ) );
             // THEN
             assertEquals( types.size(), fits.size() );
         }
@@ -522,11 +523,10 @@ public class NodeRelationshipCacheTest
         {
             int memory = numberOfDenseNodes * numberOfTypes / 5 * NodeRelationshipCache.GROUP_ENTRY_SIZE;
             int total = 0;
-            Iterator<Collection<Object>> rounds =
-                    cache.splitRelationshipTypesIntoRounds( types.entrySet().iterator(), memory );
+            Iterator<PrimitiveIntSet> rounds = cache.splitRelationshipTypesIntoRounds( types.iterator(), memory );
             while ( rounds.hasNext() )
             {
-                Collection<Object> round = rounds.next();
+                PrimitiveIntSet round = rounds.next();
                 total += round.size();
             }
             assertEquals( types.size(), total );

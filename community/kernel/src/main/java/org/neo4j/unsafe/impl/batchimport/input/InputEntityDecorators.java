@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 
 /**
@@ -32,60 +32,137 @@ public class InputEntityDecorators
     /**
      * Ensures that all {@link InputNode input nodes} will at least have the given set of labels.
      */
-    public static Decorator<InputNode> additiveLabels( final String[] labelNamesToAdd )
+    public static Decorator additiveLabels( final String[] labelNamesToAdd )
     {
         if ( labelNamesToAdd == null || labelNamesToAdd.length == 0 )
         {
-            return NO_NODE_DECORATOR;
+            return NO_DECORATOR;
         }
 
-        return node ->
-        {
-            if ( node.hasLabelField() )
-            {
-                return node;
-            }
-
-            String[] union = ArrayUtil.union( node.labels(), labelNamesToAdd );
-            if ( union != node.labels() )
-            {
-                node.setLabels( union );
-            }
-            return node;
-        };
+        return node -> new AdditiveLabelsDecorator( node, labelNamesToAdd );
     }
 
     /**
      * Ensures that {@link InputRelationship input relationships} without a specified relationship type will get
      * the specified default relationship type.
      */
-    public static Decorator<InputRelationship> defaultRelationshipType( final String defaultType )
+    public static Decorator defaultRelationshipType( final String defaultType )
     {
-        if ( defaultType == null )
-        {
-            return value -> value;
-        }
-
-        return relationship ->
-        {
-            if ( relationship.type() == null && !relationship.hasTypeId() )
-            {
-                relationship.setType( defaultType );
-            }
-
-            return relationship;
-        };
+        return defaultType == null
+                ? NO_DECORATOR
+                : relationship -> new RelationshipTypeDecorator( relationship, defaultType );
     }
 
-    public static <ENTITY extends InputEntity> Decorator<ENTITY> decorators(
-            final Decorator<ENTITY>... decorators )
+    private static final class AdditiveLabelsDecorator extends InputEntityVisitor.Delegate
     {
-        return new Decorator<ENTITY>()
+        private final String[] transport = new String[1];
+        private final String[] labelNamesToAdd;
+        private final boolean[] seenLabels;
+        private boolean seenLabelField;
+
+        AdditiveLabelsDecorator( InputEntityVisitor actual, String[] labelNamesToAdd )
+        {
+            super( actual );
+            this.labelNamesToAdd = labelNamesToAdd;
+            this.seenLabels = new boolean[labelNamesToAdd.length];
+        }
+
+        @Override
+        public boolean labelField( long labelField )
+        {
+            seenLabelField = true;
+            return super.labelField( labelField );
+        }
+
+        @Override
+        public boolean labels( String[] labels )
+        {
+            if ( !seenLabelField )
+            {
+                for ( String label : labels )
+                {
+                    for ( int i = 0; i < labelNamesToAdd.length; i++ )
+                    {
+                        if ( !seenLabels[i] && labelNamesToAdd[i].equals( label ) )
+                        {
+                            seenLabels[i] = true;
+                        }
+                    }
+                }
+            }
+            return super.labels( labels );
+        }
+
+        @Override
+        public void endOfEntity()
+        {
+            if ( !seenLabelField )
+            {
+                for ( int i = 0; i < seenLabels.length; i++ )
+                {
+                    if ( !seenLabels[i] )
+                    {
+                        transport[0] = labelNamesToAdd[i];
+                        super.labels( transport );
+                    }
+                }
+            }
+
+            Arrays.fill( seenLabels, false );
+            seenLabelField = false;
+            super.endOfEntity();
+        }
+    }
+
+    private static final class RelationshipTypeDecorator extends InputEntityVisitor.Delegate
+    {
+        private final String defaultType;
+        private boolean hasType;
+
+        RelationshipTypeDecorator( InputEntityVisitor actual, String defaultType )
+        {
+            super( actual );
+            this.defaultType = defaultType;
+        }
+
+        @Override
+        public boolean type( int type )
+        {
+            hasType = true;
+            return super.type( type );
+        }
+
+        @Override
+        public boolean type( String type )
+        {
+            if ( type != null )
+            {
+                hasType = true;
+            }
+            return super.type( type );
+        }
+
+        @Override
+        public void endOfEntity()
+        {
+            if ( !hasType )
+            {
+                super.type( defaultType );
+                hasType = false;
+            }
+
+            super.endOfEntity();
+        }
+    }
+
+    public static Decorator decorators( final Decorator... decorators )
+    {
+        return new Decorator()
         {
             @Override
-            public ENTITY apply( ENTITY from )
+            public InputEntityVisitor apply( InputEntityVisitor from )
             {
-                for ( Decorator<ENTITY> decorator : decorators )
+                for ( Decorator decorator : decorators )
                 {
                     from = decorator.apply( from );
                 }
@@ -100,11 +177,5 @@ public class InputEntityDecorators
         };
     }
 
-    public static final Decorator<InputNode> NO_NODE_DECORATOR = value -> value;
-    public static final Decorator<InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
-
-    public static <ENTITY extends InputEntity> Decorator<ENTITY> noDecorator()
-    {
-        return value -> value;
-    }
+    public static final Decorator NO_DECORATOR = value -> value;
 }

@@ -20,8 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
@@ -30,21 +29,19 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 public interface Input
 {
     /**
-     * Provides all {@link InputNode input nodes} for an import. The returned {@link InputIterable iterable's}
-     * {@link InputIterable#iterator() iterator()} method may be called multiple times.
+     * Provides all {@link InputNode input nodes} for an import.
      *
-     * @return an {@link InputIterable} which will provide all {@link InputNode input nodes} for the whole import.
+     * @return an {@link InputIterator} which will provide all {@link InputNode input nodes} for the whole import.
      */
-    InputIterable<InputNode> nodes();
+    InputIterator nodes();
 
     /**
-     * Provides all {@link InputRelationship input relationships} for an import. The returned
-     * {@link InputIterable iterable's} {@link InputIterable#iterator() iterator()} method may be called multiple times.
+     * Provides all {@link InputRelationship input relationships} for an import.
      *
-     * @return an {@link InputIterable} which will provide all {@link InputRelationship input relationships}
+     * @return an {@link InputIterator} which will provide all {@link InputRelationship input relationships}
      * for the whole import.
      */
-    InputIterable<InputRelationship> relationships();
+    InputIterator relationships();
 
     /**
      * @return {@link IdMapper} which will get populated by {@link InputNode#id() input node ids}
@@ -52,11 +49,6 @@ public interface Input
      * to resolve potentially temporary input node ids to actual node ids in the database.
      */
     IdMapper idMapper();
-
-    /**
-     * @return {@link IdGenerator} which is responsible for generating actual node ids from input node ids.
-     */
-    IdGenerator idGenerator();
 
     /**
      * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}

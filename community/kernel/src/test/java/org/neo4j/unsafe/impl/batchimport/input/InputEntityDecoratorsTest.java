@@ -27,34 +27,34 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_LABELS;
+import static org.neo4j.unsafe.impl.batchimport.input.CachingInputEntityVisitor.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.decorators;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 
 public class InputEntityDecoratorsTest
 {
+    private final CachingInputEntityVisitor entity = new CachingInputEntityVisitor();
+
     @Test
     public void shouldProvideDefaultRelationshipType() throws Exception
     {
         // GIVEN
         String defaultType = "TYPE";
-        Decorator<InputRelationship> decorator = defaultRelationshipType( defaultType );
+        InputEntityVisitor relationship = defaultRelationshipType( defaultType ).apply( entity );
 
         // WHEN
-        InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
-                "start", "end", null, null );
-        relationship = decorator.apply( relationship );
+        relationship( relationship, "source", 1, 0, NO_PROPERTIES, null, "start", "end", null, null );
 
         // THEN
-        assertEquals( defaultType, relationship.type() );
+        assertEquals( defaultType, entity.stringType );
     }
 
     @Test
@@ -62,16 +62,15 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String defaultType = "TYPE";
-        Decorator<InputRelationship> decorator = defaultRelationshipType( defaultType );
+        InputEntityVisitor relationship = defaultRelationshipType( defaultType ).apply( entity );
 
         // WHEN
         String customType = "CUSTOM_TYPE";
-        InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
+        relationship( relationship, "source", 1, 0, NO_PROPERTIES, null,
                 "start", "end", customType, null );
-        relationship = decorator.apply( relationship );
 
         // THEN
-        assertEquals( customType, relationship.type() );
+        assertEquals( customType, entity.stringType );
     }
 
     @Test
@@ -79,17 +78,17 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String defaultType = "TYPE";
-        Decorator<InputRelationship> decorator = defaultRelationshipType( defaultType );
+        Decorator decorator = defaultRelationshipType( defaultType );
+        InputEntityVisitor relationship = decorator.apply( entity );
 
         // WHEN
-        Integer typeId = 5;
-        InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
+        int typeId = 5;
+        relationship( relationship, "source", 1, 0, NO_PROPERTIES, null,
                 "start", "end", null, typeId );
-        relationship = decorator.apply( relationship );
 
         // THEN
-        assertEquals( null, relationship.type() );
-        assertEquals( typeId.intValue(), relationship.typeId() );
+        assertTrue( entity.hasIntType );
+        assertEquals( typeId, entity.intType );
     }
 
     @Test
@@ -97,14 +96,13 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        Decorator<InputNode> decorator = additiveLabels( toAdd );
+        InputEntityVisitor node = additiveLabels( toAdd ).apply( entity );
 
         // WHEN
-        InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, null );
-        node = decorator.apply( node );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, NO_LABELS, null );
 
         // THEN
-        assertArrayEquals( toAdd, node.labels() );
+        assertArrayEquals( toAdd, entity.labels() );
     }
 
     @Test
@@ -112,15 +110,14 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        Decorator<InputNode> decorator = additiveLabels( toAdd );
+        InputEntityVisitor node = additiveLabels( toAdd ).apply( entity );
 
         // WHEN
         String[] nodeLabels = new String[] {"SomeOther"};
-        InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, nodeLabels, null );
-        node = decorator.apply( node );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, nodeLabels, null );
 
         // THEN
-        assertEquals( asSet( ArrayUtil.union( toAdd, nodeLabels ) ), asSet( node.labels() ) );
+        assertEquals( asSet( ArrayUtil.union( toAdd, nodeLabels ) ), asSet( entity.labels() ) );
     }
 
     @Test
@@ -128,28 +125,27 @@ public class InputEntityDecoratorsTest
     {
         // GIVEN
         String[] toAdd = new String[] {"Add1", "Add2"};
-        Decorator<InputNode> decorator = additiveLabels( toAdd );
+        InputEntityVisitor node = additiveLabels( toAdd ).apply( entity );
 
         // WHEN
         long labelField = 123L;
-        InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, labelField );
-        node = decorator.apply( node );
+        node( node, "source", 1, 0, "id", NO_PROPERTIES, null, null, labelField );
 
         // THEN
-        assertNull( node.labels() );
-        assertEquals( labelField, node.labelField().longValue() );
+        assertEquals( 0, entity.labels().length );
+        assertEquals( labelField, entity.labelField );
     }
 
     @Test
     public void shouldCramMultipleDecoratorsIntoOne() throws Exception
     {
         // GIVEN
-        Decorator<InputNode> decorator1 = spy( new IdentityDecorator() );
-        Decorator<InputNode> decorator2 = spy( new IdentityDecorator() );
-        Decorator<InputNode> multi = decorators( decorator1, decorator2 );
+        Decorator decorator1 = spy( new IdentityDecorator() );
+        Decorator decorator2 = spy( new IdentityDecorator() );
+        Decorator multi = decorators( decorator1, decorator2 );
 
         // WHEN
-        InputNode node = mock( InputNode.class );
+        InputEntityVisitor node = mock( InputEntityVisitor.class );
         multi.apply( node );
 
         // THEN
@@ -159,60 +155,59 @@ public class InputEntityDecoratorsTest
         order.verifyNoMoreInteractions();
     }
 
-    @Test
-    public void shouldThinkMultiDecoratorIsntMutableIfNooneIs() throws Exception
+    private static void node( InputEntityVisitor entity, String sourceDescription,
+            long lineNumber, long position, Object id, Object[] properties, Long propertyId,
+            String[] labels, Long labelField )
     {
-        // GIVEN
-        Decorator<InputNode> decorator1 = spy( new IdentityDecorator() );
-        Decorator<InputNode> decorator2 = spy( new IdentityDecorator() );
-        Decorator<InputNode> multi = decorators( decorator1, decorator2 );
-
-        // WHEN
-        boolean mutable = multi.isMutable();
-
-        // THEN
-        assertFalse( mutable );
+        applyProperties( entity, properties, propertyId );
+        entity.id( id, Group.GLOBAL );
+        if ( labelField != null )
+        {
+            entity.labelField( labelField );
+        }
+        else
+        {
+            entity.labels( labels );
+        }
+        entity.endOfEntity();
     }
 
-    @Test
-    public void shouldThinkMultiDecoratorIsMutableIfAnyIs() throws Exception
+    private static void relationship( InputEntityVisitor entity, String sourceDescription, long lineNumber,
+            long position, Object[] properties, Long propertyId, Object startNode, Object endNode,
+            String type, Integer typeId )
     {
-        // GIVEN
-        Decorator<InputNode> decorator1 = spy( new IdentityDecorator() );
-        Decorator<InputNode> decorator2 = spy( new IdentityDecorator( true ) );
-        Decorator<InputNode> multi = decorators( decorator1, decorator2 );
-
-        // WHEN
-        boolean mutable = multi.isMutable();
-
-        // THEN
-        assertTrue( mutable );
+        applyProperties( entity, properties, propertyId );
+        entity.startId( startNode, Group.GLOBAL );
+        entity.endId( endNode, Group.GLOBAL );
+        if ( typeId != null )
+        {
+            entity.type( typeId );
+        }
+        else if ( type != null )
+        {
+            entity.type( type );
+        }
+        entity.endOfEntity();
     }
 
-    private static class IdentityDecorator implements Decorator<InputNode>
+    private static void applyProperties( InputEntityVisitor entity, Object[] properties, Long propertyId )
     {
-        private final boolean mutable;
-
-        IdentityDecorator()
+        if ( propertyId != null )
         {
-            this( false );
+            entity.propertyId( propertyId );
         }
-
-        IdentityDecorator( boolean mutable )
+        for ( int i = 0; i < properties.length; i++ )
         {
-            this.mutable = mutable;
+            entity.property( (String) properties[i++], properties[i] );
         }
+    }
 
+    private static class IdentityDecorator implements Decorator
+    {
         @Override
-        public InputNode apply( InputNode from ) throws RuntimeException
+        public InputEntityVisitor apply( InputEntityVisitor entity )
         {
-            return from;
-        }
-
-        @Override
-        public boolean isMutable()
-        {
-            return mutable;
+            return entity;
         }
     }
 }

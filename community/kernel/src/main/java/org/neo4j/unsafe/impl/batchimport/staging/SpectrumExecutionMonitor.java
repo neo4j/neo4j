@@ -157,7 +157,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         lastProgress = progress;
     }
 
-    private static String fitInProgress( long value )
+    public static String fitInProgress( long value )
     {
         int weight = weight( value );
 

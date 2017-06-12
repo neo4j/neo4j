@@ -19,23 +19,17 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.apache.commons.lang3.mutable.MutableLong;
-
 import java.util.Arrays;
-
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.unsafe.impl.batchimport.RelationshipTypeDistribution.RelationshipTypeCount;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
@@ -868,32 +862,31 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         return (chunkChangedArray[chunkId] & chunkMask) != 0;
     }
 
-    public Iterator<Collection<Object>> splitRelationshipTypesIntoRounds(
-            Iterator<Entry<Object,MutableLong>> allTypes, long freeMemoryForDenseNodeCache )
+    public Iterator<PrimitiveIntSet> splitRelationshipTypesIntoRounds(
+            Iterator<RelationshipTypeCount> allTypes, long freeMemoryForDenseNodeCache )
     {
-        PrefetchingIterator<Entry<Object,MutableLong>> peekableAllTypes =
-                new PrefetchingIterator<Entry<Object,MutableLong>>()
+        PrefetchingIterator<RelationshipTypeCount> peekableAllTypes = new PrefetchingIterator<RelationshipTypeCount>()
         {
             @Override
-            protected Entry<Object,MutableLong> fetchNextOrNull()
+            protected RelationshipTypeCount fetchNextOrNull()
             {
                 return allTypes.hasNext() ? allTypes.next() : null;
             }
         };
 
         long numberOfDenseNodes = calculateNumberOfDenseNodes();
-        return new PrefetchingIterator<Collection<Object>>()
+        return new PrefetchingIterator<PrimitiveIntSet>()
         {
             @Override
-            protected Collection<Object> fetchNextOrNull()
+            protected PrimitiveIntSet fetchNextOrNull()
             {
                 long currentSetOfRelationshipsMemoryUsage = 0;
-                Set<Object> typesToImportThisRound = new HashSet<>();
+                PrimitiveIntSet typesToImportThisRound = Primitive.intSet();
                 while ( peekableAllTypes.hasNext() )
                 {
                     // Calculate worst-case scenario
-                    Map.Entry<Object,MutableLong> type = peekableAllTypes.peek();
-                    long relationshipCountForThisType = type.getValue().longValue();
+                    RelationshipTypeCount type = peekableAllTypes.peek();
+                    long relationshipCountForThisType = type.getCount();
                     long maxDenseNodesForThisType = min( numberOfDenseNodes, relationshipCountForThisType * 2/*nodes/rel*/ );
                     long memoryUsageForThisType = maxDenseNodesForThisType * NodeRelationshipCache.GROUP_ENTRY_SIZE;
                     long memoryUsageUpToAndIncludingThisType =
@@ -906,7 +899,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
                         break;
                     }
                     peekableAllTypes.next();
-                    typesToImportThisRound.add( type.getKey() );
+                    typesToImportThisRound.add( type.getTypeId() );
                     currentSetOfRelationshipsMemoryUsage += memoryUsageForThisType;
                 }
                 return typesToImportThisRound.isEmpty() ? null : typesToImportThisRound;

@@ -19,116 +19,70 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.csv.reader.Readables;
-import org.neo4j.csv.reader.SourceTraceability;
+import java.io.Closeable;
+import java.io.IOException;
+
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.staging.Panicable;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability, Parallelizable, Panicable
+public interface InputIterator extends Closeable
 {
-    abstract class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
+    InputChunk newChunk();
+
+    boolean next( InputChunk chunk ) throws IOException;
+
+    abstract class Adapter implements InputIterator
     {
-        private final SourceTraceability defaults = new SourceTraceability.Adapter()
-        {
-            @Override
-            public String sourceDescription()
-            {
-                return Readables.EMPTY.sourceDescription();
-            }
-        };
-
         @Override
-        public String sourceDescription()
-        {
-            return defaults.sourceDescription();
-        }
-
-        @Override
-        public long lineNumber()
-        {
-            return defaults.lineNumber();
-        }
-
-        @Override
-        public long position()
-        {
-            return defaults.position();
-        }
-
-        @Override
-        public void receivePanic( Throwable cause )
-        {
-        }
-
-        @Override
-        public void close()
+        public void close() throws IOException
         {   // Nothing to close
         }
     }
 
-    class Delegate<T> extends PrefetchingIterator<T> implements InputIterator<T>
+    class Delegate implements InputIterator
     {
-        protected final InputIterator<T> actual;
+        protected final InputIterator actual;
 
-        public Delegate( InputIterator<T> actual )
+        public Delegate( InputIterator actual )
         {
             this.actual = actual;
         }
 
         @Override
-        public void close()
+        public void close() throws IOException
         {
             actual.close();
         }
 
         @Override
-        protected T fetchNextOrNull()
+        public InputChunk newChunk()
         {
-            return actual.hasNext() ? actual.next() : null;
+            return actual.newChunk();
         }
 
         @Override
-        public String sourceDescription()
+        public boolean next( InputChunk chunk ) throws IOException
         {
-            return actual.sourceDescription();
-        }
-
-        @Override
-        public long lineNumber()
-        {
-            return actual.lineNumber();
-        }
-
-        @Override
-        public long position()
-        {
-            return actual.position();
-        }
-
-        @Override
-        public int processors( int delta )
-        {
-            return actual.processors( delta );
-        }
-
-        @Override
-        public void receivePanic( Throwable cause )
-        {
-            actual.receivePanic( cause );
+            return actual.next( chunk );
         }
     }
 
-    class Empty<T> extends Adapter<T>
+    class Empty extends Adapter
     {
         @Override
-        protected T fetchNextOrNull()
+        public InputChunk newChunk()
         {
-            return null;
+            return InputChunk.EMPTY;
+        }
+
+        @Override
+        public boolean next( InputChunk chunk )
+        {
+            return false;
         }
     }
 }

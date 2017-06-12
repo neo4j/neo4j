@@ -25,6 +25,8 @@ import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.unsafe.impl.batchimport.input.Groups.LOWEST_NONGLOBAL_ID;
+
 public class GroupsTest
 {
     @Test
@@ -39,7 +41,7 @@ public class GroupsTest
             race.addContestant( () ->
             {
                 Group group = groups.getOrCreate( name );
-                assertEquals( 0, group.id() );
+                assertEquals( LOWEST_NONGLOBAL_ID, group.id() );
             } );
         }
 
@@ -48,6 +50,6 @@ public class GroupsTest
 
         // THEN
         Group otherGroup = groups.getOrCreate( "MyOtherGroup" );
-        assertEquals( 1, otherGroup.id() );
+        assertEquals( LOWEST_NONGLOBAL_ID + 1, otherGroup.id() );
     }
 }

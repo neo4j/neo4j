@@ -31,25 +31,23 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
-import static org.neo4j.tooling.DataGeneratorInput.bareboneNodeHeader;
-import static org.neo4j.tooling.DataGeneratorInput.bareboneRelationshipHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaultVisible;
 
 /**
  * Uses all available shortcuts to as quickly as possible import as much data as possible. Usage of this
@@ -70,19 +68,20 @@ public class QuickImport
     public static void main( String[] arguments ) throws IOException
     {
         Args args = Args.parse( arguments );
-        long nodeCount = parseLongWithUnit( args.get( "nodes", null ) );
-        long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
+        long nodeCount = Settings.parseLongWithUnit( args.get( "nodes", null ) );
+        long relationshipCount = Settings.parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
         File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
         long randomSeed = args.getNumber( "random-seed", currentTimeMillis() ).longValue();
-        Configuration config = COMMAS;
+        Configuration config = Configuration.COMMAS;
 
         Extractors extractors = new Extractors( config.arrayDelimiter() );
         IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
 
-        Header nodeHeader = parseNodeHeader( args, idType, extractors );
-        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
+        Groups groups = new Groups();
+        Header nodeHeader = parseNodeHeader( args, idType, extractors, groups );
+        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors, groups );
 
         FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
         org.neo4j.unsafe.impl.batchimport.Configuration importConfig =
@@ -101,12 +100,10 @@ public class QuickImport
             }
         };
 
-        SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, randomSeed,
-                nodeCount, labelCount, relationshipTypeCount, idType );
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
-                generator.nodes(), generator.relationships(),
-                idType, silentBadCollector( 0 ) );
+                idType, Collectors.silentBadCollector( 0 ), currentTimeMillis(),
+                nodeHeader, relationshipHeader, labelCount, relationshipTypeCount );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
@@ -118,34 +115,36 @@ public class QuickImport
             else
             {
                 consumer = new ParallelBatchImporter( dir, fileSystem, importConfig,
-                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), Config.defaults() );
+                        new SimpleLogService( sysoutLogProvider, sysoutLogProvider ),
+                        ExecutionMonitors.defaultVisible(), Config.defaults() );
             }
             consumer.doImport( input );
         }
     }
 
-    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors )
+    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors, Groups groups )
     {
         String definition = args.get( "node-header", null );
         if ( definition == null )
         {
-            return bareboneNodeHeader( idType, extractors );
+            return DataGeneratorInput.bareboneNodeHeader( idType, extractors );
         }
 
         Configuration config = Configuration.COMMAS;
-        return defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType );
+        return DataFactories.defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType, groups );
     }
 
-    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors )
+    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors, Groups groups )
     {
         String definition = args.get( "relationship-header", null );
         if ( definition == null )
         {
-            return bareboneRelationshipHeader( idType, extractors );
+            return DataGeneratorInput.bareboneRelationshipHeader( idType, extractors );
         }
 
         Configuration config = Configuration.COMMAS;
-        return defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config, idType );
+        return DataFactories.defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config,
+                idType, groups );
     }
 
     private static CharSeeker seeker( String definition, Configuration config )
