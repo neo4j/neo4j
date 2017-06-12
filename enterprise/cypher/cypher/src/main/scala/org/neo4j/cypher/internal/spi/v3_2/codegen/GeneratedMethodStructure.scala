@@ -1270,7 +1270,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     handleKernelExceptions(generator, fields.ro, _finalizers) { inner =>
       val invoke = Expression.invoke(readOperations, nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
       inner.assign(local, invoke)
-      generator.load(predVar)
     }
   }
 

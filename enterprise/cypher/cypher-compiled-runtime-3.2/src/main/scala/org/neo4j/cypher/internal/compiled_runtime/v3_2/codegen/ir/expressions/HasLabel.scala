@@ -34,12 +34,16 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
     structure.declarePredicate(localName)
 
     structure.incrementDbHits()
-    if (nodeVariable.nullable)
-      structure.nullableReference(nodeVariable.name, CodeGenType.primitiveNode,
-                                  structure.box(
-                                    structure.hasLabel(nodeVariable.name, labelVariable, localName), CodeGenType.primitiveBool))
+    if (nodeVariable.nullable) {
+      structure.ifNotStatement(structure.equalityExpression(structure.loadVariable(nodeVariable.name),
+        structure.constantExpression(Long.box(-1L)),
+        CodeGenType.primitiveInt)){ inner =>
+        inner.hasLabel(nodeVariable.name, labelVariable, localName)
+      }
+    }
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
+    structure.loadVariable(localName)
   }
 
   override def nullable(implicit context: CodeGenContext) = nodeVariable.nullable
