@@ -91,6 +91,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private final LogProvider logProvider;
     private ScheduledExecutorService silentChannelExecutor;
+    private boolean successfullyStarted;
 
     public interface Configuration
     {
@@ -111,7 +112,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private final T requestTarget;
     private final IdleChannelReaper connectedSlaveChannels;
     private final Log msgLog;
-    private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
+    private final Map<Channel, PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
     private final int frameLength;
     private final ByteCounterMonitor byteCounterMonitor;
@@ -130,7 +131,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     public Server( T requestTarget, Configuration config, LogProvider logProvider, int frameLength,
                    ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
-            byteCounterMonitor, RequestMonitor requestMonitor )
+                           byteCounterMonitor, RequestMonitor requestMonitor )
     {
         this.requestTarget = requestTarget;
         this.config = config;
@@ -199,17 +200,27 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             silentChannelExecutor.shutdownNow();
             throw new IOException( ex );
         }
+
+        successfullyStarted = true;
     }
 
     @Override
     public void stop() throws Throwable
     {
         String name = getClass().getSimpleName();
-        msgLog.info( name + " communication server shutting down and unbinding from  " + socketAddress );
+        if ( successfullyStarted )
+        {
+            msgLog.info( name + " communication server shutting down and unbinding from  " + socketAddress );
 
-        shuttingDown = true;
-        channelGroup.close().awaitUninterruptibly();
-        bootstrap.releaseExternalResources();
+            shuttingDown = true;
+            channelGroup.close().awaitUninterruptibly();
+            bootstrap.releaseExternalResources();
+        }
+        else
+        {
+            msgLog.info( String.format( "%s communication server tried to shut down but it wasn't successfully " +
+                    "started in the first place.", name ) );
+        }
     }
 
     @Override
@@ -332,7 +343,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         {
             return;
         }
-        tryToFinishOffChannel( channel, request.getRequestContext());
+        tryToFinishOffChannel( channel, request.getRequestContext() );
     }
 
     protected void tryToFinishOffChannel( Channel channel, RequestContext slave )
@@ -550,7 +561,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     protected ChunkingChannelBuffer newChunkingBuffer( ChannelBuffer bufferToWriteTo, Channel channel, int capacity,
-            byte internalProtocolVersion, byte applicationProtocolVersion )
+                                                       byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         return new ChunkingChannelBuffer( bufferToWriteTo, channel, capacity, internalProtocolVersion,
                 applicationProtocolVersion );
@@ -575,7 +586,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         public void run()
         {
             requestMonitor.beginRequest( channel.getRemoteAddress(), type, context );
@@ -617,10 +628,10 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation,Exception> transactions()
+        public Visitor<CommittedTransactionRepresentation, Exception> transactions()
         {
             targetBuffer.writeByte( 1 );
-            return new CommittedTransactionSerializer( new NetworkFlushableChannel(  targetBuffer ) );
+            return new CommittedTransactionSerializer( new NetworkFlushableChannel( targetBuffer ) );
         }
     }
 
