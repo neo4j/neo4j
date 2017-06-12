@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-import static org.neo4j.kernel.impl.store.id.IdFile.NO_RESULT;
+import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
 
 /**
  * Instances of this class maintain a list of free ids with the potential to overflow to disk if the number

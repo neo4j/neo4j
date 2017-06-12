@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 
-public class IdFile
+public class IdContainer
 {
     public static final long NO_RESULT = -1;
 
@@ -52,7 +52,7 @@ public class IdFile
 
     private long initialHighId;
 
-    public IdFile( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
+    public IdContainer( FileSystemAbstraction fs, File file, int grabSize, boolean aggressiveReuse )
     {
         if ( grabSize < 1 )
         {
@@ -219,7 +219,7 @@ public class IdFile
     }
 
     /**
-     * @return next free id or {@link IdFile#NO_RESULT} if not available
+     * @return next free id or {@link IdContainer#NO_RESULT} if not available
      */
     public long getReusableId()
     {
@@ -276,7 +276,7 @@ public class IdFile
     @Override
     public String toString()
     {
-        return "IdFile{" + "file=" + file + ", fs=" + fs + ", fileChannel=" + fileChannel + ", defragCount=" +
+        return "IdContainer{" + "file=" + file + ", fs=" + fs + ", fileChannel=" + fileChannel + ", defragCount=" +
                 freeIdKeeper.getCount() + ", grabSize=" + grabSize + ", aggressiveReuse=" +
                 aggressiveReuse + ", closed=" + closed + '}';
     }

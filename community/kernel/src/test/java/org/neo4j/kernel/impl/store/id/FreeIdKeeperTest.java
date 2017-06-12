@@ -40,7 +40,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.kernel.impl.store.id.IdFile.NO_RESULT;
+import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
 
 public class FreeIdKeeperTest
 {
@@ -53,7 +53,7 @@ public class FreeIdKeeperTest
         // Given
         StoreChannel channel = mock( StoreChannel.class );
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
 
         // when
         // then
@@ -107,7 +107,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = spy( fs.get().open( new File( "id.file" ), "rw" ) );
 
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
         reset( channel ); // because we get the position in the constructor, we need to reset all calls on the spy
 
         // when
@@ -249,7 +249,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
         Set<Long> freeIds = new HashSet<>(); // stack guarantees are not maintained between restarts
 
         // when
@@ -271,7 +271,7 @@ public class FreeIdKeeperTest
         channel.close();
         // and then we open a new one over the same file
         channel = fs.get().open( new File( "id.file" ), "rw" );
-        keeper = getFreeIdKeeper( channel, threshold );
+        keeper = getFreeIdKeeperAggressive( channel, threshold );
 
         // then
         // the count should be returned correctly
@@ -292,7 +292,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
 
         // when
         keeper.freeId( 1 );
@@ -309,7 +309,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = spy( fs.get().open( new File( "id.file" ), "rw" ) );
 
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
 
         // when
         // enough ids are persisted to overflow
@@ -332,7 +332,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
         Set<Long> freeIds = new HashSet<>();
         for ( long i = 0; i < threshold; i++ )
         {
@@ -343,7 +343,7 @@ public class FreeIdKeeperTest
         channel.close();
         // and then we open a new one over the same file
         channel = fs.get().open( new File( "id.file" ), "rw" );
-        keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
+        keeper = getFreeIdKeeper( channel, threshold );
 
         // when
         // we release some ids that spill to disk
@@ -372,7 +372,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
+        FreeIdKeeper keeper = getFreeIdKeeper( channel, threshold );
         Set<Long> freeIds = new HashSet<>();
         for ( long i = 0; i < threshold; i++ )
         {
@@ -383,7 +383,7 @@ public class FreeIdKeeperTest
         channel.close();
         // and then we open a new one over the same file
         channel = fs.get().open( new File( "id.file" ), "rw" );
-        keeper = getFreeIdKeeper( (StoreChannel) channel, (int) threshold );
+        keeper = getFreeIdKeeper( channel, threshold );
 
         // when - then
         // we exhaust all ids restored

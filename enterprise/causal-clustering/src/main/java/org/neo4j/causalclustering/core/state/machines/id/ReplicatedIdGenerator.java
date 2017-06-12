@@ -23,7 +23,7 @@ import java.io.File;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.id.IdFile;
+import org.neo4j.kernel.impl.store.id.IdContainer;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -43,7 +43,7 @@ class ReplicatedIdGenerator implements IdGenerator
     private volatile long highId;
     private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
 
-    private IdFile idFile;
+    private IdContainer idContainer;
 
     ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
             ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse,
@@ -54,14 +54,14 @@ class ReplicatedIdGenerator implements IdGenerator
         this.acquirer = acquirer;
         this.log = logProvider.getLog( getClass() );
         this.freeIdCondition = freeIdCondition;
-        idFile = new IdFile( fs, file, grabSize, aggressiveReuse );
-        idFile.init();
+        idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
+        idContainer.init();
     }
 
     @Override
     public void close()
     {
-        idFile.close( highId );
+        idContainer.close( highId );
     }
 
     @Override
@@ -69,7 +69,7 @@ class ReplicatedIdGenerator implements IdGenerator
     {
         if ( freeIdCondition.getAsBoolean() )
         {
-            idFile.freeId( id );
+            idContainer.freeId( id );
         }
     }
 
@@ -94,14 +94,14 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public long getNumberOfIdsInUse()
     {
-        return highId - idFile.getFreeIdCount();
+        return highId - idContainer.getFreeIdCount();
     }
 
     @Override
     public synchronized long nextId()
     {
-        long id = idFile.getReusableId();
-        if ( id != IdFile.NO_RESULT )
+        long id = idContainer.getReusableId();
+        if ( id != IdContainer.NO_RESULT )
         {
             return id;
         }
@@ -154,13 +154,13 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public long getDefragCount()
     {
-        return idFile.getFreeIdCount();
+        return idContainer.getFreeIdCount();
     }
 
     @Override
     public void delete()
     {
-        idFile.delete();
+        idContainer.delete();
     }
 
     @Override

@@ -38,7 +38,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 
-public class IdFileTest
+public class IdContainerTest
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -59,16 +59,16 @@ public class IdFileTest
     {
         // GIVEN
         createEmptyFile();
-        IdFile idFile = new IdFile( fs, file, 100, false );
-        idFile.init();
+        IdContainer idContainer = new IdContainer( fs, file, 100, false );
+        idContainer.init();
 
         // WHEN
-        idFile.delete();
+        idContainer.delete();
 
         // THEN
         assertFalse( fs.fileExists( file ) );
 
-        idFile.close( 0 );
+        idContainer.close( 0 );
     }
 
     @Test
@@ -76,12 +76,12 @@ public class IdFileTest
     {
         // GIVEN
         createEmptyFile();
-        IdFile idFile = new IdFile( fs, file, 100, false );
-        idFile.init();
-        idFile.close( 0 );
+        IdContainer idContainer = new IdContainer( fs, file, 100, false );
+        idContainer.init();
+        idContainer.close( 0 );
 
         // WHEN
-        idFile.delete();
+        idContainer.delete();
 
         // THEN
         assertFalse( fs.fileExists( file ) );
@@ -94,13 +94,13 @@ public class IdFileTest
         createEmptyFile();
 
         // WHEN opening the id generator, where the jvm crashes right after
-        IdFile idFile = new IdFile( fs, file, 100, false );
-        idFile.init();
+        IdContainer idContainer = new IdContainer( fs, file, 100, false );
+        idContainer.init();
 
         // THEN
         try
         {
-            IdFile.readHighId( fs, file );
+            IdContainer.readHighId( fs, file );
             fail( "Should have thrown, saying something with sticky generator" );
         }
         catch ( InvalidIdGeneratorException e )
@@ -109,7 +109,7 @@ public class IdFileTest
         }
         finally
         {
-            idFile.close( 0 );
+            idContainer.close( 0 );
         }
     }
 
@@ -117,31 +117,31 @@ public class IdFileTest
     public void shouldTruncateTheFileIfOverwriting() throws Exception
     {
         // GIVEN
-        IdFile.createEmptyIdFile( fs, file, 30, false );
-        IdFile idFile = new IdFile( fs, file, 5, false );
-        idFile.init();
+        IdContainer.createEmptyIdFile( fs, file, 30, false );
+        IdContainer idContainer = new IdContainer( fs, file, 5, false );
+        idContainer.init();
         for ( int i = 0; i < 17; i++ )
         {
-            idFile.freeId( i );
+            idContainer.freeId( i );
         }
-        idFile.close( 30 );
-        assertThat( (int) fs.getFileSize( file ), greaterThan( IdFile.HEADER_SIZE ) );
+        idContainer.close( 30 );
+        assertThat( (int) fs.getFileSize( file ), greaterThan( IdContainer.HEADER_SIZE ) );
 
         // WHEN
-        IdFile.createEmptyIdFile( fs, file, 30, false );
+        IdContainer.createEmptyIdFile( fs, file, 30, false );
 
         // THEN
-        assertEquals( IdFile.HEADER_SIZE, (int) fs.getFileSize( file ) );
-        assertEquals( 30, IdFile.readHighId( fs, file ) );
-        idFile = new IdFile( fs, file, 5, false );
-        idFile.init();
-        assertEquals( 30, idFile.getInitialHighId() );
+        assertEquals( IdContainer.HEADER_SIZE, (int) fs.getFileSize( file ) );
+        assertEquals( 30, IdContainer.readHighId( fs, file ) );
+        idContainer = new IdContainer( fs, file, 5, false );
+        idContainer.init();
+        assertEquals( 30, idContainer.getInitialHighId() );
 
-        idFile.close( 30 );
+        idContainer.close( 30 );
     }
 
     private void createEmptyFile()
     {
-        IdFile.createEmptyIdFile( fs, file, 42, false );
+        IdContainer.createEmptyIdFile( fs, file, 42, false );
     }
 }

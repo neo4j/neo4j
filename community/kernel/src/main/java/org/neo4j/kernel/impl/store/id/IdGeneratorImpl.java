@@ -67,9 +67,7 @@ public class IdGeneratorImpl implements IdGenerator
     public static final long INTEGER_MINUS_ONE = 0xFFFFFFFFL;  // 4294967295L;
 
     private final long max;
-
-    private IdFile idFile;
-
+    private final IdContainer idContainer;
     private long highId = INTEGER_MINUS_ONE;
 
     /**
@@ -102,10 +100,9 @@ public class IdGeneratorImpl implements IdGenerator
             long highId )
     {
         this.max = max;
-
-        this.idFile = new IdFile( fs, file, grabSize, aggressiveReuse );
-        this.idFile.init();
-        this.highId = max( idFile.getInitialHighId(), highId );
+        this.idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
+        this.idContainer.init();
+        this.highId = max( idContainer.getInitialHighId(), highId );
     }
 
     /**
@@ -123,8 +120,8 @@ public class IdGeneratorImpl implements IdGenerator
     public synchronized long nextId()
     {
         assertStillOpen();
-        long nextDefragId = idFile.getReusableId();
-        if ( nextDefragId != IdFile.NO_RESULT )
+        long nextDefragId = idContainer.getReusableId();
+        if ( nextDefragId != IdContainer.NO_RESULT )
         {
             return nextDefragId;
         }
@@ -147,7 +144,7 @@ public class IdGeneratorImpl implements IdGenerator
         long[] defragIds = new long[size];
         while ( count < size )
         {
-            long id = idFile.getReusableId();
+            long id = idContainer.getReusableId();
             if ( id == -1 )
             {
                 break;
@@ -213,7 +210,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized void freeId( long id )
     {
-        idFile.assertStillOpen();
+        idContainer.assertStillOpen();
 
         if ( IdValidator.isReservedId( id ) )
         {
@@ -224,7 +221,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             throw new IllegalArgumentException( "Illegal id[" + id + "], highId is " + highId );
         }
-        idFile.freeId( id );
+        idContainer.freeId( id );
     }
 
     /**
@@ -239,7 +236,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized void close()
     {
-        idFile.close( highId );
+        idContainer.close( highId );
     }
 
     /**
@@ -252,12 +249,12 @@ public class IdGeneratorImpl implements IdGenerator
     public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId,
                                         boolean throwIfFileExists )
     {
-        IdFile.createEmptyIdFile( fs, fileName, highId, throwIfFileExists );
+        IdContainer.createEmptyIdFile( fs, fileName, highId, throwIfFileExists );
     }
 
     public static long readHighId( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        return IdFile.readHighId( fileSystem, file );
+        return IdContainer.readHighId( fileSystem, file );
     }
 
     @Override
@@ -269,23 +266,23 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized long getDefragCount()
     {
-        return idFile.getFreeIdCount();
+        return idContainer.getFreeIdCount();
     }
 
     @Override
     public synchronized void delete()
     {
-        idFile.delete();
+        idContainer.delete();
     }
 
     private void assertStillOpen()
     {
-        idFile.assertStillOpen();
+        idContainer.assertStillOpen();
     }
 
     @Override
     public String toString()
     {
-        return "IdGeneratorImpl " + hashCode() + " [max=" + max + ", idFile=" + idFile + "]";
+        return "IdGeneratorImpl " + hashCode() + " [max=" + max + ", idContainer=" + idContainer + "]";
     }
 }
