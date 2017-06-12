@@ -17,28 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup.storecopy;
+package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.rules.RuleChain;
+import org.junit.Rule;
 
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import java.util.Map;
+
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
+public class EmbeddedAuthScenariosInteractionIT extends AuthScenariosInteractionTestBase<EnterpriseSecurityContext>
 {
+
+    @Rule
+    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
     @Override
-    protected void createRules()
+    protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config ) throws Throwable
     {
-        testDirectory = TestDirectory.testDirectory( StoreFilesWithRealFileSystemTest.class );
-        DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
-        fileSystemRule = defaultFileSystemRule::get;
-        hiddenFileSystemRule = new EphemeralFileSystemRule();
-        pageCacheRule = new PageCacheRule( );
-        rules = RuleChain.outerRule( defaultFileSystemRule )
-                         .around( testDirectory )
-                         .around( hiddenFileSystemRule )
-                         .around( pageCacheRule );
+        return new EmbeddedInteraction( config, () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ) );
     }
 }
