@@ -27,28 +27,24 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import java.io.File;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ConstraintHaIT.NodePropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.RelationshipPropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.UniquenessConstraintHaIT;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
@@ -60,7 +56,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -115,21 +110,6 @@ public class ConstraintHaIT
         }
 
         @Override
-        protected void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey, String value )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                ResourceIterator<Node> nodes = db.findNodes( label( type ) );
-                while ( nodes.hasNext() )
-                {
-                    Node node = nodes.next();
-                    assertTrue( node.hasProperty( propertyKey ) );
-                }
-                tx.success();
-            }
-        }
-
-        @Override
         protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
         {
             return NodePropertyExistenceConstraintDefinition.class;
@@ -179,22 +159,6 @@ public class ConstraintHaIT
         }
 
         @Override
-        protected void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey, String value )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                for ( Relationship relationship : db.getAllRelationships() )
-                {
-                    if ( relationship.isType( withName( type ) ) )
-                    {
-                        assertTrue( relationship.hasProperty( propertyKey ) );
-                    }
-                }
-                tx.success();
-            }
-        }
-
-        @Override
         protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
         {
             return RelationshipPropertyExistenceConstraintDefinition.class;
@@ -237,16 +201,6 @@ public class ConstraintHaIT
                 String value )
         {
             db.createNode( label( type ) ).setProperty( propertyKey, value );
-        }
-
-        @Override
-        protected void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey, String value )
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                assertEquals( 1, Iterators.asList( db.findNodes( label( type ), propertyKey, value ) ).size() );
-                tx.success();
-            }
         }
 
         @Override
@@ -293,9 +247,6 @@ public class ConstraintHaIT
                 String value );
 
         protected abstract void createConstraintViolation( GraphDatabaseService db, String type, String propertyKey,
-                String value );
-
-        protected abstract void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey,
                 String value );
 
         protected abstract Class<? extends ConstraintDefinition> constraintDefinitionClass();
@@ -397,62 +348,6 @@ public class ConstraintHaIT
         }
 
         @Test
-        public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
-        {
-            // Given
-            ClusterManager.ManagedCluster cluster =
-                    clusterRule.withSharedSetting( HaSettings.read_timeout, "4000s" ).startCluster();
-            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            String type = type( 3 );
-            String key = key( 3 );
-
-            ThreadToStatementContextBridge txBridge = threadToStatementContextBridge( slave );
-
-            // And given there is an entity with property
-            createEntityInTx( master, type, key, "Foo" );
-
-            // And given that I begin a transaction that will create a constraint violation
-            slave.beginTx();
-            createConstraintViolation( slave, type, key, "Foo" );
-            KernelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
-            txBridge.unbindTransactionFromCurrentThread();
-
-            // When I create a constraint
-            try ( Transaction tx = master.beginTx() )
-            {
-                createConstraint( master, type, key );
-                tx.success();
-            }
-
-            // Then the transaction started on the slave should fail on commit, with an integrity error
-            txBridge.bindTransactionToCurrentThread( slaveTx );
-            try
-            {
-                slaveTx.success();
-                slaveTx.close();
-                fail( "Expected this commit to fail :(" );
-            }
-            catch ( org.neo4j.graphdb.TransactionFailureException |
-                    org.neo4j.graphdb.TransientTransactionFailureException e )
-            {
-                assertThat(
-                        e.getCause().getCause(),
-                        instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class )
-                );
-            }
-
-            // And then both master and slave should keep working, accepting reads
-            assertConstraintHolds( master, type, key, "Foo" );
-            cluster.sync();
-            assertConstraintHolds( slave, type, key, "Foo" );
-
-            // And then I should be able to perform new write transactions, on both master and slave
-            createEntityInTx( slave, type, key, "Bar" );
-            createEntityInTx( master, type, key, "Baz" );
-        }
-
-        @Test
         public void newSlaveJoiningClusterShouldNotAcceptOperationsUntilConstraintIsOnline() throws Throwable
         {
             // Given
@@ -486,12 +381,6 @@ public class ConstraintHaIT
                 assertThat( single( definition.getPropertyKeys() ), equalTo( key ) );
                 validateLabelOrRelationshipType( definition, type );
             }
-        }
-
-        private static ThreadToStatementContextBridge threadToStatementContextBridge( HighlyAvailableGraphDatabase db )
-        {
-            DependencyResolver dependencyResolver = db.getDependencyResolver();
-            return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
         }
 
         private static void validateLabelOrRelationshipType( ConstraintDefinition constraint, String type )
