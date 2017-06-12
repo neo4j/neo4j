@@ -22,57 +22,37 @@ package org.neo4j.values.virtual;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 
-public class NodeValue extends VirtualValue
+public class NodeReference extends VirtualValue
 {
     private final long id;
-    private final LabelSet labels;
-    private final MapValue properties;
 
-    public NodeValue( long id, LabelSet labels, MapValue properties )
+    public NodeReference( long id )
     {
-        assert labels != null;
-        assert properties != null;
-
         this.id = id;
-        this.labels = labels;
-        this.properties = properties;
     }
 
     @Override
     public void writeTo( AnyValueWriter writer )
     {
         writer.beginNode( id );
-        writer.beginLabels( labels.size() );
-        for ( int i = 0; i < labels.size(); i++ )
-        {
-            writer.writeLabel( labels.getLabelId( i ) );
-        }
-        writer.endLabels();
-        writer.beginProperties( properties.size() );
-        for ( int i = 0; i < properties.size(); i++ )
-        {
-            writer.writePropertyKeyId( properties.propertyKeyId( i ) );
-            properties.value( i ).writeTo( writer );
-        }
-        writer.endProperties();
         writer.endNode();
     }
 
     @Override
     public int hash()
     {
-        return Long.hashCode( id ) + 31 * ( labels.hashCode() + 31 * properties.hashCode() );
+        return Long.hashCode( id );
     }
 
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof NodeValue) )
+        if ( other == null || !(other instanceof NodeReference) )
         {
             return false;
         }
-        NodeValue that = (NodeValue) other;
-        return id == that.id && labels.equals( that.labels ) && properties.equals( that.properties );
+        NodeReference that = (NodeReference) other;
+        return id == that.id;
     }
 
     @Override

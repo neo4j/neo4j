@@ -47,4 +47,19 @@ public class VirtualValues
     {
         return new LabelSet.ArrayBasedLabelSet( labelIds );
     }
+
+    public static NodeReference node( long id )
+    {
+        return new NodeReference( id );
+    }
+
+    public static EdgeReference edge( long id )
+    {
+        return new EdgeReference( id );
+    }
+
+    public static PathValue path( NodeReference[] nodes, EdgeReference[] edges )
+    {
+        return new PathValue( nodes, edges );
+    }
 }

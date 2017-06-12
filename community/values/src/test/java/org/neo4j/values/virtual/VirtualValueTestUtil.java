@@ -26,7 +26,7 @@ import org.neo4j.values.VirtualValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class VirtualValueTestUtil
+class VirtualValueTestUtil
 {
     static AnyValue toAnyValue( Object o )
     {
@@ -38,6 +38,20 @@ public class VirtualValueTestUtil
         {
             return Values.of( o );
         }
+    }
+
+    static VirtualValue path( VirtualValue... pathElements )
+    {
+        assert pathElements.length % 2 == 1;
+        NodeReference[] nodes = new NodeReference[pathElements.length / 2 + 1];
+        EdgeReference[] edges = new EdgeReference[pathElements.length / 2];
+        nodes[0] = (NodeReference)pathElements[0];
+        for ( int i = 1; i < pathElements.length; i+=2 )
+        {
+            edges[i/2] = (EdgeReference)pathElements[i];
+            nodes[i/2 + 1] = (NodeReference)pathElements[i+1];
+        }
+        return VirtualValues.path( nodes, edges );
     }
 
     static VirtualValue list( Object... objects )

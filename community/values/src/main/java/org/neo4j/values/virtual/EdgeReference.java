@@ -22,55 +22,37 @@ package org.neo4j.values.virtual;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 
-public class EdgeValue extends VirtualValue
+public class EdgeReference extends VirtualValue
 {
     private final long id;
-    private final long startNodeId;
-    private final long endNodeId;
-    private final int label;
-    private final MapValue properties;
 
-    public EdgeValue( long id, long startNodeId, long endNodeId, int label, MapValue properties )
+    public EdgeReference( long id )
     {
-        assert properties != null;
-
-        this.startNodeId = startNodeId;
-        this.endNodeId = endNodeId;
         this.id = id;
-        this.label = label;
-        this.properties = properties;
     }
 
     @Override
     public void writeTo( AnyValueWriter writer )
     {
         writer.beginEdge( id );
-        writer.writeLabel( label );
-        writer.beginProperties( properties.size() );
-        for ( int i = 0; i < properties.size(); i++ )
-        {
-            writer.writePropertyKeyId( properties.propertyKeyId( i ) );
-            properties.value( i ).writeTo( writer );
-        }
-        writer.endProperties();
         writer.endEdge();
     }
 
     @Override
     public int hash()
     {
-        return Long.hashCode( id ) + 31 * ( label + 31 * properties.hashCode() );
+        return Long.hashCode( id );
     }
 
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof EdgeValue) )
+        if ( other == null || !(other instanceof EdgeReference) )
         {
             return false;
         }
-        EdgeValue that = (EdgeValue) other;
-        return id == that.id && label == that.label && properties.equals( that.properties );
+        EdgeReference that = (EdgeReference) other;
+        return id == that.id;
     }
 
     @Override
