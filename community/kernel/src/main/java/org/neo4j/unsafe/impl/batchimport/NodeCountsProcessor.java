@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import javax.swing.*;
-
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;

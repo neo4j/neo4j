@@ -69,6 +69,7 @@ public class StoreUpgrader
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
+    public static final int COUNT_STORE_REBUILD_STEPS = 2;
 
     private final UpgradableDatabase upgradableDatabase;
     private final MigrationProgressMonitor progressMonitor;
@@ -120,7 +121,7 @@ public class StoreUpgrader
         }
 
         // One or more participants would like to do migration
-        progressMonitor.started();
+        progressMonitor.started( participants.size() + COUNT_STORE_REBUILD_STEPS );
 
         MigrationStatus migrationStatus = MigrationStatus.readMigrationStatus( fileSystem, migrationStateFile );
         String versionToMigrateFrom = null;
@@ -232,8 +233,7 @@ public class StoreUpgrader
             int index = 1;
             for ( StoreMigrationParticipant participant : participants )
             {
-                Section section = progressMonitor.startSection(
-                        format( "%s (%d/%d)", participant.getName(), index, participants.size() ) );
+                Section section = progressMonitor.startSection( participant.getName() );
                 participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
                 section.completed();

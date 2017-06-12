@@ -72,7 +72,8 @@ public interface StoreMigrationParticipant
      * @param versionToMigrateFrom the version we have migrated from
      * @param versionToMigrateTo   @throws IOException if unable to move one or more files.
      * */
-    void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
+    void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom,
+            String versionToMigrateTo ) throws IOException;
 
     /**
      * Delete any file from {@code migrationDir} produced during migration.

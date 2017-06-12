@@ -29,6 +29,8 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
 
     private final Log log;
+    private int numStages;
+    private int currentStage;
 
     public VisibleMigrationProgressMonitor( Log log )
     {
@@ -36,15 +38,16 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     }
 
     @Override
-    public void started()
+    public void started( int numStages )
     {
+        this.numStages = numStages;
         log.info( MESSAGE_STARTED );
     }
 
     @Override
     public Section startSection( String name )
     {
-        log.info( "Migrating " + name + ":" );
+        log.info( format( "Migrating %s (%d/%d):", name, ++currentStage, numStages ) );
 
         return new ProgressSection();
     }
@@ -52,6 +55,10 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     @Override
     public void completed()
     {
+        if ( currentStage < numStages )
+        {
+            log.info( format( "%d stages were not required and have been skipped.", numStages - currentStage ) );
+        }
         log.info( MESSAGE_COMPLETED );
     }
 

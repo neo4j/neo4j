@@ -36,7 +36,7 @@ public class VisibleMigrationProgressMonitorTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log log = logProvider.getLog( getClass() );
         VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
-        monitor.started();
+        monitor.started( 1 );
 
         // WHEN
         monitorSection( monitor, "First", 100, 40, 25, 23 /*these are too far*/ , 10, 50 );
@@ -53,7 +53,7 @@ public class VisibleMigrationProgressMonitorTest
         Log log = logProvider.getLog( getClass() );
         VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
 
-        monitor.started();
+        monitor.started( 1 );
         monitorSection( monitor, "First", 100, 1, 10, 99, 170 );
         monitor.completed();
 

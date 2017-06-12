@@ -299,7 +299,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
         // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
 
-        Optional<TransactionId> transactionInformation = legacyLogs.getTransactionInformation( storeDir, lastTransactionId );
+        Optional<TransactionId> transactionInformation = legacyLogs
+                .getTransactionInformation( storeDir, lastTransactionId );
         return transactionInformation.orElseGet( specificTransactionInformationSupplier( lastTransactionId ) );
     }
 
@@ -688,8 +689,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom, String versionToMigrateTo ) throws
-            IOException
+    public void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom,
+            String versionToMigrateTo ) throws IOException
     {
         if ( countStoreRebuildRequired( versionToMigrateFrom ) )
         {

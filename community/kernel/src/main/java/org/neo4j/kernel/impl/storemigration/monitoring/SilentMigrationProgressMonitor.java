@@ -40,7 +40,7 @@ public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
     };
 
     @Override
-    public void started()
+    public void started( int numStages )
     {
     }
 
