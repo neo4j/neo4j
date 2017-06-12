@@ -315,7 +315,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     private SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {};
+        return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,

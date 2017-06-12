@@ -163,7 +163,7 @@ public class CommunityEditionModule extends EditionModule
 
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {};
+        return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
     private TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,

@@ -37,6 +37,7 @@ import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
+import org.neo4j.concurrent.Runnables;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -122,7 +123,7 @@ class SessionRule implements TestRule
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, () -> {}, clock );
+        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, Runnables.EMPTY_RUNNABLE, clock );
         runningMachines.add( connection );
         return connection;
     }

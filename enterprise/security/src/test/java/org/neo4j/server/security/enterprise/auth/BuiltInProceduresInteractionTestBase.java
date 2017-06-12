@@ -60,6 +60,7 @@ import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
+import static org.neo4j.concurrent.Runnables.EMPTY_RUNNABLE;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -120,7 +121,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         final DoubleLatch doubleLatch = new DoubleLatch( 2 );
 
-        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
+        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, EMPTY_RUNNABLE,
+                EMPTY_RUNNABLE ) );
 
         new Thread( () -> assertEmpty( writeSubject, "CALL test.waitForLatch()" ) ).start();
         doubleLatch.startAndWaitForAllToStart();
@@ -1027,7 +1029,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         final DoubleLatch doubleLatch = new DoubleLatch( 2 );
 
-        ClassWithProcedures.setTestLatch( new ClassWithProcedures.LatchedRunnables( doubleLatch, () -> {}, () -> {} ) );
+        ClassWithProcedures.setTestLatch(
+                new ClassWithProcedures.LatchedRunnables( doubleLatch, EMPTY_RUNNABLE, EMPTY_RUNNABLE ) );
 
         new Thread( () -> assertFail( writeSubject, "CALL test.waitForLatch()", "Explicitly terminated by the user." ) )
                 .start();

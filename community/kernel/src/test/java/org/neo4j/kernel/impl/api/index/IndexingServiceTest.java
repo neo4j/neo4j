@@ -50,6 +50,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.concurrent.Runnables;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -152,7 +153,6 @@ public class IndexingServiceTest
     public ExpectedException expectedException = ExpectedException.none();
 
     private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
-    private static final Runnable DO_NOTHING_CALLBACK = () -> {};
     private final int labelId = 7;
     private final int propertyKeyId = 15;
     private final IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
@@ -345,7 +345,7 @@ public class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
-                logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK ) );
+                logProvider, IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE ) );
 
         when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
                 .thenReturn( ONLINE );
@@ -386,7 +386,7 @@ public class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
-                DO_NOTHING_CALLBACK );
+                Runnables.EMPTY_RUNNABLE );
 
         when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
                 .thenReturn( ONLINE );
@@ -977,7 +977,7 @@ public class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, indexes,
-                logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK ) );
+                logProvider, IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE ) );
 
         when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
 
@@ -1025,7 +1025,7 @@ public class IndexingServiceTest
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
-                logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK );
+                logProvider, IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
         when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
@@ -1238,7 +1238,7 @@ public class IndexingServiceTest
                         loop( iterator( rules ) ),
                         logProvider,
                         monitor,
-                        DO_NOTHING_CALLBACK )
+                        Runnables.EMPTY_RUNNABLE )
         );
     }
 
