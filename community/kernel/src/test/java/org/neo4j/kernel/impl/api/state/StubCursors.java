@@ -170,6 +170,12 @@ public class StubCursors
             }
 
             @Override
+            public Cursor<RelationshipItem> relationships( Direction direction, int relTypes )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public Cursor<RelationshipItem> relationships( Direction direction )
             {
                 throw new UnsupportedOperationException();

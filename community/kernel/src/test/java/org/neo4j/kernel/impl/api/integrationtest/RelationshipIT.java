@@ -78,7 +78,7 @@ public class RelationshipIT extends KernelIntegrationTest
             assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1 ),
                     fromRefToOther1, fromOtherToRef);
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1, relType2 ),
+            assertRels( statement.nodeGetRelationships( refNode, BOTH, new int[] { relType1, relType2 } ),
                     fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
 
 
@@ -86,7 +86,7 @@ public class RelationshipIT extends KernelIntegrationTest
 
             assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);
 
-            assertRels( statement.nodeGetRelationships( refNode, OUTGOING, relType1, relType2 ),
+            assertRels( statement.nodeGetRelationships( refNode, OUTGOING, new int[] { relType1, relType2 } ),
                     fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
 
             // when
@@ -102,14 +102,14 @@ public class RelationshipIT extends KernelIntegrationTest
             assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1 ),
                     fromRefToOther1, fromOtherToRef);
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1, relType2 ),
+            assertRels( statement.nodeGetRelationships( refNode, BOTH, new int[]{ relType1, relType2 }),
                     fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
 
             assertRels( statement.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
 
             assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);
 
-            assertRels( statement.nodeGetRelationships( refNode, OUTGOING, relType1, relType2 ),
+            assertRels( statement.nodeGetRelationships( refNode, OUTGOING, new int[]{ relType1, relType2 } ),
                     fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
         }
     }
@@ -192,7 +192,7 @@ public class RelationshipIT extends KernelIntegrationTest
             long otherNode = statement.nodeCreate();
             theRel = statement.relationshipCreate( relType1, refNode, otherNode );
 
-            assertRels( statement.nodeGetRelationships( refNode, Direction.OUTGOING, relType2, relType1 ), theRel );
+            assertRels( statement.nodeGetRelationships( refNode, Direction.OUTGOING, new int[]{ relType1, relType2 } ), theRel );
 
             commit();
         }

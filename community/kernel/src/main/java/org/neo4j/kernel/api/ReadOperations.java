@@ -181,7 +181,11 @@ public interface ReadOperations
 
     RelationshipIterator nodeGetRelationships( long nodeId,
             Direction direction,
-            int... relTypes ) throws EntityNotFoundException;
+            int[] relTypes ) throws EntityNotFoundException;
+
+    RelationshipIterator nodeGetRelationships( long nodeId,
+            Direction direction,
+            int relType ) throws EntityNotFoundException;
 
     RelationshipIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
 

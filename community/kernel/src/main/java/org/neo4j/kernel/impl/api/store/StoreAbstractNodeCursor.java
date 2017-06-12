@@ -202,9 +202,16 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         return nodeRelationshipCursor.get().init(  nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
                 direction, null );
     }
+    @Override
+
+    public Cursor<RelationshipItem> relationships( Direction direction, int relType )
+    {
+        return nodeRelationshipCursor.get().init(  nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
+                direction, relType );
+    }
 
     @Override
-    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
+    public Cursor<RelationshipItem> relationships( Direction direction, int[] relTypes )
     {
         return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
                 direction, relTypes );

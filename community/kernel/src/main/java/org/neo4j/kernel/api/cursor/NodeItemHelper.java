@@ -50,6 +50,11 @@ public abstract class NodeItemHelper
     }
 
     @Override
+    public RelationshipIterator getRelationships(Direction direction, int relType)
+    {
+        return new CursorRelationshipIterator( relationships(direction, relType) );
+    }
+    @Override
     public RelationshipIterator getRelationships( Direction direction, int[] relTypes )
     {
         relTypes = deduplicate( relTypes );
@@ -75,12 +80,15 @@ public abstract class NodeItemHelper
         for ( int i = 0; i < types.length; i++ )
         {
             int type = types[i];
-            for ( int j = 0; j < unique; j++ )
+            if ( type != -1 )
             {
-                if ( type == types[j] )
+                for ( int j = 0; j < unique; j++ )
                 {
-                    type = -1; // signal that this relationship is not unique
-                    break; // we will not find more than one conflict
+                    if ( type == types[j] )
+                    {
+                        type = -1; // signal that this relationship is not unique
+                        break; // we will not find more than one conflict
+                    }
                 }
             }
             if ( type != -1 )

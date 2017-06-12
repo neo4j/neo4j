@@ -59,7 +59,13 @@ public interface NodeItem
      * @return relationship cursor for current node
      * @throws IllegalStateException if no current node is selected
      */
-    Cursor<RelationshipItem> relationships( Direction direction, int... typeIds );
+    Cursor<RelationshipItem> relationships(Direction direction, int typeId);
+
+    /**
+     * @return relationship cursor for current node
+     * @throws IllegalStateException if no current node is selected
+     */
+    Cursor<RelationshipItem> relationships( Direction direction, int[] typeIds );
 
     /**
      * @return relationship cursor for current node
@@ -114,6 +120,13 @@ public interface NodeItem
      * @return label ids attached to this node.
      */
     PrimitiveIntIterator getLabels();
+
+    /**
+     * @param direction {@link Direction} to filter on.
+     * @param typeId relationship type id to filter on.
+     * @return relationship ids for the given direction and relationship type.
+     */
+    RelationshipIterator getRelationships(Direction direction, int typeId);
 
     /**
      * @param direction {@link Direction} to filter on.

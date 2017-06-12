@@ -163,19 +163,46 @@ public class NodeProxy
         return getRelationships( Direction.BOTH, types );
     }
 
+    private static final ResourceIterator<Relationship> NO_RELATIONSHIPS_ITERATOR = new ResourceIterator<Relationship>()
+    {
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public Relationship next()
+        {
+            return null;
+        }
+    };
+
+    private final static ResourceIterable<Relationship> NO_RELATIONSHIPS = new ResourceIterable<Relationship>()
+    {
+        @Override
+        public ResourceIterator<Relationship> iterator()
+        {
+            return NO_RELATIONSHIPS_ITERATOR;
+        }
+    };
+
     @Override
     public ResourceIterable<Relationship> getRelationships( RelationshipType type, Direction dir )
     {
-        return getRelationships( dir, type );
-    }
-
-    @Override
-    public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
-    {
-        final int[] typeIds;
+        final int typeId;
         try ( Statement statement = actions.statement() )
         {
-            typeIds = relTypeIds( types, statement );
+            typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
+            if ( typeId == NO_SUCH_RELATIONSHIP_TYPE )
+            {
+                return NO_RELATIONSHIPS;
+            }
         }
         return new ResourceIterable<Relationship>()
         {
@@ -186,8 +213,52 @@ public class NodeProxy
                 try
                 {
                     RelationshipConversion result = new RelationshipConversion( actions );
-                    result.iterator = statement.readOperations().nodeGetRelationships(
-                            nodeId, direction, typeIds );
+                    result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir, typeId );
+                    result.statement = statement;
+                    return result;
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    statement.close();
+                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+                }
+                catch ( Throwable e )
+                {
+                    statement.close();
+                    throw e;
+                }
+            }
+        };
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
+    {
+        final int[] typeIds;
+        try ( Statement statement = actions.statement() )
+        {
+            typeIds = relTypeIds( types, statement );
+        }
+        if ( typeIds.length == 0 )
+        {
+            return NO_RELATIONSHIPS;
+        }
+        return new ResourceIterable<Relationship>()
+        {
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                Statement statement = actions.statement();
+                try
+                {
+                    RelationshipConversion result = new RelationshipConversion( actions );
+                    if ( typeIds.length == 1 )
+                    {
+                        result.iterator = statement.readOperations().nodeGetRelationships( nodeId, direction, typeIds[0] );
+                    }
+                    else {
+                        result.iterator = statement.readOperations().nodeGetRelationships( nodeId, direction, typeIds );
+                    }
                     result.statement = statement;
                     return result;
                 }
@@ -238,13 +309,16 @@ public class NodeProxy
     @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        return hasRelationship( dir, type );
+        try ( ResourceIterator<Relationship> rels = getRelationships( type, dir ).iterator() )
+        {
+            return rels.hasNext();
+        }
     }
 
     @Override
     public Relationship getSingleRelationship( RelationshipType type, Direction dir )
     {
-        try ( ResourceIterator<Relationship> rels = getRelationships( dir, type ).iterator() )
+        try ( ResourceIterator<Relationship> rels = getRelationships( type, dir ).iterator() )
         {
             if ( !rels.hasNext() )
             {
