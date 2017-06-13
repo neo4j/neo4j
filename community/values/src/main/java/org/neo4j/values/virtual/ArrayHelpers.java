@@ -27,8 +27,12 @@ import org.neo4j.values.Values;
  *
  * Should we introduce dependency on primitive collections?
  */
-class ArrayHelpers
+final class ArrayHelpers
 {
+    private ArrayHelpers()
+    {
+    }
+
     static boolean isSortedSet( int[] keys )
     {
         for ( int i = 0; i < keys.length - 1; i++ )

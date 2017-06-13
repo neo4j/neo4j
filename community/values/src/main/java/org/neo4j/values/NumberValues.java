@@ -28,7 +28,7 @@ import java.util.Arrays;
  * Also compares Value typed number arrays.
  */
 @SuppressWarnings( "WeakerAccess" )
-public class NumberValues
+public final class NumberValues
 {
     private NumberValues()
     {

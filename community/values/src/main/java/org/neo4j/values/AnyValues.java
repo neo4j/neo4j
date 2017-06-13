@@ -24,7 +24,7 @@ import java.util.Comparator;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 @SuppressWarnings( "WeakerAccess" )
-public class AnyValues
+public final class AnyValues
 {
     /**
      * Default AnyValue comparator. Will correctly compare all storable and virtual values.

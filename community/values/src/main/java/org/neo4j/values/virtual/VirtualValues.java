@@ -25,7 +25,7 @@ import org.neo4j.values.AnyValue;
  * Entry point to the virtual values library.
  */
 @SuppressWarnings( "WeakerAccess" )
-public class VirtualValues
+public final class VirtualValues
 {
     private VirtualValues()
     {

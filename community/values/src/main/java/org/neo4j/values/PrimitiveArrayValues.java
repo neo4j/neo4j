@@ -27,7 +27,7 @@ import java.util.Arrays;
  * This class handles only evaluation of a[] == b[] where type( a ) != type( b ), ei. byte[] == int[] and such.
  * byte[] == byte[] evaluation can be done using Arrays.equals().
  */
-public class PrimitiveArrayValues
+public final class PrimitiveArrayValues
 {
     private PrimitiveArrayValues()
     {

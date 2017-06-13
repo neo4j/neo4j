@@ -38,7 +38,7 @@ import static java.lang.String.format;
  * and returned as part of cypher execution. These include Node, Relationship and Path.
  */
 @SuppressWarnings( "WeakerAccess" )
-public class Values
+public final class Values
 {
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );

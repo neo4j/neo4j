@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-class LazyValues
+final class LazyValues
 {
     /**
      * Get or loads the value.

@@ -25,7 +25,7 @@ import java.util.Arrays;
  * Static methods for comparing and hashing chars, Strings and Text values.
  */
 @SuppressWarnings( "WeakerAccess" )
-public class TextValues
+public final class TextValues
 {
     private TextValues()
     {
