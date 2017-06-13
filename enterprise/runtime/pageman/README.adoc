@@ -1,0 +1,4 @@
+Page Manager Prototype
+======================
+
+A simple page manager implementation for Direct Cursors.

@@ -1,0 +1,30 @@
+Prototype of Direct Cursors
+===========================
+
+These are base classes for cursors that access memory directly.
+
+Concrete implementations of these cursors define the actual API that users will use, then define the actual representation format.
+
+A typical implementation hierarchy would look something like this:
+
+----
+   +-------------+
+   | ReadCursor  |
+   |-------------|
+   | base class  |
+   +------+------+
+          ^
+          |
++---------+---------+
+|    NodeCursor     |
+|-------------------|
+| Define public API |
++---------+---------+
+          ^
+          |
++---------+---------+
+| Neo4j32NodeCursor |
+|-------------------|
+| Implement format  |
++-------------------+
+----

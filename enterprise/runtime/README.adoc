@@ -1,0 +1,11 @@
+Runtime Prototypes
+==================
+
+This directory holds prototypes of a new runtime for Cypher, as well as prototypes for new APIs for interaction between the Cypher runtime and the Kernel.
+
+The prototype subprojects are:
+
+* link:cursors/README.adoc[cursors] - Direct Cursors that access memory (the pages of the store) with minimal indirection.
+* link:protostore/README.adoc[protostore] - a Store API prototype based on the direct cursors, implementing the new link:../../community/kernel-api/README.adoc[Kernel API].
+* link:neole/README.adoc[neole] - an implementation of the Store API prototype that supports the current Neo4j store format.
+* link:pageman/README.adoc[pageman] - a Page Manager implementation for the Direct Cursors.
