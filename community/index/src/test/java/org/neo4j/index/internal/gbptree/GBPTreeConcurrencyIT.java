@@ -61,6 +61,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -106,7 +107,7 @@ public class GBPTreeConcurrencyIT
         PageCache pageCache =
                 pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTree<>( pageCache, directory.file( "index" ),
-                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER );
+                layout, 0/*use whatever page cache says*/, monitor, NO_HEADER, NO_HEADER_WRITER );
     }
 
     @After
