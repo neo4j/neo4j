@@ -141,7 +141,7 @@ trait MethodStructure[E] {
 
   // db access
   def labelScan(iterVar: String, labelIdVar: String): Unit
-  def hasLabel(nodeVar: String, labelVar: String, predVar: String): E
+  def hasLabel(nodeVar: String, labelVar: String, predVar: String): Unit
   def allNodesScan(iterVar: String): Unit
   def lookupLabelId(labelIdVar: String, labelName: String): Unit
   def lookupLabelIdE(labelName: String): E
