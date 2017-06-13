@@ -145,7 +145,7 @@ abstract class IntArray extends IntegralArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<int[]> producer )
+        Lazy( ValueLoader<int[]> producer )
         {
             this.field = producer;
         }

@@ -49,15 +49,6 @@ public class Values
     {
     }
 
-    public interface ValueLoader<T>
-    {
-        T load() throws ValueLoadException;
-    }
-
-    public class ValueLoadException extends RuntimeException
-    {
-    }
-
     /**
      * Default value comparator. Will correctly compare all storable values and order the value groups according the
      * to comparability group. Virtual values are sorted in a random but deterministic fashion (by hashCode).

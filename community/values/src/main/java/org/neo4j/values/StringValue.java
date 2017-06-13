@@ -112,7 +112,7 @@ abstract class StringValue extends TextValue
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<String> producer )
+        Lazy( ValueLoader<String> producer )
         {
             this.field = producer;
         }

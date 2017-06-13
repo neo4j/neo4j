@@ -128,7 +128,7 @@ abstract class CharArray extends TextArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<char[]> producer )
+        Lazy( ValueLoader<char[]> producer )
         {
             this.field = producer;
         }

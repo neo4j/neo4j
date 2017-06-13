@@ -145,7 +145,7 @@ abstract class ShortArray extends IntegralArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<short[]> producer )
+        Lazy( ValueLoader<short[]> producer )
         {
             this.field = producer;
         }

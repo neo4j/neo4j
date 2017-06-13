@@ -145,7 +145,7 @@ abstract class FloatArray extends FloatingPointArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<float[]> producer )
+        Lazy( ValueLoader<float[]> producer )
         {
             this.field = producer;
         }

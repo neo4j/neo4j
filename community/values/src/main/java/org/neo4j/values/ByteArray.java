@@ -145,7 +145,7 @@ abstract class ByteArray extends IntegralArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<byte[]> producer )
+        Lazy( ValueLoader<byte[]> producer )
         {
             this.field = producer;
         }

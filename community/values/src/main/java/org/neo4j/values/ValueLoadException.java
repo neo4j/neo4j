@@ -19,32 +19,18 @@
  */
 package org.neo4j.values;
 
-class LazyValues
+/**
+ * Exception thrown when {@link ValueLoader#load()} fails to load a value.
+ */
+public class ValueLoadException extends RuntimeException
 {
-    /**
-     * Get or loads the value.
-     */
-    static <T> T getOrLoad( LazyValue<T> value )
+    public ValueLoadException( String message )
     {
-        Object maybeValue = value.getMaybeValue();
-        if ( maybeValue instanceof ValueLoader<?> )
-        {
-            synchronized ( value )
-            {
-                maybeValue = value.getMaybeValue();
-                if ( maybeValue instanceof ValueLoader<?> )
-                {
-                    maybeValue = ((ValueLoader<?>) maybeValue).load();
-                    value.registerValue( (T) maybeValue );
-                }
-            }
-        }
-        //noinspection unchecked
-        return (T) maybeValue;
+        this( message, null );
     }
 
-    static boolean valueIsLoaded( Object maybeValue )
+    public ValueLoadException( String message, Throwable cause )
     {
-        return !(maybeValue instanceof ValueLoader<?>);
+        super( message, cause );
     }
 }

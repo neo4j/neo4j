@@ -178,7 +178,7 @@ abstract class BooleanArray extends ArrayValue
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<boolean[]> producer )
+        Lazy( ValueLoader<boolean[]> producer )
         {
             this.field = producer;
         }

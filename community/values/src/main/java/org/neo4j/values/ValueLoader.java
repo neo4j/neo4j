@@ -19,32 +19,13 @@
  */
 package org.neo4j.values;
 
-class LazyValues
+/**
+ * Mini-interface for loading values. This is intended for lazy loading of heavy values such as
+ * large arrays and Strings.
+ *
+ * @param <T> The type to load
+ */
+public interface ValueLoader<T>
 {
-    /**
-     * Get or loads the value.
-     */
-    static <T> T getOrLoad( LazyValue<T> value )
-    {
-        Object maybeValue = value.getMaybeValue();
-        if ( maybeValue instanceof ValueLoader<?> )
-        {
-            synchronized ( value )
-            {
-                maybeValue = value.getMaybeValue();
-                if ( maybeValue instanceof ValueLoader<?> )
-                {
-                    maybeValue = ((ValueLoader<?>) maybeValue).load();
-                    value.registerValue( (T) maybeValue );
-                }
-            }
-        }
-        //noinspection unchecked
-        return (T) maybeValue;
-    }
-
-    static boolean valueIsLoaded( Object maybeValue )
-    {
-        return !(maybeValue instanceof ValueLoader<?>);
-    }
+    T load() throws ValueLoadException;
 }
