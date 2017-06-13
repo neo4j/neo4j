@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.monitoring;
 
+import org.neo4j.helpers.MathUtil;
+
 /**
  * The PageCacheCounters exposes internal counters from the page cache.
  * The data for these counters is sourced through the PageCacheTracer API.
@@ -49,6 +51,14 @@ public interface PageCacheCounters
      * @return The number of page cache hits so far.
      */
     long hits();
+
+    /**
+     * @return The cache hit ratio observed thus far.
+     */
+    default double hitRatio()
+    {
+        return MathUtil.portion( hits(), faults() );
+    }
 
     /**
      * @return The number of page flushes observed thus far.
