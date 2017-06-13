@@ -259,7 +259,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     StorageProperty property = added.next();
                     assignedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
-                            store.propertyKeyGetName( property.propertyKeyId() ), property.valueForced(),
+                            store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( nodeState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = nodeState.removedProperties();
@@ -288,7 +288,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     StorageProperty property = added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
-                            store.propertyKeyGetName( property.propertyKeyId() ), property.valueForced(),
+                            store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( relState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = relState.removedProperties();

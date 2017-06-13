@@ -101,8 +101,6 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.Value;
 import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
@@ -1184,7 +1182,7 @@ public class StateHandlingStatementOperations implements
             StorageProperty property = properties.next();
             if ( property.propertyKeyId() == propertyKeyId )
             {
-                return property.valueForced();
+                return property.value();
             }
         }
         return Values.NO_VALUE;

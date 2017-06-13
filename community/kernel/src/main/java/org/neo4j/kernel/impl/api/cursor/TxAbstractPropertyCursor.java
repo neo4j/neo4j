@@ -80,6 +80,6 @@ public abstract class TxAbstractPropertyCursor implements Cursor<PropertyItem>, 
     @Override
     public Value value()
     {
-        return property.valueForced();
+        return property.value();
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
@@ -43,24 +42,7 @@ public class PropertyKeyValue implements StorageProperty
     }
 
     @Override
-    public boolean valueEquals( Value other )
-    {
-        return value.equals( other );
-    }
-
-    @Override
-    public Value value() throws PropertyNotFoundException
-    {
-        if ( value == Values.NO_VALUE )
-        {
-            // TODO
-            throw new PropertyNotFoundException( propertyKeyId, null, -1 );
-        }
-        return value;
-    }
-
-    @Override
-    public Value valueForced()
+    public Value value()
     {
         return value;
     }

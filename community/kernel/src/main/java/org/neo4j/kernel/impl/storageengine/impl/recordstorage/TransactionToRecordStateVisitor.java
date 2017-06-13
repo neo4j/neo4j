@@ -115,12 +115,12 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         while ( changed.hasNext() )
         {
             StorageProperty prop = changed.next();
-            recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.valueForced() );
+            recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
         }
         while ( added.hasNext() )
         {
             StorageProperty prop = added.next();
-            recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.valueForced() );
+            recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
         }
     }
 
@@ -135,12 +135,12 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         while ( changed.hasNext() )
         {
             StorageProperty prop = changed.next();
-            recordState.relChangeProperty( id, prop.propertyKeyId(), prop.valueForced() );
+            recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
         }
         while ( added.hasNext() )
         {
             StorageProperty prop = added.next();
-            recordState.relAddProperty( id, prop.propertyKeyId(), prop.valueForced() );
+            recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
         }
     }
 
@@ -155,12 +155,12 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         while ( changed.hasNext() )
         {
             StorageProperty prop = changed.next();
-            recordState.graphChangeProperty( prop.propertyKeyId(), prop.valueForced() );
+            recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
         }
         while ( added.hasNext() )
         {
             StorageProperty prop = added.next();
-            recordState.graphAddProperty( prop.propertyKeyId(), prop.valueForced() );
+            recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
         }
     }
 

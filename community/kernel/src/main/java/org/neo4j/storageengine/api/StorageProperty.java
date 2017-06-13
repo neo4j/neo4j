@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.values.Value;
 
 /**
@@ -35,21 +34,9 @@ public interface StorageProperty
     int propertyKeyId();
 
     /**
-     * @param other value to compare with for equality.
-     * @return whether or not the property value is equal to the given {@code value}.
-     */
-    boolean valueEquals( Value other );
-
-    /**
-     * @return the property value.
-     * @throws PropertyNotFoundException if this property instance represented a non-existent property.
-     */
-    Value value() throws PropertyNotFoundException;
-
-    /**
      * @return the property value or Values.NO_VALUE is this property does not exist.
      */
-    Value valueForced();
+    Value value();
 
     /**
      * @return whether or not the property is defined, e.g. if it exists (has a value) or not.

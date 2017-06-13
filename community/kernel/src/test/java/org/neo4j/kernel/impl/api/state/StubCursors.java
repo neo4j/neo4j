@@ -266,7 +266,7 @@ public class StubCursors
             @Override
             public Value value()
             {
-                return property.valueForced();
+                return property.value();
             }
         };
     }

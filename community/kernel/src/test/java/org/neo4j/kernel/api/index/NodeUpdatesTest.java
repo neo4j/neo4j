@@ -59,7 +59,7 @@ public class NodeUpdatesTest
 
     private static final StorageProperty property1 = new PropertyKeyValue( propertyKeyId1, Values.of( "Neo" ) );
     private static final StorageProperty property2 = new PropertyKeyValue( propertyKeyId2, Values.of( 100L ) );
-    private static final Value[] values12 = new Value[]{property1.valueForced(), property2.valueForced()};
+    private static final Value[] values12 = new Value[]{property1.value(), property2.value()};
 
     @Test
     public void shouldNotGenerateUpdatesForEmptyNodeUpdates()
@@ -104,7 +104,7 @@ public class NodeUpdatesTest
         assertThat(
                 updates.forIndexKeys( indexes, propertyLoader( property1 ) ),
                 containsInAnyOrder(
-                    IndexEntryUpdate.add( nodeId, index1, property1.valueForced() )
+                    IndexEntryUpdate.add( nodeId, index1, property1.value() )
                 ) );
     }
 
@@ -122,8 +122,8 @@ public class NodeUpdatesTest
         assertThat(
                 updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
                 containsInAnyOrder(
-                        IndexEntryUpdate.add( nodeId, index1, property1.valueForced() ),
-                        IndexEntryUpdate.add( nodeId, index2, property2.valueForced() ),
+                        IndexEntryUpdate.add( nodeId, index1, property1.value() ),
+                        IndexEntryUpdate.add( nodeId, index2, property2.value() ),
                         IndexEntryUpdate.add( nodeId, index12, values12 )
                 ) );
     }
@@ -149,7 +149,7 @@ public class NodeUpdatesTest
         assertThat(
                 updates.forIndexKeys( indexes, propertyLoader( property1 ) ),
                 containsInAnyOrder(
-                        IndexEntryUpdate.remove( nodeId, index1, property1.valueForced() )
+                        IndexEntryUpdate.remove( nodeId, index1, property1.value() )
                 ) );
     }
 
@@ -164,8 +164,8 @@ public class NodeUpdatesTest
         assertThat(
                 updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
                 containsInAnyOrder(
-                        IndexEntryUpdate.remove( nodeId, index1, property1.valueForced() ),
-                        IndexEntryUpdate.remove( nodeId, index2, property2.valueForced() ),
+                        IndexEntryUpdate.remove( nodeId, index1, property1.value() ),
+                        IndexEntryUpdate.remove( nodeId, index2, property2.value() ),
                         IndexEntryUpdate.remove( nodeId, index12, values12 )
                 ) );
     }
@@ -175,7 +175,7 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId )
-                .added( property1.propertyKeyId(), property1.valueForced() )
+                .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
         // Then
@@ -187,14 +187,14 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
-                .added( property1.propertyKeyId(), property1.valueForced() )
+                .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
         // Then
         assertThat(
                 updates.forIndexKeys( indexes, propertyLoader() ),
                 containsInAnyOrder(
-                        IndexEntryUpdate.add( nodeId, index1, property1.valueForced() )
+                        IndexEntryUpdate.add( nodeId, index1, property1.value() )
                 ) );
     }
 
@@ -203,16 +203,16 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
-                .added( property1.propertyKeyId(), property1.valueForced() )
-                .added( property2.propertyKeyId(), property2.valueForced() )
+                .added( property1.propertyKeyId(), property1.value() )
+                .added( property2.propertyKeyId(), property2.value() )
                 .build();
 
         // Then
         assertThat(
                 updates.forIndexKeys( indexes, propertyLoader( property1, property2 ) ),
                 containsInAnyOrder(
-                        IndexEntryUpdate.add( nodeId, index1, property1.valueForced() ),
-                        IndexEntryUpdate.add( nodeId, index2, property2.valueForced() ),
+                        IndexEntryUpdate.add( nodeId, index1, property1.value() ),
+                        IndexEntryUpdate.add( nodeId, index2, property2.value() ),
                         IndexEntryUpdate.add( nodeId, index12, values12 )
                 ) );
     }
@@ -222,8 +222,8 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels )
-                .removed( property1.propertyKeyId(), property1.valueForced() )
-                .removed( property2.propertyKeyId(), property2.valueForced() )
+                .removed( property1.propertyKeyId(), property1.value() )
+                .removed( property2.propertyKeyId(), property2.value() )
                 .build();
 
         // Then
@@ -235,8 +235,8 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty )
-                .added( property1.propertyKeyId(), property1.valueForced() )
-                .added( property2.propertyKeyId(), property2.valueForced() )
+                .added( property1.propertyKeyId(), property1.value() )
+                .added( property2.propertyKeyId(), property2.value() )
                 .build();
 
         // Then
@@ -260,7 +260,7 @@ public class NodeUpdatesTest
     {
         // When
         NodeUpdates updates = NodeUpdates.forNode( nodeId, empty )
-                .added( property1.propertyKeyId(), property1.valueForced() )
+                .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
         // Then
@@ -274,7 +274,7 @@ public class NodeUpdatesTest
         Map<Integer, Value> propertyMap = new HashMap<>( );
         for ( StorageProperty p : properties )
         {
-            propertyMap.put( p.propertyKeyId(), p.valueForced() );
+            propertyMap.put( p.propertyKeyId(), p.value() );
         }
         return ( nodeId1, propertyIds, sink ) ->
         {
