@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
+public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>
 {
     private static final byte TYPE_NODE = 1;
     private static final byte TYPE_REL = 2;
@@ -64,10 +64,6 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     private long entityId;
     private byte entityType;
     private List<DynamicRecord> deletedRecords;
-
-    // state for the Iterator aspect of this class.
-    private int blockRecordsIteratorCursor;
-    private boolean canRemoveFromIterator;
 
     public PropertyRecord( long id )
     {
@@ -168,42 +164,45 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     public Iterator<PropertyBlock> iterator()
     {
         ensureBlocksLoaded();
-        blockRecordsIteratorCursor = 0;
-        canRemoveFromIterator = false;
-        return this;
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-        return blockRecordsIteratorCursor < blockRecordsCursor;
-    }
-
-    @Override
-    public PropertyBlock next()
-    {
-        if ( !hasNext() )
+        return new Iterator<PropertyBlock>()
         {
-            throw new NoSuchElementException();
-        }
-        canRemoveFromIterator = true;
-        return blockRecords[blockRecordsIteratorCursor++];
-    }
+            // state for the Iterator aspect of this class.
+            private int blockRecordsIteratorCursor;
+            private boolean canRemoveFromIterator;
 
-    @Override
-    public void remove()
-    {
-        if ( !canRemoveFromIterator )
-        {
-            throw new IllegalStateException(
-                    "cursor:" + blockRecordsIteratorCursor + " canRemove:" + canRemoveFromIterator );
-        }
+            @Override
+            public boolean hasNext()
+            {
+                return blockRecordsIteratorCursor < blockRecordsCursor;
+            }
 
-        if ( --blockRecordsCursor > --blockRecordsIteratorCursor )
-        {
-            blockRecords[blockRecordsIteratorCursor] = blockRecords[blockRecordsCursor];
-        }
-        canRemoveFromIterator = false;
+            @Override
+            public PropertyBlock next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                canRemoveFromIterator = true;
+                return blockRecords[blockRecordsIteratorCursor++];
+            }
+
+            @Override
+            public void remove()
+            {
+                if ( !canRemoveFromIterator )
+                {
+                    throw new IllegalStateException(
+                            "cursor:" + blockRecordsIteratorCursor + " canRemove:" + canRemoveFromIterator );
+                }
+
+                if ( --blockRecordsCursor > --blockRecordsIteratorCursor )
+                {
+                    blockRecords[blockRecordsIteratorCursor] = blockRecords[blockRecordsCursor];
+                }
+                canRemoveFromIterator = false;
+            }
+        };
     }
 
     public List<DynamicRecord> getDeletedRecords()

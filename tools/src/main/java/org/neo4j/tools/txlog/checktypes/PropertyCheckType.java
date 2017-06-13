@@ -91,9 +91,9 @@ class PropertyCheckType extends CheckType<Command.PropertyCommand,PropertyRecord
     private static List<PropertyBlock> blocks( PropertyRecord record )
     {
         List<PropertyBlock> result = new ArrayList<>();
-        while ( record.hasNext() )
+        for ( PropertyBlock block : record )
         {
-            result.add( record.next() );
+            result.add( block );
         }
         return result;
     }

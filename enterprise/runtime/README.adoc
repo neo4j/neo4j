@@ -9,3 +9,4 @@ The prototype subprojects are:
 * link:protostore/README.adoc[protostore] - a Store API prototype based on the direct cursors, implementing the new link:../../community/kernel-api/README.adoc[Kernel API].
 * link:neole/README.adoc[neole] - an implementation of the Store API prototype that supports the current Neo4j store format.
 * link:pageman/README.adoc[pageman] - a Page Manager implementation for the Direct Cursors.
+* link:records/README.adoc[records] - An implementation of the Store API prototype based on the exiting Kernel infrastructure.

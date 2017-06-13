@@ -4,31 +4,24 @@
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
     <version>3.3.0-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
+    <relativePath>../../..</relativePath>
   </parent>
 
   <properties>
-    <short-name>kernelapi</short-name>
-    <bundle.namespace>org.neo4j.impl.kernel.api</bundle.namespace>
+    <short-name>protostore-records</short-name>
+    <bundle.namespace>org.neo4j.impl.store.prototype.records</bundle.namespace>
     <license-text.header>AGPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-runtime</artifactId>
+  <artifactId>neo4j-protostore-records</artifactId>
   <version>3.3.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>Neo4j - Cypher Runtime</name>
-  <description>Runtime library for the Neo4j Cypher implementation</description>
-  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <modules>
-    <module>cursors</module>
-    <module>pageman</module>
-    <module>protostore</module>
-    <module>records</module>
-    <module>neole</module>
-  </modules>
+  <packaging>jar</packaging>
+  <name>Neo4j - Storage prototype based on record objects</name>
+  <description>Prototype of storage implementation for Neo4j</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -55,5 +48,35 @@
       </comments>
     </license>
   </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>
