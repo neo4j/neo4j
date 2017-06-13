@@ -72,7 +72,7 @@ final class MapValue extends VirtualValue
     }
 
     @Override
-    public void writeTo( AnyValueWriter writer )
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writer.beginMap( keys.length );
         for ( int i = 0; i < keys.length; i++ )

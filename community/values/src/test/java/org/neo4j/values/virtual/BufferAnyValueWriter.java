@@ -24,7 +24,7 @@ import org.neo4j.values.BufferValueWriter;
 
 import static java.lang.String.format;
 
-public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueWriter
+public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueWriter<RuntimeException>
 {
 
     enum SpecialKind

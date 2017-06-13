@@ -40,7 +40,7 @@ public abstract class PointValue extends VirtualValue
     }
 
     @Override
-    public void writeTo( AnyValueWriter writer )
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writer.beginPoint( getCoordinateReferenceSystem() );
         writer.writeFloatingPoint( xCoordinate );

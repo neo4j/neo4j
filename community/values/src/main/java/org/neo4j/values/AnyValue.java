@@ -27,5 +27,5 @@ public abstract class AnyValue
     @Override
     public abstract int hashCode();
 
-    public abstract void writeTo( AnyValueWriter writer );
+    public abstract <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E;
 }

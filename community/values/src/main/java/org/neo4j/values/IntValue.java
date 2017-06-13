@@ -37,7 +37,7 @@ final class IntValue extends IntegralValue
     }
 
     @Override
-    public void writeTo( ValueWriter writer )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeInteger( value );
     }

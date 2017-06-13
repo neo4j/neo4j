@@ -37,7 +37,7 @@ public class NodeReference extends VirtualValue
     }
 
     @Override
-    public void writeTo( AnyValueWriter writer )
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writer.writeNodeReference( id );
     }

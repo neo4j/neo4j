@@ -47,12 +47,12 @@ public abstract class Value extends AnyValue
 
     public abstract boolean equals( String[] x );
 
-    public void writeTo( AnyValueWriter writer )
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writeTo( (ValueWriter)writer );
+        writeTo( (ValueWriter<E>)writer );
     }
 
-    public abstract void writeTo( ValueWriter writer );
+    public abstract <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E;
 
     /**
      * Return this value as a regular java boxed primitive, String or primitive array. This method performs defensive

@@ -81,7 +81,7 @@ final class BooleanValue extends ScalarValue
     }
 
     @Override
-    public void writeTo( ValueWriter writer )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeBoolean( value );
     }

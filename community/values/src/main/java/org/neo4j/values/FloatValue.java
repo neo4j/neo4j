@@ -55,7 +55,7 @@ final class FloatValue extends FloatingPointValue
     }
 
     @Override
-    public void writeTo( ValueWriter writer )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeFloatingPoint( value );
     }

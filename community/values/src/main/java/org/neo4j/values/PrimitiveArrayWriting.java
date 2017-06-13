@@ -24,7 +24,7 @@ package org.neo4j.values;
  */
 public final class PrimitiveArrayWriting
 {
-    public static void writeTo( ValueWriter writer, byte[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, byte[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.BYTE );
         for ( byte x : values )
@@ -34,7 +34,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, short[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, short[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.SHORT );
         for ( short x : values )
@@ -44,7 +44,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, int[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, int[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.INT );
         for ( int x : values )
@@ -54,7 +54,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, long[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, long[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.LONG );
         for ( long x : values )
@@ -64,7 +64,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, float[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, float[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.FLOAT );
         for ( float x : values )
@@ -74,7 +74,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, double[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, double[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.DOUBLE );
         for ( double x : values )
@@ -84,7 +84,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, boolean[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, boolean[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.BOOLEAN );
         for ( boolean x : values )
@@ -94,7 +94,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, char[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, char[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.CHAR );
         for ( char x : values )
@@ -104,7 +104,7 @@ public final class PrimitiveArrayWriting
         writer.endArray();
     }
 
-    public static void writeTo( ValueWriter writer, String[] values )
+    public static <E extends Exception> void writeTo( ValueWriter<E> writer, String[] values ) throws E
     {
         writer.beginArray( values.length, ValueWriter.ArrayType.STRING );
         for ( String x : values )

@@ -34,7 +34,7 @@ import static org.neo4j.values.BufferValueWriter.SpecialKind.EndArray;
 import static org.neo4j.values.BufferValueWriter.SpecialKind.EndUTF8;
 import static org.neo4j.values.BufferValueWriter.SpecialKind.WriteCharArray;
 
-public class BufferValueWriter implements ValueWriter
+public class BufferValueWriter implements ValueWriter<RuntimeException>
 {
     enum SpecialKind
     {

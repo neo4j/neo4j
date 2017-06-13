@@ -24,34 +24,34 @@ import org.neo4j.values.virtual.CoordinateReferenceSystem;
 /**
  * Writer of any values.
  */
-public interface AnyValueWriter extends ValueWriter
+public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 {
 
-    void writeNodeReference( long nodeId );
+    void writeNodeReference( long nodeId ) throws E;
 
-    void beginLabels( int numberOfLabels );
+    void beginLabels( int numberOfLabels ) throws E;
 
-    void writeLabel( int labelId );
+    void writeLabel( int labelId ) throws E;
 
-    void endLabels();
+    void endLabels() throws E;
 
-    void writeEdgeReference( long edgeId );
+    void writeEdgeReference( long edgeId ) throws E;
 
-    void beginMap( int size );
+    void beginMap( int size ) throws E;
 
-    void writeKeyId( int keyId );
+    void writeKeyId( int keyId ) throws E;
 
-    void endMap();
+    void endMap() throws E;
 
-    void beginList( int size );
+    void beginList( int size ) throws E;
 
-    void endList();
+    void endList() throws E;
 
-    void beginPath( int length );
+    void beginPath( int length ) throws E;
 
-    void endPath();
+    void endPath() throws E;
 
-    void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem );
+    void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws E;
 
-    void endPoint();
+    void endPoint() throws E;
 }
