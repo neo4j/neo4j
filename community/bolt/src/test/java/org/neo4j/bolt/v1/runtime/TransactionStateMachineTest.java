@@ -19,14 +19,18 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -36,59 +40,170 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TransactionStateMachineTest
 {
+    private TransactionStateMachineSPI stateMachineSPI;
+    private TransactionStateMachine.MutableTransactionState mutableState;
+    private TransactionStateMachine stateMachine;
+
+    @Before
+    public void createMocks()
+    {
+        stateMachineSPI = mock( TransactionStateMachineSPI.class );
+        mutableState = mock(TransactionStateMachine.MutableTransactionState.class);
+        stateMachine = new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
+    }
+
+    @Test
+    public void shouldTransitionToExplicitTransactionOnBegin() throws Exception
+    {
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
+                mutableState, stateMachineSPI, "begin", Collections.emptyMap() ),
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
+                mutableState, stateMachineSPI, "BEGIN", Collections.emptyMap() ),
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
+                mutableState, stateMachineSPI, "   begin   ", Collections.emptyMap() ),
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+        assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
+                mutableState, stateMachineSPI, "   BeGiN ;   ", Collections.emptyMap() ),
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION );
+    }
+
+    @Test
+    public void shouldTransitionToAutoCommitOnCommit() throws Exception
+    {
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "commit", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "COMMIT", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "   commit   ", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "   CoMmIt ;   ", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+    }
+
+    @Test
+    public void shouldTransitionToAutoCommitOnRollback() throws Exception
+    {
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "rollback", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "ROLLBACK", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "   rollback   ", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+        assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                mutableState, stateMachineSPI, "   RoLlBaCk ;   ", Collections.emptyMap() ),
+                TransactionStateMachine.State.AUTO_COMMIT );
+    }
+
+    @Test
+    public void shouldThrowOnBeginInExplicitTransaction() throws Exception
+    {
+        try
+        {
+            TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                    mutableState, stateMachineSPI, "begin", Collections.emptyMap() );
+        }
+        catch ( QueryExecutionKernelException ex )
+        {
+            assertEquals("Nested transactions are not supported.", ex.getMessage() );
+        }
+        try
+        {
+            TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
+                    mutableState, stateMachineSPI, " BEGIN ", Collections.emptyMap() );
+        }
+        catch ( QueryExecutionKernelException ex )
+        {
+            assertEquals("Nested transactions are not supported.", ex.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnRollbackInAutoCommit() throws Exception
+    {
+        try
+        {
+            TransactionStateMachine.State.AUTO_COMMIT.run(
+                    mutableState, stateMachineSPI, "rollback", Collections.emptyMap() );
+        }
+        catch ( QueryExecutionKernelException ex )
+        {
+            assertEquals("No current transaction to rollback.", ex.getMessage() );
+        }
+        try
+        {
+            TransactionStateMachine.State.AUTO_COMMIT.run(
+                    mutableState, stateMachineSPI, " ROLLBACK ", Collections.emptyMap() );
+        }
+        catch ( QueryExecutionKernelException ex )
+        {
+            assertEquals("No current transaction to rollback.", ex.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnCommitInAutoCommit() throws Exception
+    {
+        try
+        {
+            TransactionStateMachine.State.AUTO_COMMIT.run(
+                    mutableState, stateMachineSPI, "commit", Collections.emptyMap() );
+        }
+        catch ( QueryExecutionKernelException ex )
+        {
+            assertEquals("No current transaction to commit.", ex.getMessage() );
+        }
+        try
+        {
+            TransactionStateMachine.State.AUTO_COMMIT.run(
+                    mutableState, stateMachineSPI, " COMMIT ", Collections.emptyMap() );
+        }
+        catch ( QueryExecutionKernelException ex )
+        {
+            assertEquals("No current transaction to commit.", ex.getMessage() );
+        }
+    }
+
     @Test
     public void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
     {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
         stateMachine.run( "BEGIN", emptyMap() );
-
         verify( stateMachineSPI, never() ).awaitUpToDate( anyLong() );
     }
 
     @Test
     public void shouldAwaitSingleBookmark() throws Exception
     {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
         stateMachine.run( "BEGIN", map( "bookmark", "neo4j:bookmark:v1:tx15" ) );
-
         verify( stateMachineSPI ).awaitUpToDate( 15 );
     }
 
     @Test
     public void shouldAwaitMultipleBookmarks() throws Exception
     {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
         Map<String,Object> params = map( "bookmarks", asList(
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx9" )
         );
         stateMachine.run( "BEGIN", params );
-
         verify( stateMachineSPI ).awaitUpToDate( 92 );
     }
 
     @Test
     public void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
     {
-        TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
         Map<String,Object> params = map(
                 "bookmark", "neo4j:bookmark:v1:tx42",
                 "bookmarks", asList( "neo4j:bookmark:v1:tx47", "neo4j:bookmark:v1:tx67", "neo4j:bookmark:v1:tx45" )
         );
         stateMachine.run( "BEGIN", params );
-
         verify( stateMachineSPI ).awaitUpToDate( 67 );
-    }
-
-    private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineSPI stateMachineSPI )
-    {
-        return new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
     }
 }
