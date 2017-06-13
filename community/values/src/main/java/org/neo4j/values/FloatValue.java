@@ -61,7 +61,7 @@ final class FloatValue extends FloatingPointValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
     }

@@ -302,7 +302,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     {
                         String name =
                                 statement.readOperations().propertyKeyGetName( propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value().asPublic() );
+                        properties.put( name, propertyCursor.get().value().asObjectCopy() );
                     }
 
                     return properties;
@@ -344,7 +344,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
                 }
 
-                return value.asPublic();
+                return value.asObjectCopy();
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -366,7 +366,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
-            return value == Values.NO_VALUE ? defaultValue : value.asPublic();
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -435,7 +435,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).asPublic();
+            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {

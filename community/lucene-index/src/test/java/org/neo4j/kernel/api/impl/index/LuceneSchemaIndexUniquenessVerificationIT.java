@@ -404,7 +404,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
 
     private static Value duplicateValue( Value propertyValue )
     {
-        return Values.of( propertyValue.asPublic() );
+        return Values.of( propertyValue.asObjectCopy() );
     }
 
     private static int randomIntInRange( int min, int max )

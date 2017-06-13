@@ -399,18 +399,18 @@ public class Values
     }
 
     @Deprecated
-    public static Object asLegacyObject( Value value )
+    public static Object asObject( Value value )
     {
-        return value == null ? null : value.asLegacyObject();
+        return value == null ? null : value.asObject();
     }
 
-    public static Object[] asPublic( Value[] propertyValues )
+    public static Object[] asObjects( Value[] propertyValues )
     {
         Object[] legacy = new Object[propertyValues.length];
 
         for ( int i = 0; i < propertyValues.length; i++ )
         {
-            legacy[i] = propertyValues[i].asPublic();
+            legacy[i] = propertyValues[i].asObjectCopy();
         }
 
         return legacy;

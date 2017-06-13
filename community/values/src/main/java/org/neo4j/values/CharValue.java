@@ -73,7 +73,7 @@ final class CharValue extends TextValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
     }

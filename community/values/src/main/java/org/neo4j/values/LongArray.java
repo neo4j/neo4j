@@ -100,7 +100,7 @@ abstract class LongArray extends IntegralArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
     }
@@ -113,7 +113,7 @@ abstract class LongArray extends IntegralArray
 
     @Override
     @Deprecated
-    public Object asLegacyObject()
+    public Object asObject()
     {
         return value();
     }

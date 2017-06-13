@@ -886,7 +886,7 @@ public class StorePropertyCursorTest
         List<Object> values = new ArrayList<>();
         while ( cursor.next() )
         {
-            values.add( cursor.value().asPublic() );
+            values.add( cursor.value().asObjectCopy() );
         }
         return values;
     }

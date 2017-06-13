@@ -482,7 +482,7 @@ public class IndexPopulationJobTest
             {
                 job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
             }
-            added.add( Pair.of( update.getEntityId(), update.values()[0].asPublic() ) );
+            added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
         }
 
         @Override
@@ -497,7 +497,7 @@ public class IndexPopulationJobTest
                     {
                         case ADDED:
                         case CHANGED:
-                            added.add( Pair.of( update.getEntityId(), update.values()[0].asPublic() ) );
+                            added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
                             break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );
@@ -560,7 +560,7 @@ public class IndexPopulationJobTest
             {
                 job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
             }
-            added.put( update.getEntityId(), update.values()[0].asPublic() );
+            added.put( update.getEntityId(), update.values()[0].asObjectCopy() );
         }
 
         @Override
@@ -575,10 +575,10 @@ public class IndexPopulationJobTest
                     {
                         case ADDED:
                         case CHANGED:
-                            added.put( update.getEntityId(), update.values()[0].asPublic() );
+                            added.put( update.getEntityId(), update.values()[0].asObjectCopy() );
                             break;
                         case REMOVED:
-                            removed.put( update.getEntityId(), update.values()[0].asPublic() ); // on remove, value is the before value
+                            removed.put( update.getEntityId(), update.values()[0].asObjectCopy() ); // on remove, value is the before value
                             break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );

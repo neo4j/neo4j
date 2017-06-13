@@ -87,7 +87,7 @@ final class BooleanValue extends ScalarValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
     }

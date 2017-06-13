@@ -62,7 +62,7 @@ abstract class StringValue extends TextValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value();
     }

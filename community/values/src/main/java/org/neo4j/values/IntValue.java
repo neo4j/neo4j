@@ -43,7 +43,7 @@ final class IntValue extends IntegralValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
     }

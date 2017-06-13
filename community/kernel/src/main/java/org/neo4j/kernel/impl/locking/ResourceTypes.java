@@ -109,9 +109,9 @@ public enum ResourceTypes implements ResourceType
 
     private static String stringOf( Value value )
     {
-        if ( null != Values.NO_VALUE )
+        if ( value != null && value != Values.NO_VALUE )
         {
-            return Strings.prettyPrint( value.asLegacyObject() );
+            return Strings.prettyPrint( value.asObject() );
         }
         return "";
     }

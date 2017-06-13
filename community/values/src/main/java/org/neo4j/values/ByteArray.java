@@ -100,14 +100,14 @@ abstract class ByteArray extends IntegralArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asLegacyObject()
+    public Object asObject()
     {
         return value();
     }

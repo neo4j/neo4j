@@ -145,7 +145,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             }
             else
             {
-                engine.report().uniqueIndexNotUnique( indexRule, Values.asPublic( propertyValues ), indexedNodeId );
+                engine.report().uniqueIndexNotUnique( indexRule, Values.asObjects( propertyValues ), indexedNodeId );
             }
         }
 
@@ -157,11 +157,11 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     {
         if ( count == 0 )
         {
-            engine.report().notIndexed( indexRule, Values.asPublic( propertyValues ) );
+            engine.report().notIndexed( indexRule, Values.asObjects( propertyValues ) );
         }
         else if ( count != 1 )
         {
-            engine.report().indexedMultipleTimes( indexRule, Values.asPublic( propertyValues ), count );
+            engine.report().indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
     }
 

@@ -131,7 +131,7 @@ final class NoValue extends Value
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return null;
     }

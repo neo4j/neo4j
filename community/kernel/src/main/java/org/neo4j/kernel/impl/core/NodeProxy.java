@@ -314,7 +314,7 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).asPublic();
+            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -347,7 +347,7 @@ public class NodeProxy implements Node
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             Value value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
-            return value == Values.NO_VALUE ? defaultValue : value.asPublic();
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -420,7 +420,7 @@ public class NodeProxy implements Node
                     {
                         String name = statement.readOperations().propertyKeyGetName(
                                 propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value().asPublic() );
+                        properties.put( name, propertyCursor.get().value().asObjectCopy() );
                     }
 
                     return properties;
@@ -462,7 +462,7 @@ public class NodeProxy implements Node
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
                 }
 
-                return value.asPublic();
+                return value.asObjectCopy();
 
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )

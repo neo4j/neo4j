@@ -106,7 +106,7 @@ public class GraphPropertiesProxy implements GraphProperties
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.GRAPH, -1 );
                 }
 
-                return value.asPublic();
+                return value.asObjectCopy();
             }
             catch ( PropertyNotFoundException e )
             {
@@ -128,7 +128,7 @@ public class GraphPropertiesProxy implements GraphProperties
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             Value value = statement.readOperations().graphGetProperty( propertyKeyId );
-            return value == Values.NO_VALUE ? defaultValue : value.asPublic();
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
     }
 
@@ -165,7 +165,7 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().graphRemoveProperty( propertyKeyId ).asPublic();
+            return statement.dataWriteOperations().graphRemoveProperty( propertyKeyId ).asObjectCopy();
         }
         catch ( IllegalTokenNameException e )
         {
@@ -228,7 +228,7 @@ public class GraphPropertiesProxy implements GraphProperties
             {
                 int propertyKeyId = propertyKeys.next();
                 properties.put( readOperations.propertyKeyGetName( propertyKeyId ),
-                        readOperations.graphGetProperty( propertyKeyId ).asPublic() );
+                        readOperations.graphGetProperty( propertyKeyId ).asObjectCopy() );
             }
             return properties;
         }

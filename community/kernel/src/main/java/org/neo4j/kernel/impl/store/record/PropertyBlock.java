@@ -179,7 +179,7 @@ public class PropertyBlock implements Cloneable
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.value( this, null ).asLegacyObject();
+                Object value = type.value( this, null ).asObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );

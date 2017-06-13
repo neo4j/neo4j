@@ -84,20 +84,20 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     private static Object encode( Value value )
     {
-        Object asPublic = value.asPublic();
-        if ( asPublic instanceof Number )
+        Object asObject = value.asObject();
+        if ( asObject instanceof Number )
         {
-            asPublic = ((Number) asPublic).doubleValue();
+            asObject = ((Number) asObject).doubleValue();
         }
-        else if ( asPublic instanceof Character )
+        else if ( asObject instanceof Character )
         {
-            asPublic = asPublic.toString();
+            asObject = asObject.toString();
         }
-        else if ( asPublic.getClass().isArray() )
+        else if ( asObject.getClass().isArray() )
         {
-            asPublic = new ArrayKey( ArrayEncoder.encode( value ) );
+            asObject = new ArrayKey( ArrayEncoder.encode( value ) );
         }
-        return asPublic;
+        return asObject;
     }
 
     static class ArrayKey

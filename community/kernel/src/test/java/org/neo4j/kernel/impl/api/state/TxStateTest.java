@@ -1688,7 +1688,7 @@ public class TxStateTest
                     Value valueAfter = Values.of( entry.other() );
                     state.nodeDoAddProperty( nodeId, propertyKeyId, valueAfter );
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            ValueTuple.of( valueAfter.asPublic() ) );
+                            ValueTuple.of( valueAfter ) );
                 }
             }
         };

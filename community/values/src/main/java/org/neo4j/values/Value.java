@@ -61,7 +61,7 @@ public abstract class Value
      *
      * @return the object version of the current value
      */
-    public abstract Object asPublic();
+    public abstract Object asObjectCopy();
 
     /**
      * Return this value as a regular java boxed primitive, String or primitive array. This method does not clone
@@ -69,10 +69,9 @@ public abstract class Value
      *
      * @return the object version of the current value
      */
-    @Deprecated
-    public Object asLegacyObject()
+    public Object asObject()
     {
-        return asPublic();
+        return asObjectCopy();
     }
 
     /**

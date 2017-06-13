@@ -52,7 +52,7 @@ class PropertyContainerProxyHelper
             {
                 if ( propertyKeys[i] == propertyKeyId )
                 {
-                    properties.put( keys[i], propertyItem.value().asPublic() );
+                    properties.put( keys[i], propertyItem.value().asObjectCopy() );
                     propertiesToFind--;
                     break;
                 }

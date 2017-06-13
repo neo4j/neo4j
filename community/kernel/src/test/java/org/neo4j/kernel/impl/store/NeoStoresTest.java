@@ -987,21 +987,21 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "string1", data.value().asPublic() );
+                assertEquals( "string1", data.value().asObject() );
                 nodeAddProperty( node, prop1.propertyKeyId(), "-string1" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( 1, data.value().asPublic() );
+                assertEquals( 1, data.value().asObject() );
                 nodeAddProperty( node, prop2.propertyKeyId(), -1 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( true, data.value().asPublic() );
+                assertEquals( true, data.value().asObject() );
                 nodeAddProperty( node, prop3.propertyKeyId(), false );
             }
             else
@@ -1078,21 +1078,21 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "string2", data.value().asPublic() );
+                assertEquals( "string2", data.value().asObject() );
                 nodeAddProperty( node, prop1.propertyKeyId(), "-string2" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( 2, data.value().asPublic() );
+                assertEquals( 2, data.value().asObject() );
                 nodeAddProperty( node, prop2.propertyKeyId(), -2 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( false, data.value().asPublic() );
+                assertEquals( false, data.value().asObject() );
                 nodeAddProperty( node, prop3.propertyKeyId(), true );
             }
             else
@@ -1165,21 +1165,21 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "string1", data.value().asPublic() );
+                assertEquals( "string1", data.value().asObject() );
                 relAddProperty( rel, prop1.propertyKeyId(), "-string1" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( 1, data.value().asPublic() );
+                assertEquals( 1, data.value().asObject() );
                 relAddProperty( rel, prop2.propertyKeyId(), -1 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( true, data.value().asPublic() );
+                assertEquals( true, data.value().asObject() );
                 relAddProperty( rel, prop3.propertyKeyId(), false );
             }
             else
@@ -1227,21 +1227,21 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "string2", data.value().asPublic() );
+                assertEquals( "string2", data.value().asObject() );
                 relAddProperty( rel, prop1.propertyKeyId(), "-string2" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( 2, data.value().asPublic() );
+                assertEquals( 2, data.value().asObject() );
                 relAddProperty( rel, prop2.propertyKeyId(), -2 );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( false, data.value().asPublic() );
+                assertEquals( false, data.value().asObject() );
                 relAddProperty( rel, prop3.propertyKeyId(), true );
             }
             else
@@ -1301,19 +1301,19 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "-string1", data.value().asPublic() );
+                assertEquals( "-string1", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( -1, data.value().asPublic() );
+                assertEquals( -1, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( false, data.value().asPublic() );
+                assertEquals( false, data.value().asObject() );
                 transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId(), prop3.value() );
             }
             else
@@ -1362,19 +1362,19 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "-string2", data.value().asPublic() );
+                assertEquals( "-string2", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( -2, data.value().asPublic() );
+                assertEquals( -2, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( true, data.value().asPublic() );
+                assertEquals( true, data.value().asObject() );
                 transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId(), prop3.value() );
             }
             else
@@ -1428,19 +1428,19 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "-string1", data.value().asPublic() );
+                assertEquals( "-string1", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( -1, data.value().asPublic() );
+                assertEquals( -1, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( false, data.value().asPublic() );
+                assertEquals( false, data.value().asObject() );
                 transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId(), prop3.value() );
             }
             else
@@ -1474,19 +1474,19 @@ public class NeoStoresTest
             {
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( "-string2", data.value().asPublic() );
+                assertEquals( "-string2", data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( -2, data.value().asPublic() );
+                assertEquals( -2, data.value().asObject() );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
-                assertEquals( true, data.value().asPublic() );
+                assertEquals( true, data.value().asObject() );
                 transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId(), prop3.value() );
             }
             else

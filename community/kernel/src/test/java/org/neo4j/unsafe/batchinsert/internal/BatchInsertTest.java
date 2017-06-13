@@ -85,14 +85,11 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.format.RecordGenerators;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.traversal.AsOneStartBranchTest;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -1669,7 +1666,7 @@ public class BatchInsertTest
         Map<String,Object> asObjects = new HashMap<>();
         for ( Map.Entry<String,Value> entry : asValues.entrySet() )
         {
-            asObjects.put( entry.getKey(), entry.getValue().asPublic() );
+            asObjects.put( entry.getKey(), entry.getValue().asObjectCopy() );
         }
         return asObjects;
     }

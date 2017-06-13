@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.TextValue;
 import org.neo4j.values.Value;
-import org.neo4j.values.ValueGroup;
 import org.neo4j.values.ValueTuple;
 import org.neo4j.values.Values;
 
@@ -295,12 +294,12 @@ public abstract class IndexQuery implements Predicate<Value>
 
         public Number from()
         {
-            return (Number)from.asPublic();
+            return (Number)from.asObject();
         }
 
         public Number to()
         {
-            return (Number)to.asPublic();
+            return (Number)to.asObject();
         }
 
         public boolean fromInclusive()
@@ -368,7 +367,7 @@ public abstract class IndexQuery implements Predicate<Value>
 
         public String from()
         {
-            return (String)from.asPublic();
+            return (String)from.asObject();
         }
 
         public boolean fromInclusive()
@@ -378,7 +377,7 @@ public abstract class IndexQuery implements Predicate<Value>
 
         public String to()
         {
-            return (String)to.asPublic();
+            return (String)to.asObject();
         }
 
         public boolean toInclusive()
@@ -435,7 +434,7 @@ public abstract class IndexQuery implements Predicate<Value>
         @Override
         public boolean test( Value value )
         {
-            return value != null && Values.isTextValue( value ) && ((String)value.asPublic()).contains( contains );
+            return value != null && Values.isTextValue( value ) && ((String)value.asObject()).contains( contains );
         }
 
         public String contains()
@@ -463,7 +462,7 @@ public abstract class IndexQuery implements Predicate<Value>
         @Override
         public boolean test( Value value )
         {
-            return value != null && Values.isTextValue( value ) && ((String)value.asPublic()).endsWith( suffix );
+            return value != null && Values.isTextValue( value ) && ((String)value.asObject()).endsWith( suffix );
         }
 
         public String suffix()

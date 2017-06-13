@@ -443,7 +443,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Object previouslyCommitedValue()
         {
-            return oldValue.asPublic();
+            return oldValue.asObjectCopy();
         }
 
         @Override
@@ -453,7 +453,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 throw new IllegalStateException( "This property has been removed, it has no value anymore." );
             }
-            return newValue.asPublic();
+            return newValue.asObjectCopy();
         }
 
         @Override
@@ -498,7 +498,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Object previouslyCommitedValue()
         {
-            return oldValue.asPublic();
+            return oldValue.asObjectCopy();
         }
 
         @Override
@@ -508,7 +508,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 throw new IllegalStateException( "This property has been removed, it has no value anymore." );
             }
-            return newValue.asPublic();
+            return newValue.asObjectCopy();
         }
 
         @Override

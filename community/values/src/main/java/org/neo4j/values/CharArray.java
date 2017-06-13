@@ -83,14 +83,14 @@ abstract class CharArray extends TextArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asLegacyObject()
+    public Object asObject()
     {
         return value();
     }

@@ -227,7 +227,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator )
     {
         // TODO: use ValueWriter
-        Object asObject = value.asLegacyObject();
+        Object asObject = value.asObject();
         if ( asObject instanceof String )
         {   // Try short string first, i.e. inlined in the property block
             String string = (String) asObject;
