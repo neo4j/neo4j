@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.junit.After;
@@ -42,6 +43,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
@@ -80,11 +82,12 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
-        Factory<IndexWriterConfig> configFactory = new VerboseConfigFactory();
+        Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
         index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
                 .withWriterConfig( configFactory )
+                .withDirectoryFactory( DirectoryFactory.PERSISTENT )
                 .withIndexIdentifier( "index" )
                 .build();
 
@@ -493,14 +496,14 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         }
     }
 
-    private static class VerboseConfigFactory implements Factory<IndexWriterConfig>
+    private static class TestConfigFactory implements Factory<IndexWriterConfig>
     {
 
         @Override
         public IndexWriterConfig newInstance()
         {
             IndexWriterConfig verboseConfig = IndexWriterConfigs.standard();
-            verboseConfig.setInfoStream( System.out );
+            verboseConfig.setCodec( Codec.getDefault() );
             return verboseConfig;
         }
     }
