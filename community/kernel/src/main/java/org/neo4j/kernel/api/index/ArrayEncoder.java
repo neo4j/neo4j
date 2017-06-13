@@ -36,41 +36,6 @@ public final class ArrayEncoder
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    @Deprecated
-    public static String encode( Object array )
-    {
-        if ( !array.getClass().isArray() )
-        {
-            throw new IllegalArgumentException( "Only works with arrays" );
-        }
-
-        StringBuilder builder = new StringBuilder();
-        int length = Array.getLength( array );
-        String type = "";
-        for ( int i = 0; i < length; i++ )
-        {
-            Object o = Array.get( array, i );
-            if ( o instanceof Number )
-            {
-                type = "D";
-                builder.append( ((Number) o).doubleValue() );
-            }
-            else if ( o instanceof Boolean )
-            {
-                type = "Z";
-                builder.append( o );
-            }
-            else
-            {
-                type = "L";
-                String str = o.toString();
-                builder.append( base64Encoder.encodeToString( UTF8.encode( str ) ) );
-            }
-            builder.append( "|" );
-        }
-        return type + builder.toString();
-    }
-
     public static String encode( Value array )
     {
         if ( !Values.isArrayValue( array ) )

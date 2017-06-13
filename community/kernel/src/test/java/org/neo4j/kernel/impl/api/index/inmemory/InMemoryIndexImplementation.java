@@ -95,7 +95,7 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
         }
         else if ( asPublic.getClass().isArray() )
         {
-            asPublic = new ArrayKey( ArrayEncoder.encode( asPublic ) );
+            asPublic = new ArrayKey( ArrayEncoder.encode( value ) );
         }
         return asPublic;
     }

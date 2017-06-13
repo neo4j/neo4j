@@ -27,6 +27,7 @@ import java.util.function.Function;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +55,7 @@ public class ArrayEncoderTest
                 "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant.",
                 "Something else to trigger padding."
         };
-        String encoded = ArrayEncoder.encode( array );
+        String encoded = ArrayEncoder.encode( Values.of( array ) );
 
         int separators = 0;
         boolean padding = false;
@@ -105,24 +106,24 @@ public class ArrayEncoderTest
                 "This predetermined time is the minimum runtime of the test, since the timer starts after all threads.",
                 "The idea to use the input data as documentation for the test was just a cute thing I came up with.",
                 "Since my imagination for coming up with test data is usually poor, I figured I'd do something useful.",
-                "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."};
+                "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."
+            };
 
         raceEncode( INPUT, ArrayEncoder::encode );
-        raceEncode( INPUT, stringArray -> ArrayEncoder.encode( Values.of( stringArray ) ) );
     }
 
-    private void raceEncode( String[] INPUT, Function<String[], String> encodeFunction ) throws Throwable
+    private void raceEncode( String[] INPUT, Function<Value, String> encodeFunction ) throws Throwable
     {
         Race race = new Race();
         for ( String input : INPUT )
         {
-            final String[] inputArray = new String[] {input};
+            final Value inputValue = Values.of( new String[]{input} );
             race.addContestant( () ->
             {
-                String first = encodeFunction.apply( inputArray );
+                String first = encodeFunction.apply( inputValue );
                 for ( int i = 0; i < 1000; i++ )
                 {
-                    String encoded = encodeFunction.apply( inputArray );
+                    String encoded = encodeFunction.apply( inputValue );
                     assertEquals( "Each attempt at encoding should yield the same result. Turns out that first one was '"
                             + first + "', yet another one was '" + encoded + "'", first, encoded );
                 }
@@ -133,9 +134,6 @@ public class ArrayEncoderTest
 
     private void assertEncoding( String expected, Object toEncode )
     {
-        String objectEncoded = ArrayEncoder.encode( toEncode );
-        String valueEncoded = ArrayEncoder.encode( Values.of( toEncode ) );
-        assertEquals( expected, objectEncoded );
-        assertEquals( expected, valueEncoded );
+        assertEquals( expected, ArrayEncoder.encode( Values.of( toEncode ) ) );
     }
 }
