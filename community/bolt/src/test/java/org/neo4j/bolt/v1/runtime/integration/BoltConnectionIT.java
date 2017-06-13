@@ -632,7 +632,8 @@ public class BoltConnectionIT
         return runAndPull( machine, statement, params, SUCCESS );
     }
 
-    private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params, BoltResponseMessage expectedResponse ) throws Exception
+    private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params,
+            BoltResponseMessage expectedResponse ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         machine.run( statement, params, nullResponseHandler() );
