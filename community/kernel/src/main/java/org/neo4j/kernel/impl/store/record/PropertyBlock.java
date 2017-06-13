@@ -179,7 +179,7 @@ public class PropertyBlock implements Cloneable
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.getValueNow( this, null );
+                Object value = type.value( this, null ).asLegacyObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
@@ -247,13 +247,13 @@ public class PropertyBlock implements Cloneable
 
     public Value newPropertyValue( PropertyStore propertyStore )
     {
-        return getType().getValue( this, propertyStore );
+        return getType().valueLazy( this, propertyStore );
     }
 
     public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore )
     {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue( propertyKeyId, getType().getValue( this, propertyStore ) );
+        return new PropertyKeyValue( propertyKeyId, getType().valueLazy( this, propertyStore ) );
     }
 
     public static int keyIndexId( long valueBlock )

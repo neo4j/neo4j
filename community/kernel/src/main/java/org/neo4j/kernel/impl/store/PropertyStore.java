@@ -203,7 +203,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     public Value getValue( PropertyBlock propertyBlock )
     {
-        return propertyBlock.getType().getValueNow( propertyBlock, this );
+        return propertyBlock.getType().value( propertyBlock, this );
     }
 
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,

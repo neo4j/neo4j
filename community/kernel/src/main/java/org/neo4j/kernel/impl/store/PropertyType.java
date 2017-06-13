@@ -35,15 +35,15 @@ public enum PropertyType
     BOOL( 1 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.booleanValue( getValue( block.getSingleValueLong() ) );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
-            return getValue( block, store );
+            return valueLazy( block, store );
         }
 
         private boolean getValue( long propBlock )
@@ -54,13 +54,13 @@ public enum PropertyType
     BYTE( 2 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.byteValue( block.getSingleValueByte() );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.byteValue( block.getSingleValueByte() );
         }
@@ -68,13 +68,13 @@ public enum PropertyType
     SHORT( 3 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.shortValue( block.getSingleValueShort() );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.shortValue( block.getSingleValueShort() );
         }
@@ -82,13 +82,13 @@ public enum PropertyType
     CHAR( 4 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.charValue( (char) block.getSingleValueShort() );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.charValue( (char) block.getSingleValueShort() );
         }
@@ -96,13 +96,13 @@ public enum PropertyType
     INT( 5 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.intValue( block.getSingleValueInt() );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.intValue( block.getSingleValueInt() );
         }
@@ -110,7 +110,7 @@ public enum PropertyType
     LONG( 6 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             long firstBlock = block.getSingleValueBlock();
             long value = valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
@@ -118,9 +118,9 @@ public enum PropertyType
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
-            return getValue( block, store );
+            return valueLazy( block, store );
         }
 
         private boolean valueIsInlined( long firstBlock )
@@ -138,13 +138,13 @@ public enum PropertyType
     FLOAT( 7 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
         }
@@ -152,13 +152,13 @@ public enum PropertyType
     DOUBLE( 8 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
         }
@@ -172,13 +172,13 @@ public enum PropertyType
     STRING( 9 )
     {
         @Override
-        public Value getValue( final PropertyBlock block, final PropertyStore store )
+        public Value valueLazy( final PropertyBlock block, final PropertyStore store )
         {
             return Values.lazyStringValue( () -> store.getStringFor( block ) );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.stringValue( store.getStringFor( block ) );
         }
@@ -192,14 +192,14 @@ public enum PropertyType
     ARRAY( 10 )
     {
         @Override
-        public Value getValue( final PropertyBlock block, final PropertyStore store )
+        public Value valueLazy( final PropertyBlock block, final PropertyStore store )
         {
             // TODO: make me lazy again?
-            return getValueNow( block, store );
+            return value( block, store );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.of( store.getArrayFor( block ) );
         }
@@ -227,13 +227,13 @@ public enum PropertyType
     SHORT_STRING( 11 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             return Values.stringValue( LongerShortString.decode( block ) );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.stringValue( LongerShortString.decode( block ) );
         }
@@ -247,14 +247,14 @@ public enum PropertyType
     SHORT_ARRAY( 12 )
     {
         @Override
-        public Value getValue( PropertyBlock block, PropertyStore store )
+        public Value valueLazy( PropertyBlock block, PropertyStore store )
         {
             // TODO: Specialize per type
             return Values.of( ShortArray.decode(block) );
         }
 
         @Override
-        public Value getValueNow( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.of( ShortArray.decode( block ) );
         }
@@ -301,9 +301,9 @@ public enum PropertyType
         return (byte) type;
     }
 
-    public abstract Value getValueNow( PropertyBlock block, PropertyStore store );
+    public abstract Value value( PropertyBlock block, PropertyStore store );
 
-    public abstract Value getValue( PropertyBlock block, PropertyStore store );
+    public abstract Value valueLazy( PropertyBlock block, PropertyStore store );
 
     public static PropertyType getPropertyTypeOrNull( long propBlock )
     {

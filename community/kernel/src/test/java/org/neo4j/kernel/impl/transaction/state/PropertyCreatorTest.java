@@ -276,7 +276,7 @@ public class PropertyCreatorTest
         {
             PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
             assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().getValueNow( block, null ) );
+            assertEquals( expectedProperty.value, block.getType().value( block, null ) );
         }
     }
 

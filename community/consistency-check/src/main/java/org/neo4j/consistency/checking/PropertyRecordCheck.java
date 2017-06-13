@@ -82,7 +82,7 @@ public class PropertyRecordCheck
             default:
                 try
                 {
-                    type.getValueNow( block, null );
+                    type.value( block, null );
                 }
                 catch ( Exception e )
                 {

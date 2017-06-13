@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.values.Value;
-import org.neo4j.values.Values;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -124,6 +123,6 @@ public class PropertyPhysicalToLogicalConverter
             return null;
         }
 
-        return block.getType().getValueNow( block, propertyStore );
+        return block.getType().value( block, propertyStore );
     }
 }

@@ -129,7 +129,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             for ( PropertyBlock property : propertyRecord )
             {
-                Value value = property.getType().getValueNow( property, propertyStore );
+                Value value = property.getType().value( property, propertyStore );
                 update.added( property.getKeyIndexId(), value );
             }
         }
@@ -180,7 +180,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 int currentPropertyId = block.getKeyIndexId();
                 if ( propertyIds.contains( currentPropertyId ) )
                 {
-                    Value currentValue = block.getType().getValueNow( block, propertyStore );
+                    Value currentValue = block.getType().value( block, propertyStore );
                     sink.onProperty( currentPropertyId, currentValue );
                     propertyIds.remove( currentPropertyId );
                 }

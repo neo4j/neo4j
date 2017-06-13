@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.values.Value;
-import org.neo4j.values.Values;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -129,7 +128,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     {
         // Make sure the value is loaded, even if it's of a "heavy" kind.
         propertyStore.ensureHeavy( property );
-        return property.getType().getValueNow( property, propertyStore );
+        return property.getType().value( property, propertyStore );
     }
 
     private static boolean containsAnyLabel( int[] labelIdFilter, long[] labels )

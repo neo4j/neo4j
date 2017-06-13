@@ -24,9 +24,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -34,7 +32,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
@@ -98,7 +95,7 @@ public class PropertyReader implements PropertyAccessor
 
     public Value propertyValue( PropertyBlock block )
     {
-        return block.getType().getValue( block, propertyStore );
+        return block.getType().valueLazy( block, propertyStore );
     }
 
     @Override
