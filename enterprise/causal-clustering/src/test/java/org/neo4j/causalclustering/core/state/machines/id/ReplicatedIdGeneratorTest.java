@@ -49,6 +49,7 @@ import static java.util.Collections.min;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -88,6 +89,17 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     {
         return new ReplicatedIdGenerator( fs, file, IdType.NODE, 0, stubAcquirer(), logProvider, grabSize,
                 true, NO_REUSE );
+    }
+
+    @Test
+    public void shouldCreateIdFileForPersistence() throws Exception
+    {
+        ReplicatedIdRangeAcquirer rangeAcquirer = simpleRangeAcquirer( IdType.NODE, 0, 1024 );
+
+        ReplicatedIdGenerator idGenerator = new ReplicatedIdGenerator( fs, file, IdType.NODE, 0, rangeAcquirer, logProvider,
+                10, true, NO_REUSE );
+
+        assertTrue( fs.fileExists( file ) );
     }
 
     @Test
