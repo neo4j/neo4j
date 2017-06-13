@@ -28,7 +28,7 @@ import java.util.Set;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
 
-public class LuceneNodeLabelRange implements NodeLabelRange
+public class LuceneNodeLabelRange extends NodeLabelRange
 {
     private final int id;
     private final long[] nodeIds;
@@ -44,24 +44,8 @@ public class LuceneNodeLabelRange implements NodeLabelRange
     @Override
     public String toString()
     {
-        StringBuilder result = new StringBuilder( "NodeLabelRange[docId=" ).append( id );
-        result.append( "; {" );
-        for ( int i = 0; i < nodeIds.length; i++ )
-        {
-            if ( i != 0 )
-            {
-                result.append( ", " );
-            }
-            result.append( "Node[" ).append( nodeIds[i] ).append( "]: Labels[" );
-            String sep = "";
-            for ( long labelId : labelIds[i] )
-            {
-                result.append( sep ).append( labelId );
-                sep = ", ";
-            }
-            result.append( "]" );
-        }
-        return result.append( "}]" ).toString();
+        String prefix = "NodeLabelRange[docId=" + id;
+        return toString( prefix, nodeIds, labelIds );
     }
 
     @Override

@@ -19,11 +19,40 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
-public interface NodeLabelRange
+public abstract class NodeLabelRange
 {
-    int id();
+    public abstract int id();
 
-    long[] nodes();
+    public abstract long[] nodes();
 
-    long[] labels( long nodeId );
+    public abstract long[] labels( long nodeId );
+
+    public String toString( String prefix, long[] nodes, long[][] labels )
+    {
+        StringBuilder result = new StringBuilder( prefix );
+        result.append( "; {" );
+        for ( int i = 0; i < nodes.length; i++ )
+        {
+            if ( i != 0 )
+            {
+                result.append( ", " );
+            }
+            result.append( "Node[" ).append( nodes[i] ).append( "]: Labels[" );
+            String sep = "";
+            if ( labels[i] != null )
+            {
+                for ( long labelId : labels[i] )
+                {
+                    result.append( sep ).append( labelId );
+                    sep = ", ";
+                }
+            }
+            else
+            {
+                result.append( "null" );
+            }
+            result.append( "]" );
+        }
+        return result.append( "}]" ).toString();
+    }
 }
