@@ -112,6 +112,12 @@ abstract class DoubleArray extends FloatingPointArray
         return value();
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
     static final class Direct extends DoubleArray
     {
         final double[] value;

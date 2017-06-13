@@ -49,6 +49,12 @@ final class IntValue extends IntegralValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Integer.toString( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Int(%d)", value );

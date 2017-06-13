@@ -95,6 +95,12 @@ abstract class CharArray extends TextArray
         return value();
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
     static final class Direct extends CharArray
     {
         final char[] value;

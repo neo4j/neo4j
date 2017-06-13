@@ -67,6 +67,12 @@ final class DoubleValue extends FloatingPointValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Double.toString( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Double(%e)", value );

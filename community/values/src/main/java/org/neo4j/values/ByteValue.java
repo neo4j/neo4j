@@ -71,6 +71,12 @@ final class ByteValue extends IntegralValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Byte.toString( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Byte(%d)", value );

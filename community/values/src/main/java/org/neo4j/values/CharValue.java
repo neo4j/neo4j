@@ -79,6 +79,12 @@ final class CharValue extends TextValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return format( "'%s'", value );
+    }
+
+    @Override
     public String stringValue()
     {
         return Character.toString( value );

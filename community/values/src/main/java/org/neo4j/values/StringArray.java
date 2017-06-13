@@ -93,6 +93,12 @@ abstract class StringArray extends TextArray
         return TextValues.compareTextArrays( this, other );
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
     static final class Direct extends StringArray
     {
         final String[] value;

@@ -67,6 +67,12 @@ final class FloatValue extends FloatingPointValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Float.toString( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Float(%e)", value );

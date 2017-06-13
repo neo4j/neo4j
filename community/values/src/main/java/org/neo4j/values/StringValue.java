@@ -85,6 +85,12 @@ abstract class StringValue extends TextValue
         return value();
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return format( "'%s'", value() );
+    }
+
     static final class Direct extends StringValue
     {
         final String value;

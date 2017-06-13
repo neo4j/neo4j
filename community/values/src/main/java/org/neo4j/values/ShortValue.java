@@ -71,6 +71,12 @@ final class ShortValue extends IntegralValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Short.toString( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Short(%d)", value );

@@ -145,6 +145,12 @@ abstract class BooleanArray extends ArrayValue
         return NumberType.NO_NUMBER;
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
     static final class Direct extends BooleanArray
     {
         private final boolean[] value;

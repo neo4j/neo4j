@@ -112,6 +112,12 @@ abstract class IntArray extends IntegralArray
         return value();
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
     static final class Direct extends IntArray
     {
         final int[] value;

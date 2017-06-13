@@ -67,6 +67,12 @@ final class LongValue extends IntegralValue
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Long.toString( value );
+    }
+
+    @Override
     public String toString()
     {
         return format( "Long(%d)", value );

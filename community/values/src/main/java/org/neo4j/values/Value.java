@@ -75,6 +75,11 @@ public abstract class Value
         return asPublic();
     }
 
+    /**
+     * Returns a json-like string representation of the current value.
+     */
+    public abstract String prettyPrint();
+
     public abstract ValueGroup valueGroup();
 
     public abstract NumberType numberType();

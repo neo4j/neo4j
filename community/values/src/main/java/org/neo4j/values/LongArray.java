@@ -106,6 +106,12 @@ abstract class LongArray extends IntegralArray
     }
 
     @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
+    @Override
     @Deprecated
     public Object asLegacyObject()
     {

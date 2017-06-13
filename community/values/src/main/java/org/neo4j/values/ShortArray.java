@@ -112,6 +112,12 @@ abstract class ShortArray extends IntegralArray
         return value();
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
     static final class Direct extends ShortArray
     {
         final short[] value;

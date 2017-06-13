@@ -50,4 +50,10 @@ public class MyVirtualValue extends VirtualValue
     {
         return this;
     }
+
+    @Override
+    public String prettyPrint()
+    {
+        return null;
+    }
 }

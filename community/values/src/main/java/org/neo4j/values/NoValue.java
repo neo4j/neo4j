@@ -136,6 +136,12 @@ final class NoValue extends Value
         return null;
     }
 
+    @Override
+    public String prettyPrint()
+    {
+        return "NO_VALUE";
+    }
+
     public ValueGroup valueGroup()
     {
         return ValueGroup.NO_VALUE;
