@@ -44,7 +44,7 @@ final class PathValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof PathValue) )
+        if ( other == null || other.getClass() != PathValue.class )
         {
             return false;
         }
@@ -90,7 +90,7 @@ final class PathValue extends VirtualValue
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof PathValue) )
+        if ( other == null || other.getClass() != PathValue.class )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }

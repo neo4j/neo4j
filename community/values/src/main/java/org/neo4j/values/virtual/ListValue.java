@@ -43,7 +43,7 @@ final class ListValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof ListValue) )
+        if ( other == null || other.getClass() != ListValue.class )
         {
             return false;
         }
@@ -78,7 +78,7 @@ final class ListValue extends VirtualValue
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof ListValue) )
+        if ( other == null || other.getClass() != ListValue.class )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }

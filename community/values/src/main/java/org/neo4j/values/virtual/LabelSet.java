@@ -79,7 +79,7 @@ abstract class LabelSet extends VirtualValue
         @Override
         public boolean equals( VirtualValue other )
         {
-            if ( other == null || !(other instanceof LabelSet) )
+            if ( !(other instanceof LabelSet) )
             {
                 return false;
             }

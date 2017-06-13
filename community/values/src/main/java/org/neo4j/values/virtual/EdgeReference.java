@@ -51,7 +51,7 @@ public class EdgeReference extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof EdgeReference) )
+        if ( other == null || other.getClass() != EdgeReference.class )
         {
             return false;
         }
@@ -68,7 +68,7 @@ public class EdgeReference extends VirtualValue
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof EdgeReference) )
+        if ( other == null || other.getClass() != EdgeReference.class )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }

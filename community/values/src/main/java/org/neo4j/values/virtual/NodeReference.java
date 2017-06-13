@@ -51,7 +51,7 @@ public class NodeReference extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof NodeReference) )
+        if ( other == null || other.getClass() != NodeReference.class )
         {
             return false;
         }
@@ -68,7 +68,7 @@ public class NodeReference extends VirtualValue
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof NodeReference) )
+        if ( other == null || other.getClass() != NodeReference.class )
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
