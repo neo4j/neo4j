@@ -124,20 +124,20 @@ enum ValueEncoding
                 @Override
                 Field encodeField( String name, Value value )
                 {
-                    return stringField( name, value.asLegacyObject().toString() );
+                    return stringField( name, value.prettyPrint() );
                 }
 
                 @Override
                 void setFieldValue( Value value, Field field )
                 {
-                    field.setStringValue( value.asLegacyObject().toString() );
+                    field.setStringValue( value.prettyPrint() );
                 }
 
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
                     return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), value.asLegacyObject().toString() ) ) );
+                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
                 }
             },
     String
