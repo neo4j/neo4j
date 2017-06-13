@@ -196,9 +196,9 @@ public class BuiltInProcedures
                 .onClose( statement::close );
     }
 
-    @Description( "Get node from legacy index. Replaces `START n=node:nodes(key = 'A')`" )
-    @Procedure( name = "db.nodeLegacyIndexSeek", mode = READ )
-    public Stream<NodeResult> nodeLegacyIndexSeek( @Name( "indexName" ) String legacyIndexName,
+    @Description( "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`" )
+    @Procedure( name = "db.nodeManualIndexSeek", mode = READ )
+    public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String legacyIndexName,
             @Name( "key" ) String key,
             @Name( "value" ) Object value )
             throws ProcedureException
@@ -216,28 +216,28 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search nodes from legacy index. Replaces `START n=node:nodes('key:foo*')`" )
-    @Procedure( name = "db.nodeLegacyIndexSearch", mode = READ )
-    public Stream<NodeResult> nodeLegacyIndexSearch( @Name( "indexName" ) String legacyIndexName,
+    @Description( "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`" )
+    @Procedure( name = "db.nodeManualIndexSearch", mode = READ )
+    public Stream<NodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
             throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
-            LegacyIndexHits hits = readOperations.nodeLegacyIndexQuery( legacyIndexName, query );
+            LegacyIndexHits hits = readOperations.nodeLegacyIndexQuery( manualIndexName, query );
             return toStream( hits, ( id ) -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
-                    legacyIndexName );
+                    manualIndexName );
         }
     }
 
-    @Description( "Get relationship from legacy index. Replaces `START r=relationship:relIndex(key = 'A')`" )
-    @Procedure( name = "db.relationshipLegacyIndexSeek", mode = READ )
-    public Stream<RelationshipResult> relationshipLegacyIndexSeek( @Name( "indexName" ) String legacyIndexName,
+    @Description( "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`" )
+    @Procedure( name = "db.relationshipManualIndexSeek", mode = READ )
+    public Stream<RelationshipResult> relationshipManualIndexSeek( @Name( "indexName" ) String manualIndexName,
             @Name( "key" ) String key,
             @Name( "value" ) Object value )
             throws ProcedureException
@@ -245,32 +245,32 @@ public class BuiltInProcedures
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
-            LegacyIndexHits hits = readOperations.relationshipLegacyIndexGet( legacyIndexName, key, value, -1, -1 );
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexGet( manualIndexName, key, value, -1, -1 );
             return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
-                    legacyIndexName );
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    manualIndexName );
         }
     }
 
-    @Description( "Search relationship from legacy index. Replaces `START r=relationship:relIndex('key:foo*')`" )
-    @Procedure( name = "db.relationshipLegacyIndexSearch", mode = READ )
-    public Stream<RelationshipResult> relationshipLegacyIndexSearch( @Name( "indexName" ) String legacyIndexName,
+    @Description( "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`" )
+    @Procedure( name = "db.relationshipManualIndexSearch", mode = READ )
+    public Stream<RelationshipResult> relationshipManualIndexSearch( @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
             throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
-            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( legacyIndexName, query, -1, -1 );
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( manualIndexName, query, -1, -1 );
             return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
-                    legacyIndexName );
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    manualIndexName );
         }
     }
 

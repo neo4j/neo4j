@@ -162,24 +162,24 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "db.createRelationshipType(newRelationshipType :: STRING?) :: VOID",
                         "Create a RelationshipType"
                 } ),
-                equalTo( new Object[]{"db.nodeLegacyIndexSearch",
-                        "db.nodeLegacyIndexSearch(indexName :: STRING?, query :: ANY?) :: (node :: NODE?)",
-                        "Search nodes from legacy index. Replaces `START n=node:nodes('key:foo*')`"
+                equalTo( new Object[]{"db.nodeManualIndexSearch",
+                        "db.nodeManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (node :: NODE?)",
+                        "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`"
                 } ),
-                equalTo( new Object[]{"db.nodeLegacyIndexSeek",
-                        "db.nodeLegacyIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: " +
+                equalTo( new Object[]{"db.nodeManualIndexSeek",
+                        "db.nodeManualIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: " +
                         "NODE?)",
-                        "Get node from legacy index. Replaces `START n=node:nodes(key = 'A')`"
+                        "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`"
                 } ),
-                equalTo( new Object[]{"db.relationshipLegacyIndexSearch",
-                        "db.relationshipLegacyIndexSearch(indexName :: STRING?, query :: ANY?) :: (relationship :: " +
+                equalTo( new Object[]{"db.relationshipManualIndexSearch",
+                        "db.relationshipManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (relationship :: " +
                         "RELATIONSHIP?)",
-                        "Search relationship from legacy index. Replaces `START r=relationship:relIndex('key:foo*')`"
+                        "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`"
                 } ),
-                equalTo( new Object[]{"db.relationshipLegacyIndexSeek",
-                        "db.relationshipLegacyIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
+                equalTo( new Object[]{"db.relationshipManualIndexSeek",
+                        "db.relationshipManualIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
                         "(relationship :: RELATIONSHIP?)",
-                        "Get relationship from legacy index. Replaces `START r=relationship:relIndex(key = 'A')`"
+                        "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`"
                 } )
         ) );
     }

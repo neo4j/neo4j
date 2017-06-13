@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite}
 
-class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
+class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
   test("Node from exact key value match") {
     val node = createNode()
@@ -29,14 +29,14 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       graph.index().forNodes("index").add(node, "key", "value")
     }
 
-    val result = execute( """CALL db.nodeLegacyIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""").toList
+    val result = execute( """CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
   }
 
   test("should fail if index doesn't exist for node seek") {
     a [CypherExecutionException] should be thrownBy
-      execute("""CALL db.nodeLegacyIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""")
+      execute("""CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""")
   }
 
   test("Node from query lucene index") {
@@ -45,14 +45,14 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       graph.index().forNodes("index").add(node, "key", "value")
     }
 
-    val result = execute( """CALL db.nodeLegacyIndexSearch("index", "key:value") YIELD node as n RETURN n""").toList
+    val result = execute( """CALL db.nodeManualIndexSearch("index", "key:value") YIELD node as n RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
   }
 
   test("should fail if index doesn't exist for node search") {
     a [CypherExecutionException] should be thrownBy
-      execute("""CALL db.nodeLegacyIndexSearch('index', 'key:value') YIELD node AS n RETURN n""")
+      execute("""CALL db.nodeManualIndexSearch('index', 'key:value') YIELD node AS n RETURN n""")
   }
 
   test("legacy index + where") {
@@ -65,7 +65,7 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
     }
 
     val result = execute(
-      """CALL db.nodeLegacyIndexSearch("index", "key:value") YIELD node AS n WHERE n.prop = 42 RETURN n""").toList
+      """CALL db.nodeManualIndexSearch("index", "key:value") YIELD node AS n WHERE n.prop = 42 RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
   }
@@ -80,7 +80,7 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "CALL db.relationshipLegacyIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
+    val query = "CALL db.relationshipManualIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
     val result = execute(query)
 
     result.toList should equal(List(Map("r"-> relationship)))
@@ -88,7 +88,7 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
 
   test("should fail if index doesn't exist for relationship") {
     a [CypherExecutionException] should be thrownBy
-      execute("""CALL db.relationshipLegacyIndexSeek('index', 'key', 'value') YIELD relationship AS r RETURN r""")
+      execute("""CALL db.relationshipManualIndexSeek('index', 'key', 'value') YIELD relationship AS r RETURN r""")
   }
 
   test("Relationship legacy index search plus MATCH") {
@@ -101,7 +101,7 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "CALL db.relationshipLegacyIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]-(b) RETURN r"
+    val query = "CALL db.relationshipManualIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]-(b) RETURN r"
     val result = execute(query)
 
     result.toList should equal(List(
@@ -120,7 +120,7 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "CALL db.relationshipLegacyIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]->(b) RETURN r"
+    val query = "CALL db.relationshipManualIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]->(b) RETURN r"
     val result = execute(query)
 
     result.toList should equal(List(
@@ -139,8 +139,8 @@ class LegacyIndexProcsIT extends ExecutionEngineFunSuite {
       graph.index().forRelationships("rels").add(rel, "key", "B")
     }
 
-    val result = execute("CALL db.nodeLegacyIndexSeek('nodes', 'key', 'A') YIELD node AS n " +
-                           "CALL db.relationshipLegacyIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
+    val result = execute("CALL db.nodeManualIndexSeek('nodes', 'key', 'A') YIELD node AS n " +
+                           "CALL db.relationshipManualIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
                            "MATCH (n)-[r]->(b) RETURN b")
     result.toList should equal(List(Map("b" -> resultNode)))
   }

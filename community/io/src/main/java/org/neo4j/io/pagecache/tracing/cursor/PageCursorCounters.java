@@ -51,7 +51,7 @@ public interface PageCursorCounters
 
     /**
      * @return The sum total of bytes read in through page faults thus far.
-     *
+     */
     long bytesRead();
 
     /**

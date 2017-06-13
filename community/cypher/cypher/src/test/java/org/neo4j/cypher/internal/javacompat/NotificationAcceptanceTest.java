@@ -284,7 +284,7 @@ public class NotificationAcceptanceTest
                         "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                         containsString( "START has been deprecated and will be removed in a future version. " +
                                         "(START is deprecated, use: " +
-                                        "`CALL db.nodeLegacyIndexSeek('index', 'key', 'value') YIELD node AS n` " +
+                                        "`CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n` " +
                                         "instead." ),
                         any( InputPosition.class ),
                         SeverityLevel.WARNING ) ) );
@@ -302,7 +302,7 @@ public class NotificationAcceptanceTest
                         "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                         containsString( "START has been deprecated and will be removed in a future version. " +
                                         "(START is deprecated, use: " +
-                                        "`CALL db.nodeLegacyIndexSearch('index', 'key:value*') YIELD node AS n` " +
+                                        "`CALL db.nodeManualIndexSearch('index', 'key:value*') YIELD node AS n` " +
                                         "instead." ),
                         any( InputPosition.class ),
                         SeverityLevel.WARNING ) ) );
@@ -359,7 +359,7 @@ public class NotificationAcceptanceTest
                         "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                         containsString( "START has been deprecated and will be removed in a future version. " +
                                         "(START is deprecated, use: " +
-                                        "`CALL db.relationshipLegacyIndexSeek('index', 'key', 'value') YIELD " +
+                                        "`CALL db.relationshipManualIndexSeek('index', 'key', 'value') YIELD " +
                                         "relationship AS r` instead." ),
                         any( InputPosition.class ),
                         SeverityLevel.WARNING ) ) );
@@ -377,7 +377,7 @@ public class NotificationAcceptanceTest
                         "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                         containsString( "START has been deprecated and will be removed in a future version. " +
                                         "(START is deprecated, use: " +
-                                        "`CALL db.relationshipLegacyIndexSearch('index', 'key:value*') YIELD " +
+                                        "`CALL db.relationshipManualIndexSearch('index', 'key:value*') YIELD " +
                                         "relationship AS r` instead." ),
                         any( InputPosition.class ),
                         SeverityLevel.WARNING ) ) );
