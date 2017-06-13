@@ -35,7 +35,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.concurrent.Futures;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,7 +49,6 @@ import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertNull;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.enableRaftMessageLogging;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
@@ -66,8 +65,8 @@ public class CatchupStoreCopyInteractionStressTesting
     private static final String DEFAULT_TX_PRUNE = "50 files";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
 
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public RuleChain rules = RuleChain.outerRule( fileSystemRule ).around( pageCacheRule );
@@ -122,15 +121,12 @@ public class CatchupStoreCopyInteractionStressTesting
                 Workload.setupIndexes( cluster );
             }
 
-            Future<Throwable> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
-            Future<Throwable> startStopWorker = service.submit(
+            Future<?> workload = service.submit( new Workload( keepGoing, onFailure, cluster ) );
+            Future<?> startStopWorker = service.submit(
                     new StartStopLoad( fs, pageCache, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
-            Future<Throwable> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
+            Future<?> catchUpWorker = service.submit( new CatchUpLoad( keepGoing, onFailure, cluster ) );
 
-            long timeout = durationInMinutes + 5;
-            assertNull( Exceptions.stringify( workload.get() ), workload.get( timeout, MINUTES ) );
-            assertNull( Exceptions.stringify( startStopWorker.get() ), startStopWorker.get( timeout, MINUTES ) );
-            assertNull( Exceptions.stringify( catchUpWorker.get() ), catchUpWorker.get( timeout, MINUTES ) );
+            Futures.combine( workload, startStopWorker, catchUpWorker ).get( durationInMinutes + 5, MINUTES );
         }
         finally
         {

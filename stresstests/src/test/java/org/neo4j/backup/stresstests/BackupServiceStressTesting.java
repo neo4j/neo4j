@@ -24,20 +24,18 @@ import org.junit.Test;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.concurrent.Futures;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.ThreadTestUtils;
 
@@ -45,11 +43,9 @@ import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.DatabaseConfiguration.configureBackup;
@@ -108,23 +104,26 @@ public class BackupServiceStressTesting
             {
                 WorkLoad.setupIndexes( dbRef.get() );
             }
-            Future<Throwable> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get ) );
-            Future<Throwable> backupWorker = service.submit(
+            Future<?> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get ) );
+            Future<?> backupWorker = service.submit(
                     new BackupLoad( keepGoingSupplier, onFailure, backupHostname, backupPort, workDirectory ) );
-            Future<Throwable> startStopWorker = service.submit(
+            Future<?> startStopWorker = service.submit(
                     new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
-            long expirationTime = currentTimeMillis() + TimeUnit.MINUTES.toMillis( durationInMinutes + 5 );
-            assertSuccessfulExecution( workload, maxWaitTime( expirationTime ), expirationTime  );
-            assertSuccessfulExecution( backupWorker, maxWaitTime( expirationTime ), expirationTime );
-            assertSuccessfulExecution( startStopWorker, maxWaitTime( expirationTime ), expirationTime );
+            Futures.combine( workload, backupWorker, startStopWorker ).get(durationInMinutes + 5, MINUTES );
 
             service.shutdown();
-            if ( !service.awaitTermination( 30, TimeUnit.SECONDS ) )
+            if ( !service.awaitTermination( 30, SECONDS ) )
             {
                 ThreadTestUtils.dumpAllStackTraces();
                 fail( "Didn't manage to shut down the workers correctly, dumped threads for forensic purposes" );
             }
+        }
+        catch ( TimeoutException t )
+        {
+            System.err.println( format( "Timeout waiting task completion. Dumping all threads." ) );
+            ThreadTestUtils.dumpAllStackTraces();
+            throw t;
         }
         finally
         {
@@ -135,27 +134,5 @@ public class BackupServiceStressTesting
         // let's cleanup disk space when everything went well
         FileUtils.deleteRecursively( storeDirectory );
         FileUtils.deleteRecursively( workDirectory );
-    }
-
-    private long maxWaitTime( long expirationTime )
-    {
-        return Math.max( 0, expirationTime - currentTimeMillis() );
-    }
-
-    private void assertSuccessfulExecution( Future<Throwable> future, long timeoutMillis, long expirationTime )
-            throws InterruptedException, ExecutionException, TimeoutException
-    {
-        try
-        {
-            Throwable executionResults = future.get( timeoutMillis, MILLISECONDS );
-            assertNull( Exceptions.stringify( executionResults ), executionResults );
-        }
-        catch ( TimeoutException t )
-        {
-            System.err.println( format( "Timeout waiting task completion. Overtime %d ms. Dumping all threads.",
-                    currentTimeMillis() - expirationTime ) );
-            ThreadTestUtils.dumpAllStackTraces();
-            throw t;
-        }
     }
 }
