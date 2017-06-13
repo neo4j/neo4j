@@ -34,7 +34,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestDenseNodeRelChainPositionIT
+public class DenseNodeRelChainPositionTest
 {
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();

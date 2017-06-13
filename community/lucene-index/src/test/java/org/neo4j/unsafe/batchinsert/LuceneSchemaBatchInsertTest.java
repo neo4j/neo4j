@@ -45,7 +45,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class TestLuceneSchemaBatchInsertIT
+public class LuceneSchemaBatchInsertTest
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();

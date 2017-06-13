@@ -63,7 +63,7 @@ import static org.junit.Assert.assertTrue;
  * bit better than checking debug.log for certain entries. Another, more
  * direct, test is present in community.
  */
-public class TestPullUpdatesApplied
+public class PullUpdatesAppliedIT
 {
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     @Rule
@@ -192,7 +192,7 @@ public class TestPullUpdatesApplied
     private static int runInOtherJvmToGetExitCode( String... args ) throws Exception
     {
         List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-Djava.awt.headless=true", "-cp",
-                System.getProperty( "java.class.path" ), TestPullUpdatesApplied.class.getName() ) );
+                System.getProperty( "java.class.path" ), PullUpdatesAppliedIT.class.getName() ) );
         allArgs.addAll( Arrays.asList( args ) );
         Process p = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
         List<Thread> threads = new LinkedList<>();

@@ -71,7 +71,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.ANY_EXCEPTION;
 import static org.neo4j.test.rule.RetryACoupleOfTimesHandler.retryACoupleOfTimesOn;
 
-public class TestBranchedData
+public class BranchedDataIT
 {
     private final LifeRule life = new LifeRule( true );
     private final TestDirectory directory = TestDirectory.testDirectory();

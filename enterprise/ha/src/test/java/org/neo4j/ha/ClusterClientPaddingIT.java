@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClien
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 
-public class TestClusterClientPadding
+public class ClusterClientPaddingIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )

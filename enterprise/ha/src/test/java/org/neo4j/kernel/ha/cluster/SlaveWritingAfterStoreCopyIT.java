@@ -35,7 +35,7 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
-public class SlaveWritingAfterStoreCopyTest
+public class SlaveWritingAfterStoreCopyIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule( this.getClass() );

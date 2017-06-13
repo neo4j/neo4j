@@ -37,7 +37,7 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-public class EnterpriseInProcessServerBuilderTest
+public class EnterpriseInProcessServerBuilderIT
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();

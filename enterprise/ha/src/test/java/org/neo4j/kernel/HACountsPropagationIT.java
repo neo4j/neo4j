@@ -37,7 +37,7 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
-public class HACountsPropagationTest
+public class HACountsPropagationIT
 {
     private static final int PULL_INTERVAL = 100;
 

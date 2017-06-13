@@ -46,7 +46,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * This test case ensures that instances with the same store id but very old txids
  * will successfully join with a full version of the store.
  */
-public class TestInstanceJoin
+public class InstanceJoinIT
 {
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();

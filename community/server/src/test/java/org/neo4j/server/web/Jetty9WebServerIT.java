@@ -32,7 +32,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class TestJetty9WebServerIT extends ExclusiveServerTestBase
+public class Jetty9WebServerIT extends ExclusiveServerTestBase
 {
     @Rule
     public SuppressOutput suppressOutput = suppressAll();

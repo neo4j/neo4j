@@ -31,7 +31,7 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-public class TestClusterIndexDeletion
+public class ClusterIndexDeletionIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )

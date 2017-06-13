@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 
-public class ClusterTest
+public class ClusterIT
 {
     @Rule
     public LoggerRule logging = new LoggerRule( Level.OFF );

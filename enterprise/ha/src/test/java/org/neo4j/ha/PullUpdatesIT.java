@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
-public class TestPullUpdatesIT
+public class PullUpdatesIT
 {
     private static final int PULL_INTERVAL = 100;
     private static final int SHELL_PORT = 6370;

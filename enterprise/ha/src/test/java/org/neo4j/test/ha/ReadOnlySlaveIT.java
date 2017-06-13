@@ -27,23 +27,19 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
 import static junit.framework.TestCase.fail;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
 /**
  * This test ensures that read-only slaves cannot make any modifications.
  */
-public class ReadOnlySlaveTest
+public class ReadOnlySlaveIT
 {
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )

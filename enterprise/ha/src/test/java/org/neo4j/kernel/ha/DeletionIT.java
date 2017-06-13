@@ -51,10 +51,10 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
  *     at org.neo4j.kernel.impl.nioneo.xa.WriteTransaction.applyCommit(WriteTransaction.java:476)
  *     at org.neo4j.kernel.impl.nioneo.xa.WriteTransaction.doCommit(WriteTransaction.java:426)
  */
-public class DeletionTest
+public class DeletionIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( DeletionTest.class ).withCluster( clusterOfSize( 2 ) );
+    public ClusterRule clusterRule = new ClusterRule( DeletionIT.class ).withCluster( clusterOfSize( 2 ) );
 
     /**
      * The problem would manifest even if the transaction was performed on the Master, it would then occur when the
