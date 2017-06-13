@@ -60,7 +60,7 @@ public class SequenceLockStressIT
         UnsafeUtil.putLong( lockAddr, 0 );
     }
 
-    @RepeatRule.Repeat( times = 20 )
+    @RepeatRule.Repeat( times = 2 )
     @Test
     public void stressTest() throws Exception
     {

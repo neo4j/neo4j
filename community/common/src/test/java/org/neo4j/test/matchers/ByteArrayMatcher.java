@@ -24,6 +24,9 @@ import org.hamcrest.TypeSafeDiagnosingMatcher;
 
 public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
 {
+    private static final char[] hexadecimals =
+            {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
     public static ByteArrayMatcher byteArray( byte... expected )
     {
         return new ByteArrayMatcher( expected );
@@ -49,15 +52,16 @@ public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
     @Override
     protected boolean matchesSafely( byte[] actual, Description description )
     {
-        describe( actual, description );
         if ( actual.length != expected.length )
         {
+            describe( actual, description );
             return false;
         }
         for ( int i = 0; i < expected.length; i++ )
         {
             if ( actual[i] != expected[i] )
             {
+                describe( actual, description );
                 return false;
             }
         }
@@ -72,12 +76,20 @@ public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
 
     private void describe( byte[] bytes, Description description )
     {
-        description.appendText( "byte[] { " );
+        String prefix = "byte[] { ";
+        String suffix = "}";
+        StringBuilder sb = new StringBuilder( bytes.length * 3 + prefix.length() + suffix.length() );
+
+        sb.append( prefix );
+        //noinspection ForLoopReplaceableByForEach
         for ( int i = 0; i < bytes.length; i++ )
         {
             int b = bytes[i] & 0xFF;
-            description.appendText( String.format( "%02X ", b ) );
+            char hi = hexadecimals[b >> 4];
+            char lo = hexadecimals[b & 0x0F];
+            sb.append( hi ).append( lo ).append( ' ' );
         }
-        description.appendText( "}" );
+        sb.append( suffix );
+        description.appendText( sb.toString() );
     }
 }

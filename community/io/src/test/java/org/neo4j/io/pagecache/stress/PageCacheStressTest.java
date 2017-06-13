@@ -103,7 +103,7 @@ public class PageCacheStressTest
     public static class Builder
     {
         int numberOfPages = 10000;
-        int numberOfThreads = 8;
+        int numberOfThreads = 7;
 
         int numberOfCachePages = 1000;
         int cachePageSize = 8192;

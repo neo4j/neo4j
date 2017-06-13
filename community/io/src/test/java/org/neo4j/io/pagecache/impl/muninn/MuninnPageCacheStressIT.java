@@ -38,15 +38,14 @@ import static org.neo4j.io.pagecache.stress.Conditions.numberOfEvictions;
  */
 public class MuninnPageCacheStressIT
 {
-
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void shouldHandleTheStressOfOneMillionEvictions() throws Exception
+    public void shouldHandleTheStressOfManyManyEvictions() throws Exception
     {
         DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
-        Condition condition = numberOfEvictions( monitor, 1_000_000 );
+        Condition condition = numberOfEvictions( monitor, 100_000 );
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .withWorkingDirectory( testDirectory.directory() )
