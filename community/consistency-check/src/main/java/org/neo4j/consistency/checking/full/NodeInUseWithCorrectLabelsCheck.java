@@ -84,7 +84,7 @@ public class NodeInUseWithCorrectLabelsCheck
                 validateLabelIds( nodeRecord, storeLabels, report );
             }
         }
-        else
+        else if ( indexLabels.length != 0 )
         {
             engine.report().nodeNotInUse( nodeRecord );
         }
