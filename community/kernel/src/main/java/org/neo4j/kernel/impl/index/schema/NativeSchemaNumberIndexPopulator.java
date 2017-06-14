@@ -188,7 +188,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VA
     {
         if ( failureBytes == null )
         {
-            failureBytes = "".getBytes();
+            failureBytes = new byte[0];
         }
         tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
     }

@@ -28,7 +28,6 @@ public class NonUniqueNumberLayout extends NumberLayout
     @Override
     public long identifier()
     {
-        // todo Is Number.Value.SIZE a good checksum?
         return Layout.namedIdentifier( IDENTIFIER_NAME, NumberValue.SIZE );
     }
 

@@ -87,9 +87,6 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE ext
         }
         finally
         {
-            // Start the writer again (TODO may be unnecessary since this happens after all population is completed,
-            // however would be weird to have this sampling method close the writer and tree and keep them closed.
-            // Time will tell whether or not this could be avoided.
             try
             {
                 instantiateWriter();

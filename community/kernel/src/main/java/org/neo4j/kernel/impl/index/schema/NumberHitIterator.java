@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -39,10 +40,14 @@ public class NumberHitIterator<KEY extends NumberKey, VALUE extends NumberValue>
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
+    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted;
+    private boolean closed;
 
-    NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker )
+    NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
+            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted )
     {
         this.seeker = seeker;
+        this.toRemoveFromWhenExhausted = toRemoveFromWhenExhausted;
     }
 
     @Override
@@ -50,11 +55,29 @@ public class NumberHitIterator<KEY extends NumberKey, VALUE extends NumberValue>
     {
         try
         {
-            return seeker.next() && next( seeker.get().key().entityId );
+            if ( seeker.next() )
+            {
+                return next( seeker.get().key().entityId );
+            }
+            else
+            {
+                ensureCursorClosed();
+                return false;
+            }
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    private void ensureCursorClosed() throws IOException
+    {
+        if ( !closed )
+        {
+            seeker.close();
+            toRemoveFromWhenExhausted.remove( seeker );
+            closed = true;
         }
     }
 }

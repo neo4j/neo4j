@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
@@ -43,7 +46,7 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
     private final Layout<KEY,VALUE> layout;
     private final KEY treeKeyFrom;
     private final KEY treeKeyTo;
-    private RawCursor<Hit<KEY,VALUE>,IOException> openSeeker;
+    private Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
 
     NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
     {
@@ -51,12 +54,13 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
         this.layout = layout;
         this.treeKeyFrom = layout.newKey();
         this.treeKeyTo = layout.newKey();
+        this.openSeekers = new HashSet<>();
     }
 
     @Override
     public void close()
     {
-        ensureOpenSeekerClosed();
+        ensureOpenSeekersClosed();
     }
 
     @Override
@@ -106,7 +110,6 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
             throw new UnsupportedOperationException();
         }
 
-        ensureOpenSeekerClosed();
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
@@ -138,8 +141,9 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
     {
         try
         {
-            openSeeker = tree.seek( treeKeyFrom, treeKeyTo );
-            return new NumberHitIterator<>( openSeeker );
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
+            openSeekers.add( seeker );
+            return new NumberHitIterator<>( seeker, openSeekers );
         }
         catch ( IOException e )
         {
@@ -147,19 +151,16 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
         }
     }
 
-    private void ensureOpenSeekerClosed()
+    private void ensureOpenSeekersClosed()
     {
-        if ( openSeeker != null )
+        try
         {
-            try
-            {
-                openSeeker.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-            openSeeker = null;
+            IOUtils.closeAll( openSeekers );
+            openSeekers.clear();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 }
