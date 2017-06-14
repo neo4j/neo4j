@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.{AggregationNameGenerator, fixedPoint}
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, Rewriter, bottomUp}
 
 /**
   * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -97,6 +97,11 @@ case object isolateAggregation extends Rewriter {
 
         case e@DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>
           items.map(_.exp) :+ variable
+
+        case e: IterablePredicateExpression  if hasAggregateButIsNotAggregate(e) =>
+          val predicate: Expression = e.innerPredicate.getOrElse(throw new InternalException("Should never be empty"))
+          // Weird way of doing it to make scalac happy
+          Set(e.expression) ++ predicate.dependencies - e.variable
 
         case e if hasAggregateButIsNotAggregate(e) =>
           e.arguments
