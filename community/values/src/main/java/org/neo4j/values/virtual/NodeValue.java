@@ -54,7 +54,7 @@ public class NodeValue extends VirtualNodeValue
     @Override
     public String toString()
     {
-        return format( "(%s)", id );
+        return format( "(%d)", id );
     }
 
 }

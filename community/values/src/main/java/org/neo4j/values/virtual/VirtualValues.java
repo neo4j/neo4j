@@ -68,9 +68,9 @@ public final class VirtualValues
         return new LabelValue( id, value );
     }
 
-    public static LabelSet labels( LabelValue... labelIds )
+    public static LabelSet labels( LabelValue... labels )
     {
-        return new LabelSet.ArrayBasedLabelSet( labelIds );
+        return new LabelSet.ArrayBasedLabelSet( labels );
     }
 
     public static NodeReference node( long id )

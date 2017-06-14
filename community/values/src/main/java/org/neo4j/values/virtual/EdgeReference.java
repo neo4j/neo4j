@@ -41,7 +41,7 @@ public class EdgeReference extends VirtualEdgeValue
     @Override
     public String toString()
     {
-        return format( "-[%s]-", id );
+        return format( "-[%d]-", id );
     }
 
     @Override
