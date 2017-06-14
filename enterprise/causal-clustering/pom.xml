@@ -256,7 +256,9 @@
                 <configuration>
                     <forkCount>2C</forkCount>
                     <parallel>classes</parallel>
-                    <threadCount>4</threadCount>
+                    <!-- Misha says it is not safe to run tests with more than one thread per JVM -->
+                    <!-- He also said he'd fix that! -->
+                    <threadCount>1</threadCount>
                     <!-- slowest test class takes up to 10 minutes, so let's cater for that, with contingency -->
                     <parallelTestsTimeoutInSeconds>1200</parallelTestsTimeoutInSeconds>
                     <parallelTestsTimeoutForcedInSeconds>1800</parallelTestsTimeoutForcedInSeconds>
