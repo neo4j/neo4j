@@ -56,8 +56,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
 
     val result = expression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
 
-    val errors: Seq[SemanticError] = result.errors
-    errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
+    result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
 
   test("inner filter using missing identifier reports error") {

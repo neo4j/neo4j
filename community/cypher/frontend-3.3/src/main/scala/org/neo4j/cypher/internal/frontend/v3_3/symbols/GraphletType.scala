@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3
+package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticErrorDef, SyntaxException}
+object GraphletType {
+  val instance = new GraphletType() {
+    val parentType = CTAny
+    override val toString = "Graphlet"
+    override val toNeoTypeString = "GRAPHLET?"
 
-class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPosition]) extends ((String, InputPosition) => CypherException) {
-  override def apply(message: String, position: InputPosition): CypherException = {
-    val adjustedPosition = position.withOffset(preParserOffset)
-    new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition)
   }
 }
 
-object SyntaxExceptionCreator {
-  def throwOnError(mkException: SyntaxExceptionCreator): (Seq[SemanticErrorDef]) => Unit =
-    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw mkException(e.msg, e.position))
-}
+sealed abstract class GraphletType extends CypherType

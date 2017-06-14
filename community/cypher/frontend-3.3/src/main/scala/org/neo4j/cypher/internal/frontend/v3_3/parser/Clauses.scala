@@ -52,6 +52,10 @@ trait Clauses extends Parser
       (ast.EmitGraph(_))
   }
 
+  def ReturnGraph: Rule1[ast.ReturnGraph] = rule("RETURN GRAPH") {
+    keyword("RETURN GRAPH") ~~ optional(Expression) ~~>> (ast.ReturnGraph(_))
+  }
+
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)
@@ -67,7 +71,7 @@ trait Clauses extends Parser
 
   def Merge: Rule1[ast.Merge] = rule("MERGE") {
     group(
-      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ast.Pattern(Seq(p))) ~~ zeroOrMore(MergeAction, separator = WS)
+      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ast.Pattern(None, Seq(p))) ~~ zeroOrMore(MergeAction, separator = WS)
     ) ~~>> (ast.Merge(_, _))
   }
 
