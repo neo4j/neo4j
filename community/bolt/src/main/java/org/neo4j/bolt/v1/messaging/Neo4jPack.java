@@ -59,7 +59,7 @@ public class Neo4jPack
     public static class Packer extends PackStream.Packer
     {
         private PathPack.Packer pathPacker = new PathPack.Packer();
-        private Error error = null;
+        private Error error;
 
         public Packer( PackOutput output )
         {

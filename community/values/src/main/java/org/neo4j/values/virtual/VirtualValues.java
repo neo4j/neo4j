@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.HashMap;
+
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.TextValue;
 import org.neo4j.values.VirtualValue;
@@ -33,9 +35,6 @@ public final class VirtualValues
     {
     }
 
-    private static final int[] EMPTY_INT_ARRAY = new int[0];
-    private static final TextValue[] EMPTY_TEXT_ARRAY = new TextValue[0];
-
     // DIRECT FACTORY METHODS
 
     public static ListValue list( AnyValue... values )
@@ -45,12 +44,23 @@ public final class VirtualValues
 
     public static MapValue emptyMap()
     {
-        return new MapValue( EMPTY_INT_ARRAY, EMPTY_TEXT_ARRAY );
+        return new MapValue( new HashMap<>() );
     }
 
-    public static MapValue map( int[] keys, AnyValue[] values )
+    public static MapValue map( String[] keys, AnyValue[] values )
     {
-        return new MapValue( keys, values );
+        assert keys.length == values.length;
+        HashMap<String,AnyValue> map = new HashMap<>( keys.length );
+        for ( int i = 0; i < keys.length; i++ )
+        {
+            map.put( keys[i], values[i] );
+        }
+        return new MapValue( map );
+    }
+
+    public static MapValue map( HashMap<String,AnyValue> map )
+    {
+        return new MapValue( map );
     }
 
     public static LabelValue label( int id, TextValue value )

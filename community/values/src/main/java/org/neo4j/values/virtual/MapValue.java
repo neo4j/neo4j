@@ -19,31 +19,22 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 
-import static org.neo4j.values.virtual.ArrayHelpers.hasNullOrNoValue;
-import static org.neo4j.values.virtual.ArrayHelpers.isSortedSet;
-
 public final class MapValue extends VirtualValue
 {
-    private final int[] keys;
-    private final AnyValue[] values;
+    private final HashMap<String,AnyValue> map;
 
-    MapValue( int[] keys, AnyValue[] values )
+    MapValue( HashMap<String,AnyValue> map )
     {
-        assert keys != null;
-        assert values != null;
-        assert keys.length == values.length;
-        assert isSortedSet( keys );
-        assert !hasNullOrNoValue( values );
-
-        this.keys = keys;
-        this.values = values;
+        this.map = map;
     }
 
     @Override
@@ -54,31 +45,23 @@ public final class MapValue extends VirtualValue
             return false;
         }
         MapValue that = (MapValue) other;
-        return size() == that.size() &&
-                Arrays.equals( keys, that.keys ) &&
-                Arrays.equals( values, that.values );
+        return map.equals( that.map );
     }
 
     @Override
     public int hash()
     {
-        int result = 0;
-        for ( int i = 0; i < keys.length; i++ )
-        {
-            result += 31 * ( result + keys[i] );
-            result += 31 * ( result + values[i].hashCode() );
-        }
-        return result;
+        return map.hashCode();
     }
 
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.beginMap( keys.length );
-        for ( int i = 0; i < keys.length; i++ )
+        writer.beginMap( map.size() );
+        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
-            writer.writeKeyId( keys[i] );
-            values[i].writeTo( writer );
+            writer.writeString( entry.getKey() );
+            entry.getValue().writeTo( writer );
         }
         writer.endMap();
     }
@@ -96,65 +79,59 @@ public final class MapValue extends VirtualValue
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
-        MapValue otherMap = (MapValue) other;
-        int x = Integer.compare( this.size(), otherMap.size() );
-
-        if ( x == 0 )
+        HashMap<String,AnyValue> otherMap = ((MapValue) other).map;
+        int compare = Integer.compare( map.size(), otherMap.size() );
+        if ( compare == 0 )
         {
-            for ( int i = 0; i < keys.length; i++ )
+            Iterator<String> thisKeys = map.keySet().iterator();
+            Iterator<String> thatKeys = otherMap.keySet().iterator();
+            while ( thisKeys.hasNext() && thatKeys.hasNext() )
             {
-                x = Integer.compare( this.keys[i], otherMap.keys[i] );
-                if ( x != 0 )
+                String key1 = thisKeys.next();
+                String key2 = thatKeys.next();
+                compare = key1.compareTo( key2 );
+                if ( compare != 0 )
                 {
-                    return x;
+                    return compare;
                 }
             }
-            for ( int i = 0; i < values.length; i++ )
+
+            Iterator<AnyValue> thisValues = map.values().iterator();
+            Iterator<AnyValue> thatValues = otherMap.values().iterator();
+            while ( thisValues.hasNext() && thatValues.hasNext() )
             {
-                x = comparator.compare( this.values[i], otherMap.values[i] );
-                if ( x != 0 )
+                AnyValue value1 = thisValues.next();
+                AnyValue value2 = thatValues.next();
+                compare = comparator.compare( value1, value2 );
+                if ( compare != 0 )
                 {
-                    return x;
+                    return compare;
                 }
             }
         }
-        return x;
+        return compare;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder( "Map{" );
-        int i = 0;
-        for ( ; i < keys.length - 1; i++ )
+        String sep = "";
+        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
-            sb.append( keys[i] );
+            sb.append( sep );
+            sb.append( entry.getKey() );
             sb.append( " -> " );
-            sb.append( values[i] );
-            sb.append( ", " );
+            sb.append( entry.getValue() );
+            sep = ", ";
         }
-        if ( keys.length > 0 )
-        {
-            sb.append( keys[i] );
-            sb.append( " -> " );
-            sb.append( values[i] );
-        }
+
         sb.append( '}' );
         return sb.toString();
     }
 
     public int size()
     {
-        return keys.length;
-    }
-
-    public int propertyKeyId( int offset )
-    {
-        return keys[offset];
-    }
-
-    public AnyValue value( int offset )
-    {
-        return values[offset];
+        return map.size();
     }
 }

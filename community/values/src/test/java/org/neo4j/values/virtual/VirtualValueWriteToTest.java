@@ -45,13 +45,14 @@ import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endList;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endMap;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPath;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPoint;
+import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdge;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdgeReference;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeKeyId;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeLabel;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNode;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNodeReference;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
+import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.map;
@@ -79,12 +80,12 @@ public class VirtualValueWriteToTest
                 ),
                 shouldWrite(
                         VirtualValues.map(
-                                new int[]{1, 2},
+                                new String[]{"foo", "bar"},
                                 new AnyValue[]{intValue( 100 ), charValue( 'c' )}
                         ),
                         beginMap( 2 ),
-                        writeKeyId( 1 ), 100,
-                        writeKeyId( 2 ), 'c',
+                        "bar", 'c',
+                        "foo", 100,
                         endMap()
                 ),
                 shouldWrite(
@@ -130,21 +131,21 @@ public class VirtualValueWriteToTest
                 // map( list( map( list() ) ) )
                 shouldWrite(
                         VirtualValues.map(
-                                new int[]{5},
+                                new String[]{"foo"},
                                 new AnyValue[]{
                                         VirtualValues.list(
                                                 VirtualValues.map(
-                                                        new int[]{50},
+                                                        new String[]{"bar"},
                                                         new AnyValue[]{
                                                                 VirtualValues.list()}
                                                 )
                                         )}
                         ),
                         beginMap( 1 ),
-                        writeKeyId( 5 ),
+                        "foo",
                         beginList( 1 ),
                         beginMap( 1 ),
-                        writeKeyId( 50 ),
+                        "bar",
                         beginList( 0 ),
                         endList(),
                         endMap(),
@@ -155,12 +156,19 @@ public class VirtualValueWriteToTest
                         nodeValue( 1337L, labels(
                                 label( 1, stringValue( "L1" ) ),
                                 label( 2, stringValue( "L2" ) ) ),
-                                map( new int[]{5}, new AnyValue[]{stringValue( "foo" )} ) ),
+                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
                         writeNode( 1337L, labels(
                                 label( 1, stringValue( "L1" ) ),
                                 label( 2, stringValue( "L2" ) ) ),
-                                map( new int[]{5}, new AnyValue[]{stringValue( "foo" )} ) )
-                )
+                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) )
+                ),
+                shouldWrite(
+                        edgeValue( 1337L, 42L, 43L,
+                                stringValue( "T" ),
+                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
+                        writeEdge( 1337L, 42L, 43L,
+                                stringValue( "T" ),
+                                map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ) )
         );
     }
 

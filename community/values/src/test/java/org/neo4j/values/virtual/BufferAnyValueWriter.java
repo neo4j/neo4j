@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.BufferValueWriter;
+import org.neo4j.values.TextValue;
 
 import static java.lang.String.format;
 
@@ -37,6 +38,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         BeginLabels,
         WriteLabel,
         EndLabels,
+        WriteEdge,
         WriteEdgeReference,
         EndEdge,
         BeginMap,
@@ -129,6 +131,13 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
+    public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+            throws RuntimeException
+    {
+        buffer.add( Specials.writeEdge( edgeId, startNodeId, endNodeId, type, properties ) );
+    }
+
+    @Override
     public void beginMap( int size )
     {
         buffer.add( Specials.beginMap( size ) );
@@ -188,7 +197,14 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
 
         public static Special writeNode( long nodeId, LabelSet labels, MapValue properties )
         {
-            return new Special( SpecialKind.WriteNode, Arrays.hashCode(new Object[] {nodeId, labels, properties}));
+            return new Special( SpecialKind.WriteNode, Arrays.hashCode( new Object[]{nodeId, labels, properties} ) );
+        }
+
+        public static Special writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type,
+                MapValue properties )
+        {
+            return new Special( SpecialKind.WriteEdge,
+                    Arrays.hashCode( new Object[]{edgeId, startNodeId, endNodeId, type, properties} ) );
         }
 
         public static Special writeNodeReference( long nodeId )

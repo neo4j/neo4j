@@ -46,7 +46,7 @@ public class EdgeValue extends VirtualEdgeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writeEdgeReference( id );
+        writer.writeEdge( id, startNodeId, endNodeId, type, properties );
     }
 
     @Override

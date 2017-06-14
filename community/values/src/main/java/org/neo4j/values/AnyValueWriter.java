@@ -42,6 +42,8 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void writeEdgeReference( long edgeId ) throws E;
 
+    void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties ) throws E;
+
     void beginMap( int size ) throws E;
 
     void writeKeyId( int keyId ) throws E;
