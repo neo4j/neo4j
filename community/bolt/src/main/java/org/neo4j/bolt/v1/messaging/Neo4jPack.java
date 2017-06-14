@@ -48,8 +48,8 @@ import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
  */
 public class Neo4jPack
 {
-    public static final List<Object> EMPTY_LIST = new ArrayList<>();
-    public static final Map<String, Object> EMPTY_MAP = new HashMap<>();
+    private static final List<Object> EMPTY_LIST = new ArrayList<>();
+    private static final Map<String, Object> EMPTY_MAP = new HashMap<>();
 
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
@@ -59,7 +59,7 @@ public class Neo4jPack
     public static class Packer extends PackStream.Packer
     {
         private PathPack.Packer pathPacker = new PathPack.Packer();
-        private Optional<Error> error = Optional.empty();
+        private Error error = null;
 
         public Packer( PackOutput output )
         {
@@ -83,7 +83,7 @@ public class Neo4jPack
                 pack( (boolean) obj );
             }
             else if ( obj instanceof Byte || obj instanceof Short || obj instanceof Integer ||
-                    obj instanceof Long )
+                      obj instanceof Long )
             {
                 pack( ((Number) obj).longValue() );
             }
@@ -101,16 +101,16 @@ public class Neo4jPack
             }
             else if ( obj instanceof Map )
             {
-                Map<Object, Object> map = (Map<Object, Object>) obj;
+                Map<Object,Object> map = (Map<Object,Object>) obj;
 
                 packMapHeader( map.size() );
-                for ( Map.Entry<?, ?> entry : map.entrySet() )
+                for ( Map.Entry<?,?> entry : map.entrySet() )
                 {
                     Object key = entry.getKey();
                     if ( key == null )
                     {
-                        error = Optional.of( new Error( Status.Request.Invalid,
-                                "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
+                        error = new Error( Status.Request.Invalid,
+                                "Value `null` is not supported as key in maps, must be a non-nullable string." );
                         packNull();
                         pack( entry.getValue() );
                     }
@@ -220,15 +220,15 @@ public class Neo4jPack
             }
             else if ( obj instanceof Point )
             {
-                error = Optional.of(new Error( Status.Request.Invalid,
-                        "Point is not yet supported as a return type in Bolt" ) );
+                error = new Error( Status.Request.Invalid,
+                        "Point is not yet supported as a return type in Bolt" );
                 packNull();
 
             }
             else
             {
-                error = Optional.of(new Error( Status.Request.Invalid,
-                        "Unpackable value " + obj + " of type " + obj.getClass().getName() ));
+                error = new Error( Status.Request.Invalid,
+                        "Unpackable value " + obj + " of type " + obj.getClass().getName() );
                 packNull();
             }
         }
@@ -243,19 +243,19 @@ public class Neo4jPack
             }
         }
 
-        public void consumeError( ) throws BoltIOException
+        void consumeError() throws BoltIOException
         {
-            if ( error.isPresent() )
+            if ( error != null )
             {
-                Error e = error.get();
-                error = Optional.empty();
-                throw new BoltIOException( e.status(), e.msg() );
+                BoltIOException exception = new BoltIOException( error.status(), error.msg() );
+                error = null;
+                throw exception;
             }
         }
 
         public boolean hasErrors()
         {
-            return error.isPresent();
+            return error != null;
         }
     }
 
@@ -334,7 +334,7 @@ public class Neo4jPack
             }
         }
 
-        public List<Object> unpackList() throws IOException
+        List<Object> unpackList() throws IOException
         {
             int size = (int) unpackListHeader();
             if ( size == 0 )
@@ -447,7 +447,7 @@ public class Neo4jPack
             return map;
         }
 
-        public Optional<Neo4jError> consumeError()
+        Optional<Neo4jError> consumeError()
         {
             if ( errors.isEmpty() )
             {
