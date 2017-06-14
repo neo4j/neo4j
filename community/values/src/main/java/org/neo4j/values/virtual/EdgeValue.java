@@ -55,6 +55,16 @@ public class EdgeValue extends VirtualEdgeValue
         return format( "-[%d]-", id );
     }
 
+    public long startNode()
+    {
+        return startNodeId;
+    }
+
+    public long endNode()
+    {
+        return endNodeId;
+    }
+
     @Override
     long id()
     {

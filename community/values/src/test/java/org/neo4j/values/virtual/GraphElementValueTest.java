@@ -24,11 +24,11 @@ import org.junit.Test;
 import static org.junit.Assert.fail;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.edge;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.node;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.path;
-import static org.neo4j.values.virtual.VirtualValues.edge;
-import static org.neo4j.values.virtual.VirtualValues.node;
 
 public class GraphElementValueTest
 {
@@ -47,13 +47,13 @@ public class GraphElementValueTest
     @Test
     public void edgeShouldEqualItself()
     {
-        assertEqual( edge( 1L ), edge( 1L ) );
+        assertEqual( edge( 1L, 1L, 2L ), edge( 1L ,1L, 2L) );
     }
 
     @Test
     public void edgeShouldNotEqualOtherEdge()
     {
-        assertNotEqual( edge( 1L ), edge( 2L ) );
+        assertNotEqual( edge( 1L, 1L, 2L), edge( 2L, 1L, 2L ) );
     }
 
     @Test
@@ -61,28 +61,28 @@ public class GraphElementValueTest
     {
         assertEqual( path( node( 1L ) ), path( node( 1L ) ) );
         assertEqual(
-                path( node( 1L ), edge( 2L ), node( 3L ) ),
-                path( node( 1L ), edge( 2L ), node( 3L ) ) );
+                path( node( 1L ), edge( 2L, 1L, 3L ), node( 3L ) ),
+                path( node( 1L ), edge( 2L, 1L, 3L ), node( 3L ) ) );
 
         assertEqual(
-                path( node( 1L ), edge( 2L ), node( 2L ), edge( 3L ), node( 1L ) ),
-                path( node( 1L ), edge( 2L ), node( 2L ), edge( 3L ), node( 1L ) ) );
+                path( node( 1L ), edge( 2L, 1L, 3L ), node( 2L ), edge( 3L, 2L, 1L ), node( 1L ) ),
+                path( node( 1L ), edge( 2L, 1L, 3L ), node( 2L ), edge( 3L, 2L, 1L ), node( 1L ) ) );
     }
 
     @Test
     public void pathShouldNotEqualOtherPath()
     {
         assertNotEqual( path( node( 1L ) ), path( node( 2L ) ) );
-        assertNotEqual( path( node( 1L ) ), path( node( 1L ), edge( 1L ), node( 2L ) ) );
-        assertNotEqual( path( node( 1L ) ), path( node( 2L ), edge( 1L ), node( 1L ) ) );
+        assertNotEqual( path( node( 1L ) ), path( node( 1L ), edge( 1L, 1L, 2L ), node( 2L ) ) );
+        assertNotEqual( path( node( 1L ) ), path( node( 2L ), edge( 1L, 2L, 1L ), node( 1L ) ) );
 
         assertNotEqual(
-                path( node( 1L ), edge( 2L ), node( 3L ) ),
-                path( node( 1L ), edge( 3L ), node( 3L ) ) );
+                path( node( 1L ), edge( 2L, 1L, 3L ), node( 3L ) ),
+                path( node( 1L ), edge( 3L, 1L, 3L ), node( 3L ) ) );
 
         assertNotEqual(
-                path( node( 1L ), edge( 2L ), node( 2L ) ),
-                path( node( 1L ), edge( 2L ), node( 3L ) ) );
+                path( node( 1L ), edge( 2L, 1L, 2L ), node( 2L ) ),
+                path( node( 1L ), edge( 2L, 1L, 3L ), node( 3L ) ) );
     }
 
     @Test

@@ -46,8 +46,6 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void beginMap( int size ) throws E;
 
-    void writeKeyId( int keyId ) throws E;
-
     void endMap() throws E;
 
     void beginList( int size ) throws E;

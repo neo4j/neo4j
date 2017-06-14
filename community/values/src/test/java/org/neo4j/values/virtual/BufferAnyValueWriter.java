@@ -144,12 +144,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeKeyId( int keyId )
-    {
-        buffer.add( Specials.writeKeyId( keyId ) );
-    }
-
-    @Override
     public void endMap()
     {
         buffer.add( Specials.endMap() );

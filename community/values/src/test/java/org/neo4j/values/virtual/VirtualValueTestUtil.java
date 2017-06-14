@@ -27,6 +27,12 @@ import org.neo4j.values.VirtualValue;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.label;
+import static org.neo4j.values.virtual.VirtualValues.labels;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class VirtualValueTestUtil
@@ -43,18 +49,33 @@ public class VirtualValueTestUtil
         }
     }
 
+    public static NodeValue node( long id, String... labels )
+    {
+        LabelValue[] labelValues = new LabelValue[labels.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            labelValues[i] = label( i, stringValue( labels[i] ) );
+        }
+        return nodeValue( id, labels( labelValues ), emptyMap() );
+    }
+
     public static VirtualValue path( VirtualValue... pathElements )
     {
         assert pathElements.length % 2 == 1;
-        NodeReference[] nodes = new NodeReference[pathElements.length / 2 + 1];
-        EdgeReference[] edges = new EdgeReference[pathElements.length / 2];
-        nodes[0] = (NodeReference) pathElements[0];
+        NodeValue[] nodes = new NodeValue[pathElements.length / 2 + 1];
+        EdgeValue[] edges = new EdgeValue[pathElements.length / 2];
+        nodes[0] = (NodeValue) pathElements[0];
         for ( int i = 1; i < pathElements.length; i += 2 )
         {
-            edges[i / 2] = (EdgeReference) pathElements[i];
-            nodes[i / 2 + 1] = (NodeReference) pathElements[i + 1];
+            edges[i / 2] = (EdgeValue) pathElements[i];
+            nodes[i / 2 + 1] = (NodeValue) pathElements[i + 1];
         }
         return VirtualValues.path( nodes, edges );
+    }
+
+    public static EdgeValue edge( long id, long start, long end )
+    {
+        return edgeValue( id, start, end, stringValue( "T" ), emptyMap() );
     }
 
     public static VirtualValue list( Object... objects )
@@ -93,17 +114,17 @@ public class VirtualValueTestUtil
         assertFalse( "should not equal", b.equals( a ) );
     }
 
-    public static NodeReference[] nodes( long... ids )
+    public static NodeValue[] nodes( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( VirtualValues::node )
-                .toArray( NodeReference[]::new );
+                .mapToObj( id -> nodeValue( id, labels( label( 0, stringValue( "L" ) ) ), emptyMap() ) )
+                .toArray( NodeValue[]::new );
     }
 
-    public static EdgeReference[] edges( long... ids )
+    public static EdgeValue[] edges( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( VirtualValues::edge )
-                .toArray( EdgeReference[]::new );
+                .mapToObj( id -> edgeValue( id, 0L, 1L, stringValue( "T" ), emptyMap() ) )
+                .toArray( EdgeValue[]::new );
     }
 }

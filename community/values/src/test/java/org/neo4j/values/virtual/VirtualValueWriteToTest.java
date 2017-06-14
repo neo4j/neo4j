@@ -50,9 +50,9 @@ import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdgeRe
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeLabel;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNode;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNodeReference;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
+import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.map;
@@ -103,15 +103,25 @@ public class VirtualValueWriteToTest
                         writeNodeReference( 1L )
                 ),
                 shouldWrite(
-                        VirtualValues.edge( 2L ),
+                        edge( 2L ),
                         writeEdgeReference( 2L )
                 ),
                 shouldWrite(
-                        VirtualValues.path( nodes( 20L, 40L ), edges( 100L ) ),
+                        VirtualValues.path(
+                                new NodeValue[]{nodeValue( 20L, labels( label( 1, stringValue( "L" ))), emptyMap()),
+                                                nodeValue( 40L, labels( label( 1, stringValue( "L" ))), emptyMap())},
+                                new EdgeValue[]{edgeValue( 100L, 40L, 20L, stringValue( "T" ), emptyMap()  ) }),
                         beginPath( 1 ),
-                        writeNodeReference( 20L ),
-                        writeNodeReference( 40L ),
-                        writeEdgeReference( 100L ),
+                        beginList( 2 ),
+                        writeNode( 20L, labels( label( 1, stringValue( "L" )) ), emptyMap()),
+                        writeNode( 40L, labels( label( 1, stringValue( "L" )) ), emptyMap()),
+                        endList(),
+                        beginList( 1 ),
+                        writeEdge( 100L, 40L, 20L, stringValue( "T" ), emptyMap()  ),
+                        endList(),
+                        beginList( 2 ),
+                        -1,
+                        endList(),
                         endPath()
                 ),
                 shouldWrite(

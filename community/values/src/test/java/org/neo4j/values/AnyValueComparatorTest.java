@@ -122,17 +122,17 @@ public class AnyValueComparatorTest
 
             // Map
             map(),
-            map( 1, 'a' ),
-            map( 1, 'b' ),
-            map( 2, 'a' ),
-            map( 1, 'a', 2, 'b' ),
-            map( 1, 'b', 2, 'a' ),
-            map( 1, 'b', 2, map() ),
-            map( 1, 'b', 2, map( 10, 'a' ) ),
-            map( 1, 'b', 2, map( 10, 'b' ) ),
-            map( 1, 'b', 2, map( 20, 'a' ) ),
-            map( 1, map( 1, map( 1, 'a' ) ), 2, 'x' ),
-            map( 1, map( 1, map( 1, 'b' ) ), 2, 'x' ),
+            map( "1", 'a' ),
+            map( "1", 'b' ),
+            map( "2", 'a' ),
+            map( "1", 'a', "2", 'b' ),
+            map( "1", 'b', "2", 'a' ),
+            map( "1", 'b', "2", map() ),
+            map( "1", 'b', "2", map( "10", 'a' ) ),
+            map( "1", 'b', "2", map( "10", 'b' ) ),
+            map( "1", 'b', "2", map( "20", 'a' ) ),
+            map( "1", map( "1", map( "1", 'a' ) ), "2", 'x' ),
+            map( "1", map( "1", map( "1", 'b' ) ), "2", 'x' ),
     };
 
     @Test

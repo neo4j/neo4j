@@ -83,7 +83,7 @@ public final class VirtualValues
         return new EdgeReference( id );
     }
 
-    public static PathValue path( NodeReference[] nodes, EdgeReference[] edges )
+    public static PathValue path( NodeValue[] nodes, EdgeValue[] edges )
     {
         return new PathValue( nodes, edges );
     }
