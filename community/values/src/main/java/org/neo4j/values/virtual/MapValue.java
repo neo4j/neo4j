@@ -29,7 +29,7 @@ import org.neo4j.values.VirtualValue;
 import static org.neo4j.values.virtual.ArrayHelpers.hasNullOrNoValue;
 import static org.neo4j.values.virtual.ArrayHelpers.isSortedSet;
 
-final class MapValue extends VirtualValue
+public final class MapValue extends VirtualValue
 {
     private final int[] keys;
     private final AnyValue[] values;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Arrays;
+
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.BufferValueWriter;
 
@@ -29,6 +31,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
 
     enum SpecialKind
     {
+        WriteNode,
         WriteNodeReference,
         EndNode,
         BeginLabels,
@@ -93,6 +96,12 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     public void writeNodeReference( long nodeId )
     {
         buffer.add( Specials.writeNodeReference( nodeId ) );
+    }
+
+    @Override
+    public void writeNode( long nodeId, LabelSet labels, MapValue properties ) throws RuntimeException
+    {
+        buffer.add( Specials.writeNode( nodeId, labels, properties ) );
     }
 
     @Override
@@ -177,9 +186,14 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     public static class Specials
     {
 
+        public static Special writeNode( long nodeId, LabelSet labels, MapValue properties )
+        {
+            return new Special( SpecialKind.WriteNode, Arrays.hashCode(new Object[] {nodeId, labels, properties}));
+        }
+
         public static Special writeNodeReference( long nodeId )
         {
-            return new Special( SpecialKind.WriteNodeReference, (int)nodeId );
+            return new Special( SpecialKind.WriteNodeReference, (int) nodeId );
         }
 
         public static Special beginLabels( int numberOfLabels )
@@ -199,7 +213,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
 
         public static Special writeEdgeReference( long edgeId )
         {
-            return new Special( SpecialKind.WriteEdgeReference, (int)edgeId );
+            return new Special( SpecialKind.WriteEdgeReference, (int) edgeId );
         }
 
         public static Special beginMap( int size )

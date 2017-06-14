@@ -48,11 +48,14 @@ import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPoint;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdgeReference;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeKeyId;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeLabel;
+import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNode;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNodeReference;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
+import static org.neo4j.values.virtual.VirtualValues.map;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 @RunWith( value = Parameterized.class )
 public class VirtualValueWriteToTest
@@ -147,6 +150,16 @@ public class VirtualValueWriteToTest
                         endMap(),
                         endList(),
                         endMap()
+                ),
+                shouldWrite(
+                        nodeValue( 1337L, labels(
+                                label( 1, stringValue( "L1" ) ),
+                                label( 2, stringValue( "L2" ) ) ),
+                                map( new int[]{5}, new AnyValue[]{stringValue( "foo" )} ) ),
+                        writeNode( 1337L, labels(
+                                label( 1, stringValue( "L1" ) ),
+                                label( 2, stringValue( "L2" ) ) ),
+                                map( new int[]{5}, new AnyValue[]{stringValue( "foo" )} ) )
                 )
         );
     }

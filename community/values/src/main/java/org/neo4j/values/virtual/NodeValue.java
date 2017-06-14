@@ -21,6 +21,8 @@ package org.neo4j.values.virtual;
 
 import org.neo4j.values.AnyValueWriter;
 
+import static java.lang.String.format;
+
 public class NodeValue extends VirtualNodeValue
 {
     private final long id;
@@ -40,7 +42,7 @@ public class NodeValue extends VirtualNodeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-       writer.writeNodeReference( id );
+       writer.writeNode( id, labels, properties  );
     }
 
     @Override
@@ -48,4 +50,11 @@ public class NodeValue extends VirtualNodeValue
     {
         return id;
     }
+
+    @Override
+    public String toString()
+    {
+        return format( "(%s)", id );
+    }
+
 }

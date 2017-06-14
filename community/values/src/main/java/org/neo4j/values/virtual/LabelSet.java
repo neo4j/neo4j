@@ -29,7 +29,7 @@ import org.neo4j.values.VirtualValue;
 import static org.neo4j.values.virtual.ArrayHelpers.isSortedSet;
 import static org.neo4j.values.virtual.VirtualValueGroup.LABEL_SET;
 
-abstract class LabelSet extends VirtualValue
+public abstract class LabelSet extends VirtualValue
 {
     public abstract int size();
 
