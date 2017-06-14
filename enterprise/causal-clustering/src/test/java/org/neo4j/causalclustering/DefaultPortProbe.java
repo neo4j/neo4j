@@ -19,38 +19,11 @@
  */
 package org.neo4j.causalclustering;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-
 public class DefaultPortProbe implements PortProbe
 {
     @Override
     public boolean isOccupied( int port )
     {
-        // test binding on wildcard
-        try ( ServerSocket serverSocket = new ServerSocket() )
-        {
-            serverSocket.setReuseAddress( false );
-            serverSocket.bind( new InetSocketAddress( port ) );
-        }
-        catch ( IOException e )
-        {
-            return true;
-        }
-
-        // test binding on loopback
-        try ( ServerSocket serverSocket = new ServerSocket() )
-        {
-            serverSocket.setReuseAddress( false );
-            serverSocket.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
-        }
-        catch ( IOException e )
-        {
-            return true;
-        }
-
         return false;
     }
 }
