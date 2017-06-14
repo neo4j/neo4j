@@ -19,6 +19,7 @@
  */
 package org.neo4j.index;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -36,12 +37,16 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class ShutdownOnIndexUpdateIT
 {
+    @Rule
+    public DatabaseRule database = new ImpermanentDatabaseRule();
+
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
     private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
@@ -49,8 +54,6 @@ public class ShutdownOnIndexUpdateIT
     @Test
     public void shutdownWhileFinishingTransactionWithIndexUpdates() throws Exception
     {
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         createConstraint( database );
         waitIndexesOnline( database );
 
