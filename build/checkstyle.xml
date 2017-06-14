@@ -85,7 +85,6 @@
       <property name="option" value="space"/>
     </module>
     <module name="AvoidStarImport"/>
-    <module name="MultipleVariableDeclarations"/>
     <module name="GenericWhitespace"/>
     <module name="ExplicitInitialization"/>
     <module name="LineLength">
