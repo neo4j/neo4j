@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -153,6 +154,7 @@ public class IndexingServiceTest
     public ExpectedException expectedException = ExpectedException.none();
 
     private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
+    private final SchemaState schemaState = mock( SchemaState.class );
     private final int labelId = 7;
     private final int propertyKeyId = 15;
     private final IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propertyKeyId );
@@ -345,7 +347,7 @@ public class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
-                logProvider, IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE ) );
+                logProvider, IndexingService.NO_MONITOR, schemaState ) );
 
         when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
                 .thenReturn( ONLINE );
@@ -386,7 +388,7 @@ public class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
-                Runnables.EMPTY_RUNNABLE );
+                schemaState );
 
         when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
                 .thenReturn( ONLINE );
@@ -976,8 +978,8 @@ public class IndexingServiceTest
         }
 
         life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
-                mock( IndexStoreView.class ), mockLookup, indexes,
-                logProvider, IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE ) );
+                mock( IndexStoreView.class ), mockLookup, indexes, logProvider, IndexingService.NO_MONITOR,
+                schemaState ) );
 
         when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
 
@@ -1025,7 +1027,7 @@ public class IndexingServiceTest
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
-                logProvider, IndexingService.NO_MONITOR, Runnables.EMPTY_RUNNABLE );
+                logProvider, IndexingService.NO_MONITOR, schemaState );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
         when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
@@ -1238,7 +1240,7 @@ public class IndexingServiceTest
                         loop( iterator( rules ) ),
                         logProvider,
                         monitor,
-                        Runnables.EMPTY_RUNNABLE )
+                        schemaState )
         );
     }
 
@@ -1404,7 +1406,7 @@ public class IndexingServiceTest
         return new IndexingService( mock( IndexProxyCreator.class ), mock( SchemaIndexProviderMap.class ),
                 indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
-                mock( JobScheduler.class ), mock( Runnable.class ), mock( MultiPopulatorFactory.class ),
+                mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
                 NullLogProvider.getInstance(), IndexingService.NO_MONITOR );
     }
 }

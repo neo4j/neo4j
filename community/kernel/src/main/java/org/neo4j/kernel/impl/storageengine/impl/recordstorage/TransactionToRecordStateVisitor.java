@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -45,17 +46,17 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
     private boolean clearSchemaState;
     private final TransactionRecordState recordState;
-    private final Runnable schemaStateChangeCallback;
+    private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
     private final SchemaIndexProviderMap schemaIndexProviderMap;
 
-    public TransactionToRecordStateVisitor( TransactionRecordState recordState, Runnable schemaStateChangeCallback,
+    public TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState,
                                             SchemaStorage schemaStorage, ConstraintSemantics constraintSemantics,
                                             SchemaIndexProviderMap schemaIndexProviderMap )
     {
         this.recordState = recordState;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.schemaState = schemaState;
         this.schemaStorage = schemaStorage;
         this.constraintSemantics = constraintSemantics;
         this.schemaIndexProviderMap = schemaIndexProviderMap;
@@ -68,7 +69,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         {
             if ( clearSchemaState )
             {
-                schemaStateChangeCallback.run();
+                schemaState.clear();
             }
         }
         finally

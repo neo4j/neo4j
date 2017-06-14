@@ -22,12 +22,13 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Factory to create {@link IndexingService}
@@ -46,7 +47,7 @@ public class IndexingServiceFactory
                                           Iterable<IndexRule> indexRules,
                                           LogProvider logProvider,
                                           IndexingService.Monitor monitor,
-                                          Runnable schemaStateChangeCallback )
+                                          SchemaState schemaState )
     {
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
@@ -65,7 +66,7 @@ public class IndexingServiceFactory
                 new IndexProxyCreator( samplingConfig, storeView, providerMap, tokenNameLookup, logProvider );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
-                indexSamplingController, tokenNameLookup, scheduler, schemaStateChangeCallback,
+                indexSamplingController, tokenNameLookup, scheduler, schemaState,
                 multiPopulatorFactory, logProvider, monitor );
     }
 }
