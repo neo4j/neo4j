@@ -220,7 +220,7 @@ public class CoreClusterMember implements ClusterMember
     }
 
     @Override
-    public String settingValue(String settingName)
+    public String settingValue( String settingName )
     {
         return config.get(settingName);
     }

@@ -159,8 +159,15 @@ public class Cluster
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat,
             List<AdvertisedSocketAddress> advertisedAddresses )
     {
-        CoreClusterMember coreClusterMember =
-                createCoreClusterMember( memberId, PortAuthority.allocatePort(), DEFAULT_CLUSTER_SIZE, advertisedAddresses, recordFormat, extraParams, instanceExtraParams );
+        CoreClusterMember coreClusterMember = createCoreClusterMember(
+                memberId,
+                PortAuthority.allocatePort(),
+                DEFAULT_CLUSTER_SIZE,
+                advertisedAddresses,
+                recordFormat,
+                extraParams,
+                instanceExtraParams
+        );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
     }
@@ -183,7 +190,14 @@ public class Cluster
     private ReadReplica addReadReplica( int memberId, String recordFormat, Monitors monitors )
     {
         List<AdvertisedSocketAddress> hazelcastAddresses = extractDiscoveryListenAddresses( coreMembers );
-        ReadReplica member = createReadReplica( memberId, hazelcastAddresses, readReplicaParams, instanceReadReplicaParams, recordFormat, monitors );
+        ReadReplica member = createReadReplica(
+                memberId,
+                hazelcastAddresses,
+                readReplicaParams,
+                instanceReadReplicaParams,
+                recordFormat,
+                monitors
+        );
         readReplicas.put( memberId, member );
         return member;
     }
@@ -407,7 +421,15 @@ public class Cluster
         for ( int i = 0; i < addresses.size(); i++ )
         {
             int discoveryListenAddress = addresses.get( i ).getPort();
-            CoreClusterMember coreClusterMember = createCoreClusterMember( i, discoveryListenAddress, noOfCoreMembers, addresses, recordFormat, extraParams, instanceExtraParams );
+            CoreClusterMember coreClusterMember = createCoreClusterMember(
+                    i,
+                    discoveryListenAddress,
+                    noOfCoreMembers,
+                    addresses,
+                    recordFormat,
+                    extraParams,
+                    instanceExtraParams
+            );
             coreMembers.put( i, coreClusterMember );
         }
     }
@@ -517,7 +539,14 @@ public class Cluster
     {
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
-            ReadReplica readReplica = createReadReplica( i, coreMemberAddresses, extraParams, instanceExtraParams, recordFormat, new Monitors() );
+            ReadReplica readReplica = createReadReplica(
+                    i,
+                    coreMemberAddresses,
+                    extraParams,
+                    instanceExtraParams,
+                    recordFormat,
+                    new Monitors()
+            );
 
             readReplicas.put( i, readReplica );
         }

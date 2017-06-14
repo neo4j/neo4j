@@ -60,11 +60,14 @@ public class ClusterRuleIT
         Set<Integer> portsUsed = gatherPortsUsed( cluster );
 
         // so many for core members, so many for read replicas, all unique
-        assertThat( portsUsed.size(), is( numberOfCoreMembers * NumberOfPortsUsedByCoreMember + numberOfReadReplicas * NumberOfPortsUsedByReadReplica ) );
+        assertThat( portsUsed.size(), is(
+                numberOfCoreMembers * NumberOfPortsUsedByCoreMember +
+                        numberOfReadReplicas * NumberOfPortsUsedByReadReplica ) );
     }
 
     @Test
-    @Ignore( "ClusterRule is annoyingly singletony. the idea is to demonstrate how there is effectively a quarantine on ports, they are not handed out immediately again" )
+    @Ignore( "ClusterRule is annoyingly singletony. the idea is to demonstrate how there is effectively a quarantine on" +
+            " ports, they are not handed out immediately again" )
     public void shouldAssignNonConflictingPortsAutomatically() throws Exception
     {
         Cluster cluster1 = clusterRule.createCluster();
@@ -96,7 +99,7 @@ public class ClusterRuleIT
             portsUsed.add( getPortFromSetting( coreClusterMember, CausalClusteringSettings.raft_listen_address.name() ) );
             portsUsed.add( getPortFromSetting( coreClusterMember, OnlineBackupSettings.online_backup_server.name() ) );
             portsUsed.add( getPortFromSetting( coreClusterMember, new BoltConnector( "bolt" ).listen_address.name() ) );
-            portsUsed.add( getPortFromSetting( coreClusterMember, new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name() ) );
+            portsUsed.add( getPortFromSetting( coreClusterMember, new HttpConnector( "http" ).listen_address.name() ) );
         }
 
         for ( ReadReplica readReplica : cluster.readReplicas() )
@@ -104,7 +107,7 @@ public class ClusterRuleIT
             portsUsed.add( getPortFromSetting( readReplica, CausalClusteringSettings.transaction_listen_address.name() ) );
             portsUsed.add( getPortFromSetting( readReplica, OnlineBackupSettings.online_backup_server.name() ) );
             portsUsed.add( getPortFromSetting( readReplica, new BoltConnector( "bolt" ).listen_address.name() ) );
-            portsUsed.add( getPortFromSetting( readReplica, new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name() ) );
+            portsUsed.add( getPortFromSetting( readReplica, new HttpConnector( "http" ).listen_address.name() ) );
         }
         return portsUsed;
     }

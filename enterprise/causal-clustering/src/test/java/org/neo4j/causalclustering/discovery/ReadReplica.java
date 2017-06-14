@@ -56,7 +56,8 @@ public class ReadReplica implements ClusterMember
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
 
-    public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort, DiscoveryServiceFactory discoveryServiceFactory,
+    public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
+                        DiscoveryServiceFactory discoveryServiceFactory,
                         List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
                         Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
     {
@@ -148,7 +149,7 @@ public class ReadReplica implements ClusterMember
     }
 
     @Override
-    public String settingValue(String settingName)
+    public String settingValue( String settingName )
     {
         return config.get(settingName);
     }
