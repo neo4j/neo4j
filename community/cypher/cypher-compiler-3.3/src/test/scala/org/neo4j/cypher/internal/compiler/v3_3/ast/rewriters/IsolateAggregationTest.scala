@@ -51,6 +51,30 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "MATCH (n) WITH count(*) AS `  AGGREGATION17` RETURN `  AGGREGATION17`/60/42 AS result")
   }
 
+  test("WITH 60 as sixty, 42 as fortytwo MATCH (n) RETURN count(*)/sixty/fortytwo AS result") {
+    assertRewrite(
+      "WITH 60 as sixty, 42 as fortytwo MATCH (n) RETURN count(*)/sixty/fortytwo AS result",
+      "WITH 60 as sixty, 42 as fortytwo MATCH (n) WITH count(*) AS `  AGGREGATION50`, sixty AS `  AGGREGATION59`, fortytwo AS `  AGGREGATION65` RETURN `  AGGREGATION50`/`  AGGREGATION59`/`  AGGREGATION65` AS result")
+  }
+
+  test("WITH 1 AS node, [] AS nodes1 RETURN ANY (n IN collect(distinct node) WHERE n IN nodes1) as count") {
+    assertRewrite(
+      """WITH 1 AS node, [] AS nodes1
+        |RETURN ANY (n IN collect(distinct node) WHERE n IN nodes1) as count""".stripMargin,
+      """WITH 1 AS node, [] AS nodes1
+        |WITH collect(distinct node) AS `  AGGREGATION46`, nodes1 AS `  AGGREGATION80`
+        |RETURN ANY (n IN `  AGGREGATION46` WHERE n IN `  AGGREGATION80`) as count""".stripMargin)
+  }
+
+  test("WITH 1 AS node, [] AS nodes1 RETURN NONE(n IN collect(distinct node) WHERE n IN nodes1) as count") {
+    assertRewrite(
+      """WITH 1 AS node, [] AS nodes1
+        |RETURN NONE(n IN collect(distinct node) WHERE n IN nodes1) as count""".stripMargin,
+      """WITH 1 AS node, [] AS nodes1
+        |WITH collect(distinct node) AS `  AGGREGATION46`, nodes1 AS `  AGGREGATION80`
+        |RETURN NONE(n IN `  AGGREGATION46` WHERE n IN `  AGGREGATION80`) as count""".stripMargin)
+  }
+
   test("MATCH (n)-->() RETURN (n)-->({k: count(*)}) AS result") {
     assertRewrite(
       "MATCH (n)-->() RETURN (n)-->({k: count(*)}) AS result",
