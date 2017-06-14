@@ -22,7 +22,6 @@ package org.neo4j.causalclustering;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.causalclustering.PortConstants.EphemeralPortMinimum;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 import java.nio.file.Path;
@@ -41,7 +40,7 @@ public class PortRepositoryIT
     public void shouldReservePorts() throws Exception
     {
         Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
-        PortRepository portRepository1 = new PortRepository( directory, EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( directory );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
@@ -54,8 +53,8 @@ public class PortRepositoryIT
     public void shouldCoordinateUsingFileSystem() throws Exception
     {
         Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
-        PortRepository portRepository1 = new PortRepository( directory, EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( directory, EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( directory );
+        PortRepository portRepository2 = new PortRepository( directory );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
@@ -74,8 +73,8 @@ public class PortRepositoryIT
         Path directory1 = testDirectory.cleanDirectory( "port-repository-1" ).toPath();
         Path directory2 = testDirectory.cleanDirectory( "port-repository-2" ).toPath();
 
-        PortRepository portRepository1 = new PortRepository( directory1, EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( directory2, EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( directory1 );
+        PortRepository portRepository2 = new PortRepository( directory2 );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
@@ -85,27 +84,5 @@ public class PortRepositoryIT
         int port6 = portRepository1.reserveNextPort( "foo" );
 
         assertThat( asSet( port1, port2, port3, port4, port5, port6 ).size(), is( 4 ) );
-    }
-
-    @Test
-    @Ignore
-    public void shouldNotOverrun() throws Exception
-    {
-        Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
-        PortRepository portRepository1 = new PortRepository( directory, 65534 );
-
-        portRepository1.reserveNextPort( "foo" );
-        portRepository1.reserveNextPort( "foo" );
-
-        try
-        {
-            portRepository1.reserveNextPort( "foo" );
-
-            fail();
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage(), is( "There are no more ephemeral/ dynamic ports available" ) );
-        }
     }
 }
