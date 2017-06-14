@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -72,6 +73,8 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -91,10 +94,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -411,22 +410,15 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldStartNewTransactionAfterGuardMarkedAsShutdown() throws Throwable
+    public void exceptionWhenStartingNewTransactionOnShutdownInstance() throws Throwable
     {
-        // This is because the first thing thast happens when shutting down is that AvailabilityGuard gets
-        // marked as shut down. After that, transactions that just made it passed some layers in db.beginTx()
-        // or similar will have time to complete (other parts of shutdown will take care of that).
-
         KernelTransactions kernelTransactions = newKernelTransactions();
         SecurityContext securityContext = mock( SecurityContext.class );
 
         availabilityGuard.shutdown();
 
-        try ( KernelTransaction transaction =
-                kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L ) )
-        {
-            assertNotNull( transaction );
-        }
+        expectedException.expect( DatabaseShutdownException.class );
+        kernelTransactions.newInstance( KernelTransaction.Type.explicit, securityContext, 0L );
     }
 
     @Test

@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -43,8 +45,8 @@ import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
+import static org.hamcrest.core.Is.isA;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 
 /**
@@ -65,6 +67,8 @@ public class TransactionCompletionAndShutdownRaceIT
     public final OtherThreadRule<Void> transactor = new OtherThreadRule<>( "Transactor" );
     @Rule
     public final OtherThreadRule<Void> shutter = new OtherThreadRule<>( "Shutter" );
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void shouldAlwaysAwaitTransactionCompletionBeforeShuttingDown() throws Exception
@@ -81,7 +85,7 @@ public class TransactionCompletionAndShutdownRaceIT
             barrierInstalled.set( true );
 
             // WHEN
-            Future<Object> transactionFuture = transactor.execute( state -> doTransaction( db ) );
+            Future<Object> transactionFuture = transactor.execute( state -> doTransaction( db, barrier ) );
             Future<Object> shutterFuture = shutter.execute( state -> doShutdown( db, barrier ) );
 
             // THEN
@@ -141,10 +145,6 @@ public class TransactionCompletionAndShutdownRaceIT
                                     public void await( long millis ) throws UnavailableException
                                     {
                                         super.await( millis );
-                                        if ( barrierInstaller.get() )
-                                        {
-                                            barrier.reached();
-                                        }
                                     }
                                 };
                             }
@@ -160,6 +160,94 @@ public class TransactionCompletionAndShutdownRaceIT
         barrier.awaitUninterruptibly();
         db.shutdown();
         return null;
+    }
+
+    private Object doTransaction( GraphDatabaseService db, Barrier.Control barrier )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            barrier.reached();
+            db.createNode();
+            tx.success();
+        }
+        return null;
+    }
+
+    @Test
+    public void shouldNotStartTransactoinOnDatabaseThatIsKnownToBeShuttingDown() throws Exception
+    {
+        // GIVEN
+        Barrier.Control barrier = new Barrier.Control();
+        AtomicBoolean barrierInstalled = new AtomicBoolean();
+        File storeDir = directory.absolutePath();
+        TestGraphDatabaseFactory dbFactory = dbFactoryWithBarrierControlledTransactionStats2( barrier,
+                barrierInstalled );
+
+        {
+            GraphDatabaseService db = dbFactory.newImpermanentDatabase( storeDir );
+            barrierInstalled.set( true );
+
+            // WHEN
+            Future<Object> transactionFuture = transactor.execute( state -> doTransaction( db ) );
+            Future<Object> shutterFuture = shutter.execute( state -> doShutdown( db, barrier ) );
+
+            // THEN
+            shutterFuture.get();
+            expectedException.expectCause( isA( DatabaseShutdownException.class ) );
+            transactionFuture.get();
+            barrierInstalled.set( false );
+        }
+    }
+
+    private TestGraphDatabaseFactory dbFactoryWithBarrierControlledTransactionStats2( Barrier.Control barrier,
+            AtomicBoolean barrierInstaller )
+    {
+        return new TestGraphDatabaseFactory()
+        {
+            @Override
+            protected GraphDatabaseFacadeFactory newTestGraphDatabaseFacadeFactory( File storeDir, Config config,
+                    TestGraphDatabaseFactoryState state )
+            {
+                return new TestGraphDatabaseFacadeFactory( state, true )
+                {
+                    @Override
+                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                            GraphDatabaseFacade graphDatabaseFacade )
+                    {
+                        return new TestGraphDatabaseFacadeFactory.TestDatabasePlatformModule( storeDir, config,
+                                databaseInfo, dependencies, graphDatabaseFacade )
+                        {
+                            @Override
+                            protected AvailabilityGuard createAvailabilityGuard()
+                            {
+                                return new AvailabilityGuard( clock, NullLog.getInstance() )
+                                {
+                                    @Override
+                                    public void require( AvailabilityRequirement requirement )
+                                    {
+                                        super.require( requirement );
+                                        if ( barrierInstaller.get() )
+                                        {
+                                            barrier.release();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void await( long millis ) throws UnavailableException
+                                    {
+                                        super.await( millis );
+                                        if ( barrierInstaller.get() )
+                                        {
+                                            barrier.reached();
+                                        }
+                                    }
+                                };
+                            }
+                        };
+                    }
+                };
+            }
+        };
     }
 
     private Object doTransaction( GraphDatabaseService db )

@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -300,6 +301,10 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
 
     private void assertRunning()
     {
+        if ( availabilityGuard.isShutdown() )
+        {
+            throw new DatabaseShutdownException();
+        }
         if ( stopped )
         {
             throw new IllegalStateException( "Can't start new transaction with stopped " + getClass() );
