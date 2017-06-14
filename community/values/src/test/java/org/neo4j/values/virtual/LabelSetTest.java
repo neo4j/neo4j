@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.values.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
 
 public class LabelSetTest
@@ -30,21 +32,21 @@ public class LabelSetTest
     @Test
     public void shouldEqualItself()
     {
-        VirtualValueTestUtil.assertEqual( labels(), labels() );
-        VirtualValueTestUtil.assertEqual( labels( 1 ), labels( 1 ) );
-        VirtualValueTestUtil.assertEqual( labels( 1, 2 ), labels( 1, 2 ) );
-        VirtualValueTestUtil.assertEqual( labels( 4, 5, 12, 13, 100 ), labels( 4, 5, 12, 13, 100 ) );
+        VirtualValueTestUtil.assertEqual( labelSet(), labelSet() );
+        VirtualValueTestUtil.assertEqual( labelSet( 1 ), labelSet( 1 ) );
+        VirtualValueTestUtil.assertEqual( labelSet( 1, 2 ), labelSet( 1, 2 ) );
+        VirtualValueTestUtil.assertEqual( labelSet( 4, 5, 12, 13, 100 ), labelSet( 4, 5, 12, 13, 100 ) );
     }
 
     @Test
     public void shouldNotEqual()
     {
-        VirtualValueTestUtil.assertNotEqual( labels(), labels( 1 ) );
-        VirtualValueTestUtil.assertNotEqual( labels( 1 ), labels( 2 ) );
-        VirtualValueTestUtil.assertNotEqual( labels( 1 ), labels( 1, 2 ) );
-        VirtualValueTestUtil.assertNotEqual( labels(), labels( 1, 2 ) );
-        VirtualValueTestUtil.assertNotEqual( labels( 1, 2 ), labels( 3, 4 ) );
-        VirtualValueTestUtil.assertNotEqual( labels( 1, 2 ), labels( 1, 3 ) );
+        VirtualValueTestUtil.assertNotEqual( labelSet(), labelSet( 1 ) );
+        VirtualValueTestUtil.assertNotEqual( labelSet( 1 ), labelSet( 2 ) );
+        VirtualValueTestUtil.assertNotEqual( labelSet( 1 ), labelSet( 1, 2 ) );
+        VirtualValueTestUtil.assertNotEqual( labelSet(), labelSet( 1, 2 ) );
+        VirtualValueTestUtil.assertNotEqual( labelSet( 1, 2 ), labelSet( 3, 4 ) );
+        VirtualValueTestUtil.assertNotEqual( labelSet( 1, 2 ), labelSet( 1, 3 ) );
     }
 
     @Test
@@ -52,8 +54,8 @@ public class LabelSetTest
     {
         try
         {
-            labels( 2, 1 );
-            fail( "should throw on nonsorted input");
+            labels( label( 2, stringValue( "M" ) ), label( 1, stringValue( "L" ) ) );
+            fail( "should throw on nonsorted input" );
         }
         catch ( Throwable t )
         {
@@ -66,12 +68,22 @@ public class LabelSetTest
     {
         try
         {
-            labels( 1, 1 );
-            fail( "should throw on nonunique input");
+            labels( label( 1, stringValue( "L" ) ), label( 1, stringValue( "L" ) ) );
+            fail( "should throw on nonunique input" );
         }
         catch ( Throwable t )
         {
             assertEquals( t.getClass(), AssertionError.class );
         }
+    }
+
+    private LabelSet labelSet( int... ids )
+    {
+        LabelValue[] labelValues = new LabelValue[ids.length];
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            labelValues[i] = label( ids[i], stringValue( Integer.toString( ids[i] ) ) );
+        }
+        return labels( labelValues );
     }
 }

@@ -19,19 +19,15 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Comparator;
-
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.VirtualValue;
 
-public class NodeValue extends VirtualValue
+public class NodeValue extends VirtualNodeValue
 {
     private final long id;
     private final LabelSet labels;
     private final MapValue properties;
 
-    public NodeValue( long id, LabelSet labels, MapValue properties )
+    NodeValue( long id, LabelSet labels, MapValue properties )
     {
         assert labels != null;
         assert properties != null;
@@ -48,36 +44,8 @@ public class NodeValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    long id()
     {
-        return Long.hashCode( id ) + 31 * ( labels.hashCode() + 31 * properties.hashCode() );
-    }
-
-    @Override
-    public boolean equals( VirtualValue other )
-    {
-        if ( other == null || !(other instanceof NodeValue) )
-        {
-            return false;
-        }
-        NodeValue that = (NodeValue) other;
-        return id == that.id && labels.equals( that.labels ) && properties.equals( that.properties );
-    }
-
-    @Override
-    public VirtualValueGroup valueGroup()
-    {
-        return VirtualValueGroup.NODE;
-    }
-
-    @Override
-    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
-        if ( !(other instanceof  NodeValue ) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different virtual values" );
-        }
-        NodeValue otherNode = (NodeValue) other;
-        return Long.compare( id, otherNode.id );
+        return id;
     }
 }

@@ -20,7 +20,9 @@
 package org.neo4j.values.virtual;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValues;
 import org.neo4j.values.Values;
+import org.neo4j.values.VirtualValue;
 
 /**
  * This class is way too similar to org.neo4j.collection.primitive.PrimitiveArrays.
@@ -38,6 +40,18 @@ final class ArrayHelpers
         for ( int i = 0; i < keys.length - 1; i++ )
         {
             if ( keys[i] >= keys[i + 1] )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static boolean isSortedSet( VirtualValue[] keys )
+    {
+        for ( int i = 0; i < keys.length - 1; i++ )
+        {
+            if ( AnyValues.COMPARATOR.compare( keys[i], keys[i + 1] ) >= 0 )
             {
                 return false;
             }

@@ -19,15 +19,11 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Comparator;
-
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.VirtualValue;
 
 import static java.lang.String.format;
 
-public class EdgeReference extends VirtualValue
+public class EdgeReference extends VirtualEdgeValue
 {
     private final long id;
 
@@ -43,43 +39,14 @@ public class EdgeReference extends VirtualValue
     }
 
     @Override
-    public int hash()
-    {
-        return Long.hashCode( id );
-    }
-
-    @Override
-    public boolean equals( VirtualValue other )
-    {
-        if ( other == null || other.getClass() != EdgeReference.class )
-        {
-            return false;
-        }
-        EdgeReference that = (EdgeReference) other;
-        return id == that.id;
-    }
-
-    @Override
-    public VirtualValueGroup valueGroup()
-    {
-        return VirtualValueGroup.EDGE;
-    }
-
-    @Override
-    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
-        if ( other == null || other.getClass() != EdgeReference.class )
-        {
-            throw new IllegalArgumentException( "Cannot compare different virtual values" );
-        }
-
-        EdgeReference otherEdge = (EdgeReference) other;
-        return Long.compare( id, otherEdge.id );
-    }
-
-    @Override
     public String toString()
     {
         return format( "-[%s]-", id );
+    }
+
+    @Override
+    long id()
+    {
+        return id;
     }
 }

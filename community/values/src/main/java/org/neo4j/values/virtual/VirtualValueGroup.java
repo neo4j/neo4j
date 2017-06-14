@@ -29,6 +29,7 @@ public enum VirtualValueGroup
     NODE,
     EDGE,
     PATH,
+    LABEL,
     LABEL_SET,
     POINT,
     LIST,

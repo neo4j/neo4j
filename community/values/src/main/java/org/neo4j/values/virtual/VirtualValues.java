@@ -20,6 +20,8 @@
 package org.neo4j.values.virtual;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.TextValue;
+import org.neo4j.values.VirtualValue;
 
 /**
  * Entry point to the virtual values library.
@@ -31,6 +33,9 @@ public final class VirtualValues
     {
     }
 
+    private static final int[] EMPTY_INT_ARRAY = new int[0];
+    private static final TextValue[] EMPTY_TEXT_ARRAY = new TextValue[0];
+
     // DIRECT FACTORY METHODS
 
     public static ListValue list( AnyValue... values )
@@ -38,12 +43,22 @@ public final class VirtualValues
         return new ListValue( values );
     }
 
+    public static MapValue emptyMap()
+    {
+        return new MapValue( EMPTY_INT_ARRAY, EMPTY_TEXT_ARRAY );
+    }
+
     public static MapValue map( int[] keys, AnyValue[] values )
     {
         return new MapValue( keys, values );
     }
 
-    public static LabelSet labels( int... labelIds )
+    public static LabelValue label( int id, TextValue value )
+    {
+        return new LabelValue( id, value );
+    }
+
+    public static LabelSet labels( LabelValue... labelIds )
     {
         return new LabelSet.ArrayBasedLabelSet( labelIds );
     }
@@ -71,5 +86,15 @@ public final class VirtualValues
     public static VirtualValue pointGeographic( double latitude, double longitude )
     {
         return new PointValue.GeographicPointValue( latitude, longitude );
+    }
+
+    public static NodeValue nodeValue( long id, LabelSet labels, MapValue properties )
+    {
+        return new NodeValue( id, labels, properties );
+    }
+
+    public static EdgeValue edgeValue( long id, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    {
+        return new EdgeValue( id, startNodeId, endNodeId, type, properties );
     }
 }

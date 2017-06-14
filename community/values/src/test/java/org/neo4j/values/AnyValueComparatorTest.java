@@ -31,13 +31,18 @@ import java.util.stream.Collectors;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.values.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValues.edge;
+import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.emptyMap;
+import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.node;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
 import static org.neo4j.values.virtual.VirtualValues.pointCartesian;
 import static org.neo4j.values.virtual.VirtualValues.pointGeographic;
@@ -63,11 +68,13 @@ public class AnyValueComparatorTest
 
             // Node
             node( 1L ),
-            node( 2L ),
+            nodeValue( 2L, labels( label( 1, stringValue( "L" ) ) ), emptyMap() ),
+            node( 3L ),
 
             // Edge
             edge( 1L ),
-            edge( 2L ),
+            edgeValue( 2L, 1L, 2L, stringValue( "type" ), emptyMap() ),
+            edge( 3L ),
 
             // Path
             path( nodes( 1L ), edges() ),
@@ -84,11 +91,11 @@ public class AnyValueComparatorTest
 
             // LabelSet
             labels(),
-            labels( 1 ),
-            labels( 2 ),
-            labels( 1, 2 ),
-            labels( 1, 2, 4 ),
-            labels( 1, 3, 4 ),
+            labels( label( 1, stringValue( "L" ) ) ),
+            labels( label( 2, stringValue( "L" ) ) ),
+            labels( label( 1, stringValue( "L" ) ), label( 2, stringValue( "M" ) ) ),
+            labels( label( 1, stringValue( "L" ) ), label( 2, stringValue( "M" ) ), label( 4, stringValue( "N" ) ) ),
+            labels( label( 1, stringValue( "L" ) ), label( 3, stringValue( "M" ) ), label( 4, stringValue( "N" ) ) ),
 
             // Point
             pointCartesian( -1.0, -1.0 ),
@@ -124,9 +131,8 @@ public class AnyValueComparatorTest
             map( 1, 'b', 2, map( 10, 'a' ) ),
             map( 1, 'b', 2, map( 10, 'b' ) ),
             map( 1, 'b', 2, map( 20, 'a' ) ),
-            map( 1, map( 1, map( 1, 'a') ), 2, 'x' ),
-            map( 1, map( 1, map( 1, 'b') ), 2, 'x' ),
-
+            map( 1, map( 1, map( 1, 'a' ) ), 2, 'x' ),
+            map( 1, map( 1, map( 1, 'b' ) ), 2, 'x' ),
     };
 
     @Test
@@ -150,8 +156,9 @@ public class AnyValueComparatorTest
                 if ( cmpPos != cmpVal )
                 {
                     throw new AssertionError( format(
-                           "Comparing %s against %s does not agree with their positions in the sorted list (%d and %d)",
-                           left, right, i, j
+                            "Comparing %s against %s does not agree with their positions in the sorted list (%d and " +
+                            "%d)",
+                            left, right, i, j
                     ) );
                 }
             }

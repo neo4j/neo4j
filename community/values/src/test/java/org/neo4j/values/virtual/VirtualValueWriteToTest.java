@@ -26,7 +26,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.Values;
 
 import static org.neo4j.values.BufferValueWriter.Specials.beginArray;
 import static org.neo4j.values.BufferValueWriter.Specials.endArray;
@@ -42,16 +41,18 @@ import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginMap;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginPath;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginPoint;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endLabels;
+import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endList;
+import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endMap;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPath;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPoint;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdgeReference;
+import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeKeyId;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeLabel;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNodeReference;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endList;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endMap;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeKeyId;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
+import static org.neo4j.values.virtual.VirtualValues.label;
+import static org.neo4j.values.virtual.VirtualValues.labels;
 
 @RunWith( value = Parameterized.class )
 public class VirtualValueWriteToTest
@@ -63,20 +64,20 @@ public class VirtualValueWriteToTest
         return Arrays.asList(
                 shouldWrite(
                         VirtualValues.list(
-                            booleanValue( false ),
-                            byteArray( new byte[]{3, 4, 5} ),
-                            stringValue( "yo" )
+                                booleanValue( false ),
+                                byteArray( new byte[]{3, 4, 5} ),
+                                stringValue( "yo" )
                         ),
                         beginList( 3 ),
                         false,
-                        beginArray( 3, BYTE ), (byte)3, (byte)4, (byte)5, endArray(),
+                        beginArray( 3, BYTE ), (byte) 3, (byte) 4, (byte) 5, endArray(),
                         "yo",
                         endList()
                 ),
                 shouldWrite(
                         VirtualValues.map(
-                            new int[]{1, 2},
-                            new AnyValue[]{ intValue( 100 ), charValue( 'c' ) }
+                                new int[]{1, 2},
+                                new AnyValue[]{intValue( 100 ), charValue( 'c' )}
                         ),
                         beginMap( 2 ),
                         writeKeyId( 1 ), 100,
@@ -84,11 +85,13 @@ public class VirtualValueWriteToTest
                         endMap()
                 ),
                 shouldWrite(
-                        VirtualValues.labels( 1, 2, 3 ),
+                        labels( label( 1, stringValue( "L" ) ),
+                                label( 2, stringValue( "M" ) ),
+                                label( 3, stringValue( "N" ) ) ),
                         beginLabels( 3 ),
-                        writeLabel( 1 ),
-                        writeLabel( 2 ),
-                        writeLabel( 3 ),
+                        writeLabel( label( 1, stringValue( "L" ) ) ),
+                        writeLabel( label( 2, stringValue( "M" ) ) ),
+                        writeLabel( label( 3, stringValue( "N" ) ) ),
                         endLabels()
                 ),
                 shouldWrite(
@@ -124,25 +127,25 @@ public class VirtualValueWriteToTest
                 // map( list( map( list() ) ) )
                 shouldWrite(
                         VirtualValues.map(
-                            new int[]{5},
-                            new AnyValue[]{
-                                    VirtualValues.list(
-                                        VirtualValues.map(
-                                                new int[]{50},
-                                                new AnyValue[]{
-                                                        VirtualValues.list() }
-                                        )
-                                    ) }
+                                new int[]{5},
+                                new AnyValue[]{
+                                        VirtualValues.list(
+                                                VirtualValues.map(
+                                                        new int[]{50},
+                                                        new AnyValue[]{
+                                                                VirtualValues.list()}
+                                                )
+                                        )}
                         ),
                         beginMap( 1 ),
                         writeKeyId( 5 ),
-                            beginList( 1 ),
-                                beginMap( 1 ),
-                                writeKeyId( 50 ),
-                                    beginList( 0 ),
-                                    endList(),
-                                endMap(),
-                            endList(),
+                        beginList( 1 ),
+                        beginMap( 1 ),
+                        writeKeyId( 50 ),
+                        beginList( 0 ),
+                        endList(),
+                        endMap(),
+                        endList(),
                         endMap()
                 )
         );

@@ -102,9 +102,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeLabel( int labelId )
+    public void writeLabel( LabelValue label )
     {
-        buffer.add( Specials.writeLabel( labelId ) );
+        buffer.add( Specials.writeLabel( label ) );
     }
 
     @Override
@@ -187,9 +187,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
             return new Special( SpecialKind.BeginLabels, numberOfLabels );
         }
 
-        public static Special writeLabel( int labelId )
+        public static Special writeLabel( LabelValue labelValue )
         {
-            return new Special( SpecialKind.WriteLabel, labelId );
+            return new Special( SpecialKind.WriteLabel, labelValue.id() );
         }
 
         public static Special endLabels()

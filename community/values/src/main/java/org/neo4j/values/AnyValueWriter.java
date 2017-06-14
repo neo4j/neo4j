@@ -20,6 +20,7 @@
 package org.neo4j.values;
 
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.virtual.LabelValue;
 
 /**
  * Writer of any values.
@@ -31,7 +32,7 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void beginLabels( int numberOfLabels ) throws E;
 
-    void writeLabel( int labelId ) throws E;
+    void writeLabel( LabelValue labelValue ) throws E;
 
     void endLabels() throws E;
 

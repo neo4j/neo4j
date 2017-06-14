@@ -92,16 +92,12 @@ public final class Values
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
-    public static Value stringValue( String value )
+    public static TextValue stringValue( String value )
     {
-        if ( value == null )
-        {
-            return NO_VALUE;
-        }
         return new StringValue.Direct( value );
     }
 
-    public static Value lazyStringValue( ValueLoader<String> producer )
+    public static TextValue lazyStringValue( ValueLoader<String> producer )
     {
         return new StringValue.Lazy( producer );
     }

@@ -19,28 +19,27 @@
  */
 package org.neo4j.values.virtual;
 
-import java.util.Comparator;
-
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.VirtualValue;
+import org.neo4j.values.TextValue;
 
-public class EdgeValue extends VirtualValue
+import static java.lang.String.format;
+
+public class EdgeValue extends VirtualEdgeValue
 {
     private final long id;
     private final long startNodeId;
     private final long endNodeId;
-    private final int label;
+    private final TextValue type;
     private final MapValue properties;
 
-    public EdgeValue( long id, long startNodeId, long endNodeId, int label, MapValue properties )
+    EdgeValue( long id, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
         assert properties != null;
 
         this.startNodeId = startNodeId;
         this.endNodeId = endNodeId;
         this.id = id;
-        this.label = label;
+        this.type = type;
         this.properties = properties;
     }
 
@@ -51,36 +50,14 @@ public class EdgeValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public String toString()
     {
-        return Long.hashCode( id ) + 31 * ( label + 31 * properties.hashCode() );
+        return format( "-[%s]-", id );
     }
 
     @Override
-    public boolean equals( VirtualValue other )
+    long id()
     {
-        if ( other == null || !(other instanceof EdgeValue) )
-        {
-            return false;
-        }
-        EdgeValue that = (EdgeValue) other;
-        return id == that.id && label == that.label && properties.equals( that.properties );
-    }
-
-    @Override
-    public VirtualValueGroup valueGroup()
-    {
-        return VirtualValueGroup.EDGE;
-    }
-
-    @Override
-    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
-    {
-        if ( !(other instanceof  EdgeValue ) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different virtual values" );
-        }
-        EdgeValue otherNode = (EdgeValue) other;
-        return Long.compare( id, otherNode.id );
+        return id;
     }
 }

@@ -37,14 +37,14 @@ abstract class LabelSet extends VirtualValue
 
     static class ArrayBasedLabelSet extends LabelSet
     {
-        private final int[] labelIds;
+        private final LabelValue[] labelIds;
 
-        ArrayBasedLabelSet( int[] labelIds )
+        ArrayBasedLabelSet( LabelValue[] labels )
         {
-            assert labelIds != null;
-            assert isSortedSet( labelIds );
+            assert labels != null;
+            assert isSortedSet( labels );
 
-            this.labelIds = labelIds;
+            this.labelIds = labels;
         }
 
         @Override
@@ -56,16 +56,16 @@ abstract class LabelSet extends VirtualValue
         @Override
         public int getLabelId( int offset )
         {
-            return labelIds[offset];
+            return labelIds[offset].id();
         }
 
         @Override
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
             writer.beginLabels( labelIds.length );
-            for ( int labelId : labelIds )
+            for ( LabelValue label : labelIds )
             {
-                writer.writeLabel( labelId );
+                writer.writeLabel( label );
             }
             writer.endLabels();
         }
@@ -90,7 +90,7 @@ abstract class LabelSet extends VirtualValue
             }
             for ( int i = 0; i < labelIds.length; i++ )
             {
-                if ( labelIds[i] != that.getLabelId( i ) )
+                if ( labelIds[i].id() != that.getLabelId( i ) )
                 {
                     return false;
                 }
@@ -119,7 +119,7 @@ abstract class LabelSet extends VirtualValue
             {
                 for ( int i = 0; i < size(); i++ )
                 {
-                    x = Integer.compare( this.labelIds[i], otherSet.getLabelId( i ) );
+                    x = Integer.compare( this.labelIds[i].id(), otherSet.getLabelId( i ) );
                     if ( x != 0 )
                     {
                         return x;
