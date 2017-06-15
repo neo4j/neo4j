@@ -112,5 +112,5 @@ object Methods {
   val unboxDouble = method[java.lang.Double, Double]("doubleValue")
   val unboxNode = method[CompiledConversionUtils, Long]("unboxNodeOrNull", typeRef[NodeIdWrapper])
   val unboxRel = method[CompiledConversionUtils, Long]("unboxRelationshipOrNull", typeRef[RelationshipIdWrapper])
-  val reboxValue = method[Values, Object]("asLegacyObject", typeRef[Value])
+  val reboxValue = method[Values, Object]("asObject", typeRef[Value])
 }
