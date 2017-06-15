@@ -21,7 +21,7 @@ package org.neo4j.values;
 
 /**
  * Writer of values.
- *
+ * <p>
  * Has functionality to write all supported primitives, as well as arrays and different representations of Strings.
  */
 public interface ValueWriter<E extends Exception>
@@ -75,4 +75,6 @@ public interface ValueWriter<E extends Exception>
     void beginArray( int size, ArrayType arrayType ) throws E;
 
     void endArray() throws E;
+
+    void writeByteArray( byte[] value ) throws E;
 }

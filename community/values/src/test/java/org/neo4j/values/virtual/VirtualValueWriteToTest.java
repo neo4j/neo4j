@@ -26,10 +26,8 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.BufferValueWriter.Specials;
 
-import static org.neo4j.values.BufferValueWriter.Specials.beginArray;
-import static org.neo4j.values.BufferValueWriter.Specials.endArray;
-import static org.neo4j.values.ValueWriter.ArrayType.BYTE;
 import static org.neo4j.values.Values.booleanValue;
 import static org.neo4j.values.Values.byteArray;
 import static org.neo4j.values.Values.charValue;
@@ -73,7 +71,7 @@ public class VirtualValueWriteToTest
                         ),
                         beginList( 3 ),
                         false,
-                        beginArray( 3, BYTE ), (byte) 3, (byte) 4, (byte) 5, endArray(),
+                        Specials.byteArray( new byte[]{3, 4, 5} ),
                         "yo",
                         endList()
                 ),

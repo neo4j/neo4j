@@ -48,7 +48,7 @@ public final class ArrayEncoder
         return encoder.result();
     }
 
-    static class ValueEncoder implements ValueWriter
+    static class ValueEncoder implements ValueWriter<RuntimeException>
     {
         StringBuilder builder;
 
@@ -165,6 +165,12 @@ public final class ArrayEncoder
         public void endArray()
         {
 
+        }
+
+        @Override
+        public void writeByteArray( byte[] value )
+        {
+            builder.append( 'D' );
         }
 
         private char typeChar( ArrayType arrayType )

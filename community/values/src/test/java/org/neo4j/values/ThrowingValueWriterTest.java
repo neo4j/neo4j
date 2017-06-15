@@ -144,5 +144,11 @@ public class ThrowingValueWriterTest
         {
             throw new TestException();
         }
+
+        @Override
+        public void writeByteArray( byte[] value ) throws TestException
+        {
+            throw new TestException();
+        }
     }
 }
