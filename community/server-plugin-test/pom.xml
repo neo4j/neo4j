@@ -50,6 +50,17 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <forkCount>1</forkCount>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j.app</groupId>

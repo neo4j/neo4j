@@ -60,14 +60,20 @@ public class CertificatesIT
     {
         // GIVEN
         SecureSocketConnection connection = new SecureSocketConnection();
+        try
+        {
+            // WHEN
+            connection.connect( new HostnamePort( "localhost:7687" ) )
+                    .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
-        // WHEN
-        connection.connect( new HostnamePort( "localhost:7687" ) )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
-
-        // THEN
-        Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
-        assertThat(certificatesSeen, contains(loadCertificateFromDisk()));
+            // THEN
+            Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
+            assertThat( certificatesSeen, contains( loadCertificateFromDisk() ) );
+        }
+        finally
+        {
+            connection.disconnect();
+        }
     }
 
     private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException

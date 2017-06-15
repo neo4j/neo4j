@@ -36,6 +36,7 @@
     <findbugs.version>3.0.1</findbugs.version>
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
+    <forkCounts>0</forkCounts>
   </properties>
 
   <modules>
@@ -52,7 +53,10 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <forkCount>${forkCounts}</forkCount>
+          <reuseForks>true</reuseForks>
           <argLine>${test.runner.jvm.settings}</argLine>
+          <runOrder>random</runOrder>
           <systemPropertyVariables>
             <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
           </systemPropertyVariables>
@@ -62,6 +66,9 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
+          <forkCount>${forkCounts}</forkCount>
+          <reuseForks>true</reuseForks>
+          <runOrder>random</runOrder>
           <systemPropertyVariables>
             <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
           </systemPropertyVariables>
@@ -129,12 +136,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.19.1</version>
+          <version>2.20</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.19.1</version>
+          <version>2.20</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -306,6 +313,17 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>parallelTestExecution</id>
+      <activation>
+        <property>
+          <name>!sequentialTests</name>
+        </property>
+      </activation>
+      <properties>
+        <forkCounts>1C</forkCounts>
+      </properties>
+    </profile>
     <!--
      Git information extraction profiles.
      Activate by adding the required Git information to the environment, e.g. on *nix:

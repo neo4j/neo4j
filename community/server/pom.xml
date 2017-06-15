@@ -320,6 +320,13 @@
   <build>
     <plugins>
 
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <forkCount>1</forkCount>
+        </configuration>
+      </plugin>
+
       <!-- Development execution -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

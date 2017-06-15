@@ -31,7 +31,7 @@ public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
     @Override
     protected void createRules()
     {
-        testDirectory = TestDirectory.testDirectory( StoreFilesTest.class );
+        testDirectory = TestDirectory.testDirectory( StoreFilesWithRealFileSystemTest.class );
         DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
         fileSystemRule = defaultFileSystemRule::get;
         hiddenFileSystemRule = new EphemeralFileSystemRule();

@@ -41,6 +41,7 @@ public class TestConfiguration
     private static final File SOURCE_DIR = new File( "target/db" );
     private static final String BACKUP_DIR = "target/full-backup";
     private static final String HOST_ADDRESS = "127.0.0.1";
+    private static final int PORT = 6365;
 
     @Before
     public void before() throws Exception
@@ -52,8 +53,9 @@ public class TestConfiguration
     @Test
     public void testOnByDefault() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
-        OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
+                .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + PORT ).newGraphDatabase();
+        OnlineBackup.from( HOST_ADDRESS, PORT ).full( BACKUP_DIR );
         db.shutdown();
     }
 
@@ -62,10 +64,11 @@ public class TestConfiguration
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + PORT )
                 .newGraphDatabase();
         try
         {
-            OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+            OnlineBackup.from( HOST_ADDRESS, PORT ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
@@ -79,9 +82,10 @@ public class TestConfiguration
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .setConfig( OnlineBackupSettings.online_backup_server, "localhost:" + PORT )
                 .newGraphDatabase();
 
-        OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+        OnlineBackup.from( HOST_ADDRESS, PORT ).full( BACKUP_DIR );
         db.shutdown();
     }
 
@@ -95,7 +99,7 @@ public class TestConfiguration
                 .newGraphDatabase();
         try
         {
-            OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
+            OnlineBackup.from( HOST_ADDRESS, 12346 ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
