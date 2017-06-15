@@ -294,26 +294,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     result shouldBe empty
   }
 
-  test("label scan + optional expand incoming") {
-  //given
-  val plan = ProduceResult(List("a", "b"),
-                             OptionalExpand(
-                               NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
-                               SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll,
-                               Seq(HasLabels(varFor("b"), Seq(LabelName("T1")(pos)))(pos)))(solved))
-
-    //when
-    val compiled: InternalExecutionResult = compileAndExecute(plan)
-    //then
-    val result = getNodesFromResult(compiled, "a", "b")
-
-    result should equal(List(
-      Map("a" -> aNode, "b" -> null),
-      Map("a" -> bNode, "b" -> null),
-      Map("a" -> cNode, "b" -> null)
-      ))
-  }
-
   test("label scan + expand both directions") { // MATCH (a:T1)-[r]-(b) RETURN a, b
   //given
   val plan = ProduceResult(List("a", "b"),
@@ -377,54 +357,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
-  test("optional expand into self loop") {
-    //given
-    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
-    val optionalExpandInto = OptionalExpand(
-      scanT1, IdName("a"), SemanticDirection.OUTGOING,
-      Seq.empty, IdName("a"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("a"), Seq(LabelName("T2")(pos)))(pos)))(solved)
-
-
-    val plan = ProduceResult(List("a", "r2"), optionalExpandInto)
-
-    //when
-    val compiled = compileAndExecute(plan)
-
-    //then
-    val result = getResult(compiled, "a", "r2")
-
-    result should equal(List(
-      Map("a" -> aNode, "r2" -> null),
-      Map("a" -> bNode, "r2" -> null),
-      Map("a" -> cNode, "r2" -> null)))
-  }
-
-  test("optional expand into on top of expand all") {
-    //given
-    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
-    val expandAll = Expand(
-      scanT1, IdName("a"), SemanticDirection.OUTGOING,
-      Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val optionalExpandInto = OptionalExpand(
-      expandAll, IdName("a"), SemanticDirection.OUTGOING,
-      Seq.empty, IdName("b"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
-
-
-    val plan = ProduceResult(List("a", "b", "r2"), optionalExpandInto)
-
-    //when
-    val compiled = compileAndExecute(plan)
-
-    //then
-    val result = getResult(compiled, "a", "b", "r2")
-
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode, "r2" -> null),
-      Map("a" -> bNode, "b" -> dNode, "r2" -> null),
-      Map("a" -> cNode, "b" -> eNode, "r2" -> null)
-    ))
-  }
-
   test("expand into on top of expand all with relationship types") {
     //given
     val scanT2 = NodeByLabelScan(IdName("a"), lblName("T2"), Set.empty)(solved)
@@ -450,33 +382,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
-  test("optional expand into on top of expand all with relationship types") {
-    //given
-    val scanT2 = NodeByLabelScan(IdName("a"), lblName("T2"), Set.empty)(solved)
-    val expandAll = Expand(
-      scanT2, IdName("a"), SemanticDirection.OUTGOING,
-      Seq(RelTypeName("R2")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val expandInto = OptionalExpand(
-      expandAll, IdName("b"), SemanticDirection.INCOMING,
-      Seq(RelTypeName("R2")(pos)), IdName("a"), IdName("r2"), ExpandInto)(solved)
-
-
-    val plan = ProduceResult(List("a", "b", "r2"), expandInto)
-
-    //when
-    val compiled = compileAndExecute(plan)
-
-    //then
-    val result = getResult(compiled, "a", "b", "r2")
-
-    result should equal(List(
-      Map("a" -> fNode, "b" -> dNode, "r2" -> relMap(14L).relationship),
-      Map("a" -> gNode, "b" -> eNode, "r2" -> relMap(15L).relationship)
-    ))
-  }
-
-
-  test("expand into on top of expand all with a loop") {
+ test("expand into on top of expand all with a loop") {
     //given
     val scanT3 = NodeByLabelScan(IdName("a"), lblName("T3"), Set.empty)(solved)
     val expandAll = Expand(
@@ -498,32 +404,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     result should equal(List(
       Map("a" -> hNode, "b" -> iNode),
       Map("a" -> iNode, "b" -> hNode)
-    ))
-  }
-
-  test("optional expand into on top of expand all with a loop") {
-    //given
-    val scanT3 = NodeByLabelScan(IdName("a"), lblName("T3"), Set.empty)(solved)
-    val expandAll = Expand(
-      scanT3, IdName("a"), SemanticDirection.OUTGOING,
-      Seq(RelTypeName("R3")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val expandInto = OptionalExpand(
-      expandAll, IdName("b"), SemanticDirection.INCOMING,
-      Seq(RelTypeName("R3")(pos)), IdName("a"), IdName("r2"), ExpandInto,
-      Seq(HasLabels(varFor("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
-
-
-    val plan = ProduceResult(List("a", "b", "r2"), expandInto)
-
-    //when
-    val compiled = compileAndExecute(plan)
-
-    //then
-    val result = getResult(compiled, "a", "b", "r2")
-
-    result should equal(List(
-      Map("a" -> hNode, "b" -> iNode, "r2" -> null),
-      Map("a" -> iNode, "b" -> hNode, "r2" -> null)
     ))
   }
 
@@ -1387,33 +1267,6 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     // then
     val result = getResult(compiled, "x")
     result.toList should equal(List(Map("x" -> List(true, false))))
-  }
-
-  test("compare nullable relationships with equals") {
-    //given
-    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
-    val expand = Expand(scanT1,
-      from = IdName("a"), SemanticDirection.OUTGOING, Seq.empty,
-      to = IdName("b"), relName = IdName("r1"), ExpandAll)(solved)
-    val optionalExpandInto = OptionalExpand(expand,
-      from = IdName("b"), SemanticDirection.OUTGOING, Seq.empty,
-      to = IdName("a"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("a"), Seq(LabelName("T2")(pos)))(pos)))(solved)
-
-    val projection = plans.Projection(optionalExpandInto, Map("sameRel" -> Equals(varFor("r1"), varFor("r2"))(pos)))(solved)
-    val plan = ProduceResult(List("sameRel"), projection)
-
-    //when
-    val compiled = compileAndExecute(plan)
-
-    //then
-    val result = getResult(compiled, "sameRel")
-
-    // Since r2 is null the result of equals should be null
-    result should equal(List(
-      Map("sameRel" -> null),
-      Map("sameRel" -> null),
-      Map("sameRel" -> null)
-    ))
   }
 
   test("count with non-nullable literal") {

@@ -234,7 +234,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     // WHEN
-    val result = profileWithAllPlannersAndRuntimes("MATCH (n) optional match (n)-->(x) return x")
+    val result = profileWithAllPlanners("MATCH (n) optional match (n)-->(x) return x")
 
     // THEN
     assertDbHits(0)(result)("ProduceResults")
@@ -324,7 +324,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should support profiling optional match queries") {
     createLabeledNode(Map("x" -> 1), "Label")
-    val result = profileWithAllPlannersAndRuntimes("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
+    val result = profileWithAllPlanners("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
     result("A") should equal(1)
     result("B") should equal(null.asInstanceOf[Int])
   }

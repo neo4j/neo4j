@@ -97,6 +97,21 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
   }
 
+  test("should handle optional match of non-existent path.") {
+
+    val n = createLabeledNode("Client")
+
+    val query =
+      """ MATCH (n:Client)
+        | OPTIONAL MATCH (n)-[rel1:relType]->(n1:label)
+        | OPTIONAL MATCH (n1)-[rel2:relType2]->(n2:label2)
+        | RETURN n, rel1, n1, rel2, n2;
+        |""".stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    result.toList should equal(List(Map("n" -> n, "rel1" -> null, "rel2" -> null, "n1" -> null, "n2" -> null)))
+  }
+
   test("should handle optional paths from graph algo") {
     val a = createNode("A")
     val b = createNode("B")
