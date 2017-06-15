@@ -44,6 +44,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
  */
 public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
 {
+    private long lastCheckPointKey;
     private long[] data;
 
     public SimpleBitSet( int size )
@@ -108,11 +109,37 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
         unlockWrite( stamp );
     }
 
-    public void clear()
+    public long checkPointAndPut( long checkPoint, int key )
     {
-        long stamp = writeLock();
-        Arrays.fill( data, 0 );
-        unlockWrite( stamp );
+        // We only need to clear the bit set if it was modified since the last check point
+        if ( !validate( checkPoint ) || key != lastCheckPointKey )
+        {
+            long stamp = writeLock();
+            int idx = key >>> 6;
+            if ( idx < data.length )
+            {
+                Arrays.fill( data, 0 );
+            }
+            else
+            {
+                int len = data.length;
+                len = findNewLength( idx, len );
+                data = new long[len];
+            }
+            data[idx] = data[idx] | (1L<< (key & 63));
+            lastCheckPointKey = key;
+            checkPoint = tryConvertToOptimisticRead( stamp );
+        }
+        return checkPoint;
+    }
+
+    private int findNewLength( int idx, int len )
+    {
+        while ( len <= idx )
+        {
+            len *= 2;
+        }
+        return len;
     }
 
     public int size()
@@ -125,8 +152,7 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
 
     private void ensureCapacity( int arrayIndex )
     {
-        while(data.length <= arrayIndex)
-            data = Arrays.copyOf(data, data.length * 2);
+        data = Arrays.copyOf( data, findNewLength( arrayIndex, data.length ) );
     }
 
     //
