@@ -19,12 +19,9 @@
  */
 package org.neo4j.values;
 
-import java.io.IOException;
-
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.LabelSet;
-import org.neo4j.values.virtual.LabelValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 
@@ -39,8 +36,6 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
     void writeNode( long nodeId, LabelSet labels, MapValue properties ) throws E;
 
     void beginLabels( int numberOfLabels ) throws E;
-
-    void writeLabel( LabelValue labelValue ) throws E;
 
     void endLabels() throws E;
 

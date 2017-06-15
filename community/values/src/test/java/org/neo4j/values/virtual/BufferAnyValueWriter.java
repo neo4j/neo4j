@@ -36,7 +36,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         WriteNodeReference,
         EndNode,
         BeginLabels,
-        WriteLabel,
         EndLabels,
         WriteEdge,
         WriteEdgeReference,
@@ -109,12 +108,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     public void beginLabels( int numberOfLabels )
     {
         buffer.add( Specials.beginLabels( numberOfLabels ) );
-    }
-
-    @Override
-    public void writeLabel( LabelValue label )
-    {
-        buffer.add( Specials.writeLabel( label ) );
     }
 
     @Override
@@ -207,11 +200,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         public static Special beginLabels( int numberOfLabels )
         {
             return new Special( SpecialKind.BeginLabels, numberOfLabels );
-        }
-
-        public static Special writeLabel( LabelValue labelValue )
-        {
-            return new Special( SpecialKind.WriteLabel, labelValue.id() );
         }
 
         public static Special endLabels()

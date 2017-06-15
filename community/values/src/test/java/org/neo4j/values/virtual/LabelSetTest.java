@@ -21,10 +21,11 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
+import org.neo4j.values.TextValue;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.values.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
 
 public class LabelSetTest
@@ -54,7 +55,7 @@ public class LabelSetTest
     {
         try
         {
-            labels( label( 2, stringValue( "M" ) ), label( 1, stringValue( "L" ) ) );
+            labels( stringValue( "M" ), stringValue( "L" ) );
             fail( "should throw on nonsorted input" );
         }
         catch ( Throwable t )
@@ -68,7 +69,7 @@ public class LabelSetTest
     {
         try
         {
-            labels( label( 1, stringValue( "L" ) ), label( 1, stringValue( "L" ) ) );
+            labels( stringValue( "L" ), stringValue( "L" ) );
             fail( "should throw on nonunique input" );
         }
         catch ( Throwable t )
@@ -79,10 +80,10 @@ public class LabelSetTest
 
     private LabelSet labelSet( int... ids )
     {
-        LabelValue[] labelValues = new LabelValue[ids.length];
+        TextValue[] labelValues = new TextValue[ids.length];
         for ( int i = 0; i < ids.length; i++ )
         {
-            labelValues[i] = label( ids[i], stringValue( Integer.toString( ids[i] ) ) );
+            labelValues[i] = stringValue( Integer.toString( ids[i] ) );
         }
         return labels( labelValues );
     }

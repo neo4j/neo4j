@@ -39,7 +39,6 @@ import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
-import static org.neo4j.values.virtual.VirtualValues.label;
 import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
@@ -68,7 +67,7 @@ public class AnyValueComparatorTest
 
             // Node
             node( 1L ),
-            nodeValue( 2L, labels( label( 1, stringValue( "L" ) ) ), emptyMap() ),
+            nodeValue( 2L, labels( stringValue( "L" ) ), emptyMap() ),
             node( 3L ),
 
             // Edge
@@ -91,11 +90,11 @@ public class AnyValueComparatorTest
 
             // LabelSet
             labels(),
-            labels( label( 1, stringValue( "L" ) ) ),
-            labels( label( 2, stringValue( "L" ) ) ),
-            labels( label( 1, stringValue( "L" ) ), label( 2, stringValue( "M" ) ) ),
-            labels( label( 1, stringValue( "L" ) ), label( 2, stringValue( "M" ) ), label( 4, stringValue( "N" ) ) ),
-            labels( label( 1, stringValue( "L" ) ), label( 3, stringValue( "M" ) ), label( 4, stringValue( "N" ) ) ),
+            labels( stringValue( "L" ) ),
+            labels( stringValue( "M" ) ),
+            labels( stringValue( "L" ), stringValue( "M" ) ),
+            labels( stringValue( "L" ), stringValue( "M" ), stringValue( "N" ) ),
+            labels( stringValue( "L" ), stringValue( "M" ), stringValue( "O" ) ),
 
             // Point
             pointCartesian( -1.0, -1.0 ),

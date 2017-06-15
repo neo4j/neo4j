@@ -63,12 +63,7 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static LabelValue label( int id, TextValue value )
-    {
-        return new LabelValue( id, value );
-    }
-
-    public static LabelSet labels( LabelValue... labels )
+    public static LabelSet labels( TextValue... labels )
     {
         return new LabelSet.ArrayBasedLabelSet( labels );
     }

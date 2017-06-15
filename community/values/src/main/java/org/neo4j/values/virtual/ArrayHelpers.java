@@ -19,14 +19,18 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 import org.neo4j.values.VirtualValue;
 
 /**
  * This class is way too similar to org.neo4j.collection.primitive.PrimitiveArrays.
- *
+ * <p>
  * Should we introduce dependency on primitive collections?
  */
 final class ArrayHelpers
@@ -47,11 +51,23 @@ final class ArrayHelpers
         return true;
     }
 
-    static boolean isSortedSet( VirtualValue[] keys )
+    static boolean isSortedSet( VirtualValue[] keys, Comparator<AnyValue> comparator )
     {
         for ( int i = 0; i < keys.length - 1; i++ )
         {
-            if ( AnyValues.COMPARATOR.compare( keys[i], keys[i + 1] ) >= 0 )
+            if ( comparator.compare( keys[i], keys[i + 1] ) >= 0 )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static boolean isSortedSet( Value[] keys, Comparator<AnyValue> comparator )
+    {
+        for ( int i = 0; i < keys.length - 1; i++ )
+        {
+            if ( comparator.compare( keys[i], keys[i + 1] ) >= 0 )
             {
                 return false;
             }
@@ -69,5 +85,30 @@ final class ArrayHelpers
             }
         }
         return false;
+    }
+
+    static <T> Iterator<T> asIterator( T[] array )
+    {
+        assert array != null;
+        return new Iterator<T>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < array.length;
+            }
+
+            @Override
+            public T next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                return array[index++];
+            }
+        };
     }
 }

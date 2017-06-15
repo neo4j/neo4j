@@ -21,51 +21,46 @@ package org.neo4j.values.virtual;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.TextValue;
 import org.neo4j.values.VirtualValue;
 
+import static org.neo4j.values.virtual.ArrayHelpers.asIterator;
 import static org.neo4j.values.virtual.ArrayHelpers.isSortedSet;
 import static org.neo4j.values.virtual.VirtualValueGroup.LABEL_SET;
 
-public abstract class LabelSet extends VirtualValue
+public abstract class LabelSet extends VirtualValue implements Iterable<TextValue>
 {
     public abstract int size();
 
-    public abstract int getLabelId( int offset );
-
+    /**
+     * This implementation is assuming that the label set is fairly
+     * small, maintains a sorted set of labels.
+     */
     static class ArrayBasedLabelSet extends LabelSet
     {
-        private final LabelValue[] labelIds;
+        private final TextValue[] labels;
 
-        ArrayBasedLabelSet( LabelValue[] labels )
+        ArrayBasedLabelSet( TextValue[] labels )
         {
             assert labels != null;
-            assert isSortedSet( labels );
-
-            this.labelIds = labels;
-        }
-
-        @Override
-        public int size()
-        {
-            return labelIds.length;
-        }
-
-        @Override
-        public int getLabelId( int offset )
-        {
-            return labelIds[offset].id();
+            this.labels = new TextValue[labels.length];
+            System.arraycopy( labels, 0, this.labels, 0, this.labels.length );
+            Arrays.sort( this.labels, AnyValues.COMPARATOR );
+            assert isSortedSet( this.labels, AnyValues.COMPARATOR );
         }
 
         @Override
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
-            writer.beginLabels( labelIds.length );
-            for ( LabelValue label : labelIds )
+            writer.beginLabels( labels.length );
+            for ( TextValue label : labels )
             {
-                writer.writeLabel( label );
+                label.writeTo( writer );
             }
             writer.endLabels();
         }
@@ -73,7 +68,7 @@ public abstract class LabelSet extends VirtualValue
         @Override
         public int hash()
         {
-            return Arrays.hashCode( labelIds );
+            return Arrays.hashCode( labels );
         }
 
         @Override
@@ -83,19 +78,40 @@ public abstract class LabelSet extends VirtualValue
             {
                 return false;
             }
-            LabelSet that = (LabelSet) other;
-            if ( labelIds.length != that.size() )
+            if ( labels.length != ((LabelSet) other).size() )
             {
                 return false;
             }
-            for ( int i = 0; i < labelIds.length; i++ )
-            {
-                if ( labelIds[i].id() != that.getLabelId( i ) )
+
+            if ( other instanceof ArrayBasedLabelSet )
+            {   //fast route
+                ArrayBasedLabelSet that = (ArrayBasedLabelSet) other;
+
+                for ( int i = 0; i < labels.length; i++ )
                 {
-                    return false;
+                    if ( !labels[i].equals( that.labels[i] ) )
+                    {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
+            else
+            {   //slow route
+                LabelSet that = (LabelSet) other;
+                Iterator<TextValue> thisIterator = iterator();
+                Iterator<TextValue> thatIterator = that.iterator();
+                while ( thisIterator.hasNext() && thatIterator.hasNext() )
+                {
+                    TextValue label1 = thisIterator.next();
+                    TextValue label2 = thatIterator.next();
+                    if ( !label1.equals( label2 ) )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         @Override
@@ -117,17 +133,55 @@ public abstract class LabelSet extends VirtualValue
 
             if ( x == 0 )
             {
-                for ( int i = 0; i < size(); i++ )
+                if ( otherSet instanceof ArrayBasedLabelSet )
                 {
-                    x = Integer.compare( this.labelIds[i].id(), otherSet.getLabelId( i ) );
-                    if ( x != 0 )
+                    ArrayBasedLabelSet otherArraySet = (ArrayBasedLabelSet) otherSet;
+                    for ( int i = 0; i < size(); i++ )
                     {
-                        return x;
+                        x = comparator.compare( labels[i], otherArraySet.labels[i] );
+                        if ( x != 0 )
+                        {
+                            return x;
+                        }
+                    }
+                }
+                else
+                {
+                    Iterator<TextValue> thisIterator = iterator();
+                    Iterator<TextValue> thatIterator = otherSet.iterator();
+                    while ( thisIterator.hasNext() && thatIterator.hasNext() )
+                    {
+                        TextValue label1 = thisIterator.next();
+                        TextValue label2 = thatIterator.next();
+                        x = comparator.compare( label1, label2 );
+                        if ( x != 0 )
+                        {
+                            return x;
+                        }
                     }
                 }
             }
 
             return x;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Arrays.toString( labels );
+        }
+
+        @Override
+        public int size()
+        {
+            return labels.length;
+        }
+
+        @SuppressWarnings( "NullableProblems" )
+        @Override
+        public Iterator<TextValue> iterator()
+        {
+            return asIterator( labels );
         }
     }
 }
