@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
@@ -43,7 +42,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.collection.Pair.pair;
 
-public class ServerManagementTest
+public class ServerManagementIT
 {
 
     private final CleanupRule cleanup = new CleanupRule();
