@@ -391,7 +391,7 @@ public class Values
      *
      * Converts an array of object values to the internal Value type. See {@Values.of}.
      */
-    public static Value[] values( Object[] objects )
+    public static Value[] values( Object... objects )
     {
         return Arrays.stream( objects )
                         .map( Values::of )

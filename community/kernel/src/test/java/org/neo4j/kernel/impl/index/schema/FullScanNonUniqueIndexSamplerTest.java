@@ -105,7 +105,7 @@ public class FullScanNonUniqueIndexSamplerTest
         List<Number> result = new ArrayList<>();
         for ( IndexEntryUpdate<?> update : NativeSchemaIndexPopulatorTest.someDuplicateIndexEntryUpdates() )
         {
-            result.add( (Number) update.values()[0].asPublic() );
+            result.add( (Number) update.values()[0].asObject() );
         }
         // TODO: perhaps some more values?
         return result;

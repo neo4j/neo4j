@@ -47,7 +47,7 @@ class SchemaNumberValueConversion
             throw new IllegalArgumentException(
                     "Key layout does only support numbers, tried to create key from " + values[0] );
         }
-        return (Number) values[0].asPublic();
+        return (Number) values[0].asObject();
     }
 
     static Number toValue( byte type, long rawValueBits )
