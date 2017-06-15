@@ -135,13 +135,10 @@ class NativeLabelScanReader implements LabelScanReader
 
     private void ensureOpenCursorsClosed() throws IOException
     {
-        if ( !openCursors.isEmpty() )
+        for ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor : openCursors )
         {
-            for ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor : openCursors )
-            {
-                cursor.close();
-            }
-            openCursors.clear();
+            cursor.close();
         }
+        openCursors.clear();
     }
 }

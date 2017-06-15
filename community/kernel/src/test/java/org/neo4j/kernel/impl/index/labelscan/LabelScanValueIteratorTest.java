@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -53,6 +54,9 @@ public class LabelScanValueIteratorTest
         // retrying to get more items from the first one should not close it again
         iterator.hasNext();
         verify( cursor, times( 1 ) ).close();
+
+        // and set should be empty
+        assertTrue( toRemoveFrom.isEmpty() );
     }
 
     private void exhaust( PrimitiveLongIterator iterator )

@@ -62,7 +62,14 @@ class LabelScanValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseI
      */
     private long prevRange = -1;
 
+    /**
+     * Remove provided cursor from this collection when iterator is exhausted.
+     */
     private final Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenExhausted;
+
+    /**
+     * Indicate provided cursor has been closed.
+     */
     private boolean closed;
 
     LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
