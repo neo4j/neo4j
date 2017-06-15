@@ -33,8 +33,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
@@ -158,6 +162,22 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         }
         catch ( Exception e )
         {
+            ProcessBuilder builder = new ProcessBuilder( "lsof -i TCP" );
+            builder.inheritIO().redirectOutput( ProcessBuilder.Redirect.PIPE );
+
+            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( builder.start().getInputStream() ) ) )
+            {
+                String output = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
+
+                System.out.println("lsof -i TCP:" + output);
+                System.err.println(output);
+            }
+            catch ( IOException e1 )
+            {
+                System.out.println("meh");
+                e.printStackTrace();
+            }
+
             // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
             // checked exception but it still throws them with some black magic at runtime.
             //noinspection ConstantConditions
