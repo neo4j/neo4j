@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.schema.ConstraintDefinition
 
 trait ConstraintCreator extends GraphIcing {
   def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String)

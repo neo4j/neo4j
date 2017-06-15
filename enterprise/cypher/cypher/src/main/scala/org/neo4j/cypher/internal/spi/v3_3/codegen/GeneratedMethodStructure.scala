@@ -1379,7 +1379,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
       body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
-      body.assign(local, invoke(readOperations, nodeGetUniqueFromIndexLookup, descriptor,
+      body.assign(local, invoke(readOperations, indexQuery, descriptor,
         newArray(typeRef[IndexQuery.ExactPredicate], predicate)))
     }
   }
