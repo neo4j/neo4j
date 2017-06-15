@@ -314,10 +314,10 @@
 
   <profiles>
     <profile>
-      <id>forkTests</id>
+      <id>parallelTestExecution</id>
       <activation>
         <property>
-          <name>!skipTestsFork</name>
+          <name>!sequentialTests</name>
         </property>
       </activation>
       <properties>
