@@ -162,7 +162,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         }
         catch ( Exception e )
         {
-            ProcessBuilder builder = new ProcessBuilder( "lsof -i TCP" );
+            ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP" );
             builder.inheritIO().redirectOutput( ProcessBuilder.Redirect.PIPE );
 
             try ( BufferedReader reader = new BufferedReader( new InputStreamReader( builder.start().getInputStream() ) ) )
