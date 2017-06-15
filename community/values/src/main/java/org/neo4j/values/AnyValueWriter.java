@@ -19,10 +19,14 @@
  */
 package org.neo4j.values;
 
+import java.io.IOException;
+
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
+import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.LabelSet;
 import org.neo4j.values.virtual.LabelValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
 
 /**
  * Writer of any values.
@@ -52,9 +56,7 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void endList() throws E;
 
-    void beginPath( int length ) throws E;
-
-    void endPath() throws E;
+    void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws E;
 
     void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws E;
 

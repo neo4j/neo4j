@@ -45,7 +45,7 @@ public class NodeReference extends VirtualNodeValue
     }
 
     @Override
-    long id()
+    public long id()
     {
         return id;
     }

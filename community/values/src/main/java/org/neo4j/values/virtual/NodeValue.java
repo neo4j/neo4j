@@ -39,6 +39,16 @@ public class NodeValue extends VirtualNodeValue
         this.properties = properties;
     }
 
+    LabelSet labels()
+    {
+        return labels;
+    }
+
+    MapValue properties()
+    {
+        return properties;
+    }
+
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
@@ -46,7 +56,7 @@ public class NodeValue extends VirtualNodeValue
     }
 
     @Override
-    long id()
+    public long id()
     {
         return id;
     }

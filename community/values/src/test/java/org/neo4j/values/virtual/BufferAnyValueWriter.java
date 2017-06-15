@@ -41,13 +41,12 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         WriteEdge,
         WriteEdgeReference,
         EndEdge,
+        WritePath,
         BeginMap,
         WriteKeyId,
         EndMap,
         BeginList,
         EndList,
-        BeginPath,
-        EndPath,
         BeginPoint,
         EndPoint
     }
@@ -162,15 +161,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void beginPath( int length )
+    public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
     {
-        buffer.add( Specials.beginPath( length ) );
-    }
-
-    @Override
-    public void endPath()
-    {
-        buffer.add( Specials.endPath() );
+        buffer.add( Specials.writePath( nodes, edges ) );
     }
 
     @Override
@@ -199,6 +192,11 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         {
             return new Special( SpecialKind.WriteEdge,
                     Arrays.hashCode( new Object[]{edgeId, startNodeId, endNodeId, type, properties} ) );
+        }
+
+        public static Special writePath( NodeValue[] nodes, EdgeValue[] edges )
+        {
+            return new Special( SpecialKind.WritePath, Arrays.hashCode( nodes ) + 31 * Arrays.hashCode( edges ) );
         }
 
         public static Special writeNodeReference( long nodeId )
@@ -231,11 +229,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
             return new Special( SpecialKind.BeginMap, size );
         }
 
-        public static Special writeKeyId( int keyId )
-        {
-            return new Special( SpecialKind.WriteKeyId, keyId );
-        }
-
         public static Special endMap()
         {
             return new Special( SpecialKind.EndMap, 0 );
@@ -249,16 +242,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         public static Special endList()
         {
             return new Special( SpecialKind.EndList, 0 );
-        }
-
-        public static Special beginPath( int length )
-        {
-            return new Special( SpecialKind.BeginPath, length );
-        }
-
-        public static Special endPath()
-        {
-            return new Special( SpecialKind.EndPath, 0 );
         }
 
         public static Special beginPoint( CoordinateReferenceSystem crs )

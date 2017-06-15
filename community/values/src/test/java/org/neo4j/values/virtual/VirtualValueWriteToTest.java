@@ -38,18 +38,17 @@ import static org.neo4j.values.Values.stringValue;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginLabels;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginMap;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginPath;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginPoint;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endLabels;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endList;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endMap;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPath;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPoint;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdge;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeEdgeReference;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeLabel;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNode;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writeNodeReference;
+import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.writePath;
 import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
@@ -111,18 +110,9 @@ public class VirtualValueWriteToTest
                                 new NodeValue[]{nodeValue( 20L, labels( label( 1, stringValue( "L" ))), emptyMap()),
                                                 nodeValue( 40L, labels( label( 1, stringValue( "L" ))), emptyMap())},
                                 new EdgeValue[]{edgeValue( 100L, 40L, 20L, stringValue( "T" ), emptyMap()  ) }),
-                        beginPath( 1 ),
-                        beginList( 2 ),
-                        writeNode( 20L, labels( label( 1, stringValue( "L" )) ), emptyMap()),
-                        writeNode( 40L, labels( label( 1, stringValue( "L" )) ), emptyMap()),
-                        endList(),
-                        beginList( 1 ),
-                        writeEdge( 100L, 40L, 20L, stringValue( "T" ), emptyMap()  ),
-                        endList(),
-                        beginList( 2 ),
-                        -1,
-                        endList(),
-                        endPath()
+                        writePath( new NodeValue[]{nodeValue( 20L, labels( label( 1, stringValue( "L" ))), emptyMap()),
+                                        nodeValue( 40L, labels( label( 1, stringValue( "L" ))), emptyMap())},
+                                new EdgeValue[]{edgeValue( 100L, 40L, 20L, stringValue( "T" ), emptyMap()  ) } )
                 ),
                 shouldWrite(
                         VirtualValues.pointCartesian( 2.0, -4.0 ),

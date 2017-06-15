@@ -27,7 +27,7 @@ import org.neo4j.values.VirtualValue;
 
 abstract class VirtualNodeValue extends VirtualValue
 {
-    abstract long id();
+    public abstract long id();
 
     @Override
     public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )

@@ -66,7 +66,7 @@ public class EdgeValue extends VirtualEdgeValue
     }
 
     @Override
-    long id()
+    public long id()
     {
         return id;
     }

@@ -69,66 +69,7 @@ final class PathValue extends VirtualValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        //A path is serialized in the following form
-        // Given path: (a {id: 42})-[r1 {id: 10}]->(b {id: 43})<-[r1 {id: 11}]-(c {id: 44})
-        //The seralization will look like:
-        //
-        // {
-        //    [a, b, c]
-        //    [r1, r2]
-        //    [1, 1, -2, 2]
-        // }
-        // The first list contains all nodes where the first node (a) is guaranteed to be the start node of the path
-        // The second list contains all edges of the path
-        // The third list defines the path order, where every other item specifies the offset into the
-        // relationship and node list respectively. Since all paths is guaranteed to start with a 0, meaning that
-        // a is the start node in this case, those are excluded. So the first integer in the array refers to the
-        // position
-        // in the relationship array (1 indexed where sign denotes direction) and the second one refers to the offset
-        // into the
-        // node list (zero indexed) and so on.
-        writer.beginPath( edges.length );
-        writer.beginList( nodes.length );
-        for ( NodeValue node : nodes )
-        {
-            node.writeTo( writer );
-        }
-        writer.endList();
-        writer.beginList( edges.length );
-        for ( EdgeValue edge : edges )
-        {
-            edge.writeTo( writer );
-        }
-        writer.endList();
-        writer.beginList( 2 * edges.length );
-        long node = -1L;
-        for ( int i = 0; i < 2 * edges.length; i++ )
-        {
-            int index = i / 2;
-            if ( i % 2 == 0 )
-            {
-                node = nodes[index].id();
-                if ( i > 0 )
-                {
-                    writer.writeInteger( index );
-                }
-            }
-            else
-            {
-                EdgeValue edge = edges[index];
-                if ( node >= 0 && node == edge.startNode() )
-                {
-                    writer.writeInteger( index + 1 );
-                }
-                else
-                {
-                    writer.writeInteger( -index - 1 );
-                }
-            }
-
-        }
-        writer.endList();
-        writer.endPath();
+      writer.writePath( nodes, edges );
     }
 
     @Override
