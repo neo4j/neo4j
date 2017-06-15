@@ -132,6 +132,8 @@ Find a shortest path among paths matched using a non-variable length pattern
 Find a combination of a shortest path and a pattern expression
 Filter with AND/OR
 LIMIT 0 should stop side effects
+Id on null
+type on null
 
 //OrderByAcceptance.feature - Unsupported orderability
 ORDER BY nodes should return null results last in ascending order

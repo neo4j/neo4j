@@ -560,6 +560,21 @@ Handling non-string operands for CONTAINS
 Handling non-string operands for ENDS WITH
 Returning nested expressions based on list property
 
+Returning label predicate on null node
+`type()` on mixed null and non-null relationships
+`type()` on mixed null and non-null relationships
+`type()` on null relationship
+Return two subgraphs with bound undirected relationship and optional relationship
+Respect predicates on the OPTIONAL MATCH
+Optionally matching self-loops
+Optionally matching self-loops without matches
+OPTIONAL MATCH with previously bound nodes
+OPTIONAL MATCH with labels on the optional end node
+OPTIONAL MATCH and bound nodes
+MATCH and OPTIONAL MATCH on same pattern
+Handling correlated optional matches; first does not match implies second does not match
+Do not fail when predicates on optionally matched and missed nodes are invalid
+
 Many CREATE clauses
 
 Comparing strings and integers using > in an AND'd predicate
