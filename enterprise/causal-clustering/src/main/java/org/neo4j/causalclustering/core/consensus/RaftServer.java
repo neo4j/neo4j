@@ -19,6 +19,15 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import static java.lang.String.format;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.BindException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,14 +41,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -59,8 +60,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
-
-import static java.lang.String.format;
 
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.ClusterIdAwareMessage>
 {
@@ -162,6 +161,8 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         }
         catch ( Exception e )
         {
+            System.out.println( "problems with " + listenAddress );
+//            ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP:" + listenAddress.getPort() );
             ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP" );
             builder.inheritIO().redirectOutput( ProcessBuilder.Redirect.PIPE );
 
@@ -169,12 +170,12 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
             {
                 String output = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
 
-                System.out.println("lsof -i TCP:" + output);
-                System.err.println(output);
+                System.out.println( "lsof -i TCP:" + output );
+                System.err.println( output );
             }
             catch ( IOException e1 )
             {
-                System.out.println("meh");
+                System.out.println( "meh" );
                 e.printStackTrace();
             }
 

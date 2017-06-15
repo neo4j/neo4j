@@ -204,6 +204,8 @@ public class CatchupServer extends LifecycleAdapter
         }
         catch ( Exception e )
         {
+            System.out.println( "problems with " + listenAddress );
+//            ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP:" + listenAddress.getPort() );
             ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP" );
             builder.inheritIO().redirectOutput( ProcessBuilder.Redirect.PIPE );
 
@@ -211,8 +213,7 @@ public class CatchupServer extends LifecycleAdapter
             {
                 String output = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
 
-                System.out.println("lsof -i TCP:" + output);
-                System.err.println(output);
+                System.out.println( "lsof -i TCP:" + output );
             }
 
             // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
