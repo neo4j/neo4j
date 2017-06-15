@@ -291,7 +291,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     public boolean hasFullNumberPrecision()
     {
-        return true;
+        return false;
     }
 
     private interface StringFilter
