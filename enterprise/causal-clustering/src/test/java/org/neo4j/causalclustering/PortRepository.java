@@ -19,36 +19,33 @@
  */
 package org.neo4j.causalclustering;
 
+import static org.neo4j.causalclustering.PortConstants.EphemeralPortMaximum;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
 
 public class PortRepository
 {
-    private static final Random RANDOM = new Random();
-
     private final Path directory;
-    private final int lowestPort;
 
-    public PortRepository( Path directory, int lowestPort )
+    private int currentPort;
+
+    public PortRepository( Path directory, int initialPort )
     {
         this.directory = directory;
-        this.lowestPort = lowestPort;
+
+        this.currentPort = initialPort;
     }
 
     // synchronize between threads in this JVM
     public synchronized int reserveNextPort( String trace )
     {
-        // if we do not find one after trying 100(!) times, bail out
-        for ( int i = 0; i < 100; i++ )
+        while ( currentPort <= EphemeralPortMaximum )
         {
-            int port = lowestPort + RANDOM.nextInt( PortConstants.EphemeralPortMaximum - lowestPort );
-
-            Path portFilePath = directory.resolve( "port" + port );
+            Path portFilePath = directory.resolve( "port" + currentPort );
 
             try
             {
@@ -60,11 +57,11 @@ public class PortRepository
                     fileOutputStream.flush();
                 }
 
-                return port;
+                return currentPort++;
             }
             catch ( FileAlreadyExistsException e )
             {
-                // try again
+                currentPort++;
             }
             catch ( IOException e )
             {

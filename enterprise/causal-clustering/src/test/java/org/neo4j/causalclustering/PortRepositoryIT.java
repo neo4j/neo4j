@@ -88,7 +88,6 @@ public class PortRepositoryIT
     }
 
     @Test
-    @Ignore( "This was for when ports were allocated sequentially" )
     public void shouldNotOverrun() throws Exception
     {
         Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
