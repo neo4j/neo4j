@@ -49,7 +49,7 @@ public class PortAuthority
             {
                 Path directory = Paths.get( portAuthorityDirectory );
                 Files.createDirectories( directory );
-                PortRepository portRepository = new PortRepository( directory );
+                PortRepository portRepository = new PortRepository( directory, EphemeralPortMinimum );
                 PortProbe portProbe = new DefaultPortProbe();
                 portProvider = new CoordinatingPortProvider( portRepository, portProbe );
             }

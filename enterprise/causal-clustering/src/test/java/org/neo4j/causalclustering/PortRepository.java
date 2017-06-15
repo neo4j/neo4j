@@ -19,35 +19,39 @@
  */
 package org.neo4j.causalclustering;
 
+
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 
 public class PortRepository
 {
-    private final Path directory;
+    private static final Random RANDOM = new Random();
 
-    public PortRepository( Path directory )
+    private final Path directory;
+    private final int lowestPort;
+
+    public PortRepository( Path directory, int lowestPort )
     {
         this.directory = directory;
+        this.lowestPort = lowestPort;
     }
 
     // synchronize between threads in this JVM
     public synchronized int reserveNextPort( String trace )
     {
-        // if we do not find one after trying 100 times, bail out
+        // if we do not find one after trying 100(!) times, bail out
         for ( int i = 0; i < 100; i++ )
         {
-            // have OS pick a free port
-            try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+            int port = lowestPort + RANDOM.nextInt( PortConstants.EphemeralPortMaximum - lowestPort );
+
+            Path portFilePath = directory.resolve( "port" + port );
+
+            try
             {
-                int port = serverSocket.getLocalPort();
-
-                Path portFilePath = directory.resolve( "port" + port );
-
                 Files.createFile( portFilePath );
 
                 try ( FileOutputStream fileOutputStream = new FileOutputStream( portFilePath.toFile(), true ) )
