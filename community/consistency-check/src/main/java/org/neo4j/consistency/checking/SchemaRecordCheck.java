@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -49,14 +50,16 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 {
     final SchemaRuleAccess ruleAccess;
 
+    private final IndexAccessors indexAccessors;
     private final Map<Long, DynamicRecord> indexObligations;
     private final Map<Long, DynamicRecord> constraintObligations;
     private final Map<SchemaRule, DynamicRecord> verifiedRulesWithRecords;
     private final CheckStrategy strategy;
 
-    public SchemaRecordCheck( SchemaRuleAccess ruleAccess )
+    public SchemaRecordCheck( SchemaRuleAccess ruleAccess, IndexAccessors indexAccessors )
     {
         this.ruleAccess = ruleAccess;
+        this.indexAccessors = indexAccessors;
         this.indexObligations = new HashMap<>();
         this.constraintObligations = new HashMap<>();
         this.verifiedRulesWithRecords = new HashMap<>();
@@ -65,12 +68,14 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
     private SchemaRecordCheck(
             SchemaRuleAccess ruleAccess,
+            IndexAccessors indexAccessors,
             Map<Long, DynamicRecord> indexObligations,
             Map<Long, DynamicRecord> constraintObligations,
             Map<SchemaRule, DynamicRecord> verifiedRulesWithRecords,
             CheckStrategy strategy )
     {
         this.ruleAccess = ruleAccess;
+        this.indexAccessors = indexAccessors;
         this.indexObligations = indexObligations;
         this.constraintObligations = constraintObligations;
         this.verifiedRulesWithRecords = verifiedRulesWithRecords;
@@ -79,8 +84,8 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
     public SchemaRecordCheck forObligationChecking()
     {
-        return new SchemaRecordCheck( ruleAccess, indexObligations, constraintObligations, verifiedRulesWithRecords,
-                new ObligationsCheckStrategy() );
+        return new SchemaRecordCheck( ruleAccess, indexAccessors, indexObligations, constraintObligations,
+                verifiedRulesWithRecords, new ObligationsCheckStrategy() );
     }
 
     @Override
@@ -192,6 +197,10 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                         engine.report().constraintIndexRuleNotReferencingBack( obligation );
                     }
                 }
+            }
+            if ( indexAccessors.notOnlineRules().contains( rule ) )
+            {
+                engine.report().schemaRuleNotOnline( rule );
             }
         }
 

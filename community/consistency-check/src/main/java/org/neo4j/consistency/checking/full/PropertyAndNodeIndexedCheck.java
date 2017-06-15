@@ -93,7 +93,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     {
         Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
         PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
-        for ( IndexRule indexRule : indexes.rules() )
+        for ( IndexRule indexRule : indexes.onlineRules() )
         {
             long labelId = indexRule.schema().getLabelId();
             if ( labels.contains( labelId ) )

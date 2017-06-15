@@ -156,6 +156,10 @@ public interface ConsistencyReport
 
         @Documented( "The schema rule contained in the DynamicRecord chain is of an unrecognized Kind" )
         void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
+
+        @Warning
+        @Documented( "The schema rule contained in the DynamicRecord chain a reference to a schema rule that is not online. It will be rebuilt on next startup." )
+        void schemaRuleNotOnline( SchemaRule schemaRule );
     }
 
     interface NodeConsistencyReport extends PrimitiveConsistencyReport
