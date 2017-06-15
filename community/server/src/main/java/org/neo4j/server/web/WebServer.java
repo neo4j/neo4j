@@ -32,10 +32,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
+import org.neo4j.ssl.SslPolicy;
 
 public interface WebServer
 {
@@ -43,7 +43,7 @@ public interface WebServer
 
     void setHttpsAddress( Optional<ListenSocketAddress> address );
 
-    void setHttpsCertificateInformation( KeyStoreInformation config );
+    void setSslPolicy( SslPolicy sslPolicy );
 
     void setRequestLog( RequestLog requestLog );
 

@@ -36,7 +36,7 @@ import java.util.Random;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 
 public class ServerTestUtils
 {
@@ -88,7 +88,7 @@ public class ServerTestUtils
     {
         addRelativeProperty( temporaryFolder, properties, DatabaseManagementSystemSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.certificates_directory );
+        addRelativeProperty( temporaryFolder, properties, LegacySslPolicyConfig.certificates_directory );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
     }
 

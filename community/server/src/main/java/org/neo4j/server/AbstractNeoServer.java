@@ -20,12 +20,10 @@
 package org.neo4j.server;
 
 import org.apache.commons.configuration.Configuration;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.security.GeneralSecurityException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,9 +32,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import org.neo4j.bolt.security.ssl.Certificates;
-import org.neo4j.bolt.security.ssl.KeyStoreFactory;
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -49,6 +44,7 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -85,6 +81,7 @@ import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
@@ -134,11 +131,11 @@ public abstract class AbstractNeoServer implements NeoServer
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
     protected Supplier<UserManagerSupplier> userManagerSupplier;
-    protected Optional<KeyStoreInformation> keyStoreInfo;
+    protected Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private DatabaseActions databaseActions;
     private TransactionFacade transactionFacade;
-    private TransactionHandleRegistry transactionRegistry;
 
+    private TransactionHandleRegistry transactionRegistry;
     private boolean initialized = false;
     private LifecycleAdapter serverComponents;
 
@@ -186,10 +183,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
         this.userManagerSupplier = dependencyResolver.provideDependency( UserManagerSupplier.class );
+        this.sslPolicyFactorySupplier = dependencyResolver.provideDependency( SslPolicyLoader.class );
 
         this.webServer = createWebServer();
-
-        this.keyStoreInfo = createKeyStore();
 
         for ( ServerModule moduleClass : createServerModules() )
         {
@@ -306,9 +302,12 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setMaxThreads( config.get( ServerSettings.webserver_max_threads ) );
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
-        if ( keyStoreInfo.isPresent() )
+
+        String sslPolicyName = config.get( ServerSettings.ssl_policy );
+        if ( sslPolicyName != null )
         {
-            webServer.setHttpsCertificateInformation( keyStoreInfo.get() );
+            SslPolicy sslPolicy = sslPolicyFactorySupplier.get().getPolicy( sslPolicyName );
+            webServer.setSslPolicy( sslPolicy );
         }
     }
 
@@ -355,62 +354,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected Pattern[] getUriWhitelist()
     {
         return DEFAULT_URI_WHITELIST;
-    }
-
-    protected Optional<KeyStoreInformation> createKeyStore()
-    {
-        if ( httpsIsEnabled() )
-        {
-            File privateKeyPath = config.get( ServerSettings.tls_key_file ).getAbsoluteFile();
-            File certificatePath = config.get( ServerSettings.tls_certificate_file ).getAbsoluteFile();
-
-            try
-            {
-                // If neither file is specified
-                if ( !certificatePath.exists() && !privateKeyPath.exists() )
-                {
-                    //noinspection deprecation
-                    log.info( "No SSL certificate found, generating a self-signed certificate.." );
-                    Certificates certFactory = new Certificates();
-                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath,
-                            httpAdvertisedAddress.getHostname() );
-                }
-
-                // Make sure both files were there, or were generated
-                if ( !certificatePath.exists() )
-                {
-                    throw new ServerStartupException(
-                            String.format(
-                                    "TLS private key found, but missing certificate at '%s'. Cannot start server " +
-                                    "without certificate.",
-
-                                    certificatePath ) );
-                }
-                if ( !privateKeyPath.exists() )
-                {
-                    throw new ServerStartupException(
-                            String.format(
-                                    "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
-                                    privateKeyPath ) );
-                }
-
-                return Optional.of( new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath ) );
-            }
-            catch ( GeneralSecurityException e )
-            {
-                throw new ServerStartupException(
-                        "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
-            }
-            catch ( IOException | OperatorCreationException e )
-            {
-                throw new ServerStartupException(
-                        "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
-            }
-        }
-        else
-        {
-            return Optional.empty();
-        }
     }
 
     @Override

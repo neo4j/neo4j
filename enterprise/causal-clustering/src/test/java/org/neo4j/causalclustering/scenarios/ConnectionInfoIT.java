@@ -77,7 +77,7 @@ public class ConnectionInfoIT
                 new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
                         mockSupplier(), mock( BooleanSupplier.class ), snapshotService, config, new Monitors(),
                         mockSupplier(), mock( FileSystemAbstraction.class ), mock( PageCache.class ),
-                        new StoreCopyCheckPointMutex() );
+                        new StoreCopyCheckPointMutex(), null );
 
         //then
         try

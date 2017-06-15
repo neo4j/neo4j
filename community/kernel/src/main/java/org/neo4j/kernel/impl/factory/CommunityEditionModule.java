@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -98,6 +99,8 @@ public class CommunityEditionModule extends EditionModule
         this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
+
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
         statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );

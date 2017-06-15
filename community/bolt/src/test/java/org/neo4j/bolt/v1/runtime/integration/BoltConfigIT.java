@@ -42,7 +42,6 @@ import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUI
 
 public class BoltConfigIT
 {
-
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings ->

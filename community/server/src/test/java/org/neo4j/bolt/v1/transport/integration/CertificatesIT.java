@@ -32,21 +32,21 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
-import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.tls_certificate_file;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.tls_key_file;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_certificate_file;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_key_file;
 
 public class CertificatesIT
 {
     private static File keyFile;
     private static File certFile;
-    private static Certificates certFactory;
+    private static PkiUtils certFactory;
 
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
@@ -81,7 +81,7 @@ public class CertificatesIT
     @BeforeClass
     public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException
     {
-        certFactory = new Certificates();
+        certFactory = new PkiUtils();
         keyFile = File.createTempFile( "key", "pem" );
         certFile = File.createTempFile( "key", "pem" );
         keyFile.deleteOnExit();

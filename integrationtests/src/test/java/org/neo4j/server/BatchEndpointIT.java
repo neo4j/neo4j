@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
@@ -38,8 +39,8 @@ public class BatchEndpointIT
 {
     @Rule
     public final Neo4jRule neo4j = new Neo4jRule()
-            .withConfig( ServerSettings.certificates_directory,
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
+            .withConfig( LegacySslPolicyConfig.certificates_directory,
+                    getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
             .withConfig( GraphDatabaseSettings.logs_directory,
                     getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.logs_directory ) )
             .withConfig( ServerSettings.http_logging_enabled, "true" )

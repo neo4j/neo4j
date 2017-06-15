@@ -27,11 +27,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
+import java.util.List;
+import java.util.UUID;
+
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
+import org.neo4j.ssl.SslPolicy;
 
 
 public class SslSocketConnectorFactory extends HttpConnectorFactory
@@ -50,21 +53,49 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, KeyStoreInformation config, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator )
+    public ServerConnector createConnector( Server server, SslPolicy sslPolicy, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator )
     {
-        SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( config );
+        SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( sslPolicy );
         return super.createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
     }
 
-    private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation ksInfo )
+    private SslConnectionFactory createSslConnectionFactory( SslPolicy sslPolicy )
     {
         SslContextFactory sslContextFactory = new SslContextFactory();
 
-        sslContextFactory.setKeyStore( ksInfo.getKeyStore() );
-        sslContextFactory.setKeyStorePassword( String.valueOf( ksInfo.getKeyStorePassword() ) );
-        sslContextFactory.setKeyManagerPassword( String.valueOf( ksInfo.getKeyPassword() ) );
+        String password = UUID.randomUUID().toString();
+        sslContextFactory.setKeyStore( sslPolicy.getKeyStore( password.toCharArray(), password.toCharArray() ) );
+        sslContextFactory.setKeyStorePassword( password );
+        sslContextFactory.setKeyManagerPassword( password );
+
+        List<String> ciphers = sslPolicy.getCipherSuites();
+        if ( ciphers != null )
+        {
+            sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[ciphers.size()] ) );
+        }
+
+        List<String> protocols = sslPolicy.getTlsVersions();
+        if ( protocols != null )
+        {
+            sslContextFactory.setIncludeProtocols( protocols.toArray( new String[protocols.size()] ) );
+        }
+
+        switch ( sslPolicy.getClientAuth() )
+        {
+        case REQUIRE:
+            sslContextFactory.setNeedClientAuth( true );
+            break;
+        case OPTIONAL:
+            sslContextFactory.setWantClientAuth( true );
+            break;
+        case NONE:
+            sslContextFactory.setWantClientAuth( false );
+            sslContextFactory.setNeedClientAuth( false );
+            break;
+        default:
+            throw new IllegalArgumentException( "Not supported: " + sslPolicy.getClientAuth() );
+        }
 
         return new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
     }
-
 }

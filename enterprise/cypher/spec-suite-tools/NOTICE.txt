@@ -43,6 +43,7 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   MongoDB Java Driver
+  Netty/All-in-One
   nscala-time
   openCypher Grammar Developer Tools
   openCypher TCK Developer Tools
@@ -63,6 +64,10 @@ BSD License
   scala-parser-combinators
   scala-xml
   Scalap
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 
 GNU Lesser General Public License, Version 2.1
   JCommon

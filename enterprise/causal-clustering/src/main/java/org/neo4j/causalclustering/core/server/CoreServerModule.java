@@ -74,6 +74,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
@@ -89,7 +90,7 @@ public class CoreServerModule
             ConsensusModule consensusModule, CoreStateMachinesModule coreStateMachinesModule,
             ReplicationModule replicationModule, File clusterStateDirectory, ClusteringModule clusteringModule,
             LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger,
-            Supplier<DatabaseHealth> dbHealthSupplier )
+            Supplier<DatabaseHealth> dbHealthSupplier, SslPolicy sslPolicy )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -111,7 +112,7 @@ public class CoreServerModule
 
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), config, logProvider,
+        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), sslPolicy, config, logProvider,
                 userLogProvider, monitors );
 
         LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
@@ -120,7 +121,7 @@ public class CoreServerModule
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life
                 .add( new CatchUpClient( clusteringModule.topologyService(), logProvider, Clocks.systemClock(),
-                        inactivityTimeoutMillis, monitors ) );
+                        inactivityTimeoutMillis, monitors, sslPolicy ) );
 
         RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ),
@@ -212,7 +213,7 @@ public class CoreServerModule
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 localDatabase::dataSource, localDatabase::isAvailable, snapshotService, config, platformModule.monitors,
                 new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex );
+                platformModule.storeCopyCheckPointMutex, sslPolicy );
 
         // Exposes this so that tests can start/stop the catchup server
         dependencies.satisfyDependency( catchupServer );
