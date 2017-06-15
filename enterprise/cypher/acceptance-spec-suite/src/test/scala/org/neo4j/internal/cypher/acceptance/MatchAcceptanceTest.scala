@@ -97,7 +97,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
   }
 
-  test("should handle optional match of none existant path.") {
+  test("should handle optional match of non-existent path.") {
 
     val n = createLabeledNode("Client")
 
