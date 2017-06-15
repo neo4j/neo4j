@@ -69,7 +69,6 @@ public class StoreUpgrader
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
-    public static final int COUNT_STORE_REBUILD_STEPS = 2;
 
     private final UpgradableDatabase upgradableDatabase;
     private final MigrationProgressMonitor progressMonitor;
@@ -121,7 +120,7 @@ public class StoreUpgrader
         }
 
         // One or more participants would like to do migration
-        progressMonitor.started( participants.size() + COUNT_STORE_REBUILD_STEPS );
+        progressMonitor.started( participants.size() );
 
         MigrationStatus migrationStatus = MigrationStatus.readMigrationStatus( fileSystem, migrationStateFile );
         String versionToMigrateFrom = null;
@@ -142,15 +141,6 @@ public class StoreUpgrader
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             moveMigratedFilesToStoreDirectory( participants, migrationDirectory, storeDirectory,
                     versionToMigrateFrom, upgradableDatabase.currentVersion() );
-            MigrationStatus.countsRebuilding.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
-        }
-
-        if ( MigrationStatus.countsRebuilding.isNeededFor( migrationStatus ) )
-        {
-            versionToMigrateFrom = MigrationStatus.countsRebuilding.maybeReadInfo(
-                    fileSystem, migrationStateFile, versionToMigrateFrom );
-            rebuildCountsInStoreDirectory( participants, storeDirectory, versionToMigrateFrom );
-            MigrationStatus.completed.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
         cleanup( participants, migrationDirectory );
@@ -201,23 +191,6 @@ public class StoreUpgrader
             {
                 participant.moveMigratedFiles( migrationDirectory, storeDirectory, versionToMigrateFrom,
                         versionToMigrateTo );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnableToUpgradeException( "Unable to move migrated files into place", e );
-        }
-    }
-
-    private void rebuildCountsInStoreDirectory( List<StoreMigrationParticipant> participants, File storeDirectory,
-            String versionToMigrateFrom )
-    {
-        try
-        {
-            for ( StoreMigrationParticipant participant : participants )
-            {
-                participant.rebuildCounts( storeDirectory, progressMonitor, versionToMigrateFrom,
-                        upgradableDatabase.currentVersion() );
             }
         }
         catch ( IOException e )

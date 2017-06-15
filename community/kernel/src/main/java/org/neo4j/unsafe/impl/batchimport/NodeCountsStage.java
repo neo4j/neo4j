@@ -36,15 +36,15 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIterator.allIn;
  */
 public class NodeCountsStage extends Stage
 {
-    public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore,
-            int highLabelId, CountsAccessor.Updater countsUpdater, MigrationProgressMonitor.Section progressMonitor,
-            StatsProvider...
-            additionalStatsProviders )
+    public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore, int highLabelId,
+            CountsAccessor.Updater countsUpdater, MigrationProgressMonitor.Section progressMonitor,
+            StatsProvider... additionalStatsProviders )
     {
         super( "Node counts", config );
         add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, null ) );
-        add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
-                nodeStore, cache, highLabelId, countsUpdater, progressMonitor ), true, additionalStatsProviders ) );
+        add( new RecordProcessorStep<>( control(), "COUNT", config,
+                new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressMonitor ), true,
+                additionalStatsProviders ) );
     }
 }

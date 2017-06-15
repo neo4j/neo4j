@@ -24,13 +24,16 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -39,12 +42,12 @@ import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
-import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -101,23 +104,34 @@ public class StoreMigratorTest
     public void detectObsoleteCountStoresToRebuildDuringMigration() throws IOException
     {
         TestStoreMigrator storeMigrator = new TestStoreMigrator( new DefaultFileSystemAbstraction(),
-                mock( PageCache.class ), Config.empty(), NullLogService.getInstance(), mock( LegacyLogs.class ) );
+                mock( PageCache.class ), Config.empty(), NullLogService.getInstance() );
+        Set<String> actualVersions = new TreeSet<>();
+        Set<String> expectedVersions = new TreeSet<>(
+                Arrays.stream( StoreVersion.values() ).map( StoreVersion::versionString )
+                        .collect( Collectors.toSet() ) );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V2_3.versionString() ) );
+        actualVersions.add( StoreVersion.STANDARD_V2_3.versionString() );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_0.versionString() ) );
+        actualVersions.add( StoreVersion.STANDARD_V3_0.versionString() );
         assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.STANDARD_V3_2.versionString() ) );
+        actualVersions.add( StoreVersion.STANDARD_V3_2.versionString() );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_0_0.versionString() ) );
+        actualVersions.add( StoreVersion.HIGH_LIMIT_V3_0_0.versionString() );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_0_6.versionString() ) );
+        actualVersions.add( StoreVersion.HIGH_LIMIT_V3_0_6.versionString() );
         assertTrue( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_1_0.versionString() ) );
+        actualVersions.add( StoreVersion.HIGH_LIMIT_V3_1_0.versionString() );
         assertFalse( storeMigrator.countStoreRebuildRequired( StoreVersion.HIGH_LIMIT_V3_2_0.versionString() ) );
+        actualVersions.add( StoreVersion.HIGH_LIMIT_V3_2_0.versionString() );
+        assertEquals( expectedVersions, actualVersions );
     }
 
-    private class TestStoreMigrator extends StoreMigrator
+    private class TestStoreMigrator extends CountsMigrator
     {
 
-        TestStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, LogService logService,
-                LegacyLogs legacyLogs )
+        TestStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, LogService logService )
         {
-            super( fileSystem, pageCache, config, logService, legacyLogs );
+            super( fileSystem, pageCache, config, logService );
         }
 
         @Override

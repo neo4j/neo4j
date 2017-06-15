@@ -40,18 +40,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     private final CountsAccessor.Updater counts;
     private final int anyLabel;
 
-    public NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
-                                CountsAccessor.Updater counts )
-    {
-        this.nodeStore = nodeStore;
-        this.cache = cache;
-        this.anyLabel = highLabelId;
-        this.counts = counts;
-        // Instantiate with high id + 1 since we need that extra slot for the ANY count
-        this.labelCounts = new long[highLabelId + 1];
-    }
-
-    public NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
+    NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
             CountsAccessor.Updater counts, MigrationProgressMonitor.Section progressMonitor )
     {
         this.nodeStore = nodeStore;

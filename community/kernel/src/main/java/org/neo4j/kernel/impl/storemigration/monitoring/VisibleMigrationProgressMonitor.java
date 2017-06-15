@@ -55,10 +55,6 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     @Override
     public void completed()
     {
-        if ( currentStage < numStages )
-        {
-            log.info( format( "%d stages were not required and have been skipped.", numStages - currentStage ) );
-        }
         log.info( MESSAGE_COMPLETED );
     }
 

@@ -50,7 +50,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
-    private final MigrationProgressMonitor progressMonitor;
+    private final MigrationProgressMonitor.Section progressMonitor;
 
     public CountsComputer( NeoStores stores )
     {
@@ -64,11 +64,11 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
             int highLabelId, int highRelationshipTypeId )
     {
         this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
-                new SilentMigrationProgressMonitor() );
+                new SilentMigrationProgressMonitor().startSection( "Counts" ) );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId, int highRelationshipTypeId, MigrationProgressMonitor progressMonitor )
+            int highLabelId, int highRelationshipTypeId, MigrationProgressMonitor.Section progressMonitor )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
@@ -81,27 +81,23 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     @Override
     public void initialize( CountsAccessor.Updater countsUpdater )
     {
+        progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
         try
         {
             // Count nodes
-            MigrationProgressMonitor.Section nodeSection = progressMonitor.startSection( "node counting" );
-            nodeSection.start( nodes.getHighestPossibleIdInUse() );
             superviseDynamicExecution(
                     new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater,
-                            nodeSection ) );
-            nodeSection.completed();
+                            progressMonitor ) );
             // Count relationships
-            MigrationProgressMonitor.Section relationshipSection = progressMonitor
-                    .startSection( "relationship counting" );
-            relationshipSection.start( relationships.getHighestPossibleIdInUse() );
             superviseDynamicExecution(
                     new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, AUTO, relationshipSection ) );
+                            highRelationshipTypeId, countsUpdater, AUTO, progressMonitor ) );
         }
         finally
         {
             cache.close();
+            progressMonitor.completed();
         }
     }
 

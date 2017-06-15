@@ -53,12 +53,6 @@ public class AbstractStoreMigrationParticipant implements StoreMigrationParticip
     }
 
     @Override
-    public void rebuildCounts( File storeDir, MigrationProgressMonitor progressMonitor, String versionToMigrateFrom,
-            String versionToMigrateTo ) throws IOException
-    {
-    }
-
-    @Override
     public void cleanup( File migrationDir ) throws IOException
     {
     }

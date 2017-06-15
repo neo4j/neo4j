@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -364,7 +365,6 @@ public class StoreUpgraderTest
     public void upgradeShouldGiveProgressMonitorProgressMessages() throws Exception
     {
         // Given
-        fileSystem.deleteFile( new File( dbDirectory, INTERNAL_LOG_FILE ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem, new StoreVersionCheck( pageCache ),
                 getRecordFormats() );
@@ -377,8 +377,7 @@ public class StoreUpgraderTest
         // Then
         logProvider.assertContainsLogCallContaining( "Store files" );
         logProvider.assertContainsLogCallContaining( "Indexes" );
-        logProvider.assertContainsLogCallContaining( "node count" );
-        logProvider.assertContainsLogCallContaining( "relationship count" );
+        logProvider.assertContainsLogCallContaining( "Count rebuilding" );
         logProvider.assertContainsLogCallContaining( "Successfully finished" );
     }
 
@@ -447,12 +446,14 @@ public class StoreUpgraderTest
     {
         NullLogService instance = NullLogService.getInstance();
         StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance );
+        CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig(), instance );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, schemaIndexProvider );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( defaultMigrator );
+        upgrader.addParticipant( countsMigrator );
         return upgrader;
     }
 

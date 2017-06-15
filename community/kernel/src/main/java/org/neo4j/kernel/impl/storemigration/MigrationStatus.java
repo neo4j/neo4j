@@ -33,7 +33,6 @@ enum MigrationStatus
 {
     migrating,
     moving,
-    countsRebuilding,
     completed;
 
     public boolean isNeededFor( MigrationStatus current )
