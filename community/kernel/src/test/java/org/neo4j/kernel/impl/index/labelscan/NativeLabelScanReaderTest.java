@@ -31,6 +31,8 @@ import org.neo4j.index.internal.gbptree.Hit;
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
@@ -73,11 +75,81 @@ public class NativeLabelScanReaderTest
         }
     }
 
+    @Test
+    public void shouldSupportMultipleOpenCursorsConcurrently() throws Exception
+    {
+        // GIVEN
+        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor1 = mock( RawCursor.class );
+        when( cursor1.next() ).thenReturn( false );
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor2 = mock( RawCursor.class );
+        when( cursor2.next() ).thenReturn( false );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
+
+        // WHEN
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
+        {
+            // first check test invariants
+            verify( cursor1, times( 0 ) ).close();
+            verify( cursor2, times( 0 ) ).close();
+            PrimitiveLongIterator first = reader.nodesWithLabel( LABEL_ID );
+            PrimitiveLongIterator second = reader.nodesWithLabel( LABEL_ID );
+
+            // getting the second iterator should not have closed the first one
+            verify( cursor1, times( 0 ) ).close();
+            verify( cursor2, times( 0 ) ).close();
+
+            // exhausting the first one should have closed only the first one
+            exhaust( first );
+            verify( cursor1, times( 1 ) ).close();
+            verify( cursor2, times( 0 ) ).close();
+
+            // exhausting the second one should close it
+            exhaust( second );
+            verify( cursor1, times( 1 ) ).close();
+            verify( cursor2, times( 1 ) ).close();
+        }
+    }
+
+    @Test
+    public void shouldCloseUnexhaustedCursorsOnReaderClose() throws Exception
+    {
+        // GIVEN
+        GBPTree<LabelScanKey,LabelScanValue> index = mock( GBPTree.class );
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor1 = mock( RawCursor.class );
+        when( cursor1.next() ).thenReturn( false );
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor2 = mock( RawCursor.class );
+        when( cursor2.next() ).thenReturn( false );
+        when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
+
+        // WHEN
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
+        {
+            // first check test invariants
+            reader.nodesWithLabel( LABEL_ID );
+            reader.nodesWithLabel( LABEL_ID );
+            verify( cursor1, times( 0 ) ).close();
+            verify( cursor2, times( 0 ) ).close();
+        }
+
+        // THEN
+        verify( cursor1, times( 1 ) ).close();
+        verify( cursor2, times( 1 ) ).close();
+    }
+
     private static Hit<LabelScanKey,LabelScanValue> hit( long baseNodeId, long bits )
     {
         LabelScanKey key = new LabelScanKey( LABEL_ID, baseNodeId );
         LabelScanValue value = new LabelScanValue();
         value.bits = bits;
         return new MutableHit<>( key, value );
+    }
+
+    private void exhaust( PrimitiveLongIterator iterator )
+    {
+        while ( iterator.hasNext() )
+        {
+            iterator.next();
+        }
     }
 }
