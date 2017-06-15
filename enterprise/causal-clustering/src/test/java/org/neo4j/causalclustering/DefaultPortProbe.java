@@ -19,11 +19,21 @@
  */
 package org.neo4j.causalclustering;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+
 public class DefaultPortProbe implements PortProbe
 {
     @Override
     public boolean isOccupied( int port )
     {
-        return false;
+        try ( ServerSocket ignored = new ServerSocket( port ) )
+        {
+            return false;
+        }
+        catch ( IOException e )
+        {
+            return true;
+        }
     }
 }
