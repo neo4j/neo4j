@@ -216,7 +216,7 @@ public class ForsetiFalseDeadlockTest
 
         // During development I also had iteration counts 1 and 2 here, but they never found anything, so for actually
         // running this test, I leave only iteration count 100 enabled.
-        int[] iterations = new int[]{100};
+        int iteration = 100;
         LockManager[] lockManagers = LockManager.values();
         LockWaitStrategies[] lockWaitStrategies = LockWaitStrategies.values();
         LockType[] lockTypes = LockType.values();
@@ -232,12 +232,9 @@ public class ForsetiFalseDeadlockTest
                         {
                             for ( LockType lockTypeBY : lockTypes )
                             {
-                                for ( int iteration : iterations )
-                                {
-                                    fixtures.add( new Fixture(
-                                            iteration, lockManager, waitStrategy,
-                                            lockTypeAX, lockTypeAY, lockTypeBX, lockTypeBY ) );
-                                }
+                                fixtures.add( new Fixture(
+                                        iteration, lockManager, waitStrategy,
+                                        lockTypeAX, lockTypeAY, lockTypeBX, lockTypeBY ) );
                             }
                         }
                     }
