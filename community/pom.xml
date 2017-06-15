@@ -67,6 +67,7 @@
     <module>command-line</module>
     <module>procedure-compiler</module>
     <module>values</module>
+    <module>ssl</module>
   </modules>
 
   <licenses>

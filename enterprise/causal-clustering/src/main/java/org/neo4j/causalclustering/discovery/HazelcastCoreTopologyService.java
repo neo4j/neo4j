@@ -49,6 +49,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 import static com.hazelcast.spi.properties.GroupProperty.INITIAL_MIN_CLUSTER_SIZE;
 import static com.hazelcast.spi.properties.GroupProperty.LOGGING_TYPE;
@@ -60,17 +61,20 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extr
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
+import static org.neo4j.causalclustering.discovery.HazelcastSslConfiguration.configureSsl;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private final Config config;
+    private final SslPolicy sslPolicy;
     private final MemberId myself;
     private final Log log;
     private final Log userLog;
     private final CoreTopologyListenerService listenerService;
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
+    private final LogProvider logProvider;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -83,13 +87,15 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
+    HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
             LogProvider userLogProvider )
     {
         this.config = config;
+        this.sslPolicy = sslPolicy;
         this.myself = myself;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
+        this.logProvider = logProvider;
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
@@ -136,7 +142,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             log.info( "Cluster discovery service started" );
         } );
         startingThread.setDaemon( true );
-        startingThread.setName( "HC Starting Thread" );
+        startingThread.setName( "HZ Starting Thread" );
         startingThread.start();
     }
 
@@ -197,21 +203,24 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         }
 
         NetworkConfig networkConfig = new NetworkConfig();
+
+        configureSsl( networkConfig, sslPolicy, logProvider );
+
         networkConfig.setInterfaces( interfaces );
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
 
-        // We'll use election_timeout as a base value to calculate HC timeouts. We multiply by 1.5
+        // We'll use election_timeout as a base value to calculate HZ timeouts. We multiply by 1.5
         Long electionTimeoutMillis = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
-        Long baseHazelcastTimeoutMillis = ( 3 * electionTimeoutMillis ) / 2;
+        Long baseHazelcastTimeoutMillis = (3 * electionTimeoutMillis) / 2;
         /*
-         * Some HC settings require the value in seconds. Adding the divider and subtracting 1 is equivalent to the
+         * Some HZ settings require the value in seconds. Adding the divider and subtracting 1 is equivalent to the
          * ceiling function for integers ( Math.ceil() returns double ). Anything < 0 will return 0, any
          * multiple of 1000 returns the result of the division by 1000, any non multiple of 1000 returns the result
          * of the division + 1. In other words, values in millis are rounded up.
          */
-        long baseHazelcastTimeoutSeconds = ( baseHazelcastTimeoutMillis + 1000 - 1 ) / 1000;
+        long baseHazelcastTimeoutSeconds = (baseHazelcastTimeoutMillis + 1000 - 1) / 1000;
 
         com.hazelcast.config.Config c = new com.hazelcast.config.Config();
         c.setProperty( OPERATION_CALL_TIMEOUT_MILLIS.getName(), String.valueOf( baseHazelcastTimeoutMillis ) );

@@ -23,13 +23,13 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 public interface DiscoveryServiceFactory
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider );
 
-    TopologyService topologyService( Config config, LogProvider logProvider,
-                                     JobScheduler jobScheduler, MemberId myself );
-
+    TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
+            JobScheduler jobScheduler, MemberId myself );
 }

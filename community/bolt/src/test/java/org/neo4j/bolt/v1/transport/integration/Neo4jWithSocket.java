@@ -35,6 +35,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -141,8 +142,6 @@ public class Neo4jWithSocket extends ExternalResource
         settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
         settings.put( new BoltConnector( "bolt" ).encryption_level.name(), OPTIONAL.name() );
-        settings.put( BoltKernelExtension.Settings.tls_key_file.name(), tempPath( "key.key" ) );
-        settings.put( BoltKernelExtension.Settings.tls_certificate_file.name(), tempPath( "cert.cert" ) );
         configure.accept( settings );
         overrideSettingsFunction.accept( settings );
         return settings;

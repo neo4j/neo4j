@@ -95,8 +95,8 @@ public class SharedDiscoveryServiceIT
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
 
-        CoreTopologyService topologyService = disoveryServiceFactory
-                .coreTopologyService( config(), member, jobScheduler, logProvider, userLogProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), null, member,
+                jobScheduler, logProvider, userLogProvider );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 

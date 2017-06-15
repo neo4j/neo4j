@@ -28,8 +28,8 @@ import java.io.IOException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -218,8 +218,8 @@ public class FixturesTest
     private TestServerBuilder getServerBuilder( File targetFolder ) throws IOException
     {
         TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder )
-                .withConfig( ServerSettings.certificates_directory.name(),
-                        ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.certificates_directory ) );
+                .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
+                        ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory ) );
         return serverBuilder;
     }
 

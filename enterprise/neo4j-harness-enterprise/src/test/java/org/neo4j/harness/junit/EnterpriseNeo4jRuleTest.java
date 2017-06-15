@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.harness.extensionpackage.MyEnterpriseUnmanagedExtension;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
@@ -37,8 +37,8 @@ public class EnterpriseNeo4jRuleTest
 {
     @Rule
     public Neo4jRule neo4j = new EnterpriseNeo4jRule()
-            .withConfig( ServerSettings.certificates_directory.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
+            .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
             .withExtension( "/test", MyEnterpriseUnmanagedExtension.class );
 
     @Rule

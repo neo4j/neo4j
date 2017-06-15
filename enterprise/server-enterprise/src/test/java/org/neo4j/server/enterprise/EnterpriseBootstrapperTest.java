@@ -49,8 +49,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.certificates_directory;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
-import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest

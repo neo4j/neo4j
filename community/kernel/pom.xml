@@ -200,7 +200,11 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-index</artifactId>
       <version>${project.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ssl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>annotations</artifactId>

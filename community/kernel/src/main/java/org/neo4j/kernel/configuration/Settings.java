@@ -775,6 +775,11 @@ public class Settings
         return options( EnumSet.allOf( enumClass ), false );
     }
 
+    public static <T extends Enum<T>> Function<String, T> options( final Class<T> enumClass, boolean ignoreCase )
+    {
+        return options( EnumSet.allOf( enumClass ), ignoreCase );
+    }
+
     public static <T> Function<String, T> options( T... optionValues )
     {
         return options( Iterables.iterable( optionValues ), false );

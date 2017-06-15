@@ -52,6 +52,10 @@ BSD License
   ASM Core
   Scala Compiler
 
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
 MIT License
   SLF4J API Module
   SLF4J NOP Binding

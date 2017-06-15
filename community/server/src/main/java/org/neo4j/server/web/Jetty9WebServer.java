@@ -60,7 +60,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.Config;
@@ -69,6 +68,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
+import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
 
@@ -126,7 +126,7 @@ public class Jetty9WebServer implements WebServer
     private final List<FilterDefinition> filters = new ArrayList<>();
 
     private int jettyMaxThreads = 1;
-    private KeyStoreInformation httpsCertificateInformation;
+    private SslPolicy sslPolicy;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
     private final Log log;
@@ -150,12 +150,12 @@ public class Jetty9WebServer implements WebServer
 
             jettyHttpsAddress.ifPresent( ( address ) ->
             {
-                if ( httpsCertificateInformation == null )
+                if ( sslPolicy == null )
                 {
-                    throw new RuntimeException( "HTTPS set to enabled, but no HTTPS configuration provided" );
+                    throw new RuntimeException( "HTTPS set to enabled, but no SSL policy provided" );
                 }
                 jetty.addConnector( sslSocketFactory.createConnector(
-                        jetty, httpsCertificateInformation, address, jettyThreadCalculator ) );
+                        jetty, sslPolicy, address, jettyThreadCalculator ) );
             } );
 
             if ( jettyCreatedCallback != null )
@@ -346,9 +346,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpsCertificateInformation( KeyStoreInformation config )
+    public void setSslPolicy( SslPolicy sslPolicy )
     {
-        httpsCertificateInformation = config;
+        this.sslPolicy = sslPolicy;
     }
 
     public Server getJetty()

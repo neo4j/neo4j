@@ -34,25 +34,34 @@ import org.neo4j.causalclustering.messaging.marshalling.RaftMessageEncoder;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
     private final Log log;
     private final Monitors monitors;
+    private final SslPolicy sslPolicy;
 
     public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider,
-            Monitors monitors )
+            Monitors monitors, SslPolicy sslPolicy )
     {
         this.marshal = marshal;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.sslPolicy = sslPolicy;
     }
 
     @Override
     protected void initChannel( SocketChannel ch ) throws Exception
     {
         ChannelPipeline pipeline = ch.pipeline();
+
+        if ( sslPolicy != null )
+        {
+            pipeline.addLast( sslPolicy.nettyClientHandler( ch ) );
+        }
+
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
         pipeline.addLast( new VersionPrepender() );
         pipeline.addLast( "raftMessageEncoder", new RaftMessageEncoder( marshal ) );

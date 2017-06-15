@@ -21,19 +21,28 @@ package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.core.HazelcastInstance;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
+
+import static org.neo4j.causalclustering.discovery.HazelcastSslConfiguration.configureSsl;
 
 public class HazelcastClientConnector implements HazelcastConnector
 {
     private final Config config;
+    private final LogProvider logProvider;
+    private final SslPolicy sslPolicy;
 
-    public HazelcastClientConnector( Config config )
+    HazelcastClientConnector( Config config, LogProvider logProvider, SslPolicy sslPolicy )
     {
         this.config = config;
+        this.logProvider = logProvider;
+        this.sslPolicy = sslPolicy;
     }
 
     @Override
@@ -41,10 +50,15 @@ public class HazelcastClientConnector implements HazelcastConnector
     {
         ClientConfig clientConfig = new ClientConfig();
 
+        ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+
         for ( AdvertisedSocketAddress address : config.get( CausalClusteringSettings.initial_discovery_members ) )
         {
-            clientConfig.getNetworkConfig().addAddress( address.toString() );
+            networkConfig.addAddress( address.toString() );
         }
+
+        configureSsl( networkConfig, sslPolicy, logProvider );
+
         return HazelcastClient.newHazelcastClient( clientConfig );
     }
 }

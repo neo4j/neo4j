@@ -67,6 +67,7 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -94,6 +95,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
@@ -188,15 +190,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
+        SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
+        SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
+
         ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory.get() );
+                platformModule, clusterStateDirectory.get(), clusterSslPolicy );
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
         int maxQueueSize = config.get( CausalClusteringSettings.outgoing_queue_size );
 
         final SenderService raftSender = new SenderService(
-                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors ),
+                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, clusterSslPolicy ),
                 logProvider, platformModule.monitors, maxQueueSize );
         life.add( raftSender );
 
@@ -230,7 +235,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
                 coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier );
+                messageLogger, databaseHealthSupplier, clusterSslPolicy );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 

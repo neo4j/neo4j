@@ -34,6 +34,7 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
@@ -44,4 +45,8 @@ BSD - Scala License
 BSD License
   ASM Core
   Scala Compiler
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 

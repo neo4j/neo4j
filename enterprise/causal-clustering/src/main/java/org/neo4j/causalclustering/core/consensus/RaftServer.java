@@ -44,16 +44,17 @@ import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
 import org.neo4j.causalclustering.messaging.Inbound;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
 
@@ -61,6 +62,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
+    private final SslPolicy sslPolicy;
     private final ListenSocketAddress listenAddress;
     private final LogProvider logProvider;
     private final Log log;
@@ -73,10 +75,11 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, Config config, LogProvider logProvider,
-            LogProvider userLogProvider, Monitors monitors )
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, SslPolicy sslPolicy, Config config,
+            LogProvider logProvider, LogProvider userLogProvider, Monitors monitors )
     {
         this.marshal = marshal;
+        this.sslPolicy = sslPolicy;
         this.listenAddress = config.get( setting );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
@@ -127,6 +130,12 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
                     protected void initChannel( SocketChannel ch ) throws Exception
                     {
                         ChannelPipeline pipeline = ch.pipeline();
+
+                        if ( sslPolicy != null )
+                        {
+                            pipeline.addLast( sslPolicy.nettyServerHandler( ch ) );
+                        }
+
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
 
