@@ -62,7 +62,7 @@ abstract class StringValue extends TextValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value();
     }
@@ -83,6 +83,12 @@ abstract class StringValue extends TextValue
     public String stringValue()
     {
         return value();
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return format( "'%s'", value() );
     }
 
     static final class Direct extends StringValue
@@ -106,7 +112,7 @@ abstract class StringValue extends TextValue
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<String> producer )
+        Lazy( ValueLoader<String> producer )
         {
             this.field = producer;
         }

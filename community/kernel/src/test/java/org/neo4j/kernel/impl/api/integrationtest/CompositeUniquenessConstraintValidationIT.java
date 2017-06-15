@@ -44,9 +44,9 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -195,7 +195,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        statement.dataWriteOperations().nodeSetProperty( node, property( 0, "Alive!" ) );
+        statement.dataWriteOperations().nodeSetProperty( node, 0, Values.of( "Alive!" ) );
         long newNode = createLabeledNode( label );
         setProperties( newNode, aValues );
 
@@ -352,7 +352,7 @@ public class CompositeUniquenessConstraintValidationIT
 
     private void setProperty( long nodeId, int propertyId, Object value ) throws KernelException
     {
-        statement.dataWriteOperations().nodeSetProperty( nodeId, property( propertyId, value ) );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyId, Values.of( value ) );
     }
 
     private long createNode() throws KernelException

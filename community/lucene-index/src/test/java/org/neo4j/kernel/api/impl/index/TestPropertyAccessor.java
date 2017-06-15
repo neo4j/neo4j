@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.List;
+
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.values.Value;
 
 public class TestPropertyAccessor implements PropertyAccessor
 {
-    private final Object[] propertyValues;
+    private final List<Value> propertyValues;
 
-    public TestPropertyAccessor( Object[] propertyValues )
+    public TestPropertyAccessor( List<Value> propertyValues )
     {
         this.propertyValues = propertyValues;
     }
 
     @Override
-    public Property getProperty( long nodeId, int propertyKeyId )
+    public Value getPropertyValue( long nodeId, int propertyKeyId )
     {
-        return Property.property( propertyKeyId, propertyValues[(int) nodeId] );
+        return propertyValues.get( (int)nodeId );
     }
 }

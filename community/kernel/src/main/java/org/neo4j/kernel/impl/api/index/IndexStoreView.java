@@ -28,9 +28,10 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor, PropertyLoader
@@ -109,9 +110,9 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+        public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
         {
-            return Property.noNodeProperty( nodeId, propertyKeyId );
+            return Values.NO_VALUE;
         }
 
         @Override

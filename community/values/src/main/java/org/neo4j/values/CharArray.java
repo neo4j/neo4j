@@ -83,9 +83,22 @@ abstract class CharArray extends TextArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
     }
 
     static final class Direct extends CharArray
@@ -115,7 +128,7 @@ abstract class CharArray extends TextArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<char[]> producer )
+        Lazy( ValueLoader<char[]> producer )
         {
             this.field = producer;
         }

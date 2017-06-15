@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.Value;
 
 class IndexLookup implements AutoCloseable
 {
@@ -142,6 +143,6 @@ class IndexLookup implements AutoCloseable
 
     interface Index
     {
-        boolean contains( long nodeId, Object propertyValue ) throws IOException;
+        boolean contains( long nodeId, Value propertyValue ) throws IOException;
     }
 }

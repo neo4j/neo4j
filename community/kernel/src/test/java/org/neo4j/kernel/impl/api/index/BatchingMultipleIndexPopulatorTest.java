@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.AWAIT_TIMEOUT_MINUTES_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.BATCH_SIZE_NAME;
 import static org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator.TASK_QUEUE_SIZE_NAME;
@@ -91,8 +93,8 @@ public class BatchingMultipleIndexPopulatorTest
         IndexUpdater updater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( any() ) ).thenReturn( updater );
 
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1.schema(), "foo" );
-        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index1.schema(), "bar" );
+        IndexEntryUpdate update1 = add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate update2 = add( 2, index1.schema(), "bar" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
@@ -125,9 +127,9 @@ public class BatchingMultipleIndexPopulatorTest
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
         batchingPopulator.indexAllNodes();
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( 1, index1.schema(), "foo" );
-        IndexEntryUpdate update2 = IndexEntryUpdate.add( 2, index42.schema(), "bar" );
-        IndexEntryUpdate update3 = IndexEntryUpdate.add( 3, index1.schema(), "baz" );
+        IndexEntryUpdate update1 = add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate update2 = add( 2, index42.schema(), "bar" );
+        IndexEntryUpdate update3 = add( 3, index1.schema(), "baz" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
         batchingPopulator.queue( update3 );
@@ -308,7 +310,9 @@ public class BatchingMultipleIndexPopulatorTest
     private NodeUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...
             labelIds )
     {
-        return NodeUpdates.forNode( nodeId, labelIds, labelIds ).added( propertyId, propertyValue ).build();
+        return NodeUpdates.forNode( nodeId, labelIds, labelIds )
+                .added( propertyId, Values.of( propertyValue ) )
+                .build();
     }
 
     private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )

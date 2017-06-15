@@ -26,7 +26,7 @@ import static java.lang.String.format;
 /**
  * Comparator for values. Usable for sorting values, for example during index range scans.
  */
-class ValueComparator implements Comparator<Value>
+public class ValueComparator implements Comparator<Value>
 {
     private final Comparator<ValueGroup> valueGroupComparator;
     private final Comparator<VirtualValue> virtualValueComparator;

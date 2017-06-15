@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.values.Value;
 
 /**
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
@@ -34,7 +35,7 @@ abstract class SchemaNumberValue
     protected byte type;
     protected long rawValueBits;
 
-    abstract void from( long entityId, Object[] values );
+    abstract void from( long entityId, Value[] values );
 
     abstract long getEntityId();
 

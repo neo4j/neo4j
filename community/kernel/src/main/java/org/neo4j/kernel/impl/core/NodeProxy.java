@@ -52,11 +52,12 @@ import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
@@ -274,7 +275,7 @@ public class NodeProxy implements Node
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
+                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
             }
             catch ( ConstraintValidationException e )
             {
@@ -313,7 +314,7 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).value( null );
+            return statement.dataWriteOperations().nodeRemoveProperty( nodeId, propertyKeyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -345,8 +346,8 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
-            return value == null ? defaultValue : value;
+            Value value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -419,7 +420,7 @@ public class NodeProxy implements Node
                     {
                         String name = statement.readOperations().propertyKeyGetName(
                                 propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value() );
+                        properties.put( name, propertyCursor.get().value().asObjectCopy() );
                     }
 
                     return properties;
@@ -454,14 +455,14 @@ public class NodeProxy implements Node
                     throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+                Value value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
 
-                if ( value == null )
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
                 }
 
-                return value;
+                return value.asObjectCopy();
 
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )

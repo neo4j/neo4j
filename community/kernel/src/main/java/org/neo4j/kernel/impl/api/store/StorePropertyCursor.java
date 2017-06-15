@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.values.Value;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -100,9 +101,9 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     }
 
     @Override
-    public Object value()
+    public Value value()
     {
-        Object value = payload.value();
+        Value value = payload.value();
         assertOpen.assertOpen();
         return value;
     }

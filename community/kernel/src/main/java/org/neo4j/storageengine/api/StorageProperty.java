@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.values.Value;
 
 /**
  * Abstraction pairing property key token id and property value. Can represent both defined and undefined
@@ -34,29 +34,9 @@ public interface StorageProperty
     int propertyKeyId();
 
     /**
-     * @param other value to compare with for equality.
-     * @return whether or not the property value is equal to the given {@code value}.
+     * @return the property value or Values.NO_VALUE is this property does not exist.
      */
-    boolean valueEquals( Object other );
-
-    /**
-     * @return the property value.
-     * @throws PropertyNotFoundException if this property instance represented a non-existent property.
-     */
-    Object value() throws PropertyNotFoundException;
-
-    /**
-     * @param defaultValue value to return if this property has no value associated with it, instead
-     * of throwing exception.
-     * @return the property value.
-     */
-    Object value( Object defaultValue );
-
-    /**
-     * @return the property value as, a {@link String} representation of it.
-     * @throws PropertyNotFoundException if this property instance represented a non-existent property.
-     */
-    String valueAsString() throws PropertyNotFoundException;
+    Value value();
 
     /**
      * @return whether or not the property is defined, e.g. if it exists (has a value) or not.

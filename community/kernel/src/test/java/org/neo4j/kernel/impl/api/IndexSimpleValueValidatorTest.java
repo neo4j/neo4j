@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.impl.util.Validator;
+import org.neo4j.values.Values;
 
 import static org.neo4j.kernel.impl.api.IndexSimpleValueValidator.INSTANCE;
 
@@ -83,6 +84,6 @@ public class IndexSimpleValueValidatorTest
 
     protected Validator<Object> getValidator()
     {
-        return INSTANCE;
+        return object -> INSTANCE.validate( Values.of( object ) );
     }
 }

@@ -23,22 +23,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 public class NodePropertyAccessor implements PropertyAccessor
 {
-    private final Map<Long, Map<Integer,Object>> nodePropertyMap;
+    private final Map<Long, Map<Integer,Value>> nodePropertyMap;
 
-    NodePropertyAccessor( long nodeId, LabelSchemaDescriptor schema, Object... values )
+    NodePropertyAccessor( long nodeId, LabelSchemaDescriptor schema, Value... values )
     {
         nodePropertyMap = new HashMap<>();
         addNode( nodeId, schema, values );
     }
 
-    public void addNode( long nodeId, LabelSchemaDescriptor schema, Object... values )
+    public void addNode( long nodeId, LabelSchemaDescriptor schema, Value... values )
     {
-        Map<Integer,Object> propertyMap = new HashMap<>();
+        Map<Integer,Value> propertyMap = new HashMap<>();
         for ( int i = 0; i < schema.getPropertyIds().length; i++ )
         {
             propertyMap.put( schema.getPropertyIds()[i], values[i] );
@@ -47,20 +48,20 @@ public class NodePropertyAccessor implements PropertyAccessor
     }
 
     @Override
-    public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {
-            Object value = nodePropertyMap.get( nodeId ).get( propertyKeyId );
+            Value value = nodePropertyMap.get( nodeId ).get( propertyKeyId );
             if ( value == null )
             {
-                return Property.noNodeProperty( nodeId, propertyKeyId );
+                return Values.NO_VALUE;
             }
             else
             {
-                return Property.property( propertyKeyId, value );
+                return value;
             }
         }
-        return Property.noNodeProperty( nodeId, propertyKeyId );
+        return Values.NO_VALUE;
     }
 }

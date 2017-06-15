@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.singletonList;
 
@@ -166,7 +167,7 @@ public class Commands
         PropertyBlock block = new PropertyBlock();
         if ( valueRecordIds.length == 0 )
         {
-            PropertyStore.encodeValue( block, key, 123 /*value*/, null, null );
+            PropertyStore.encodeValue( block, key, Values.of( 123 ), null, null );
         }
         else
         {

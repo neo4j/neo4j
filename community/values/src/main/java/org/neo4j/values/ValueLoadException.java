@@ -17,31 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.properties;
+package org.neo4j.values;
 
 /**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
+ * Exception thrown when {@link ValueLoader#load()} fails to load a value.
  */
-final class IntProperty extends IntegralNumberProperty
+public class ValueLoadException extends RuntimeException
 {
-    private final int value;
-
-    IntProperty( int propertyKeyId, int value )
+    public ValueLoadException( String message )
     {
-        super( propertyKeyId );
-        this.value = value;
+        this( message, null );
     }
 
-    @Override
-    public Integer value()
+    public ValueLoadException( String message, Throwable cause )
     {
-        return value;
-    }
-
-    @Override
-    public long longValue()
-    {
-        return value;
+        super( message, cause );
     }
 }

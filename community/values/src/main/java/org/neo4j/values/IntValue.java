@@ -43,9 +43,15 @@ final class IntValue extends IntegralValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Integer.toString( value );
     }
 
     @Override

@@ -32,13 +32,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.io.IOUtils;
@@ -48,12 +46,13 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.instanceOf;
@@ -106,7 +105,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void stringValuesWithoutDuplicates() throws IOException
     {
-        Set<PropertyValue> data = randomStrings();
+        Set<Value> data = randomStrings();
 
         insert( data );
 
@@ -116,7 +115,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void stringValuesWithDuplicates() throws IOException
     {
-        List<PropertyValue> data = withDuplicate( randomStrings() );
+        List<Value> data = withDuplicate( randomStrings() );
 
         insert( data );
 
@@ -128,7 +127,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         long min = randomLongInRange( 100, 10_000 );
         long max = min + nodesToCreate;
-        Set<PropertyValue> data = randomLongs( min, max );
+        Set<Value> data = randomLongs( min, max );
 
         insert( data );
 
@@ -140,7 +139,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         long min = randomLongInRange( 100, 10_000 );
         long max = min + nodesToCreate;
-        List<PropertyValue> data = withDuplicate( randomLongs( min, max ) );
+        List<Value> data = withDuplicate( randomLongs( min, max ) );
 
         insert( data );
 
@@ -152,7 +151,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         long max = randomLongInRange( MIN_LONG_VALUE, MAX_LONG_VALUE );
         long min = max - nodesToCreate;
-        Set<PropertyValue> data = randomLongs( min, max );
+        Set<Value> data = randomLongs( min, max );
 
         insert( data );
 
@@ -164,7 +163,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         long max = randomLongInRange( MIN_LONG_VALUE, MAX_LONG_VALUE );
         long min = max - nodesToCreate;
-        List<PropertyValue> data = withDuplicate( randomLongs( min, max ) );
+        List<Value> data = withDuplicate( randomLongs( min, max ) );
 
         insert( data );
 
@@ -176,7 +175,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         double min = randomDoubleInRange( 100, 10_000 );
         double max = min + nodesToCreate;
-        Set<PropertyValue> data = randomDoubles( min, max );
+        Set<Value> data = randomDoubles( min, max );
 
         insert( data );
 
@@ -188,7 +187,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         double min = randomDoubleInRange( 100, 10_000 );
         double max = min + nodesToCreate;
-        List<PropertyValue> data = withDuplicate( randomDoubles( min, max ) );
+        List<Value> data = withDuplicate( randomDoubles( min, max ) );
 
         insert( data );
 
@@ -200,7 +199,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         double max = randomDoubleInRange( Double.MAX_VALUE / 2, Double.MAX_VALUE );
         double min = max / 2;
-        Set<PropertyValue> data = randomDoubles( min, max );
+        Set<Value> data = randomDoubles( min, max );
 
         insert( data );
 
@@ -212,7 +211,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     {
         double max = randomDoubleInRange( Double.MAX_VALUE / 2, Double.MAX_VALUE );
         double min = max / 2;
-        List<PropertyValue> data = withDuplicate( randomDoubles( min, max ) );
+        List<Value> data = withDuplicate( randomDoubles( min, max ) );
 
         insert( data );
 
@@ -222,7 +221,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void smallArrayValuesWithoutDuplicates() throws IOException
     {
-        Set<PropertyValue> data = randomArrays( 3, 7 );
+        Set<Value> data = randomArrays( 3, 7 );
 
         insert( data );
 
@@ -232,7 +231,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void smallArrayValuesWithDuplicates() throws IOException
     {
-        List<PropertyValue> data = withDuplicate( randomArrays( 3, 7 ) );
+        List<Value> data = withDuplicate( randomArrays( 3, 7 ) );
 
         insert( data );
 
@@ -242,7 +241,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void largeArrayValuesWithoutDuplicates() throws IOException
     {
-        Set<PropertyValue> data = randomArrays( 70, 100 );
+        Set<Value> data = randomArrays( 70, 100 );
 
         insert( data );
 
@@ -252,7 +251,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void largeArrayValuesWithDuplicates() throws IOException
     {
-        List<PropertyValue> data = withDuplicate( randomArrays( 70, 100 ) );
+        List<Value> data = withDuplicate( randomArrays( 70, 100 ) );
 
         insert( data );
 
@@ -262,7 +261,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void variousValuesWithoutDuplicates() throws IOException
     {
-        Set<PropertyValue> data = randomPropertyValues();
+        Set<Value> data = randomValues();
 
         insert( data );
 
@@ -272,25 +271,25 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Test
     public void variousValuesWitDuplicates() throws IOException
     {
-        List<PropertyValue> data = withDuplicate( randomPropertyValues() );
+        List<Value> data = withDuplicate( randomValues() );
 
         insert( data );
 
         assertUniquenessConstraintFails( data );
     }
 
-    private void insert( Collection<PropertyValue> data ) throws IOException
+    private void insert( Collection<Value> data ) throws IOException
     {
-        PropertyValue[] dataArray = data.toArray( new PropertyValue[data.size()] );
+        Value[] dataArray = data.toArray( new Value[data.size()] );
         for ( int i = 0; i < dataArray.length; i++ )
         {
-            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, dataArray[i].value );
+            Document doc = LuceneDocumentStructure.documentRepresentingProperties( i, dataArray[i] );
             index.getIndexWriter().addDocument( doc );
         }
         index.maybeRefreshBlocking();
     }
 
-    private void assertUniquenessConstraintHolds( Collection<PropertyValue> data )
+    private void assertUniquenessConstraintHolds( Collection<Value> data )
     {
         try
         {
@@ -303,7 +302,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         }
     }
 
-    private void assertUniquenessConstraintFails( Collection<PropertyValue> data )
+    private void assertUniquenessConstraintFails( Collection<Value> data )
     {
         try
         {
@@ -317,19 +316,18 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         }
     }
 
-    private void verifyUniqueness( Collection<PropertyValue> data ) throws IOException, IndexEntryConflictException
+    private void verifyUniqueness( Collection<Value> data ) throws IOException, IndexEntryConflictException
     {
-        Object[] propertyValues = data.stream().map( property -> property.value ).toArray();
-        PropertyAccessor propertyAccessor = new TestPropertyAccessor( propertyValues );
+        PropertyAccessor propertyAccessor = new TestPropertyAccessor( new ArrayList<>( data ) );
         index.verifyUniqueness( propertyAccessor, new int[]{PROPERTY_KEY_ID} );
     }
 
-    private Set<PropertyValue> randomStrings()
+    private Set<Value> randomStrings()
     {
         return ThreadLocalRandom.current()
                 .ints( nodesToCreate, 1, 200 )
                 .mapToObj( this::randomString )
-                .map( PropertyValue::new )
+                .map( Values::of )
                 .collect( toSet() );
     }
 
@@ -340,47 +338,47 @@ public class LuceneSchemaIndexUniquenessVerificationIT
                : RandomStringUtils.randomAlphabetic( size );
     }
 
-    private Set<PropertyValue> randomLongs( long min, long max )
+    private Set<Value> randomLongs( long min, long max )
     {
         return ThreadLocalRandom.current()
                 .longs( nodesToCreate, min, max )
                 .boxed()
-                .map( PropertyValue::new )
+                .map( Values::of )
                 .collect( toSet() );
     }
 
-    private Set<PropertyValue> randomDoubles( double min, double max )
+    private Set<Value> randomDoubles( double min, double max )
     {
         return ThreadLocalRandom.current()
                 .doubles( nodesToCreate, min, max )
                 .boxed()
-                .map( PropertyValue::new )
+                .map( Values::of )
                 .collect( toSet() );
     }
 
-    private Set<PropertyValue> randomArrays( int minLength, int maxLength )
+    private Set<Value> randomArrays( int minLength, int maxLength )
     {
         Randoms randoms = new Randoms( ThreadLocalRandom.current(), new ArraySizeConfig( minLength, maxLength ) );
 
         return IntStream.range( 0, nodesToCreate )
                 .mapToObj( i -> randoms.array() )
-                .map( PropertyValue::new )
+                .map( Values::of )
                 .collect( toSet() );
     }
 
-    private Set<PropertyValue> randomPropertyValues()
+    private Set<Value> randomValues()
     {
         Randoms randoms = new Randoms( ThreadLocalRandom.current(), new ArraySizeConfig( 5, 100 ) );
 
         return IntStream.range( 0, nodesToCreate )
                 .mapToObj( i -> randoms.propertyValue() )
-                .map( PropertyValue::new )
+                .map( Values::of )
                 .collect( toSet() );
     }
 
-    private static List<PropertyValue> withDuplicate( Set<PropertyValue> set )
+    private static List<Value> withDuplicate( Set<Value> set )
     {
-        List<PropertyValue> data = new ArrayList<>( set );
+        List<Value> data = new ArrayList<>( set );
         if ( data.isEmpty() )
         {
             throw new IllegalStateException();
@@ -398,15 +396,15 @@ public class LuceneSchemaIndexUniquenessVerificationIT
                 duplicateValueIndex = ThreadLocalRandom.current().nextInt( data.size() );
             }
             while ( duplicateValueIndex == duplicateIndex );
-            PropertyValue duplicate = duplicatePropertyValue( data.get( duplicateValueIndex ) );
+            Value duplicate = duplicateValue( data.get( duplicateValueIndex ) );
             data.set( duplicateIndex, duplicate );
         }
         return data;
     }
 
-    private static PropertyValue duplicatePropertyValue( PropertyValue propertyValue )
+    private static Value duplicateValue( Value propertyValue )
     {
-        return new PropertyValue( propertyValue.value );
+        return Values.of( propertyValue.asObjectCopy() );
     }
 
     private static int randomIntInRange( int min, int max )
@@ -445,54 +443,6 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         public int arrayMaxLength()
         {
             return super.arrayMaxLength();
-        }
-    }
-
-    /**
-     * This class is used to implement correct equals and hashCode for property values of numeric and array types.
-     */
-    private static class PropertyValue
-    {
-        final Object value;
-
-        PropertyValue( Object value )
-        {
-            this.value = Objects.requireNonNull( value );
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            PropertyValue that = (PropertyValue) o;
-            return Property.property( PROPERTY_KEY_ID, value ).valueEquals( that.value );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            if ( value instanceof Number )
-            {
-                return Double.hashCode( ((Number) value).doubleValue() );
-            }
-            else if ( value.getClass().isArray() )
-            {
-                return ArrayUtil.hashCode( value );
-            }
-            return value.hashCode();
-        }
-
-        @Override
-        public String toString()
-        {
-            return Strings.prettyPrint( value );
         }
     }
 

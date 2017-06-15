@@ -100,9 +100,22 @@ abstract class ByteArray extends IntegralArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
     }
 
     static final class Direct extends ByteArray
@@ -132,7 +145,7 @@ abstract class ByteArray extends IntegralArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<byte[]> producer )
+        Lazy( ValueLoader<byte[]> producer )
         {
             this.field = producer;
         }

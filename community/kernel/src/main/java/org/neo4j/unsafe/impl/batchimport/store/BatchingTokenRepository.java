@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.Math.max;
 
@@ -223,7 +225,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             {
                 int key = getOrCreateId( properties[cursor++] );
                 Object value = properties[cursor++];
-                target[offset + i] = creator.encodeValue( new PropertyBlock(), key, value );
+                target[offset + i] = creator.encodeValue( new PropertyBlock(), key, Values.of( value ) );
             }
         }
     }

@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.values.Value;
 
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -74,18 +75,18 @@ public class LuceneDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long nodeId, Object... values )
+    public static Document documentRepresentingProperties( long nodeId, Value... values )
     {
         DocWithId document = reuseDocument( nodeId );
         document.setValues( values );
         return document.document;
     }
 
-    public static String encodedStringValuesForSampling( Object... values )
+    public static String encodedStringValuesForSampling( Value... values )
     {
         StringBuilder sb = new StringBuilder();
         String sep = "";
-        for ( Object value : values )
+        for ( Value value : values )
         {
             sb.append( sep );
             sep = DELIMITER;
@@ -100,7 +101,7 @@ public class LuceneDocumentStructure
         return new MatchAllDocsQuery();
     }
 
-    public static Query newSeekQuery( Object... values )
+    public static Query newSeekQuery( Value... values )
     {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for ( int i = 0; i < values.length; i++ )
@@ -185,7 +186,7 @@ public class LuceneDocumentStructure
 
     /**
      * Filters the given {@link Terms terms} to include only terms that were created using fields from
-     * {@link ValueEncoding#encodeField(String,Object)}. Internal lucene terms like those created for indexing numeric values
+     * {@link ValueEncoding#encodeField(String, Value)}. Internal lucene terms like those created for indexing numeric values
      * (see javadoc for {@link NumericRangeQuery} class) are skipped. In other words this method returns
      * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
      *
@@ -253,7 +254,7 @@ public class LuceneDocumentStructure
         }
     }
 
-    public static Field encodeValueField( Object value )
+    public static Field encodeValueField( Value value )
     {
         ValueEncoding encoding = ValueEncoding.forValue( value );
         return encoding.encodeField( encoding.key(), value );
@@ -283,7 +284,7 @@ public class LuceneDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValues( Object... values )
+        private void setValues( Value... values )
         {
             removeAllValueFields();
             int neededLength = values.length * ValueEncoding.values().length;
@@ -313,7 +314,7 @@ public class LuceneDocumentStructure
             }
         }
 
-        private Field getFieldWithValue( int propertyNumber, Object value )
+        private Field getFieldWithValue( int propertyNumber, Value value )
         {
             ValueEncoding encoding = ValueEncoding.forValue( value );
             int reuseId = propertyNumber * ValueEncoding.values().length + encoding.ordinal();

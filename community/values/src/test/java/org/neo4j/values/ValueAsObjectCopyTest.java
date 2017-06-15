@@ -28,9 +28,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ValueAsPublicTest
+public class ValueAsObjectCopyTest
 {
-    private Iterable<AsPublicTest> scalars = Arrays.asList(
+    private Iterable<AsObjectCopyTest> scalars = Arrays.asList(
             shouldGivePublic( Values.byteValue( (byte)1 ), (byte)1 ),
             shouldGivePublic( Values.shortValue( (short)2 ), (short)2 ),
             shouldGivePublic( Values.intValue( 3 ), 3 ),
@@ -46,7 +46,7 @@ public class ValueAsPublicTest
     @Test
     public void shouldProvideScalarValueAsPublic()
     {
-        for ( AsPublicTest test : scalars )
+        for ( AsObjectCopyTest test : scalars )
         {
             test.assertGeneratesPublic();
         }
@@ -59,15 +59,15 @@ public class ValueAsPublicTest
     {
         byte[] inStore = {1};
         Value value = Values.byteArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return byte[]", asPublic instanceof byte[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return byte[]", asObject instanceof byte[] );
 
-        byte[] arr = (byte[]) asPublic;
+        byte[] arr = (byte[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (byte[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (byte[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -75,15 +75,15 @@ public class ValueAsPublicTest
     {
         short[] inStore = {1};
         Value value = Values.shortArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return short[]", asPublic instanceof short[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return short[]", asObject instanceof short[] );
 
-        short[] arr = (short[]) asPublic;
+        short[] arr = (short[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (short[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (short[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -91,15 +91,15 @@ public class ValueAsPublicTest
     {
         int[] inStore = {1};
         Value value = Values.intArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return int[]", asPublic instanceof int[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return int[]", asObject instanceof int[] );
 
-        int[] arr = (int[]) asPublic;
+        int[] arr = (int[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (int[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (int[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -107,15 +107,15 @@ public class ValueAsPublicTest
     {
         long[] inStore = {1};
         Value value = Values.longArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return long[]", asPublic instanceof long[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return long[]", asObject instanceof long[] );
 
-        long[] arr = (long[]) asPublic;
+        long[] arr = (long[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (long[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (long[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -123,15 +123,15 @@ public class ValueAsPublicTest
     {
         float[] inStore = {1};
         Value value = Values.floatArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return float[]", asPublic instanceof float[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return float[]", asObject instanceof float[] );
 
-        float[] arr = (float[]) asPublic;
+        float[] arr = (float[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (float[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (float[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -139,15 +139,15 @@ public class ValueAsPublicTest
     {
         double[] inStore = {1};
         Value value = Values.doubleArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return double[]", asPublic instanceof double[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return double[]", asObject instanceof double[] );
 
-        double[] arr = (double[]) asPublic;
+        double[] arr = (double[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (double[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (double[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -155,15 +155,15 @@ public class ValueAsPublicTest
     {
         char[] inStore = {'a'};
         Value value = Values.charArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return char[]", asPublic instanceof char[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return char[]", asObject instanceof char[] );
 
-        char[] arr = (char[]) asPublic;
+        char[] arr = (char[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = 'b';
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (char[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (char[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -171,15 +171,15 @@ public class ValueAsPublicTest
     {
         String[] inStore = {"a"};
         Value value = Values.stringArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return String[]", asPublic instanceof String[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return String[]", asObject instanceof String[] );
 
-        String[] arr = (String[]) asPublic;
+        String[] arr = (String[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = "b";
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (String[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (String[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -187,15 +187,15 @@ public class ValueAsPublicTest
     {
         boolean[] inStore = {true};
         Value value = Values.booleanArray( inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return boolean[]", asPublic instanceof boolean[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return boolean[]", asObject instanceof boolean[] );
 
-        boolean[] arr = (boolean[]) asPublic;
+        boolean[] arr = (boolean[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = false;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (boolean[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (boolean[])value.asObjectCopy() ) );
     }
 
     // LAZY ARRAYS
@@ -205,15 +205,15 @@ public class ValueAsPublicTest
     {
         byte[] inStore = {1};
         Value value = Values.lazyByteArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return byte[]", asPublic instanceof byte[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return byte[]", asObject instanceof byte[] );
 
-        byte[] arr = (byte[]) asPublic;
+        byte[] arr = (byte[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (byte[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (byte[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -221,15 +221,15 @@ public class ValueAsPublicTest
     {
         short[] inStore = {1};
         Value value = Values.lazyShortArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return short[]", asPublic instanceof short[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return short[]", asObject instanceof short[] );
 
-        short[] arr = (short[]) asPublic;
+        short[] arr = (short[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (short[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (short[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -237,15 +237,15 @@ public class ValueAsPublicTest
     {
         int[] inStore = {1};
         Value value = Values.lazyIntArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return int[]", asPublic instanceof int[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return int[]", asObject instanceof int[] );
 
-        int[] arr = (int[]) asPublic;
+        int[] arr = (int[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (int[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (int[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -253,15 +253,15 @@ public class ValueAsPublicTest
     {
         long[] inStore = {1};
         Value value = Values.lazyLongArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return long[]", asPublic instanceof long[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return long[]", asObject instanceof long[] );
 
-        long[] arr = (long[]) asPublic;
+        long[] arr = (long[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (long[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (long[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -269,15 +269,15 @@ public class ValueAsPublicTest
     {
         float[] inStore = {1};
         Value value = Values.lazyFloatArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return float[]", asPublic instanceof float[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return float[]", asObject instanceof float[] );
 
-        float[] arr = (float[]) asPublic;
+        float[] arr = (float[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (float[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (float[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -285,15 +285,15 @@ public class ValueAsPublicTest
     {
         double[] inStore = {1};
         Value value = Values.lazyDoubleArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return double[]", asPublic instanceof double[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return double[]", asObject instanceof double[] );
 
-        double[] arr = (double[]) asPublic;
+        double[] arr = (double[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = -1;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (double[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (double[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -301,15 +301,15 @@ public class ValueAsPublicTest
     {
         char[] inStore = {'a'};
         Value value = Values.lazyCharArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return char[]", asPublic instanceof char[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return char[]", asObject instanceof char[] );
 
-        char[] arr = (char[]) asPublic;
+        char[] arr = (char[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = 'b';
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (char[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (char[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -317,15 +317,15 @@ public class ValueAsPublicTest
     {
         String[] inStore = {"a"};
         Value value = Values.lazyStringArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return String[]", asPublic instanceof String[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return String[]", asObject instanceof String[] );
 
-        String[] arr = (String[]) asPublic;
+        String[] arr = (String[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = "b";
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (String[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (String[])value.asObjectCopy() ) );
     }
 
     @Test
@@ -333,28 +333,28 @@ public class ValueAsPublicTest
     {
         boolean[] inStore = {true};
         Value value = Values.lazyBooleanArray( () -> inStore );
-        Object asPublic = value.asPublic();
-        assertTrue( "should return boolean[]", asPublic instanceof boolean[] );
+        Object asObject = value.asObjectCopy();
+        assertTrue( "should return boolean[]", asObject instanceof boolean[] );
 
-        boolean[] arr = (boolean[]) asPublic;
+        boolean[] arr = (boolean[]) asObject;
         assertTrue( "should have same values", Arrays.equals( inStore, arr ) );
 
         arr[0] = false;
         assertFalse( "should not modify inStore array", Arrays.equals( inStore, arr ) );
-        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (boolean[])value.asPublic() ) );
+        assertTrue( "should still generate inStore array", Arrays.equals( inStore, (boolean[])value.asObjectCopy() ) );
     }
 
-    private AsPublicTest shouldGivePublic( Value value, Object asPublic )
+    private AsObjectCopyTest shouldGivePublic( Value value, Object asObject )
     {
-        return new AsPublicTest( value, asPublic );
+        return new AsObjectCopyTest( value, asObject );
     }
 
-    private class AsPublicTest
+    private class AsObjectCopyTest
     {
         private final Value value;
         private final Object expected;
 
-        private AsPublicTest( Value value, Object expected )
+        private AsObjectCopyTest( Value value, Object expected )
         {
             this.value = value;
             this.expected = expected;
@@ -362,7 +362,7 @@ public class ValueAsPublicTest
 
         void assertGeneratesPublic()
         {
-            assertThat( value.asPublic(), equalTo( expected ) );
+            assertThat( value.asObjectCopy(), equalTo( expected ) );
         }
     }
 }

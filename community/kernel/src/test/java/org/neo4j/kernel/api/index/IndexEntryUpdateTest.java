@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -31,8 +33,8 @@ import static org.hamcrest.Matchers.not;
 
 public class IndexEntryUpdateTest
 {
-    private final Object[] multiValue = new Object[]{"value", "value2"};
-    private final String singleValue = "value";
+    private final Value[] multiValue = new Value[]{Values.of( "value" ), Values.of( "value2" )};
+    private final Value singleValue = Values.of( "value" );
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -40,8 +42,8 @@ public class IndexEntryUpdateTest
     @Test
     public void indexEntryUpdatesShouldBeEqual()
     {
-        IndexEntryUpdate a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), "hi" );
-        IndexEntryUpdate b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), "hi" );
+        IndexEntryUpdate a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
+        IndexEntryUpdate b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         assertThat( a, equalTo( b ) );
         assertThat( a.hashCode(), equalTo( b.hashCode() ) );
     }
@@ -87,7 +89,7 @@ public class IndexEntryUpdateTest
     public void updatesShouldEqualRegardlessOfCreationMethod()
     {
         IndexEntryUpdate singleAdd = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
-        Object[] singleAsArray = {singleValue};
+        Value[] singleAsArray = {singleValue};
         IndexEntryUpdate multiAdd = IndexEntryUpdate
                 .add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleAsArray );
         IndexEntryUpdate singleRemove = IndexEntryUpdate
@@ -106,32 +108,15 @@ public class IndexEntryUpdateTest
     @Test
     public void changedShouldRetainValues() throws Exception
     {
-        String singleAfter = "Hello";
+        Value singleAfter = Values.of( "Hello" );
         IndexEntryUpdate singleChange = IndexEntryUpdate
                 .change( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue, singleAfter );
-        Object[] multiAfter = {"Hello", "Hi"};
+        Value[] multiAfter = {Values.of( "Hello" ), Values.of( "Hi" )};
         IndexEntryUpdate multiChange = IndexEntryUpdate
                 .change( 0, SchemaDescriptorFactory.forLabel( 3, 4, 5 ), multiValue, multiAfter );
         assertThat( new Object[]{singleValue}, equalTo( singleChange.beforeValues() ) );
         assertThat( new Object[]{singleAfter}, equalTo( singleChange.values() ) );
         assertThat( multiValue, equalTo( multiChange.beforeValues() ) );
         assertThat( multiAfter, equalTo( multiChange.values() ) );
-    }
-
-    @Test
-    public void indexEntryUpdatesShouldBeEqualForDeepValues()
-    {
-        Object value1 = arraysOfDepth( 13 );
-        Object value2 = arraysOfDepth( 13 );
-
-        IndexEntryUpdate a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), value1 );
-        IndexEntryUpdate b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), value2 );
-        assertThat( a, equalTo( b ) );
-        assertThat( a.hashCode(), equalTo( b.hashCode() ) );
-    }
-
-    private Object[] arraysOfDepth( int n )
-    {
-        return n == 0 ? new Object[]{"hej"} : new Object[]{arraysOfDepth( n - 1 )};
     }
 }

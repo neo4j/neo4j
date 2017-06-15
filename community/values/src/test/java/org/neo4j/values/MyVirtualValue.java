@@ -46,8 +46,14 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return this;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return null;
     }
 }

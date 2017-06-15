@@ -38,10 +38,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.index.GBPTreeUtil;
+import org.neo4j.values.ValueTuple;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
-import static org.neo4j.kernel.api.schema.OrderedPropertyValues.ofUndefined;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -135,8 +135,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
         {
             long existingNodeId = conflictDetectingValueMerger.existingNodeId();
             long addedNodeId = conflictDetectingValueMerger.addedNodeId();
-            // TODO: not sure about the OrderedPropertyValues#ofUndefined bit
-            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ofUndefined( update.values() ) );
+            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( update.values() ) );
         }
     }
 

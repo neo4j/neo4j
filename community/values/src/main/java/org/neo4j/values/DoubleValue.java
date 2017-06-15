@@ -61,9 +61,15 @@ final class DoubleValue extends FloatingPointValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Double.toString( value );
     }
 
     @Override

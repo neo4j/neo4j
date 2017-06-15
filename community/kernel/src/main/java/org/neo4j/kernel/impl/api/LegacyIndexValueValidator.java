@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.impl.util.Validator;
 
-public class LegacyIndexValueValidator implements Validator
+public class LegacyIndexValueValidator implements Validator<Object>
 {
     public static LegacyIndexValueValidator INSTANCE = new LegacyIndexValueValidator();
 
@@ -32,7 +32,14 @@ public class LegacyIndexValueValidator implements Validator
     @Override
     public void validate( Object value )
     {
-        IndexSimpleValueValidator.INSTANCE.validate( value );
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "Null value" );
+        }
+        if ( value instanceof String )
+        {
+            IndexValueLengthValidator.INSTANCE.validate( ((String)value).getBytes() );
+        }
         if ( !(value instanceof Number) && value.toString() == null )
         {
             throw new IllegalArgumentException( "Value of type " + value.getClass() + " has null toString" );

@@ -28,8 +28,7 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.values.Value;
 
 public interface DataWriteOperations
 {
@@ -70,26 +69,26 @@ public interface DataWriteOperations
      */
     boolean nodeRemoveLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
-    Property nodeSetProperty( long nodeId, DefinedProperty property )
+    Value nodeSetProperty( long nodeId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException,
                     InvalidTransactionTypeKernelException, ConstraintValidationException;
 
-    Property relationshipSetProperty( long relationshipId, DefinedProperty property )
+    Value relationshipSetProperty( long relationshipId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property graphSetProperty( DefinedProperty property );
+    Value graphSetProperty( int propertyKeyId, Value value );
 
     /**
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( long nodeId, int propertyKeyId )
+    Value nodeRemoveProperty( long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property relationshipRemoveProperty( long relationshipId, int propertyKeyId )
+    Value relationshipRemoveProperty( long relationshipId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property graphRemoveProperty( int propertyKeyId );
+    Value graphRemoveProperty( int propertyKeyId );
 
     /**
      * Creates a legacy index in a separate transaction if not yet available.

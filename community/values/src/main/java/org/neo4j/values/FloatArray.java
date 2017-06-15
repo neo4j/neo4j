@@ -100,9 +100,22 @@ abstract class FloatArray extends FloatingPointArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
     }
 
     static final class Direct extends FloatArray
@@ -132,7 +145,7 @@ abstract class FloatArray extends FloatingPointArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<float[]> producer )
+        Lazy( ValueLoader<float[]> producer )
         {
             this.field = producer;
         }

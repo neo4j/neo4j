@@ -45,6 +45,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 
@@ -104,7 +106,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 int[] indexPropertyIds = indexRule.schema().getPropertyIds();
                 if ( nodeHasSchemaProperties( nodePropertyMap, indexPropertyIds ) )
                 {
-                    Object[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
+                    Value[] values = getPropertyValues( nodePropertyMap, indexPropertyIds );
                     try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
                     {
                         long nodeId = record.getId();
@@ -124,7 +126,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private void verifyNodeCorrectlyIndexedUniquely( long nodeId, Object[] propertyValues,
+    private void verifyNodeCorrectlyIndexedUniquely( long nodeId, Value[] propertyValues,
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
@@ -143,23 +145,23 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             }
             else
             {
-                engine.report().uniqueIndexNotUnique( indexRule, propertyValues, indexedNodeId );
+                engine.report().uniqueIndexNotUnique( indexRule, Values.asObjects( propertyValues ), indexedNodeId );
             }
         }
 
         reportIncorrectIndexCount( propertyValues, engine, indexRule, count );
     }
 
-    private void reportIncorrectIndexCount( Object[] propertyValues,
+    private void reportIncorrectIndexCount( Value[] propertyValues,
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule, long count )
     {
         if ( count == 0 )
         {
-            engine.report().notIndexed( indexRule, propertyValues );
+            engine.report().notIndexed( indexRule, Values.asObjects( propertyValues ) );
         }
         else if ( count != 1 )
         {
-            engine.report().indexedMultipleTimes( indexRule, propertyValues, count );
+            engine.report().indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
     }
 
@@ -196,13 +198,13 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private Object[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
+    private Value[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
     {
-        Object[] values = new Object[indexPropertyIds.length];
+        Value[] values = new Value[indexPropertyIds.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
         {
             PropertyBlock propertyBlock = propertyMap.get( indexPropertyIds[i] );
-            values[i] = propertyReader.propertyValue( propertyBlock ).value();
+            values[i] = propertyReader.propertyValue( propertyBlock );
         }
         return values;
     }
@@ -217,7 +219,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return propertyIds;
     }
 
-    private IndexQuery[] seek( LabelSchemaDescriptor schema, Object[] propertyValues )
+    private IndexQuery[] seek( LabelSchemaDescriptor schema, Value[] propertyValues )
     {
         assert schema.getPropertyIds().length == propertyValues.length;
         IndexQuery[] query = new IndexQuery[propertyValues.length];

@@ -27,11 +27,11 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.values.ValueTuple;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +68,7 @@ public class TxStateCompositeIndexTest
     {
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( "43value1", "43value2" ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
         assertTrue( diffSets.isEmpty() );
@@ -97,7 +97,7 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( "43value1", "43value2" ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -112,7 +112,7 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( 43001.0, 43002.0 ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( 43001.0, 43002.0 ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -145,7 +145,7 @@ public class TxStateCompositeIndexTest
 
         // WHEN
         ReadableDiffSets<Long> diffSets =
-                state.indexUpdatesForSeek( indexOn_1_1_2, OrderedPropertyValues.ofUndefined( "43value1", "43value2" ) );
+                state.indexUpdatesForSeek( indexOn_1_1_2, ValueTuple.of( "43value1", "43value2" ) );
 
         // THEN
         assertEquals( asSet( 43L, 44L ), diffSets.getAdded() );
@@ -155,20 +155,20 @@ public class TxStateCompositeIndexTest
     public void shouldSeekInComplexMix() throws Exception
     {
         // GIVEN
-        OrderedPropertyValues[] values2_1 = Iterators.array(
-                OrderedPropertyValues.ofUndefined( "hi", 3 ),
-                OrderedPropertyValues.ofUndefined( 9L, 33L ),
-                OrderedPropertyValues.ofUndefined( "sneaker", false ) );
+        ValueTuple[] values2_1 = Iterators.array(
+                ValueTuple.of( "hi", 3 ),
+                ValueTuple.of( 9L, 33L ),
+                ValueTuple.of( "sneaker", false ) );
 
-        OrderedPropertyValues[] values2_2 = Iterators.array(
-                OrderedPropertyValues.ofUndefined( true, false ),
-                OrderedPropertyValues.ofUndefined( new int[]{ 10,100}, "array-buddy" ),
-                OrderedPropertyValues.ofUndefined( 40.1, 40.2 ) );
+        ValueTuple[] values2_2 = Iterators.array(
+                ValueTuple.of( true, false ),
+                ValueTuple.of( new int[]{ 10,100}, "array-buddy" ),
+                ValueTuple.of( 40.1, 40.2 ) );
 
-        OrderedPropertyValues[] values3 = Iterators.array(
-                OrderedPropertyValues.ofUndefined( "hi", "ho", "hello" ),
-                OrderedPropertyValues.ofUndefined( true, new long[]{4L}, 33L ),
-                OrderedPropertyValues.ofUndefined( 2, false, 1 ) );
+        ValueTuple[] values3 = Iterators.array(
+                ValueTuple.of( "hi", "ho", "hello" ),
+                ValueTuple.of( true, new long[]{4L}, 33L ),
+                ValueTuple.of( 2, false, 1 ) );
 
         addEntries( indexOn_1_1_2, values2_1, 10 );
         addEntries( indexOn_2_2_3, values2_2, 100 );
@@ -179,7 +179,7 @@ public class TxStateCompositeIndexTest
         assertSeek( indexOn_2_2_3_4, values3, 1000 );
     }
 
-    private void addEntries( IndexDescriptor index, OrderedPropertyValues[] values, long nodeIdStart )
+    private void addEntries( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -187,7 +187,7 @@ public class TxStateCompositeIndexTest
         }
     }
 
-    private void assertSeek( IndexDescriptor index, OrderedPropertyValues[] values, long nodeIdStart )
+    private void assertSeek( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -227,7 +227,7 @@ public class TxStateCompositeIndexTest
             @Override
             public void addDefaultStringProperties( long... nodeIds )
             {
-                Collection<Pair<Long,OrderedPropertyValues>> entries = new ArrayList<>( nodeIds.length );
+                Collection<Pair<Long,ValueTuple>> entries = new ArrayList<>( nodeIds.length );
                 for ( long nodeId : nodeIds )
                 {
                     int[] propertyIds = descriptor.schema().getPropertyIds();
@@ -236,36 +236,36 @@ public class TxStateCompositeIndexTest
                     {
                         values[i] = nodeId * 1000.0 + propertyIds[i];
                     }
-                    entries.add( of( nodeId, OrderedPropertyValues.ofUndefined( values ) ) );
+                    entries.add( of( nodeId, ValueTuple.of( values ) ) );
                 }
                 addEntries( entries );
             }
 
-            void addEntries( Collection<Pair<Long,OrderedPropertyValues>> nodesWithValues )
+            void addEntries( Collection<Pair<Long,ValueTuple>> nodesWithValues )
             {
-                for ( Pair<Long,OrderedPropertyValues> entry : nodesWithValues )
+                for ( Pair<Long,ValueTuple> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null, entry.other() );
                 }
             }
 
-            void removeEntries( Collection<Pair<Long,OrderedPropertyValues>> nodesWithValues )
+            void removeEntries( Collection<Pair<Long,ValueTuple>> nodesWithValues )
             {
-                for ( Pair<Long,OrderedPropertyValues> entry : nodesWithValues )
+                for ( Pair<Long,ValueTuple> entry : nodesWithValues )
                 {
                     long nodeId = entry.first();
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, entry.other(), null );
                 }
             }
 
-            private Collection<Pair<Long,OrderedPropertyValues>> getDefaultStringEntries( long[] nodeIds )
+            private Collection<Pair<Long,ValueTuple>> getDefaultStringEntries( long[] nodeIds )
             {
-                Collection<Pair<Long,OrderedPropertyValues>> entries = new ArrayList<>( nodeIds.length );
+                Collection<Pair<Long,ValueTuple>> entries = new ArrayList<>( nodeIds.length );
                 for ( long nodeId : nodeIds )
                 {
                     int[] propertyIds = descriptor.schema().getPropertyIds();
-                    OrderedPropertyValues values = getDefaultStringPropertyValues( nodeId, propertyIds );
+                    ValueTuple values = getDefaultStringPropertyValues( nodeId, propertyIds );
                     entries.add( of( nodeId, values ) );
                 }
                 return entries;
@@ -273,13 +273,13 @@ public class TxStateCompositeIndexTest
         };
     }
 
-    private OrderedPropertyValues getDefaultStringPropertyValues( long nodeId, int[] propertyIds )
+    private ValueTuple getDefaultStringPropertyValues( long nodeId, int[] propertyIds )
     {
         Object[] values = new Object[propertyIds.length];
         for ( int i = 0; i < propertyIds.length; i++ )
         {
             values[i] = nodeId + "value" + propertyIds[i];
         }
-        return OrderedPropertyValues.ofUndefined( values );
+        return ValueTuple.of( values );
     }
 }

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -258,7 +259,7 @@ public class StorePropertyPayloadCursorTest
             // Then
             assertTrue( next );
             assertEquals( param.type, cursor.type() );
-            assertObjectOrArrayEquals( param.value, cursor.value() );
+            assertEquals( Values.of( param.value ), cursor.value() );
         }
     }
 
@@ -438,7 +439,7 @@ public class StorePropertyPayloadCursorTest
                 // Then
                 assertTrue( next );
                 assertEquals( param.type, cursor.type() );
-                assertObjectOrArrayEquals( param.value, cursor.value() );
+                assertEquals( Values.of( param.value ), cursor.value() );
             }
         }
     }
@@ -489,7 +490,7 @@ public class StorePropertyPayloadCursorTest
             Object value = values[i];
 
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, i, value, stringAllocator, arrayAllocator );
+            PropertyStore.encodeValue( block, i, Values.of( value ), stringAllocator, arrayAllocator );
             long[] valueBlocks = block.getValueBlocks();
             System.arraycopy( valueBlocks, 0, blocks, cursor, valueBlocks.length );
             cursor += valueBlocks.length;

@@ -27,14 +27,15 @@ import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexQuery;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -111,9 +112,9 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         populator.create();
         populator.configureSampling( true );
         long nodeId = 1;
-        final String propertyValue = "value1";
+        final Value propertyValue = Values.of( "value1" );
         PropertyAccessor propertyAccessor =
-                ( nodeId1, propertyKeyId ) -> Property.stringProperty( propertyKeyId, propertyValue );
+                ( nodeId1, propertyKeyId ) -> propertyValue;
 
         // this update (using add())...
         populator.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor.schema(), propertyValue ) ) );
@@ -150,15 +151,17 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
             populator.create();
-            populator.add( Arrays.asList( IndexEntryUpdate.add( 1, descriptor.schema(), "value1" ),
-                    IndexEntryUpdate.add( 2, descriptor.schema(), "value1" ) ) );
+            Value value = Values.of( "value1" );
+            populator.add( Arrays.asList(
+                    IndexEntryUpdate.add( 1, descriptor.schema(), value ),
+                    IndexEntryUpdate.add( 2, descriptor.schema(), value ) ) );
             populator.close( true );
 
             // then
             IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
             try ( IndexReader reader = accessor.newReader() )
             {
-                PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, "value1" ) );
+                PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, value ) );
                 assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
             }
             accessor.close();
@@ -179,7 +182,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         public void shouldProvidePopulatorThatEnforcesUniqueConstraints() throws Exception
         {
             // when
-            String value = "value1";
+            Value value = Values.of( "value1" );
             int nodeId1 = 1;
             int nodeId2 = 2;
 
@@ -187,7 +190,8 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
 
             populator.create();
-            populator.add( Arrays.asList( IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
+            populator.add( Arrays.asList(
+                    IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
                     IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
             try
             {
@@ -202,7 +206,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             catch ( IndexEntryConflictException conflict )
             {
                 assertEquals( nodeId1, conflict.getExistingNodeId() );
-                assertEquals( OrderedPropertyValues.ofUndefined( value ), conflict.getPropertyValues() );
+                assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
                 assertEquals( nodeId2, conflict.getAddedNodeId() );
             }
         }

@@ -32,8 +32,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.guard.Guard;
@@ -43,6 +41,7 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.Value;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,
@@ -119,32 +118,31 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement statement, long nodeId, DefinedProperty property )
+    public Value nodeSetProperty( KernelStatement statement, long nodeId, int propertyKeyId, Value value )
             throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException,
             InvalidTransactionTypeKernelException
     {
         guard.check( statement );
-        return entityWriteDelegate.nodeSetProperty( statement, nodeId, property );
+        return entityWriteDelegate.nodeSetProperty( statement, nodeId, propertyKeyId, value );
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement statement,
-            long relationshipId,
-            DefinedProperty property ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+    public Value relationshipSetProperty( KernelStatement statement, long relationshipId, int propertyKeyId,
+            Value value ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check( statement );
-        return entityWriteDelegate.relationshipSetProperty( statement, relationshipId, property );
+        return entityWriteDelegate.relationshipSetProperty( statement, relationshipId, propertyKeyId, value );
     }
 
     @Override
-    public Property graphSetProperty( KernelStatement statement, DefinedProperty property )
+    public Value graphSetProperty( KernelStatement statement, int propertyKeyId, Value value )
     {
         guard.check( statement );
-        return entityWriteDelegate.graphSetProperty( statement, property );
+        return entityWriteDelegate.graphSetProperty( statement, propertyKeyId, value );
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement statement, long nodeId, int propertyKeyId )
+    public Value nodeRemoveProperty( KernelStatement statement, long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         guard.check( statement );
@@ -152,7 +150,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement statement,
+    public Value relationshipRemoveProperty( KernelStatement statement,
             long relationshipId,
             int propertyKeyId ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
@@ -161,7 +159,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property graphRemoveProperty( KernelStatement statement, int propertyKeyId )
+    public Value graphRemoveProperty( KernelStatement statement, int propertyKeyId )
     {
         guard.check( statement );
         return entityWriteDelegate.graphRemoveProperty( statement, propertyKeyId );
@@ -192,7 +190,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check( statement );
@@ -207,7 +205,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Object graphGetProperty( KernelStatement statement, int propertyKeyId )
+    public Value graphGetProperty( KernelStatement statement, int propertyKeyId )
     {
         guard.check( statement );
         return entityReadDelegate.graphGetProperty( statement, propertyKeyId );
@@ -289,7 +287,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    public Value nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
         guard.check( statement );
         return entityReadDelegate.nodeGetProperty( statement, node, propertyKeyId );
@@ -317,7 +315,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    public Value relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
     {
         guard.check( statement );
         return entityReadDelegate.relationshipGetProperty( statement, relationship, propertyKeyId );

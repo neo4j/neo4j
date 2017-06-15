@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 import org.neo4j.time.Clocks
+import org.neo4j.values.{Value, Values}
 
 import scala.collection.{JavaConverters, mutable}
 
@@ -1612,10 +1613,10 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   when(queryContext.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.readOperations).thenReturn(ro)
   when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
-  when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Object] {
-    override def answer(invocationOnMock: InvocationOnMock): Object = {
+  when(ro.nodeGetProperty(anyLong(), anyInt())).thenAnswer(new Answer[Value] {
+    override def answer(invocationOnMock: InvocationOnMock): Value = {
       val id = invocationOnMock.getArguments()(0).asInstanceOf[Long]
-      if (id < 3) "value"
+      if (id < 3) Values.stringValue("value")
       else null
     }
   })

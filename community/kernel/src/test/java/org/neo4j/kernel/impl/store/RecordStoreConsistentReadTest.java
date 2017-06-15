@@ -46,6 +46,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
@@ -441,7 +443,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             record.setInUse( true );
             PropertyBlock block = new PropertyBlock();
             DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator( 64, new DynamicRecord( 7 ) );
-            String value = "a string too large to fit in the property block itself";
+            Value value = Values.of( "a string too large to fit in the property block itself" );
             PropertyStore.encodeValue( block, 6, value, stringAllocator, null );
             if ( light )
             {

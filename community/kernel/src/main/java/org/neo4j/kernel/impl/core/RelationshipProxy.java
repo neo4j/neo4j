@@ -43,13 +43,14 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 
@@ -301,7 +302,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     {
                         String name =
                                 statement.readOperations().propertyKeyGetName( propertyCursor.get().propertyKeyId() );
-                        properties.put( name, propertyCursor.get().value() );
+                        properties.put( name, propertyCursor.get().value().asObjectCopy() );
                     }
 
                     return properties;
@@ -336,14 +337,14 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                     throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+                Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
 
-                if ( value == null )
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
                 }
 
-                return value;
+                return value.asObjectCopy();
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -364,8 +365,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
-            return value == null ? defaultValue : value;
+            Value value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
@@ -399,7 +400,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            statement.dataWriteOperations().relationshipSetProperty( getId(), Property.property( propertyKeyId, value ) );
+            statement.dataWriteOperations()
+                    .relationshipSetProperty( getId(), propertyKeyId, Values.of( value, false ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -433,7 +435,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).value( null );
+            return statement.dataWriteOperations().relationshipRemoveProperty( getId(), propertyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {

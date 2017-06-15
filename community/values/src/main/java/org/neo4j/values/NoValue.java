@@ -131,9 +131,15 @@ final class NoValue extends Value
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return null;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return "NO_VALUE";
     }
 
     public ValueGroup valueGroup()

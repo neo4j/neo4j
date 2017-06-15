@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
 
 abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterable<Long>
 {
@@ -32,23 +33,23 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     abstract void drop();
 
-    public final PrimitiveLongIterator seek( Object... values )
+    public final PrimitiveLongIterator seek( Value... values )
     {
         return doIndexSeek( encode( values ) );
     }
 
-    final boolean add( long nodeId, boolean applyIdempotently, Object... propertyValues )
+    final boolean add( long nodeId, boolean applyIdempotently, Value... propertyValues )
     {
         return doAdd( nodeId, applyIdempotently, encode( propertyValues ) );
     }
 
-    final void remove( long nodeId, Object... propertyValues )
+    final void remove( long nodeId, Value... propertyValues )
     {
         doRemove( nodeId, encode( propertyValues ) );
     }
 
     @Override
-    public final long countIndexedNodes( long nodeId, Object... propertyValues )
+    public final long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         return doCountIndexedNodes( nodeId, encode( propertyValues ) );
     }
@@ -70,28 +71,33 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     {
     }
 
-    private static Object[] encode( Object... propertyValues )
+    private static Object[] encode( Value[] propertyValues )
     {
+        Object[] encoded = new Object[propertyValues.length];
         for ( int i = 0; i < propertyValues.length; i++ )
         {
-
-            if ( propertyValues[i] instanceof Number )
-            {
-                propertyValues[i] = ((Number) propertyValues[i]).doubleValue();
-            }
-
-            if ( propertyValues[i] instanceof Character )
-            {
-                propertyValues[i] = propertyValues[i].toString();
-            }
-
-            if ( propertyValues[i].getClass().isArray() )
-            {
-                propertyValues[i] = new ArrayKey( ArrayEncoder.encode( propertyValues[i] ) );
-            }
+            encoded[i] = encode( propertyValues[i] );
         }
 
-        return propertyValues;
+        return encoded;
+    }
+
+    private static Object encode( Value value )
+    {
+        Object asObject = value.asObject();
+        if ( asObject instanceof Number )
+        {
+            asObject = ((Number) asObject).doubleValue();
+        }
+        else if ( asObject instanceof Character )
+        {
+            asObject = asObject.toString();
+        }
+        else if ( asObject.getClass().isArray() )
+        {
+            asObject = new ArrayKey( ArrayEncoder.encode( value ) );
+        }
+        return asObject;
     }
 
     static class ArrayKey

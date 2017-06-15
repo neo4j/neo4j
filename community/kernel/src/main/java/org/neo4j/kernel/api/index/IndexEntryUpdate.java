@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
+import org.neo4j.values.Value;
 
 import static java.lang.String.format;
 
@@ -36,17 +37,17 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
 {
     private final long entityId;
     private final UpdateMode updateMode;
-    private final Object[] before;
-    private final Object[] values;
+    private final Value[] before;
+    private final Value[] values;
     private final INDEX_KEY indexKey;
 
-    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Object... values )
+    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Value... values )
     {
         this( entityId, indexKey, updateMode, null, values );
     }
 
-    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Object[] before,
-            Object[] values )
+    private IndexEntryUpdate( long entityId, INDEX_KEY indexKey, UpdateMode updateMode, Value[] before,
+            Value[] values )
     {
         // we do not support partial index entries
         assert indexKey.schema().getPropertyIds().length == values.length :
@@ -76,7 +77,7 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
         return indexKey;
     }
 
-    public Object[] values()
+    public Value[] values()
     {
         return values;
     }
@@ -103,11 +104,11 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
         {
             return false;
         }
-        if ( !Arrays.deepEquals( before, that.before ) )
+        if ( !Arrays.equals( before, that.before ) )
         {
             return false;
         }
-        if ( !Arrays.deepEquals( values, that.values ) )
+        if ( !Arrays.equals( values, that.values ) )
         {
             return false;
         }
@@ -119,8 +120,8 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
     {
         int result = (int) (entityId ^ (entityId >>> 32));
         result = 31 * result + (updateMode != null ? updateMode.hashCode() : 0);
-        result = 31 * result + Arrays.deepHashCode( before );
-        result = 31 * result + Arrays.deepHashCode( values );
+        result = 31 * result + Arrays.hashCode( before );
+        result = 31 * result + Arrays.hashCode( values );
         result = 31 * result + (indexKey != null ? indexKey.schema().hashCode() : 0);
         return result;
     }
@@ -133,31 +134,31 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
     }
 
     public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> add(
-            long nodeId, INDEX_KEY indexKey, Object... values )
+            long nodeId, INDEX_KEY indexKey, Value... values )
     {
         return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.ADDED, values );
     }
 
     public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> remove(
-            long nodeId, INDEX_KEY indexKey, Object... values )
+            long nodeId, INDEX_KEY indexKey, Value... values )
     {
         return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.REMOVED, values );
     }
 
     public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> change(
-            long nodeId, INDEX_KEY indexKey, Object before, Object after )
+            long nodeId, INDEX_KEY indexKey, Value before, Value after )
     {
         return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.CHANGED,
-                new Object[]{before}, new Object[]{after} );
+                new Value[]{before}, new Value[]{after} );
     }
 
     public static <INDEX_KEY extends LabelSchemaSupplier> IndexEntryUpdate<INDEX_KEY> change(
-            long nodeId, INDEX_KEY indexKey, Object[] before, Object[] after )
+            long nodeId, INDEX_KEY indexKey, Value[] before, Value[] after )
     {
         return new IndexEntryUpdate<>( nodeId, indexKey, UpdateMode.CHANGED, before, after );
     }
 
-    public Object[] beforeValues()
+    public Value[] beforeValues()
     {
         if ( before == null )
         {

@@ -38,8 +38,6 @@ import java.util.Set;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
@@ -52,6 +50,9 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -67,9 +68,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
-import static org.neo4j.kernel.api.properties.Property.booleanProperty;
-import static org.neo4j.kernel.api.properties.Property.numberProperty;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.relationship;
 
@@ -224,8 +222,7 @@ public class TxStateTest
         addNodesToIndex( indexOn_1_2 ).withDefaultStringProperties( 44L );
 
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, OrderedPropertyValues.ofUndefined( "value43"
-        ) );
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForSeek( indexOn_1_1, ValueTuple.of( "value43" ) );
 
         // THEN
         assertEquals( asSet( 43L ), diffSets.getAdded() );
@@ -1664,22 +1661,22 @@ public class TxStateTest
             @Override
             public void withStringProperties( Collection<Pair<Long,String>> nodesWithValues )
             {
-                final int labelId = descriptor.schema().getLabelId();
-                final int propertyKeyId = descriptor.schema().getPropertyId();
-                for ( Pair<Long,String> entry : nodesWithValues )
-                {
-                    long nodeId = entry.first();
-                    state.nodeDoCreate( nodeId );
-                    state.nodeDoAddLabel( labelId, nodeId );
-                    DefinedProperty propertyAfter = stringProperty( propertyKeyId, entry.other() );
-                    state.nodeDoAddProperty( nodeId, propertyAfter );
-                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
-                }
+                withProperties( nodesWithValues );
             }
 
             @Override
             public <T extends Number> void withNumberProperties( Collection<Pair<Long,T>> nodesWithValues )
+            {
+                withProperties( nodesWithValues );
+            }
+
+            @Override
+            public void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues )
+            {
+                withProperties( nodesWithValues );
+            }
+
+            private <T> void withProperties( Collection<Pair<Long,T>> nodesWithValues )
             {
                 final int labelId = descriptor.schema().getLabelId();
                 final int propertyKeyId = descriptor.schema().getPropertyId();
@@ -1688,27 +1685,10 @@ public class TxStateTest
                     long nodeId = entry.first();
                     state.nodeDoCreate( nodeId );
                     state.nodeDoAddLabel( labelId, nodeId );
-                    DefinedProperty propertyAfter = numberProperty( propertyKeyId, entry.other() );
-                    state.nodeDoAddProperty( nodeId, propertyAfter );
+                    Value valueAfter = Values.of( entry.other() );
+                    state.nodeDoAddProperty( nodeId, propertyKeyId, valueAfter );
                     state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
-                }
-            }
-
-            @Override
-            public void withBooleanProperties( Collection<Pair<Long,Boolean>> nodesWithValues )
-            {
-                final int labelId = descriptor.schema().getLabelId();
-                final int propertyKeyId = descriptor.schema().getPropertyId();
-                for ( Pair<Long,Boolean> entry : nodesWithValues )
-                {
-                    long nodeId = entry.first();
-                    state.nodeDoCreate( nodeId );
-                    state.nodeDoAddLabel( labelId, nodeId );
-                    DefinedProperty propertyAfter = booleanProperty( propertyKeyId, entry.other() );
-                    state.nodeDoAddProperty( nodeId, propertyAfter );
-                    state.indexDoUpdateEntry( descriptor.schema(), nodeId, null,
-                            OrderedPropertyValues.ofUndefined( propertyAfter.value() ) );
+                            ValueTuple.of( valueAfter ) );
                 }
             }
         };

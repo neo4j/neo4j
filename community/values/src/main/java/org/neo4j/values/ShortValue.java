@@ -65,9 +65,15 @@ final class ShortValue extends IntegralValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Short.toString( value );
     }
 
     @Override

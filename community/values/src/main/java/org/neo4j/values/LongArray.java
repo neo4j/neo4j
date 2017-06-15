@@ -100,9 +100,22 @@ abstract class LongArray extends IntegralArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
     }
 
     static final class Direct extends LongArray
@@ -132,7 +145,7 @@ abstract class LongArray extends IntegralArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<long[]> producer )
+        Lazy( ValueLoader<long[]> producer )
         {
             this.field = producer;
         }

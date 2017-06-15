@@ -100,9 +100,22 @@ abstract class ShortArray extends IntegralArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
     }
 
     static final class Direct extends ShortArray
@@ -132,7 +145,7 @@ abstract class ShortArray extends IntegralArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<short[]> producer )
+        Lazy( ValueLoader<short[]> producer )
         {
             this.field = producer;
         }

@@ -31,15 +31,16 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class TxStateVisitorTest
 {
@@ -50,13 +51,14 @@ public class TxStateVisitorTest
         long relId = 1L;
         int propKey = 2;
         GatheringVisitor visitor = new GatheringVisitor();
-        DefinedProperty prop = stringProperty( propKey, "hello" );
-        state.relationshipDoReplaceProperty( relId, stringProperty( propKey, "" ), prop );
+        Value value = Values.of( "hello" );
+        state.relationshipDoReplaceProperty( relId, propKey, Values.of( "" ), value );
 
         // When
         state.accept( visitor );
 
         // Then
+        StorageProperty prop = new PropertyKeyValue( propKey, Values.of( "hello" ) );
         assertThat(visitor.relPropertyChanges, contains( propChange( relId, noProperty, asList( prop ), noRemoved ) ) );
     }
 

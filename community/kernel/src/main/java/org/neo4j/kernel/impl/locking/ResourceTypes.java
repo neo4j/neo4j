@@ -22,12 +22,13 @@ package org.neo4j.kernel.impl.locking;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
@@ -87,10 +88,10 @@ public enum ResourceTypes implements ResourceType
     private static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate[] predicates, int i )
     {
         int propertyKeyId = predicates[i].propertyKeyId();
-        Object value = predicates[i].value();
+        Value value = predicates[i].value();
         // Note:
         // It is important that single-property indexes only hash with this particular call; no additional hashing!
-        long hash = indexEntryResourceId( labelId, propertyKeyId, stringOf( propertyKeyId, value ) );
+        long hash = indexEntryResourceId( labelId, propertyKeyId, stringOf( value ) );
         i++;
         if ( i < predicates.length )
         {
@@ -106,12 +107,11 @@ public enum ResourceTypes implements ResourceType
         return hob + propertyValue.hashCode();
     }
 
-    private static String stringOf( int propertyKeyId, Object value )
+    private static String stringOf( Value value )
     {
-        if ( null != value )
+        if ( value != null && value != Values.NO_VALUE )
         {
-            DefinedProperty property = Property.property( propertyKeyId, value );
-            return property.valueAsString();
+            return Strings.prettyPrint( value.asObject() );
         }
         return "";
     }

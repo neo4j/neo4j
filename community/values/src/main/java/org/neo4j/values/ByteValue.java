@@ -65,9 +65,15 @@ final class ByteValue extends IntegralValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Byte.toString( value );
     }
 
     @Override

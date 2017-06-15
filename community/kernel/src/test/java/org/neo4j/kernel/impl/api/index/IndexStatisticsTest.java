@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -63,6 +62,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -326,7 +326,7 @@ public class IndexStatisticsTest
         {
             Statement statement = bridge.get();
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-            statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, newValue ) );
+            statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( newValue ) );
             tx.success();
         }
     }
@@ -463,7 +463,7 @@ public class IndexStatisticsTest
         int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
         long nodeId = statement.dataWriteOperations().nodeCreate();
         statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
-        statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, value ) );
+        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value ) );
         return nodeId;
     }
 

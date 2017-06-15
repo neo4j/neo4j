@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.Value;
 
 /**
  * The PropertyLoader provides a stream-lined interface for getting multiple property values from a node in a single
@@ -41,6 +42,6 @@ public interface PropertyLoader
 
     interface PropertyLoadSink
     {
-        void onProperty( int propertyId, Object value );
+        void onProperty( int propertyId, Value value );
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.schema.IndexQuery.StringContainsPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringPrefixPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringSuffixPredicate;
+import org.neo4j.values.Values;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -44,13 +45,13 @@ public class IndexQueryTest
     {
         ExistsPredicate p = IndexQuery.exists( propId );
 
-        assertTrue( p.test( "string" ) );
-        assertTrue( p.test( 1 ) );
-        assertTrue( p.test( 1.0 ) );
-        assertTrue( p.test( true ) );
-        assertTrue( p.test( new long[]{1L} ) );
+        assertTrue( test( p, "string" ) );
+        assertTrue( test( p, 1 ) );
+        assertTrue( test( p, 1.0 ) );
+        assertTrue( test( p, true ) );
+        assertTrue( test( p, new long[]{1L} ) );
 
-        assertFalse( p.test( null ) );
+        assertFalse( test( p, null ) );
     }
 
     // EXACT
@@ -69,7 +70,7 @@ public class IndexQueryTest
     {
         ExactPredicate p = IndexQuery.exact( propId, value );
 
-        assertTrue( p.test( value ) );
+        assertTrue( test( p, value ) );
 
         assertFalseForOtherThings( p );
     }
@@ -79,7 +80,7 @@ public class IndexQueryTest
     {
         ExactPredicate p = IndexQuery.exact( propId, 9007199254740993L );
 
-        Assert.assertFalse( p.test( 9007199254740992D ) );
+        Assert.assertFalse( test( p, 9007199254740992D ) );
     }
 
     // NUMERIC RANGE
@@ -97,11 +98,11 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, 11, true, 13, true );
 
-        Assert.assertFalse( p.test( 10 ) );
-        Assert.assertTrue( p.test( 11 ) );
-        Assert.assertTrue( p.test( 12 ) );
-        Assert.assertTrue( p.test( 13 ) );
-        Assert.assertFalse( p.test( 14 ) );
+        Assert.assertFalse( test( p, 10 ) );
+        Assert.assertTrue( test( p, 11 ) );
+        Assert.assertTrue( test( p, 12 ) );
+        Assert.assertTrue( test( p, 13 ) );
+        Assert.assertFalse( test( p, 14 ) );
     }
 
     @Test
@@ -109,9 +110,9 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, 11, false, 13, false );
 
-        Assert.assertFalse( p.test( 11 ) );
-        Assert.assertTrue( p.test( 12 ) );
-        Assert.assertFalse( p.test( 13 ) );
+        Assert.assertFalse( test( p, 11 ) );
+        Assert.assertTrue( test( p, 12 ) );
+        Assert.assertFalse( test( p, 13 ) );
     }
 
     @Test
@@ -119,10 +120,10 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, 11, true, 13, false );
 
-        Assert.assertFalse( p.test( 10 ) );
-        Assert.assertTrue( p.test( 11 ) );
-        Assert.assertTrue( p.test( 12 ) );
-        Assert.assertFalse( p.test( 13 ) );
+        Assert.assertFalse( test( p, 10 ) );
+        Assert.assertTrue( test( p, 11 ) );
+        Assert.assertTrue( test( p, 12 ) );
+        Assert.assertFalse( test( p, 13 ) );
     }
 
     @Test
@@ -130,10 +131,10 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, 11, false, 13, true );
 
-        Assert.assertFalse( p.test( 11 ) );
-        Assert.assertTrue( p.test( 12 ) );
-        Assert.assertTrue( p.test( 13 ) );
-        Assert.assertFalse( p.test( 14 ) );
+        Assert.assertFalse( test( p, 11 ) );
+        Assert.assertTrue( test( p, 12 ) );
+        Assert.assertTrue( test( p, 13 ) );
+        Assert.assertFalse( test( p, 14 ) );
     }
 
     @Test
@@ -141,11 +142,11 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, null, true, 13, true );
 
-        Assert.assertTrue( p.test( 10 ) );
-        Assert.assertTrue( p.test( 11 ) );
-        Assert.assertTrue( p.test( 12 ) );
-        Assert.assertTrue( p.test( 13 ) );
-        Assert.assertFalse( p.test( 14 ) );
+        Assert.assertTrue( test( p, 10 ) );
+        Assert.assertTrue( test( p, 11 ) );
+        Assert.assertTrue( test( p, 12 ) );
+        Assert.assertTrue( test( p, 13 ) );
+        Assert.assertFalse( test( p, 14 ) );
     }
 
     @Test
@@ -153,11 +154,11 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, 11, true, null, true );
 
-        Assert.assertFalse( p.test( 10 ) );
-        Assert.assertTrue( p.test( 11 ) );
-        Assert.assertTrue( p.test( 12 ) );
-        Assert.assertTrue( p.test( 13 ) );
-        Assert.assertTrue( p.test( 14 ) );
+        Assert.assertFalse( test( p, 10 ) );
+        Assert.assertTrue( test( p, 11 ) );
+        Assert.assertTrue( test( p, 12 ) );
+        Assert.assertTrue( test( p, 13 ) );
+        Assert.assertTrue( test( p, 14 ) );
     }
 
     @Test
@@ -165,7 +166,7 @@ public class IndexQueryTest
     {
         NumberRangePredicate p = IndexQuery.range( propId, 9007199254740993L, true, null, true );
 
-        Assert.assertFalse( p.test( 9007199254740992D ) );
+        Assert.assertFalse( test( p, 9007199254740992D ) );
     }
 
     // STRING RANGE
@@ -183,11 +184,11 @@ public class IndexQueryTest
     {
         StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
 
-        Assert.assertFalse( p.test( "bba" ) );
-        Assert.assertTrue( p.test( "bbb" ) );
-        Assert.assertTrue( p.test( "bee" ) );
-        Assert.assertFalse( p.test( "beea" ) );
-        Assert.assertFalse( p.test( "bef" ) );
+        Assert.assertFalse( test( p, "bba" ) );
+        Assert.assertTrue( test( p, "bbb" ) );
+        Assert.assertTrue( test( p, "bee" ) );
+        Assert.assertFalse( test( p, "beea" ) );
+        Assert.assertFalse( test( p, "bef" ) );
     }
 
     @Test
@@ -195,10 +196,10 @@ public class IndexQueryTest
     {
         StringRangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", true );
 
-        Assert.assertFalse( p.test( "bbb" ) );
-        Assert.assertTrue( p.test( "bbba" ) );
-        Assert.assertTrue( p.test( "bee" ) );
-        Assert.assertFalse( p.test( "beea" ) );
+        Assert.assertFalse( test( p, "bbb" ) );
+        Assert.assertTrue( test( p, "bbba" ) );
+        Assert.assertTrue( test( p, "bee" ) );
+        Assert.assertFalse( test( p, "beea" ) );
     }
 
     @Test
@@ -206,10 +207,10 @@ public class IndexQueryTest
     {
         StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", false );
 
-        Assert.assertFalse( p.test( "bba" ) );
-        Assert.assertTrue( p.test( "bbb" ) );
-        Assert.assertTrue( p.test( "bed" ) );
-        Assert.assertFalse( p.test( "bee" ) );
+        Assert.assertFalse( test( p, "bba" ) );
+        Assert.assertTrue( test( p, "bbb" ) );
+        Assert.assertTrue( test( p, "bed" ) );
+        Assert.assertFalse( test( p, "bee" ) );
     }
 
     @Test
@@ -217,10 +218,10 @@ public class IndexQueryTest
     {
         StringRangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", false );
 
-        Assert.assertFalse( p.test( "bbb" ) );
-        Assert.assertTrue( p.test( "bbba" ) );
-        Assert.assertTrue( p.test( "bed" ) );
-        Assert.assertFalse( p.test( "bee" ) );
+        Assert.assertFalse( test( p, "bbb" ) );
+        Assert.assertTrue( test( p, "bbba" ) );
+        Assert.assertTrue( test( p, "bed" ) );
+        Assert.assertFalse( test( p, "bee" ) );
     }
 
     @Test
@@ -228,9 +229,9 @@ public class IndexQueryTest
     {
         StringRangePredicate p = IndexQuery.range( propId, "bbb", false, null, false );
 
-        Assert.assertFalse( p.test( "bbb" ) );
-        Assert.assertTrue( p.test( "bbba" ) );
-        Assert.assertTrue( p.test( "xxxxx" ) );
+        Assert.assertFalse( test( p, "bbb" ) );
+        Assert.assertTrue( test( p, "bbba" ) );
+        Assert.assertTrue( test( p, "xxxxx" ) );
     }
 
     @Test
@@ -238,9 +239,9 @@ public class IndexQueryTest
     {
         StringRangePredicate p = IndexQuery.range( propId, null, false, "bee", false );
 
-        Assert.assertTrue( p.test( "" ) );
-        Assert.assertTrue( p.test( "bed" ) );
-        Assert.assertFalse( p.test( "bee" ) );
+        Assert.assertTrue( test( p, "" ) );
+        Assert.assertTrue( test( p, "bed" ) );
+        Assert.assertFalse( test( p, "bee" ) );
     }
 
     // STRING PREFIX
@@ -258,11 +259,11 @@ public class IndexQueryTest
     {
         StringPrefixPredicate p = IndexQuery.stringPrefix( propId, "dog" );
 
-        Assert.assertFalse( p.test( "doffington" ) );
-        Assert.assertFalse( p.test( "doh, not this again!" ) );
-        Assert.assertTrue( p.test( "dog" ) );
-        Assert.assertTrue( p.test( "doggidog" ) );
-        Assert.assertTrue( p.test( "doggidogdog" ) );
+        Assert.assertFalse( test( p, "doffington" ) );
+        Assert.assertFalse( test( p, "doh, not this again!" ) );
+        Assert.assertTrue( test( p, "dog" ) );
+        Assert.assertTrue( test( p, "doggidog" ) );
+        Assert.assertTrue( test( p, "doggidogdog" ) );
     }
 
     // STRING CONTAINS
@@ -280,11 +281,11 @@ public class IndexQueryTest
     {
         StringContainsPredicate p = IndexQuery.stringContains( propId, "cat" );
 
-        Assert.assertFalse( p.test( "dog" ) );
-        Assert.assertFalse( p.test( "cameraman" ) );
-        Assert.assertTrue( p.test( "cat" ) );
-        Assert.assertTrue( p.test( "bobcat" ) );
-        Assert.assertTrue( p.test( "scatman" ) );
+        Assert.assertFalse( test( p, "dog" ) );
+        Assert.assertFalse( test( p, "cameraman" ) );
+        Assert.assertTrue( test( p, "cat" ) );
+        Assert.assertTrue( test( p, "bobcat" ) );
+        Assert.assertTrue( test( p, "scatman" ) );
     }
 
     // STRING SUFFIX
@@ -302,25 +303,29 @@ public class IndexQueryTest
     {
         StringSuffixPredicate p = IndexQuery.stringSuffix( propId, "less" );
 
-        Assert.assertFalse( p.test( "lesser being" ) );
-        Assert.assertFalse( p.test( "make less noise please..." ) );
-        Assert.assertTrue( p.test( "less" ) );
-        Assert.assertTrue( p.test( "clueless" ) );
-        Assert.assertTrue( p.test( "cluelessly clueless" ) );
+        Assert.assertFalse( test( p, "lesser being" ) );
+        Assert.assertFalse( test( p, "make less noise please..." ) );
+        Assert.assertTrue( test( p, "less" ) );
+        Assert.assertTrue( test( p, "clueless" ) );
+        Assert.assertTrue( test( p, "cluelessly clueless" ) );
     }
 
     // HELPERS
 
     private void assertFalseForOtherThings( IndexQuery p )
     {
-        assertFalse( p.test( "other string" ) );
-        assertFalse( p.test( "string1" ) );
-        assertFalse( p.test( "" ) );
-        assertFalse( p.test( -1 ) );
-        assertFalse( p.test( -1.0 ) );
-        assertFalse( p.test( false ) );
-        assertFalse( p.test( new long[]{-1L} ) );
-        assertFalse( p.test( null ) );
+        assertFalse( test( p, "other string" ) );
+        assertFalse( test( p, "string1" ) );
+        assertFalse( test( p, "" ) );
+        assertFalse( test( p, -1 ) );
+        assertFalse( test( p, -1.0 ) );
+        assertFalse( test( p, false ) );
+        assertFalse( test( p, new long[]{-1L} ) );
+        assertFalse( test( p, null ) );
     }
 
+    private boolean test( IndexQuery p, Object x )
+    {
+        return p.test( Values.of( x ) );
+    }
 }

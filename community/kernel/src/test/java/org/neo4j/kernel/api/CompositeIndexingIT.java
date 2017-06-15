@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -158,7 +158,7 @@ public class CompositeIndexingIT
             writeOperations.nodeAddLabel( nodeID, LABEL_ID );
             for ( int propID : index.schema().getPropertyIds() )
             {
-                writeOperations.nodeSetProperty( nodeID, DefinedProperty.intProperty( propID, propID ) );
+                writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
             PrimitiveLongIterator resultIterator = seek();
             assertThat( resultIterator.next(), equalTo( nodeID ) );
@@ -175,7 +175,7 @@ public class CompositeIndexingIT
             long nodeID = writeOperations.nodeCreate();
             for ( int propID : index.schema().getPropertyIds() )
             {
-                writeOperations.nodeSetProperty( nodeID, DefinedProperty.intProperty( propID, propID ) );
+                writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
             writeOperations.nodeAddLabel( nodeID, LABEL_ID );
             PrimitiveLongIterator resultIterator = seek();
@@ -263,7 +263,7 @@ public class CompositeIndexingIT
             for ( int i = 0; i < index.schema().getPropertyIds().length - 1; i++ )
             {
                 int propID = index.schema().getPropertyIds()[i];
-                writeOperations.nodeSetProperty( irrelevantNodeID, DefinedProperty.intProperty( propID, propID ) );
+                writeOperations.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
             }
             PrimitiveLongIterator resultIterator = seek();
             Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
@@ -283,7 +283,7 @@ public class CompositeIndexingIT
             writeOperations.nodeAddLabel( nodeID, LABEL_ID );
             for ( int propID : index.schema().getPropertyIds() )
             {
-                writeOperations.nodeSetProperty( nodeID, DefinedProperty.intProperty( propID, propID ) );
+                writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
             tx.success();
         }
@@ -301,7 +301,7 @@ public class CompositeIndexingIT
         for ( int i = 0; i < query.length; i++ )
         {
             int propID = index.schema().getPropertyIds()[i];
-            query[i] = IndexQuery.exact( propID, propID );
+            query[i] = IndexQuery.exact( propID, Values.of( propID ) );
         }
         return query;
     }

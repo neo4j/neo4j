@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.Value;
 
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
@@ -91,14 +92,14 @@ class InMemoryIndex
         return new OnlineAccessor();
     }
 
-    protected boolean add( long nodeId, Object[] propertyValues, boolean applyIdempotently )
+    protected boolean add( long nodeId, Value[] propertyValues, boolean applyIdempotently )
             throws IndexEntryConflictException, IOException
     {
         assert propertyValues.length > 0;
         return indexData.add( nodeId, applyIdempotently, propertyValues );
     }
 
-    protected void remove( long nodeId, Object[] propertyValues )
+    protected void remove( long nodeId, Value[] propertyValues )
     {
         assert propertyValues.length > 0;
         indexData.remove( nodeId, propertyValues );

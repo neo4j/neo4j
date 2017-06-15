@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -150,9 +151,11 @@ public class IndexPopulationFlipRaceIT
             for ( int j = 0; j < NODES_PER_INDEX; j++ )
             {
                 long nodeAId = data.first()[j];
-                assertEquals( 1, statement.readOperations().nodesCountIndexed( indexA, nodeAId, nodeAId ) );
+                assertEquals( 1, statement.readOperations().nodesCountIndexed(
+                        indexA, nodeAId, Values.of( nodeAId ) ) );
                 long nodeBId = data.other()[j];
-                assertEquals( 1, statement.readOperations().nodesCountIndexed( indexB, nodeBId, nodeBId ) );
+                assertEquals( 1, statement.readOperations().nodesCountIndexed(
+                        indexB, nodeBId, Values.of( nodeBId ) ) );
             }
         }
     }

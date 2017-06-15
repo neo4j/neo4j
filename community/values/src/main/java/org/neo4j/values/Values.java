@@ -20,7 +20,10 @@
 package org.neo4j.values;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Comparator;
+
+import static java.lang.String.format;
 
 /**
  * Entry point to the values library.
@@ -37,16 +40,12 @@ import java.util.Comparator;
 @SuppressWarnings( "WeakerAccess" )
 public class Values
 {
+    public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
+    public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
+    public static final Value MIN_STRING = Values.stringValue( "" );
+    public static final Value MAX_STRING = Values.booleanValue( false );
+
     private Values()
-    {
-    }
-
-    interface ValueLoader<T>
-    {
-        T load() throws ValueLoadException;
-    }
-
-    public class ValueLoadException extends RuntimeException
     {
     }
 
@@ -60,12 +59,49 @@ public class Values
                     Comparator.comparingInt( VirtualValue::hashCode )
                 );
 
+    public static boolean isNumberValue( Object value )
+    {
+        return value instanceof NumberValue;
+    }
+
+    public static boolean isBooleanValue( Object value )
+    {
+        return value instanceof BooleanValue;
+    }
+
+    public static boolean isTextValue( Object value )
+    {
+        return value instanceof TextValue;
+    }
+
+    public static boolean isArrayValue( Value value )
+    {
+        return value instanceof ArrayValue;
+    }
+
+    public static double coerceToDouble( Value value )
+    {
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue)value).longValue();
+        }
+        if ( value instanceof FloatingPointValue )
+        {
+            return ((FloatingPointValue)value).doubleValue();
+        }
+        throw new UnsupportedOperationException( format( "Cannot coerce %s to double", value ) );
+    }
+
     // DIRECT FACTORY METHODS
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
     public static Value stringValue( String value )
     {
+        if ( value == null )
+        {
+            return NO_VALUE;
+        }
         return new StringValue.Direct( value );
     }
 
@@ -144,6 +180,10 @@ public class Values
         if ( number instanceof Short )
         {
             return shortValue( number.shortValue() );
+        }
+        if ( number == null )
+        {
+            return NO_VALUE;
         }
 
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
@@ -240,7 +280,7 @@ public class Values
      * Generic value factory method.
      *
      * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
-     * make testing convenient. Passing a Value and in parameter should never be needed, and will throw an
+     * make testing convenient. Passing a Value as in parameter should never be needed, and will throw an
      * UnsupportedOperationException.
      *
      * This method does defensive copying of arrays, while the explicit *Array() factory methods do not.
@@ -249,6 +289,11 @@ public class Values
      * @return the created Value
      */
     public static Value of( Object value )
+    {
+        return of( value, true );
+    }
+
+    public static Value of( Object value, boolean allowNull )
     {
         if ( value instanceof String )
         {
@@ -324,7 +369,11 @@ public class Values
         }
         if ( value == null )
         {
-            return NoValue.NO_VALUE;
+            if ( allowNull )
+            {
+                return NoValue.NO_VALUE;
+            }
+            throw new IllegalArgumentException( "[null] is not a supported property value" );
         }
         if ( value instanceof Value )
         {
@@ -334,7 +383,37 @@ public class Values
 
         // otherwise fail
         throw new IllegalArgumentException(
-                    String.format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+                    format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+    }
+
+    /**
+     * Generic value factory method.
+     *
+     * Converts an array of object values to the internal Value type. See {@Values.of}.
+     */
+    public static Value[] values( Object... objects )
+    {
+        return Arrays.stream( objects )
+                        .map( Values::of )
+                        .toArray( Value[]::new );
+    }
+
+    @Deprecated
+    public static Object asObject( Value value )
+    {
+        return value == null ? null : value.asObject();
+    }
+
+    public static Object[] asObjects( Value[] propertyValues )
+    {
+        Object[] legacy = new Object[propertyValues.length];
+
+        for ( int i = 0; i < propertyValues.length; i++ )
+        {
+            legacy[i] = propertyValues[i].asObjectCopy();
+        }
+
+        return legacy;
     }
 
     private static Value arrayValue( Object[] value )
@@ -376,7 +455,7 @@ public class Values
             return shortArray( copy( value, new short[value.length] ) );
         }
         throw new IllegalArgumentException(
-                String.format( "%s[] is not a supported property value type",
+                format( "%s[] is not a supported property value type",
                                value.getClass().getComponentType().getName() ) );
     }
 

@@ -33,11 +33,9 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -58,6 +56,9 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.emptyIterator;
 import static org.junit.Assert.assertEquals;
@@ -74,7 +75,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
@@ -250,7 +250,7 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForSeek( index, OrderedPropertyValues.ofUndefined( "value" ) ) ).thenReturn(
+        when( txState.indexUpdatesForSeek( index, ValueTuple.of( "value" ) ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -419,7 +419,8 @@ public class StateHandlingStatementOperationsTest
         {
             long nodeId = (long) invocationOnMock.getArguments()[1];
             when( txState.augmentSinglePropertyCursor( any( Cursor.class ), any( PropertyContainerState.class ),
-                    eq( propertyKey ) ) ).thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+                    eq( propertyKey ) ) )
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKey, Values.of( inRange ) ) ) );
             return asNodeCursor( nodeId, nodeId + 20000 );
         } );
 
@@ -433,7 +434,8 @@ public class StateHandlingStatementOperationsTest
         {
             long nodeId = (long) invocationOnMock.getArguments()[0];
             when( storeReadLayer.nodeGetProperty( eq( storageStatement ), any( NodeItem.class ), eq( propertyKey ),
-                    any( AssertOpen.class ) ) ).thenReturn( asPropertyCursor( intProperty( propertyKey, inRange ) ) );
+                    any( AssertOpen.class ) ) )
+                .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKey, Values.of( inRange ) ) ) );
             return asNodeCursor( nodeId, nodeId + 20000 );
         } );
 
@@ -505,7 +507,7 @@ public class StateHandlingStatementOperationsTest
         // GIVEN
         int propertyKeyId = 5;
         long nodeId = 0;
-        String value = "The value";
+        Value value = Values.of( "The value" );
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId );
@@ -522,14 +524,15 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
-        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
-        operations.nodeSetProperty( kernelStatement, nodeId, newProperty );
+        Value newValue = Values.of( "The value" );
+        operations.nodeSetProperty( kernelStatement, nodeId, propertyKeyId, newValue );
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
-        verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( nodeId ),
-                eq( Property.stringProperty( propertyKeyId, value ) ), eq( newProperty ) );
+        verify( autoIndexOps ).propertyChanged(
+                any( DataWriteOperations.class ), eq( nodeId ),
+                eq( propertyKeyId ), eq( value ), eq( newValue ) );
     }
 
     @Test
@@ -538,7 +541,7 @@ public class StateHandlingStatementOperationsTest
         // GIVEN
         int propertyKeyId = 5;
         long relationshipId = 0;
-        String value = "The value";
+        Value value = Values.of( "The value" );
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId );
@@ -555,14 +558,15 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations operations = newTxStateOps( storeReadLayer, autoIndexing );
 
         // WHEN
-        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
-        operations.relationshipSetProperty( kernelStatement, relationshipId, newProperty );
+        Value newValue = Values.of( "The value" );
+        operations.relationshipSetProperty( kernelStatement, relationshipId, propertyKeyId, newValue );
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
-        verify( autoIndexOps ).propertyChanged( any( DataWriteOperations.class ), eq( relationshipId ),
-                eq( newProperty ), eq( newProperty ) );
+        verify( autoIndexOps ).propertyChanged(
+                any( DataWriteOperations.class ), eq( relationshipId ),
+                eq( propertyKeyId ), eq( newValue ), eq( newValue ) );
     }
 
     @Test
@@ -570,16 +574,16 @@ public class StateHandlingStatementOperationsTest
     {
         // GIVEN
         int propertyKeyId = 5;
-        String value = "The value";
+        Value value = Values.of( "The value" );
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
-        when( inner.graphGetAllProperties() ).thenReturn( iterator( Property.stringProperty( propertyKeyId, value ) ) );
+        when( inner.graphGetAllProperties() ).thenReturn( iterator( new PropertyKeyValue( propertyKeyId, value ) ) );
         StateHandlingStatementOperations operations = newTxStateOps( inner );
 
         // WHEN
-        DefinedProperty newProperty = Property.stringProperty( propertyKeyId, value );
-        operations.graphSetProperty( kernelStatement, newProperty );
+        Value newValue = Values.of( "The value" );
+        operations.graphSetProperty( kernelStatement, propertyKeyId, newValue );
 
         // THEN
         assertFalse( kernelStatement.hasTxStateWithChanges() );
@@ -599,7 +603,7 @@ public class StateHandlingStatementOperationsTest
         return StubCursors.cursor( item );
     }
 
-    private Cursor<PropertyItem> propertyCursor( long propertyKeyId, String value )
+    private Cursor<PropertyItem> propertyCursor( long propertyKeyId, Value value )
     {
         PropertyItem propertyItem = mock( PropertyItem.class );
         when( propertyItem.propertyKeyId() ).thenReturn( (int) propertyKeyId );

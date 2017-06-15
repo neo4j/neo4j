@@ -25,12 +25,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Supplier;
 
-import org.neo4j.function.Suppliers;
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.values.Value;
 
 public class PropertyBlock implements Cloneable
 {
@@ -180,7 +179,7 @@ public class PropertyBlock implements Cloneable
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.getValue( this, null );
+                Object value = type.value( this, null ).asObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
@@ -246,14 +245,15 @@ public class PropertyBlock implements Cloneable
         return Arrays.equals( valueBlocks, other.valueBlocks );
     }
 
-    public DefinedProperty newPropertyData( PropertyStore propertyStore )
+    public Value newPropertyValue( PropertyStore propertyStore )
     {
-        return newPropertyData( Suppliers.singleton( propertyStore ) );
+        return getType().valueLazy( this, propertyStore );
     }
 
-    public DefinedProperty newPropertyData( Supplier<PropertyStore> propertyStore )
+    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore )
     {
-        return getType().readProperty( getKeyIndexId(), this, propertyStore );
+        int propertyKeyId = getKeyIndexId();
+        return new PropertyKeyValue( propertyKeyId, getType().valueLazy( this, propertyStore ) );
     }
 
     public static int keyIndexId( long valueBlock )

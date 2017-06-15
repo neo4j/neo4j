@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -48,7 +50,7 @@ public class ConstraintEnforcingEntityOperationsTest
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
-    private final String value = "value";
+    private final Value value = Values.of( "value" );
     private final long resourceId = indexEntryResourceId( labelId, exact( propertyKeyId, value ) );
     private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
     private final IndexQuery.ExactPredicate withValue = IndexQuery.exact( propertyKeyId, value );

@@ -61,9 +61,15 @@ final class FloatValue extends FloatingPointValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Float.toString( value );
     }
 
     @Override

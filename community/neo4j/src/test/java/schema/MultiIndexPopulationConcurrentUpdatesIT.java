@@ -79,6 +79,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 
@@ -130,9 +131,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
         updates.add( NodeUpdates.forNode( 0, id( COUNTRY_LABEL ) )
-                .removed( propertyId, "Sweden" ).build() );
+                .removed( propertyId, Values.of( "Sweden" ) ).build() );
         updates.add( NodeUpdates.forNode( 3, id( COLOR_LABEL ) )
-                .removed( propertyId, "green" ).build() );
+                .removed( propertyId, Values.of( "green" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
@@ -144,13 +145,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
                 assertEquals("Should be removed by concurrent remove.",
-                        0, indexReader.countIndexedNodes( 0, "Sweden" ) );
+                        0, indexReader.countIndexedNodes( 0, Values.of( "Sweden"  )) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertEquals("Should be removed by concurrent remove.",
-                        0, indexReader.countIndexedNodes( 3, "green" ) );
+                        0, indexReader.countIndexedNodes( 3, Values.of( "green"  )) );
             }
         }
     }
@@ -160,9 +161,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
         updates.add( NodeUpdates.forNode( 6, id( COUNTRY_LABEL ) )
-                .added( propertyId, "Denmark" ).build() );
+                .added( propertyId, Values.of( "Denmark" ) ).build() );
         updates.add( NodeUpdates.forNode( 7, id( CAR_LABEL ) )
-                .added( propertyId, "BMW" ).build() );
+                .added( propertyId, Values.of( "BMW" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
@@ -173,12 +174,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertEquals("Should be added by concurrent add.", 1, indexReader.countIndexedNodes( 6, "Denmark" ) );
+                assertEquals("Should be added by concurrent add.", 1,
+                        indexReader.countIndexedNodes( 6, Values.of( "Denmark" ) ) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertEquals("Should be added by concurrent add.", 1, indexReader.countIndexedNodes( 7, "BMW" ) );
+                assertEquals("Should be added by concurrent add.", 1,
+                        indexReader.countIndexedNodes( 7, Values.of( "BMW" ) ) );
             }
         }
     }
@@ -188,9 +191,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         List<NodeUpdates> updates = new ArrayList<>( 2 );
         updates.add( NodeUpdates.forNode( 3, id( COLOR_LABEL ) )
-                .changed( propertyId, "green", "pink" ).build() );
+                .changed( propertyId, Values.of( "green" ), Values.of( "pink" ) ).build() );
         updates.add( NodeUpdates.forNode( 5, id( CAR_LABEL ) )
-                .changed( propertyId, "Ford", "SAAB" ).build() );
+                .changed( propertyId, Values.of( "Ford" ), Values.of( "SAAB" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, updates );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
@@ -201,16 +204,19 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertEquals("Should be deleted by concurrent change.", 0, indexReader.countIndexedNodes( 3, "green" ) );
+                assertEquals("Should be deleted by concurrent change.", 0,
+                        indexReader.countIndexedNodes( 3, Values.of( "green" ) ) );
             }
             try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertEquals("Should be updated by concurrent change.", 1, indexReader.countIndexedNodes( 3, "pink" ) );
+                assertEquals("Should be updated by concurrent change.", 1,
+                        indexReader.countIndexedNodes( 3, Values.of( "pink"  ) ) );
             }
 
             try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertEquals("Should be added by concurrent change.", 1, indexReader.countIndexedNodes( 5, "SAAB" ) );
+                assertEquals("Should be added by concurrent change.", 1,
+                        indexReader.countIndexedNodes( 5, Values.of( "SAAB"  ) ) );
             }
         }
     }
@@ -492,7 +498,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 case ADDED:
                                     node.addLabel(
                                             Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
-                                    node.setProperty( NAME_PROPERTY, indexUpdate.values()[0] );
+                                    node.setProperty( NAME_PROPERTY, indexUpdate.values()[0].asObject() );
                                     break;
                                 case REMOVED:
                                     node.addLabel(

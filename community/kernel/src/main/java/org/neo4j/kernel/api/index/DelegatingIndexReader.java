@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.Value;
 
 public class DelegatingIndexReader implements IndexReader
 {
@@ -35,7 +36,7 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object... propertyValues )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         return delegate.countIndexedNodes( nodeId, propertyValues );
     }

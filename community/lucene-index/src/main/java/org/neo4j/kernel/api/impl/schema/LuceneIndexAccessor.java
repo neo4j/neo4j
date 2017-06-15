@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Value;
 
 public class LuceneIndexAccessor implements IndexAccessor
 {
@@ -182,19 +183,19 @@ public class LuceneIndexAccessor implements IndexAccessor
             } );
         }
 
-        private void addRecovered( long nodeId, Object[] values ) throws IOException
+        private void addRecovered( long nodeId, Value[] values ) throws IOException
         {
 
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void add( long nodeId, Object[] values ) throws IOException
+        private void add( long nodeId, Value[] values ) throws IOException
         {
             writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
 
-        private void change( long nodeId, Object[] values ) throws IOException
+        private void change( long nodeId, Value[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );

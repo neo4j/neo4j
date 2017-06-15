@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Matchers.any;
@@ -128,7 +129,7 @@ public class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedNodes( 2, "testValue" );
+        simpleIndexReader.countIndexedNodes( 2, Values.of( "testValue" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
     }

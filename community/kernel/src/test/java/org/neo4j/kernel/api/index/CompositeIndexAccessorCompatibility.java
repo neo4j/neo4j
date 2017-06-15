@@ -22,16 +22,17 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.api.schema.IndexQuery.exact;
+import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 import static org.neo4j.kernel.api.schema.IndexQuery.exists;
-
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -50,9 +51,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testIndexSeekAndScanByString() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor.schema(), "a", "a" ),
-                IndexEntryUpdate.add( 2L, descriptor.schema(), "b", "b" ),
-                IndexEntryUpdate.add( 3L, descriptor.schema(), "a", "b" ) ) );
+                add( 1L, descriptor.schema(), "a", "a" ),
+                add( 2L, descriptor.schema(), "b", "b" ),
+                add( 3L, descriptor.schema(), "a", "b" ) ) );
 
         assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
         assertThat( query( exact( 0, "b" ), exact( 1, "b" ) ), equalTo( singletonList( 2L ) ) );
@@ -64,9 +65,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testIndexSeekAndScanByNumber() throws Exception
     {
         updateAndCommit( asList(
-                IndexEntryUpdate.add( 1L, descriptor.schema(), 333, 333 ),
-                IndexEntryUpdate.add( 2L, descriptor.schema(), 101, 101 ),
-                IndexEntryUpdate.add( 3L, descriptor.schema(), 333, 101 ) ) );
+                add( 1L, descriptor.schema(), 333, 333 ),
+                add( 2L, descriptor.schema(), 101, 101 ),
+                add( 3L, descriptor.schema(), 333, 101 ) ) );
 
         assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( singletonList( 1L ) ) );
         assertThat( query( exact( 0, 101 ), exact( 1, 101 ) ), equalTo( singletonList( 2L ) ) );
@@ -87,8 +88,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         public void testDuplicatesInIndexSeekByString() throws Exception
         {
             updateAndCommit( asList(
-                    IndexEntryUpdate.add( 1L, descriptor.schema(), "a", "a" ),
-                    IndexEntryUpdate.add( 2L, descriptor.schema(), "a", "a" ) ) );
+                    add( 1L, descriptor.schema(), "a", "a" ),
+                    add( 2L, descriptor.schema(), "a", "a" ) ) );
 
             assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
         }
@@ -97,8 +98,8 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         public void testDuplicatesInIndexSeekByNumber() throws Exception
         {
             updateAndCommit( asList(
-                    IndexEntryUpdate.add( 1L, descriptor.schema(), 333, 333 ),
-                    IndexEntryUpdate.add( 2L, descriptor.schema(), 333, 333 ) ) );
+                    add( 1L, descriptor.schema(), 333, 333 ),
+                    add( 2L, descriptor.schema(), 333, 333 ) ) );
 
             assertThat( query( exact( 0, 333 ), exact( 1, 333 ) ), equalTo( asList( 1L, 2L ) ) );
         }
@@ -123,11 +124,16 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
             // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
             updateAndCommit( asList(
-                    IndexEntryUpdate.add( 1L, descriptor.schema(), "a", "a" ),
-                    IndexEntryUpdate.add( 2L, descriptor.schema(), "a", "a" ) ) );
+                    add( 1L, descriptor.schema(), "a", "a" ),
+                    add( 2L, descriptor.schema(), "a", "a" ) ) );
 
             assertThat( query( exact( 0, "a" ), exact( 1, "a" ) ), equalTo( asList( 1L, 2L ) ) );
         }
+    }
+
+    private static IndexEntryUpdate add( long nodeId, LabelSchemaDescriptor schema, Object value1, Object value2 )
+    {
+        return IndexEntryUpdate.add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
     }
 
 //TODO: add when supported:

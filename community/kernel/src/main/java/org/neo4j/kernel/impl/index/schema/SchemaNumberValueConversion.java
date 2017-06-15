@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
+
 import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.DOUBLE;
 import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.FLOAT;
 import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.LONG;
@@ -28,7 +31,7 @@ import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.LONG;
  */
 class SchemaNumberValueConversion
 {
-    static void assertValidSingleNumberPropertyValue( Object[] values )
+    static Number assertValidSingleNumber( Value[] values )
     {
         // TODO: support multiple values, right?
         if ( values.length > 1 )
@@ -39,11 +42,12 @@ class SchemaNumberValueConversion
         {
             throw new IllegalArgumentException( "Tried to create key without value" );
         }
-        if ( !(values[0] instanceof Number) )
+        if ( !Values.isNumberValue( values[0] ) )
         {
             throw new IllegalArgumentException(
                     "Key layout does only support numbers, tried to create key from " + values[0] );
         }
+        return (Number) values[0].asObject();
     }
 
     static Number toValue( byte type, long rawValueBits )

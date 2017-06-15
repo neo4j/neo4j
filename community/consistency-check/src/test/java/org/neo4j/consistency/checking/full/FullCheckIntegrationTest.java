@@ -107,6 +107,8 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -598,12 +600,12 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private Object[] values( IndexRule indexRule )
+    private Value[] values( IndexRule indexRule )
     {
         switch ( indexRule.schema().getPropertyIds().length )
         {
-        case 1: return Iterators.array( VALUE1 );
-        case 2: return Iterators.array( VALUE1, VALUE2 );
+        case 1: return Iterators.array( Values.of( VALUE1 ) );
+        case 2: return Iterators.array( Values.of( VALUE1 ), Values.of( VALUE2 ) );
         default: throw new UnsupportedOperationException();
         }
     }

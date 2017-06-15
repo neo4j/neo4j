@@ -25,7 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
-
+import org.neo4j.values.Value;
 
 /**
  * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the
@@ -38,7 +38,7 @@ public interface IndexReader extends Resource
      * @param propertyValues property values to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
      */
-    long countIndexedNodes( long nodeId, Object... propertyValues );
+    long countIndexedNodes( long nodeId, Value... propertyValues );
 
     IndexSampler createSampler();
 
@@ -54,7 +54,7 @@ public interface IndexReader extends Resource
     {
         // Used for checking index correctness
         @Override
-        public long countIndexedNodes( long nodeId, Object... propertyValues )
+        public long countIndexedNodes( long nodeId, Value... propertyValues )
         {
             return 0;
         }

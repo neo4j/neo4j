@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.Values;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -135,7 +136,7 @@ public class LuceneSchemaIndexIT
             addDocumentToIndex( index, 45 );
 
             index.getIndexWriter().updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( 100 ),
-                    LuceneDocumentStructure.documentRepresentingProperties( (long) 100, 100 ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) 100, Values.intValue( 100 ) ) );
             index.maybeRefreshBlocking();
 
             long documentsInIndex = Iterators.count( index.allDocumentsReader().iterator() );
@@ -244,7 +245,7 @@ public class LuceneSchemaIndexIT
         for ( int i = 0; i < documents; i++ )
         {
             index.getIndexWriter().addDocument(
-                    LuceneDocumentStructure.documentRepresentingProperties( (long) i, i ) );
+                    LuceneDocumentStructure.documentRepresentingProperties( (long) i, Values.intValue( i ) ) );
         }
     }
 
@@ -309,7 +310,7 @@ public class LuceneSchemaIndexIT
 
     private IndexEntryUpdate add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, descriptor.schema(), value );
+        return IndexEntryUpdate.add( nodeId, descriptor.schema(), Values.of( value ) );
     }
 
 }

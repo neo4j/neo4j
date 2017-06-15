@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.values.{Value, Values}
 
 object Methods {
 
@@ -84,13 +85,13 @@ object Methods {
   val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
-  val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty", typeRef[Long], typeRef[Int])
+  val nodeGetProperty = method[ReadOperations, Value]("nodeGetProperty", typeRef[Long], typeRef[Int])
   val indexQuery = method[ReadOperations, PrimitiveLongIterator]("indexQuery", typeRef[IndexDescriptor], typeRef[Array[IndexQuery]])
   val indexQueryExact = method[IndexQuery, IndexQuery.ExactPredicate]("exact", typeRef[Int], typeRef[Object])
   val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Array[IndexQuery.ExactPredicate]])
   val countsForNode = method[ReadOperations, Long]("countsForNode", typeRef[Int])
   val countsForRel = method[ReadOperations, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
-  val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty", typeRef[Long], typeRef[Int])
+  val relationshipGetProperty = method[ReadOperations, Value]("relationshipGetProperty", typeRef[Long], typeRef[Int])
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
@@ -111,4 +112,5 @@ object Methods {
   val unboxDouble = method[java.lang.Double, Double]("doubleValue")
   val unboxNode = method[CompiledConversionUtils, Long]("unboxNodeOrNull", typeRef[NodeIdWrapper])
   val unboxRel = method[CompiledConversionUtils, Long]("unboxRelationshipOrNull", typeRef[RelationshipIdWrapper])
+  val reboxValue = method[Values, Object]("asObject", typeRef[Value])
 }

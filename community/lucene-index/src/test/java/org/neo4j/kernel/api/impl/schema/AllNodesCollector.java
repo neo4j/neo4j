@@ -32,9 +32,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.values.Value;
+
 public class AllNodesCollector extends SimpleCollector
 {
-    public static List<Long> getAllNodes( Directory directory, Object propertyValue ) throws IOException
+    public static List<Long> getAllNodes( Directory directory, Value propertyValue ) throws IOException
     {
         try ( SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ) )
         {

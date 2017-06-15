@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.values.Value;
+
 import static java.lang.String.format;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumberPropertyValue;
+import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
 import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.toValue;
 
 /**
@@ -34,10 +36,9 @@ class NonUniqueSchemaNumberValue extends SchemaNumberValue
             Long.SIZE;  /* value bits */
 
     @Override
-    public void from( long entityId, Object[] values )
+    public void from( long entityId, Value[] values )
     {
-        assertValidSingleNumberPropertyValue( values );
-        extractValue( (Number) values[0] );
+        extractValue( assertValidSingleNumber( values ) );
     }
 
     @Override

@@ -26,9 +26,13 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class DataStatementArgumentVerificationTest
@@ -41,10 +45,10 @@ public class DataStatementArgumentVerificationTest
         ReadOperations statement = stubStatement();
 
         // when
-        Object value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Value value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertNull( "should return NoProperty", value );
+        assertTrue( "should return NoProperty", value == Values.NO_VALUE );
     }
 
     @Test
@@ -55,10 +59,10 @@ public class DataStatementArgumentVerificationTest
         ReadOperations statement = stubStatement();
 
         // when
-        Object value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Value value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertNull( "should return NoProperty", value );
+        assertEquals( "should return NoProperty", value, Values.NO_VALUE );
     }
 
     @Test

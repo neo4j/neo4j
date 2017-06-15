@@ -57,12 +57,9 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaUtil;
@@ -104,6 +101,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.filter;
@@ -114,7 +114,6 @@ import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.properties.DefinedProperty.NO_SUCH_PROPERTY;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.api.state.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.kernel.impl.util.Cursors.count;
@@ -285,7 +284,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    public Value nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
         try ( Cursor<PropertyItem> cursor = nodeGetPropertyCursor( statement, node, propertyKeyId ) )
         {
@@ -296,10 +295,10 @@ public class StateHandlingStatementOperations implements
         }
         catch ( NotFoundException e )
         {
-            return null;
+            return Values.NO_VALUE;
         }
 
-        return null;
+        return Values.NO_VALUE;
     }
 
     @Override
@@ -366,7 +365,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    public Value relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
     {
         try ( Cursor<PropertyItem> cursor = relationshipGetPropertyCursor( statement, relationship, propertyKeyId ) )
         {
@@ -377,10 +376,10 @@ public class StateHandlingStatementOperations implements
         }
         catch ( NotFoundException e )
         {
-            return null;
+            return Values.NO_VALUE;
         }
 
-        return null;
+        return Values.NO_VALUE;
     }
 
     @Override
@@ -830,7 +829,7 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
         PrimitiveLongIterator exactMatches = LookupFilter.exactIndexMatches( this, state, committed, query );
         PrimitiveLongIterator changesFiltered =
-                filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( query ) );
+                filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
@@ -848,7 +847,8 @@ public class StateHandlingStatementOperations implements
         {
         case exact:
             IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( predicates );
-            return filterIndexStateChangesForSeek( state, exactMatches, index, OrderedPropertyValues.of( exactPreds ) );
+            return filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( exactPreds ) );
+
         case stringSuffix:
         case stringContains:
         case exists:
@@ -916,7 +916,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
@@ -940,7 +940,7 @@ public class StateHandlingStatementOperations implements
 
     private PrimitiveLongIterator filterIndexStateChangesForSeek(
             KernelStatement state, PrimitiveLongIterator nodeIds, IndexDescriptor index,
-            OrderedPropertyValues propertyValues )
+            ValueTuple propertyValues )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -1012,167 +1012,148 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+    public Value nodeSetProperty( KernelStatement state, long nodeId, int propertyKeyId, Value value )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            DefinedProperty existingProperty = NO_SUCH_PROPERTY;
-            try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, property.propertyKeyId() ) )
+            Value existingValue = Values.NO_VALUE;
+            try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, propertyKeyId ) )
             {
                 if ( !properties.next() )
                 {
-                    autoIndexing.nodes().propertyAdded( ops, nodeId, property );
+                    autoIndexing.nodes().propertyAdded( ops, nodeId, propertyKeyId, value );
                 }
                 else
                 {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-                    autoIndexing.nodes().propertyChanged( ops, nodeId, existingProperty, property );
+                    existingValue = properties.get().value();
+                    autoIndexing.nodes().propertyChanged( ops, nodeId, propertyKeyId, existingValue, value );
                 }
             }
 
-            if ( existingProperty == NO_SUCH_PROPERTY )
+            if ( existingValue == Values.NO_VALUE )
             {
-                state.txState().nodeDoAddProperty( node.id(), property );
-                indexTxStateUpdater.onPropertyAdd( state, node, property );
-                return Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
+                state.txState().nodeDoAddProperty( node.id(), propertyKeyId, value );
+                indexTxStateUpdater.onPropertyAdd( state, node, propertyKeyId, value );
+                return Values.NO_VALUE;
             }
             else
             {
-                if ( !property.equals( existingProperty ) )
+                if ( !value.equals( existingValue ) )
                 {
-                    state.txState().nodeDoChangeProperty( node.id(), existingProperty, property );
-                    indexTxStateUpdater.onPropertyChange( state, node, existingProperty, property );
+                    state.txState().nodeDoChangeProperty( node.id(), propertyKeyId, existingValue, value );
+                    indexTxStateUpdater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
                 }
-                return existingProperty;
+                return existingValue;
             }
         }
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state,
-            long relationshipId,
-            DefinedProperty property )
+    public Value relationshipSetProperty( KernelStatement state, long relationshipId, int propertyKeyId, Value value )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
             RelationshipItem relationship = cursor.get();
-            Property existingProperty;
-            try ( Cursor<PropertyItem> properties = relationshipGetPropertyCursor( state, relationship,
-                    property.propertyKeyId() ) )
+            Value existingValue = Values.NO_VALUE;
+            try ( Cursor<PropertyItem> properties = relationshipGetPropertyCursor( state, relationship, propertyKeyId ) )
             {
                 if ( !properties.next() )
                 {
-                    autoIndexing.relationships().propertyAdded( ops, relationshipId, property );
-                    existingProperty =
-                            Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP, relationship.id() );
+                    autoIndexing.relationships().propertyAdded( ops, relationshipId, propertyKeyId, value );
                 }
                 else
                 {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-                    autoIndexing.relationships().propertyChanged( ops, relationshipId, existingProperty, property );
+                    existingValue = properties.get().value();
+                    autoIndexing.relationships().propertyChanged(
+                            ops, relationshipId, propertyKeyId, existingValue, value );
                 }
             }
-            if ( !property.equals( existingProperty ) )
+            if ( !value.equals( existingValue ) )
             {
-                state.txState().relationshipDoReplaceProperty( relationship.id(), existingProperty, property );
+                state.txState().relationshipDoReplaceProperty(
+                        relationship.id(), propertyKeyId, existingValue, value );
             }
-            return existingProperty;
+            return existingValue;
         }
     }
 
     @Override
-    public Property graphSetProperty( KernelStatement state, DefinedProperty property )
+    public Value graphSetProperty( KernelStatement state, int propertyKeyId, Value value )
     {
-        Object existingPropertyValue = graphGetProperty( state, property.propertyKeyId() );
-        Property existingProperty = existingPropertyValue == null ?
-                Property.noGraphProperty( property.propertyKeyId() ) :
-                Property.property( property.propertyKeyId(), existingPropertyValue );
+        Value existingValue = graphGetProperty( state, propertyKeyId );
 
-        if ( !property.equals( existingProperty ) )
+        if ( !value.equals( existingValue ) )
         {
-            state.txState().graphDoReplaceProperty( existingProperty, property );
+            state.txState().graphDoReplaceProperty( propertyKeyId, existingValue, value );
         }
 
-        return existingProperty;
+        return existingValue;
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+    public Value nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            DefinedProperty existingProperty = NO_SUCH_PROPERTY;
+            Value existingValue = Values.NO_VALUE;
             try ( Cursor<PropertyItem> properties = nodeGetPropertyCursor( state, node, propertyKeyId ) )
             {
                 if ( properties.next() )
                 {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
+                    existingValue = properties.get().value();
 
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
-                    state.txState().nodeDoRemoveProperty( node.id(), existingProperty );
+                    state.txState().nodeDoRemoveProperty( node.id(), propertyKeyId, existingValue );
 
-                    indexTxStateUpdater.onPropertyRemove( state, node, existingProperty );
+                    indexTxStateUpdater.onPropertyRemove( state, node, propertyKeyId, existingValue );
                 }
             }
-
-            if ( existingProperty == NO_SUCH_PROPERTY )
-            {
-                return Property.noProperty( propertyKeyId, EntityType.NODE, node.id() );
-            }
-            return existingProperty;
+            return existingValue;
         }
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state,
-            long relationshipId,
-            int propertyKeyId )
+    public Value relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
             RelationshipItem relationship = cursor.get();
-            Property existingProperty;
+            Value existingValue = Values.NO_VALUE;
             try ( Cursor<PropertyItem> properties = relationshipGetPropertyCursor( state, relationship,
                     propertyKeyId ) )
             {
-                if ( !properties.next() )
+                if ( properties.next() )
                 {
-                    existingProperty = Property.noProperty( propertyKeyId, EntityType.RELATIONSHIP, relationship.id() );
-                }
-                else
-                {
-                    existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
+                    existingValue = properties.get().value();
 
                     autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
                     state.txState()
-                            .relationshipDoRemoveProperty( relationship.id(), (DefinedProperty) existingProperty );
+                            .relationshipDoRemoveProperty( relationship.id(), propertyKeyId, existingValue );
                 }
             }
-            return existingProperty;
+            return existingValue;
         }
     }
 
     @Override
-    public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
+    public Value graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
-        Object existingPropertyValue = graphGetProperty( state, propertyKeyId );
-        if ( existingPropertyValue != null )
+        Value existingValue = graphGetProperty( state, propertyKeyId );
+        if ( existingValue != Values.NO_VALUE )
         {
-            DefinedProperty existingProperty = Property.property( propertyKeyId, existingPropertyValue );
-            state.txState().graphDoRemoveProperty( existingProperty );
-            return existingProperty;
+            state.txState().graphDoRemoveProperty( propertyKeyId, existingValue );
         }
-        return Property.noGraphProperty( propertyKeyId );
+        return existingValue;
     }
 
     @Override
@@ -1189,22 +1170,22 @@ public class StateHandlingStatementOperations implements
     @Override
     public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
     {
-        return graphGetProperty( state, propertyKeyId ) != null;
+        return graphGetProperty( state, propertyKeyId ) != Values.NO_VALUE;
     }
 
     @Override
-    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
+    public Value graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         Iterator<StorageProperty> properties = graphGetAllProperties( state );
         while ( properties.hasNext() )
         {
-            DefinedProperty property = (DefinedProperty) properties.next();
+            StorageProperty property = properties.next();
             if ( property.propertyKeyId() == propertyKeyId )
             {
                 return property.value();
             }
         }
-        return null;
+        return Values.NO_VALUE;
     }
 
     private Iterator<StorageProperty> graphGetAllProperties( KernelStatement state )

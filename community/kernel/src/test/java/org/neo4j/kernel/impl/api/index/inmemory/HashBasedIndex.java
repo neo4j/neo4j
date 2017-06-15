@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.Value;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType.exact;
@@ -252,7 +253,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         if ( predicates.length > 1 )
         {
-            Object[] values = new Object[predicates.length];
+            Value[] values = new Value[predicates.length];
             for ( int i = 0; i < predicates.length; i++ )
             {
                 assert predicates[i].type() == exact : "composite indexes only supported for seek";

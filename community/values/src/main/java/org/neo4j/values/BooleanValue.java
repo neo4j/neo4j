@@ -27,11 +27,11 @@ import static java.lang.String.format;
  */
 final class BooleanValue extends ScalarValue
 {
-    private final boolean bool;
+    private final boolean value;
 
-    BooleanValue( boolean bool )
+    BooleanValue( boolean value )
     {
-        this.bool = bool;
+        this.value = value;
     }
 
     @Override
@@ -43,13 +43,13 @@ final class BooleanValue extends ScalarValue
     @Override
     public boolean equals( Value other )
     {
-        return other.equals( bool );
+        return other.equals( value );
     }
 
     @Override
     public boolean equals( boolean x )
     {
-        return bool == x;
+        return value == x;
     }
 
     @Override
@@ -67,35 +67,41 @@ final class BooleanValue extends ScalarValue
     @Override
     public int hashCode()
     {
-        return bool ? -1 : 0;
+        return value ? -1 : 0;
     }
 
     public boolean booleanValue()
     {
-        return bool;
+        return value;
     }
 
     public int compareTo( BooleanValue other )
     {
-        return Boolean.compare( bool, other.booleanValue() );
+        return Boolean.compare( value, other.booleanValue() );
     }
 
     @Override
     public void writeTo( ValueWriter writer )
     {
-        writer.writeBoolean( bool );
+        writer.writeBoolean( value );
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
-        return bool;
+        return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Boolean.toString( value );
     }
 
     @Override
     public String toString()
     {
-        return format( "Boolean('%s')", Boolean.toString( bool ) );
+        return format( "Boolean('%s')", Boolean.toString( value ) );
     }
 
     public ValueGroup valueGroup()

@@ -96,7 +96,7 @@ public class PropertyLoader
             {
                 for ( PropertyBlock propBlock : propRecord )
                 {
-                    receiver.receive( propBlock.newPropertyData( propertyStore ), propRecord.getId() );
+                    receiver.receive( propBlock.newPropertyKeyValue( propertyStore ), propRecord.getId() );
                 }
             }
         }

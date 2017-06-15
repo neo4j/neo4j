@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -47,12 +48,9 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
@@ -76,6 +74,8 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -138,7 +138,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
+    public Value nodeSetProperty( KernelStatement state, long nodeId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException,
                    InvalidTransactionTypeKernelException, ConstraintValidationException
     {
@@ -146,30 +146,30 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             NodeItem node = cursor.get();
             Iterator<ConstraintDescriptor> constraints =
-                    getConstraintsInvolvingProperty( state, property.propertyKeyId() );
+                    getConstraintsInvolvingProperty( state, propertyKeyId );
             Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
                     new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
 
-            nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, property.propertyKeyId(),
+            nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, propertyKeyId,
                     ( constraint, propertyIds ) ->
                     {
 
-                        if ( propertyIds.contains( property.propertyKeyId() ) )
+                        if ( propertyIds.contains( propertyKeyId ) )
                         {
-                            Object previousValue = nodeGetProperty( state, node, property.propertyKeyId() );
-                            if ( property.valueEquals( previousValue ) )
+                            Value previousValue = nodeGetProperty( state, node, propertyKeyId );
+                            if ( value.equals( previousValue ) )
                             {
                                 // since we are changing to the same value, there is no need to check
                                 return;
                             }
                         }
                         validateNoExistingNodeWithExactValues( state, constraint,
-                                getAllPropertyValues( state, constraint.schema(), node, property ),
+                                getAllPropertyValues( state, constraint.schema(), node, propertyKeyId, value ),
                                 node.id() );
                     } );
         }
 
-        return entityWriteOperations.nodeSetProperty( state, nodeId, property );
+        return entityWriteOperations.nodeSetProperty( state, nodeId, propertyKeyId, value );
     }
 
     private Iterator<ConstraintDescriptor> getConstraintsInvolvingProperty( KernelStatement state, int propertyId )
@@ -181,7 +181,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node )
     {
-        return getAllPropertyValues( state, schema, node, DefinedProperty.NO_SUCH_PROPERTY );
+        return getAllPropertyValues( state, schema, node, StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
     }
 
     /**
@@ -192,14 +192,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
      * to change a property, and that to verify that the post-change values do not validate some constraint.
      */
     private ExactPredicate[] getAllPropertyValues( KernelStatement state, SchemaDescriptor schema, NodeItem node,
-            DefinedProperty changedProperty )
+            int changedPropertyKeyId, Value changedValue )
     {
         int[] schemaPropertyIds = schema.getPropertyIds();
         ExactPredicate[] values = new ExactPredicate[schemaPropertyIds.length];
 
         int nMatched = 0;
         Cursor<PropertyItem> nodePropertyCursor = nodeGetProperties( state, node );
-        int changedPropId = changedProperty.propertyKeyId();
         while ( nodePropertyCursor.next() )
         {
             PropertyItem property = nodePropertyCursor.get();
@@ -208,7 +207,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
             if ( k >= 0 )
             {
-                if ( nodePropertyId != changedPropId )
+                if ( nodePropertyId != changedPropertyKeyId )
                 {
                     values[k] = IndexQuery.exact( nodePropertyId, property.value() );
                 }
@@ -216,12 +215,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             }
         }
 
-        if ( changedPropId != NO_SUCH_PROPERTY_KEY )
+        if ( changedPropertyKeyId != NO_SUCH_PROPERTY_KEY )
         {
-            int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropId );
+            int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropertyKeyId );
             if ( k >= 0 )
             {
-                values[k] = IndexQuery.exact( changedPropId, changedProperty.value() );
+                values[k] = IndexQuery.exact( changedPropertyKeyId, changedValue );
                 nMatched++;
             }
         }
@@ -255,8 +254,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
-                        new IndexEntryConflictException( existing, NO_SUCH_NODE,
-                                OrderedPropertyValues.of( propertyValues ) ) );
+                        new IndexEntryConflictException( existing, NO_SUCH_NODE, IndexQuery.asValueTuple( propertyValues ) ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
@@ -316,27 +314,27 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
+    public Value relationshipSetProperty( KernelStatement state, long relationshipId, int propertyKeyId, Value value )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
+        return entityWriteOperations.relationshipSetProperty( state, relationshipId, propertyKeyId, value );
     }
 
     @Override
-    public Property graphSetProperty( KernelStatement state, DefinedProperty property )
+    public Value graphSetProperty( KernelStatement state, int propertyKeyId, Value value )
     {
-        return entityWriteOperations.graphSetProperty( state, property );
+        return entityWriteOperations.graphSetProperty( state, propertyKeyId, value );
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
+    public Value nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         return entityWriteOperations.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state,
+    public Value relationshipRemoveProperty( KernelStatement state,
             long relationshipId,
             int propertyKeyId ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
@@ -344,7 +342,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
+    public Value graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
         return entityWriteOperations.graphRemoveProperty( state, propertyKeyId );
     }
@@ -421,7 +419,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );
@@ -434,7 +432,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
+    public Value graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         return entityReadOperations.graphGetProperty( state, propertyKeyId );
     }
@@ -496,7 +494,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    public Value nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
     {
         return entityReadOperations.nodeGetProperty( statement, node, propertyKeyId );
     }
@@ -520,7 +518,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Object relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
+    public Value relationshipGetProperty( KernelStatement statement, RelationshipItem relationship, int propertyKeyId )
     {
         return entityReadOperations.relationshipGetProperty( statement, relationship, propertyKeyId );
     }

@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.api.cursor;
 import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.values.Value;
 
 /**
  * Overlays transaction state on a {@link PropertyItem} cursors.
@@ -34,7 +35,7 @@ public abstract class TxAbstractPropertyCursor implements Cursor<PropertyItem>, 
     private final Consumer<TxAbstractPropertyCursor> instanceCache;
 
     protected Cursor<PropertyItem> cursor;
-    protected DefinedProperty property;
+    protected StorageProperty property;
     protected PropertyContainerState state;
 
     public TxAbstractPropertyCursor( Consumer<TxAbstractPropertyCursor> instanceCache )
@@ -77,7 +78,7 @@ public abstract class TxAbstractPropertyCursor implements Cursor<PropertyItem>, 
     }
 
     @Override
-    public Object value()
+    public Value value()
     {
         return property.value();
     }

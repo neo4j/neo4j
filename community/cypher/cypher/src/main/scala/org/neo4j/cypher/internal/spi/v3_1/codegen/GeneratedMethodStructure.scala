@@ -697,14 +697,22 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, fields.close) { body =>
-      body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)))
+      body.assign(local,
+                  invoke(
+                    reboxValue,
+                    invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar))
+                  ))
     }
   }
 
   override def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, fields.close) { body =>
-      body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), constant(propId)))
+      body.assign(local,
+                  invoke(
+                    reboxValue,
+                    invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), constant(propId))
+                  ))
     }
   }
 
@@ -722,14 +730,21 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local,
-                  invoke(readOperations, relationshipGetProperty, body.load(relIdVar), body.load(propIdVar)))
+                  invoke(
+                    reboxValue,
+                    invoke(readOperations, relationshipGetProperty, body.load(relIdVar), body.load(propIdVar))
+                  ))
     }
   }
 
   override def relationshipGetPropertyById(relIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, fields.close) { body =>
-      body.assign(local, invoke(readOperations, relationshipGetProperty, body.load(relIdVar), constant(propId)))
+      body.assign(local,
+                  invoke(
+                    reboxValue,
+                    invoke(readOperations, relationshipGetProperty, body.load(relIdVar), constant(propId))
+                  ))
     }
   }
 

@@ -73,9 +73,15 @@ final class CharValue extends TextValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return format( "'%s'", value );
     }
 
     @Override

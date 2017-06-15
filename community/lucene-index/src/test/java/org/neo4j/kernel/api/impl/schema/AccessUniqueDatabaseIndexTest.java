@@ -32,11 +32,13 @@ import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -149,23 +151,23 @@ public class AccessUniqueDatabaseIndexTest
 
     private IndexEntryUpdate add( long nodeId, Object propertyValue )
     {
-        return IndexEntryUpdate.add( nodeId, index.schema(), propertyValue );
+        return IndexQueryHelper.add( nodeId, index.schema(), propertyValue );
     }
 
     private IndexEntryUpdate change( long nodeId, Object oldValue, Object newValue )
     {
-        return IndexEntryUpdate.change( nodeId, index.schema(), oldValue, newValue );
+        return IndexQueryHelper.change( nodeId, index.schema(), oldValue, newValue );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object oldValue )
     {
-        return IndexEntryUpdate.remove( nodeId, index.schema(), oldValue );
+        return IndexQueryHelper.remove( nodeId, index.schema(), oldValue );
     }
 
     private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
     {
         return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ),
-                propertyValue );
+                Values.stringValue( propertyValue ) );
     }
 
     private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate> updates )

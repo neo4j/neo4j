@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -129,9 +130,10 @@ public class NonUniqueDatabaseIndexSamplerTest
         return terms;
     }
 
-    private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue ) throws IOException
+    private static void insertDocument( WritableIndexPartition partition, long nodeId, Object propertyValue )
+            throws IOException
     {
-        Document doc = LuceneDocumentStructure.documentRepresentingProperties( nodeId, propertyValue );
+        Document doc = LuceneDocumentStructure.documentRepresentingProperties( nodeId, Values.of( propertyValue ) );
         partition.getIndexWriter().addDocument( doc );
     }
 

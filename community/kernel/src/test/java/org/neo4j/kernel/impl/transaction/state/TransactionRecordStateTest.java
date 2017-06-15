@@ -40,7 +40,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
@@ -87,6 +86,8 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.NeoStoresRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -116,8 +117,8 @@ public class TransactionRecordStateTest
     private static final String LONG_STRING = "string value long enough not to be stored as a short string";
     private static final int propertyId1 = 1;
     private static final int propertyId2 = 2;
-    private static final String value1 = "first";
-    private static final int value2 = 4;
+    private static final Value value1 = Values.of( "first" );
+    private static final Value value2 = Values.of( 4 );
     private static final long[] noLabels = new long[0];
     private final long[] oneLabelId = new long[]{3};
     private final long[] secondLabelId = new long[]{4};
@@ -219,7 +220,7 @@ public class TransactionRecordStateTest
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
         recordState.addLabelToNode( labelId, nodeId );
-        recordState.nodeAddProperty( nodeId, propertyKeyId, "Neo" );
+        recordState.nodeAddProperty( nodeId, propertyKeyId, Values.of( "Neo" ) );
 
         // WHEN
         PhysicalTransactionRepresentation transaction = transactionRepresentationOf( recordState );
@@ -301,8 +302,8 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        Object value1 = LONG_STRING;
-        Object value2 = LONG_STRING.getBytes();
+        Value value1 = Values.of( LONG_STRING );
+        Value value2 = Values.of( LONG_STRING.getBytes() );
         recordState.nodeCreate( nodeId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
@@ -375,20 +376,20 @@ public class TransactionRecordStateTest
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        recordState.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
+        recordState.nodeRemoveProperty( nodeId, propertyId1 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
         Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
-                        .removed( property1.propertyKeyId(), property1.value() )
+                        .removed( propertyId1, value1 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
@@ -401,20 +402,20 @@ public class TransactionRecordStateTest
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
-        DefinedProperty ignored = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
         Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
-                        .added( property2.propertyKeyId(), property2.value() )
+                        .added( propertyId2, value2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
@@ -427,23 +428,23 @@ public class TransactionRecordStateTest
         int nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
-        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, transactionRepresentationOf( recordState ) );
 
         // WHEN
-        String newValue1 = "new";
-        String newValue2 = "new 2";
+        Value newValue1 = Values.of( "new" );
+        Value newValue2 = Values.of( "new 2" );
         recordState = newTransactionRecordState( neoStores );
-        recordState.nodeChangeProperty( nodeId, property1.propertyKeyId(), newValue1 );
-        recordState.nodeChangeProperty( nodeId, property2.propertyKeyId(), newValue2 );
+        recordState.nodeChangeProperty( nodeId, propertyId1, newValue1 );
+        recordState.nodeChangeProperty( nodeId, propertyId2, newValue2 );
         Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId )
-                        .changed( property1.propertyKeyId(), property1.value(), newValue1 )
-                        .changed( property2.propertyKeyId(), property2.value(), newValue2 )
+                        .changed( propertyId1, value1, newValue1 )
+                        .changed( propertyId2, value2, newValue2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
@@ -457,21 +458,21 @@ public class TransactionRecordStateTest
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         recordState.nodeCreate( nodeId );
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        DefinedProperty property1 = recordState.nodeAddProperty( nodeId, propertyId1, value1 );
-        DefinedProperty property2 = recordState.nodeAddProperty( nodeId, propertyId2, value2 );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
+        recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, transactionRepresentationOf( recordState ) );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
-        recordState.nodeRemoveProperty( nodeId, property1.propertyKeyId() );
-        recordState.nodeRemoveProperty( nodeId, property2.propertyKeyId() );
+        recordState.nodeRemoveProperty( nodeId, propertyId1 );
+        recordState.nodeRemoveProperty( nodeId, propertyId2 );
         Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
         NodeUpdates expected =
                 NodeUpdates.forNode( nodeId, oneLabelId )
-                        .removed( property1.propertyKeyId(), property1.value() )
-                        .removed( property2.propertyKeyId(), property2.value() )
+                        .removed( propertyId1, value1 )
+                        .removed( propertyId2, value2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
@@ -531,7 +532,7 @@ public class TransactionRecordStateTest
         recordState.nodeCreate( nodeId );
         recordState.relCreate( relId++, 0, nodeId, nodeId );
         recordState.relCreate( relId, 0, nodeId, nodeId );
-        recordState.nodeAddProperty( nodeId, 0, 101 );
+        recordState.nodeAddProperty( nodeId, 0, value2 );
 
         // WHEN
         Collection<StorageCommand> commands = new ArrayList<>();
@@ -562,15 +563,15 @@ public class TransactionRecordStateTest
         recordState.nodeCreate( nodeId );
         recordState.relCreate( relId1, 0, nodeId, nodeId );
         recordState.relCreate( relId2, 0, nodeId, nodeId );
-        recordState.nodeAddProperty( nodeId, 0, 101 );
+        recordState.nodeAddProperty( nodeId, 0, Values.of( 101 ) );
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( recordState ) );
 
         recordState = newTransactionRecordState( neoStores );
-        recordState.nodeChangeProperty( nodeId, 0, 102 );
+        recordState.nodeChangeProperty( nodeId, 0, Values.of( 102 ) );
         recordState.relCreate( relId3, 0, nodeId, nodeId );
-        recordState.relAddProperty( relId1, 0, 123 );
+        recordState.relAddProperty( relId1, 0, Values.of( 123 ) );
 
         // WHEN
         Collection<StorageCommand> commands = new ArrayList<>();
@@ -650,7 +651,7 @@ public class TransactionRecordStateTest
         recordState.relCreate( relId1, 0, nodeId1, nodeId1 );
         recordState.relCreate( relId2, 0, nodeId1, nodeId1 );
         recordState.relCreate( relId4, 1, nodeId1, nodeId1 );
-        recordState.nodeAddProperty( nodeId1, 0, 101 );
+        recordState.nodeAddProperty( nodeId1, 0, value1 );
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( recordState ) );
@@ -707,11 +708,9 @@ public class TransactionRecordStateTest
 
         int nodeId = 1;
         recordState.nodeCreate( nodeId );
-        int propertyKey = 1;
-        Object value = 5;
 
         // WHEN
-        recordState.nodeAddProperty( nodeId, propertyKey, value );
+        recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         Collection<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
         PropertyCommand propertyCommand = singlePropertyCommand( commands );
@@ -780,8 +779,8 @@ public class TransactionRecordStateTest
             {
                 tx.nodeCreate( nodes[i] );
             }
-            tx.nodeAddProperty( nodes[3], 0, "old" );
-            tx.nodeAddProperty( nodes[4], 0, "old" );
+            tx.nodeAddProperty( nodes[3], 0, Values.of( "old" ) );
+            tx.nodeAddProperty( nodes[4], 0, Values.of( "old" ) );
             BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                     locks );
             apply( applier, transaction( tx ) );
@@ -792,14 +791,14 @@ public class TransactionRecordStateTest
         TransactionRecordState tx = newTransactionRecordState( neoStores );
         tx.nodeCreate( nodes[0] );
         tx.addLabelToNode( 0, nodes[1] );
-        tx.nodeAddProperty( nodes[2], 0, "value" );
-        tx.nodeChangeProperty( nodes[3], 0, "value" );
+        tx.nodeAddProperty( nodes[2], 0, Values.of( "value" ) );
+        tx.nodeChangeProperty( nodes[3], 0, Values.of( "value" ) );
         tx.nodeRemoveProperty( nodes[4], 0 );
         tx.nodeDelete( nodes[5] );
 
         tx.nodeCreate( nodes[6] );
         tx.addLabelToNode( 0, nodes[6] );
-        tx.nodeAddProperty( nodes[6], 0, "value" );
+        tx.nodeAddProperty( nodes[6], 0, Values.of( "value" ) );
 
         //commit( tx );
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ), locks );
@@ -1380,7 +1379,7 @@ public class TransactionRecordStateTest
         assertTrue( inUse == record.inUse() );
     }
 
-    private String string( int length )
+    private Value string( int length )
     {
         StringBuilder result = new StringBuilder();
         char ch = 'a';
@@ -1388,7 +1387,7 @@ public class TransactionRecordStateTest
         {
             result.append( (char) ((ch + (i % 10))) );
         }
-        return result.toString();
+        return Values.of( result.toString() );
     }
 
     private PropertyCommand singlePropertyCommand( Collection<StorageCommand> commands )

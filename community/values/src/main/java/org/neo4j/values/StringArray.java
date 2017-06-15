@@ -76,14 +76,27 @@ abstract class StringArray extends TextArray
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
     }
 
     public int compareTo( TextArray other )
     {
         return TextValues.compareTextArrays( this, other );
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
     }
 
     static final class Direct extends StringArray
@@ -113,7 +126,7 @@ abstract class StringArray extends TextArray
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<String[]> producer )
+        Lazy( ValueLoader<String[]> producer )
         {
             this.field = producer;
         }

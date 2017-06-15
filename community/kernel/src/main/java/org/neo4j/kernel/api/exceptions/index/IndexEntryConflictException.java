@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 import org.neo4j.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueTuple;
 
 import static java.lang.String.format;
+import static java.lang.String.valueOf;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 /**
@@ -34,16 +38,16 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
  */
 public class IndexEntryConflictException extends Exception
 {
-    private final OrderedPropertyValues propertyValues;
+    private final ValueTuple propertyValues;
     private final long addedNodeId;
     private final long existingNodeId;
 
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object propertyValue )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Value propertyValue )
     {
-        this( existingNodeId, addedNodeId, OrderedPropertyValues.ofUndefined( propertyValue ) );
+        this( existingNodeId, addedNodeId, ValueTuple.of( propertyValue ) );
     }
 
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, OrderedPropertyValues propertyValues )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, ValueTuple propertyValues )
     {
         super( format( "Both node %d and node %d share the property value %s",
                 existingNodeId, addedNodeId, propertyValues ) );
@@ -81,14 +85,14 @@ public class IndexEntryConflictException extends Exception
         }
     }
 
-    public OrderedPropertyValues getPropertyValues()
+    public ValueTuple getPropertyValues()
     {
         return propertyValues;
     }
 
-    public Object getSinglePropertyValue()
+    public Value getSinglePropertyValue()
     {
-        return propertyValues.getSinglePropertyValue();
+        return propertyValues.getOnlyValue();
     }
 
     public long getAddedNodeId()
@@ -150,7 +154,7 @@ public class IndexEntryConflictException extends Exception
             sb.append( '`' );
             sb.append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
             sb.append( "` = " );
-            sb.append( OrderedPropertyValues.quote( propertyValues.valueAt( i ) ) );
+            sb.append( propertyValues.valueAt( i ).prettyPrint() );
         }
         return sb.toString();
     }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.values;
 
-import org.neo4j.values.Values.ValueLoader;
-
 class LazyValues
 {
     /**

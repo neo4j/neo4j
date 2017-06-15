@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -58,6 +59,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.api.schema.IndexQuery.exact;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -152,7 +154,7 @@ public class DatabaseCompositeIndexAccessorTest
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
+                .query( exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -167,13 +169,13 @@ public class DatabaseCompositeIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( firstReader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
+                .query( exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) ) );
         assertEquals( asSet(), PrimitiveLongCollections.toSet( firstReader
-                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
+                .query( exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) ) );
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( secondReader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
+                .query( exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) ) );
         assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( secondReader
-                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
+                .query( exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -187,7 +189,7 @@ public class DatabaseCompositeIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
+                .query( exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -203,9 +205,9 @@ public class DatabaseCompositeIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
+                .query( exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) ) );
         assertEquals( emptySet(), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
+                .query( exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -221,9 +223,9 @@ public class DatabaseCompositeIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values2[0] ), IndexQuery.exact( PROP_ID2, values2[1] ) ) ) );
+                .query( exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) ) );
         assertEquals( asSet(), PrimitiveLongCollections.toSet( reader
-                .query( IndexQuery.exact( PROP_ID1, values[0] ), IndexQuery.exact( PROP_ID2, values[1] ) ) ) );
+                .query( exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) ) );
         reader.close();
     }
 
@@ -260,17 +262,17 @@ public class DatabaseCompositeIndexAccessorTest
 
     private IndexEntryUpdate add( long nodeId, Object... values )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor.schema(), values );
+        return IndexQueryHelper.add( nodeId, indexDescriptor.schema(), values );
     }
 
     private IndexEntryUpdate remove( long nodeId, Object... values )
     {
-        return IndexEntryUpdate.remove( nodeId, indexDescriptor.schema(), values );
+        return IndexQueryHelper.remove( nodeId, indexDescriptor.schema(), values );
     }
 
     private IndexEntryUpdate change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
     {
-        return IndexEntryUpdate.change( nodeId, indexDescriptor.schema(), valuesBefore, valuesAfter );
+        return IndexQueryHelper.change( nodeId, indexDescriptor.schema(), valuesBefore, valuesAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )

@@ -22,9 +22,13 @@ package org.neo4j.kernel.api.index;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.function.Function;
+
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,7 +55,7 @@ public class ArrayEncoderTest
                 "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant.",
                 "Something else to trigger padding."
         };
-        String encoded = ArrayEncoder.encode( array );
+        String encoded = ArrayEncoder.encode( Values.of( array ) );
 
         int separators = 0;
         boolean padding = false;
@@ -83,9 +87,9 @@ public class ArrayEncoderTest
     @Test
     public void shouldEncodeArrays() throws Exception
     {
-        assertEquals( "D1.0|2.0|3.0|", ArrayEncoder.encode( new int[]{1, 2, 3} ) );
-        assertEquals( "Ztrue|false|", ArrayEncoder.encode( new boolean[]{true, false} ) );
-        assertEquals( "LYWxp|YXJl|eW91|b2s=|", ArrayEncoder.encode( new String[]{"ali", "are", "you", "ok"} ) );
+        assertEncoding( "D1.0|2.0|3.0|", new int[]{1, 2, 3} );
+        assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
+        assertEncoding( "LYWxp|YXJl|eW91|b2s=|", new String[]{"ali", "are", "you", "ok"} );
     }
 
     @Test
@@ -102,23 +106,34 @@ public class ArrayEncoderTest
                 "This predetermined time is the minimum runtime of the test, since the timer starts after all threads.",
                 "The idea to use the input data as documentation for the test was just a cute thing I came up with.",
                 "Since my imagination for coming up with test data is usually poor, I figured I'd do something useful.",
-                "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."};
+                "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."
+            };
 
+        raceEncode( INPUT, ArrayEncoder::encode );
+    }
+
+    private void raceEncode( String[] INPUT, Function<Value, String> encodeFunction ) throws Throwable
+    {
         Race race = new Race();
         for ( String input : INPUT )
         {
-            final String[] inputArray = new String[] {input};
+            final Value inputValue = Values.of( new String[]{input} );
             race.addContestant( () ->
             {
-                String first = ArrayEncoder.encode( inputArray );
+                String first = encodeFunction.apply( inputValue );
                 for ( int i = 0; i < 1000; i++ )
                 {
-                    String encoded = ArrayEncoder.encode( inputArray );
+                    String encoded = encodeFunction.apply( inputValue );
                     assertEquals( "Each attempt at encoding should yield the same result. Turns out that first one was '"
                             + first + "', yet another one was '" + encoded + "'", first, encoded );
                 }
             } );
         }
         race.go();
+    }
+
+    private void assertEncoding( String expected, Object toEncode )
+    {
+        assertEquals( expected, ArrayEncoder.encode( Values.of( toEncode ) ) );
     }
 }

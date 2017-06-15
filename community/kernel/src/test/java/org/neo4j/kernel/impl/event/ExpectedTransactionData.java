@@ -32,6 +32,7 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;

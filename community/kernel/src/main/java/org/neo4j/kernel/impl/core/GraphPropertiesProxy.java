@@ -35,9 +35,10 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static java.lang.String.format;
 
@@ -98,14 +99,14 @@ public class GraphPropertiesProxy implements GraphProperties
                     throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
 
-                Object value = statement.readOperations().graphGetProperty( propertyKeyId );
+                Value value = statement.readOperations().graphGetProperty( propertyKeyId );
 
-                if ( value == null )
+                if ( value == Values.NO_VALUE )
                 {
                     throw new PropertyNotFoundException( propertyKeyId, EntityType.GRAPH, -1 );
                 }
 
-                return value;
+                return value.asObjectCopy();
             }
             catch ( PropertyNotFoundException e )
             {
@@ -126,8 +127,8 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            Object value = statement.readOperations().graphGetProperty( propertyKeyId );
-            return value == null ? defaultValue : value;
+            Value value = statement.readOperations().graphGetProperty( propertyKeyId );
+            return value == Values.NO_VALUE ? defaultValue : value.asObjectCopy();
         }
     }
 
@@ -139,7 +140,7 @@ public class GraphPropertiesProxy implements GraphProperties
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             try
             {
-                statement.dataWriteOperations().graphSetProperty( Property.property( propertyKeyId, value ) );
+                statement.dataWriteOperations().graphSetProperty( propertyKeyId, Values.of( value, false ) );
             }
             catch ( IllegalArgumentException e )
             {
@@ -164,7 +165,7 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-            return statement.dataWriteOperations().graphRemoveProperty( propertyKeyId ).value( null );
+            return statement.dataWriteOperations().graphRemoveProperty( propertyKeyId ).asObjectCopy();
         }
         catch ( IllegalTokenNameException e )
         {
@@ -227,7 +228,7 @@ public class GraphPropertiesProxy implements GraphProperties
             {
                 int propertyKeyId = propertyKeys.next();
                 properties.put( readOperations.propertyKeyGetName( propertyKeyId ),
-                        readOperations.graphGetProperty( propertyKeyId ) );
+                        readOperations.graphGetProperty( propertyKeyId ).asObjectCopy() );
             }
             return properties;
         }

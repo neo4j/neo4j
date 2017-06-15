@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumberPropertyValue;
+import org.neo4j.values.Value;
+
+import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
 
 /**
  * Contains only comparison value, which means that all values needs to be unique.
@@ -35,10 +37,9 @@ class UniqueSchemaNumberKey implements SchemaNumberKey
     boolean isHighest;
 
     @Override
-    public void from( long entityId, Object[] values )
+    public void from( long entityId, Value[] values )
     {
-        assertValidSingleNumberPropertyValue( values );
-        value = ((Number) values[0]).doubleValue();
+        value = assertValidSingleNumber( values ).doubleValue();
         isHighest = false;
     }
 

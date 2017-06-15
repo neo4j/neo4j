@@ -117,9 +117,16 @@ abstract class BooleanArray extends ArrayValue
     }
 
     @Override
-    public Object asPublic()
+    public Object asObjectCopy()
     {
         return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public Object asObject()
+    {
+        return value();
     }
 
     public int compareTo( BooleanArray other )
@@ -136,6 +143,12 @@ abstract class BooleanArray extends ArrayValue
     public NumberType numberType()
     {
         return NumberType.NO_NUMBER;
+    }
+
+    @Override
+    public String prettyPrint()
+    {
+        return Arrays.toString( value() );
     }
 
     static final class Direct extends BooleanArray
@@ -165,7 +178,7 @@ abstract class BooleanArray extends ArrayValue
     {
         private volatile Object field;
 
-        Lazy( Values.ValueLoader<boolean[]> producer )
+        Lazy( ValueLoader<boolean[]> producer )
         {
             this.field = producer;
         }

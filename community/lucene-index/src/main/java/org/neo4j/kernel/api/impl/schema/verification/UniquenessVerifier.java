@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.Value;
 
 /**
  * A component that verifies uniqueness of values in a lucene index.
@@ -51,10 +52,10 @@ public interface UniquenessVerifier extends Closeable
      *
      * @param accessor the accessor to retrieve actual property values from the store.
      * @param propKeyIds the ids of the properties to verify.
-     * @param updatedPropertyValues the values to check uniqueness for.
+     * @param updatedValueTuples the values to check uniqueness for.
      * @throws IndexEntryConflictException if there are duplicates.
      * @throws IOException when Lucene throws {@link IOException}.
      */
-    void verify( PropertyAccessor accessor, int[] propKeyIds, List<Object> updatedPropertyValues )
+    void verify( PropertyAccessor accessor, int[] propKeyIds, List<Value[]> updatedValueTuples )
             throws IndexEntryConflictException, IOException;
 }

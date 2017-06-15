@@ -23,6 +23,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.util.Validator;
+import org.neo4j.values.Values;
 
 public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
 {
@@ -45,8 +46,8 @@ public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
     }
 
     @Override
-    protected Validator getValidator()
+    protected Validator<Object> getValidator()
     {
-        return IndexValueValidator.INSTANCE;
+        return object -> IndexValueValidator.INSTANCE.validate( Values.of( object ) );
     }
 }

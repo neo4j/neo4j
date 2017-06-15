@@ -28,13 +28,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.values.Value;
 
 public class InternalAutoIndexOperations implements AutoIndexOperations
 {
@@ -150,21 +149,21 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
     }
 
     @Override
-    public void propertyAdded( DataWriteOperations ops, long entityId, Property property ) throws
+    public void propertyAdded( DataWriteOperations ops, long entityId, int propertyKeyId, Value value ) throws
             AutoIndexingKernelException
     {
         if ( enabled )
         {
             try
             {
-                String name = propertyKeyLookup.getTokenById( property.propertyKeyId() ).name();
+                String name = propertyKeyLookup.getTokenById( propertyKeyId ).name();
                 if ( propertyKeysToInclude.get().contains( name ) )
                 {
                     ensureIndexExists( ops );
-                    type.add( ops, entityId, name, property.value() );
+                    type.add( ops, entityId, name, value.asObject() );
                 }
             }
-            catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException | PropertyNotFoundException e )
+            catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -172,29 +171,29 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
             {
                 // TODO: TokenNotFoundException was added before there was a kernel. It should be converted to a
                 // KernelException now
-                throw new AutoIndexingKernelException( new PropertyKeyIdNotFoundKernelException( property
-                        .propertyKeyId(), e ) );
+                throw new AutoIndexingKernelException( new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
             }
         }
     }
 
     @Override
-    public void propertyChanged( DataWriteOperations ops, long entityId, Property oldProperty, Property newProperty )
+    public void propertyChanged( DataWriteOperations ops, long entityId, int propertyKeyId, Value oldValue,
+            Value newValue )
             throws AutoIndexingKernelException
     {
         if ( enabled )
         {
             try
             {
-                String name = propertyKeyLookup.getTokenById( oldProperty.propertyKeyId() ).name();
+                String name = propertyKeyLookup.getTokenById( propertyKeyId ).name();
                 if ( propertyKeysToInclude.get().contains( name ) )
                 {
                     ensureIndexExists( ops );
-                    type.remove( ops, entityId, name, oldProperty.value() );
-                    type.add( ops, entityId, name, newProperty.value() );
+                    type.remove( ops, entityId, name, oldValue.asObject() );
+                    type.add( ops, entityId, name, newValue.asObject() );
                 }
             }
-            catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException | PropertyNotFoundException e )
+            catch ( LegacyIndexNotFoundKernelException | EntityNotFoundException e )
             {
                 throw new AutoIndexingKernelException( e );
             }
@@ -202,8 +201,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
             {
                 // TODO: TokenNotFoundException was added before there was a kernel. It should be converted to a
                 // KernelException now
-                throw new AutoIndexingKernelException( new PropertyKeyIdNotFoundKernelException( oldProperty
-                        .propertyKeyId(), e ) );
+                throw new AutoIndexingKernelException( new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
             }
         }
     }

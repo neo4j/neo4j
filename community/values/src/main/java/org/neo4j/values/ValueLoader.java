@@ -17,27 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.properties;
+package org.neo4j.values;
 
-final class DoubleProperty extends FloatingPointNumberProperty
+/**
+ * Mini-interface for loading values. This is intended for lazy loading of heavy values such as
+ * large arrays and Strings.
+ *
+ * @param <T> The type to load
+ */
+public interface ValueLoader<T>
 {
-    private final double value;
-
-    DoubleProperty( int propertyKeyId, double value )
-    {
-        super( propertyKeyId );
-        this.value = value;
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        return value;
-    }
-
-    @Override
-    public Double value()
-    {
-        return value;
-    }
+    T load() throws ValueLoadException;
 }
