@@ -57,10 +57,10 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
  */
 public class SimpleIndexReader implements IndexReader
 {
-    private PartitionSearcher partitionSearcher;
-    private IndexDescriptor descriptor;
+    private final PartitionSearcher partitionSearcher;
+    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private TaskCoordinator taskCoordinator;
+    private final TaskCoordinator taskCoordinator;
 
     public SimpleIndexReader( PartitionSearcher partitionSearcher,
             IndexDescriptor descriptor,
@@ -136,6 +136,12 @@ public class SimpleIndexReader implements IndexReader
             // todo figure out a more specific exception
             throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
         }
+    }
+
+    @Override
+    public boolean hasFullNumberPrecision()
+    {
+        return false;
     }
 
     private void assertNotComposite( IndexQuery[] predicates )

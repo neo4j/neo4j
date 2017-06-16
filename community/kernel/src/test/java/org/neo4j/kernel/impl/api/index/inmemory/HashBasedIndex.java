@@ -289,6 +289,12 @@ class HashBasedIndex extends InMemoryIndexImplementation
         }
     }
 
+    @Override
+    public boolean hasFullNumberPrecision()
+    {
+        return false;
+    }
+
     private interface StringFilter
     {
         boolean test( String s );

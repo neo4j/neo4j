@@ -78,6 +78,12 @@ public class PartitionedIndexReader implements IndexReader
         }
     }
 
+    @Override
+    public boolean hasFullNumberPrecision()
+    {
+        return false;
+    }
+
     private PrimitiveLongIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
     {
         try

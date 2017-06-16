@@ -94,10 +94,16 @@ public class LookupFilter
     }
 
     /**
+     * This filter is added on top of index results for schema index implementations that will have
+     * potential false positive hits due to value coersion to double values.
+     * The given {@code indexedNodeIds} will be wrapped in a filter double-checking with the actual
+     * node property values iff the {@link IndexQuery} predicates query for numbers, i.e. where this
+     * coersion problem may be possible.
+     *
      * used in "normal" operation
      */
     public static PrimitiveLongIterator exactIndexMatches( EntityOperations operations, KernelStatement state,
-                                                           PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
+            PrimitiveLongIterator indexedNodeIds, IndexQuery... predicates )
     {
         if ( !indexedNodeIds.hasNext() )
         {
